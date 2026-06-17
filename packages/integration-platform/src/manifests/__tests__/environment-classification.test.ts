@@ -1,8 +1,26 @@
 import { describe, expect, it } from 'bun:test';
 import {
   classifyEnvironment,
+  confirmsEnvironmentSeparation,
   envTagValues,
 } from '../environment-classification';
+
+describe('confirmsEnvironmentSeparation — requires prod + non-prod', () => {
+  it('passes only with production AND a non-production environment', () => {
+    expect(confirmsEnvironmentSeparation(['production', 'development'])).toBe(true);
+    expect(confirmsEnvironmentSeparation(['production', 'staging', 'test'])).toBe(true);
+  });
+
+  it('fails on two non-production environments (no production)', () => {
+    expect(confirmsEnvironmentSeparation(['development', 'staging'])).toBe(false);
+  });
+
+  it('fails on production alone, or a single environment, or none', () => {
+    expect(confirmsEnvironmentSeparation(['production'])).toBe(false);
+    expect(confirmsEnvironmentSeparation(['development'])).toBe(false);
+    expect(confirmsEnvironmentSeparation([])).toBe(false);
+  });
+});
 
 describe('classifyEnvironment — token-exact matching', () => {
   it('classifies common environment tokens', () => {

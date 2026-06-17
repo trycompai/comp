@@ -970,7 +970,7 @@ describe('AWS environment separation', () => {
     expect(classifyVpcEnv(undefined)).toBeNull();
   });
 
-  it('passes when >=2 environments are found, without claiming cross-account isolation', () => {
+  it('passes on production + non-production, without claiming cross-account isolation', () => {
     const out = evaluateEnvironmentSeparation([
       { vpcId: 'vpc-1', region: 'us-east-1', environment: 'production' },
       { vpcId: 'vpc-2', region: 'us-east-1', environment: 'development' },
@@ -978,6 +978,15 @@ describe('AWS environment separation', () => {
     expect(out).toHaveLength(1);
     expect(out[0]!.kind).toBe('pass');
     expect(out[0]!.description).toMatch(/not cross-account isolation/);
+  });
+
+  it('fails when only non-production environments are present (no production)', () => {
+    const out = evaluateEnvironmentSeparation([
+      { vpcId: 'vpc-1', region: 'us-east-1', environment: 'development' },
+      { vpcId: 'vpc-2', region: 'us-east-1', environment: 'staging' },
+    ]);
+    expect(out).toHaveLength(1);
+    expect(out[0]!.kind).toBe('fail');
   });
 
   it('fails (low) with guidance when only one environment is detected', () => {

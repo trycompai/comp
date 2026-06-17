@@ -23,6 +23,24 @@ const ENV_TOKEN_SETS: ReadonlyArray<{ env: string; tokens: ReadonlySet<string> }
 /** Default tag/label keys that conventionally carry the environment. */
 export const ENV_TAG_KEYS = ['environment', 'env', 'stage', 'tier'] as const;
 
+/** The single production bucket; every other bucket is non-production. */
+const PRODUCTION_ENV = 'production';
+
+/**
+ * Whether a set of detected environments confirms environment SEPARATION as the
+ * control intends: production must be present AND at least one non-production
+ * environment (staging/development/test/sandbox). Two non-production
+ * environments alone (e.g. dev + staging) do NOT demonstrate that production is
+ * segregated, so they must not pass.
+ */
+export function confirmsEnvironmentSeparation(
+  envs: ReadonlyArray<string>,
+): boolean {
+  return (
+    envs.includes(PRODUCTION_ENV) && envs.some((e) => e !== PRODUCTION_ENV)
+  );
+}
+
 /** Split on any run of non-alphanumeric chars; lowercased, empties removed. */
 function tokenize(value: string): string[] {
   return value

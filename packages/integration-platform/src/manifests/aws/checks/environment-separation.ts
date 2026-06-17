@@ -3,6 +3,7 @@ import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
 import {
   classifyEnvironment,
+  confirmsEnvironmentSeparation,
   envTagValues,
 } from '../../environment-classification';
 import {
@@ -50,11 +51,12 @@ export function classifyVpcEnv(
 }
 
 /**
- * Pure verdict from the account's non-default VPCs. PASS only when >=2 distinct
- * environments are positively observed; otherwise fail-with-guidance (never a
- * silent pass). The PASS wording is deliberately scoped to "within a single
- * AWS account" — two environment-labeled VPCs prove network labeling, not
- * cross-account isolation (they can be peered / share the account boundary).
+ * Pure verdict from the account's non-default VPCs. PASS only when a PRODUCTION
+ * environment is positively observed alongside at least one NON-PRODUCTION
+ * environment; otherwise fail-with-guidance (never a silent pass). The PASS
+ * wording is deliberately scoped to "within a single AWS account" — environment-
+ * labeled VPCs prove network labeling, not cross-account isolation (they can be
+ * peered / share the account boundary).
  */
 export function evaluateEnvironmentSeparation(vpcs: VpcInfo[]): CheckOutcome[] {
   const sample = vpcs.slice(0, 50).map((v) => ({
@@ -85,12 +87,15 @@ export function evaluateEnvironmentSeparation(vpcs: VpcInfo[]): CheckOutcome[] {
     ),
   ];
 
-  if (detected.length >= 2) {
+  // A confirmed pass requires a production environment separated from a
+  // non-production one — two non-production VPCs alone do not demonstrate that
+  // production is segregated.
+  if (confirmsEnvironmentSeparation(detected)) {
     return [
       {
         kind: 'pass',
         title: 'Distinct environment-labeled VPCs found',
-        description: `Detected ${detected.length} distinct environments across non-default VPCs in this AWS account: ${detected.join(', ')}. This evidences environment-labeled network separation within a single account (not cross-account isolation).`,
+        description: `Detected production separated from non-production across non-default VPCs in this AWS account: ${detected.join(', ')}. This evidences environment-labeled network separation within a single account (not cross-account isolation).`,
         resourceType: 'aws-environment-separation',
         resourceId: 'vpcs',
         evidence: {
@@ -107,9 +112,9 @@ export function evaluateEnvironmentSeparation(vpcs: VpcInfo[]): CheckOutcome[] {
       kind: 'fail',
       title: 'Could not confirm environment separation',
       description:
-        detected.length === 1
-          ? `Only one environment ("${detected[0]}") was detected among this account's VPCs; this connection evaluates a single AWS account.`
-          : "No VPC in this account could be classified by environment, so environment separation could not be confirmed.",
+        detected.length === 0
+          ? "No VPC in this account could be classified by environment, so environment separation could not be confirmed."
+          : `Detected environment(s) ${detected.join(', ')} among this account's VPCs, but could not confirm a production environment separated from a non-production one; this connection evaluates a single AWS account.`,
       resourceType: 'aws-environment-separation',
       resourceId: 'vpcs',
       severity: 'low',
@@ -126,7 +131,8 @@ export function evaluateEnvironmentSeparation(vpcs: VpcInfo[]): CheckOutcome[] {
 /**
  * Separation of Environments check (heuristic, within-account). Lists every
  * non-default VPC across the account's regions, classifies each by its
- * Environment/Name tag, and passes when >=2 distinct environments are found.
+ * Environment/Name tag, and passes when a production environment is found
+ * alongside at least one non-production environment.
  * Account-per-environment separation is invisible from one connection (no
  * Organizations access), so a single-environment account fails with guidance to
  * connect each env account or upload a diagram — the task accepts manual
