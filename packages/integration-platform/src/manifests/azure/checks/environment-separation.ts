@@ -63,6 +63,7 @@ export const environmentSeparationCheck: IntegrationCheck = {
     // subscription's display name only — we never touch subscriptions outside
     // the configured selection.
     const subscriptionEnvSet = new Set<string>();
+    let anySubscriptionReadFailed = false;
     for (const id of subscriptionIds) {
       try {
         const sub = await ctx.fetch<{ displayName?: string }>(
@@ -71,6 +72,7 @@ export const environmentSeparationCheck: IntegrationCheck = {
         const env = classifyEnvironment([sub.displayName]);
         if (env) subscriptionEnvSet.add(env);
       } catch (err) {
+        anySubscriptionReadFailed = true;
         ctx.log(
           `Azure env-separation: could not read subscription ${id} — ${toHttpReadFailure(err).error}`,
         );
@@ -136,19 +138,24 @@ export const environmentSeparationCheck: IntegrationCheck = {
       return;
     }
 
-    // Could not confirm. A read failure leaves coverage incomplete ("could not
-    // verify"); a complete scan that simply found no prod/non-prod split is
-    // "could not confirm".
+    // Could not confirm. A read failure in EITHER tier (a subscription name we
+    // couldn't read, or resource groups we couldn't list) leaves coverage
+    // incomplete, so the verdict is "could not verify" (retry/permissions) — not
+    // the confident "could not confirm" (a complete scan that found no split).
     const detectedAll = [...new Set([...subscriptionEnvs, ...resourceGroupEnvs])];
+    const readGaps: string[] = [];
+    if (anySubscriptionReadFailed) readGaps.push('subscriptions');
+    if (anyRgReadFailed) readGaps.push('resource groups');
+    const coverageIncomplete = readGaps.length > 0;
     const base =
       detectedAll.length === 0
         ? `No in-scope Azure subscription or resource group could be classified by environment across ${subscriptionIds.length} subscription(s)`
         : `Detected environment(s) ${detectedAll.join(', ')}, but could not confirm a production environment separated from a non-production one across ${subscriptionIds.length} in-scope subscription(s)`;
     ctx.fail({
-      title: anyRgReadFailed
+      title: coverageIncomplete
         ? 'Could not verify environment separation'
         : 'Could not confirm environment separation',
-      description: `${base}${anyRgReadFailed ? ' (some resource groups could not be read)' : ''}.`,
+      description: `${base}${coverageIncomplete ? ` (some ${readGaps.join(' and ')} could not be read)` : ''}.`,
       resourceType: 'azure-environment-separation',
       resourceId: 'subscriptions',
       severity: 'medium',
@@ -158,6 +165,7 @@ export const environmentSeparationCheck: IntegrationCheck = {
         resourceGroupEnvironments: resourceGroupEnvs,
         subscriptionsScanned: subscriptionIds.length,
         resourceGroupsClassified: rgSamples.length,
+        ...(coverageIncomplete ? { coverageIncomplete: true } : {}),
       },
     });
   },

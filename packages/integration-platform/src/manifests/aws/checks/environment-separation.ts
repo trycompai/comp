@@ -129,6 +129,55 @@ export function evaluateEnvironmentSeparation(vpcs: VpcInfo[]): CheckOutcome[] {
 }
 
 /**
+ * Combine the VPCs we read with any per-region read failures into the outcomes
+ * to emit. A region we couldn't read leaves coverage incomplete and is surfaced
+ * as its own "could not verify" finding — UNLESS the VPCs we DID read already
+ * confirm separation. Reading more regions can only ADD environments, so it can
+ * never un-confirm a positive result; pairing a confirmed pass with a
+ * verification-failure would only emit a contradictory pass+fail in one run.
+ * When zero VPCs were read AND a region failed, only the region-failure finding
+ * is returned — a "no VPCs" verdict layered on unread data would mislead.
+ */
+export function buildEnvironmentSeparationOutcomes(
+  vpcs: VpcInfo[],
+  regionFailures: ReadonlyArray<{ region: string; failure: ReadFailure }>,
+): CheckOutcome[] {
+  const separation = evaluateEnvironmentSeparation(vpcs);
+  const confirmed = separation.some((o) => o.kind === 'pass');
+
+  // No coverage gap, or separation already proven → the verdict stands alone.
+  if (regionFailures.length === 0 || confirmed) return separation;
+
+  const regions = regionFailures.map((r) => r.region);
+  const regionFailure: CheckOutcome = {
+    kind: 'fail',
+    title: 'Could not verify VPCs in some regions',
+    description: `VPCs could not be listed in: ${regions.join(', ')}, so environment separation is unverified in those regions.`,
+    resourceType: 'aws-environment-separation',
+    resourceId: `regions:${regions.join(',')}`,
+    severity: 'medium',
+    remediation: remediationForReadFailure(
+      combineReadFailures(regionFailures.map((r) => r.failure)),
+      'Grant ec2:DescribeVpcs to the integration role in all enabled regions, then re-run the check.',
+    ),
+    evidence: {
+      failedRegions: regionFailures.map((r) => ({
+        region: r.region,
+        error: r.failure.error,
+      })),
+    },
+  };
+
+  // Zero VPCs read + a region failure: the unverified-region finding already
+  // tells the story on its own.
+  if (vpcs.length === 0) return [regionFailure];
+
+  // Coverage gap AND we couldn't confirm from what we read: surface both —
+  // they're consistent (both negative).
+  return [regionFailure, ...separation];
+}
+
+/**
  * Separation of Environments check (heuristic, within-account). Lists every
  * non-default VPC across the account's regions, classifies each by its
  * Environment/Name tag, and passes when a production environment is found
@@ -189,35 +238,6 @@ export const environmentSeparationCheck: IntegrationCheck = {
       }
     }
 
-    // A region we couldn't read is unverified — surface it instead of letting a
-    // partial read failure end as a silent verdict.
-    if (regionFailures.length > 0) {
-      const regions = regionFailures.map((r) => r.region);
-      emitOutcomes(ctx, [
-        {
-          kind: 'fail',
-          title: 'Could not verify VPCs in some regions',
-          description: `VPCs could not be listed in: ${regions.join(', ')}, so environment separation is unverified in those regions.`,
-          resourceType: 'aws-environment-separation',
-          resourceId: `regions:${regions.join(',')}`,
-          severity: 'medium',
-          remediation: remediationForReadFailure(
-            combineReadFailures(regionFailures.map((r) => r.failure)),
-            'Grant ec2:DescribeVpcs to the integration role in all enabled regions, then re-run the check.',
-          ),
-          evidence: {
-            failedRegions: regionFailures.map((r) => ({
-              region: r.region,
-              error: r.failure.error,
-            })),
-          },
-        },
-      ]);
-      // If we also found zero VPCs, the unverified-region finding already tells
-      // the story — don't add a misleading "no VPCs" verdict on unread data.
-      if (vpcs.length === 0) return;
-    }
-
-    emitOutcomes(ctx, evaluateEnvironmentSeparation(vpcs));
+    emitOutcomes(ctx, buildEnvironmentSeparationOutcomes(vpcs, regionFailures));
   },
 };

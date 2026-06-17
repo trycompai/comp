@@ -66,6 +66,63 @@ describe('classifyEnvironment — token-exact matching', () => {
   });
 });
 
+describe('classifyEnvironment — negated/qualified production (cubic finding)', () => {
+  it('classifies separated negated production as NON-production, not production', () => {
+    expect(classifyEnvironment(['non-prod'])).toBe('non-production');
+    expect(classifyEnvironment(['non_prod'])).toBe('non-production');
+    expect(classifyEnvironment(['non.prod'])).toBe('non-production');
+    expect(classifyEnvironment(['not-prod'])).toBe('non-production');
+    expect(classifyEnvironment(['myapp-non-prod'])).toBe('non-production');
+    expect(classifyEnvironment(['non-production'])).toBe('non-production');
+    expect(classifyEnvironment(['NON-PROD'])).toBe('non-production'); // case-insensitive
+  });
+
+  it('classifies joined non-production spellings as NON-production', () => {
+    expect(classifyEnvironment(['nonprod'])).toBe('non-production');
+    expect(classifyEnvironment(['notprod'])).toBe('non-production');
+    expect(classifyEnvironment(['nonprd'])).toBe('non-production');
+    expect(classifyEnvironment(['notprd'])).toBe('non-production');
+    expect(classifyEnvironment(['nonproduction'])).toBe('non-production');
+    expect(classifyEnvironment(['notproduction'])).toBe('non-production');
+    expect(classifyEnvironment(['app-nonprod'])).toBe('non-production');
+  });
+
+  it('classifies pre-prod as staging (consistent with joined "preprod")', () => {
+    expect(classifyEnvironment(['pre-prod'])).toBe('staging');
+    expect(classifyEnvironment(['pre_prod'])).toBe('staging');
+    expect(classifyEnvironment(['app-pre-prod'])).toBe('staging');
+    expect(classifyEnvironment(['preprod'])).toBe('staging');
+  });
+
+  it('still classifies plain production (negation needs an ADJACENT qualifier)', () => {
+    expect(classifyEnvironment(['prod'])).toBe('production');
+    expect(classifyEnvironment(['myapp-prod'])).toBe('production');
+    // a "non" that does not immediately precede a prod token must NOT negate
+    expect(classifyEnvironment(['prod-non-critical'])).toBe('production');
+  });
+
+  it('end-to-end: prod + non-prod now CONFIRMS separation (was a false fail)', () => {
+    // Pre-fix, "non-prod" classified as production, so detected={production}
+    // and separation failed despite a real prod/non-prod split.
+    const detected = [
+      ...new Set(['prod-vpc', 'non-prod-vpc'].map((n) => classifyEnvironment([n]))),
+    ].filter((e): e is string => e !== null);
+    expect(detected).toContain('production');
+    expect(detected).toContain('non-production');
+    expect(confirmsEnvironmentSeparation(detected)).toBe(true);
+  });
+
+  it('end-to-end: a non-prod-only footprint does NOT fabricate production (was a false pass)', () => {
+    // Pre-fix, "non-prod-staging" classified as production, so dev + that string
+    // passed as if production existed.
+    const detected = [
+      ...new Set(['dev', 'non-prod-staging'].map((n) => classifyEnvironment([n]))),
+    ].filter((e): e is string => e !== null);
+    expect(detected).not.toContain('production');
+    expect(confirmsEnvironmentSeparation(detected)).toBe(false);
+  });
+});
+
 describe('envTagValues — only env-key tags, case-insensitive', () => {
   it('reads environment-indicating keys regardless of case', () => {
     expect(envTagValues({ Environment: 'production' })).toEqual(['production']);

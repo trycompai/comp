@@ -1014,6 +1014,27 @@ describe('Azure environment separation', () => {
     expect(failed.some((f) => /Could not verify environment separation/.test(f.title))).toBe(true);
   });
 
+  it('fails "could not verify" when a SUBSCRIPTION name read fails (cubic finding)', async () => {
+    // Tier-1 displayName read fails while resource-group listing succeeds but
+    // classifies nothing. Coverage is incomplete, so the verdict must be the
+    // retry-signalling "could not verify", not the confident "could not confirm".
+    const { passed, failed } = await run(
+      environmentSeparationCheck,
+      (url) => {
+        const subM = url.match(/\/subscriptions\/([^/?]+)\?api-version/);
+        if (subM) throw new Error('HTTP 403: Forbidden');
+        if (url.includes('/resourcegroups')) {
+          return { value: [{ id: 'a', name: 'backend' }] };
+        }
+        return {};
+      },
+      { subscription_ids: ['s1'] },
+    );
+    expect(passed).toHaveLength(0);
+    expect(failed.some((f) => /Could not verify environment separation/.test(f.title))).toBe(true);
+    expect(failed.some((f) => /Could not confirm environment separation/.test(f.title))).toBe(false);
+  });
+
   it('defers to the scope resolver when no subscription is in scope', async () => {
     // variables {} → discovery; no enabled subscription → resolveAzureSubscriptionIds
     // emits its own scope finding and the check early-returns (no double fail).
