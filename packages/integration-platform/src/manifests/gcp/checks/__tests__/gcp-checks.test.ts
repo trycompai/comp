@@ -634,7 +634,9 @@ describe('GCP Cloud Monitoring — alerting and log export check', () => {
     const out = await runCheck(cloudMonitoringAlertingCheck, {
       fetch: monitorFetch({
         policies: [{ name: 'p1', enabled: true, notificationChannels: [] }],
-        sinks: [{ name: 'export-bq', disabled: false }],
+        sinks: [
+          { name: 'export-bq', destination: 'storage.googleapis.com/b1', disabled: false },
+        ],
       }),
     });
     expect(out.failed).toHaveLength(1);
@@ -645,7 +647,10 @@ describe('GCP Cloud Monitoring — alerting and log export check', () => {
 
   it('fails alerting when there are zero alert policies', async () => {
     const out = await runCheck(cloudMonitoringAlertingCheck, {
-      fetch: monitorFetch({ policies: [], sinks: [{ name: 'export', disabled: false }] }),
+      fetch: monitorFetch({
+        policies: [],
+        sinks: [{ name: 'export', destination: 'bigquery.googleapis.com/x', disabled: false }],
+      }),
     });
     expect(out.failed.some((f) => /No alerting configured/.test(f.title))).toBe(true);
   });
@@ -654,7 +659,13 @@ describe('GCP Cloud Monitoring — alerting and log export check', () => {
     const out = await runCheck(cloudMonitoringAlertingCheck, {
       fetch: monitorFetch({
         policies: [{ name: 'p1', notificationChannels: ['c1'] }], // no `enabled`
-        sinks: [{ name: 'export', disabled: false }],
+        sinks: [
+          {
+            name: 'export',
+            destination: 'pubsub.googleapis.com/projects/x/topics/logs',
+            disabled: false,
+          },
+        ],
       }),
     });
     expect(out.failed).toHaveLength(0);
@@ -666,8 +677,18 @@ describe('GCP Cloud Monitoring — alerting and log export check', () => {
       fetch: monitorFetch({
         policies: [{ name: 'p1', enabled: true, notificationChannels: ['c1'] }],
         sinks: [
-          { name: '_Default', disabled: false },
-          { name: '_Required', disabled: false },
+          {
+            name: '_Default',
+            destination:
+              'logging.googleapis.com/projects/x/locations/global/buckets/_Default',
+            disabled: false,
+          },
+          {
+            name: '_Required',
+            destination:
+              'logging.googleapis.com/projects/x/locations/global/buckets/_Required',
+            disabled: false,
+          },
         ],
       }),
     });
@@ -679,10 +700,45 @@ describe('GCP Cloud Monitoring — alerting and log export check', () => {
     const out = await runCheck(cloudMonitoringAlertingCheck, {
       fetch: monitorFetch({
         policies: [{ name: 'p1', enabled: true, notificationChannels: ['c1'] }],
-        sinks: [{ name: 'export', disabled: true }],
+        sinks: [{ name: 'export', destination: 'bigquery.googleapis.com/x', disabled: true }],
       }),
     });
     expect(out.failed.some((f) => /No log export configured/.test(f.title))).toBe(true);
+  });
+
+  it('does not count a custom-named sink that still targets the _Default bucket', async () => {
+    const out = await runCheck(cloudMonitoringAlertingCheck, {
+      fetch: monitorFetch({
+        policies: [{ name: 'p1', enabled: true, notificationChannels: ['c1'] }],
+        sinks: [
+          {
+            name: 'my-sink', // non-default NAME, but routes to the default bucket
+            destination:
+              'logging.googleapis.com/projects/x/locations/global/buckets/_Default',
+            disabled: false,
+          },
+        ],
+      }),
+    });
+    expect(out.failed.some((f) => /No log export configured/.test(f.title))).toBe(true);
+  });
+
+  it('counts a sink to a dedicated (non-default) Cloud Logging bucket as export', async () => {
+    const out = await runCheck(cloudMonitoringAlertingCheck, {
+      fetch: monitorFetch({
+        policies: [{ name: 'p1', enabled: true, notificationChannels: ['c1'] }],
+        sinks: [
+          {
+            name: 'audit',
+            destination:
+              'logging.googleapis.com/projects/x/locations/global/buckets/audit-7yr',
+            disabled: false,
+          },
+        ],
+      }),
+    });
+    expect(out.failed).toHaveLength(0);
+    expect(out.passed.some((p) => /Log export configured/.test(p.title))).toBe(true);
   });
 
   it('fails "could not verify" alerting on a genuine permission error (log export unaffected)', async () => {
@@ -694,7 +750,11 @@ describe('GCP Cloud Monitoring — alerting and log export check', () => {
             403,
           );
         }
-        if (url.includes('/sinks')) return { sinks: [{ name: 'export', disabled: false }] };
+        if (url.includes('/sinks')) {
+          return {
+            sinks: [{ name: 'export', destination: 'storage.googleapis.com/b', disabled: false }],
+          };
+        }
         return {};
       },
     });
