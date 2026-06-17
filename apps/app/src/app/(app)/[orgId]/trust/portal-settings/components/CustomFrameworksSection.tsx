@@ -36,8 +36,13 @@ export function CustomFrameworksSection({
   canUpdate: boolean;
   initialCustomFrameworks: TrustCustomFrameworkItem[];
 }) {
-  const { updateCustomFramework, uploadCustomComplianceResource, getCustomComplianceResourceUrl } =
-    useTrustPortalSettings();
+  const {
+    updateCustomFramework,
+    uploadCustomComplianceResource,
+    getCustomComplianceResourceUrl,
+    uploadCustomFrameworkBadge,
+    removeCustomFrameworkBadge,
+  } = useTrustPortalSettings();
 
   const [frameworks, setFrameworks] = useState<TrustCustomFrameworkItem[]>(initialCustomFrameworks);
 
@@ -123,6 +128,30 @@ export function CustomFrameworksSection({
     window.open(payload.signedUrl, '_blank', 'noopener,noreferrer');
   };
 
+  const setBadgeUrl = (customFrameworkId: string, badgeUrl: string | null) => {
+    setFrameworks((prev) =>
+      prev.map((framework) =>
+        framework.customFrameworkId === customFrameworkId ? { ...framework, badgeUrl } : framework,
+      ),
+    );
+  };
+
+  const handleBadgeUpload = async (file: File, customFrameworkId: string) => {
+    const fileData = await convertFileToBase64(file);
+    const payload = await uploadCustomFrameworkBadge(
+      customFrameworkId,
+      file.name,
+      file.type || 'image/png',
+      fileData,
+    );
+    setBadgeUrl(customFrameworkId, payload.badgeUrl);
+  };
+
+  const handleBadgeRemove = async (customFrameworkId: string) => {
+    await removeCustomFrameworkBadge(customFrameworkId);
+    setBadgeUrl(customFrameworkId, null);
+  };
+
   return (
     <div className="mt-10">
       <div className="mb-4">
@@ -168,6 +197,10 @@ export function CustomFrameworksSection({
             }}
             onFileUpload={canUpdate ? handleFileUpload : undefined}
             onFilePreview={handleFilePreview}
+            isCustomFramework
+            badgeUrl={framework.badgeUrl}
+            onBadgeUpload={canUpdate ? handleBadgeUpload : undefined}
+            onBadgeRemove={canUpdate ? handleBadgeRemove : undefined}
           />
         ))}
       </div>
