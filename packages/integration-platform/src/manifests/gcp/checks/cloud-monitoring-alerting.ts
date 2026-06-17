@@ -22,9 +22,32 @@ interface LogSink {
 
 // Every project has two managed sinks (`_Required`, `_Default`) writing to the
 // project's `_Default` log bucket. They are present by default and are NOT
-// evidence that the customer configured durable log routing/retention, so they
-// don't count as a "log export". Any other enabled sink is operator-configured.
+// evidence that the customer configured durable log routing/retention.
 const DEFAULT_SINK_NAMES = new Set(['_Required', '_Default']);
+
+/**
+ * A sink only proves durable log retention/export when it writes OUTSIDE the
+ * default in-project log bucket: to BigQuery, Cloud Storage, Pub/Sub, or a
+ * dedicated (non-default) Cloud Logging bucket. Keying off the DESTINATION (not
+ * just the sink name) prevents a custom-named sink that still targets the
+ * `_Default`/`_Required` bucket from being mistaken for durable export.
+ */
+function isDurableExportDestination(destination: string | undefined): boolean {
+  if (!destination) return false;
+  if (
+    destination.startsWith('bigquery.googleapis.com/') ||
+    destination.startsWith('storage.googleapis.com/') ||
+    destination.startsWith('pubsub.googleapis.com/')
+  ) {
+    return true;
+  }
+  // Cloud Logging bucket destination — durable only when it is NOT the managed
+  // `_Default`/`_Required` bucket (those hold default in-project retention).
+  const bucket = destination.match(/\/buckets\/([^/]+)$/)?.[1];
+  if (bucket) return !DEFAULT_SINK_NAMES.has(bucket);
+  // Unknown/unsupported destination shape — be conservative and don't count it.
+  return false;
+}
 
 /**
  * Per-project alerting prong: at least one enabled alert policy must be wired to
@@ -153,7 +176,10 @@ async function evaluateLogExport(
   }
 
   const exportSinks = sinks.filter(
-    (s) => s.disabled !== true && !DEFAULT_SINK_NAMES.has(s.name),
+    (s) =>
+      s.disabled !== true &&
+      !DEFAULT_SINK_NAMES.has(s.name) &&
+      isDurableExportDestination(s.destination),
   );
 
   if (exportSinks.length > 0) {
