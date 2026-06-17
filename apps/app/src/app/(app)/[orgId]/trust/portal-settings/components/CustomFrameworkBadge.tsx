@@ -38,7 +38,8 @@ export function CustomFrameworkBadge({
   const editable = !!onUpload && !disabled;
 
   const handleFile = async (file: File) => {
-    if (!ALLOWED_BADGE_TYPES.includes(file.type) && !/\.(png|jpe?g|webp)$/i.test(file.name)) {
+    // Match the server: gate on the MIME type (it becomes the stored ContentType).
+    if (!ALLOWED_BADGE_TYPES.includes(file.type)) {
       toast.error('Badge must be a PNG, JPEG, or WebP image');
       return;
     }

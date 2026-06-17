@@ -12,8 +12,9 @@ import type { UploadCustomFrameworkBadgeDto } from './dto/trust-custom-framework
 
 // Badge images are shown on the public Trust Portal, so keep them small and
 // non-executable. SVG is intentionally excluded (it can carry inline scripts).
+// The MIME type is the security-relevant field: it's stored as the S3 object's
+// ContentType, which is what the browser uses to interpret the file on render.
 const ALLOWED_BADGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
-const ALLOWED_BADGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.webp'];
 const MAX_BADGE_BYTES = 256 * 1024; // 256KB
 // Matches the favicon public-serve TTL (getFaviconSignedUrl). The public page
 // re-fetches per render, so a fresh URL is signed each time.
@@ -59,13 +60,9 @@ export class TrustCustomFrameworkBadgeService {
       throw new NotFoundException('Custom framework not found');
     }
 
-    const fileExtension = fileName
-      .toLowerCase()
-      .substring(fileName.lastIndexOf('.'));
-    if (
-      !ALLOWED_BADGE_TYPES.includes(fileType) &&
-      !ALLOWED_BADGE_EXTENSIONS.includes(fileExtension)
-    ) {
+    // Reject on the MIME type alone — a disallowed type must never pass just
+    // because the filename happens to carry an allowed extension.
+    if (!ALLOWED_BADGE_TYPES.includes(fileType)) {
       throw new BadRequestException('Badge must be a PNG, JPEG, or WebP image');
     }
 

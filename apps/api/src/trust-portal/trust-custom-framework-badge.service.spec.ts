@@ -76,6 +76,21 @@ describe('TrustCustomFrameworkBadgeService', () => {
       expect(mockS3.send).not.toHaveBeenCalled();
     });
 
+    it('rejects a disallowed MIME type even when the extension is allowed', async () => {
+      mockDb.customFramework.findFirst.mockResolvedValue({ id: 'cfrm_a' });
+
+      // A ".png" name must not let a non-image MIME through — the MIME is what we
+      // store as the S3 ContentType.
+      await expect(
+        service.uploadBadge('org_1', {
+          ...dto,
+          fileName: 'badge.png',
+          fileType: 'text/html',
+        }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(mockS3.send).not.toHaveBeenCalled();
+    });
+
     it('rejects images larger than 256KB', async () => {
       mockDb.customFramework.findFirst.mockResolvedValue({ id: 'cfrm_a' });
       // 'A' is valid base64; ~400KB of chars decodes to ~300KB > 256KB cap.

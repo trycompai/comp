@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsBase64, IsNotEmpty, IsString, MaxLength } from 'class-validator';
 import { z } from 'zod';
 
 /**
@@ -75,10 +75,15 @@ export class UploadCustomFrameworkBadgeDto {
   fileType!: string;
 
   @ApiProperty({
-    description: 'Base64 encoded image content',
+    description:
+      'Base64 encoded image content (PNG/JPEG/WebP, max 256KB decoded)',
   })
   @IsString()
   @IsNotEmpty()
+  @IsBase64()
+  // ~256KB once base64-decoded; rejects oversized/malformed payloads at the
+  // request boundary. The service enforces the exact decoded-byte cap.
+  @MaxLength(350_000)
   fileData!: string;
 }
 
