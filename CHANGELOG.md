@@ -1,3 +1,17 @@
+# [3.84.0](https://github.com/trycompai/comp/compare/v3.83.8...v3.84.0) (2026-06-17)
+
+
+### Bug Fixes
+
+* **risk:** stop AI mitigation from reopening user-closed risks ([afd89eb](https://github.com/trycompai/comp/commit/afd89eb36eab2675fa5f56e066fb130d99ac56b9))
+* **trust-portal:** fall back to initials when a badge image fails to load ([66399a9](https://github.com/trycompai/comp/commit/66399a9a8ae76405a3f314ca1321933bed3acac1))
+* **trust-portal:** harden custom framework badge upload validation ([c248a15](https://github.com/trycompai/comp/commit/c248a15016e91b28519a8b3d922d9fd560fde2a7))
+
+
+### Features
+
+* **trust-portal:** upload custom framework badges on the trust portal ([68d187a](https://github.com/trycompai/comp/commit/68d187adeb45408c0fb555161ea3b21a164cd1c2))
+
 ## [3.83.8](https://github.com/trycompai/comp/compare/v3.83.7...v3.83.8) (2026-06-17)
 
 
