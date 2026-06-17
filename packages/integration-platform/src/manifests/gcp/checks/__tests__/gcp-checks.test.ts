@@ -8,6 +8,10 @@ import { cloudMonitoringAlertingCheck } from '../cloud-monitoring-alerting';
 import { cloudSqlBackupsCheck } from '../cloud-sql-backups';
 import { cloudSqlEncryptionCheck } from '../cloud-sql-encryption';
 import { cloudSqlSslCheck } from '../cloud-sql-ssl';
+import {
+  classifyProjectEnv,
+  environmentSeparationCheck,
+} from '../environment-separation';
 import { iamPrimitiveRolesCheck } from '../iam-primitive-roles';
 import { storageEncryptionCheck } from '../storage-encryption';
 import { storagePublicAccessCheck } from '../storage-public-access';
@@ -881,5 +885,120 @@ describe('GCP Cloud SQL encryption check', () => {
     expect(out.passed).toHaveLength(0);
     expect(out.failed).toHaveLength(1);
     expect(out.failed[0]!.title).toMatch(/Could not verify Cloud SQL encryption/);
+  });
+});
+
+describe('classifyProjectEnv — token matching', () => {
+  it('classifies by name token', () => {
+    expect(classifyProjectEnv({ projectId: 'myapp-prod' })).toBe('production');
+    expect(classifyProjectEnv({ projectId: 'myapp-dev-123' })).toBe('development');
+    expect(classifyProjectEnv({ projectId: 'web-staging' })).toBe('staging');
+  });
+
+  it('prefers an explicit environment label over the name', () => {
+    expect(
+      classifyProjectEnv({ projectId: 'proj-001', labels: { environment: 'production' } }),
+    ).toBe('production');
+    expect(
+      classifyProjectEnv({ projectId: 'proj-002', labels: { env: 'qa' } }),
+    ).toBe('test');
+  });
+
+  it('does NOT false-match substrings like product/developer', () => {
+    expect(classifyProjectEnv({ projectId: 'product-catalog' })).toBeNull();
+    expect(classifyProjectEnv({ projectId: 'developer-portal' })).toBeNull();
+    expect(classifyProjectEnv({ projectId: 'data-warehouse' })).toBeNull();
+  });
+
+  it('treats preprod as staging, not production', () => {
+    expect(classifyProjectEnv({ projectId: 'app-preprod' })).toBe('staging');
+  });
+});
+
+describe('GCP environment-separation check', () => {
+  const status = (err: Error, code: number) => {
+    (err as Error & { status: number }).status = code;
+    return err;
+  };
+
+  it('passes when ≥2 distinct environments are detected by name', async () => {
+    const out = await runCheck(environmentSeparationCheck, {
+      fetch: () => ({
+        projects: [{ projectId: 'myapp-prod' }, { projectId: 'myapp-dev' }],
+      }),
+    });
+    expect(out.failed).toHaveLength(0);
+    expect(out.passed).toHaveLength(1);
+    expect(out.passed[0]!.title).toMatch(/Environments separated/);
+    expect(out.passed[0]!.evidence).toMatchObject({
+      detectedEnvironments: expect.arrayContaining(['production', 'development']),
+    });
+  });
+
+  it('passes when environments are distinguished by labels', async () => {
+    const out = await runCheck(environmentSeparationCheck, {
+      fetch: () => ({
+        projects: [
+          { projectId: 'a', labels: { environment: 'production' } },
+          { projectId: 'b', labels: { environment: 'staging' } },
+        ],
+      }),
+    });
+    expect(out.failed).toHaveLength(0);
+    expect(out.passed).toHaveLength(1);
+  });
+
+  it('evaluates projects across multiple pages', async () => {
+    const out = await runCheck(environmentSeparationCheck, {
+      fetch: (url) => {
+        if (url.includes('pageToken=tok2')) {
+          return { projects: [{ projectId: 'app-dev' }] };
+        }
+        return { projects: [{ projectId: 'app-prod' }], nextPageToken: 'tok2' };
+      },
+    });
+    expect(out.failed).toHaveLength(0);
+    expect(out.passed).toHaveLength(1);
+  });
+
+  it('fails with guidance when only one environment is present', async () => {
+    const out = await runCheck(environmentSeparationCheck, {
+      fetch: () => ({ projects: [{ projectId: 'myapp-prod' }] }),
+    });
+    expect(out.passed).toHaveLength(0);
+    expect(out.failed).toHaveLength(1);
+    expect(out.failed[0]!.title).toMatch(/Could not confirm environment separation/);
+    expect(out.failed[0]!.remediation).toMatch(/distinct GCP projects/);
+  });
+
+  it('fails with guidance when no project can be classified', async () => {
+    const out = await runCheck(environmentSeparationCheck, {
+      fetch: () => ({
+        projects: [{ projectId: 'product-catalog' }, { projectId: 'backend' }],
+      }),
+    });
+    expect(out.passed).toHaveLength(0);
+    expect(out.failed).toHaveLength(1);
+    expect(out.failed[0]!.title).toMatch(/Could not confirm environment separation/);
+  });
+
+  it('fails when no projects are accessible', async () => {
+    const out = await runCheck(environmentSeparationCheck, {
+      fetch: () => ({ projects: [] }),
+    });
+    expect(out.passed).toHaveLength(0);
+    expect(out.failed).toHaveLength(1);
+    expect(out.failed[0]!.title).toMatch(/No GCP projects detected/);
+  });
+
+  it('fails "could not verify" when the project list read fails', async () => {
+    const out = await runCheck(environmentSeparationCheck, {
+      fetch: () => {
+        throw status(new Error('HTTP 403: Forbidden'), 403);
+      },
+    });
+    expect(out.passed).toHaveLength(0);
+    expect(out.failed).toHaveLength(1);
+    expect(out.failed[0]!.title).toMatch(/Could not verify environment separation/);
   });
 });
