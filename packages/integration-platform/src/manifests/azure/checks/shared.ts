@@ -2,6 +2,7 @@ import type { CheckContext } from '../../../types';
 import { remediationForReadFailure, toHttpReadFailure } from '../../http-read-failure';
 
 const ARM = 'https://management.azure.com';
+const ARM_PAGE_CAP = 50;
 
 /** Fan-out bound for auto-discovered subscriptions (13 checks × N subs). */
 const MAX_SUBSCRIPTIONS = 50;
@@ -112,14 +113,25 @@ export async function resolveAzureSubscriptionIds(
 }
 
 /** Paginate an Azure ARM list endpoint (`{ value: T[], nextLink? }`). */
-export async function armListAll<T>(
-  ctx: CheckContext,
-  url: string,
-): Promise<T[]> {
+export type ArmListCoverageGap = 'page-cap' | 'unexpected-next-link-host';
+
+export interface ArmListResult<T> {
+  items: T[];
+  coverageGaps: ArmListCoverageGap[];
+}
+
+export async function armListAllWithCoverage<T>({
+  ctx,
+  url,
+}: {
+  ctx: CheckContext;
+  url: string;
+}): Promise<ArmListResult<T>> {
   const out: T[] = [];
+  const coverageGaps: ArmListCoverageGap[] = [];
   let nextUrl: string | undefined = url;
   let pages = 0;
-  while (nextUrl && pages < 50) {
+  while (nextUrl && pages < ARM_PAGE_CAP) {
     const data: { value?: T[]; nextLink?: string } = await ctx.fetch(nextUrl);
     if (Array.isArray(data.value)) out.push(...data.value);
     nextUrl = data.nextLink;
@@ -129,6 +141,7 @@ export async function armListAll<T>(
       ctx.warn('Azure ARM nextLink pointed to an unexpected host; stopping pagination', {
         nextLink: nextUrl,
       });
+      coverageGaps.push('unexpected-next-link-host');
       nextUrl = undefined;
     }
     pages++;
@@ -138,8 +151,15 @@ export async function armListAll<T>(
       url,
       pages,
     });
+    coverageGaps.push('page-cap');
   }
-  return out;
+  return { items: out, coverageGaps };
+}
+
+/** Paginate an Azure ARM list endpoint (`{ value: T[], nextLink? }`). */
+export async function armListAll<T>(ctx: CheckContext, url: string): Promise<T[]> {
+  const result = await armListAllWithCoverage<T>({ ctx, url });
+  return result.items;
 }
 
 /**

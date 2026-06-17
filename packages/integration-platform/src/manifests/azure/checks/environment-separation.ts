@@ -6,7 +6,7 @@ import {
   envTagValues,
 } from '../../environment-classification';
 import { toHttpReadFailure } from '../../http-read-failure';
-import { ARM_BASE, armListAll, resolveAzureSubscriptionIds } from './shared';
+import { ARM_BASE, armListAllWithCoverage, resolveAzureSubscriptionIds } from './shared';
 
 const SUBSCRIPTION_API_VERSION = '2020-01-01';
 const RESOURCE_GROUPS_API_VERSION = '2021-04-01';
@@ -99,13 +99,21 @@ export const environmentSeparationCheck: IntegrationCheck = {
     const rgEnvSet = new Set<string>();
     const rgSamples: Array<{ name: string; environment: string }> = [];
     let anyRgReadFailed = false;
+    let resourceGroupsClassified = 0;
+    const rgCoverageGaps = new Set<string>();
+    const rgCoverageGapSubscriptions = new Set<string>();
     for (const id of subscriptionIds) {
       let resourceGroups: ResourceGroup[];
       try {
-        resourceGroups = await armListAll<ResourceGroup>(
+        const result = await armListAllWithCoverage<ResourceGroup>({
           ctx,
-          `${ARM_BASE}/subscriptions/${id}/resourcegroups?api-version=${RESOURCE_GROUPS_API_VERSION}`,
-        );
+          url: `${ARM_BASE}/subscriptions/${id}/resourcegroups?api-version=${RESOURCE_GROUPS_API_VERSION}`,
+        });
+        resourceGroups = result.items;
+        for (const gap of result.coverageGaps) {
+          rgCoverageGaps.add(gap);
+          rgCoverageGapSubscriptions.add(id);
+        }
       } catch (err) {
         anyRgReadFailed = true;
         ctx.log(
@@ -117,12 +125,15 @@ export const environmentSeparationCheck: IntegrationCheck = {
         const env = classifyResourceGroupEnv(rg);
         if (env) {
           rgEnvSet.add(env);
+          resourceGroupsClassified++;
           if (rgSamples.length < 50) rgSamples.push({ name: rg.name, environment: env });
         }
       }
     }
     const resourceGroupEnvs = [...rgEnvSet];
-    if (confirmsEnvironmentSeparation(resourceGroupEnvs)) {
+    const resourceGroupCoverageIncomplete = rgCoverageGaps.size > 0;
+    const resourceGroupSeparationDetected = confirmsEnvironmentSeparation(resourceGroupEnvs);
+    if (!resourceGroupCoverageIncomplete && resourceGroupSeparationDetected) {
       ctx.pass({
         title: 'Environments separated across resource groups',
         description: `Detected production separated from non-production across resource groups in ${subscriptionIds.length} in-scope subscription(s): ${resourceGroupEnvs.join(', ')}. Resource-group separation is logical — RGs share the subscription's access and network boundary — not full isolation.`,
@@ -138,24 +149,29 @@ export const environmentSeparationCheck: IntegrationCheck = {
       return;
     }
 
-    // Could not confirm. A read failure in EITHER tier (a subscription name we
-    // couldn't read, or resource groups we couldn't list) leaves coverage
-    // incomplete, so the verdict is "could not verify" (retry/permissions) — not
-    // the confident "could not confirm" (a complete scan that found no split).
+    // Could not confirm. A read failure or pagination gap in EITHER tier leaves
+    // coverage incomplete, so the verdict is "could not verify"
+    // (retry/permissions/scope) — not the confident "could not confirm" (a
+    // complete scan that found no split).
     const detectedAll = [...new Set([...subscriptionEnvs, ...resourceGroupEnvs])];
-    const readGaps: string[] = [];
-    if (anySubscriptionReadFailed) readGaps.push('subscriptions');
-    if (anyRgReadFailed) readGaps.push('resource groups');
-    const coverageIncomplete = readGaps.length > 0;
+    const coverageGaps: string[] = [];
+    if (anySubscriptionReadFailed) coverageGaps.push('subscriptions could not be read');
+    if (anyRgReadFailed) coverageGaps.push('resource groups could not be listed');
+    if (resourceGroupCoverageIncomplete) {
+      coverageGaps.push('resource-group pagination stopped before all groups were evaluated');
+    }
+    const coverageIncomplete = coverageGaps.length > 0;
     const base =
       detectedAll.length === 0
         ? `No in-scope Azure subscription or resource group could be classified by environment across ${subscriptionIds.length} subscription(s)`
-        : `Detected environment(s) ${detectedAll.join(', ')}, but could not confirm a production environment separated from a non-production one across ${subscriptionIds.length} in-scope subscription(s)`;
+        : resourceGroupSeparationDetected && resourceGroupCoverageIncomplete
+          ? `Detected production separated from non-production in the scanned resource groups (${resourceGroupEnvs.join(', ')}), but not all resource groups were evaluated across ${subscriptionIds.length} in-scope subscription(s)`
+          : `Detected environment(s) ${detectedAll.join(', ')}, but could not confirm a production environment separated from a non-production one across ${subscriptionIds.length} in-scope subscription(s)`;
     ctx.fail({
       title: coverageIncomplete
         ? 'Could not verify environment separation'
         : 'Could not confirm environment separation',
-      description: `${base}${coverageIncomplete ? ` (some ${readGaps.join(' and ')} could not be read)` : ''}.`,
+      description: `${base}${coverageIncomplete ? ` (${coverageGaps.join('; ')})` : ''}.`,
       resourceType: 'azure-environment-separation',
       resourceId: 'subscriptions',
       severity: 'medium',
@@ -164,8 +180,14 @@ export const environmentSeparationCheck: IntegrationCheck = {
         subscriptionEnvironments: subscriptionEnvs,
         resourceGroupEnvironments: resourceGroupEnvs,
         subscriptionsScanned: subscriptionIds.length,
-        resourceGroupsClassified: rgSamples.length,
+        resourceGroupsClassified,
         ...(coverageIncomplete ? { coverageIncomplete: true } : {}),
+        ...(resourceGroupCoverageIncomplete
+          ? {
+              resourceGroupCoverageGaps: [...rgCoverageGaps],
+              resourceGroupCoverageGapSubscriptions: [...rgCoverageGapSubscriptions],
+            }
+          : {}),
       },
     });
   },
