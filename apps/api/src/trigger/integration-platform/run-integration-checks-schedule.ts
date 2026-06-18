@@ -3,7 +3,7 @@ import { db, TaskFrequency } from '@db';
 import { logger, schedules } from '@trigger.dev/sdk';
 import { runTaskIntegrationChecks } from './run-task-integration-checks';
 import { runDeviceSync } from './run-device-sync';
-import { parseDisabledTaskChecks } from '../../integration-platform/utils/disabled-task-checks';
+import { isCheckDisabledForTask } from '../../integration-platform/utils/disabled-task-checks';
 import { isDueToday } from '../shared/is-due-today';
 
 /**
@@ -175,20 +175,13 @@ export const integrationChecksSchedule = schedules.task({
         );
       }
 
-      // Per-task disabled checks are stored on the connection's metadata so
-      // users can disconnect individual checks from individual tasks without
-      // tearing down the whole integration. Resolve once per connection.
-      const disabledByTask = parseDisabledTaskChecks(connection.metadata);
-
       for (const t of tasks) {
-        const disabledForThisTask = new Set(disabledByTask[t.id] ?? []);
-
         // Find which checks apply to this task, minus any the user disabled
         const checksForTask = checks
           .filter(
             (c) =>
               c.taskMapping === t.taskTemplateId &&
-              !disabledForThisTask.has(c.id),
+              !isCheckDisabledForTask(connection.metadata, t.id, c.id),
           )
           .map((c) => c.id);
 
