@@ -1,3 +1,12 @@
+## [3.86.1](https://github.com/trycompai/comp/compare/v3.86.0...v3.86.1) (2026-06-18)
+
+
+### Bug Fixes
+
+* **integration-platform:** fail closed on partial environment coverage ([35eef7f](https://github.com/trycompai/comp/commit/35eef7f75ff0049dfecf117d11276deb162d14f7))
+* **integration-platform:** reject duplicate environment aliases ([bfb7a4f](https://github.com/trycompai/comp/commit/bfb7a4fb31b07437718943c87d25366f1fbae809))
+* **integration-platform:** support environment aliases ([448f0b2](https://github.com/trycompai/comp/commit/448f0b23c771da7a65aa1fdbb984e091b1c05661))
+
 # [3.86.0](https://github.com/trycompai/comp/compare/v3.85.0...v3.86.0) (2026-06-18)
 
 
