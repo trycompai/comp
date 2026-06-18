@@ -28,12 +28,24 @@ function normalizeConfiguredValue(raw: CheckVariableValues[string]): string {
   return '';
 }
 
+function addInvalidEntry({
+  invalidEntries,
+  entry,
+}: {
+  invalidEntries: string[];
+  entry: string;
+}): void {
+  if (!invalidEntries.includes(entry)) invalidEntries.push(entry);
+}
+
 export function parseEnvironmentAliases(variables: CheckVariableValues): EnvironmentAliasesConfig {
   const raw = normalizeConfiguredValue(variables.environment_aliases);
   if (!raw.trim()) return { aliases: [], invalidEntries: [] };
 
   const aliasesByTokenKey = new Map<string, EnvironmentAlias>();
+  const entriesByTokenKey = new Map<string, string>();
   const invalidEntries: string[] = [];
+  let duplicateAliasDetected = false;
   for (const entry of raw.split(/[,;\n]+/)) {
     const trimmed = entry.trim();
     if (!trimmed) continue;
@@ -53,12 +65,24 @@ export function parseEnvironmentAliases(variables: CheckVariableValues): Environ
       continue;
     }
 
-    aliasesByTokenKey.set(tokens.join('\u0000'), {
+    const tokenKey = tokens.join('\u0000');
+    const existingEntry = entriesByTokenKey.get(tokenKey);
+    if (existingEntry) {
+      duplicateAliasDetected = true;
+      addInvalidEntry({ invalidEntries, entry: existingEntry });
+      addInvalidEntry({ invalidEntries, entry: trimmed });
+      continue;
+    }
+
+    entriesByTokenKey.set(tokenKey, trimmed);
+    aliasesByTokenKey.set(tokenKey, {
       alias,
       environment,
       tokens,
     });
   }
+
+  if (duplicateAliasDetected) return { aliases: [], invalidEntries };
 
   return { aliases: [...aliasesByTokenKey.values()], invalidEntries };
 }
