@@ -402,7 +402,7 @@ For Merchants - https://d...`,
   },
   frk_tt_68e52a484cad0014de7a628f: {
     name: 'Separation of Environments',
-    description: `Upload proof that dev/test/staging and production are segregated, such as a cloud console screenshot or architecture diagram. Cloud metadata checks are optional when names/tags clearly identify environments.`,
+    description: `Attach proof to this task, for example in the comments, that dev/test/staging and production are segregated. Use a cloud console screenshot or architecture diagram. Cloud metadata checks are optional when names/tags clearly identify environments.`,
     department: 'it',
     frequency: 'yearly',
   },
