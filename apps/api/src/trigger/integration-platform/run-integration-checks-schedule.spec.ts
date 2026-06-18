@@ -1,6 +1,9 @@
 import { TaskFrequency } from '@trycompai/db';
+import { db } from '@db';
+import { getManifest } from '@trycompai/integration-platform';
 import {
   filterDueTasks,
+  integrationChecksSchedule,
   resolveProviderChecks,
 } from './run-integration-checks-schedule';
 
@@ -13,6 +16,7 @@ jest.mock('@db', () => ({
     integrationConnection: { findMany: jest.fn() },
     task: { findMany: jest.fn(), update: jest.fn() },
     dynamicIntegration: { findMany: jest.fn() },
+    organization: { findMany: jest.fn() },
   },
   TaskFrequency: {
     daily: 'daily',
@@ -20,6 +24,10 @@ jest.mock('@db', () => ({
     monthly: 'monthly',
     quarterly: 'quarterly',
     yearly: 'yearly',
+  },
+  TaskAutomationStatus: {
+    AUTOMATED: 'AUTOMATED',
+    MANUAL: 'MANUAL',
   },
 }));
 
@@ -170,5 +178,61 @@ describe('resolveProviderChecks (static vs dynamic)', () => {
     });
 
     expect(checks).toEqual([{ id: 'c1', taskMapping: null }]);
+  });
+});
+
+describe('orchestrator excludes MANUAL tasks from scheduled runs', () => {
+  // Cast the db/getManifest mocks to their jest.Mock shape for setup.
+  const taskFindMany = (db as unknown as { task: { findMany: jest.Mock } }).task
+    .findMany;
+  const connectionFindMany = (
+    db as unknown as { integrationConnection: { findMany: jest.Mock } }
+  ).integrationConnection.findMany;
+  const dynamicFindMany = (
+    db as unknown as { dynamicIntegration: { findMany: jest.Mock } }
+  ).dynamicIntegration.findMany;
+  const orgFindMany = (
+    db as unknown as { organization: { findMany: jest.Mock } }
+  ).organization.findMany;
+  const getManifestMock = getManifest as jest.Mock;
+
+  // schedules.task is mocked to return the config, so .run is invokable here.
+  const runOrchestrator = (
+    integrationChecksSchedule as unknown as {
+      run: (p: { timestamp: Date; lastTimestamp?: Date }) => Promise<unknown>;
+    }
+  ).run;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    connectionFindMany.mockResolvedValue([
+      {
+        id: 'conn1',
+        provider: { slug: 'github' },
+        organizationId: 'org1',
+        organization: { id: 'org1', name: 'Org' },
+        metadata: null,
+      },
+    ]);
+    dynamicFindMany.mockResolvedValue([]);
+    getManifestMock.mockReturnValue({
+      checks: [{ id: 'c1', taskMapping: 'tpl_a' }],
+    });
+    taskFindMany.mockResolvedValue([]); // no due tasks → no triggers
+    orgFindMany.mockResolvedValue([]); // device-sync section is a no-op
+  });
+
+  it('queries candidate tasks with an automationStatus != MANUAL filter', async () => {
+    await runOrchestrator({ timestamp: new Date(), lastTimestamp: new Date() });
+
+    expect(taskFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          organizationId: 'org1',
+          taskTemplateId: { in: ['tpl_a'] },
+          automationStatus: { not: 'MANUAL' },
+        }),
+      }),
+    );
   });
 });

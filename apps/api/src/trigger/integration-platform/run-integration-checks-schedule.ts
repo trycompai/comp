@@ -1,5 +1,5 @@
 import { getManifest } from '@trycompai/integration-platform';
-import { db, TaskFrequency } from '@db';
+import { db, TaskAutomationStatus, TaskFrequency } from '@db';
 import { logger, schedules } from '@trigger.dev/sdk';
 import { runTaskIntegrationChecks } from './run-task-integration-checks';
 import { runDeviceSync } from './run-device-sync';
@@ -149,11 +149,15 @@ export const integrationChecksSchedule = schedules.task({
         continue;
       }
 
-      // Find tasks in this org that match these templates
+      // Find tasks in this org that match these templates. MANUAL tasks are
+      // excluded: the scheduler must not auto-run checks (or flip the status) on
+      // a task the customer manages manually — mirrors the UI, which hides the
+      // automation/checks tab when automationStatus is MANUAL.
       const candidateTasks = await db.task.findMany({
         where: {
           organizationId: connection.organizationId,
           taskTemplateId: { in: taskTemplateIds as string[] },
+          automationStatus: { not: TaskAutomationStatus.MANUAL },
         },
         select: {
           id: true,
