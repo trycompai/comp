@@ -22,6 +22,20 @@ export interface VpcInfo {
   environment: string | null;
 }
 
+function summarizeVpcs(vpcs: VpcInfo[]) {
+  const sample = vpcs.slice(0, 50).map((v) => ({
+    vpcId: v.vpcId,
+    region: v.region,
+    environment: v.environment ?? 'unclassified',
+  }));
+  const detected = [
+    ...new Set(vpcs.map((v) => v.environment).filter((e): e is string => e !== null)),
+  ];
+  const unclassifiedVpcCount = vpcs.filter((v) => v.environment === null).length;
+
+  return { sample, detected, unclassifiedVpcCount };
+}
+
 // Shown on every "could not confirm" outcome. AWS's recommended separation is a
 // separate ACCOUNT per environment, which is invisible from one connection (one
 // account's role), so a single-account result is the EXPECTED shape for those
@@ -44,9 +58,7 @@ export function classifyVpcEnv(
       tagMap[t.Key] = t.Value;
     }
   }
-  const nameTag = Object.entries(tagMap).find(
-    ([k]) => k.toLowerCase() === 'name',
-  )?.[1];
+  const nameTag = Object.entries(tagMap).find(([k]) => k.toLowerCase() === 'name')?.[1];
   return classifyEnvironment([...envTagValues(tagMap), nameTag]);
 }
 
@@ -59,12 +71,6 @@ export function classifyVpcEnv(
  * peered / share the account boundary).
  */
 export function evaluateEnvironmentSeparation(vpcs: VpcInfo[]): CheckOutcome[] {
-  const sample = vpcs.slice(0, 50).map((v) => ({
-    vpcId: v.vpcId,
-    region: v.region,
-    environment: v.environment ?? 'unclassified',
-  }));
-
   if (vpcs.length === 0) {
     return [
       {
@@ -81,11 +87,7 @@ export function evaluateEnvironmentSeparation(vpcs: VpcInfo[]): CheckOutcome[] {
     ];
   }
 
-  const detected = [
-    ...new Set(
-      vpcs.map((v) => v.environment).filter((e): e is string => e !== null),
-    ),
-  ];
+  const { sample, detected, unclassifiedVpcCount } = summarizeVpcs(vpcs);
 
   // A confirmed pass requires a production environment separated from a
   // non-production one — two non-production VPCs alone do not demonstrate that
@@ -102,10 +104,16 @@ export function evaluateEnvironmentSeparation(vpcs: VpcInfo[]): CheckOutcome[] {
           detectedEnvironments: detected,
           vpcCount: vpcs.length,
           vpcs: sample,
+          unclassifiedVpcCount,
         },
       },
     ];
   }
+
+  const unclassifiedDetail =
+    unclassifiedVpcCount > 0
+      ? ` ${unclassifiedVpcCount} VPC(s) were unclassified and need an Environment tag or environment token in the Name tag.`
+      : '';
 
   return [
     {
@@ -113,8 +121,8 @@ export function evaluateEnvironmentSeparation(vpcs: VpcInfo[]): CheckOutcome[] {
       title: 'Could not confirm environment separation',
       description:
         detected.length === 0
-          ? "No VPC in this account could be classified by environment, so environment separation could not be confirmed."
-          : `Detected environment(s) ${detected.join(', ')} among this account's VPCs, but could not confirm a production environment separated from a non-production one; this connection evaluates a single AWS account.`,
+          ? `No VPC in this account could be classified by environment, so environment separation could not be confirmed.${unclassifiedDetail}`
+          : `Detected environment(s) ${detected.join(', ')} among this account's VPCs, but could not confirm a production environment separated from a non-production one; this connection evaluates a single AWS account.${unclassifiedDetail}`,
       resourceType: 'aws-environment-separation',
       resourceId: 'vpcs',
       severity: 'low',
@@ -123,6 +131,7 @@ export function evaluateEnvironmentSeparation(vpcs: VpcInfo[]): CheckOutcome[] {
         detectedEnvironments: detected,
         vpcCount: vpcs.length,
         vpcs: sample,
+        unclassifiedVpcCount,
       },
     },
   ];
@@ -131,10 +140,9 @@ export function evaluateEnvironmentSeparation(vpcs: VpcInfo[]): CheckOutcome[] {
 /**
  * Combine the VPCs we read with any per-region read failures into the outcomes
  * to emit. A region we couldn't read leaves coverage incomplete and is surfaced
- * as its own "could not verify" finding — UNLESS the VPCs we DID read already
- * confirm separation. Reading more regions can only ADD environments, so it can
- * never un-confirm a positive result; pairing a confirmed pass with a
- * verification-failure would only emit a contradictory pass+fail in one run.
+ * as its own "could not verify" finding. A partial regional footprint must not
+ * auto-complete the evidence task, even if the regions we did read already show
+ * production and non-production VPCs.
  * When zero VPCs were read AND a region failed, only the region-failure finding
  * is returned — a "no VPCs" verdict layered on unread data would mislead.
  */
@@ -145,10 +153,11 @@ export function buildEnvironmentSeparationOutcomes(
   const separation = evaluateEnvironmentSeparation(vpcs);
   const confirmed = separation.some((o) => o.kind === 'pass');
 
-  // No coverage gap, or separation already proven → the verdict stands alone.
-  if (regionFailures.length === 0 || confirmed) return separation;
+  // No coverage gap → the verdict stands alone.
+  if (regionFailures.length === 0) return separation;
 
   const regions = regionFailures.map((r) => r.region);
+  const { sample, detected, unclassifiedVpcCount } = summarizeVpcs(vpcs);
   const regionFailure: CheckOutcome = {
     kind: 'fail',
     title: 'Could not verify VPCs in some regions',
@@ -165,12 +174,21 @@ export function buildEnvironmentSeparationOutcomes(
         region: r.region,
         error: r.failure.error,
       })),
+      vpcCount: vpcs.length,
+      detectedEnvironments: detected,
+      unclassifiedVpcCount,
+      vpcs: sample,
     },
   };
 
   // Zero VPCs read + a region failure: the unverified-region finding already
   // tells the story on its own.
   if (vpcs.length === 0) return [regionFailure];
+
+  // The scanned regions showed separation, but the account-level coverage is
+  // incomplete. Return only the verification failure so the task does not
+  // auto-complete from a partial regional footprint.
+  if (confirmed) return [regionFailure];
 
   // Coverage gap AND we couldn't confirm from what we read: surface both —
   // they're consistent (both negative).
@@ -197,9 +215,7 @@ export const environmentSeparationCheck: IntegrationCheck = {
   run: async (ctx: CheckContext) => {
     const session = await resolveAwsSessionOrFail(ctx);
     if (!session) {
-      ctx.log(
-        'AWS environment-separation check: connection not configured — skipping',
-      );
+      ctx.log('AWS environment-separation check: connection not configured — skipping');
       return;
     }
 
