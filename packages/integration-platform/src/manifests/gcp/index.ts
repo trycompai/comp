@@ -4,6 +4,7 @@ import {
   cloudSqlBackupsCheck,
   cloudSqlEncryptionCheck,
   cloudSqlSslCheck,
+  environmentSeparationCheck,
   iamPrimitiveRolesCheck,
   storageEncryptionCheck,
   storagePublicAccessCheck,
@@ -168,5 +169,6 @@ This is industry standard - all GCP security monitoring tools use the same scope
     cloudMonitoringAlertingCheck,
     storageEncryptionCheck,
     cloudSqlEncryptionCheck,
+    environmentSeparationCheck,
   ],
 };

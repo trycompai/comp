@@ -2,6 +2,7 @@ import type { IntegrationManifest } from '../../types';
 import {
   cloudTrailEnabledCheck,
   ec2SecurityGroupsCheck,
+  environmentSeparationCheck,
   iamAccountSecurityCheck,
   kmsKeyRotationCheck,
   rdsBackupsCheck,
@@ -100,5 +101,6 @@ export const awsManifest: IntegrationManifest = {
     rdsBackupsCheck,
     kmsKeyRotationCheck,
     cloudTrailEnabledCheck,
+    environmentSeparationCheck,
   ],
 };

@@ -2,6 +2,11 @@ import { describe, expect, it } from 'bun:test';
 import { evaluateCloudTrail } from '../cloudtrail';
 import { evaluateSecurityGroups } from '../ec2';
 import {
+  buildEnvironmentSeparationOutcomes,
+  classifyVpcEnv,
+  evaluateEnvironmentSeparation,
+} from '../environment-separation';
+import {
   evaluateAccountSummary,
   evaluateIamAccount,
   evaluatePasswordPolicy,
@@ -951,5 +956,111 @@ describe('account-level findings carry AWS account attribution (cubic finding on
       error: 'assume failed for test',
     });
     expect(failed[0]!.description).toContain('AWS account 123456789012');
+  });
+});
+
+describe('AWS environment separation', () => {
+  it('classifyVpcEnv: env tag wins, then Name tag, incl. underscore', () => {
+    expect(classifyVpcEnv([{ Key: 'Environment', Value: 'production' }])).toBe('production');
+    expect(classifyVpcEnv([{ Key: 'Name', Value: 'prod-vpc' }])).toBe('production');
+    expect(classifyVpcEnv([{ Key: 'Name', Value: 'vpc_dev' }])).toBe('development');
+  });
+
+  it('classifyVpcEnv: ignores non-env tags (no fabricated environment)', () => {
+    expect(classifyVpcEnv([{ Key: 'team', Value: 'dev-team' }])).toBeNull();
+    expect(classifyVpcEnv(undefined)).toBeNull();
+  });
+
+  it('passes on production + non-production, without claiming cross-account isolation', () => {
+    const out = evaluateEnvironmentSeparation([
+      { vpcId: 'vpc-1', region: 'us-east-1', environment: 'production' },
+      { vpcId: 'vpc-2', region: 'us-east-1', environment: 'development' },
+    ]);
+    expect(out).toHaveLength(1);
+    expect(out[0]!.kind).toBe('pass');
+    expect(out[0]!.description).toMatch(/not cross-account isolation/);
+  });
+
+  it('fails when only non-production environments are present (no production)', () => {
+    const out = evaluateEnvironmentSeparation([
+      { vpcId: 'vpc-1', region: 'us-east-1', environment: 'development' },
+      { vpcId: 'vpc-2', region: 'us-east-1', environment: 'staging' },
+    ]);
+    expect(out).toHaveLength(1);
+    expect(out[0]!.kind).toBe('fail');
+  });
+
+  it('fails (low) with guidance when only one environment is detected', () => {
+    const out = evaluateEnvironmentSeparation([
+      { vpcId: 'vpc-1', region: 'us-east-1', environment: 'production' },
+    ]);
+    expect(out).toHaveLength(1);
+    expect(out[0]!.kind).toBe('fail');
+    expect(out[0]!.severity).toBe('low');
+    expect(out[0]!.remediation).toMatch(/separate AWS account per environment/);
+  });
+
+  it('fails when no VPC can be classified', () => {
+    const out = evaluateEnvironmentSeparation([
+      { vpcId: 'vpc-1', region: 'us-east-1', environment: null },
+      { vpcId: 'vpc-2', region: 'us-east-1', environment: null },
+    ]);
+    expect(out[0]!.kind).toBe('fail');
+  });
+
+  it('fails (low) with guidance when there are no non-default VPCs', () => {
+    const out = evaluateEnvironmentSeparation([]);
+    expect(out).toHaveLength(1);
+    expect(out[0]!.kind).toBe('fail');
+    expect(out[0]!.severity).toBe('low');
+    expect(out[0]!.evidence).toMatchObject({ vpcCount: 0 });
+  });
+});
+
+describe('buildEnvironmentSeparationOutcomes — region failures vs verdict (cubic finding)', () => {
+  const failure = { error: 'AccessDenied: ec2:DescribeVpcs', denied: true };
+  const regionFailures = [{ region: 'eu-west-1', failure }];
+
+  it('does NOT pair a region-failure fail with a confirmed pass', () => {
+    const out = buildEnvironmentSeparationOutcomes(
+      [
+        { vpcId: 'vpc-1', region: 'us-east-1', environment: 'production' },
+        { vpcId: 'vpc-2', region: 'us-east-1', environment: 'development' },
+      ],
+      regionFailures,
+    );
+    // A confirmed pass stands alone — more regions can only ADD environments, so
+    // the unread region can't un-confirm it; emitting a fail too would be a
+    // contradictory pass+fail in one run.
+    expect(out).toHaveLength(1);
+    expect(out[0]!.kind).toBe('pass');
+  });
+
+  it('surfaces the region failure alongside an UNconfirmed verdict (both negative)', () => {
+    const out = buildEnvironmentSeparationOutcomes(
+      [{ vpcId: 'vpc-1', region: 'us-east-1', environment: 'production' }],
+      regionFailures,
+    );
+    expect(out.length).toBeGreaterThanOrEqual(2);
+    expect(out.every((o) => o.kind === 'fail')).toBe(true);
+    expect(out.some((o) => /Could not verify VPCs in some regions/.test(o.title))).toBe(true);
+  });
+
+  it('returns only the region-failure finding when zero VPCs were read', () => {
+    const out = buildEnvironmentSeparationOutcomes([], regionFailures);
+    expect(out).toHaveLength(1);
+    expect(out[0]!.title).toMatch(/Could not verify VPCs in some regions/);
+  });
+
+  it('with no region failures, returns the separation verdict unchanged', () => {
+    const out = buildEnvironmentSeparationOutcomes(
+      [
+        { vpcId: 'vpc-1', region: 'us-east-1', environment: 'production' },
+        { vpcId: 'vpc-2', region: 'us-east-1', environment: 'staging' },
+      ],
+      [],
+    );
+    expect(out).toHaveLength(1);
+    expect(out[0]!.kind).toBe('pass');
   });
 });
