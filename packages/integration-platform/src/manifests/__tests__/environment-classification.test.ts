@@ -197,4 +197,21 @@ describe('environment aliases — customer naming conventions', () => {
     expect(config.aliases).toHaveLength(1);
     expect(config.invalidEntries).toEqual(['weird=customer', 'no-delimiter']);
   });
+
+  it('rejects duplicate or conflicting aliases instead of letting the last entry win', () => {
+    const config = parseEnvironmentAliases({
+      environment_aliases: 'release=production, preview=staging, release=staging',
+    });
+
+    expect(config.aliases).toHaveLength(0);
+    expect(config.invalidEntries).toEqual(
+      expect.arrayContaining(['release=production', 'release=staging']),
+    );
+    expect(
+      classifyEnvironmentWithAliases({
+        candidates: ['app-release'],
+        aliases: config.aliases,
+      }),
+    ).toBeNull();
+  });
 });
