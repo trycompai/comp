@@ -2,7 +2,12 @@ import { DescribeVpcsCommand, EC2Client } from '@aws-sdk/client-ec2';
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
 import {
-  classifyEnvironment,
+  applyEnvironmentAliasEvidence,
+  parseEnvironmentAliases,
+  type EnvironmentAlias,
+} from '../../environment-aliases';
+import {
+  classifyEnvironmentWithAliases,
   confirmsEnvironmentSeparation,
   envTagValues,
 } from '../../environment-classification';
@@ -41,7 +46,7 @@ function summarizeVpcs(vpcs: VpcInfo[]) {
 // account's role), so a single-account result is the EXPECTED shape for those
 // customers — guide, never accuse.
 const ACCOUNT_GUIDANCE =
-  'If you separate environments using a separate AWS account per environment (the recommended pattern), connect each environment account as its own connection — this check evaluates one account at a time. Otherwise separate prod/non-prod into distinct VPCs and tag each (Environment=production / Environment=staging), or upload an architecture diagram as evidence.';
+  'If you separate environments using a separate AWS account per environment (the recommended pattern), connect each environment account as its own connection — this check evaluates one account at a time. Otherwise separate prod/non-prod into distinct VPCs and tag each (Environment=production / Environment=staging). If your organization uses different environment names, configure Environment aliases (e.g. release=production), or upload an architecture diagram as evidence.';
 
 /**
  * Classify a VPC into an environment from its tags: an explicit `environment`
@@ -52,6 +57,16 @@ const ACCOUNT_GUIDANCE =
 export function classifyVpcEnv(
   tags: ReadonlyArray<{ Key?: string; Value?: string }> | undefined,
 ): string | null {
+  return classifyVpcEnvWithAliases({ tags, aliases: [] });
+}
+
+export function classifyVpcEnvWithAliases({
+  tags,
+  aliases,
+}: {
+  tags: ReadonlyArray<{ Key?: string; Value?: string }> | undefined;
+  aliases: readonly EnvironmentAlias[];
+}): string | null {
   const tagMap: Record<string, string> = {};
   for (const t of tags ?? []) {
     if (typeof t.Key === 'string' && typeof t.Value === 'string') {
@@ -59,7 +74,10 @@ export function classifyVpcEnv(
     }
   }
   const nameTag = Object.entries(tagMap).find(([k]) => k.toLowerCase() === 'name')?.[1];
-  return classifyEnvironment([...envTagValues(tagMap), nameTag]);
+  return classifyEnvironmentWithAliases({
+    candidates: [...envTagValues(tagMap), nameTag],
+    aliases,
+  });
 }
 
 /**
@@ -221,6 +239,12 @@ export const environmentSeparationCheck: IntegrationCheck = {
 
     const vpcs: VpcInfo[] = [];
     const regionFailures: Array<{ region: string; failure: ReadFailure }> = [];
+    const aliasesConfig = parseEnvironmentAliases(ctx.variables);
+    if (aliasesConfig.invalidEntries.length > 0) {
+      ctx.warn('AWS environment-separation check: ignored invalid environment aliases', {
+        invalidEntries: aliasesConfig.invalidEntries,
+      });
+    }
 
     for (const region of session.regions) {
       try {
@@ -242,7 +266,10 @@ export const environmentSeparationCheck: IntegrationCheck = {
             vpcs.push({
               vpcId: v.VpcId ?? 'unknown',
               region,
-              environment: classifyVpcEnv(v.Tags),
+              environment: classifyVpcEnvWithAliases({
+                tags: v.Tags,
+                aliases: aliasesConfig.aliases,
+              }),
             });
           }
           token = resp.NextToken;
@@ -254,6 +281,12 @@ export const environmentSeparationCheck: IntegrationCheck = {
       }
     }
 
-    emitOutcomes(ctx, buildEnvironmentSeparationOutcomes(vpcs, regionFailures));
+    emitOutcomes(
+      ctx,
+      applyEnvironmentAliasEvidence({
+        items: buildEnvironmentSeparationOutcomes(vpcs, regionFailures),
+        aliasesConfig,
+      }),
+    );
   },
 };

@@ -17,13 +17,10 @@
  * read as production and corrupt the prod-vs-non-prod separation verdict.
  */
 
+import type { EnvironmentAlias } from './environment-aliases';
+
 /** Production keywords — defined once so the qualifier pass below can reuse them. */
-const PRODUCTION_TOKENS: ReadonlySet<string> = new Set([
-  'prod',
-  'production',
-  'prd',
-  'live',
-]);
+const PRODUCTION_TOKENS: ReadonlySet<string> = new Set(['prod', 'production', 'prd', 'live']);
 
 const ENV_TOKEN_SETS: ReadonlyArray<{ env: string; tokens: ReadonlySet<string> }> = [
   // Production is first so it wins ties when a string carries multiple tokens.
@@ -74,6 +71,15 @@ const NON_PRODUCTION_TOKENS: ReadonlySet<string> = new Set([
 const PRODUCTION_NEGATORS: ReadonlySet<string> = new Set(['non', 'not']);
 const PREPROD_QUALIFIERS: ReadonlySet<string> = new Set(['pre']);
 
+const CANONICAL_ENVIRONMENTS: ReadonlySet<string> = new Set([
+  PRODUCTION_ENV,
+  STAGING_ENV,
+  'development',
+  'test',
+  'sandbox',
+  NON_PRODUCTION_ENV,
+]);
+
 /**
  * Whether a set of detected environments confirms environment SEPARATION as the
  * control intends: production must be present AND at least one non-production
@@ -81,20 +87,22 @@ const PREPROD_QUALIFIERS: ReadonlySet<string> = new Set(['pre']);
  * environments alone (e.g. dev + staging) do NOT demonstrate that production is
  * segregated, so they must not pass.
  */
-export function confirmsEnvironmentSeparation(
-  envs: ReadonlyArray<string>,
-): boolean {
-  return (
-    envs.includes(PRODUCTION_ENV) && envs.some((e) => e !== PRODUCTION_ENV)
-  );
+export function confirmsEnvironmentSeparation(envs: ReadonlyArray<string>): boolean {
+  return envs.includes(PRODUCTION_ENV) && envs.some((e) => e !== PRODUCTION_ENV);
 }
 
 /** Split on any run of non-alphanumeric chars; lowercased, empties removed. */
-function tokenize(value: string): string[] {
+export function tokenizeEnvironmentValue(value: string): string[] {
   return value
     .toLowerCase()
     .split(/[^a-z0-9]+/)
     .filter((t) => t.length > 0);
+}
+
+export function normalizeEnvironmentName(raw: string): string | null {
+  const env = classifyTokens({ tokens: tokenizeEnvironmentValue(raw), aliases: [] });
+  if (!env) return null;
+  return CANONICAL_ENVIRONMENTS.has(env) ? env : null;
 }
 
 /**
@@ -104,7 +112,40 @@ function tokenize(value: string): string[] {
  * can't win it back. Otherwise tokens are matched exactly against each
  * environment set (production first, so it wins when several tokens are present).
  */
-function classifyTokens(tokens: string[]): string | null {
+function hasTokenSequence({
+  tokens,
+  sequence,
+  startIndex,
+}: {
+  tokens: readonly string[];
+  sequence: readonly string[];
+  startIndex: number;
+}): boolean {
+  if (startIndex + sequence.length > tokens.length) return false;
+  return sequence.every((token, offset) => tokens[startIndex + offset] === token);
+}
+
+function qualifiedProductionEnv({
+  tokens,
+  startIndex,
+}: {
+  tokens: readonly string[];
+  startIndex: number;
+}): string | null {
+  const previous = tokens[startIndex - 1];
+  if (!previous) return null;
+  if (PRODUCTION_NEGATORS.has(previous)) return NON_PRODUCTION_ENV;
+  if (PREPROD_QUALIFIERS.has(previous)) return STAGING_ENV;
+  return null;
+}
+
+function classifyTokens({
+  tokens,
+  aliases,
+}: {
+  tokens: readonly string[];
+  aliases: readonly EnvironmentAlias[];
+}): string | null {
   let prev: string | undefined;
   for (const token of tokens) {
     if (NON_PRODUCTION_TOKENS.has(token)) return NON_PRODUCTION_ENV;
@@ -113,6 +154,15 @@ function classifyTokens(tokens: string[]): string | null {
       if (PREPROD_QUALIFIERS.has(prev)) return STAGING_ENV;
     }
     prev = token;
+  }
+  for (let i = 0; i < tokens.length; i++) {
+    for (const alias of aliases) {
+      if (!hasTokenSequence({ tokens, sequence: alias.tokens, startIndex: i })) continue;
+      if (alias.environment === PRODUCTION_ENV) {
+        return qualifiedProductionEnv({ tokens, startIndex: i }) ?? PRODUCTION_ENV;
+      }
+      return alias.environment;
+    }
   }
   for (const { env, tokens: keywords } of ENV_TOKEN_SETS) {
     if (tokens.some((t) => keywords.has(t))) return env;
@@ -126,12 +176,20 @@ function classifyTokens(tokens: string[]): string | null {
  * Candidates are tried in order, so callers should pass the most authoritative
  * source (explicit env tag/label value) before the resource name.
  */
-export function classifyEnvironment(
-  candidates: ReadonlyArray<string | undefined>,
-): string | null {
+export function classifyEnvironment(candidates: ReadonlyArray<string | undefined>): string | null {
+  return classifyEnvironmentWithAliases({ candidates, aliases: [] });
+}
+
+export function classifyEnvironmentWithAliases({
+  candidates,
+  aliases,
+}: {
+  candidates: ReadonlyArray<string | undefined>;
+  aliases: readonly EnvironmentAlias[];
+}): string | null {
   for (const candidate of candidates) {
     if (!candidate) continue;
-    const env = classifyTokens(tokenize(candidate));
+    const env = classifyTokens({ tokens: tokenizeEnvironmentValue(candidate), aliases });
     if (env) return env;
   }
   return null;
@@ -151,9 +209,7 @@ export function envTagValues(
   // Iterate the configured keys in PRIORITY order (not the tag map's insertion
   // order) so a more authoritative key (`environment`) is returned before a
   // less authoritative one (`stage`) — `classifyEnvironment` trusts order.
-  const normalized = new Map(
-    Object.entries(tags).map(([k, v]) => [k.toLowerCase(), v]),
-  );
+  const normalized = new Map(Object.entries(tags).map(([k, v]) => [k.toLowerCase(), v]));
   return keys
     .map((k) => normalized.get(k.toLowerCase()))
     .filter((v): v is string => typeof v === 'string' && v.length > 0);

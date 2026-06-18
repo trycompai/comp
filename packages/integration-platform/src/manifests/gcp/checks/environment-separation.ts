@@ -1,7 +1,13 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
 import {
+  environmentAliasEvidence,
+  parseEnvironmentAliases,
+  type EnvironmentAlias,
+} from '../../environment-aliases';
+import {
   classifyEnvironment,
+  classifyEnvironmentWithAliases,
   confirmsEnvironmentSeparation,
   envTagValues,
 } from '../../environment-classification';
@@ -30,6 +36,19 @@ interface ResolvedProjects {
  */
 export function classifyProjectEnv(project: GcpProject): string | null {
   return classifyEnvironment([...envTagValues(project.labels), project.projectId, project.name]);
+}
+
+function classifyProjectEnvWithAliases({
+  project,
+  aliases,
+}: {
+  project: GcpProject;
+  aliases: readonly EnvironmentAlias[];
+}): string | null {
+  return classifyEnvironmentWithAliases({
+    candidates: [...envTagValues(project.labels), project.projectId, project.name],
+    aliases,
+  });
 }
 
 /** The user-selected project scope (`project_ids` variable), trimmed. */
@@ -88,7 +107,7 @@ async function resolveProjects(ctx: CheckContext): Promise<ResolvedProjects> {
 }
 
 const GUIDANCE =
-  'Separate production and non-production workloads into distinct GCP projects and label each with an `environment` label (e.g. environment=production, environment=staging). If you separate environments another way (e.g. VPCs or folders), upload a console screenshot or architecture diagram as evidence.';
+  'Separate production and non-production workloads into distinct GCP projects and label each with an `environment` label (e.g. environment=production, environment=staging). If your organization uses different environment names, configure Environment aliases (e.g. release=production). If you separate environments another way (e.g. VPCs or folders), upload a console screenshot or architecture diagram as evidence.';
 
 /**
  * Separation of Environments check (heuristic). GCP's recommended pattern is a
@@ -133,6 +152,12 @@ export const environmentSeparationCheck: IntegrationCheck = {
     }
 
     const { projects, truncated, readError } = resolved;
+    const aliasesConfig = parseEnvironmentAliases(ctx.variables);
+    if (aliasesConfig.invalidEntries.length > 0) {
+      ctx.warn('GCP env-separation: ignored invalid environment aliases', {
+        invalidEntries: aliasesConfig.invalidEntries,
+      });
+    }
 
     if (projects.length === 0) {
       // A read failure (scoped projects unreadable) is "could not verify"; a
@@ -155,7 +180,10 @@ export const environmentSeparationCheck: IntegrationCheck = {
 
     const classified = projects.map((p) => ({
       projectId: p.projectId,
-      environment: classifyProjectEnv(p),
+      environment: classifyProjectEnvWithAliases({
+        project: p,
+        aliases: aliasesConfig.aliases,
+      }),
     }));
     const detected = [
       ...new Set(classified.map((c) => c.environment).filter((e): e is string => e !== null)),
@@ -186,6 +214,7 @@ export const environmentSeparationCheck: IntegrationCheck = {
           projectCount: projects.length,
           projects: sample,
           unclassifiedProjectCount,
+          ...environmentAliasEvidence(aliasesConfig),
         },
       });
       return;
@@ -219,6 +248,7 @@ export const environmentSeparationCheck: IntegrationCheck = {
         unclassifiedProjectCount,
         ...(truncated ? { discoveryTruncated: true } : {}),
         projects: sample,
+        ...environmentAliasEvidence(aliasesConfig),
       },
     });
   },

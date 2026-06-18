@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'bun:test';
 import type { CheckContext } from '../../../../types';
+import { parseEnvironmentAliases } from '../../../environment-aliases';
+import { awsManifest } from '../../index';
 import { evaluateCloudTrail } from '../cloudtrail';
 import { evaluateSecurityGroups } from '../ec2';
 import {
   buildEnvironmentSeparationOutcomes,
   classifyVpcEnv,
+  classifyVpcEnvWithAliases,
   evaluateEnvironmentSeparation,
 } from '../environment-separation';
 import { evaluateAccountSummary, evaluateIamAccount, evaluatePasswordPolicy } from '../iam';
@@ -1159,6 +1162,28 @@ describe('AWS environment separation', () => {
   it('classifyVpcEnv: ignores non-env tags (no fabricated environment)', () => {
     expect(classifyVpcEnv([{ Key: 'team', Value: 'dev-team' }])).toBeNull();
     expect(classifyVpcEnv(undefined)).toBeNull();
+  });
+
+  it('classifyVpcEnv: honors customer-configured aliases', () => {
+    const aliasesConfig = parseEnvironmentAliases({
+      environment_aliases: 'release=production, preview=staging',
+    });
+    expect(
+      classifyVpcEnvWithAliases({
+        tags: [{ Key: 'Name', Value: 'app-release' }],
+        aliases: aliasesConfig.aliases,
+      }),
+    ).toBe('production');
+    expect(
+      classifyVpcEnvWithAliases({
+        tags: [{ Key: 'Environment', Value: 'preview' }],
+        aliases: aliasesConfig.aliases,
+      }),
+    ).toBe('staging');
+  });
+
+  it('exposes environment aliases as an AWS connection variable', () => {
+    expect(awsManifest.variables?.some((v) => v.id === 'environment_aliases')).toBe(true);
   });
 
   it('passes on production + non-production, without claiming cross-account isolation', () => {

@@ -896,6 +896,10 @@ describe('azure subscription picker fetchOptions', () => {
     const options = await variable!.fetchOptions!(ctx);
     expect(options).toEqual([]);
   });
+
+  it('exposes environment aliases as an Azure connection variable', () => {
+    expect(azureManifest.variables?.some((v) => v.id === 'environment_aliases')).toBe(true);
+  });
 });
 
 describe('Azure environment separation', () => {
@@ -947,6 +951,24 @@ describe('Azure environment separation', () => {
         },
       }),
     );
+    expect(passed).toContain('Environments separated across resource groups');
+  });
+
+  it('passes with customer-configured environment aliases', async () => {
+    const { passed, failed } = await run(
+      environmentSeparationCheck,
+      azFetch({
+        names: { 'sub-1': 'Company' },
+        rgs: {
+          'sub-1': [{ id: 'a', name: 'app-release' }, { id: 'b', name: 'app-preview' }],
+        },
+      }),
+      {
+        subscription_id: 'sub-1',
+        environment_aliases: 'release=production, preview=staging',
+      },
+    );
+    expect(failed).toHaveLength(0);
     expect(passed).toContain('Environments separated across resource groups');
   });
 

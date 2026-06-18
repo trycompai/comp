@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import type { CheckContext, CheckVariableValues, IntegrationCheck } from '../../../../types';
+import { gcpManifest } from '../../index';
 import { cloudMonitoringAlertingCheck } from '../cloud-monitoring-alerting';
 import { cloudSqlBackupsCheck } from '../cloud-sql-backups';
 import { cloudSqlEncryptionCheck } from '../cloud-sql-encryption';
@@ -980,6 +981,30 @@ describe('GCP environment-separation check', () => {
     });
     expect(out.failed).toHaveLength(0);
     expect(out.passed).toHaveLength(1);
+  });
+
+  it('passes with customer-configured environment aliases', async () => {
+    const out = await runCheck(environmentSeparationCheck, {
+      variables: {
+        environment_aliases: 'release=production, preview=staging',
+      },
+      fetch: () => ({
+        projects: [{ projectId: 'app-release' }, { projectId: 'app-preview' }],
+      }),
+    });
+    expect(out.failed).toHaveLength(0);
+    expect(out.passed).toHaveLength(1);
+    expect(out.passed[0]!.evidence).toMatchObject({
+      detectedEnvironments: expect.arrayContaining(['production', 'staging']),
+      environmentAliases: [
+        { alias: 'release', environment: 'production' },
+        { alias: 'preview', environment: 'staging' },
+      ],
+    });
+  });
+
+  it('exposes environment aliases as a GCP connection variable', () => {
+    expect(gcpManifest.variables?.some((v) => v.id === 'environment_aliases')).toBe(true);
   });
 
   it('evaluates projects across multiple pages (unscoped discovery)', async () => {
