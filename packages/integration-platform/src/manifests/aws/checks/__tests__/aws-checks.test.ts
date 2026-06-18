@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'bun:test';
+import type { CheckContext } from '../../../../types';
+import { parseEnvironmentAliases } from '../../../environment-aliases';
+import { awsManifest } from '../../index';
 import { evaluateCloudTrail } from '../cloudtrail';
 import { evaluateSecurityGroups } from '../ec2';
 import {
   buildEnvironmentSeparationOutcomes,
   classifyVpcEnv,
+  classifyVpcEnvWithAliases,
   evaluateEnvironmentSeparation,
 } from '../environment-separation';
-import {
-  evaluateAccountSummary,
-  evaluateIamAccount,
-  evaluatePasswordPolicy,
-} from '../iam';
+import { evaluateAccountSummary, evaluateIamAccount, evaluatePasswordPolicy } from '../iam';
 import { evaluateKmsRotation } from '../kms';
 import {
   evaluateRdsBackups,
@@ -23,15 +23,14 @@ import { gatherBuckets } from '../s3-buckets';
 import {
   assumeAwsSession,
   awsAccountIdFromCtx,
+  combineReadFailures,
   emitOutcomes,
+  remediationForReadFailure,
   resolveAwsCredentialInputs,
   resolveAwsSessionOrFail,
-  combineReadFailures,
-  remediationForReadFailure,
   toReadFailure,
   type CheckOutcome,
 } from '../shared';
-import type { CheckContext } from '../../../../types';
 
 const kinds = (os: { kind: string }[]) => os.map((o) => o.kind);
 
@@ -132,9 +131,7 @@ describe('AWS credential resolution (regions shape)', () => {
   });
 
   it('returns null when roleArn or externalId is missing', () => {
-    expect(
-      resolveAwsCredentialInputs({ externalId: 'eid', regions: ['us-east-1'] }),
-    ).toBeNull();
+    expect(resolveAwsCredentialInputs({ externalId: 'eid', regions: ['us-east-1'] })).toBeNull();
     expect(
       resolveAwsCredentialInputs({ roleArn: base.roleArn, regions: ['us-east-1'] }),
     ).toBeNull();
@@ -172,7 +169,9 @@ describe('AWS IAM account evaluator', () => {
     expect(out[0]!.kind).toBe('fail');
     expect(out[0]!.title).toMatch(/password policy/i);
     // and the summary evaluator is independent
-    expect(evaluateAccountSummary({ AccountMFAEnabled: 1, AccountAccessKeysPresent: 0 })).toHaveLength(2);
+    expect(
+      evaluateAccountSummary({ AccountMFAEnabled: 1, AccountAccessKeysPresent: 0 }),
+    ).toHaveLength(2);
   });
 });
 
@@ -186,10 +185,28 @@ const ALL_BLOCKED = {
 describe('AWS S3 evaluators', () => {
   it('encryption: pass when encrypted, fail (high) when not, "could not verify" (medium) when indeterminate', () => {
     const out = evaluateS3Encryption([
-      { name: 'a', encrypted: true, encryptionDetermined: true, publicAccessDetermined: true, bucketBpa: null },
-      { name: 'b', encrypted: false, encryptionDetermined: true, publicAccessDetermined: true, bucketBpa: null },
+      {
+        name: 'a',
+        encrypted: true,
+        encryptionDetermined: true,
+        publicAccessDetermined: true,
+        bucketBpa: null,
+      },
+      {
+        name: 'b',
+        encrypted: false,
+        encryptionDetermined: true,
+        publicAccessDetermined: true,
+        bucketBpa: null,
+      },
       // read error → indeterminate → "could not verify" (not a false high, not silently dropped)
-      { name: 'c', encrypted: false, encryptionDetermined: false, publicAccessDetermined: true, bucketBpa: null },
+      {
+        name: 'c',
+        encrypted: false,
+        encryptionDetermined: false,
+        publicAccessDetermined: true,
+        bucketBpa: null,
+      },
     ]);
     expect(out).toHaveLength(3);
     expect(out[0]!.kind).toBe('pass');
@@ -202,7 +219,13 @@ describe('AWS S3 evaluators', () => {
 
   it('encryption: all-indeterminate buckets do not pass silently', () => {
     const out = evaluateS3Encryption([
-      { name: 'x', encrypted: false, encryptionDetermined: false, publicAccessDetermined: true, bucketBpa: null },
+      {
+        name: 'x',
+        encrypted: false,
+        encryptionDetermined: false,
+        publicAccessDetermined: true,
+        bucketBpa: null,
+      },
     ]);
     expect(out).toHaveLength(1);
     expect(out[0]!.kind).toBe('fail');
@@ -212,8 +235,20 @@ describe('AWS S3 evaluators', () => {
   it('public access: bucket-level all-blocked passes, missing fails', () => {
     const out = evaluateS3PublicAccess(
       [
-        { name: 'a', encrypted: false, encryptionDetermined: true, publicAccessDetermined: true, bucketBpa: ALL_BLOCKED },
-        { name: 'b', encrypted: false, encryptionDetermined: true, publicAccessDetermined: true, bucketBpa: null },
+        {
+          name: 'a',
+          encrypted: false,
+          encryptionDetermined: true,
+          publicAccessDetermined: true,
+          bucketBpa: ALL_BLOCKED,
+        },
+        {
+          name: 'b',
+          encrypted: false,
+          encryptionDetermined: true,
+          publicAccessDetermined: true,
+          bucketBpa: null,
+        },
       ],
       null,
     );
@@ -222,7 +257,15 @@ describe('AWS S3 evaluators', () => {
 
   it('public access: account-level BPA covers buckets lacking bucket config', () => {
     const out = evaluateS3PublicAccess(
-      [{ name: 'b', encrypted: false, encryptionDetermined: true, publicAccessDetermined: true, bucketBpa: null }],
+      [
+        {
+          name: 'b',
+          encrypted: false,
+          encryptionDetermined: true,
+          publicAccessDetermined: true,
+          bucketBpa: null,
+        },
+      ],
       ALL_BLOCKED,
     );
     expect(out[0]!.kind).toBe('pass');
@@ -272,7 +315,15 @@ describe('AWS S3 evaluators', () => {
 
   it('public access: indeterminate without failure detail keeps the legacy permission hint', () => {
     const out = evaluateS3PublicAccess(
-      [{ name: 'b', encrypted: false, encryptionDetermined: true, publicAccessDetermined: false, bucketBpa: null }],
+      [
+        {
+          name: 'b',
+          encrypted: false,
+          encryptionDetermined: true,
+          publicAccessDetermined: false,
+          bucketBpa: null,
+        },
+      ],
       null,
     );
     expect(out[0]!.kind).toBe('fail');
@@ -307,7 +358,12 @@ describe('AWS S3 evaluators', () => {
 });
 
 describe('gatherBuckets — per-bucket region routing', () => {
-  type FakeClient = { send: (cmd: { constructor: { name: string }; input: Record<string, unknown> }) => Promise<unknown> };
+  type FakeClient = {
+    send: (cmd: {
+      constructor: { name: string };
+      input: Record<string, unknown>;
+    }) => Promise<unknown>;
+  };
   const asS3 = (c: FakeClient) => c as unknown as import('@aws-sdk/client-s3').S3Client;
 
   const BPA_OK = {
@@ -462,7 +518,11 @@ describe('toReadFailure — read-error classification', () => {
   it('classifies AccessDenied by error name', () => {
     const err = new Error('Access Denied');
     err.name = 'AccessDenied';
-    expect(toReadFailure(err)).toEqual({ error: 'AccessDenied: Access Denied', denied: true, regionDisabled: false });
+    expect(toReadFailure(err)).toEqual({
+      error: 'AccessDenied: Access Denied',
+      denied: true,
+      regionDisabled: false,
+    });
   });
 
   it('classifies 403 by http status even with a generic name', () => {
@@ -476,7 +536,11 @@ describe('toReadFailure — read-error classification', () => {
   it('treats network/timeout errors as not denied', () => {
     const err = new Error('socket hang up');
     err.name = 'TimeoutError';
-    expect(toReadFailure(err)).toEqual({ error: 'TimeoutError: socket hang up', denied: false, regionDisabled: false });
+    expect(toReadFailure(err)).toEqual({
+      error: 'TimeoutError: socket hang up',
+      denied: false,
+      regionDisabled: false,
+    });
   });
 
   it('stringifies non-Error throwables', () => {
@@ -510,7 +574,10 @@ describe('combineReadFailures / remediationForReadFailure', () => {
   it('combine: any denied wins; regionDisabled only when ALL are', () => {
     expect(combineReadFailures([])).toBeUndefined();
     expect(combineReadFailures([transient, denied])!.denied).toBe(true);
-    expect(combineReadFailures([disabled, disabled])).toMatchObject({ regionDisabled: true, denied: false });
+    expect(combineReadFailures([disabled, disabled])).toMatchObject({
+      regionDisabled: true,
+      denied: false,
+    });
     // mixed disabled + transient must NOT advise removing a region
     expect(combineReadFailures([disabled, transient])!.regionDisabled).toBe(false);
   });
@@ -553,7 +620,11 @@ describe('AWS EC2 security-group evaluator', () => {
 
   it('flags all-protocols (-1) open as critical', () => {
     const out = evaluateSecurityGroups([
-      { groupId: 'sg-2', region: 'us-east-1', permissions: [{ ipProtocol: '-1', cidrs: ['0.0.0.0/0'] }] },
+      {
+        groupId: 'sg-2',
+        region: 'us-east-1',
+        permissions: [{ ipProtocol: '-1', cidrs: ['0.0.0.0/0'] }],
+      },
     ]);
     expect(out[0]!.severity).toBe('critical');
   });
@@ -589,8 +660,20 @@ describe('AWS EC2 security-group evaluator', () => {
 describe('AWS RDS evaluators', () => {
   it('encryption: pass when encrypted, fail (high) when not', () => {
     const out = evaluateRdsEncryption([
-      { id: 'db1', region: 'us-east-1', encrypted: true, backupRetentionDays: 7, engine: 'postgres' },
-      { id: 'db2', region: 'us-east-1', encrypted: false, backupRetentionDays: 7, engine: 'postgres' },
+      {
+        id: 'db1',
+        region: 'us-east-1',
+        encrypted: true,
+        backupRetentionDays: 7,
+        engine: 'postgres',
+      },
+      {
+        id: 'db2',
+        region: 'us-east-1',
+        encrypted: false,
+        backupRetentionDays: 7,
+        engine: 'postgres',
+      },
     ]);
     expect(out[0]!.kind).toBe('pass');
     expect(out[1]!.severity).toBe('high');
@@ -598,17 +681,41 @@ describe('AWS RDS evaluators', () => {
 
   it('backups: pass when retention > 0, fail when 0, skip Aurora (cluster-level)', () => {
     const out = evaluateRdsBackups([
-      { id: 'db1', region: 'us-east-1', encrypted: true, backupRetentionDays: 7, engine: 'postgres' },
+      {
+        id: 'db1',
+        region: 'us-east-1',
+        encrypted: true,
+        backupRetentionDays: 7,
+        engine: 'postgres',
+      },
       { id: 'db2', region: 'us-east-1', encrypted: true, backupRetentionDays: 0, engine: 'mysql' },
-      { id: 'aur', region: 'us-east-1', encrypted: true, backupRetentionDays: 0, engine: 'aurora-mysql' },
+      {
+        id: 'aur',
+        region: 'us-east-1',
+        encrypted: true,
+        backupRetentionDays: 0,
+        engine: 'aurora-mysql',
+      },
     ]);
     expect(kinds(out)).toEqual(['pass', 'fail']); // aurora excluded, not failed
   });
 
   it('cluster encryption: Aurora evaluated at cluster level (pass/fail)', () => {
     const out = evaluateRdsClusterEncryption([
-      { id: 'c1', region: 'us-east-1', encrypted: true, backupRetentionDays: 7, engine: 'aurora-postgresql' },
-      { id: 'c2', region: 'us-east-1', encrypted: false, backupRetentionDays: 7, engine: 'aurora-mysql' },
+      {
+        id: 'c1',
+        region: 'us-east-1',
+        encrypted: true,
+        backupRetentionDays: 7,
+        engine: 'aurora-postgresql',
+      },
+      {
+        id: 'c2',
+        region: 'us-east-1',
+        encrypted: false,
+        backupRetentionDays: 7,
+        engine: 'aurora-mysql',
+      },
     ]);
     expect(out[0]!.kind).toBe('pass');
     expect(out[1]!.kind).toBe('fail');
@@ -617,8 +724,20 @@ describe('AWS RDS evaluators', () => {
 
   it('cluster backups: Aurora retention evaluated at cluster level (pass/fail)', () => {
     const out = evaluateRdsClusterBackups([
-      { id: 'c1', region: 'us-east-1', encrypted: true, backupRetentionDays: 7, engine: 'aurora-mysql' },
-      { id: 'c2', region: 'us-east-1', encrypted: true, backupRetentionDays: 0, engine: 'aurora-mysql' },
+      {
+        id: 'c1',
+        region: 'us-east-1',
+        encrypted: true,
+        backupRetentionDays: 7,
+        engine: 'aurora-mysql',
+      },
+      {
+        id: 'c2',
+        region: 'us-east-1',
+        encrypted: true,
+        backupRetentionDays: 0,
+        engine: 'aurora-mysql',
+      },
     ]);
     expect(out[0]!.kind).toBe('pass');
     expect(out[1]!.kind).toBe('fail');
@@ -628,12 +747,36 @@ describe('AWS RDS evaluators', () => {
 describe('AWS KMS rotation evaluator', () => {
   it('evaluates eligible keys; unreadable rotation status → could-not-verify (not dropped)', () => {
     const out = evaluateKmsRotation([
-      { keyId: 'sym-on', region: 'us-east-1', rotationEligible: true, rotationStatusKnown: true, rotationEnabled: true },
-      { keyId: 'sym-off', region: 'us-east-1', rotationEligible: true, rotationStatusKnown: true, rotationEnabled: false },
+      {
+        keyId: 'sym-on',
+        region: 'us-east-1',
+        rotationEligible: true,
+        rotationStatusKnown: true,
+        rotationEnabled: true,
+      },
+      {
+        keyId: 'sym-off',
+        region: 'us-east-1',
+        rotationEligible: true,
+        rotationStatusKnown: true,
+        rotationEnabled: false,
+      },
       // RSA/HMAC/etc. — not rotation-eligible → no finding
-      { keyId: 'rsa', region: 'us-east-1', rotationEligible: false, rotationStatusKnown: false, rotationEnabled: false },
+      {
+        keyId: 'rsa',
+        region: 'us-east-1',
+        rotationEligible: false,
+        rotationStatusKnown: false,
+        rotationEnabled: false,
+      },
       // eligible but status unreadable → "could not verify" (masking a permission gap as clean would be wrong)
-      { keyId: 'unknown', region: 'us-east-1', rotationEligible: true, rotationStatusKnown: false, rotationEnabled: false },
+      {
+        keyId: 'unknown',
+        region: 'us-east-1',
+        rotationEligible: true,
+        rotationStatusKnown: false,
+        rotationEnabled: false,
+      },
     ]);
     expect(out).toHaveLength(3);
     expect(out[0]!.kind).toBe('pass');
@@ -645,7 +788,13 @@ describe('AWS KMS rotation evaluator', () => {
 
   it('does not pass silently when rotation status is unreadable for all eligible keys', () => {
     const out = evaluateKmsRotation([
-      { keyId: 'k1', region: 'us-east-1', rotationEligible: true, rotationStatusKnown: false, rotationEnabled: false },
+      {
+        keyId: 'k1',
+        region: 'us-east-1',
+        rotationEligible: true,
+        rotationStatusKnown: false,
+        rotationEnabled: false,
+      },
     ]);
     expect(out).toHaveLength(1);
     expect(out[0]!.kind).toBe('fail');
@@ -657,7 +806,11 @@ describe('KMS rotation read-failure gating', () => {
   it('transient rotation-status failure surfaces readError and avoids the permission claim', () => {
     const out = evaluateKmsRotation([
       {
-        keyId: 'k1', region: 'us-east-1', rotationEligible: true, rotationStatusKnown: false, rotationEnabled: false,
+        keyId: 'k1',
+        region: 'us-east-1',
+        rotationEligible: true,
+        rotationStatusKnown: false,
+        rotationEnabled: false,
         rotationReadFailure: { error: 'ThrottlingException: Rate exceeded', denied: false },
       },
     ]);
@@ -670,8 +823,15 @@ describe('KMS rotation read-failure gating', () => {
   it('denied rotation-status failure keeps the grant remediation', () => {
     const out = evaluateKmsRotation([
       {
-        keyId: 'k1', region: 'us-east-1', rotationEligible: true, rotationStatusKnown: false, rotationEnabled: false,
-        rotationReadFailure: { error: 'AccessDeniedException: no kms:GetKeyRotationStatus', denied: true },
+        keyId: 'k1',
+        region: 'us-east-1',
+        rotationEligible: true,
+        rotationStatusKnown: false,
+        rotationEnabled: false,
+        rotationReadFailure: {
+          error: 'AccessDeniedException: no kms:GetKeyRotationStatus',
+          denied: true,
+        },
       },
     ]);
     expect(out[0]!.remediation).toContain('Grant kms:GetKeyRotationStatus');
@@ -679,7 +839,13 @@ describe('KMS rotation read-failure gating', () => {
 
   it('without failure detail the legacy permission hint is kept', () => {
     const out = evaluateKmsRotation([
-      { keyId: 'k1', region: 'us-east-1', rotationEligible: true, rotationStatusKnown: false, rotationEnabled: false },
+      {
+        keyId: 'k1',
+        region: 'us-east-1',
+        rotationEligible: true,
+        rotationStatusKnown: false,
+        rotationEnabled: false,
+      },
     ]);
     expect(out[0]!.remediation).toContain('Grant kms:GetKeyRotationStatus');
   });
@@ -730,7 +896,11 @@ describe('AWS CloudTrail evaluator', () => {
   it('status-read failure: transient error surfaces readError and does not claim a missing permission', () => {
     const out = evaluateCloudTrail([
       {
-        name: 't1', multiRegion: true, logValidation: true, logging: false, loggingKnown: false,
+        name: 't1',
+        multiRegion: true,
+        logValidation: true,
+        logging: false,
+        loggingKnown: false,
         statusReadFailure: { error: 'TimeoutError: socket hang up', denied: false },
       },
     ]);
@@ -743,7 +913,11 @@ describe('AWS CloudTrail evaluator', () => {
   it('status-read failure: AccessDenied keeps the grant-permission remediation', () => {
     const out = evaluateCloudTrail([
       {
-        name: 't1', multiRegion: true, logValidation: true, logging: false, loggingKnown: false,
+        name: 't1',
+        multiRegion: true,
+        logValidation: true,
+        logging: false,
+        loggingKnown: false,
         statusReadFailure: { error: 'AccessDeniedException: nope', denied: true },
       },
     ]);
@@ -758,9 +932,7 @@ describe('IAM/CloudTrail outcomes carry evidence (so the UI shows "View Evidence
 
   it('every password-policy outcome has evidence (none / weak / strong)', () => {
     expect(evaluatePasswordPolicy(null).every(hasEvidence)).toBe(true);
-    expect(
-      evaluatePasswordPolicy({ MinimumPasswordLength: 8 }).every(hasEvidence),
-    ).toBe(true);
+    expect(evaluatePasswordPolicy({ MinimumPasswordLength: 8 }).every(hasEvidence)).toBe(true);
     expect(
       evaluatePasswordPolicy({
         MinimumPasswordLength: 14,
@@ -791,21 +963,48 @@ describe('IAM/CloudTrail outcomes carry evidence (so the UI shows "View Evidence
     const out = evaluateCloudTrail([], { scannedRegions: ['us-east-1', 'eu-west-1'] });
     expect(out).toHaveLength(1);
     expect(out[0]!.title).toMatch(/No CloudTrail trail found/);
-    expect(out[0]!.evidence).toMatchObject({ trailsFound: 0, scannedRegions: ['us-east-1', 'eu-west-1'] });
+    expect(out[0]!.evidence).toMatchObject({
+      trailsFound: 0,
+      scannedRegions: ['us-east-1', 'eu-west-1'],
+    });
     expect(hasEvidence(out[0]!)).toBe(true);
   });
 
   it('pass/fail evidence carries the determining value (S3 encryption, KMS rotation)', () => {
     const enc = evaluateS3Encryption([
-      { name: 'enc', encrypted: true, encryptionDetermined: true, publicAccessDetermined: true, bucketBpa: null },
-      { name: 'plain', encrypted: false, encryptionDetermined: true, publicAccessDetermined: true, bucketBpa: null },
+      {
+        name: 'enc',
+        encrypted: true,
+        encryptionDetermined: true,
+        publicAccessDetermined: true,
+        bucketBpa: null,
+      },
+      {
+        name: 'plain',
+        encrypted: false,
+        encryptionDetermined: true,
+        publicAccessDetermined: true,
+        bucketBpa: null,
+      },
     ]);
     expect(enc[0]!.evidence?.encrypted).toBe(true);
     expect(enc[1]!.evidence?.encrypted).toBe(false);
 
     const rot = evaluateKmsRotation([
-      { keyId: 'on', region: 'us-east-1', rotationEligible: true, rotationStatusKnown: true, rotationEnabled: true },
-      { keyId: 'off', region: 'us-east-1', rotationEligible: true, rotationStatusKnown: true, rotationEnabled: false },
+      {
+        keyId: 'on',
+        region: 'us-east-1',
+        rotationEligible: true,
+        rotationStatusKnown: true,
+        rotationEnabled: true,
+      },
+      {
+        keyId: 'off',
+        region: 'us-east-1',
+        rotationEligible: true,
+        rotationStatusKnown: true,
+        rotationEnabled: false,
+      },
     ]);
     expect(rot[0]!.evidence?.rotationEnabled).toBe(true);
     expect(rot[1]!.evidence?.rotationEnabled).toBe(false);
@@ -820,10 +1019,8 @@ function captureCtx(credentials: Record<string, unknown>, checkId?: string) {
   const ctx = {
     credentials,
     checkId,
-    pass: (r: { description: string; evidence?: Record<string, unknown> }) =>
-      passed.push(r),
-    fail: (r: { description: string; evidence?: Record<string, unknown> }) =>
-      failed.push(r),
+    pass: (r: { description: string; evidence?: Record<string, unknown> }) => passed.push(r),
+    fail: (r: { description: string; evidence?: Record<string, unknown> }) => failed.push(r),
   } as unknown as CheckContext;
   return { ctx, passed, failed };
 }
@@ -847,9 +1044,7 @@ describe('awsAccountIdFromCtx', () => {
   });
 
   it('returns null when the role ARN is missing or malformed', () => {
-    expect(
-      awsAccountIdFromCtx({ credentials: {} } as unknown as CheckContext),
-    ).toBeNull();
+    expect(awsAccountIdFromCtx({ credentials: {} } as unknown as CheckContext)).toBeNull();
     expect(
       awsAccountIdFromCtx({
         credentials: { roleArn: 'not-an-arn' },
@@ -896,9 +1091,7 @@ describe('emitOutcomes — attributes findings to the AWS account', () => {
     });
     emitOutcomes(ctx, [PASS_OUTCOME]);
     expect(passed[0]!.evidence?.awsConnectionName).toBe('Production AWS');
-    expect(passed[0]!.description).toContain(
-      '(AWS account 123456789012 — Production AWS)',
-    );
+    expect(passed[0]!.description).toContain('(AWS account 123456789012 — Production AWS)');
   });
 
   it('stamps a stable findingKey of `${checkId}-${resourceId}` so findings can be excepted', () => {
@@ -971,6 +1164,28 @@ describe('AWS environment separation', () => {
     expect(classifyVpcEnv(undefined)).toBeNull();
   });
 
+  it('classifyVpcEnv: honors customer-configured aliases', () => {
+    const aliasesConfig = parseEnvironmentAliases({
+      environment_aliases: 'release=production, preview=staging',
+    });
+    expect(
+      classifyVpcEnvWithAliases({
+        tags: [{ Key: 'Name', Value: 'app-release' }],
+        aliases: aliasesConfig.aliases,
+      }),
+    ).toBe('production');
+    expect(
+      classifyVpcEnvWithAliases({
+        tags: [{ Key: 'Environment', Value: 'preview' }],
+        aliases: aliasesConfig.aliases,
+      }),
+    ).toBe('staging');
+  });
+
+  it('exposes environment aliases as an AWS connection variable', () => {
+    expect(awsManifest.variables?.some((v) => v.id === 'environment_aliases')).toBe(true);
+  });
+
   it('passes on production + non-production, without claiming cross-account isolation', () => {
     const out = evaluateEnvironmentSeparation([
       { vpcId: 'vpc-1', region: 'us-east-1', environment: 'production' },
@@ -1008,6 +1223,17 @@ describe('AWS environment separation', () => {
     expect(out[0]!.kind).toBe('fail');
   });
 
+  it('fails clearly when production is detected but another VPC is unclassified', () => {
+    const out = evaluateEnvironmentSeparation([
+      { vpcId: 'vpc-1', region: 'us-east-1', environment: 'production' },
+      { vpcId: 'vpc-2', region: 'us-east-1', environment: null },
+    ]);
+    expect(out).toHaveLength(1);
+    expect(out[0]!.kind).toBe('fail');
+    expect(out[0]!.description).toMatch(/1 VPC\(s\) were unclassified/);
+    expect(out[0]!.evidence).toMatchObject({ unclassifiedVpcCount: 1 });
+  });
+
   it('fails (low) with guidance when there are no non-default VPCs', () => {
     const out = evaluateEnvironmentSeparation([]);
     expect(out).toHaveLength(1);
@@ -1021,7 +1247,7 @@ describe('buildEnvironmentSeparationOutcomes — region failures vs verdict (cub
   const failure = { error: 'AccessDenied: ec2:DescribeVpcs', denied: true };
   const regionFailures = [{ region: 'eu-west-1', failure }];
 
-  it('does NOT pair a region-failure fail with a confirmed pass', () => {
+  it('does not pass when some regions could not be read, even if scanned regions show separation', () => {
     const out = buildEnvironmentSeparationOutcomes(
       [
         { vpcId: 'vpc-1', region: 'us-east-1', environment: 'production' },
@@ -1029,11 +1255,9 @@ describe('buildEnvironmentSeparationOutcomes — region failures vs verdict (cub
       ],
       regionFailures,
     );
-    // A confirmed pass stands alone — more regions can only ADD environments, so
-    // the unread region can't un-confirm it; emitting a fail too would be a
-    // contradictory pass+fail in one run.
     expect(out).toHaveLength(1);
-    expect(out[0]!.kind).toBe('pass');
+    expect(out[0]!.kind).toBe('fail');
+    expect(out[0]!.title).toMatch(/Could not verify VPCs in some regions/);
   });
 
   it('surfaces the region failure alongside an UNconfirmed verdict (both negative)', () => {

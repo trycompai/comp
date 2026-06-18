@@ -1,22 +1,16 @@
 import { describe, expect, it } from 'bun:test';
-import type {
-  CheckContext,
-  CheckVariableValues,
-  IntegrationCheck,
-} from '../../../../types';
+import type { CheckContext, CheckVariableValues, IntegrationCheck } from '../../../../types';
+import { gcpManifest } from '../../index';
 import { cloudMonitoringAlertingCheck } from '../cloud-monitoring-alerting';
 import { cloudSqlBackupsCheck } from '../cloud-sql-backups';
 import { cloudSqlEncryptionCheck } from '../cloud-sql-encryption';
 import { cloudSqlSslCheck } from '../cloud-sql-ssl';
-import {
-  classifyProjectEnv,
-  environmentSeparationCheck,
-} from '../environment-separation';
+import { classifyProjectEnv, environmentSeparationCheck } from '../environment-separation';
 import { iamPrimitiveRolesCheck } from '../iam-primitive-roles';
+import { isGcpApiDisabled } from '../shared';
 import { storageEncryptionCheck } from '../storage-encryption';
 import { storagePublicAccessCheck } from '../storage-public-access';
 import { vpcOpenFirewallsCheck } from '../vpc-open-firewalls';
-import { isGcpApiDisabled } from '../shared';
 
 interface Captured {
   passed: Array<{
@@ -68,9 +62,9 @@ async function runCheck(
         remediation: r.remediation,
         evidence: r.evidence,
       }),
-    fetch: (async <T,>(url: string): Promise<T> =>
+    fetch: (async <T>(url: string): Promise<T> =>
       (opts.fetch ? opts.fetch(url) : {}) as T) as CheckContext['fetch'],
-    post: (async <T,>(url: string, body?: unknown): Promise<T> =>
+    post: (async <T>(url: string, body?: unknown): Promise<T> =>
       (opts.post ? opts.post(url, body) : {}) as T) as CheckContext['post'],
     put: (async () => ({})) as CheckContext['put'],
     patch: (async () => ({})) as CheckContext['patch'],
@@ -96,14 +90,20 @@ describe('isGcpApiDisabled — service-not-enabled detection', () => {
   it('matches the real SERVICE_DISABLED 403 body', () => {
     expect(
       isGcpApiDisabled(
-        httpErr(403, '{"error":{"code":403,"message":"Cloud SQL Admin API has not been used in project gen-lang-client-0670714718 before or it is disabled.","status":"PERMISSION_DENIED","details":[{"reason":"SERVICE_DISABLED"}]}}'),
+        httpErr(
+          403,
+          '{"error":{"code":403,"message":"Cloud SQL Admin API has not been used in project gen-lang-client-0670714718 before or it is disabled.","status":"PERMISSION_DENIED","details":[{"reason":"SERVICE_DISABLED"}]}}',
+        ),
       ),
     ).toBe(true);
   });
   it('does NOT match a genuine permission denial', () => {
     expect(
       isGcpApiDisabled(
-        httpErr(403, '{"error":{"code":403,"message":"The caller does not have permission","status":"PERMISSION_DENIED"}}'),
+        httpErr(
+          403,
+          '{"error":{"code":403,"message":"The caller does not have permission","status":"PERMISSION_DENIED"}}',
+        ),
       ),
     ).toBe(false);
   });
@@ -114,14 +114,18 @@ describe('isGcpApiDisabled — service-not-enabled detection', () => {
 
 describe('GCP checks skip projects whose service API is disabled', () => {
   const apiDisabled = () => {
-    const e = new Error('HTTP 403: Forbidden - Cloud SQL Admin API has not been used in project p before or it is disabled. (SERVICE_DISABLED)');
+    const e = new Error(
+      'HTTP 403: Forbidden - Cloud SQL Admin API has not been used in project p before or it is disabled. (SERVICE_DISABLED)',
+    );
     (e as Error & { status: number }).status = 403;
     return e;
   };
   it('cloud-sql-ssl emits NO finding when the API is disabled (vs a false "grant permission")', async () => {
     const out = await runCheck(cloudSqlSslCheck, {
       variables: { project_ids: ['p'] },
-      fetch: () => { throw apiDisabled(); },
+      fetch: () => {
+        throw apiDisabled();
+      },
     });
     expect(out.failed).toHaveLength(0);
     expect(out.passed).toHaveLength(0);
@@ -134,7 +138,9 @@ describe('GCP checks skip projects whose service API is disabled', () => {
     };
     const out = await runCheck(cloudSqlSslCheck, {
       variables: { project_ids: ['p'] },
-      fetch: () => { throw denied(); },
+      fetch: () => {
+        throw denied();
+      },
     });
     expect(out.failed).toHaveLength(1);
     expect(out.failed[0]!.title).toMatch(/Could not verify Cloud SQL SSL/);
@@ -495,10 +501,28 @@ describe('GCP VPC open-firewalls check', () => {
     const { passed, failed } = await runCheck(vpcOpenFirewallsCheck, {
       fetch: () => ({
         items: [
-          { name: 'https', sourceRanges: ['0.0.0.0/0'], allowed: [{ IPProtocol: 'tcp', ports: ['443'] }] },
-          { name: 'internal-ssh', sourceRanges: ['10.0.0.0/8'], allowed: [{ IPProtocol: 'tcp', ports: ['22'] }] },
-          { name: 'disabled', disabled: true, sourceRanges: ['0.0.0.0/0'], allowed: [{ IPProtocol: 'tcp', ports: ['22'] }] },
-          { name: 'egress', direction: 'EGRESS', sourceRanges: ['0.0.0.0/0'], allowed: [{ IPProtocol: 'all' }] },
+          {
+            name: 'https',
+            sourceRanges: ['0.0.0.0/0'],
+            allowed: [{ IPProtocol: 'tcp', ports: ['443'] }],
+          },
+          {
+            name: 'internal-ssh',
+            sourceRanges: ['10.0.0.0/8'],
+            allowed: [{ IPProtocol: 'tcp', ports: ['22'] }],
+          },
+          {
+            name: 'disabled',
+            disabled: true,
+            sourceRanges: ['0.0.0.0/0'],
+            allowed: [{ IPProtocol: 'tcp', ports: ['22'] }],
+          },
+          {
+            name: 'egress',
+            direction: 'EGRESS',
+            sourceRanges: ['0.0.0.0/0'],
+            allowed: [{ IPProtocol: 'all' }],
+          },
         ],
       }),
     });
@@ -510,7 +534,11 @@ describe('GCP VPC open-firewalls check', () => {
     const { failed } = await runCheck(vpcOpenFirewallsCheck, {
       fetch: () => ({
         items: [
-          { name: 'range', sourceRanges: ['0.0.0.0/0'], allowed: [{ IPProtocol: 'tcp', ports: ['20-25'] }] },
+          {
+            name: 'range',
+            sourceRanges: ['0.0.0.0/0'],
+            allowed: [{ IPProtocol: 'tcp', ports: ['20-25'] }],
+          },
         ],
       }),
     });
@@ -522,7 +550,9 @@ describe('GCP VPC open-firewalls check', () => {
   it('flags IPv6 ::/0 and sensitive ports across multiple tcp tuples', async () => {
     const ipv6 = await runCheck(vpcOpenFirewallsCheck, {
       fetch: () => ({
-        items: [{ name: 'v6', sourceRanges: ['::/0'], allowed: [{ IPProtocol: 'tcp', ports: ['3389'] }] }],
+        items: [
+          { name: 'v6', sourceRanges: ['::/0'], allowed: [{ IPProtocol: 'tcp', ports: ['3389'] }] },
+        ],
       }),
     });
     expect(ipv6.failed[0]!.severity).toBe('critical');
@@ -533,7 +563,10 @@ describe('GCP VPC open-firewalls check', () => {
           {
             name: 'm',
             sourceRanges: ['0.0.0.0/0'],
-            allowed: [{ IPProtocol: 'tcp', ports: ['443'] }, { IPProtocol: 'tcp', ports: ['22'] }],
+            allowed: [
+              { IPProtocol: 'tcp', ports: ['443'] },
+              { IPProtocol: 'tcp', ports: ['22'] },
+            ],
           },
         ],
       }),
@@ -545,7 +578,9 @@ describe('GCP VPC open-firewalls check', () => {
 describe('GCP Cloud SQL checks', () => {
   it('SSL: passes ENCRYPTED_ONLY, fails when unset', async () => {
     const ok = await runCheck(cloudSqlSslCheck, {
-      fetch: () => ({ items: [{ name: 'db1', settings: { ipConfiguration: { sslMode: 'ENCRYPTED_ONLY' } } }] }),
+      fetch: () => ({
+        items: [{ name: 'db1', settings: { ipConfiguration: { sslMode: 'ENCRYPTED_ONLY' } } }],
+      }),
     });
     expect(ok.passed).toHaveLength(1);
     expect(ok.failed).toHaveLength(0);
@@ -558,12 +593,16 @@ describe('GCP Cloud SQL checks', () => {
 
   it('backups: passes when enabled, fails when disabled', async () => {
     const ok = await runCheck(cloudSqlBackupsCheck, {
-      fetch: () => ({ items: [{ name: 'db1', settings: { backupConfiguration: { enabled: true } } }] }),
+      fetch: () => ({
+        items: [{ name: 'db1', settings: { backupConfiguration: { enabled: true } } }],
+      }),
     });
     expect(ok.passed).toHaveLength(1);
 
     const bad = await runCheck(cloudSqlBackupsCheck, {
-      fetch: () => ({ items: [{ name: 'db2', settings: { backupConfiguration: { enabled: false } } }] }),
+      fetch: () => ({
+        items: [{ name: 'db2', settings: { backupConfiguration: { enabled: false } } }],
+      }),
     });
     expect(bad.failed).toHaveLength(1);
   });
@@ -572,7 +611,11 @@ describe('GCP Cloud SQL checks', () => {
     const out = await runCheck(cloudSqlBackupsCheck, {
       fetch: () => ({
         items: [
-          { name: 'replica', masterInstanceName: 'primary', settings: { backupConfiguration: { enabled: false } } },
+          {
+            name: 'replica',
+            masterInstanceName: 'primary',
+            settings: { backupConfiguration: { enabled: false } },
+          },
         ],
       }),
     });
@@ -586,9 +629,7 @@ describe('No projects resolved → check no-ops (no false pass)', () => {
     const { passed, failed } = await runCheck(iamPrimitiveRolesCheck, {
       variables: {}, // no project_ids → falls back to detection
       fetch: (url) =>
-        url.includes('organizations:search')
-          ? { organizations: [] }
-          : { projects: [] },
+        url.includes('organizations:search') ? { organizations: [] } : { projects: [] },
     });
     expect(passed).toHaveLength(0);
     expect(failed).toHaveLength(0);
@@ -597,14 +638,13 @@ describe('No projects resolved → check no-ops (no false pass)', () => {
 
 describe('GCP Cloud Monitoring — alerting and log export check', () => {
   // Branch a single mock by which API the check is calling.
-  const monitorFetch =
-    (opts: { policies?: unknown[]; sinks?: unknown[] }) => (url: string) => {
-      if (url.includes('/alertPolicies')) {
-        return { alertPolicies: opts.policies ?? [] };
-      }
-      if (url.includes('/sinks')) return { sinks: opts.sinks ?? [] };
-      return {};
-    };
+  const monitorFetch = (opts: { policies?: unknown[]; sinks?: unknown[] }) => (url: string) => {
+    if (url.includes('/alertPolicies')) {
+      return { alertPolicies: opts.policies ?? [] };
+    }
+    if (url.includes('/sinks')) return { sinks: opts.sinks ?? [] };
+    return {};
+  };
 
   const status = (err: Error, code: number) => {
     (err as Error & { status: number }).status = code;
@@ -638,9 +678,7 @@ describe('GCP Cloud Monitoring — alerting and log export check', () => {
     const out = await runCheck(cloudMonitoringAlertingCheck, {
       fetch: monitorFetch({
         policies: [{ name: 'p1', enabled: true, notificationChannels: [] }],
-        sinks: [
-          { name: 'export-bq', destination: 'storage.googleapis.com/b1', disabled: false },
-        ],
+        sinks: [{ name: 'export-bq', destination: 'storage.googleapis.com/b1', disabled: false }],
       }),
     });
     expect(out.failed).toHaveLength(1);
@@ -683,14 +721,12 @@ describe('GCP Cloud Monitoring — alerting and log export check', () => {
         sinks: [
           {
             name: '_Default',
-            destination:
-              'logging.googleapis.com/projects/x/locations/global/buckets/_Default',
+            destination: 'logging.googleapis.com/projects/x/locations/global/buckets/_Default',
             disabled: false,
           },
           {
             name: '_Required',
-            destination:
-              'logging.googleapis.com/projects/x/locations/global/buckets/_Required',
+            destination: 'logging.googleapis.com/projects/x/locations/global/buckets/_Required',
             disabled: false,
           },
         ],
@@ -717,8 +753,7 @@ describe('GCP Cloud Monitoring — alerting and log export check', () => {
         sinks: [
           {
             name: 'my-sink', // non-default NAME, but routes to the default bucket
-            destination:
-              'logging.googleapis.com/projects/x/locations/global/buckets/_Default',
+            destination: 'logging.googleapis.com/projects/x/locations/global/buckets/_Default',
             disabled: false,
           },
         ],
@@ -734,8 +769,7 @@ describe('GCP Cloud Monitoring — alerting and log export check', () => {
         sinks: [
           {
             name: 'audit',
-            destination:
-              'logging.googleapis.com/projects/x/locations/global/buckets/audit-7yr',
+            destination: 'logging.googleapis.com/projects/x/locations/global/buckets/audit-7yr',
             disabled: false,
           },
         ],
@@ -749,10 +783,7 @@ describe('GCP Cloud Monitoring — alerting and log export check', () => {
     const out = await runCheck(cloudMonitoringAlertingCheck, {
       fetch: (url) => {
         if (url.includes('/alertPolicies')) {
-          throw status(
-            new Error('HTTP 403: Forbidden - The caller does not have permission'),
-            403,
-          );
+          throw status(new Error('HTTP 403: Forbidden - The caller does not have permission'), 403);
         }
         if (url.includes('/sinks')) {
           return {
@@ -900,9 +931,7 @@ describe('classifyProjectEnv — token matching', () => {
     expect(
       classifyProjectEnv({ projectId: 'proj-001', labels: { environment: 'production' } }),
     ).toBe('production');
-    expect(
-      classifyProjectEnv({ projectId: 'proj-002', labels: { env: 'qa' } }),
-    ).toBe('test');
+    expect(classifyProjectEnv({ projectId: 'proj-002', labels: { env: 'qa' } })).toBe('test');
   });
 
   it('does NOT false-match substrings like product/developer', () => {
@@ -954,6 +983,30 @@ describe('GCP environment-separation check', () => {
     expect(out.passed).toHaveLength(1);
   });
 
+  it('passes with customer-configured environment aliases', async () => {
+    const out = await runCheck(environmentSeparationCheck, {
+      variables: {
+        environment_aliases: 'release=production, preview=staging',
+      },
+      fetch: () => ({
+        projects: [{ projectId: 'app-release' }, { projectId: 'app-preview' }],
+      }),
+    });
+    expect(out.failed).toHaveLength(0);
+    expect(out.passed).toHaveLength(1);
+    expect(out.passed[0]!.evidence).toMatchObject({
+      detectedEnvironments: expect.arrayContaining(['production', 'staging']),
+      environmentAliases: [
+        { alias: 'release', environment: 'production' },
+        { alias: 'preview', environment: 'staging' },
+      ],
+    });
+  });
+
+  it('exposes environment aliases as a GCP connection variable', () => {
+    expect(gcpManifest.variables?.some((v) => v.id === 'environment_aliases')).toBe(true);
+  });
+
   it('evaluates projects across multiple pages (unscoped discovery)', async () => {
     const out = await runCheck(environmentSeparationCheck, {
       variables: UNSCOPED,
@@ -966,6 +1019,23 @@ describe('GCP environment-separation check', () => {
     });
     expect(out.failed).toHaveLength(0);
     expect(out.passed).toHaveLength(1);
+  });
+
+  it('does not pass when discovery is capped even if scanned projects show separation', async () => {
+    const out = await runCheck(environmentSeparationCheck, {
+      variables: UNSCOPED,
+      fetch: (url) => {
+        const page = Number(new URLSearchParams(url.split('?')[1] ?? '').get('pageToken') ?? '0');
+        return {
+          projects: [{ projectId: page === 0 ? 'myapp-prod' : 'myapp-dev' }],
+          nextPageToken: String(page + 1),
+        };
+      },
+    });
+    expect(out.passed).toHaveLength(0);
+    expect(out.failed).toHaveLength(1);
+    expect(out.failed[0]!.title).toMatch(/Could not verify environment separation/);
+    expect(out.failed[0]!.evidence).toMatchObject({ discoveryTruncated: true });
   });
 
   it('honors project_ids scope: fetches selected projects, never lists all', async () => {
@@ -1007,6 +1077,18 @@ describe('GCP environment-separation check', () => {
     expect(out.failed).toHaveLength(1);
     expect(out.failed[0]!.title).toMatch(/Could not confirm environment separation/);
     expect(out.failed[0]!.remediation).toMatch(/distinct GCP projects/);
+  });
+
+  it('fails clearly when production is detected but another project is unclassified', async () => {
+    const out = await runCheck(environmentSeparationCheck, {
+      variables: UNSCOPED,
+      fetch: () => ({
+        projects: [{ projectId: 'nymph-prod-480000' }, { projectId: 'nymph-480000' }],
+      }),
+    });
+    expect(out.passed).toHaveLength(0);
+    expect(out.failed).toHaveLength(1);
+    expect(out.failed[0]!.evidence).toMatchObject({ unclassifiedProjectCount: 1 });
   });
 
   it('fails when no project can be classified', async () => {

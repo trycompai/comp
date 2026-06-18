@@ -1,4 +1,5 @@
 import type { IntegrationManifest } from '../../types';
+import { environmentAliasesVariable } from '../environment-aliases';
 import {
   cloudTrailEnabledCheck,
   ec2SecurityGroupsCheck,
@@ -91,6 +92,8 @@ export const awsManifest: IntegrationManifest = {
     { id: 'elastic-beanstalk', name: 'Elastic Beanstalk', description: 'Managed updates, enhanced health reporting, and HTTPS configuration checks', enabledByDefault: false, implemented: true },
     { id: 'appflow', name: 'AppFlow', description: 'Flow encryption, VPC configuration, and data transfer security checks', enabledByDefault: false, implemented: true },
   ],
+
+  variables: [environmentAliasesVariable],
 
   checks: [
     iamAccountSecurityCheck,

@@ -1,4 +1,5 @@
 import type { IntegrationManifest } from '../../types';
+import { environmentAliasesVariable } from '../environment-aliases';
 import {
   cloudMonitoringAlertingCheck,
   cloudSqlBackupsCheck,
@@ -158,6 +159,7 @@ This is industry standard - all GCP security monitoring tools use the same scope
         }
       },
     },
+    environmentAliasesVariable,
   ],
 
   checks: [
