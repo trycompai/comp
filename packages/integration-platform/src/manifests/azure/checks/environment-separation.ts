@@ -70,9 +70,10 @@ export const environmentSeparationCheck: IntegrationCheck = {
   id: 'azure-environment-separation',
   name: 'Separation of environments — production isolated from non-production',
   description:
-    'Verify production and non-production are separated across Azure subscriptions or resource groups.',
+    'Optional check: confirm production and non-production separation from Azure subscription/resource-group metadata when environment naming is clear.',
   service: 'policy',
   taskMapping: TASK_TEMPLATES.separationOfEnvironments,
+  taskRunEnabledByDefault: false,
   run: async (ctx: CheckContext) => {
     const subscriptionIds = await resolveAzureSubscriptionIds(ctx);
     // resolveAzureSubscriptionIds already emitted a finding when scope is empty.

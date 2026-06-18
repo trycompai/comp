@@ -227,9 +227,10 @@ export const environmentSeparationCheck: IntegrationCheck = {
   id: 'aws-environment-separation',
   name: 'Separation of environments — production isolated from non-production',
   description:
-    'Verify production and non-production workloads run in distinct VPCs within the AWS account.',
+    'Optional check: confirm production and non-production separation from AWS VPC metadata when environment naming is clear.',
   service: 'ec2-vpc',
   taskMapping: TASK_TEMPLATES.separationOfEnvironments,
+  taskRunEnabledByDefault: false,
   run: async (ctx: CheckContext) => {
     const session = await resolveAwsSessionOrFail(ctx);
     if (!session) {

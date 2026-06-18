@@ -4,7 +4,10 @@ import { TaskIntegrationChecksService } from './task-integration-checks.service'
 import { ConnectionRepository } from '../repositories/connection.repository';
 import { ProviderRepository } from '../repositories/provider.repository';
 import { ConnectionService } from './connection.service';
-import { DISABLED_TASK_CHECKS_KEY } from '../utils/disabled-task-checks';
+import {
+  DISABLED_TASK_CHECKS_KEY,
+  ENABLED_TASK_CHECKS_KEY,
+} from '../utils/disabled-task-checks';
 
 jest.mock('@db', () => ({
   db: {
@@ -254,6 +257,34 @@ describe('TaskIntegrationChecksService', () => {
       const [, persistedMetadata] =
         mockConnectionService.updateConnectionMetadata.mock.calls[0];
       expect(persistedMetadata[DISABLED_TASK_CHECKS_KEY]).toEqual({});
+    });
+
+    it('records explicit opt-in when reconnecting a default-off check', async () => {
+      mockedGetManifest.mockReturnValue({
+        ...baseManifest,
+        checks: [
+          ...baseManifest.checks,
+          {
+            id: 'gcp-environment-separation',
+            name: 'Separation of environments',
+            taskRunEnabledByDefault: false,
+          },
+        ],
+      } as never);
+
+      await service.reconnectCheckToTask({
+        taskId: TASK_ID,
+        connectionId: CONNECTION_ID,
+        checkId: 'gcp-environment-separation',
+        organizationId: ORG_ID,
+      });
+
+      const [, persistedMetadata] =
+        mockConnectionService.updateConnectionMetadata.mock.calls[0];
+      expect(persistedMetadata[DISABLED_TASK_CHECKS_KEY]).toEqual({});
+      expect(persistedMetadata[ENABLED_TASK_CHECKS_KEY]).toEqual({
+        [TASK_ID]: ['gcp-environment-separation'],
+      });
     });
   });
 });

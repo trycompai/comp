@@ -676,6 +676,13 @@ export interface IntegrationCheck {
    */
   taskMapping?: TaskTemplateId;
 
+  /**
+   * Whether mapped evidence-task schedules should run this check automatically.
+   * Defaults to true. Set false for heuristic checks that should be explicit
+   * customer opt-in from the task UI.
+   */
+  taskRunEnabledByDefault?: boolean;
+
   /** Default severity for findings from this check */
   defaultSeverity?: FindingSeverity;
 

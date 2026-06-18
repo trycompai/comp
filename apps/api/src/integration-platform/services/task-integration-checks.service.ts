@@ -10,9 +10,10 @@ import { ConnectionRepository } from '../repositories/connection.repository';
 import { ProviderRepository } from '../repositories/provider.repository';
 import { ConnectionService } from './connection.service';
 import {
-  withCheckDisabled,
-  withCheckEnabled,
+  withTaskCheckDisabled,
+  withTaskCheckEnabled,
 } from '../utils/disabled-task-checks';
+import { isTaskRunEnabledByDefault } from '../utils/task-check-defaults';
 
 /**
  * Handles enable/disable of a single integration check for a single task.
@@ -54,11 +55,11 @@ export class TaskIntegrationChecksService {
     await this.assertTaskInOrg(taskId, organizationId);
     await this.assertCheckExists(connection.providerId, checkId);
 
-    const nextMetadata = withCheckDisabled(
-      connection.metadata,
+    const nextMetadata = withTaskCheckDisabled({
+      metadata: connection.metadata,
       taskId,
       checkId,
-    );
+    });
     await this.connectionService.updateConnectionMetadata(
       connectionId,
       nextMetadata,
@@ -86,9 +87,14 @@ export class TaskIntegrationChecksService {
       organizationId,
     );
     await this.assertTaskInOrg(taskId, organizationId);
-    await this.assertCheckExists(connection.providerId, checkId);
+    const check = await this.assertCheckExists(connection.providerId, checkId);
 
-    const nextMetadata = withCheckEnabled(connection.metadata, taskId, checkId);
+    const nextMetadata = withTaskCheckEnabled({
+      metadata: connection.metadata,
+      taskId,
+      checkId,
+      enabledByDefault: isTaskRunEnabledByDefault(check),
+    });
     await this.connectionService.updateConnectionMetadata(
       connectionId,
       nextMetadata,
@@ -136,5 +142,6 @@ export class TaskIntegrationChecksService {
         `Check "${checkId}" is not defined for provider "${provider.slug}"`,
       );
     }
+    return check;
   }
 }

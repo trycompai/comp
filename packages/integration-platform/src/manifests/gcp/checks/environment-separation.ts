@@ -126,9 +126,10 @@ export const environmentSeparationCheck: IntegrationCheck = {
   id: 'gcp-environment-separation',
   name: 'Separation of environments — production isolated from non-production',
   description:
-    'Verify production and non-production workloads are separated across distinct GCP projects.',
+    'Optional check: confirm production and non-production separation from GCP project metadata when environment naming is clear.',
   service: 'iam',
   taskMapping: TASK_TEMPLATES.separationOfEnvironments,
+  taskRunEnabledByDefault: false,
 
   run: async (ctx: CheckContext) => {
     let resolved: ResolvedProjects;

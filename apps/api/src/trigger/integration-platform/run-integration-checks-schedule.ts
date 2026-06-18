@@ -3,8 +3,12 @@ import { db, TaskFrequency } from '@db';
 import { logger, schedules } from '@trigger.dev/sdk';
 import { runTaskIntegrationChecks } from './run-task-integration-checks';
 import { runDeviceSync } from './run-device-sync';
-import { parseDisabledTaskChecks } from '../../integration-platform/utils/disabled-task-checks';
 import { isDueToday } from '../shared/is-due-today';
+import {
+  getEnabledChecksForScheduledTask,
+  resolveProviderChecks,
+  type ProviderCheck,
+} from './scheduled-task-checks';
 
 /**
  * Pure helper extracted for unit testing. Filters a list of candidate tasks
@@ -26,44 +30,6 @@ export function filterDueTasks<
       now,
     }),
   );
-}
-
-/** A provider's check reduced to what the orchestrator needs to schedule it. */
-export interface ProviderCheck {
-  id: string;
-  taskMapping: string | null;
-}
-
-/**
- * Resolve a connection's checks from EITHER the static code manifest (the 8
- * built-in integrations, present in the Trigger.dev registry) OR the dynamic
- * (DB-backed) check map for that provider slug.
- *
- * Dynamic integrations are absent from the Trigger.dev manifest registry, so
- * `getManifest` returns undefined for them here and they were silently skipped —
- * the entire reason scheduled checks never ran for them. Falling back to the DB
- * map lets the orchestrator discover their due tasks too. Static manifests win
- * when both exist (matching the registry, which never lets a dynamic manifest
- * override a code one).
- */
-export function resolveProviderChecks({
-  manifest,
-  dynamicChecks,
-}: {
-  // Loose check shape so a real `IntegrationManifest` (whose `taskMapping` is a
-  // literal-union-or-undefined) is accepted; `.map` below normalizes it.
-  manifest:
-    | { checks?: Array<{ id: string; taskMapping?: string | null }> }
-    | undefined;
-  dynamicChecks: ProviderCheck[] | undefined;
-}): ProviderCheck[] {
-  if (manifest?.checks) {
-    return manifest.checks.map((c) => ({
-      id: c.id,
-      taskMapping: c.taskMapping ?? null,
-    }));
-  }
-  return dynamicChecks ?? [];
 }
 
 /**
@@ -113,7 +79,11 @@ export const integrationChecksSchedule = schedules.task({
     const dynamicChecksBySlug = new Map<string, ProviderCheck[]>(
       dynamicIntegrations.map((d) => [
         d.slug,
-        d.checks.map((c) => ({ id: c.checkSlug, taskMapping: c.taskMapping })),
+        d.checks.map((c) => ({
+          id: c.checkSlug,
+          taskMapping: c.taskMapping,
+          taskRunEnabledByDefault: true,
+        })),
       ]),
     );
 
@@ -175,22 +145,15 @@ export const integrationChecksSchedule = schedules.task({
         );
       }
 
-      // Per-task disabled checks are stored on the connection's metadata so
-      // users can disconnect individual checks from individual tasks without
-      // tearing down the whole integration. Resolve once per connection.
-      const disabledByTask = parseDisabledTaskChecks(connection.metadata);
-
       for (const t of tasks) {
-        const disabledForThisTask = new Set(disabledByTask[t.id] ?? []);
-
-        // Find which checks apply to this task, minus any the user disabled
-        const checksForTask = checks
-          .filter(
-            (c) =>
-              c.taskMapping === t.taskTemplateId &&
-              !disabledForThisTask.has(c.id),
-          )
-          .map((c) => c.id);
+        // Find which checks apply to this task, minus checks that are either
+        // manually disabled or opt-in-only and not yet enabled for this task.
+        const checksForTask = getEnabledChecksForScheduledTask({
+          checks,
+          taskTemplateId: t.taskTemplateId,
+          taskId: t.id,
+          metadata: connection.metadata,
+        });
 
         if (checksForTask.length > 0) {
           tasksToRun.push({

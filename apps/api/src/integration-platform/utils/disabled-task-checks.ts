@@ -16,25 +16,26 @@
  *
  * Storing on the connection gives us "reconnect = fresh state" for free and
  * transparently supports orgs with multiple connections per provider — each
- * connection has its own disable state.
+ * connection has its own enable/disable state. Checks that are off by default
+ * are stored under `enabledTaskChecks` only after the user reconnects them.
  */
 
 export const DISABLED_TASK_CHECKS_KEY = 'disabledTaskChecks';
+export const ENABLED_TASK_CHECKS_KEY = 'enabledTaskChecks';
 
 export type DisabledTaskChecksMap = Record<string, string[]>;
 
-/**
- * Parse the disabled task checks map from a connection's metadata JSON blob.
- * Returns an empty map if the metadata is missing, malformed, or doesn't
- * contain a `disabledTaskChecks` entry. Never throws.
- */
-export function parseDisabledTaskChecks(
-  metadata: unknown,
-): DisabledTaskChecksMap {
+function parseTaskChecksMap({
+  metadata,
+  key,
+}: {
+  metadata: unknown;
+  key: string;
+}): DisabledTaskChecksMap {
   if (!metadata || typeof metadata !== 'object') {
     return {};
   }
-  const raw = (metadata as Record<string, unknown>)[DISABLED_TASK_CHECKS_KEY];
+  const raw = (metadata as Record<string, unknown>)[key];
   if (!raw || typeof raw !== 'object') {
     return {};
   }
@@ -55,6 +56,78 @@ export function parseDisabledTaskChecks(
 }
 
 /**
+ * Parse the disabled task checks map from a connection's metadata JSON blob.
+ * Returns an empty map if the metadata is missing, malformed, or doesn't
+ * contain a `disabledTaskChecks` entry. Never throws.
+ */
+export function parseDisabledTaskChecks(
+  metadata: unknown,
+): DisabledTaskChecksMap {
+  return parseTaskChecksMap({ metadata, key: DISABLED_TASK_CHECKS_KEY });
+}
+
+export function parseEnabledTaskChecks(
+  metadata: unknown,
+): DisabledTaskChecksMap {
+  return parseTaskChecksMap({ metadata, key: ENABLED_TASK_CHECKS_KEY });
+}
+
+function removeCheckFromMap({
+  map,
+  taskId,
+  checkId,
+}: {
+  map: DisabledTaskChecksMap;
+  taskId: string;
+  checkId: string;
+}): DisabledTaskChecksMap {
+  const current = map[taskId];
+  if (!current?.includes(checkId)) return map;
+
+  const nextChecks = current.filter((id) => id !== checkId);
+  const nextMap: DisabledTaskChecksMap = { ...map };
+  if (nextChecks.length === 0) {
+    delete nextMap[taskId];
+  } else {
+    nextMap[taskId] = nextChecks;
+  }
+  return nextMap;
+}
+
+function addCheckToMap({
+  map,
+  taskId,
+  checkId,
+}: {
+  map: DisabledTaskChecksMap;
+  taskId: string;
+  checkId: string;
+}): DisabledTaskChecksMap {
+  const current = map[taskId] ?? [];
+  if (current.includes(checkId)) return map;
+  return { ...map, [taskId]: [...current, checkId] };
+}
+
+export function isTaskCheckEnabled({
+  metadata,
+  taskId,
+  checkId,
+  enabledByDefault = true,
+}: {
+  metadata: unknown;
+  taskId: string;
+  checkId: string;
+  enabledByDefault?: boolean;
+}): boolean {
+  const disabled = parseDisabledTaskChecks(metadata)[taskId] ?? [];
+  if (disabled.includes(checkId)) return false;
+  if (enabledByDefault) return true;
+
+  const enabled = parseEnabledTaskChecks(metadata)[taskId] ?? [];
+  return enabled.includes(checkId);
+}
+
+/**
  * Returns true if the given checkId is disabled for the given taskId on this
  * connection's metadata.
  */
@@ -63,9 +136,7 @@ export function isCheckDisabledForTask(
   taskId: string,
   checkId: string,
 ): boolean {
-  const map = parseDisabledTaskChecks(metadata);
-  const disabled = map[taskId];
-  return Array.isArray(disabled) && disabled.includes(checkId);
+  return !isTaskCheckEnabled({ metadata, taskId, checkId });
 }
 
 /**
@@ -78,22 +149,32 @@ export function withCheckDisabled(
   taskId: string,
   checkId: string,
 ): Record<string, unknown> {
+  return withTaskCheckDisabled({ metadata, taskId, checkId });
+}
+
+export function withTaskCheckDisabled({
+  metadata,
+  taskId,
+  checkId,
+}: {
+  metadata: unknown;
+  taskId: string;
+  checkId: string;
+}): Record<string, unknown> {
   const base: Record<string, unknown> =
     metadata && typeof metadata === 'object'
       ? { ...(metadata as Record<string, unknown>) }
       : {};
-  const map = parseDisabledTaskChecks(base);
-  const current = map[taskId] ?? [];
-  if (current.includes(checkId)) {
-    // Already disabled — return a merged copy so callers can safely write back.
-    base[DISABLED_TASK_CHECKS_KEY] = map;
-    return base;
-  }
-  const nextMap: DisabledTaskChecksMap = {
-    ...map,
-    [taskId]: [...current, checkId],
-  };
-  base[DISABLED_TASK_CHECKS_KEY] = nextMap;
+  base[DISABLED_TASK_CHECKS_KEY] = addCheckToMap({
+    map: parseDisabledTaskChecks(base),
+    taskId,
+    checkId,
+  });
+  base[ENABLED_TASK_CHECKS_KEY] = removeCheckFromMap({
+    map: parseEnabledTaskChecks(base),
+    taskId,
+    checkId,
+  });
   return base;
 }
 
@@ -107,23 +188,32 @@ export function withCheckEnabled(
   taskId: string,
   checkId: string,
 ): Record<string, unknown> {
+  return withTaskCheckEnabled({ metadata, taskId, checkId });
+}
+
+export function withTaskCheckEnabled({
+  metadata,
+  taskId,
+  checkId,
+  enabledByDefault = true,
+}: {
+  metadata: unknown;
+  taskId: string;
+  checkId: string;
+  enabledByDefault?: boolean;
+}): Record<string, unknown> {
   const base: Record<string, unknown> =
     metadata && typeof metadata === 'object'
       ? { ...(metadata as Record<string, unknown>) }
       : {};
-  const map = parseDisabledTaskChecks(base);
-  const current = map[taskId];
-  if (!current || !current.includes(checkId)) {
-    base[DISABLED_TASK_CHECKS_KEY] = map;
-    return base;
-  }
-  const nextChecks = current.filter((id) => id !== checkId);
-  const nextMap: DisabledTaskChecksMap = { ...map };
-  if (nextChecks.length === 0) {
-    delete nextMap[taskId];
-  } else {
-    nextMap[taskId] = nextChecks;
-  }
-  base[DISABLED_TASK_CHECKS_KEY] = nextMap;
+  base[DISABLED_TASK_CHECKS_KEY] = removeCheckFromMap({
+    map: parseDisabledTaskChecks(base),
+    taskId,
+    checkId,
+  });
+  const enabledMap = parseEnabledTaskChecks(base);
+  base[ENABLED_TASK_CHECKS_KEY] = enabledByDefault
+    ? removeCheckFromMap({ map: enabledMap, taskId, checkId })
+    : addCheckToMap({ map: enabledMap, taskId, checkId });
   return base;
 }

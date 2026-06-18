@@ -1,8 +1,12 @@
 import { TaskFrequency } from '@trycompai/db';
 import {
   filterDueTasks,
-  resolveProviderChecks,
 } from './run-integration-checks-schedule';
+import {
+  getEnabledChecksForScheduledTask,
+  resolveProviderChecks,
+} from './scheduled-task-checks';
+import { ENABLED_TASK_CHECKS_KEY } from '../../integration-platform/utils/disabled-task-checks';
 
 // Mock @db at the module boundary so importing the orchestrator does not try
 // to connect to Postgres. We never call the scheduled `run` function itself
@@ -133,12 +137,26 @@ describe('resolveProviderChecks (static vs dynamic)', () => {
           { id: 'branch_protection', taskMapping: null },
         ],
       },
-      dynamicChecks: [{ id: 'should_not_be_used', taskMapping: 'tpl_x' }],
+      dynamicChecks: [
+        {
+          id: 'should_not_be_used',
+          taskMapping: 'tpl_x',
+          taskRunEnabledByDefault: true,
+        },
+      ],
     });
 
     expect(checks).toEqual([
-      { id: 'two_factor_auth', taskMapping: 'tpl_mfa' },
-      { id: 'branch_protection', taskMapping: null },
+      {
+        id: 'two_factor_auth',
+        taskMapping: 'tpl_mfa',
+        taskRunEnabledByDefault: true,
+      },
+      {
+        id: 'branch_protection',
+        taskMapping: null,
+        taskRunEnabledByDefault: true,
+      },
     ]);
   });
 
@@ -146,14 +164,30 @@ describe('resolveProviderChecks (static vs dynamic)', () => {
     const checks = resolveProviderChecks({
       manifest: undefined,
       dynamicChecks: [
-        { id: 'mfa_enforcement', taskMapping: 'frk_tt_mfa' },
-        { id: 'supabase_mfa', taskMapping: 'frk_tt_mfa' },
+        {
+          id: 'mfa_enforcement',
+          taskMapping: 'frk_tt_mfa',
+          taskRunEnabledByDefault: true,
+        },
+        {
+          id: 'supabase_mfa',
+          taskMapping: 'frk_tt_mfa',
+          taskRunEnabledByDefault: true,
+        },
       ],
     });
 
     expect(checks).toEqual([
-      { id: 'mfa_enforcement', taskMapping: 'frk_tt_mfa' },
-      { id: 'supabase_mfa', taskMapping: 'frk_tt_mfa' },
+      {
+        id: 'mfa_enforcement',
+        taskMapping: 'frk_tt_mfa',
+        taskRunEnabledByDefault: true,
+      },
+      {
+        id: 'supabase_mfa',
+        taskMapping: 'frk_tt_mfa',
+        taskRunEnabledByDefault: true,
+      },
     ]);
   });
 
@@ -169,6 +203,81 @@ describe('resolveProviderChecks (static vs dynamic)', () => {
       dynamicChecks: undefined,
     });
 
-    expect(checks).toEqual([{ id: 'c1', taskMapping: null }]);
+    expect(checks).toEqual([
+      { id: 'c1', taskMapping: null, taskRunEnabledByDefault: true },
+    ]);
+  });
+
+  it('preserves manifest checks that are disabled for task runs by default', () => {
+    const checks = resolveProviderChecks({
+      manifest: {
+        checks: [
+          {
+            id: 'gcp-environment-separation',
+            taskMapping: 'frk_tt_environment_separation',
+            taskRunEnabledByDefault: false,
+          },
+        ],
+      },
+      dynamicChecks: undefined,
+    });
+
+    expect(checks).toEqual([
+      {
+        id: 'gcp-environment-separation',
+        taskMapping: 'frk_tt_environment_separation',
+        taskRunEnabledByDefault: false,
+      },
+    ]);
+  });
+});
+
+describe('getEnabledChecksForScheduledTask', () => {
+  const defaultOnCheck = {
+    id: 'branch_protection',
+    taskMapping: 'tpl_code',
+    taskRunEnabledByDefault: true,
+  };
+  const optInCheck = {
+    id: 'gcp-environment-separation',
+    taskMapping: 'tpl_env',
+    taskRunEnabledByDefault: false,
+  };
+
+  it('skips opt-in checks until they are explicitly enabled for the task', () => {
+    expect(
+      getEnabledChecksForScheduledTask({
+        checks: [optInCheck],
+        taskTemplateId: 'tpl_env',
+        taskId: 'tsk_1',
+        metadata: {},
+      }),
+    ).toEqual([]);
+  });
+
+  it('includes opt-in checks after the user reconnects them for the task', () => {
+    expect(
+      getEnabledChecksForScheduledTask({
+        checks: [optInCheck],
+        taskTemplateId: 'tpl_env',
+        taskId: 'tsk_1',
+        metadata: {
+          [ENABLED_TASK_CHECKS_KEY]: {
+            tsk_1: ['gcp-environment-separation'],
+          },
+        },
+      }),
+    ).toEqual(['gcp-environment-separation']);
+  });
+
+  it('still includes normal default-on checks unless manually disabled', () => {
+    expect(
+      getEnabledChecksForScheduledTask({
+        checks: [defaultOnCheck],
+        taskTemplateId: 'tpl_code',
+        taskId: 'tsk_1',
+        metadata: {},
+      }),
+    ).toEqual(['branch_protection']);
   });
 });

@@ -35,7 +35,8 @@ import { CredentialVaultService } from '../services/credential-vault.service';
 import { OAuthCredentialsService } from '../services/oauth-credentials.service';
 import { TaskIntegrationChecksService } from '../services/task-integration-checks.service';
 import { getStringValue } from '../utils/credential-utils';
-import { isCheckDisabledForTask } from '../utils/disabled-task-checks';
+import { isTaskCheckEnabled } from '../utils/disabled-task-checks';
+import { isTaskRunEnabledByDefault } from '../utils/task-check-defaults';
 import { getProviderSummary } from '../utils/provider-summary';
 import { getConnectionLabel } from '../utils/connection-label';
 import { loadActiveExceptionSet } from '../../cloud-security/finding-exceptions';
@@ -227,11 +228,12 @@ export class TaskIntegrationsController {
           const isDisabledForTask =
             !!taskIdForDisableState &&
             !!connection &&
-            isCheckDisabledForTask(
-              connection.metadata,
-              taskIdForDisableState,
-              check.id,
-            );
+            !isTaskCheckEnabled({
+              metadata: connection.metadata,
+              taskId: taskIdForDisableState,
+              checkId: check.id,
+              enabledByDefault: isTaskRunEnabledByDefault(check),
+            });
 
           checks.push({
             integrationId: manifest.id,
@@ -402,7 +404,14 @@ export class TaskIntegrationsController {
     // failing account still leaves the earlier accounts' results persisted.
     for (const conn of connections) {
       // Respect a check that was disconnected from this task for this account.
-      if (isCheckDisabledForTask(conn.metadata, taskId, checkId)) {
+      if (
+        !isTaskCheckEnabled({
+          metadata: conn.metadata,
+          taskId,
+          checkId,
+          enabledByDefault: isTaskRunEnabledByDefault(checkDef),
+        })
+      ) {
         continue;
       }
       const outcome = await this.runCheckForConnection({
