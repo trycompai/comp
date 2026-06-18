@@ -4,7 +4,7 @@ import { logger, tags, task } from '@trigger.dev/sdk';
 import { triggerEmail } from '../../email/trigger-email';
 import { TaskStatusChangedEmail } from '../../email/templates/task-status-changed';
 import { isUserUnsubscribed } from '@trycompai/email';
-import { parseDisabledTaskChecks } from '../../integration-platform/utils/disabled-task-checks';
+import { isCheckDisabledForTask } from '../../integration-platform/utils/disabled-task-checks';
 import {
   getAccessToken,
   requestValidCredentials,
@@ -342,11 +342,8 @@ export const runTaskIntegrationChecks = task({
     // metadata and skip anything that's now disabled. The rest of the flow
     // (lastSyncAt update, task status evaluation, return payload) runs as
     // before — just over the filtered list instead of the original one.
-    const disabledForThisTask = new Set(
-      parseDisabledTaskChecks(connection.metadata)[taskId] ?? [],
-    );
     const effectiveCheckIds = checkIds.filter(
-      (id) => !disabledForThisTask.has(id),
+      (id) => !isCheckDisabledForTask(connection.metadata, taskId, id),
     );
     if (effectiveCheckIds.length < checkIds.length) {
       logger.info(
