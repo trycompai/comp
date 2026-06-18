@@ -1,3 +1,10 @@
+## [3.86.2](https://github.com/trycompai/comp/compare/v3.86.1...v3.86.2) (2026-06-18)
+
+
+### Bug Fixes
+
+* **integration-platform:** default environment separation checks off ([0455fd1](https://github.com/trycompai/comp/commit/0455fd15f4e5a17305c05098c9a000a475abcdee))
+
 ## [3.86.1](https://github.com/trycompai/comp/compare/v3.86.0...v3.86.1) (2026-06-18)
 
 
