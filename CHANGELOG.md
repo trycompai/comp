@@ -1,3 +1,19 @@
+# [3.86.0](https://github.com/trycompai/comp/compare/v3.85.0...v3.86.0) (2026-06-18)
+
+
+### Bug Fixes
+
+* **integration-platform:** fail closed on capped azure env pagination ([ee53b72](https://github.com/trycompai/comp/commit/ee53b72495fa90cd3760bcf1690b10c9ecf1f196))
+* **integrations:** address env-separation review — scope, prod+non-prod bar, truncation ([adc2634](https://github.com/trycompai/comp/commit/adc2634f9b8b4bc398ef90b1a2b7574e7b696c2d)), closes [#1](https://github.com/trycompai/comp/issues/1)
+* **integrations:** env-separation classifier negation + read-failure verdicts ([1420c1c](https://github.com/trycompai/comp/commit/1420c1c6362f47e8e860d2c1fad0289d0d8b7463))
+* **integrations:** env-tag priority order + surface Azure subscription scan cap ([11696f9](https://github.com/trycompai/comp/commit/11696f9624111e2845d2c487ecee797f5232b124))
+
+
+### Features
+
+* **integrations:** add AWS & Azure Separation of Environments checks + shared env classifier ([76c505b](https://github.com/trycompai/comp/commit/76c505bf41e3d468fb3ec2005540ff4dd0e1271f))
+* **integrations:** add GCP Separation of Environments check ([393a460](https://github.com/trycompai/comp/commit/393a460193c6fab0fca0af8262f6bf1156c4c513))
+
 # [3.85.0](https://github.com/trycompai/comp/compare/v3.84.0...v3.85.0) (2026-06-17)
 
 
