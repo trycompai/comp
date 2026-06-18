@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'bun:test';
+import { parseEnvironmentAliases } from '../environment-aliases';
 import {
   classifyEnvironment,
+  classifyEnvironmentWithAliases,
   confirmsEnvironmentSeparation,
   envTagValues,
 } from '../environment-classification';
@@ -143,5 +145,56 @@ describe('envTagValues — only env-key tags, case-insensitive', () => {
 
   it('returns [] for undefined tags', () => {
     expect(envTagValues(undefined)).toEqual([]);
+  });
+});
+
+describe('environment aliases — customer naming conventions', () => {
+  it('keeps ambiguous names unclassified unless the customer maps them', () => {
+    expect(classifyEnvironment(['app-release'])).toBeNull();
+
+    const config = parseEnvironmentAliases({
+      environment_aliases: 'release=production, preview=staging',
+    });
+
+    expect(
+      classifyEnvironmentWithAliases({
+        candidates: ['app-release'],
+        aliases: config.aliases,
+      }),
+    ).toBe('production');
+    expect(
+      classifyEnvironmentWithAliases({
+        candidates: ['app-preview'],
+        aliases: config.aliases,
+      }),
+    ).toBe('staging');
+  });
+
+  it('honors production qualifiers for mapped production aliases', () => {
+    const config = parseEnvironmentAliases({
+      environment_aliases: 'release=production',
+    });
+
+    expect(
+      classifyEnvironmentWithAliases({
+        candidates: ['app-pre-release'],
+        aliases: config.aliases,
+      }),
+    ).toBe('staging');
+    expect(
+      classifyEnvironmentWithAliases({
+        candidates: ['app-non-release'],
+        aliases: config.aliases,
+      }),
+    ).toBe('non-production');
+  });
+
+  it('reports invalid alias entries instead of guessing', () => {
+    const config = parseEnvironmentAliases({
+      environment_aliases: 'release=production, weird=customer, no-delimiter',
+    });
+
+    expect(config.aliases).toHaveLength(1);
+    expect(config.invalidEntries).toEqual(['weird=customer', 'no-delimiter']);
   });
 });

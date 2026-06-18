@@ -1,14 +1,17 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
 import {
+  environmentAliasEvidence,
+  parseEnvironmentAliases,
+  type EnvironmentAlias,
+} from '../../environment-aliases';
+import {
   classifyEnvironment,
+  classifyEnvironmentWithAliases,
   confirmsEnvironmentSeparation,
   envTagValues,
 } from '../../environment-classification';
-import {
-  remediationForReadFailure,
-  toHttpReadFailure,
-} from '../../http-read-failure';
+import { remediationForReadFailure, toHttpReadFailure } from '../../http-read-failure';
 
 interface GcpProject {
   projectId: string;
@@ -32,11 +35,20 @@ interface ResolvedProjects {
  * (`-`/`_`/`.`) doesn't matter.
  */
 export function classifyProjectEnv(project: GcpProject): string | null {
-  return classifyEnvironment([
-    ...envTagValues(project.labels),
-    project.projectId,
-    project.name,
-  ]);
+  return classifyEnvironment([...envTagValues(project.labels), project.projectId, project.name]);
+}
+
+function classifyProjectEnvWithAliases({
+  project,
+  aliases,
+}: {
+  project: GcpProject;
+  aliases: readonly EnvironmentAlias[];
+}): string | null {
+  return classifyEnvironmentWithAliases({
+    candidates: [...envTagValues(project.labels), project.projectId, project.name],
+    aliases,
+  });
 }
 
 /** The user-selected project scope (`project_ids` variable), trimmed. */
@@ -63,9 +75,7 @@ async function resolveProjects(ctx: CheckContext): Promise<ResolvedProjects> {
     let readError: string | undefined;
     for (const id of selected) {
       try {
-        const project = await ctx.fetch<GcpProject>(
-          `/v1/projects/${encodeURIComponent(id)}`,
-        );
+        const project = await ctx.fetch<GcpProject>(`/v1/projects/${encodeURIComponent(id)}`);
         if (project && typeof project.projectId === 'string') {
           projects.push(project);
         }
@@ -81,9 +91,7 @@ async function resolveProjects(ctx: CheckContext): Promise<ResolvedProjects> {
   let pageToken: string | undefined;
   let pages = 0;
   do {
-    const tokenParam = pageToken
-      ? `&pageToken=${encodeURIComponent(pageToken)}`
-      : '';
+    const tokenParam = pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : '';
     const data = await ctx.fetch<{
       projects?: GcpProject[];
       nextPageToken?: string;
@@ -91,8 +99,7 @@ async function resolveProjects(ctx: CheckContext): Promise<ResolvedProjects> {
       `/v1/projects?filter=${encodeURIComponent('lifecycleState:ACTIVE')}&pageSize=100${tokenParam}`,
     );
     for (const p of data.projects ?? []) projects.push(p);
-    pageToken =
-      typeof data.nextPageToken === 'string' ? data.nextPageToken : undefined;
+    pageToken = typeof data.nextPageToken === 'string' ? data.nextPageToken : undefined;
     pages++;
   } while (pageToken && pages < 20);
 
@@ -100,7 +107,7 @@ async function resolveProjects(ctx: CheckContext): Promise<ResolvedProjects> {
 }
 
 const GUIDANCE =
-  'Separate production and non-production workloads into distinct GCP projects and label each with an `environment` label (e.g. environment=production, environment=staging). If you separate environments another way (e.g. VPCs or folders), upload a console screenshot or architecture diagram as evidence.';
+  'Separate production and non-production workloads into distinct GCP projects and label each with an `environment` label (e.g. environment=production, environment=staging). If your organization uses different environment names, configure Environment aliases (e.g. release=production). If you separate environments another way (e.g. VPCs or folders), upload a console screenshot or architecture diagram as evidence.';
 
 /**
  * Separation of Environments check (heuristic). GCP's recommended pattern is a
@@ -145,14 +152,18 @@ export const environmentSeparationCheck: IntegrationCheck = {
     }
 
     const { projects, truncated, readError } = resolved;
+    const aliasesConfig = parseEnvironmentAliases(ctx.variables);
+    if (aliasesConfig.invalidEntries.length > 0) {
+      ctx.warn('GCP env-separation: ignored invalid environment aliases', {
+        invalidEntries: aliasesConfig.invalidEntries,
+      });
+    }
 
     if (projects.length === 0) {
       // A read failure (scoped projects unreadable) is "could not verify"; a
       // genuinely empty footprint is "no projects".
       ctx.fail({
-        title: readError
-          ? 'Could not verify environment separation'
-          : 'No GCP projects detected',
+        title: readError ? 'Could not verify environment separation' : 'No GCP projects detected',
         description: readError
           ? `Selected GCP projects could not be read (${readError}), so environment separation could not be evaluated.`
           : 'No GCP projects were in scope, so environment separation could not be evaluated.',
@@ -169,24 +180,30 @@ export const environmentSeparationCheck: IntegrationCheck = {
 
     const classified = projects.map((p) => ({
       projectId: p.projectId,
-      environment: classifyProjectEnv(p),
+      environment: classifyProjectEnvWithAliases({
+        project: p,
+        aliases: aliasesConfig.aliases,
+      }),
     }));
     const detected = [
-      ...new Set(
-        classified
-          .map((c) => c.environment)
-          .filter((e): e is string => e !== null),
-      ),
+      ...new Set(classified.map((c) => c.environment).filter((e): e is string => e !== null)),
     ];
     const sample = classified.slice(0, 50).map((c) => ({
       projectId: c.projectId,
       environment: c.environment ?? 'unclassified',
     }));
+    const unclassifiedProjectCount = classified.filter((c) => c.environment === null).length;
 
-    // A confirmed pass requires production + a non-production environment.
-    // Truncation/read gaps cannot turn a confirmed pass into a wrong one
-    // (scanning more projects only ADDS environments), so a pass stands.
-    if (confirmsEnvironmentSeparation(detected)) {
+    const coverageGaps: string[] = [];
+    if (truncated) {
+      coverageGaps.push('project discovery hit the page cap, so not all projects were evaluated');
+    }
+    if (readError) {
+      coverageGaps.push('some selected projects could not be read');
+    }
+
+    const separationDetected = confirmsEnvironmentSeparation(detected);
+    if (coverageGaps.length === 0 && separationDetected) {
       ctx.pass({
         title: 'Environments separated across projects',
         description: `Detected production separated from non-production across ${projects.length} GCP project(s): ${detected.join(', ')}.`,
@@ -196,6 +213,8 @@ export const environmentSeparationCheck: IntegrationCheck = {
           detectedEnvironments: detected,
           projectCount: projects.length,
           projects: sample,
+          unclassifiedProjectCount,
+          ...environmentAliasEvidence(aliasesConfig),
         },
       });
       return;
@@ -203,25 +222,22 @@ export const environmentSeparationCheck: IntegrationCheck = {
 
     // Could not confirm. Surface any incomplete coverage so a partial footprint
     // is never presented as a complete "not separated" verdict.
-    const coverageGaps: string[] = [];
-    if (truncated) {
-      coverageGaps.push(
-        'project discovery hit the page cap, so not all projects were evaluated',
-      );
-    }
-    if (readError) {
-      coverageGaps.push('some selected projects could not be read');
-    }
+    const unclassifiedDetail =
+      unclassifiedProjectCount > 0
+        ? `; ${unclassifiedProjectCount} project(s) were unclassified and need an environment label or environment token in the project name`
+        : '';
     const base =
       detected.length === 0
         ? `No GCP project could be classified by environment across ${projects.length} project(s)`
-        : `Detected environment(s) ${detected.join(', ')}, but could not confirm a production environment separated from a non-production one across ${projects.length} project(s)`;
+        : separationDetected
+          ? `Detected production separated from non-production in the scanned GCP projects (${detected.join(', ')}), but coverage is incomplete across ${projects.length} project(s)`
+          : `Detected environment(s) ${detected.join(', ')}, but could not confirm a production environment separated from a non-production one across ${projects.length} project(s)`;
     ctx.fail({
       title:
         coverageGaps.length > 0
           ? 'Could not verify environment separation'
           : 'Could not confirm environment separation',
-      description: `${base}${coverageGaps.length ? ` (${coverageGaps.join('; ')})` : ''}.`,
+      description: `${base}${unclassifiedDetail}${coverageGaps.length ? ` (${coverageGaps.join('; ')})` : ''}.`,
       resourceType: 'gcp-environment-separation',
       resourceId: 'projects',
       severity: 'medium',
@@ -229,8 +245,10 @@ export const environmentSeparationCheck: IntegrationCheck = {
       evidence: {
         detectedEnvironments: detected,
         projectCount: projects.length,
+        unclassifiedProjectCount,
         ...(truncated ? { discoveryTruncated: true } : {}),
         projects: sample,
+        ...environmentAliasEvidence(aliasesConfig),
       },
     });
   },

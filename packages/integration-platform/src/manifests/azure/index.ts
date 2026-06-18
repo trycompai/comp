@@ -1,4 +1,5 @@
 import type { IntegrationManifest } from '../../types';
+import { environmentAliasesVariable } from '../environment-aliases';
 import {
   environmentSeparationCheck,
   keyVaultProtectionCheck,
@@ -161,6 +162,7 @@ Our integration only makes read-only API calls for security scanning.`,
         'Auto-detected after connecting. If not detected, find it at portal.azure.com → Subscriptions',
       placeholder: 'Auto-detected',
     },
+    environmentAliasesVariable,
   ],
 
   checks: [

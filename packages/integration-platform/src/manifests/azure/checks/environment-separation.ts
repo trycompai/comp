@@ -1,7 +1,13 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
 import {
+  environmentAliasEvidence,
+  parseEnvironmentAliases,
+  type EnvironmentAlias,
+} from '../../environment-aliases';
+import {
   classifyEnvironment,
+  classifyEnvironmentWithAliases,
   confirmsEnvironmentSeparation,
   envTagValues,
 } from '../../environment-classification';
@@ -30,8 +36,21 @@ export function classifyResourceGroupEnv(rg: {
   return classifyEnvironment([...envTagValues(rg.tags), rg.name]);
 }
 
+function classifyResourceGroupEnvWithAliases({
+  rg,
+  aliases,
+}: {
+  rg: { name: string; tags?: Record<string, string> };
+  aliases: readonly EnvironmentAlias[];
+}): string | null {
+  return classifyEnvironmentWithAliases({
+    candidates: [...envTagValues(rg.tags), rg.name],
+    aliases,
+  });
+}
+
 const GUIDANCE =
-  'Separate production and non-production into distinct subscriptions (strongest), or tag each resource group with an `environment` tag (e.g. environment=production / environment=staging). If you separate environments another way, upload a console screenshot or architecture diagram as evidence.';
+  'Separate production and non-production into distinct subscriptions (strongest), or tag each resource group with an `environment` tag (e.g. environment=production / environment=staging). If your organization uses different environment names, configure Environment aliases (e.g. release=production). If you separate environments another way, upload a console screenshot or architecture diagram as evidence.';
 
 /**
  * Separation of Environments check (heuristic). Evaluates ONLY the subscriptions
@@ -59,6 +78,13 @@ export const environmentSeparationCheck: IntegrationCheck = {
     // resolveAzureSubscriptionIds already emitted a finding when scope is empty.
     if (subscriptionIds.length === 0) return;
 
+    const aliasesConfig = parseEnvironmentAliases(ctx.variables);
+    if (aliasesConfig.invalidEntries.length > 0) {
+      ctx.warn('Azure env-separation: ignored invalid environment aliases', {
+        invalidEntries: aliasesConfig.invalidEntries,
+      });
+    }
+
     // Tier 1 (strong): subscription-level separation. Read each IN-SCOPE
     // subscription's display name only — we never touch subscriptions outside
     // the configured selection.
@@ -69,7 +95,10 @@ export const environmentSeparationCheck: IntegrationCheck = {
         const sub = await ctx.fetch<{ displayName?: string }>(
           `${ARM_BASE}/subscriptions/${id}?api-version=${SUBSCRIPTION_API_VERSION}`,
         );
-        const env = classifyEnvironment([sub.displayName]);
+        const env = classifyEnvironmentWithAliases({
+          candidates: [sub.displayName],
+          aliases: aliasesConfig.aliases,
+        });
         if (env) subscriptionEnvSet.add(env);
       } catch (err) {
         anySubscriptionReadFailed = true;
@@ -79,7 +108,8 @@ export const environmentSeparationCheck: IntegrationCheck = {
       }
     }
     const subscriptionEnvs = [...subscriptionEnvSet];
-    if (confirmsEnvironmentSeparation(subscriptionEnvs)) {
+    const subscriptionSeparationDetected = confirmsEnvironmentSeparation(subscriptionEnvs);
+    if (!anySubscriptionReadFailed && subscriptionSeparationDetected) {
       ctx.pass({
         title: 'Environments separated across subscriptions',
         description: `Detected production separated from non-production across ${subscriptionIds.length} in-scope Azure subscription(s): ${subscriptionEnvs.join(', ')} (subscription-level boundary).`,
@@ -89,6 +119,7 @@ export const environmentSeparationCheck: IntegrationCheck = {
           boundary: 'subscription',
           detectedEnvironments: subscriptionEnvs,
           subscriptionsScanned: subscriptionIds.length,
+          ...environmentAliasEvidence(aliasesConfig),
         },
       });
       return;
@@ -99,6 +130,7 @@ export const environmentSeparationCheck: IntegrationCheck = {
     const rgEnvSet = new Set<string>();
     const rgSamples: Array<{ name: string; environment: string }> = [];
     let anyRgReadFailed = false;
+    let resourceGroupsScanned = 0;
     let resourceGroupsClassified = 0;
     const rgCoverageGaps = new Set<string>();
     const rgCoverageGapSubscriptions = new Set<string>();
@@ -122,7 +154,11 @@ export const environmentSeparationCheck: IntegrationCheck = {
         continue;
       }
       for (const rg of resourceGroups) {
-        const env = classifyResourceGroupEnv(rg);
+        resourceGroupsScanned++;
+        const env = classifyResourceGroupEnvWithAliases({
+          rg,
+          aliases: aliasesConfig.aliases,
+        });
         if (env) {
           rgEnvSet.add(env);
           resourceGroupsClassified++;
@@ -133,7 +169,11 @@ export const environmentSeparationCheck: IntegrationCheck = {
     const resourceGroupEnvs = [...rgEnvSet];
     const resourceGroupCoverageIncomplete = rgCoverageGaps.size > 0;
     const resourceGroupSeparationDetected = confirmsEnvironmentSeparation(resourceGroupEnvs);
-    if (!resourceGroupCoverageIncomplete && resourceGroupSeparationDetected) {
+    if (
+      !anySubscriptionReadFailed &&
+      !resourceGroupCoverageIncomplete &&
+      resourceGroupSeparationDetected
+    ) {
       ctx.pass({
         title: 'Environments separated across resource groups',
         description: `Detected production separated from non-production across resource groups in ${subscriptionIds.length} in-scope subscription(s): ${resourceGroupEnvs.join(', ')}. Resource-group separation is logical — RGs share the subscription's access and network boundary — not full isolation.`,
@@ -144,6 +184,7 @@ export const environmentSeparationCheck: IntegrationCheck = {
           detectedEnvironments: resourceGroupEnvs,
           subscriptionsScanned: subscriptionIds.length,
           resourceGroups: rgSamples,
+          ...environmentAliasEvidence(aliasesConfig),
         },
       });
       return;
@@ -161,17 +202,23 @@ export const environmentSeparationCheck: IntegrationCheck = {
       coverageGaps.push('resource-group pagination stopped before all groups were evaluated');
     }
     const coverageIncomplete = coverageGaps.length > 0;
+    const separationDetected = subscriptionSeparationDetected || resourceGroupSeparationDetected;
+    const unclassifiedResourceGroupCount = resourceGroupsScanned - resourceGroupsClassified;
+    const unclassifiedDetail =
+      unclassifiedResourceGroupCount > 0
+        ? `; ${unclassifiedResourceGroupCount} resource group(s) were unclassified and need an environment tag or environment token in the name`
+        : '';
     const base =
       detectedAll.length === 0
         ? `No in-scope Azure subscription or resource group could be classified by environment across ${subscriptionIds.length} subscription(s)`
-        : resourceGroupSeparationDetected && resourceGroupCoverageIncomplete
-          ? `Detected production separated from non-production in the scanned resource groups (${resourceGroupEnvs.join(', ')}), but not all resource groups were evaluated across ${subscriptionIds.length} in-scope subscription(s)`
+        : separationDetected && coverageIncomplete
+          ? `Detected production separated from non-production in the scanned Azure scope (${detectedAll.join(', ')}), but coverage is incomplete across ${subscriptionIds.length} in-scope subscription(s)`
           : `Detected environment(s) ${detectedAll.join(', ')}, but could not confirm a production environment separated from a non-production one across ${subscriptionIds.length} in-scope subscription(s)`;
     ctx.fail({
       title: coverageIncomplete
         ? 'Could not verify environment separation'
         : 'Could not confirm environment separation',
-      description: `${base}${coverageIncomplete ? ` (${coverageGaps.join('; ')})` : ''}.`,
+      description: `${base}${unclassifiedDetail}${coverageIncomplete ? ` (${coverageGaps.join('; ')})` : ''}.`,
       resourceType: 'azure-environment-separation',
       resourceId: 'subscriptions',
       severity: 'medium',
@@ -180,7 +227,9 @@ export const environmentSeparationCheck: IntegrationCheck = {
         subscriptionEnvironments: subscriptionEnvs,
         resourceGroupEnvironments: resourceGroupEnvs,
         subscriptionsScanned: subscriptionIds.length,
+        resourceGroupsScanned,
         resourceGroupsClassified,
+        unclassifiedResourceGroupCount,
         ...(coverageIncomplete ? { coverageIncomplete: true } : {}),
         ...(resourceGroupCoverageIncomplete
           ? {
@@ -188,6 +237,7 @@ export const environmentSeparationCheck: IntegrationCheck = {
               resourceGroupCoverageGapSubscriptions: [...rgCoverageGapSubscriptions],
             }
           : {}),
+        ...environmentAliasEvidence(aliasesConfig),
       },
     });
   },
