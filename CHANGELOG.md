@@ -1,3 +1,10 @@
+## [3.86.3](https://github.com/trycompai/comp/compare/v3.86.2...v3.86.3) (2026-06-18)
+
+
+### Bug Fixes
+
+* **integrations:** scheduler skips MANUAL evidence tasks ([1ee9c9f](https://github.com/trycompai/comp/commit/1ee9c9f61e33f649382f93241e3d1333885bddc7))
+
 ## [3.86.2](https://github.com/trycompai/comp/compare/v3.86.1...v3.86.2) (2026-06-18)
 
 
