@@ -43,4 +43,12 @@ describe('classifyBrowserAutomationError', () => {
       'Browser automation failed for an unknown reason.',
     );
   });
+
+  it('reads message fields from non-Error thrown objects', () => {
+    const result = classifyBrowserAutomationError({
+      message: 'Target closed while taking screenshot',
+    });
+
+    expect(result.code).toBe('browser_session_lost');
+  });
 });

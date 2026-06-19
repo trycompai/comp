@@ -3,6 +3,10 @@ import { z } from 'zod';
 import { renderOverlay } from './screenshot-overlay';
 import type { BrowserbaseSessionService } from './browserbase-session.service';
 import {
+  bringEvidencePageToFront,
+  resolveEvidencePage,
+} from './browser-evidence-page';
+import {
   type BrowserAutomationFailureCode,
   type BrowserAutomationFailureStage,
   type ClassifiedBrowserAutomationError,
@@ -55,7 +59,8 @@ export async function executeBrowserEvidence({
   try {
     log('session', 'Initializing Stagehand session.');
     stagehand = await sessions.createStagehand(input.sessionId);
-    let page = await sessions.ensureActivePage(stagehand);
+    const initialPage = await sessions.ensureActivePage(stagehand);
+    let page = initialPage;
 
     currentStage = 'navigation';
     log('navigation', `Opening ${input.targetUrl}.`);
@@ -90,7 +95,11 @@ export async function executeBrowserEvidence({
       .execute({ instruction, maxSteps: 20 });
 
     await delay(2000);
-    page = await sessions.ensureActivePage(stagehand);
+    page = await resolveEvidencePage({
+      stagehand,
+      initialPage,
+      targetUrl: input.targetUrl,
+    });
     const finalUrl = page.url();
 
     currentStage = 'screenshot';
@@ -109,6 +118,7 @@ export async function executeBrowserEvidence({
       finalUrl,
     });
     currentStage = 'evaluation';
+    await bringEvidencePageToFront(page);
     const evaluation = await evaluateIfNeeded({
       stagehand,
       criteria: input.evaluationCriteria,

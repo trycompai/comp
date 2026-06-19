@@ -71,7 +71,6 @@ export class BrowserAuthProfileContextService {
       await delay(pollMs);
     }
 
-    await this.deletePendingProfile(profileId);
     this.logger.warn(
       `Timed out waiting for Browser auth profile context ${profileId}`,
     );

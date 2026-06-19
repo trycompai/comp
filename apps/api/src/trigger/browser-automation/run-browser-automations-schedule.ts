@@ -38,6 +38,7 @@ const parsePositiveInt = (
 export function limitAutomationBatch<
   T extends {
     id?: string;
+    lastRunAt?: Date | null;
     targetUrl: string;
     task: { organizationId: string };
   },
@@ -53,8 +54,11 @@ export function limitAutomationBatch<
   const orgCounts = new Map<string, number>();
   const hostnameCounts = new Map<string, number>();
   const selected: T[] = [];
+  const sortedAutomations = [...automations].sort(
+    (a, b) => (a.lastRunAt?.getTime() ?? 0) - (b.lastRunAt?.getTime() ?? 0),
+  );
 
-  for (const automation of automations) {
+  for (const automation of sortedAutomations) {
     const organizationId = automation.task.organizationId;
     let hostname: string;
     try {

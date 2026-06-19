@@ -94,7 +94,6 @@ export class BrowserbaseOrgContextService {
       await delay(pollMs);
     }
 
-    await this.clearPendingOrgContext(organizationId);
     this.logger.warn(
       `Timed out waiting for Browserbase context creation for org ${organizationId}`,
     );

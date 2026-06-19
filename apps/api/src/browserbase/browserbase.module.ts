@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { BrowserAutomationCrudService } from './browser-automation-crud.service';
 import { BrowserAutomationExecutionService } from './browser-automation-execution.service';
+import { BrowserAutomationRunStoreService } from './browser-automation-run-store.service';
 import { BrowserAuthProfilesController } from './browser-auth-profiles.controller';
 import { BrowserAuthProfileContextService } from './browser-auth-profile-context.service';
 import { BrowserAuthProfileService } from './browser-auth-profile.service';
@@ -20,6 +21,7 @@ import { AuthModule } from '../auth/auth.module';
     BrowserbaseSessionService,
     BrowserAutomationCrudService,
     BrowserAutomationExecutionService,
+    BrowserAutomationRunStoreService,
     BrowserAuthProfileContextService,
     BrowserAuthProfileService,
     BrowserbaseOrgContextService,

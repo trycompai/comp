@@ -1,6 +1,12 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { db, Prisma } from '@db';
+import {
+  ConflictException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
+import { db } from '@db';
 import { BrowserAuthProfileService } from './browser-auth-profile.service';
+import { BrowserAutomationRunStoreService } from './browser-automation-run-store.service';
 import { failedBrowserEvidenceRunResult } from './browser-automation-run-result';
 import {
   BrowserEvidenceRunnerService,
@@ -20,6 +26,7 @@ export class BrowserAutomationExecutionService {
     private readonly runner: BrowserEvidenceRunnerService = new BrowserEvidenceRunnerService(
       sessions,
     ),
+    private readonly runs: BrowserAutomationRunStoreService = new BrowserAutomationRunStoreService(),
   ) {}
 
   async startAutomationWithLiveView(
@@ -34,7 +41,10 @@ export class BrowserAutomationExecutionService {
       organizationId,
       targetUrl: automation.targetUrl,
     });
-    const run = await this.createRun({ automationId, profileId: profile.id });
+    const run = await this.runs.createRun({
+      automationId,
+      profileId: profile.id,
+    });
 
     try {
       const { sessionId, liveViewUrl } =
@@ -42,7 +52,11 @@ export class BrowserAutomationExecutionService {
       return { runId: run.id, sessionId, liveViewUrl, profileId: profile.id };
     } catch (error) {
       const result = failedBrowserEvidenceRunResult(error);
-      await this.finishRun({ runId: run.id, startedAt: run.startedAt, result });
+      await this.runs.finishRun({
+        runId: run.id,
+        startedAt: run.startedAt,
+        result,
+      });
       await this.applyProfileResult({
         organizationId,
         profileId: profile.id,
@@ -62,12 +76,10 @@ export class BrowserAutomationExecutionService {
       automationId,
       organizationId,
     });
-    const run = await db.browserAutomationRun.findUnique({
-      where: { id: runId },
+    const run = await this.runs.getActiveRun({
+      runId,
+      automationId,
     });
-    if (!run || run.automationId !== automationId) {
-      throw new NotFoundException('Run not found');
-    }
 
     const profile = await this.profiles.resolveProfileForTarget({
       organizationId,
@@ -90,13 +102,16 @@ export class BrowserAutomationExecutionService {
           hostname: profile.hostname,
           contextId: profile.contextId,
         },
+        beforeExecution: () =>
+          this.runs.assertRunIsStillActive({ runId, automationId }),
       });
     } catch (error) {
+      if (this.isTerminalReplayError(error)) throw error;
       this.logger.error('Browser evidence runner failed', error);
       result = failedBrowserEvidenceRunResult(error);
     }
 
-    await this.finishRun({ runId, startedAt: run.startedAt, result });
+    await this.runs.finishRun({ runId, startedAt: run.startedAt, result });
     await this.applyProfileResult({
       organizationId,
       profileId: profile.id,
@@ -114,11 +129,18 @@ export class BrowserAutomationExecutionService {
       organizationId,
       targetUrl: automation.targetUrl,
     });
-    const run = await this.createRun({ automationId, profileId: profile.id });
+    const run = await this.runs.createRun({
+      automationId,
+      profileId: profile.id,
+    });
 
     if (profile.status !== 'verified') {
       const result = this.profileBlockedResult(profile.status);
-      await this.finishRun({ runId: run.id, startedAt: run.startedAt, result });
+      await this.runs.finishRun({
+        runId: run.id,
+        startedAt: run.startedAt,
+        result,
+      });
       return this.toRunResponse({ runId: run.id, result });
     }
 
@@ -142,62 +164,17 @@ export class BrowserAutomationExecutionService {
       this.logger.error('Browser evidence runner failed', error);
       result = failedBrowserEvidenceRunResult(error);
     }
-    await this.finishRun({ runId: run.id, startedAt: run.startedAt, result });
+    await this.runs.finishRun({
+      runId: run.id,
+      startedAt: run.startedAt,
+      result,
+    });
     await this.applyProfileResult({
       organizationId,
       profileId: profile.id,
       result,
     });
     return this.toRunResponse({ runId: run.id, result });
-  }
-
-  private async createRun(input: { automationId: string; profileId?: string }) {
-    return db.$transaction(
-      async (tx) => {
-        const attemptCount =
-          (await tx.browserAutomationRun.count({
-            where: { automationId: input.automationId },
-          })) + 1;
-        return tx.browserAutomationRun.create({
-          data: {
-            automationId: input.automationId,
-            profileId: input.profileId,
-            status: 'running',
-            startedAt: new Date(),
-            attemptCount,
-          },
-        });
-      },
-      {
-        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-      },
-    );
-  }
-
-  private async finishRun(input: {
-    runId: string;
-    startedAt: Date | null;
-    result: BrowserEvidenceRunResult;
-  }) {
-    await db.browserAutomationRun.update({
-      where: { id: input.runId },
-      data: {
-        status: input.result.status,
-        completedAt: new Date(),
-        durationMs: input.startedAt
-          ? Date.now() - input.startedAt.getTime()
-          : 0,
-        screenshotUrl: input.result.screenshotKey,
-        evaluationStatus: input.result.evaluationStatus ?? null,
-        evaluationReason: input.result.evaluationReason ?? null,
-        error: input.result.error,
-        failureCode: input.result.failureCode,
-        failureStage: input.result.failureStage,
-        blockedReason: input.result.blockedReason,
-        finalUrl: input.result.finalUrl,
-        logs: input.result.logs,
-      },
-    });
   }
 
   private async applyProfileResult(input: {
@@ -283,5 +260,11 @@ export class BrowserAutomationExecutionService {
       throw new NotFoundException('Automation not found');
     }
     return automation;
+  }
+
+  private isTerminalReplayError(error: unknown): boolean {
+    return (
+      error instanceof ConflictException || error instanceof NotFoundException
+    );
   }
 }

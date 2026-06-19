@@ -29,6 +29,14 @@ export interface ClassifiedBrowserAutomationError {
 const getErrorText = (error: unknown): string => {
   if (error instanceof Error) return error.message;
   if (typeof error === 'string') return error;
+  if (typeof error === 'object' && error !== null && 'message' in error) {
+    const message = error.message;
+    if (typeof message === 'string') return message;
+  }
+  if (typeof error === 'object' && error !== null && 'error' in error) {
+    const nestedError = error.error;
+    if (typeof nestedError === 'string') return nestedError;
+  }
   return String(error);
 };
 

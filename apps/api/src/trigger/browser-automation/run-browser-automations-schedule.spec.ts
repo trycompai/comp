@@ -157,6 +157,40 @@ describe('limitAutomationBatch', () => {
     ]);
   });
 
+  it('prioritizes never-run and oldest automations before applying caps', () => {
+    const automations = [
+      {
+        id: 'ba_newer',
+        lastRunAt: atUtc('2026-04-20'),
+        targetUrl: 'https://github.com/newer',
+        task: { organizationId: 'org_1' },
+      },
+      {
+        id: 'ba_never',
+        lastRunAt: null,
+        targetUrl: 'https://github.com/never',
+        task: { organizationId: 'org_1' },
+      },
+      {
+        id: 'ba_older',
+        lastRunAt: atUtc('2026-04-01'),
+        targetUrl: 'https://gitlab.com/older',
+        task: { organizationId: 'org_1' },
+      },
+    ];
+
+    const limited = limitAutomationBatch({
+      automations,
+      maxPerOrg: 2,
+      maxPerHostname: 2,
+    });
+
+    expect(limited.map((automation) => automation.id)).toEqual([
+      'ba_never',
+      'ba_older',
+    ]);
+  });
+
   it('skips malformed target URLs without dropping valid automations', () => {
     const automations = [
       {

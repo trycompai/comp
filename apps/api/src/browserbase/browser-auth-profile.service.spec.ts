@@ -114,6 +114,28 @@ describe('BrowserAuthProfileService', () => {
     });
   });
 
+  it('rejects profile verification for a different hostname', async () => {
+    jest
+      .spyOn(sessions, 'checkLoginStatus')
+      .mockResolvedValue({ isLoggedIn: true });
+    (db.browserAuthProfile.findFirst as jest.Mock).mockResolvedValue({
+      id: 'bap_1',
+      organizationId: 'org_1',
+      hostname: 'github.com',
+      lastVerifiedAt: null,
+    });
+
+    await expect(
+      service.verifyProfileSession({
+        organizationId: 'org_1',
+        profileId: 'bap_1',
+        sessionId: 'sess_1',
+        url: 'https://gitlab.com/acme/repo',
+      }),
+    ).rejects.toThrow('Verification URL must match');
+    expect(sessions.checkLoginStatus).not.toHaveBeenCalled();
+  });
+
   it('treats a pending legacy org context as unavailable', async () => {
     (db.browserbaseContext.findUnique as jest.Mock).mockResolvedValue({
       organizationId: 'org_1',

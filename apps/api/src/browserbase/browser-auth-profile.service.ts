@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { db } from '@db';
 import {
   defaultProfileDisplayName,
@@ -175,6 +179,10 @@ export class BrowserAuthProfileService {
     if (!profile) {
       throw new NotFoundException('Browser auth profile not found');
     }
+    this.assertUrlMatchesProfileHostname({
+      url: input.url,
+      profileHostname: profile.hostname,
+    });
 
     const auth = await this.sessions.checkLoginStatus(
       input.sessionId,
@@ -242,5 +250,23 @@ export class BrowserAuthProfileService {
     organizationId: string,
   ): Promise<{ contextId: string } | null> {
     return this.orgContexts.getOrgContext(organizationId);
+  }
+
+  private assertUrlMatchesProfileHostname(input: {
+    url: string;
+    profileHostname: string;
+  }): void {
+    let hostname: string;
+    try {
+      hostname = normalizeHostnameFromUrl(input.url);
+    } catch {
+      throw new BadRequestException('Invalid verification URL');
+    }
+
+    if (hostname !== input.profileHostname) {
+      throw new BadRequestException(
+        'Verification URL must match the browser auth profile hostname.',
+      );
+    }
   }
 }

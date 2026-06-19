@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { BrowserAutomationCrudService } from './browser-automation-crud.service';
 import { BrowserAutomationExecutionService } from './browser-automation-execution.service';
+import { BrowserAutomationRunStoreService } from './browser-automation-run-store.service';
 import { BrowserAuthProfileContextService } from './browser-auth-profile-context.service';
 import { BrowserAuthProfileService } from './browser-auth-profile.service';
 import { BrowserEvidenceRunnerService } from './browser-evidence-runner.service';
@@ -50,6 +51,7 @@ describe('BrowserbaseService.getScreenshotRedirectUrl', () => {
         BrowserbaseSessionService,
         BrowserAutomationCrudService,
         BrowserAutomationExecutionService,
+        BrowserAutomationRunStoreService,
         BrowserAuthProfileContextService,
         BrowserAuthProfileService,
         BrowserbaseOrgContextService,
@@ -167,6 +169,7 @@ describe('BrowserbaseService schedule frequency passthrough', () => {
         BrowserbaseSessionService,
         BrowserAutomationCrudService,
         BrowserAutomationExecutionService,
+        BrowserAutomationRunStoreService,
         BrowserAuthProfileContextService,
         BrowserAuthProfileService,
         BrowserbaseOrgContextService,

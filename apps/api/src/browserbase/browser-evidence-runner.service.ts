@@ -30,6 +30,7 @@ export interface BrowserEvidenceRunnerInput {
     hostname: string;
     contextId: string;
   };
+  beforeExecution?: () => Promise<void>;
 }
 
 export interface BrowserEvidenceSessionInput extends BrowserEvidenceRunnerInput {
@@ -84,7 +85,10 @@ export class BrowserEvidenceRunnerService {
         );
 
         try {
-          return await this.executeEvidenceOnSession({ ...input, sessionId });
+          return await this.executeEvidenceOnSessionUnlocked({
+            ...input,
+            sessionId,
+          });
         } finally {
           await this.closeSession(sessionId);
         }
@@ -95,6 +99,17 @@ export class BrowserEvidenceRunnerService {
   async executeEvidenceOnSession(
     input: BrowserEvidenceSessionInput,
   ): Promise<BrowserEvidenceRunResult> {
+    return browserRunCoordinator.withProfileLock({
+      profileId: input.profile.id,
+      hostname: input.profile.hostname,
+      run: () => this.executeEvidenceOnSessionUnlocked(input),
+    });
+  }
+
+  private async executeEvidenceOnSessionUnlocked(
+    input: BrowserEvidenceSessionInput,
+  ): Promise<BrowserEvidenceRunResult> {
+    await input.beforeExecution?.();
     await this.credentialVault.resolveCredentialReference({
       profileId: input.profile.id,
     });
