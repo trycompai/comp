@@ -1,4 +1,3 @@
-import { getFeatureFlags } from '@/app/posthog';
 import { requireRoutePermission } from '@/lib/permissions.server';
 import { auth } from '@/utils/auth';
 import { headers } from 'next/headers';
@@ -24,16 +23,8 @@ export default async function Layout({
     return redirect('/');
   }
 
-  let isWebAutomationsEnabled = false;
-  if (session.user?.id) {
-    const flags = await getFeatureFlags(session.user.id);
-    isWebAutomationsEnabled =
-      flags['is-web-automations-enabled'] === true ||
-      flags['is-web-automations-enabled'] === 'true';
-  }
-
   return (
-    <SettingsTabs orgId={orgId} showBrowserTab={isWebAutomationsEnabled}>
+    <SettingsTabs orgId={orgId} showBrowserTab={false}>
       {children}
     </SettingsTabs>
   );
