@@ -2,6 +2,7 @@ import { db, TaskFrequency } from '@db';
 import { logger, schedules } from '@trigger.dev/sdk';
 import { runBrowserAutomation } from './run-browser-automation';
 import { isDueToday } from '../shared/is-due-today';
+import { normalizeHostnameFromUrl } from '../../browserbase/browserbase-url';
 
 /**
  * Pure helper extracted for unit testing. Filters a list of candidate
@@ -23,6 +24,48 @@ export function filterDueAutomations<
       now,
     }),
   );
+}
+
+const parsePositiveInt = (value: string | undefined, fallback: number): number => {
+  if (!value) return fallback;
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+export function limitAutomationBatch<
+  T extends {
+    targetUrl: string;
+    task: { organizationId: string };
+  },
+>({
+  automations,
+  maxPerOrg,
+  maxPerHostname,
+}: {
+  automations: T[];
+  maxPerOrg: number;
+  maxPerHostname: number;
+}): T[] {
+  const orgCounts = new Map<string, number>();
+  const hostnameCounts = new Map<string, number>();
+  const selected: T[] = [];
+
+  for (const automation of automations) {
+    const organizationId = automation.task.organizationId;
+    const hostname = normalizeHostnameFromUrl(automation.targetUrl);
+    const orgCount = orgCounts.get(organizationId) ?? 0;
+    const hostnameCount = hostnameCounts.get(hostname) ?? 0;
+
+    if (orgCount >= maxPerOrg || hostnameCount >= maxPerHostname) {
+      continue;
+    }
+
+    orgCounts.set(organizationId, orgCount + 1);
+    hostnameCounts.set(hostname, hostnameCount + 1);
+    selected.push(automation);
+  }
+
+  return selected;
 }
 
 /**
@@ -48,6 +91,7 @@ export const browserAutomationsSchedule = schedules.task({
         id: true,
         name: true,
         taskId: true,
+        targetUrl: true,
         scheduleFrequency: true,
         lastRunAt: true,
         task: {
@@ -89,8 +133,26 @@ export const browserAutomationsSchedule = schedules.task({
       return { success: true, automationsTriggered: 0 };
     }
 
+    const limitedAutomations = limitAutomationBatch({
+      automations,
+      maxPerOrg: parsePositiveInt(
+        process.env.BROWSER_AUTOMATION_ORG_CONCURRENCY,
+        5,
+      ),
+      maxPerHostname: parsePositiveInt(
+        process.env.BROWSER_AUTOMATION_HOST_CONCURRENCY,
+        3,
+      ),
+    });
+
+    if (limitedAutomations.length < automations.length) {
+      logger.info(
+        `Deferred ${automations.length - limitedAutomations.length} automation(s) due to org/domain concurrency limits`,
+      );
+    }
+
     // Build payloads for batch triggering
-    const triggerPayloads = automations.map((automation) => ({
+    const triggerPayloads = limitedAutomations.map((automation) => ({
       payload: {
         automationId: automation.id,
         automationName: automation.name,

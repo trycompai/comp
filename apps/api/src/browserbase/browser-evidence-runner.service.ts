@@ -1,0 +1,180 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { Prisma } from '@db';
+import { BrowserbaseSessionService } from './browserbase-session.service';
+import { BrowserbaseScreenshotService } from './browserbase-screenshot.service';
+import {
+  type BrowserAutomationFailureCode,
+  type BrowserAutomationFailureStage,
+} from './browser-automation-errors';
+import {
+  executeBrowserEvidence,
+  type BrowserEvidenceLog,
+  type BrowserEvidenceExecutionResult,
+} from './browser-evidence-execution';
+import { browserRunCoordinator } from './browser-run-coordinator';
+import {
+  type BrowserCredentialVaultAdapter,
+  NoopBrowserCredentialVaultAdapter,
+} from './credential-vault';
+
+export interface BrowserEvidenceRunnerInput {
+  organizationId: string;
+  taskId?: string;
+  automationId: string;
+  runId: string;
+  targetUrl: string;
+  instruction: string;
+  evaluationCriteria?: string | null;
+  profile: {
+    id: string;
+    hostname: string;
+    contextId: string;
+  };
+}
+
+export interface BrowserEvidenceSessionInput extends BrowserEvidenceRunnerInput {
+  sessionId: string;
+}
+
+export interface BrowserEvidenceRunResult {
+  success: boolean;
+  status: 'completed' | 'failed' | 'blocked';
+  screenshotKey?: string;
+  screenshotUrl?: string;
+  finalUrl?: string;
+  evaluationStatus?: 'pass' | 'fail';
+  evaluationReason?: string;
+  error?: string;
+  needsReauth?: boolean;
+  failureCode?: BrowserAutomationFailureCode;
+  failureStage?: BrowserAutomationFailureStage;
+  blockedReason?: string;
+  logs: Prisma.InputJsonValue;
+}
+
+const toJsonLogs = (logs: BrowserEvidenceLog[]): Prisma.InputJsonArray =>
+  logs.map(
+    (log): Prisma.InputJsonObject => ({
+      timestamp: log.timestamp,
+      stage: log.stage,
+      message: log.message,
+    }),
+  );
+
+@Injectable()
+export class BrowserEvidenceRunnerService {
+  private readonly logger = new Logger(BrowserEvidenceRunnerService.name);
+  private readonly credentialVault: BrowserCredentialVaultAdapter =
+    new NoopBrowserCredentialVaultAdapter();
+
+  constructor(
+    private readonly sessions: BrowserbaseSessionService = new BrowserbaseSessionService(),
+    private readonly screenshots: BrowserbaseScreenshotService = new BrowserbaseScreenshotService(),
+  ) {}
+
+  async runEvidence(
+    input: BrowserEvidenceRunnerInput,
+  ): Promise<BrowserEvidenceRunResult> {
+    return browserRunCoordinator.withProfileLock({
+      profileId: input.profile.id,
+      hostname: input.profile.hostname,
+      run: async () => {
+        const { sessionId } = await this.sessions.createSessionWithContext(
+          input.profile.contextId,
+        );
+
+        try {
+          return await this.executeEvidenceOnSession({ ...input, sessionId });
+        } finally {
+          await this.closeSession(sessionId);
+        }
+      },
+    });
+  }
+
+  async executeEvidenceOnSession(
+    input: BrowserEvidenceSessionInput,
+  ): Promise<BrowserEvidenceRunResult> {
+    await this.credentialVault.resolveCredentialReference({
+      profileId: input.profile.id,
+    });
+
+    const execution = await executeBrowserEvidence({
+      input,
+      sessions: this.sessions,
+      logger: this.logger,
+    });
+    const uploaded = await this.uploadCapturedScreenshot({ input, execution });
+
+    if (!execution.success) {
+      return {
+        success: false,
+        status: this.blockedStatusForCode(execution.failureCode),
+        screenshotKey: uploaded?.screenshotKey,
+        screenshotUrl: uploaded?.screenshotUrl,
+        finalUrl: execution.finalUrl,
+        evaluationStatus: execution.evaluationStatus,
+        evaluationReason: execution.evaluationReason,
+        error: execution.error,
+        needsReauth: execution.needsReauth,
+        failureCode: execution.failureCode,
+        failureStage: execution.failureStage,
+        blockedReason: execution.blockedReason,
+        logs: toJsonLogs(execution.logs),
+      };
+    }
+
+    return {
+      success: true,
+      status: 'completed',
+      screenshotKey: uploaded?.screenshotKey,
+      screenshotUrl: uploaded?.screenshotUrl,
+      finalUrl: execution.finalUrl,
+      evaluationStatus: execution.evaluationStatus,
+      evaluationReason: execution.evaluationReason,
+      logs: toJsonLogs(execution.logs),
+    };
+  }
+
+  private async uploadCapturedScreenshot({
+    input,
+    execution,
+  }: {
+    input: BrowserEvidenceRunnerInput;
+    execution: BrowserEvidenceExecutionResult;
+  }): Promise<{ screenshotKey: string; screenshotUrl: string } | null> {
+    if (!execution.screenshot) return null;
+
+    const screenshotKey = await this.screenshots.uploadScreenshot({
+      organizationId: input.organizationId,
+      automationId: input.automationId,
+      runId: input.runId,
+      base64Screenshot: execution.screenshot,
+    });
+    const screenshotUrl = await this.screenshots.getPresignedUrl({
+      key: screenshotKey,
+    });
+
+    return { screenshotKey, screenshotUrl };
+  }
+
+  private async closeSession(sessionId: string): Promise<void> {
+    try {
+      await this.sessions.closeSession(sessionId);
+    } catch (err) {
+      this.logger.warn('Failed to close Browserbase session (ignored)', {
+        sessionId,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  private blockedStatusForCode(
+    code: BrowserAutomationFailureCode | undefined,
+  ): 'failed' | 'blocked' {
+    if (code === 'captcha_blocked' || code === 'needs_user_action') {
+      return 'blocked';
+    }
+    return 'failed';
+  }
+}

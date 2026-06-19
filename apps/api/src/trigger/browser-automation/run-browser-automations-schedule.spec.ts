@@ -1,5 +1,8 @@
 import { TaskFrequency } from '@trycompai/db';
-import { filterDueAutomations } from './run-browser-automations-schedule';
+import {
+  filterDueAutomations,
+  limitAutomationBatch,
+} from './run-browser-automations-schedule';
 
 // Mock @db at the module boundary so importing the orchestrator does not try
 // to connect to Postgres. We never call the scheduled `run` function itself
@@ -114,5 +117,40 @@ describe('filterDueAutomations (browser automation orchestrator)', () => {
     });
 
     expect(due).toEqual([]);
+  });
+});
+
+describe('limitAutomationBatch', () => {
+  it('limits due automations by organization and hostname', () => {
+    const automations = [
+      {
+        id: 'ba_1',
+        targetUrl: 'https://github.com/a',
+        task: { organizationId: 'org_1' },
+      },
+      {
+        id: 'ba_2',
+        targetUrl: 'https://github.com/b',
+        task: { organizationId: 'org_1' },
+      },
+      {
+        id: 'ba_3',
+        targetUrl: 'https://gitlab.com/a',
+        task: { organizationId: 'org_1' },
+      },
+      {
+        id: 'ba_4',
+        targetUrl: 'https://github.com/c',
+        task: { organizationId: 'org_2' },
+      },
+    ];
+
+    const limited = limitAutomationBatch({
+      automations,
+      maxPerOrg: 2,
+      maxPerHostname: 2,
+    });
+
+    expect(limited.map((automation) => automation.id)).toEqual(['ba_1', 'ba_2']);
   });
 });

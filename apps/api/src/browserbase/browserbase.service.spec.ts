@@ -1,6 +1,12 @@
 // apps/api/src/browserbase/browserbase.service.spec.ts
 import { Test } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
+import { BrowserAutomationCrudService } from './browser-automation-crud.service';
+import { BrowserAutomationExecutionService } from './browser-automation-execution.service';
+import { BrowserAuthProfileService } from './browser-auth-profile.service';
+import { BrowserEvidenceRunnerService } from './browser-evidence-runner.service';
+import { BrowserbaseScreenshotService } from './browserbase-screenshot.service';
+import { BrowserbaseSessionService } from './browserbase-session.service';
 import { BrowserbaseService } from './browserbase.service';
 
 jest.mock('@db', () => ({
@@ -37,7 +43,15 @@ describe('BrowserbaseService.getScreenshotRedirectUrl', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
     const moduleRef = await Test.createTestingModule({
-      providers: [BrowserbaseService],
+      providers: [
+        BrowserbaseService,
+        BrowserbaseSessionService,
+        BrowserAutomationCrudService,
+        BrowserAutomationExecutionService,
+        BrowserAuthProfileService,
+        BrowserbaseScreenshotService,
+        BrowserEvidenceRunnerService,
+      ],
     }).compile();
     service = moduleRef.get(BrowserbaseService);
   });
@@ -144,7 +158,15 @@ describe('BrowserbaseService schedule frequency passthrough', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
     const moduleRef = await Test.createTestingModule({
-      providers: [BrowserbaseService],
+      providers: [
+        BrowserbaseService,
+        BrowserbaseSessionService,
+        BrowserAutomationCrudService,
+        BrowserAutomationExecutionService,
+        BrowserAuthProfileService,
+        BrowserbaseScreenshotService,
+        BrowserEvidenceRunnerService,
+      ],
     }).compile();
     service = moduleRef.get(BrowserbaseService);
   });
