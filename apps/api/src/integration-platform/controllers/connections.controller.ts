@@ -256,9 +256,13 @@ export class ConnectionsController {
           ? m.auth.config.credentialFields
           : m.credentialFields;
 
-      // Get setup instructions for custom auth
+      // Surface setup instructions for any credential-entry auth type (custom, api_key,
+      // basic, jwt) — not just custom. oauth2 is excluded because its setupInstructions are
+      // admin app-creation steps, not customer connect steps.
       const setupInstructions =
-        m.auth.type === 'custom' ? m.auth.config.setupInstructions : undefined;
+        m.auth.type !== 'oauth2' && 'setupInstructions' in m.auth.config
+          ? m.auth.config.setupInstructions
+          : undefined;
 
       const setupScript =
         m.auth.type === 'custom' ? m.auth.config.setupScript : undefined;
@@ -372,9 +376,12 @@ export class ConnectionsController {
         ? manifest.auth.config.credentialFields
         : manifest.credentialFields;
 
-    // Get setup instructions for custom auth
+    // Surface setup instructions for any credential-entry auth type (custom, api_key,
+    // basic, jwt) — not just custom. oauth2 is excluded because its setupInstructions are
+    // admin app-creation steps, not customer connect steps.
     const setupInstructions =
-      manifest.auth.type === 'custom'
+      manifest.auth.type !== 'oauth2' &&
+      'setupInstructions' in manifest.auth.config
         ? manifest.auth.config.setupInstructions
         : undefined;
 

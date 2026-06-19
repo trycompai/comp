@@ -1,3 +1,10 @@
+## [3.86.4](https://github.com/trycompai/comp/compare/v3.86.3...v3.86.4) (2026-06-19)
+
+
+### Bug Fixes
+
+* **integration-platform:** surface setup instructions for non-custom auth types ([582a277](https://github.com/trycompai/comp/commit/582a2777e5316f07f6770860b577a52ce77ee1ba))
+
 ## [3.86.3](https://github.com/trycompai/comp/compare/v3.86.2...v3.86.3) (2026-06-18)
 
 
