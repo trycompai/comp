@@ -1,6 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import Browserbase from '@browserbasehq/sdk';
 import { z } from 'zod';
+import {
+  browserbaseUnavailableException,
+  getBrowserbaseErrorText,
+  isRetryableBrowserbaseUpstreamError,
+} from './browserbase-upstream-error';
 import { isNoPageError } from './run-error-formatter';
 
 type Stagehand = import('@browserbasehq/stagehand').Stagehand;
@@ -8,6 +13,8 @@ type Stagehand = import('@browserbasehq/stagehand').Stagehand;
 const BROWSER_WIDTH = 1440;
 const BROWSER_HEIGHT = 900;
 const STAGEHAND_MODEL = 'anthropic/claude-sonnet-4-6';
+const BROWSERBASE_CONTEXT_CREATE_MAX_ATTEMPTS = 3;
+const BROWSERBASE_RETRY_DELAYS_MS = [250, 750];
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -26,10 +33,35 @@ export class BrowserbaseSessionService {
   }
 
   async createBrowserbaseContext(): Promise<string> {
-    const context = await this.getBrowserbase().contexts.create({
-      projectId: this.getProjectId(),
-    });
-    return context.id;
+    for (
+      let attempt = 1;
+      attempt <= BROWSERBASE_CONTEXT_CREATE_MAX_ATTEMPTS;
+      attempt += 1
+    ) {
+      try {
+        const context = await this.getBrowserbase().contexts.create({
+          projectId: this.getProjectId(),
+        });
+        return context.id;
+      } catch (error) {
+        const retryable = isRetryableBrowserbaseUpstreamError(error);
+        if (!retryable || attempt === BROWSERBASE_CONTEXT_CREATE_MAX_ATTEMPTS) {
+          this.logger.error('Browserbase context creation failed', {
+            attempt,
+            error: getBrowserbaseErrorText(error),
+          });
+          throw browserbaseUnavailableException();
+        }
+
+        this.logger.warn('Browserbase context creation failed; retrying', {
+          attempt,
+          error: getBrowserbaseErrorText(error),
+        });
+        await delay(BROWSERBASE_RETRY_DELAYS_MS[attempt - 1] ?? 1000);
+      }
+    }
+
+    throw browserbaseUnavailableException();
   }
 
   async createSessionWithContext(
