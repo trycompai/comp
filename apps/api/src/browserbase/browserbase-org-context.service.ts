@@ -1,10 +1,18 @@
-import { Injectable, Logger, RequestTimeoutException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  Logger,
+  RequestTimeoutException,
+} from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { db } from '@db';
 import { BrowserbaseSessionService } from './browserbase-session.service';
 
 export const PENDING_CONTEXT_ID = '__PENDING__';
+const PENDING_CONTEXT_PREFIX = `${PENDING_CONTEXT_ID}:`;
 const ORG_CONTEXT_MAX_WAIT_MS = 10_000;
 const ORG_CONTEXT_POLL_MS = 200;
+const ORG_CONTEXT_STALE_MS = 60_000;
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -14,6 +22,10 @@ export const isPrismaUniqueConstraintError = (error: unknown): boolean => {
   const code = (error as { code?: unknown }).code;
   return code === 'P2002';
 };
+
+const isPendingContextId = (contextId: string): boolean =>
+  contextId === PENDING_CONTEXT_ID ||
+  contextId.startsWith(PENDING_CONTEXT_PREFIX);
 
 @Injectable()
 export class BrowserbaseOrgContextService {
@@ -44,11 +56,22 @@ export class BrowserbaseOrgContextService {
       where: { organizationId: input.organizationId },
     });
 
-    if (existing && existing.contextId !== PENDING_CONTEXT_ID) {
+    if (existing && !isPendingContextId(existing.contextId)) {
       return { contextId: existing.contextId, isNew: false };
     }
 
     if (existing) {
+      const claimId = await this.claimStalePendingOrgContext({
+        organizationId: input.organizationId,
+        contextId: existing.contextId,
+        updatedAt: existing.updatedAt,
+      });
+      if (claimId) {
+        return this.createAndStoreOrgContext({
+          organizationId: input.organizationId,
+          pendingContextId: claimId,
+        });
+      }
       return this.waitForOrgContext(input);
     }
 
@@ -64,7 +87,10 @@ export class BrowserbaseOrgContextService {
       return this.waitForOrgContext(input);
     }
 
-    return this.createAndStoreOrgContext(input.organizationId);
+    return this.createAndStoreOrgContext({
+      organizationId: input.organizationId,
+      pendingContextId: PENDING_CONTEXT_ID,
+    });
   }
 
   async getOrgContext(
@@ -73,22 +99,34 @@ export class BrowserbaseOrgContextService {
     const context = await db.browserbaseContext.findUnique({
       where: { organizationId },
     });
-    if (!context || context.contextId === PENDING_CONTEXT_ID) return null;
+    if (!context || isPendingContextId(context.contextId)) return null;
     return { contextId: context.contextId };
   }
 
-  private async createAndStoreOrgContext(
-    organizationId: string,
-  ): Promise<{ contextId: string; isNew: boolean }> {
+  private async createAndStoreOrgContext(input: {
+    organizationId: string;
+    pendingContextId: string;
+  }): Promise<{ contextId: string; isNew: boolean }> {
     try {
       const contextId = await this.sessions.createBrowserbaseContext();
-      await db.browserbaseContext.update({
-        where: { organizationId },
+      const updated = await db.browserbaseContext.updateMany({
+        where: {
+          organizationId: input.organizationId,
+          contextId: input.pendingContextId,
+        },
         data: { contextId },
       });
+      if (updated.count !== 1) {
+        throw new ConflictException(
+          'Browser context initialization was superseded. Please retry.',
+        );
+      }
       return { contextId, isNew: true };
     } catch (error) {
-      await this.clearPendingOrgContext(organizationId);
+      await this.clearPendingOrgContext({
+        organizationId: input.organizationId,
+        pendingContextId: input.pendingContextId,
+      });
       throw error;
     }
   }
@@ -102,11 +140,25 @@ export class BrowserbaseOrgContextService {
         where: { organizationId: input.organizationId },
       });
 
-      if (current && current.contextId !== PENDING_CONTEXT_ID) {
+      if (current && !isPendingContextId(current.contextId)) {
         return { contextId: current.contextId, isNew: false };
       }
 
-      if (!current) return await this.getOrCreateOrgContextWithinDeadline(input);
+      if (!current) {
+        return await this.getOrCreateOrgContextWithinDeadline(input);
+      }
+
+      const claimId = await this.claimStalePendingOrgContext({
+        organizationId: input.organizationId,
+        contextId: current.contextId,
+        updatedAt: current.updatedAt,
+      });
+      if (claimId) {
+        return this.createAndStoreOrgContext({
+          organizationId: input.organizationId,
+          pendingContextId: claimId,
+        });
+      }
       await delay(
         Math.min(
           ORG_CONTEXT_POLL_MS,
@@ -127,14 +179,45 @@ export class BrowserbaseOrgContextService {
     );
   }
 
-  private async clearPendingOrgContext(organizationId: string): Promise<void> {
+  private async claimStalePendingOrgContext(input: {
+    organizationId: string;
+    contextId: string;
+    updatedAt: Date;
+  }): Promise<string | null> {
+    const staleBefore = new Date(Date.now() - ORG_CONTEXT_STALE_MS);
+    if (input.updatedAt > staleBefore) return null;
+
+    const claimId = `${PENDING_CONTEXT_PREFIX}${randomUUID()}`;
+    const updated = await db.browserbaseContext.updateMany({
+      where: {
+        organizationId: input.organizationId,
+        contextId: input.contextId,
+        updatedAt: { lte: staleBefore },
+      },
+      data: { contextId: claimId },
+    });
+
+    if (updated.count !== 1) return null;
+    this.logger.warn(
+      `Recovering stale Browserbase context initialization for org ${input.organizationId}`,
+    );
+    return claimId;
+  }
+
+  private async clearPendingOrgContext(input: {
+    organizationId: string;
+    pendingContextId: string;
+  }): Promise<void> {
     try {
       await db.browserbaseContext.deleteMany({
-        where: { organizationId, contextId: PENDING_CONTEXT_ID },
+        where: {
+          organizationId: input.organizationId,
+          contextId: input.pendingContextId,
+        },
       });
     } catch (error) {
       this.logger.warn('Failed to clear pending Browserbase context', {
-        organizationId,
+        organizationId: input.organizationId,
         error: error instanceof Error ? error.message : String(error),
       });
     }
