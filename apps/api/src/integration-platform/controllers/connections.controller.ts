@@ -1181,14 +1181,22 @@ export class ConnectionsController {
           );
 
           if (!newToken) {
-            // Refresh failed - connection needs to be re-established
-            await this.connectionService.setConnectionError(
-              id,
-              'OAuth token expired and refresh failed. Please reconnect.',
-            );
+            const refreshedConnection =
+              await this.connectionService.getConnectionForOrg(
+                id,
+                organizationId,
+              );
+            if (refreshedConnection.status === 'error') {
+              throw new HttpException(
+                refreshedConnection.errorMessage ??
+                  'Token refresh failed. Please reconnect the integration.',
+                HttpStatus.UNAUTHORIZED,
+              );
+            }
+
             throw new HttpException(
-              'Token refresh failed. Please reconnect the integration.',
-              HttpStatus.UNAUTHORIZED,
+              'Token refresh temporarily failed. Please try again.',
+              HttpStatus.SERVICE_UNAVAILABLE,
             );
           }
 
