@@ -1,7 +1,7 @@
 'use client';
 
-import { apiClient } from '@/lib/api-client';
 import { usePermissions } from '@/hooks/use-permissions';
+import { apiClient } from '@/lib/api-client';
 import {
   Badge,
   Button,
@@ -16,12 +16,12 @@ import {
 } from '@trycompai/design-system';
 import { Globe, Screen } from '@trycompai/design-system/icons';
 import { useCallback, useEffect, useState } from 'react';
+import { BrowserConnectionInstructions } from './BrowserConnectionInstructions';
+import { BrowserConnectionLiveView } from './BrowserConnectionLiveView';
 import {
   BrowserConnectionProfileList,
   type BrowserConnectionProfile,
 } from './BrowserConnectionProfileList';
-import { BrowserConnectionInstructions } from './BrowserConnectionInstructions';
-import { BrowserConnectionLiveView } from './BrowserConnectionLiveView';
 
 interface ResolveProfileResponse {
   profile: BrowserConnectionProfile & { contextId: string };
@@ -53,7 +53,6 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
   const { hasPermission } = usePermissions();
   const canManageBrowser = hasPermission('integration', 'create');
   const [status, setStatus] = useState<Status>('idle');
-  const [hasContext, setHasContext] = useState(false);
   const [profileId, setProfileId] = useState<string | null>(null);
   const [profiles, setProfiles] = useState<BrowserConnectionProfile[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -61,6 +60,7 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
   const [urlToCheck, setUrlToCheck] = useState('https://github.com');
   const [authStatus, setAuthStatus] = useState<AuthStatusResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const hasContext = profiles.some((profile) => profile.status === 'verified');
 
   const checkContextStatus = useCallback(async () => {
     try {
@@ -69,7 +69,6 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
         setProfiles(res.data);
         const verifiedProfile = res.data.find((profile) => profile.status === 'verified');
         const firstProfile = verifiedProfile ?? res.data[0];
-        setHasContext(Boolean(verifiedProfile));
         setProfileId(firstProfile?.id ?? null);
       }
     } catch {
@@ -96,7 +95,9 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
       }
       setProfileId(profileRes.data.profile.id);
       setProfiles((currentProfiles) => {
-        const rest = currentProfiles.filter((profile) => profile.id !== profileRes.data?.profile.id);
+        const rest = currentProfiles.filter(
+          (profile) => profile.id !== profileRes.data?.profile.id,
+        );
         return profileRes.data ? [profileRes.data.profile, ...rest] : currentProfiles;
       });
 
@@ -112,10 +113,10 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
       setLiveViewUrl(sessionRes.data.liveViewUrl);
 
       // Navigate to the URL
-      await apiClient.post(
-        '/v1/browserbase/navigate',
-        { sessionId: startedSessionId, url: urlToCheck },
-      );
+      await apiClient.post('/v1/browserbase/navigate', {
+        sessionId: startedSessionId,
+        url: urlToCheck,
+      });
 
       setStatus('session-active');
     } catch (err) {
@@ -127,10 +128,7 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
       // If we created a session but navigation failed, close it to avoid orphaned sessions
       if (startedSessionId) {
         try {
-          await apiClient.post(
-            '/v1/browserbase/session/close',
-            { sessionId: startedSessionId },
-          );
+          await apiClient.post('/v1/browserbase/session/close', { sessionId: startedSessionId });
         } catch {
           // Ignore cleanup errors (don't mask original error)
         }
@@ -158,7 +156,6 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
         const rest = currentProfiles.filter((profile) => profile.id !== res.data?.profile.id);
         return res.data ? [res.data.profile, ...rest] : currentProfiles;
       });
-      setHasContext(res.data.profile.status === 'verified');
 
       // Close the session after checking
       await apiClient.post('/v1/browserbase/session/close', { sessionId });

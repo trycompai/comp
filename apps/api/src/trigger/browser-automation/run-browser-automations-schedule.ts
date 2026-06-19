@@ -26,7 +26,10 @@ export function filterDueAutomations<
   );
 }
 
-const parsePositiveInt = (value: string | undefined, fallback: number): number => {
+const parsePositiveInt = (
+  value: string | undefined,
+  fallback: number,
+): number => {
   if (!value) return fallback;
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
@@ -34,6 +37,7 @@ const parsePositiveInt = (value: string | undefined, fallback: number): number =
 
 export function limitAutomationBatch<
   T extends {
+    id?: string;
     targetUrl: string;
     task: { organizationId: string };
   },
@@ -52,7 +56,17 @@ export function limitAutomationBatch<
 
   for (const automation of automations) {
     const organizationId = automation.task.organizationId;
-    const hostname = normalizeHostnameFromUrl(automation.targetUrl);
+    let hostname: string;
+    try {
+      hostname = normalizeHostnameFromUrl(automation.targetUrl);
+    } catch (error) {
+      logger.warn('Skipping browser automation with invalid target URL', {
+        automationId: automation.id,
+        targetUrl: automation.targetUrl,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      continue;
+    }
     const orgCount = orgCounts.get(organizationId) ?? 0;
     const hostnameCount = hostnameCounts.get(hostname) ?? 0;
 

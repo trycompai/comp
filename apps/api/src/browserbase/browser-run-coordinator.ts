@@ -1,6 +1,9 @@
 const DEFAULT_DOMAIN_THROTTLE_MS = 5_000;
 
-const parsePositiveInt = (value: string | undefined, fallback: number): number => {
+const parsePositiveInt = (
+  value: string | undefined,
+  fallback: number,
+): number => {
   if (!value) return fallback;
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
@@ -10,6 +13,7 @@ const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export class BrowserRunCoordinator {
   private readonly profileLocks = new Map<string, Promise<void>>();
+  private readonly domainLocks = new Map<string, Promise<void>>();
   private readonly lastDomainRunAt = new Map<string, number>();
 
   async withProfileLock<T>({
@@ -22,7 +26,7 @@ export class BrowserRunCoordinator {
     run: () => Promise<T>;
   }): Promise<T> {
     const previous = this.profileLocks.get(profileId) ?? Promise.resolve();
-    let release: () => void = () => undefined;
+    let release: () => void = () => {};
     const current = new Promise<void>((resolve) => {
       release = resolve;
     });
@@ -32,12 +36,39 @@ export class BrowserRunCoordinator {
     await previous;
 
     try {
-      await this.waitForDomainTurn(hostname);
-      return await run();
+      return await this.withDomainTurn({ hostname, run });
     } finally {
       release();
       if (this.profileLocks.get(profileId) === chained) {
         this.profileLocks.delete(profileId);
+      }
+    }
+  }
+
+  private async withDomainTurn<T>({
+    hostname,
+    run,
+  }: {
+    hostname: string;
+    run: () => Promise<T>;
+  }): Promise<T> {
+    const previous = this.domainLocks.get(hostname) ?? Promise.resolve();
+    let release: () => void = () => {};
+    const current = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const chained = previous.then(() => current);
+    this.domainLocks.set(hostname, chained);
+
+    await previous;
+
+    try {
+      await this.waitForDomainTurn(hostname);
+      return await run();
+    } finally {
+      release();
+      if (this.domainLocks.get(hostname) === chained) {
+        this.domainLocks.delete(hostname);
       }
     }
   }

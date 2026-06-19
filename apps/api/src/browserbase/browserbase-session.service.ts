@@ -147,13 +147,14 @@ export class BrowserbaseSessionService {
       return { success: true };
     } catch (err) {
       this.logger.error('Failed to navigate to URL', err);
-      if (stagehand) {
-        await this.safeCloseStagehand(stagehand);
-      }
       return {
         success: false,
         error: err instanceof Error ? err.message : 'Unknown error',
       };
+    } finally {
+      if (stagehand) {
+        await this.safeCloseStagehand(stagehand);
+      }
     }
   }
 

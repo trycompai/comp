@@ -104,7 +104,24 @@ export class BrowserEvidenceRunnerService {
       sessions: this.sessions,
       logger: this.logger,
     });
-    const uploaded = await this.uploadCapturedScreenshot({ input, execution });
+    let uploaded: { screenshotKey: string; screenshotUrl: string } | null =
+      null;
+    try {
+      uploaded = await this.uploadCapturedScreenshot({ input, execution });
+    } catch (err) {
+      this.logger.warn(
+        'Screenshot upload failed; continuing without screenshot',
+        {
+          runId: input.runId,
+          error: err instanceof Error ? err.message : String(err),
+        },
+      );
+      execution.logs.push({
+        timestamp: new Date().toISOString(),
+        stage: 'upload',
+        message: 'Screenshot upload failed; run completed without screenshot.',
+      });
+    }
 
     if (!execution.success) {
       return {

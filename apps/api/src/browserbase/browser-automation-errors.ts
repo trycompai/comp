@@ -40,23 +40,6 @@ export function classifyBrowserAutomationError(
   const lower = message.toLowerCase();
 
   if (
-    lower.includes('session expired') ||
-    lower.includes('not logged in') ||
-    lower.includes('login') ||
-    lower.includes('sign in') ||
-    lower.includes('unauthorized') ||
-    lower.includes('forbidden')
-  ) {
-    return {
-      code: 'needs_reauth',
-      stage: 'auth',
-      userFacing: 'Authentication is no longer valid. Reconnect this browser profile.',
-      needsReauth: true,
-      blockedReason: 'Authentication expired or could not be verified.',
-    };
-  }
-
-  if (
     lower.includes('two-factor') ||
     lower.includes('2fa') ||
     lower.includes('totp') ||
@@ -67,9 +50,33 @@ export function classifyBrowserAutomationError(
     return {
       code: 'needs_user_action',
       stage: 'auth',
-      userFacing: 'The site requires a user action such as 2FA or device approval.',
+      userFacing:
+        'The site requires a user action such as 2FA or device approval.',
       needsReauth: true,
       blockedReason: 'Manual 2FA or device approval is required.',
+    };
+  }
+
+  if (
+    lower.includes('session expired') ||
+    lower.includes('not logged in') ||
+    lower.includes('not signed in') ||
+    lower.includes('signed out') ||
+    lower.includes('login required') ||
+    lower.includes('log in required') ||
+    lower.includes('sign in required') ||
+    lower.includes('please log in') ||
+    lower.includes('please login') ||
+    lower.includes('unauthorized') ||
+    lower.includes('forbidden')
+  ) {
+    return {
+      code: 'needs_reauth',
+      stage: 'auth',
+      userFacing:
+        'Authentication is no longer valid. Reconnect this browser profile.',
+      needsReauth: true,
+      blockedReason: 'Authentication expired or could not be verified.',
     };
   }
 
@@ -77,7 +84,8 @@ export function classifyBrowserAutomationError(
     return {
       code: 'captcha_blocked',
       stage: 'auth',
-      userFacing: 'The site presented a captcha that automation cannot complete.',
+      userFacing:
+        'The site presented a captcha that automation cannot complete.',
       needsReauth: false,
       blockedReason: 'Captcha challenge blocked automation.',
     };
@@ -127,12 +135,14 @@ export function classifyBrowserAutomationError(
   return {
     code: 'unknown',
     stage,
-    userFacing: message || 'Browser automation failed for an unknown reason.',
+    userFacing: 'Browser automation failed for an unknown reason.',
     needsReauth: false,
   };
 }
 
-export function evaluationFailedError(message: string): ClassifiedBrowserAutomationError {
+export function evaluationFailedError(
+  message: string,
+): ClassifiedBrowserAutomationError {
   return {
     code: 'evaluation_failed',
     stage: 'evaluation',

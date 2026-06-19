@@ -14,7 +14,9 @@ describe('classifyBrowserAutomationError', () => {
 
   it('classifies 2FA and device approval as needs_user_action', () => {
     const result = classifyBrowserAutomationError(
-      new Error('Device approval required before continuing'),
+      new Error(
+        'Login paused because device approval required before continuing',
+      ),
       'auth',
     );
 
@@ -29,5 +31,16 @@ describe('classifyBrowserAutomationError', () => {
     expect(
       classifyBrowserAutomationError(new Error('429 Too Many Requests')).code,
     ).toBe('rate_limited');
+  });
+
+  it('does not expose raw unknown error text to users', () => {
+    const result = classifyBrowserAutomationError(
+      new Error('internal token abc123'),
+    );
+
+    expect(result.code).toBe('unknown');
+    expect(result.userFacing).toBe(
+      'Browser automation failed for an unknown reason.',
+    );
   });
 });

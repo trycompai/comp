@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { db } from '@db';
 import {
   defaultProfileDisplayName,
@@ -6,17 +6,12 @@ import {
   normalizeLoginIdentity,
 } from './browserbase-url';
 import { BrowserbaseSessionService } from './browserbase-session.service';
-
-const PENDING_CONTEXT_ID = '__PENDING__';
-
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-const isPrismaUniqueConstraintError = (error: unknown): boolean => {
-  if (typeof error !== 'object' || error === null) return false;
-  if (!('code' in error)) return false;
-  const code = (error as { code?: unknown }).code;
-  return code === 'P2002';
-};
+import { BrowserAuthProfileContextService } from './browser-auth-profile-context.service';
+import {
+  BrowserbaseOrgContextService,
+  PENDING_CONTEXT_ID,
+  isPrismaUniqueConstraintError,
+} from './browserbase-org-context.service';
 
 export interface AuthProfileInput {
   organizationId: string;
@@ -30,10 +25,15 @@ export interface AuthProfileInput {
 
 @Injectable()
 export class BrowserAuthProfileService {
-  private readonly logger = new Logger(BrowserAuthProfileService.name);
-
   constructor(
     private readonly sessions: BrowserbaseSessionService = new BrowserbaseSessionService(),
+    private readonly orgContexts: BrowserbaseOrgContextService = new BrowserbaseOrgContextService(
+      sessions,
+    ),
+    private readonly profileContexts: BrowserAuthProfileContextService = new BrowserAuthProfileContextService(
+      sessions,
+      orgContexts,
+    ),
   ) {}
 
   async listProfiles(organizationId: string) {
@@ -70,24 +70,30 @@ export class BrowserAuthProfileService {
     });
 
     if (existing) {
-      return { profile: existing, isNew: false };
+      return {
+        profile: await this.profileContexts.ready(existing),
+        isNew: false,
+      };
     }
 
-    const contextId = await this.resolveInitialContextId(input.organizationId);
-
     try {
-      const profile = await db.browserAuthProfile.create({
+      const pendingProfile = await db.browserAuthProfile.create({
         data: {
           organizationId: input.organizationId,
           hostname,
           loginIdentity,
-          displayName: input.displayName?.trim() || defaultProfileDisplayName(hostname),
-          contextId,
+          displayName:
+            input.displayName?.trim() || defaultProfileDisplayName(hostname),
+          contextId: PENDING_CONTEXT_ID,
           lastAuthCheckUrl: input.url,
           vaultProvider: input.vaultProvider,
           vaultExternalItemRef: input.vaultExternalItemRef,
           vaultConnectionId: input.vaultConnectionId,
         },
+      });
+      const profile = await this.profileContexts.initialize({
+        profileId: pendingProfile.id,
+        organizationId: input.organizationId,
       });
       return { profile, isNew: true };
     } catch (error) {
@@ -104,7 +110,10 @@ export class BrowserAuthProfileService {
           },
         },
       });
-      return { profile, isNew: false };
+      return {
+        profile: await this.profileContexts.ready(profile),
+        isNew: false,
+      };
     }
   }
 
@@ -119,9 +128,9 @@ export class BrowserAuthProfileService {
         organizationId: input.organizationId,
       });
       if (!profile) {
-        throw new Error('Browser auth profile not found');
+        throw new NotFoundException('Browser auth profile not found');
       }
-      return profile;
+      return this.profileContexts.ready(profile);
     }
 
     const hostname = normalizeHostnameFromUrl(input.targetUrl);
@@ -131,8 +140,8 @@ export class BrowserAuthProfileService {
     });
 
     const verified = profiles.find((profile) => profile.status === 'verified');
-    if (verified) return verified;
-    if (profiles[0]) return profiles[0];
+    if (verified) return this.profileContexts.ready(verified);
+    if (profiles[0]) return this.profileContexts.ready(profiles[0]);
 
     const created = await this.getOrCreateProfileFromUrl({
       organizationId: input.organizationId,
@@ -147,9 +156,10 @@ export class BrowserAuthProfileService {
   }): Promise<{ sessionId: string; liveViewUrl: string }> {
     const profile = await this.getProfile(input);
     if (!profile) {
-      throw new Error('Browser auth profile not found');
+      throw new NotFoundException('Browser auth profile not found');
     }
-    return this.sessions.createSessionWithContext(profile.contextId);
+    const readyProfile = await this.profileContexts.ready(profile);
+    return this.sessions.createSessionWithContext(readyProfile.contextId);
   }
 
   async verifyProfileSession(input: {
@@ -163,10 +173,13 @@ export class BrowserAuthProfileService {
       profileId: input.profileId,
     });
     if (!profile) {
-      throw new Error('Browser auth profile not found');
+      throw new NotFoundException('Browser auth profile not found');
     }
 
-    const auth = await this.sessions.checkLoginStatus(input.sessionId, input.url);
+    const auth = await this.sessions.checkLoginStatus(
+      input.sessionId,
+      input.url,
+    );
     const status = auth.isLoggedIn ? 'verified' : 'needs_reauth';
     const updated = await db.browserAuthProfile.update({
       where: { id: profile.id },
@@ -188,7 +201,7 @@ export class BrowserAuthProfileService {
   }) {
     const profile = await this.getProfile(input);
     if (!profile) {
-      throw new Error('Browser auth profile not found');
+      throw new NotFoundException('Browser auth profile not found');
     }
 
     return db.browserAuthProfile.update({
@@ -207,7 +220,7 @@ export class BrowserAuthProfileService {
   }) {
     const profile = await this.getProfile(input);
     if (!profile) {
-      throw new Error('Browser auth profile not found');
+      throw new NotFoundException('Browser auth profile not found');
     }
 
     return db.browserAuthProfile.update({
@@ -222,75 +235,12 @@ export class BrowserAuthProfileService {
   async getOrCreateOrgContext(
     organizationId: string,
   ): Promise<{ contextId: string; isNew: boolean }> {
-    const existing = await db.browserbaseContext.findUnique({
-      where: { organizationId },
-    });
-
-    if (existing && existing.contextId !== PENDING_CONTEXT_ID) {
-      return { contextId: existing.contextId, isNew: false };
-    }
-
-    try {
-      await db.browserbaseContext.create({
-        data: { organizationId, contextId: PENDING_CONTEXT_ID },
-      });
-
-      const contextId = await this.sessions.createBrowserbaseContext();
-
-      await db.browserbaseContext.update({
-        where: { organizationId },
-        data: { contextId },
-      });
-
-      return { contextId, isNew: true };
-    } catch (error) {
-      if (!isPrismaUniqueConstraintError(error)) {
-        throw error;
-      }
-    }
-
-    return this.waitForOrgContext(organizationId);
+    return this.orgContexts.getOrCreateOrgContext(organizationId);
   }
 
-  async getOrgContext(organizationId: string): Promise<{ contextId: string } | null> {
-    const context = await db.browserbaseContext.findUnique({
-      where: { organizationId },
-    });
-
-    if (!context || context.contextId === PENDING_CONTEXT_ID) return null;
-    return { contextId: context.contextId };
-  }
-
-  private async resolveInitialContextId(organizationId: string): Promise<string> {
-    const legacy = await this.getOrgContext(organizationId);
-    if (legacy) return legacy.contextId;
-    return this.sessions.createBrowserbaseContext();
-  }
-
-  private async waitForOrgContext(
+  async getOrgContext(
     organizationId: string,
-  ): Promise<{ contextId: string; isNew: boolean }> {
-    const maxWaitMs = 10_000;
-    const pollMs = 200;
-    const startedAt = Date.now();
-
-    while (Date.now() - startedAt < maxWaitMs) {
-      const current = await db.browserbaseContext.findUnique({
-        where: { organizationId },
-      });
-
-      if (current && current.contextId !== PENDING_CONTEXT_ID) {
-        return { contextId: current.contextId, isNew: false };
-      }
-
-      if (!current) {
-        return await this.getOrCreateOrgContext(organizationId);
-      }
-
-      await delay(pollMs);
-    }
-
-    this.logger.warn(`Timed out waiting for Browserbase context creation for org ${organizationId}`);
-    throw new Error('Browser context initialization is taking too long. Please retry.');
+  ): Promise<{ contextId: string } | null> {
+    return this.orgContexts.getOrgContext(organizationId);
   }
 }

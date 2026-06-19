@@ -151,6 +151,32 @@ describe('limitAutomationBatch', () => {
       maxPerHostname: 2,
     });
 
-    expect(limited.map((automation) => automation.id)).toEqual(['ba_1', 'ba_2']);
+    expect(limited.map((automation) => automation.id)).toEqual([
+      'ba_1',
+      'ba_2',
+    ]);
+  });
+
+  it('skips malformed target URLs without dropping valid automations', () => {
+    const automations = [
+      {
+        id: 'ba_bad',
+        targetUrl: 'not-a-url',
+        task: { organizationId: 'org_1' },
+      },
+      {
+        id: 'ba_good',
+        targetUrl: 'https://github.com/a',
+        task: { organizationId: 'org_1' },
+      },
+    ];
+
+    const limited = limitAutomationBatch({
+      automations,
+      maxPerOrg: 2,
+      maxPerHostname: 2,
+    });
+
+    expect(limited.map((automation) => automation.id)).toEqual(['ba_good']);
   });
 });

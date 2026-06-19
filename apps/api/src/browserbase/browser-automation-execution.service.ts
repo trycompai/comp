@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { db } from '@db';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { db, Prisma } from '@db';
 import { BrowserAuthProfileService } from './browser-auth-profile.service';
+import { failedBrowserEvidenceRunResult } from './browser-automation-run-result';
 import {
   BrowserEvidenceRunnerService,
   type BrowserEvidenceRunResult,
@@ -9,6 +10,8 @@ import { BrowserbaseSessionService } from './browserbase-session.service';
 
 @Injectable()
 export class BrowserAutomationExecutionService {
+  private readonly logger = new Logger(BrowserAutomationExecutionService.name);
+
   constructor(
     private readonly sessions: BrowserbaseSessionService = new BrowserbaseSessionService(),
     private readonly profiles: BrowserAuthProfileService = new BrowserAuthProfileService(
@@ -19,7 +22,10 @@ export class BrowserAutomationExecutionService {
     ),
   ) {}
 
-  async startAutomationWithLiveView(automationId: string, organizationId: string) {
+  async startAutomationWithLiveView(
+    automationId: string,
+    organizationId: string,
+  ) {
     const automation = await this.getRunnableAutomation({
       automationId,
       organizationId,
@@ -29,10 +35,21 @@ export class BrowserAutomationExecutionService {
       targetUrl: automation.targetUrl,
     });
     const run = await this.createRun({ automationId, profileId: profile.id });
-    const { sessionId, liveViewUrl } = await this.sessions.createSessionWithContext(
-      profile.contextId,
-    );
-    return { runId: run.id, sessionId, liveViewUrl, profileId: profile.id };
+
+    try {
+      const { sessionId, liveViewUrl } =
+        await this.sessions.createSessionWithContext(profile.contextId);
+      return { runId: run.id, sessionId, liveViewUrl, profileId: profile.id };
+    } catch (error) {
+      const result = failedBrowserEvidenceRunResult(error);
+      await this.finishRun({ runId: run.id, startedAt: run.startedAt, result });
+      await this.applyProfileResult({
+        organizationId,
+        profileId: profile.id,
+        result,
+      });
+      throw error;
+    }
   }
 
   async executeAutomationOnSession(
@@ -45,32 +62,46 @@ export class BrowserAutomationExecutionService {
       automationId,
       organizationId,
     });
-    const run = await db.browserAutomationRun.findUnique({ where: { id: runId } });
-    if (!run || run.automationId !== automationId) throw new Error('Run not found');
+    const run = await db.browserAutomationRun.findUnique({
+      where: { id: runId },
+    });
+    if (!run || run.automationId !== automationId) {
+      throw new NotFoundException('Run not found');
+    }
 
     const profile = await this.profiles.resolveProfileForTarget({
       organizationId,
       targetUrl: automation.targetUrl,
       profileId: run.profileId ?? undefined,
     });
-    const result = await this.runner.executeEvidenceOnSession({
-      organizationId,
-      taskId: automation.taskId,
-      automationId,
-      runId,
-      sessionId,
-      targetUrl: automation.targetUrl,
-      instruction: automation.instruction,
-      evaluationCriteria: automation.evaluationCriteria,
-      profile: {
-        id: profile.id,
-        hostname: profile.hostname,
-        contextId: profile.contextId,
-      },
-    });
+    let result: BrowserEvidenceRunResult;
+    try {
+      result = await this.runner.executeEvidenceOnSession({
+        organizationId,
+        taskId: automation.taskId,
+        automationId,
+        runId,
+        sessionId,
+        targetUrl: automation.targetUrl,
+        instruction: automation.instruction,
+        evaluationCriteria: automation.evaluationCriteria,
+        profile: {
+          id: profile.id,
+          hostname: profile.hostname,
+          contextId: profile.contextId,
+        },
+      });
+    } catch (error) {
+      this.logger.error('Browser evidence runner failed', error);
+      result = failedBrowserEvidenceRunResult(error);
+    }
 
     await this.finishRun({ runId, startedAt: run.startedAt, result });
-    await this.applyProfileResult({ organizationId, profileId: profile.id, result });
+    await this.applyProfileResult({
+      organizationId,
+      profileId: profile.id,
+      result,
+    });
     return this.toRunResponse({ runId, result });
   }
 
@@ -91,39 +122,56 @@ export class BrowserAutomationExecutionService {
       return this.toRunResponse({ runId: run.id, result });
     }
 
-    const result = await this.runner.runEvidence({
-      organizationId,
-      taskId: automation.taskId,
-      automationId,
-      runId: run.id,
-      targetUrl: automation.targetUrl,
-      instruction: automation.instruction,
-      evaluationCriteria: automation.evaluationCriteria,
-      profile: {
-        id: profile.id,
-        hostname: profile.hostname,
-        contextId: profile.contextId,
-      },
-    });
+    let result: BrowserEvidenceRunResult;
+    try {
+      result = await this.runner.runEvidence({
+        organizationId,
+        taskId: automation.taskId,
+        automationId,
+        runId: run.id,
+        targetUrl: automation.targetUrl,
+        instruction: automation.instruction,
+        evaluationCriteria: automation.evaluationCriteria,
+        profile: {
+          id: profile.id,
+          hostname: profile.hostname,
+          contextId: profile.contextId,
+        },
+      });
+    } catch (error) {
+      this.logger.error('Browser evidence runner failed', error);
+      result = failedBrowserEvidenceRunResult(error);
+    }
     await this.finishRun({ runId: run.id, startedAt: run.startedAt, result });
-    await this.applyProfileResult({ organizationId, profileId: profile.id, result });
+    await this.applyProfileResult({
+      organizationId,
+      profileId: profile.id,
+      result,
+    });
     return this.toRunResponse({ runId: run.id, result });
   }
 
   private async createRun(input: { automationId: string; profileId?: string }) {
-    const attemptCount =
-      (await db.browserAutomationRun.count({
-        where: { automationId: input.automationId },
-      })) + 1;
-    return db.browserAutomationRun.create({
-      data: {
-        automationId: input.automationId,
-        profileId: input.profileId,
-        status: 'running',
-        startedAt: new Date(),
-        attemptCount,
+    return db.$transaction(
+      async (tx) => {
+        const attemptCount =
+          (await tx.browserAutomationRun.count({
+            where: { automationId: input.automationId },
+          })) + 1;
+        return tx.browserAutomationRun.create({
+          data: {
+            automationId: input.automationId,
+            profileId: input.profileId,
+            status: 'running',
+            startedAt: new Date(),
+            attemptCount,
+          },
+        });
       },
-    });
+      {
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+      },
+    );
   }
 
   private async finishRun(input: {
@@ -136,7 +184,9 @@ export class BrowserAutomationExecutionService {
       data: {
         status: input.result.status,
         completedAt: new Date(),
-        durationMs: input.startedAt ? Date.now() - input.startedAt.getTime() : 0,
+        durationMs: input.startedAt
+          ? Date.now() - input.startedAt.getTime()
+          : 0,
         screenshotUrl: input.result.screenshotKey,
         evaluationStatus: input.result.evaluationStatus ?? null,
         evaluationReason: input.result.evaluationReason ?? null,
@@ -226,24 +276,11 @@ export class BrowserAutomationExecutionService {
         },
       },
     });
-    const scoped = this.hideCrossOrgAutomation({
-      automation,
-      organizationId: input.organizationId,
-    });
-    if (!scoped) throw new NotFoundException('Automation not found');
-    return scoped;
-  }
-
-  private hideCrossOrgAutomation<T extends { task: { organizationId: string } }>({
-    automation,
-    organizationId,
-  }: {
-    automation: T | null;
-    organizationId?: string;
-  }): T | null {
-    if (!automation) return null;
-    if (organizationId && automation.task.organizationId !== organizationId) {
-      return null;
+    if (
+      !automation ||
+      automation.task.organizationId !== input.organizationId
+    ) {
+      throw new NotFoundException('Automation not found');
     }
     return automation;
   }

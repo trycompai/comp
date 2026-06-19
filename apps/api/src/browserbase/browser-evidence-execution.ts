@@ -50,12 +50,14 @@ export async function executeBrowserEvidence({
     logs.push({ timestamp: new Date().toISOString(), stage, message });
   };
   let stagehand: Stagehand | null = null;
+  let currentStage: BrowserAutomationFailureStage = 'session';
 
   try {
     log('session', 'Initializing Stagehand session.');
     stagehand = await sessions.createStagehand(input.sessionId);
     let page = await sessions.ensureActivePage(stagehand);
 
+    currentStage = 'navigation';
     log('navigation', `Opening ${input.targetUrl}.`);
     await page.goto(input.targetUrl, {
       waitUntil: 'domcontentloaded',
@@ -63,6 +65,7 @@ export async function executeBrowserEvidence({
     });
     await delay(1000);
 
+    currentStage = 'auth';
     const authCheck = await checkAuth(stagehand);
     if (!authCheck.isLoggedIn) {
       const classified = classifyBrowserAutomationError(
@@ -73,6 +76,7 @@ export async function executeBrowserEvidence({
       return toExecutionFailure({ classified, logs });
     }
 
+    currentStage = 'action';
     log('action', 'Running navigation instruction.');
     const instruction = `${input.instruction}. After completing all navigation steps, stop and wait.`;
     await stagehand
@@ -89,6 +93,7 @@ export async function executeBrowserEvidence({
     page = await sessions.ensureActivePage(stagehand);
     const finalUrl = page.url();
 
+    currentStage = 'screenshot';
     log('screenshot', 'Capturing screenshot.');
     const rawScreenshot = await page.screenshot({
       type: 'jpeg',
@@ -103,6 +108,7 @@ export async function executeBrowserEvidence({
       instruction: input.instruction,
       finalUrl,
     });
+    currentStage = 'evaluation';
     const evaluation = await evaluateIfNeeded({
       stagehand,
       criteria: input.evaluationCriteria,
@@ -132,7 +138,7 @@ export async function executeBrowserEvidence({
       logs,
     };
   } catch (err) {
-    const classified = classifyBrowserAutomationError(err, 'action');
+    const classified = classifyBrowserAutomationError(err, currentStage);
     log(classified.stage, classified.userFacing);
     logger.error('Failed to execute browser evidence run', err);
     return toExecutionFailure({ classified, logs });
@@ -166,7 +172,8 @@ async function renderScreenshot({
     });
   } catch (overlayErr) {
     logger.warn('Screenshot overlay render failed; uploading raw image', {
-      error: overlayErr instanceof Error ? overlayErr.message : String(overlayErr),
+      error:
+        overlayErr instanceof Error ? overlayErr.message : String(overlayErr),
     });
     logs.push({
       timestamp: new Date().toISOString(),
@@ -177,7 +184,9 @@ async function renderScreenshot({
   return finalBuffer.toString('base64');
 }
 
-async function checkAuth(stagehand: Stagehand): Promise<{ isLoggedIn: boolean }> {
+async function checkAuth(
+  stagehand: Stagehand,
+): Promise<{ isLoggedIn: boolean }> {
   const loginSchema = z.object({ isLoggedIn: z.boolean() });
   return stagehand.extract(
     'Check if the user is logged in to this website. Look for a user avatar, profile menu, account dropdown, or login/sign-in buttons. Return true if logged in, false if you see login buttons or a login form.',
