@@ -276,8 +276,7 @@ export const runTaskIntegrationChecks = task({
             where: { id: connectionId },
             data: {
               status: 'error',
-              errorMessage:
-                'OAuth token expired. Please reconnect the integration.',
+              errorMessage,
             },
           });
         }

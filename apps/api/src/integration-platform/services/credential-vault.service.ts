@@ -8,6 +8,11 @@ import {
 } from 'crypto';
 import { CredentialRepository } from '../repositories/credential.repository';
 import { ConnectionRepository } from '../repositories/connection.repository';
+import {
+  buildOAuthRefreshErrorMessage,
+  isTerminalOAuthRefreshFailure,
+  type OAuthRefreshFailure,
+} from './oauth-refresh-error';
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 12;
@@ -61,6 +66,10 @@ export interface TokenRefreshConfig {
   tokenParams?: Record<string, string>;
   /** If provider has a separate refresh URL (rare) */
   refreshUrl?: string;
+}
+
+interface StoreOAuthTokensOptions {
+  preserveExistingRefreshToken?: boolean;
 }
 
 @Injectable()
@@ -133,6 +142,7 @@ export class CredentialVaultService {
   async storeOAuthTokens(
     connectionId: string,
     tokens: OAuthTokens,
+    options: StoreOAuthTokensOptions = {},
   ): Promise<void> {
     // Encrypt each token field
     const encryptedPayload: Record<string, unknown> = {};
@@ -140,8 +150,27 @@ export class CredentialVaultService {
     if (tokens.access_token) {
       encryptedPayload.access_token = await this.encrypt(tokens.access_token);
     }
-    if (tokens.refresh_token) {
-      encryptedPayload.refresh_token = await this.encrypt(tokens.refresh_token);
+
+    // Google may omit refresh_token on later OAuth responses. Do not replace a
+    // working credential version with one that can no longer refresh itself.
+    let refreshToken = tokens.refresh_token;
+    if (!refreshToken && options.preserveExistingRefreshToken) {
+      try {
+        refreshToken = (await this.getRefreshToken(connectionId)) ?? undefined;
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : String(error);
+        throw new Error(
+          `Unable to preserve existing refresh token for connection ${connectionId}: ${reason}`,
+        );
+      }
+      if (!refreshToken) {
+        throw new Error(
+          `OAuth response did not include a refresh token and no existing refresh token could be preserved for connection ${connectionId}`,
+        );
+      }
+    }
+    if (refreshToken) {
+      encryptedPayload.refresh_token = await this.encrypt(refreshToken);
     }
     if (tokens.token_type) {
       encryptedPayload.token_type = tokens.token_type;
@@ -346,7 +375,7 @@ export class CredentialVaultService {
       refresh_token: refreshToken,
     });
 
-    if (config.scope) {
+    if (config.scope && this.shouldSendRefreshScope(config)) {
       body.set('scope', config.scope);
     }
 
@@ -421,6 +450,16 @@ export class CredentialVaultService {
 
     await this.storeOAuthTokens(connectionId, tokensToStore);
     return { token: tokens.access_token };
+  }
+
+  private shouldSendRefreshScope(config: TokenRefreshConfig): boolean {
+    const endpoint = config.refreshUrl || config.tokenUrl;
+    try {
+      const { hostname } = new URL(endpoint);
+      return hostname !== 'oauth2.googleapis.com';
+    } catch {
+      return true;
+    }
   }
 
   /**
@@ -558,6 +597,11 @@ export class CredentialVaultService {
       this.logger.warn(
         `No refresh token available for connection ${connectionId}`,
       );
+      await this.connectionRepository.update(connectionId, {
+        status: 'error',
+        errorMessage:
+          'OAuth refresh token missing. Please reconnect the integration.',
+      });
       return null;
     }
 
@@ -575,6 +619,15 @@ export class CredentialVaultService {
           `Successfully refreshed OAuth tokens for connection ${connectionId}`,
         );
         return first.token;
+      }
+
+      if (isTerminalOAuthRefreshFailure(first)) {
+        await this.markTerminalTokenRefreshFailure(
+          connectionId,
+          config,
+          first,
+        );
+        return null;
       }
 
       // Retry once after 2 seconds for transient failures (rate limits, network blips)
@@ -600,16 +653,12 @@ export class CredentialVaultService {
         `Token refresh failed for connection ${connectionId} after 2 attempts: HTTP ${second.status} — ${second.errorBody ?? '(no body)'}`,
       );
 
-      if (
-        second.status === 400 ||
-        second.status === 401 ||
-        second.status === 403
-      ) {
-        await this.connectionRepository.update(connectionId, {
-          status: 'error',
-          errorMessage:
-            'OAuth token expired. Please reconnect the integration.',
-        });
+      if (isTerminalOAuthRefreshFailure(second)) {
+        await this.markTerminalTokenRefreshFailure(
+          connectionId,
+          config,
+          second,
+        );
       }
 
       return null;
@@ -619,6 +668,29 @@ export class CredentialVaultService {
         error,
       );
       return null;
+    }
+  }
+
+  private async markTerminalTokenRefreshFailure(
+    connectionId: string,
+    config: TokenRefreshConfig,
+    failure: OAuthRefreshFailure,
+  ): Promise<void> {
+    await this.connectionRepository.update(connectionId, {
+      status: 'error',
+      errorMessage: buildOAuthRefreshErrorMessage({
+        providerHost: this.getTokenEndpointHost(config),
+        failure,
+      }),
+    });
+  }
+
+  private getTokenEndpointHost(config: TokenRefreshConfig): string | undefined {
+    const endpoint = config.refreshUrl || config.tokenUrl;
+    try {
+      return new URL(endpoint).hostname;
+    } catch {
+      return undefined;
     }
   }
 

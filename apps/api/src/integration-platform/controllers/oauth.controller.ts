@@ -355,7 +355,11 @@ export class OAuthController {
       }
 
       // Store tokens and mark connection as active
-      await this.credentialVaultService.storeOAuthTokens(connection.id, tokens);
+      await this.credentialVaultService.storeOAuthTokens(connection.id, tokens, {
+        preserveExistingRefreshToken:
+          oauthState.providerSlug === 'gcp' ||
+          oauthState.providerSlug === 'google-workspace',
+      });
 
       // Mark cloud OAuth reconnect completion so reconnect banners clear after successful OAuth.
       if (manifest.category === 'Cloud') {
