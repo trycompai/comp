@@ -6,6 +6,10 @@ type EvidencePage = Awaited<
   ReturnType<BrowserbaseSessionService['ensureActivePage']>
 >;
 
+interface EvidencePageCandidate {
+  url(): string;
+}
+
 export async function resolveEvidencePage({
   stagehand,
   initialPage,
@@ -15,34 +19,48 @@ export async function resolveEvidencePage({
   initialPage: EvidencePage;
   targetUrl: string;
 }): Promise<EvidencePage> {
-  if (!isEvidencePageClosed(initialPage)) {
-    await bringEvidencePageToFront(initialPage);
-    return initialPage;
-  }
-
-  const targetHostname = safeHostname(targetUrl);
-  const matchingPage = stagehand.context.pages().find((candidate) => {
-    if (isEvidencePageClosed(candidate)) return false;
-    return (
-      targetHostname !== null &&
-      safeHostname(candidate.url()) === targetHostname
-    );
+  const selectedPage = selectEvidencePage({
+    pages: stagehand.context.pages(),
+    initialPage,
+    targetUrl,
+    isClosed: isEvidencePageClosed,
   });
 
-  if (matchingPage) {
-    await bringEvidencePageToFront(matchingPage);
-    return matchingPage;
+  if (!selectedPage) {
+    throw new Error('Browser session ended before evidence capture.');
   }
 
-  const [fallbackPage] = stagehand.context
-    .pages()
-    .filter((candidate) => !isEvidencePageClosed(candidate));
-  if (fallbackPage) {
-    await bringEvidencePageToFront(fallbackPage);
-    return fallbackPage;
-  }
+  await bringEvidencePageToFront(selectedPage);
+  return selectedPage;
+}
 
-  return initialPage;
+export function selectEvidencePage<Page extends EvidencePageCandidate>({
+  pages,
+  initialPage,
+  targetUrl,
+  isClosed,
+}: {
+  pages: Page[];
+  initialPage: Page;
+  targetUrl: string;
+  isClosed: (page: Page) => boolean;
+}): Page | null {
+  const openPages = pages.filter((page) => !isClosed(page));
+  const targetHostname = safeHostname(targetUrl);
+  const openMatchesTarget = (page: Page) =>
+    targetHostname !== null && safeHostname(page.url()) === targetHostname;
+
+  const newestMatchingNewPage = [...openPages]
+    .reverse()
+    .find((page) => page !== initialPage && openMatchesTarget(page));
+  if (newestMatchingNewPage) return newestMatchingNewPage;
+
+  if (!isClosed(initialPage)) return initialPage;
+
+  const newestMatchingPage = [...openPages].reverse().find(openMatchesTarget);
+  if (newestMatchingPage) return newestMatchingPage;
+
+  return openPages.at(-1) ?? null;
 }
 
 export async function bringEvidencePageToFront(
