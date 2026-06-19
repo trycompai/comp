@@ -101,6 +101,9 @@ export class BrowserAutomationExecutionService {
           id: profile.id,
           hostname: profile.hostname,
           contextId: profile.contextId,
+          vaultProvider: profile.vaultProvider,
+          vaultExternalItemRef: profile.vaultExternalItemRef,
+          vaultConnectionId: profile.vaultConnectionId,
         },
         beforeExecution: () =>
           this.runs.assertRunIsStillActive({ runId, automationId }),
@@ -158,6 +161,9 @@ export class BrowserAutomationExecutionService {
           id: profile.id,
           hostname: profile.hostname,
           contextId: profile.contextId,
+          vaultProvider: profile.vaultProvider,
+          vaultExternalItemRef: profile.vaultExternalItemRef,
+          vaultConnectionId: profile.vaultConnectionId,
         },
       });
     } catch (error) {

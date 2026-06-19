@@ -72,6 +72,11 @@ export class BrowserbaseSessionService {
     });
   }
 
+  async getSessionContextId(sessionId: string): Promise<string | undefined> {
+    const session = await this.getBrowserbase().sessions.retrieve(sessionId);
+    return session.contextId;
+  }
+
   async createStagehand(sessionId: string): Promise<Stagehand> {
     const { Stagehand } = await import('@browserbasehq/stagehand');
     const stagehand = new Stagehand({

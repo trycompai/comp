@@ -11,6 +11,10 @@ import { BrowserbaseOrgContextService } from './browserbase-org-context.service'
 import { BrowserbaseScreenshotService } from './browserbase-screenshot.service';
 import { BrowserbaseSessionService } from './browserbase-session.service';
 import { BrowserbaseService } from './browserbase.service';
+import {
+  BROWSER_CREDENTIAL_VAULT_ADAPTER,
+  NoopBrowserCredentialVaultAdapter,
+} from './credential-vault';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
@@ -27,6 +31,10 @@ import { AuthModule } from '../auth/auth.module';
     BrowserbaseOrgContextService,
     BrowserbaseScreenshotService,
     BrowserEvidenceRunnerService,
+    {
+      provide: BROWSER_CREDENTIAL_VAULT_ADAPTER,
+      useClass: NoopBrowserCredentialVaultAdapter,
+    },
   ],
   exports: [BrowserbaseService],
 })

@@ -136,6 +136,31 @@ describe('BrowserAuthProfileService', () => {
     expect(sessions.checkLoginStatus).not.toHaveBeenCalled();
   });
 
+  it('rejects profile verification when the session uses another context', async () => {
+    jest.spyOn(sessions, 'getSessionContextId').mockResolvedValue('ctx_other');
+    jest
+      .spyOn(sessions, 'checkLoginStatus')
+      .mockResolvedValue({ isLoggedIn: true });
+    (db.browserAuthProfile.findFirst as jest.Mock).mockResolvedValue({
+      id: 'bap_1',
+      organizationId: 'org_1',
+      hostname: 'github.com',
+      contextId: 'ctx_profile',
+      lastVerifiedAt: null,
+    });
+
+    await expect(
+      service.verifyProfileSession({
+        organizationId: 'org_1',
+        profileId: 'bap_1',
+        sessionId: 'sess_wrong',
+        url: 'https://github.com/acme/repo',
+      }),
+    ).rejects.toThrow('does not belong to this auth profile');
+    expect(sessions.checkLoginStatus).not.toHaveBeenCalled();
+    expect(db.browserAuthProfile.update).not.toHaveBeenCalled();
+  });
+
   it('treats a pending legacy org context as unavailable', async () => {
     (db.browserbaseContext.findUnique as jest.Mock).mockResolvedValue({
       organizationId: 'org_1',

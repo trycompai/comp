@@ -75,8 +75,10 @@ export function classifyBrowserAutomationError(
     lower.includes('sign in required') ||
     lower.includes('please log in') ||
     lower.includes('please login') ||
-    lower.includes('unauthorized') ||
-    lower.includes('forbidden')
+    lower.includes('401 unauthorized') ||
+    lower.includes('http 401') ||
+    lower.includes('unauthorized. please log in') ||
+    lower.includes('unauthorized. please login')
   ) {
     return {
       code: 'needs_reauth',

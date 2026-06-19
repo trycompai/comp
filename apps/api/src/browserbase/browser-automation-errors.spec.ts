@@ -44,6 +44,16 @@ describe('classifyBrowserAutomationError', () => {
     );
   });
 
+  it('does not classify generic forbidden errors as reauth', () => {
+    const result = classifyBrowserAutomationError(
+      new Error('403 forbidden while loading report'),
+      'navigation',
+    );
+
+    expect(result.code).toBe('unknown');
+    expect(result.needsReauth).toBe(false);
+  });
+
   it('reads message fields from non-Error thrown objects', () => {
     const result = classifyBrowserAutomationError({
       message: 'Target closed while taking screenshot',

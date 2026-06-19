@@ -183,6 +183,10 @@ export class BrowserAuthProfileService {
       url: input.url,
       profileHostname: profile.hostname,
     });
+    await this.assertSessionMatchesProfile({
+      sessionId: input.sessionId,
+      profileContextId: profile.contextId,
+    });
 
     const auth = await this.sessions.checkLoginStatus(
       input.sessionId,
@@ -268,5 +272,19 @@ export class BrowserAuthProfileService {
         'Verification URL must match the browser auth profile hostname.',
       );
     }
+  }
+
+  private async assertSessionMatchesProfile(input: {
+    sessionId: string;
+    profileContextId: string;
+  }): Promise<void> {
+    const sessionContextId = await this.sessions.getSessionContextId(
+      input.sessionId,
+    );
+    if (sessionContextId === input.profileContextId) return;
+
+    throw new BadRequestException(
+      'Browser session does not belong to this auth profile.',
+    );
   }
 }

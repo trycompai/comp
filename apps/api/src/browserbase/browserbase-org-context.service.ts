@@ -1,8 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, RequestTimeoutException } from '@nestjs/common';
 import { db } from '@db';
 import { BrowserbaseSessionService } from './browserbase-session.service';
 
 export const PENDING_CONTEXT_ID = '__PENDING__';
+const ORG_CONTEXT_MAX_WAIT_MS = 10_000;
+const ORG_CONTEXT_POLL_MS = 200;
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -24,8 +26,22 @@ export class BrowserbaseOrgContextService {
   async getOrCreateOrgContext(
     organizationId: string,
   ): Promise<{ contextId: string; isNew: boolean }> {
+    return this.getOrCreateOrgContextWithinDeadline({
+      organizationId,
+      deadlineMs: Date.now() + ORG_CONTEXT_MAX_WAIT_MS,
+    });
+  }
+
+  private async getOrCreateOrgContextWithinDeadline(input: {
+    organizationId: string;
+    deadlineMs: number;
+  }): Promise<{ contextId: string; isNew: boolean }> {
+    if (Date.now() >= input.deadlineMs) {
+      this.throwContextTimeout(input.organizationId);
+    }
+
     const existing = await db.browserbaseContext.findUnique({
-      where: { organizationId },
+      where: { organizationId: input.organizationId },
     });
 
     if (existing && existing.contextId !== PENDING_CONTEXT_ID) {
@@ -33,19 +49,22 @@ export class BrowserbaseOrgContextService {
     }
 
     if (existing) {
-      return this.waitForOrgContext(organizationId);
+      return this.waitForOrgContext(input);
     }
 
     try {
       await db.browserbaseContext.create({
-        data: { organizationId, contextId: PENDING_CONTEXT_ID },
+        data: {
+          organizationId: input.organizationId,
+          contextId: PENDING_CONTEXT_ID,
+        },
       });
     } catch (error) {
       if (!isPrismaUniqueConstraintError(error)) throw error;
-      return this.waitForOrgContext(organizationId);
+      return this.waitForOrgContext(input);
     }
 
-    return this.createAndStoreOrgContext(organizationId);
+    return this.createAndStoreOrgContext(input.organizationId);
   }
 
   async getOrgContext(
@@ -74,30 +93,36 @@ export class BrowserbaseOrgContextService {
     }
   }
 
-  private async waitForOrgContext(
-    organizationId: string,
-  ): Promise<{ contextId: string; isNew: boolean }> {
-    const maxWaitMs = 10_000;
-    const pollMs = 200;
-    const startedAt = Date.now();
-
-    while (Date.now() - startedAt < maxWaitMs) {
+  private async waitForOrgContext(input: {
+    organizationId: string;
+    deadlineMs: number;
+  }): Promise<{ contextId: string; isNew: boolean }> {
+    while (Date.now() < input.deadlineMs) {
       const current = await db.browserbaseContext.findUnique({
-        where: { organizationId },
+        where: { organizationId: input.organizationId },
       });
 
       if (current && current.contextId !== PENDING_CONTEXT_ID) {
         return { contextId: current.contextId, isNew: false };
       }
 
-      if (!current) return await this.getOrCreateOrgContext(organizationId);
-      await delay(pollMs);
+      if (!current) return await this.getOrCreateOrgContextWithinDeadline(input);
+      await delay(
+        Math.min(
+          ORG_CONTEXT_POLL_MS,
+          Math.max(0, input.deadlineMs - Date.now()),
+        ),
+      );
     }
 
+    this.throwContextTimeout(input.organizationId);
+  }
+
+  private throwContextTimeout(organizationId: string): never {
     this.logger.warn(
       `Timed out waiting for Browserbase context creation for org ${organizationId}`,
     );
-    throw new Error(
+    throw new RequestTimeoutException(
       'Browser context initialization is taking too long. Please retry.',
     );
   }
