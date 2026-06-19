@@ -7,21 +7,39 @@ jest.mock('@browserbasehq/sdk', () => ({
   default: jest.fn().mockImplementation(() => ({})),
 }));
 
-type BrowserbaseClient = ReturnType<BrowserbaseSessionService['getBrowserbase']>;
+type BrowserbaseClient = ReturnType<
+  BrowserbaseSessionService['getBrowserbase']
+>;
 
 const prematureCloseError = () =>
   Object.assign(new Error('Invalid response body: Premature close'), {
     code: 'ERR_STREAM_PREMATURE_CLOSE',
   });
 
+type MockBrowserbaseClientInput = {
+  createContext?: jest.Mock;
+  createSession?: jest.Mock;
+  debugSession?: jest.Mock;
+  retrieveSession?: jest.Mock;
+  updateSession?: jest.Mock;
+};
+
 const mockBrowserbaseClient = ({
-  createContext,
-}: {
-  createContext: jest.Mock;
-}): BrowserbaseClient =>
+  createContext = jest.fn(),
+  createSession = jest.fn(),
+  debugSession = jest.fn(),
+  retrieveSession = jest.fn(),
+  updateSession = jest.fn(),
+}: MockBrowserbaseClientInput): BrowserbaseClient =>
   ({
     contexts: {
       create: createContext,
+    },
+    sessions: {
+      create: createSession,
+      debug: debugSession,
+      retrieve: retrieveSession,
+      update: updateSession,
     },
   }) as unknown as BrowserbaseClient;
 
@@ -78,5 +96,52 @@ describe('BrowserbaseSessionService', () => {
 
     await expectation;
     expect(createContext).toHaveBeenCalledTimes(3);
+  });
+
+  it('retries transient Browserbase session retrieval failures', async () => {
+    jest.useFakeTimers();
+    const service = new BrowserbaseSessionService();
+    const retrieveSession = jest
+      .fn()
+      .mockRejectedValueOnce(prematureCloseError())
+      .mockResolvedValueOnce({ contextId: 'ctx_1' });
+    jest
+      .spyOn(service, 'getBrowserbase')
+      .mockReturnValue(mockBrowserbaseClient({ retrieveSession }));
+
+    const promise = service.getSessionContextId('session_1');
+    await jest.advanceTimersByTimeAsync(250);
+
+    await expect(promise).resolves.toBe('ctx_1');
+    expect(retrieveSession).toHaveBeenCalledTimes(2);
+    expect(retrieveSession).toHaveBeenCalledWith('session_1');
+  });
+
+  it('retries transient Browserbase live view lookup failures', async () => {
+    jest.useFakeTimers();
+    const service = new BrowserbaseSessionService();
+    const createSession = jest.fn().mockResolvedValue({ id: 'session_1' });
+    const debugSession = jest
+      .fn()
+      .mockRejectedValueOnce(prematureCloseError())
+      .mockResolvedValueOnce({
+        debuggerFullscreenUrl: 'https://live.browserbase.test/session_1',
+      });
+    jest.spyOn(service, 'getBrowserbase').mockReturnValue(
+      mockBrowserbaseClient({
+        createSession,
+        debugSession,
+      }),
+    );
+
+    const promise = service.createSessionWithContext('ctx_1');
+    await jest.advanceTimersByTimeAsync(250);
+
+    await expect(promise).resolves.toEqual({
+      sessionId: 'session_1',
+      liveViewUrl: 'https://live.browserbase.test/session_1',
+    });
+    expect(createSession).toHaveBeenCalledTimes(1);
+    expect(debugSession).toHaveBeenCalledTimes(2);
   });
 });
