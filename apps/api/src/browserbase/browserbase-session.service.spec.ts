@@ -1,5 +1,11 @@
 import { ServiceUnavailableException } from '@nestjs/common';
+import Browserbase from '@browserbasehq/sdk';
 import { BrowserbaseSessionService } from './browserbase-session.service';
+
+jest.mock('@browserbasehq/sdk', () => ({
+  __esModule: true,
+  default: jest.fn().mockImplementation(() => ({})),
+}));
 
 type BrowserbaseClient = ReturnType<BrowserbaseSessionService['getBrowserbase']>;
 
@@ -22,7 +28,20 @@ const mockBrowserbaseClient = ({
 describe('BrowserbaseSessionService', () => {
   afterEach(() => {
     jest.useRealTimers();
+    jest.clearAllMocks();
     jest.restoreAllMocks();
+  });
+
+  it('requests identity encoded Browserbase API responses', () => {
+    const service = new BrowserbaseSessionService();
+
+    service.getBrowserbase();
+
+    expect(jest.mocked(Browserbase)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        defaultHeaders: { 'accept-encoding': 'identity' },
+      }),
+    );
   });
 
   it('retries transient Browserbase context creation failures', async () => {

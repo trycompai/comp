@@ -15,6 +15,7 @@ const BROWSER_HEIGHT = 900;
 const STAGEHAND_MODEL = 'anthropic/claude-sonnet-4-6';
 const BROWSERBASE_CONTEXT_CREATE_MAX_ATTEMPTS = 3;
 const BROWSERBASE_RETRY_DELAYS_MS = [250, 750];
+const BROWSERBASE_DEFAULT_HEADERS = { 'accept-encoding': 'identity' };
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -25,6 +26,7 @@ export class BrowserbaseSessionService {
   getBrowserbase() {
     return new Browserbase({
       apiKey: process.env.BROWSERBASE_API_KEY,
+      defaultHeaders: BROWSERBASE_DEFAULT_HEADERS,
     });
   }
 
