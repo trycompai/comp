@@ -139,12 +139,19 @@ export class CloudSecurityService {
           });
 
         if (!accessToken) {
+          const refreshedConnection = await db.integrationConnection.findUnique({
+            where: { id: connectionId },
+            select: { errorMessage: true },
+          });
+
           return {
             success: false,
             provider: providerSlug,
             findings: [],
             scannedAt: new Date().toISOString(),
-            error: 'OAuth token expired. Please reconnect the integration.',
+            error:
+              refreshedConnection?.errorMessage ??
+              'OAuth token expired. Please reconnect the integration.',
           };
         }
 
