@@ -1,6 +1,8 @@
 'use client';
 
+import { useApiSWR } from '@/hooks/use-api-swr';
 import {
+  extractOrgFrameworkTypes,
   FINDING_SEVERITY_CONFIG,
   FINDING_STATUS_CONFIG,
   FINDING_TYPE_LABELS,
@@ -54,12 +56,6 @@ const SEVERITY_OPTIONS: { value: FindingSeverity | 'all'; label: string }[] = [
   { value: FindingSeverity.high, label: 'High' },
   { value: FindingSeverity.medium, label: 'Medium' },
   { value: FindingSeverity.low, label: 'Low' },
-];
-
-const FRAMEWORK_OPTIONS: { value: FindingType | 'all'; label: string }[] = [
-  { value: 'all', label: 'All frameworks' },
-  { value: FindingType.soc2, label: FINDING_TYPE_LABELS.soc2 },
-  { value: FindingType.iso27001, label: FINDING_TYPE_LABELS.iso27001 },
 ];
 
 const capitalize = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
@@ -134,6 +130,26 @@ export function FindingsTab({
   );
   const findings: Finding[] = Array.isArray(data?.data) ? data.data : [];
 
+  // Mirror the Create Finding form: the framework filter must offer every
+  // framework the org has actually enabled — not a hardcoded SOC 2 / ISO 27001
+  // pair — so findings logged against ISO 42001, HIPAA, etc. are filterable.
+  const { data: frameworksData } = useApiSWR<unknown>(
+    '/v1/frameworks?includeScores=false',
+    { refreshInterval: 0 },
+  );
+  const frameworkOptions = useMemo<
+    { value: FindingType | 'all'; label: string }[]
+  >(
+    () => [
+      { value: 'all', label: 'All frameworks' },
+      ...extractOrgFrameworkTypes(frameworksData).map((type) => ({
+        value: type,
+        label: FINDING_TYPE_LABELS[type],
+      })),
+    ],
+    [frameworksData],
+  );
+
   // Support deep links (e.g. emails + in-app notifications) that land on
   // `/overview/findings?open=<id>`. Auto-open the matching finding's sheet
   // once we've loaded the list, then strip the query param so a page
@@ -184,7 +200,7 @@ export function FindingsTab({
   const severityLabel =
     SEVERITY_OPTIONS.find((o) => o.value === severityFilter)?.label ?? 'Severity';
   const frameworkLabel =
-    FRAMEWORK_OPTIONS.find((o) => o.value === frameworkFilter)?.label ??
+    frameworkOptions.find((o) => o.value === frameworkFilter)?.label ??
     'Framework';
 
   const hasAnyFinding = findings.length > 0;
@@ -255,7 +271,7 @@ export function FindingsTab({
                   <SelectValue placeholder="Framework">{frameworkLabel}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {FRAMEWORK_OPTIONS.map((opt) => (
+                  {frameworkOptions.map((opt) => (
                     <SelectItem key={opt.value} value={opt.value}>
                       {opt.label}
                     </SelectItem>
