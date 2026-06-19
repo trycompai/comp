@@ -32,10 +32,10 @@ export function NoContextState({ isStartingAuth, onStartAuth }: NoContextStatePr
           <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
             <Screen className="h-6 w-6 text-muted-foreground" />
           </div>
-          <h4 className="text-sm font-medium mb-2">Connect your browser first</h4>
+          <h4 className="text-sm font-medium mb-2">Log in to the website first</h4>
           <p className="text-xs text-muted-foreground mb-4 max-w-sm mx-auto">
-            Browser automations require authentication. Log in to sites like GitHub, Jira, or AWS to
-            capture screenshots as evidence.
+            Enter the site you want to automate. We will save a browser profile for that hostname
+            and reuse it for future evidence runs.
           </p>
           <div className="flex flex-col gap-3 max-w-xs mx-auto">
             <div className="flex gap-2">
@@ -55,7 +55,7 @@ export function NoContextState({ isStartingAuth, onStartAuth }: NoContextStatePr
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Tip: Use a dedicated service account for automations
+              Use a dedicated service account for automations when possible.
             </p>
           </div>
         </div>

@@ -24,4 +24,10 @@ describe('SettingsSidebar', () => {
 
     expect(screen.queryByRole('link', { name: 'Billing' })).not.toBeInTheDocument();
   });
+
+  it('hides Browser even when the browser tab flag is enabled', () => {
+    render(<SettingsSidebar orgId="org-1" showBillingTab={true} showBrowserTab={true} />);
+
+    expect(screen.queryByRole('link', { name: 'Browser' })).not.toBeInTheDocument();
+  });
 });

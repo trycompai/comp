@@ -37,11 +37,7 @@ export interface ContextResponse {
   isNew: boolean;
 }
 
-export type BrowserAuthProfileStatus =
-  | 'unverified'
-  | 'verified'
-  | 'needs_reauth'
-  | 'blocked';
+export type BrowserAuthProfileStatus = 'unverified' | 'verified' | 'needs_reauth' | 'blocked';
 
 export interface BrowserAuthProfile {
   id: string;
@@ -66,6 +62,11 @@ export interface ResolveAuthProfileResponse {
 export interface SessionResponse {
   sessionId: string;
   liveViewUrl: string;
+}
+
+export interface NavigateResponse {
+  success: boolean;
+  error?: string;
 }
 
 export interface AuthStatusResponse {
