@@ -1,3 +1,10 @@
+## [3.86.5](https://github.com/trycompai/comp/compare/v3.86.4...v3.86.5) (2026-06-19)
+
+
+### Bug Fixes
+
+* **integrations:** harden google oauth refresh ([b8fa9bb](https://github.com/trycompai/comp/commit/b8fa9bb9a07f24a02f124563ad43f3ca97591b6b))
+
 ## [3.86.4](https://github.com/trycompai/comp/compare/v3.86.3...v3.86.4) (2026-06-19)
 
 
