@@ -55,7 +55,7 @@ export function BrowserLiveView({
                 loading={isChecking}
                 iconLeft={!isChecking ? <Renew size={12} /> : undefined}
               >
-                {isChecking ? 'Checking...' : 'Save & Close'}
+                {isChecking ? 'Checking...' : 'Check & Save'}
               </Button>
             )}
             <Button variant="ghost" size="sm" onClick={onCancel}>
