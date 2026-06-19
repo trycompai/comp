@@ -54,6 +54,136 @@ export class CloseSessionDto {
   sessionId: string;
 }
 
+export class AuthStatusResponseDto {
+  @ApiProperty()
+  isLoggedIn: boolean;
+
+  @ApiPropertyOptional()
+  username?: string;
+}
+
+// ===== Auth Profile DTOs =====
+
+export class ResolveAuthProfileDto {
+  @ApiProperty({ description: 'Website URL to normalize into an auth profile hostname' })
+  @IsUrl({}, { message: 'url must be a valid URL' })
+  @IsSafeUrl({ message: 'The provided URL is not allowed.' })
+  @IsString()
+  @IsNotEmpty()
+  url: string;
+
+  @ApiPropertyOptional({ description: 'Human-readable profile name' })
+  @IsString()
+  @IsOptional()
+  displayName?: string;
+
+  @ApiPropertyOptional({
+    description: 'Login identity label, such as a service account email',
+  })
+  @IsString()
+  @IsOptional()
+  loginIdentity?: string;
+
+  @ApiPropertyOptional({ description: 'External vault provider name' })
+  @IsString()
+  @IsOptional()
+  vaultProvider?: string;
+
+  @ApiPropertyOptional({ description: 'External vault item reference' })
+  @IsString()
+  @IsOptional()
+  vaultExternalItemRef?: string;
+
+  @ApiPropertyOptional({ description: 'External vault connection ID' })
+  @IsString()
+  @IsOptional()
+  vaultConnectionId?: string;
+}
+
+export class VerifyAuthProfileSessionDto {
+  @ApiProperty({ description: 'Browserbase session ID' })
+  @IsString()
+  @IsNotEmpty()
+  sessionId: string;
+
+  @ApiProperty({ description: 'URL to verify authentication on' })
+  @IsUrl({}, { message: 'url must be a valid URL' })
+  @IsSafeUrl({ message: 'The provided URL is not allowed.' })
+  @IsString()
+  @IsNotEmpty()
+  url: string;
+}
+
+export class MarkAuthProfileNeedsReauthDto {
+  @ApiPropertyOptional({ description: 'Reason the profile needs re-authentication' })
+  @IsString()
+  @IsOptional()
+  reason?: string;
+}
+
+export class BrowserAuthProfileResponseDto {
+  @ApiProperty()
+  id: string;
+
+  @ApiProperty()
+  organizationId: string;
+
+  @ApiProperty()
+  hostname: string;
+
+  @ApiProperty()
+  loginIdentity: string;
+
+  @ApiProperty()
+  displayName: string;
+
+  @ApiProperty()
+  contextId: string;
+
+  @ApiProperty({ enum: ['unverified', 'verified', 'needs_reauth', 'blocked'] })
+  status: string;
+
+  @ApiPropertyOptional()
+  lastVerifiedAt?: Date;
+
+  @ApiPropertyOptional()
+  lastAuthCheckUrl?: string;
+
+  @ApiPropertyOptional()
+  blockedReason?: string;
+
+  @ApiPropertyOptional()
+  vaultProvider?: string;
+
+  @ApiPropertyOptional()
+  vaultExternalItemRef?: string;
+
+  @ApiPropertyOptional()
+  vaultConnectionId?: string;
+
+  @ApiProperty()
+  createdAt: Date;
+
+  @ApiProperty()
+  updatedAt: Date;
+}
+
+export class ResolveAuthProfileResponseDto {
+  @ApiProperty({ type: BrowserAuthProfileResponseDto })
+  profile: BrowserAuthProfileResponseDto;
+
+  @ApiProperty()
+  isNew: boolean;
+}
+
+export class VerifyAuthProfileResponseDto {
+  @ApiProperty({ type: BrowserAuthProfileResponseDto })
+  profile: BrowserAuthProfileResponseDto;
+
+  @ApiProperty({ type: () => AuthStatusResponseDto })
+  auth: AuthStatusResponseDto;
+}
+
 // ===== Browser Automation DTOs =====
 
 export class CreateBrowserAutomationDto {
@@ -146,6 +276,18 @@ export class UpdateBrowserAutomationDto {
   scheduleFrequency?: TaskFrequency;
 }
 
+export class ExecuteAutomationSessionDto {
+  @ApiProperty({ description: 'Browser automation run ID' })
+  @IsString()
+  @IsNotEmpty()
+  runId: string;
+
+  @ApiProperty({ description: 'Browserbase session ID' })
+  @IsString()
+  @IsNotEmpty()
+  sessionId: string;
+}
+
 // ===== Response DTOs =====
 
 export class ContextResponseDto {
@@ -162,14 +304,6 @@ export class SessionResponseDto {
 
   @ApiProperty()
   liveViewUrl: string;
-}
-
-export class AuthStatusResponseDto {
-  @ApiProperty()
-  isLoggedIn: boolean;
-
-  @ApiPropertyOptional()
-  username?: string;
 }
 
 export class BrowserAutomationResponseDto {
@@ -208,6 +342,9 @@ export class BrowserAutomationRunResponseDto {
   @ApiProperty()
   automationId: string;
 
+  @ApiPropertyOptional()
+  profileId?: string;
+
   @ApiProperty()
   status: string;
 
@@ -225,6 +362,21 @@ export class BrowserAutomationRunResponseDto {
 
   @ApiPropertyOptional()
   error?: string;
+
+  @ApiPropertyOptional()
+  failureCode?: string;
+
+  @ApiPropertyOptional()
+  failureStage?: string;
+
+  @ApiPropertyOptional()
+  blockedReason?: string;
+
+  @ApiPropertyOptional()
+  finalUrl?: string;
+
+  @ApiPropertyOptional()
+  attemptCount?: number;
 
   @ApiProperty()
   createdAt: Date;
@@ -245,4 +397,19 @@ export class RunAutomationResponseDto {
 
   @ApiPropertyOptional()
   needsReauth?: boolean;
+
+  @ApiPropertyOptional()
+  evaluationStatus?: string;
+
+  @ApiPropertyOptional()
+  evaluationReason?: string;
+
+  @ApiPropertyOptional()
+  failureCode?: string;
+
+  @ApiPropertyOptional()
+  failureStage?: string;
+
+  @ApiPropertyOptional()
+  blockedReason?: string;
 }

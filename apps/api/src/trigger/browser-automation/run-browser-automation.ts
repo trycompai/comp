@@ -7,6 +7,25 @@ import { isUserUnsubscribed } from '@trycompai/email';
 
 const browserbaseService = new BrowserbaseService();
 
+const browserAutomationConcurrencyLimit = (): number => {
+  const parsed = Number.parseInt(
+    process.env.BROWSER_AUTOMATION_GLOBAL_CONCURRENCY ?? '20',
+    10,
+  );
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 20;
+};
+
+export function shouldMarkTaskDoneAfterBrowserRun(input: {
+  screenshotUrl?: string;
+  evaluationCriteria?: string | null;
+  evaluationStatus?: 'pass' | 'fail';
+}): boolean {
+  if (!input.screenshotUrl) return false;
+  const criteria = input.evaluationCriteria?.trim();
+  if (!criteria) return true;
+  return input.evaluationStatus === 'pass';
+}
+
 /**
  * Send email notifications for task status change
  */
@@ -171,7 +190,7 @@ export const runBrowserAutomation = task({
   id: 'run-browser-automation',
   maxDuration: 1000 * 60 * 10, // 10 minutes per automation
   queue: {
-    concurrencyLimit: 80,
+    concurrencyLimit: browserAutomationConcurrencyLimit(),
   },
   retry: {
     maxAttempts: 2,
@@ -217,29 +236,6 @@ export const runBrowserAutomation = task({
     });
     const taskTitle = taskDetails?.title ?? 'Unknown Task';
 
-    // Check if org has browser context
-    const context = await browserbaseService.getOrgContext(organizationId);
-    if (!context) {
-      logger.error(`No browser context for org ${organizationId}`);
-
-      // Create a failed run record
-      await db.browserAutomationRun.create({
-        data: {
-          automationId,
-          status: 'failed',
-          startedAt: new Date(),
-          completedAt: new Date(),
-          error: 'No browser context. Please connect your browser in settings.',
-        },
-      });
-
-      return {
-        success: false,
-        error: 'No browser context',
-        needsReauth: true,
-      };
-    }
-
     // Run the automation
     const result = await browserbaseService.runBrowserAutomation(
       automationId,
@@ -252,8 +248,13 @@ export const runBrowserAutomation = task({
         screenshotUrl: result.screenshotUrl ? 'captured' : 'none',
       });
 
-      // Update task status to done if screenshot was captured
-      if (result.screenshotUrl) {
+      if (
+        shouldMarkTaskDoneAfterBrowserRun({
+          screenshotUrl: result.screenshotUrl,
+          evaluationCriteria: automation.evaluationCriteria,
+          evaluationStatus: result.evaluationStatus,
+        })
+      ) {
         const currentTask = await db.task.findUnique({
           where: { id: taskId },
           select: { status: true, frequency: true },
@@ -349,6 +350,7 @@ export const runBrowserAutomation = task({
       screenshotUrl: result.screenshotUrl,
       error: result.error,
       needsReauth: result.needsReauth,
+      failureCode: result.failureCode,
     };
   },
 });

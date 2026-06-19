@@ -1,20 +1,19 @@
 'use client';
 
 import { SchedulePicker } from '@/components/schedule-picker';
-import { Button } from '@trycompai/ui/button';
 import {
+  Button,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
-import { Input } from '@trycompai/ui/input';
-import { Label } from '@trycompai/ui/label';
-import { Textarea } from '@trycompai/ui/textarea';
+  Input,
+  Label,
+  Textarea,
+} from '@trycompai/design-system';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -57,6 +56,7 @@ export function BrowserAutomationConfigDialog({
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
   } = useForm<AutomationConfigFormData>({
     resolver: zodResolver(automationConfigSchema),
@@ -124,6 +124,14 @@ export function BrowserAutomationConfigDialog({
       ? 'Update where the AI starts and what it should do before taking a screenshot.'
       : 'Configure an automation to navigate to a page and capture a screenshot.';
   const submitLabel = mode === 'edit' ? 'Save changes' : 'Create automation';
+  const targetUrl = watch('targetUrl');
+  const profileHostname = (() => {
+    try {
+      return new URL(targetUrl).hostname.toLowerCase();
+    } catch {
+      return null;
+    }
+  })();
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
@@ -155,6 +163,11 @@ export function BrowserAutomationConfigDialog({
             />
             {errors.targetUrl?.message ? (
               <p className="text-sm text-destructive">{errors.targetUrl.message}</p>
+            ) : profileHostname ? (
+              <p className="text-xs text-muted-foreground">
+                Uses the browser auth profile for {profileHostname}. Verify that profile before
+                scheduled runs.
+              </p>
             ) : (
               <p className="text-xs text-muted-foreground">
                 The URL where the automation will start navigating from.
@@ -218,15 +231,8 @@ export function BrowserAutomationConfigDialog({
             <Button type="button" variant="outline" onClick={handleClose} disabled={isSaving}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSaving}>
-              {isSaving ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                submitLabel
-              )}
+            <Button type="submit" disabled={isSaving} loading={isSaving}>
+              {isSaving ? 'Saving...' : submitLabel}
             </Button>
           </DialogFooter>
         </form>
