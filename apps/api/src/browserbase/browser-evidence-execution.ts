@@ -7,7 +7,6 @@ import {
   resolveEvidencePage,
 } from './browser-evidence-page';
 import { evaluateIfNeeded } from './browser-evidence-evaluation';
-import { attemptVaultBackedSignIn } from './browser-vault-auth';
 import {
   type BrowserAutomationFailureCode,
   type BrowserAutomationFailureStage,
@@ -72,18 +71,7 @@ export async function executeBrowserEvidence({
     await delay(1000);
 
     currentStage = 'auth';
-    let authCheck = await checkAuth(stagehand);
-    if (!authCheck.isLoggedIn && input.credentialMaterial) {
-      log('auth', 'Attempting vault-backed sign-in.');
-      const attempted = await attemptVaultBackedSignIn({
-        stagehand,
-        credentials: input.credentialMaterial,
-      });
-      if (attempted) {
-        await delay(1000);
-        authCheck = await checkAuth(stagehand);
-      }
-    }
+    const authCheck = await checkAuth(stagehand);
 
     if (!authCheck.isLoggedIn) {
       const classified = classifyBrowserAutomationError(

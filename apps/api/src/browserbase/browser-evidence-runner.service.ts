@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@db';
 import { BrowserbaseSessionService } from './browserbase-session.service';
 import { BrowserbaseScreenshotService } from './browserbase-screenshot.service';
@@ -12,12 +12,6 @@ import {
   type BrowserEvidenceExecutionResult,
 } from './browser-evidence-execution';
 import { browserRunCoordinator } from './browser-run-coordinator';
-import {
-  BROWSER_CREDENTIAL_VAULT_ADAPTER,
-  type BrowserCredentialVaultAdapter,
-  NoopBrowserCredentialVaultAdapter,
-  type RuntimeCredentialMaterial,
-} from './credential-vault';
 
 export interface BrowserEvidenceRunnerInput {
   organizationId: string;
@@ -40,7 +34,6 @@ export interface BrowserEvidenceRunnerInput {
 
 export interface BrowserEvidenceSessionInput extends BrowserEvidenceRunnerInput {
   sessionId: string;
-  credentialMaterial?: RuntimeCredentialMaterial | null;
 }
 
 export interface BrowserEvidenceRunResult {
@@ -71,18 +64,11 @@ const toJsonLogs = (logs: BrowserEvidenceLog[]): Prisma.InputJsonArray =>
 @Injectable()
 export class BrowserEvidenceRunnerService {
   private readonly logger = new Logger(BrowserEvidenceRunnerService.name);
-  private readonly credentialVault: BrowserCredentialVaultAdapter;
 
   constructor(
     private readonly sessions: BrowserbaseSessionService = new BrowserbaseSessionService(),
     private readonly screenshots: BrowserbaseScreenshotService = new BrowserbaseScreenshotService(),
-    @Optional()
-    @Inject(BROWSER_CREDENTIAL_VAULT_ADAPTER)
-    credentialVault?: BrowserCredentialVaultAdapter,
-  ) {
-    this.credentialVault =
-      credentialVault ?? new NoopBrowserCredentialVaultAdapter();
-  }
+  ) {}
 
   async runEvidence(
     input: BrowserEvidenceRunnerInput,
@@ -121,14 +107,9 @@ export class BrowserEvidenceRunnerService {
     input: BrowserEvidenceSessionInput,
   ): Promise<BrowserEvidenceRunResult> {
     await input.beforeExecution?.();
-    const credentialResult = await this.resolveCredentialMaterial(input);
-    if (credentialResult.blocked) return credentialResult.blocked;
 
     const execution = await executeBrowserEvidence({
-      input: {
-        ...input,
-        credentialMaterial: credentialResult.material,
-      },
+      input,
       sessions: this.sessions,
       logger: this.logger,
     });
@@ -201,64 +182,6 @@ export class BrowserEvidenceRunnerService {
     });
 
     return { screenshotKey, screenshotUrl };
-  }
-
-  private async resolveCredentialMaterial(
-    input: BrowserEvidenceSessionInput,
-  ): Promise<{
-    material: RuntimeCredentialMaterial | null;
-    blocked?: BrowserEvidenceRunResult;
-  }> {
-    try {
-      const material = await this.credentialVault.resolveCredentialReference({
-        profileId: input.profile.id,
-        provider: input.profile.vaultProvider,
-        externalItemRef: input.profile.vaultExternalItemRef,
-        connectionId: input.profile.vaultConnectionId,
-      });
-      if (material || !this.hasVaultReference(input.profile)) {
-        return { material };
-      }
-    } catch (err) {
-      this.logger.warn('Credential vault resolution failed', {
-        profileId: input.profile.id,
-        error: err instanceof Error ? err.message : String(err),
-      });
-    }
-
-    return {
-      material: null,
-      blocked: {
-        success: false,
-        status: 'blocked',
-        error: 'Credential vault material is unavailable.',
-        needsReauth: true,
-        failureCode: 'needs_user_action',
-        failureStage: 'auth',
-        blockedReason:
-          'Vault credentials are configured but could not be resolved at runtime.',
-        logs: toJsonLogs([
-          {
-            timestamp: new Date().toISOString(),
-            stage: 'auth',
-            message:
-              'Vault credentials are configured but unavailable; automation was blocked.',
-          },
-        ]),
-      },
-    };
-  }
-
-  private hasVaultReference(input: {
-    vaultProvider?: string | null;
-    vaultExternalItemRef?: string | null;
-    vaultConnectionId?: string | null;
-  }): boolean {
-    return Boolean(
-      input.vaultProvider ||
-        input.vaultExternalItemRef ||
-        input.vaultConnectionId,
-    );
   }
 
   private async closeSession(sessionId: string): Promise<void> {

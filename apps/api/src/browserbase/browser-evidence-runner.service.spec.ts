@@ -2,7 +2,6 @@ import { BrowserEvidenceRunnerService } from './browser-evidence-runner.service'
 import { executeBrowserEvidence } from './browser-evidence-execution';
 import { BrowserbaseScreenshotService } from './browserbase-screenshot.service';
 import { BrowserbaseSessionService } from './browserbase-session.service';
-import type { BrowserCredentialVaultAdapter } from './credential-vault';
 
 jest.mock('@db', () => ({
   db: {},
@@ -67,17 +66,19 @@ describe('BrowserEvidenceRunnerService', () => {
     ]);
   });
 
-  it('blocks configured vault profiles when credentials cannot be resolved', async () => {
-    const credentialVault: BrowserCredentialVaultAdapter = {
-      resolveCredentialReference: jest.fn().mockResolvedValue(null),
-    };
+  it('does not pass vault credential material into evidence execution', async () => {
+    jest.mocked(executeBrowserEvidence).mockResolvedValue({
+      success: true,
+      finalUrl: 'https://example.com/final',
+      logs: [],
+    });
+
     const service = new BrowserEvidenceRunnerService(
       new BrowserbaseSessionService(),
       new BrowserbaseScreenshotService(),
-      credentialVault,
     );
 
-    const result = await service.executeEvidenceOnSession({
+    await service.executeEvidenceOnSession({
       organizationId: 'org_1',
       automationId: 'bau_1',
       runId: 'bar_1',
@@ -94,50 +95,7 @@ describe('BrowserEvidenceRunnerService', () => {
       sessionId: 'sess_1',
     });
 
-    expect(result.status).toBe('blocked');
-    expect(result.failureCode).toBe('needs_user_action');
-    expect(executeBrowserEvidence).not.toHaveBeenCalled();
-    expect(credentialVault.resolveCredentialReference).toHaveBeenCalledWith({
-      profileId: 'bap_1',
-      provider: '1password',
-      externalItemRef: 'op://vault/item',
-      connectionId: 'conn_1',
-    });
-  });
-
-  it('passes resolved vault credentials to the evidence execution contract', async () => {
-    const credentials = { username: 'svc@example.com', password: 'secret' };
-    const credentialVault: BrowserCredentialVaultAdapter = {
-      resolveCredentialReference: jest.fn().mockResolvedValue(credentials),
-    };
-    jest.mocked(executeBrowserEvidence).mockResolvedValue({
-      success: true,
-      finalUrl: 'https://example.com/final',
-      logs: [],
-    });
-
-    const service = new BrowserEvidenceRunnerService(
-      new BrowserbaseSessionService(),
-      new BrowserbaseScreenshotService(),
-      credentialVault,
-    );
-
-    await service.executeEvidenceOnSession({
-      organizationId: 'org_1',
-      automationId: 'bau_1',
-      runId: 'bar_1',
-      targetUrl: 'https://example.com',
-      instruction: 'collect evidence',
-      profile: {
-        id: 'bap_1',
-        hostname: 'example.com',
-        contextId: 'ctx_1',
-        vaultProvider: '1password',
-      },
-      sessionId: 'sess_1',
-    });
-
     const call = jest.mocked(executeBrowserEvidence).mock.calls[0];
-    expect(call?.[0].input.credentialMaterial).toEqual(credentials);
+    expect(call?.[0].input).not.toHaveProperty('credentialMaterial');
   });
 });
