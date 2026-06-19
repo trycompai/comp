@@ -12,6 +12,13 @@ vi.mock('@/hooks/use-permissions', () => ({
   usePermissions: () => ({ permissions: {}, hasPermission: mockHasPermission }),
 }));
 
+// FindingsTab fetches the org's enabled frameworks via useApiSWR to build the
+// framework filter. Stub it so these tests don't hit the real SWR hook (which
+// reaches for next/navigation's useParams).
+vi.mock('@/hooks/use-api-swr', () => ({
+  useApiSWR: () => ({ data: undefined }),
+}));
+
 const mockUseOrganizationFindings = vi.fn();
 vi.mock('@/hooks/use-findings-api', async () => {
   const actual = await vi.importActual<typeof import('@/hooks/use-findings-api')>(
