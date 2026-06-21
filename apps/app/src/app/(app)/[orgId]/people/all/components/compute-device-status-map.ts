@@ -8,12 +8,13 @@ export type MemberDeviceStatus = 'compliant' | 'non-compliant' | 'stale' | 'not-
  * Rules (in order of precedence):
  * 1. Every member in `complianceMemberIds` starts as `not-installed`.
  * 2. For each agent device with a memberId in the set, the member's roll-up is
- *    `non-compliant` > `stale` > `compliant`:
+ *    `non-compliant` > `compliant` > `stale`:
  *      - Any device with `complianceStatus === 'non_compliant'` → member is
  *        `'non-compliant'`.
- *      - Else any device with `complianceStatus === 'stale'` → member is
- *        `'stale'`.
- *      - Else (all devices compliant) → `'compliant'`.
+ *      - Else any device with `complianceStatus === 'compliant'` → member is
+ *        `'compliant'` (an actively-reporting compliant device beats an
+ *        old/abandoned device that hasn't checked in).
+ *      - Else (all devices stale) → `'stale'`.
  * 3. If a member has no agent device but has a Fleet host, we fall back to
  *    Fleet policy status (compliant / non-compliant; Fleet has no stale
  *    concept). Agent data always wins when present.
@@ -45,13 +46,13 @@ export function computeDeviceStatusMap({
       agentRollup.set(d.memberId, 'non-compliant');
       continue;
     }
-    if (d.complianceStatus === 'stale') {
-      // Stale wins over compliant but loses to non-compliant.
-      if (prev !== 'stale') agentRollup.set(d.memberId, 'stale');
+    if (d.complianceStatus === 'compliant') {
+      // Compliant wins over stale but loses to non-compliant.
+      agentRollup.set(d.memberId, 'compliant');
       continue;
     }
-    // complianceStatus === 'compliant' (or any other benign value).
-    if (prev === undefined) agentRollup.set(d.memberId, 'compliant');
+    // complianceStatus === 'stale' (or any other unknown value).
+    if (prev === undefined) agentRollup.set(d.memberId, 'stale');
   }
   for (const [memberId, status] of agentRollup) {
     map[memberId] = status;
