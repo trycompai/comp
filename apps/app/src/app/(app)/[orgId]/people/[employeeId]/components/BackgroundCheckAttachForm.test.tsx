@@ -41,7 +41,10 @@ describe('BackgroundCheckAttachForm', () => {
     expect(accept).toContain('application/pdf');
     expect(accept).toMatch(/image\/png/);
     expect(accept).toMatch(/image\/jpeg/);
-    expect(accept).toMatch(/image\/heic/);
+    expect(accept).toMatch(/image\/webp/);
+    // HEIC/HEIF intentionally excluded — the API can't validate/store them and
+    // most browsers can't display them; offering them would fail server-side.
+    expect(accept).not.toMatch(/image\/heic/);
   });
 
   it('still accepts a PDF report', () => {
