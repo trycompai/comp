@@ -709,7 +709,9 @@ export function TaskList({
                               </AvatarFallback>
                             </Avatar>
                             <span className="truncate">
-                              {selectedMember.user.name ?? 'Unknown member'}
+                              {selectedMember.user.name ||
+                                selectedMember.user.email ||
+                                'Unknown member'}
                             </span>
                           </div>
                         );
@@ -732,7 +734,7 @@ export function TaskList({
                               {member.user.name?.charAt(0)?.toUpperCase() ?? '?'}
                             </AvatarFallback>
                           </Avatar>
-                          <span>{member.user.name ?? 'Unknown member'}</span>
+                          <span>{member.user.name || member.user.email || 'Unknown member'}</span>
                         </div>
                       </SelectItem>
                     ))}
