@@ -13,7 +13,7 @@ type Stagehand = import('@browserbasehq/stagehand').Stagehand;
 const BROWSER_WIDTH = 1440;
 const BROWSER_HEIGHT = 900;
 const STAGEHAND_MODEL = 'anthropic/claude-sonnet-4-6';
-const BROWSERBASE_CONTEXT_CREATE_MAX_ATTEMPTS = 3;
+const BROWSERBASE_API_MAX_ATTEMPTS = 3;
 const BROWSERBASE_RETRY_DELAYS_MS = [250, 750];
 const BROWSERBASE_DEFAULT_HEADERS = { 'accept-encoding': 'identity' };
 
@@ -35,27 +35,118 @@ export class BrowserbaseSessionService {
   }
 
   async createBrowserbaseContext(): Promise<string> {
-    for (
-      let attempt = 1;
-      attempt <= BROWSERBASE_CONTEXT_CREATE_MAX_ATTEMPTS;
-      attempt += 1
-    ) {
-      try {
+    return this.withBrowserbaseRetry({
+      operationName: 'context creation',
+      operation: async () => {
         const context = await this.getBrowserbase().contexts.create({
           projectId: this.getProjectId(),
         });
         return context.id;
+      },
+    });
+  }
+
+  async createSessionWithContext(
+    contextId: string,
+  ): Promise<{ sessionId: string; liveViewUrl: string }> {
+    const bb = this.getBrowserbase();
+
+    const session = await this.withBrowserbaseRetry({
+      operationName: 'session creation',
+      operation: () =>
+        bb.sessions.create({
+          projectId: this.getProjectId(),
+          browserSettings: {
+            context: {
+              id: contextId,
+              persist: true,
+            },
+            fingerprint: {
+              screen: {
+                maxHeight: BROWSER_HEIGHT,
+                maxWidth: BROWSER_WIDTH,
+                minHeight: BROWSER_HEIGHT,
+                minWidth: BROWSER_WIDTH,
+              },
+            },
+            viewport: { width: BROWSER_WIDTH, height: BROWSER_HEIGHT },
+          },
+          keepAlive: true,
+        }),
+    });
+
+    try {
+      const debug = await this.withBrowserbaseRetry({
+        operationName: 'session debug URL lookup',
+        operation: () => bb.sessions.debug(session.id),
+      });
+
+      return {
+        sessionId: session.id,
+        liveViewUrl: debug.debuggerFullscreenUrl,
+      };
+    } catch (error) {
+      try {
+        await this.closeSession(session.id);
+      } catch {
+        // Ignore best-effort cleanup errors after a failed live-view lookup.
+      }
+      throw error;
+    }
+  }
+
+  async closeSession(sessionId: string): Promise<void> {
+    await this.withBrowserbaseRetry({
+      operationName: 'session close',
+      operation: () =>
+        this.getBrowserbase().sessions.update(sessionId, {
+          projectId: this.getProjectId(),
+          status: 'REQUEST_RELEASE',
+        }),
+    });
+  }
+
+  async getSessionContextId(sessionId: string): Promise<string | undefined> {
+    const session = await this.withBrowserbaseRetry({
+      operationName: 'session retrieval',
+      operation: () => this.getBrowserbase().sessions.retrieve(sessionId),
+    });
+    return session.contextId;
+  }
+
+  private async withBrowserbaseRetry<T>({
+    operation,
+    operationName,
+  }: {
+    operation: () => Promise<T>;
+    operationName: string;
+  }): Promise<T> {
+    for (
+      let attempt = 1;
+      attempt <= BROWSERBASE_API_MAX_ATTEMPTS;
+      attempt += 1
+    ) {
+      try {
+        return await operation();
       } catch (error) {
         const retryable = isRetryableBrowserbaseUpstreamError(error);
-        if (!retryable || attempt === BROWSERBASE_CONTEXT_CREATE_MAX_ATTEMPTS) {
-          this.logger.error('Browserbase context creation failed', {
+        if (!retryable) {
+          this.logger.error(`Browserbase ${operationName} failed`, {
+            attempt,
+            error: getBrowserbaseErrorText(error),
+          });
+          throw error;
+        }
+
+        if (attempt === BROWSERBASE_API_MAX_ATTEMPTS) {
+          this.logger.error(`Browserbase ${operationName} failed`, {
             attempt,
             error: getBrowserbaseErrorText(error),
           });
           throw browserbaseUnavailableException();
         }
 
-        this.logger.warn('Browserbase context creation failed; retrying', {
+        this.logger.warn(`Browserbase ${operationName} failed; retrying`, {
           attempt,
           error: getBrowserbaseErrorText(error),
         });
@@ -64,51 +155,6 @@ export class BrowserbaseSessionService {
     }
 
     throw browserbaseUnavailableException();
-  }
-
-  async createSessionWithContext(
-    contextId: string,
-  ): Promise<{ sessionId: string; liveViewUrl: string }> {
-    const bb = this.getBrowserbase();
-
-    const session = await bb.sessions.create({
-      projectId: this.getProjectId(),
-      browserSettings: {
-        context: {
-          id: contextId,
-          persist: true,
-        },
-        fingerprint: {
-          screen: {
-            maxHeight: BROWSER_HEIGHT,
-            maxWidth: BROWSER_WIDTH,
-            minHeight: BROWSER_HEIGHT,
-            minWidth: BROWSER_WIDTH,
-          },
-        },
-        viewport: { width: BROWSER_WIDTH, height: BROWSER_HEIGHT },
-      },
-      keepAlive: true,
-    });
-
-    const debug = await bb.sessions.debug(session.id);
-
-    return {
-      sessionId: session.id,
-      liveViewUrl: debug.debuggerFullscreenUrl,
-    };
-  }
-
-  async closeSession(sessionId: string): Promise<void> {
-    await this.getBrowserbase().sessions.update(sessionId, {
-      projectId: this.getProjectId(),
-      status: 'REQUEST_RELEASE',
-    });
-  }
-
-  async getSessionContextId(sessionId: string): Promise<string | undefined> {
-    const session = await this.getBrowserbase().sessions.retrieve(sessionId);
-    return session.contextId;
   }
 
   async createStagehand(sessionId: string): Promise<Stagehand> {
