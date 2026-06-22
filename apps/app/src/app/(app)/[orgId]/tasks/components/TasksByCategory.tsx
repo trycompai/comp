@@ -353,7 +353,9 @@ export function TasksByCategory({ tasks, members, statusFilter }: TasksByCategor
                                 </span>
                               )}
                             </div>
-                            <span className="truncate">{member.user?.name ?? 'Unassigned'}</span>
+                            <span className="truncate">
+                              {member.user?.name || member.user?.email || 'Unassigned'}
+                            </span>
                           </div>
                         ) : (
                           <span className="text-xs text-muted-foreground">Unassigned</span>
