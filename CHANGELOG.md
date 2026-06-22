@@ -1,3 +1,44 @@
+# [3.87.0](https://github.com/trycompai/comp/compare/v3.86.5...v3.87.0) (2026-06-22)
+
+
+### Bug Fixes
+
+* **api:** add familyId to update-policy frameworks schema (unblock build after FRAME-20) ([483c368](https://github.com/trycompai/comp/commit/483c36856475a06bbd076dda48454f1318c2fafb))
+* **browserbase:** close remaining reliability gaps ([bbb15db](https://github.com/trycompai/comp/commit/bbb15db5f82de4d6fda20f379d4d1a2d95df1ec0))
+* **browserbase:** harden automation run reliability ([a20de6d](https://github.com/trycompai/comp/commit/a20de6d067d86df6d44ae5436f073a31a08697d9))
+* **browserbase:** make task auth flow primary ([ea00eea](https://github.com/trycompai/comp/commit/ea00eead63389c671936f3e49ae766b2c0aa755a))
+* **browserbase:** preserve non-retryable errors ([1683d00](https://github.com/trycompai/comp/commit/1683d009bc9cbc36056617c49a638cde567769dc))
+* **browserbase:** recover stale context setup ([829a7f8](https://github.com/trycompai/comp/commit/829a7f8b528f929ce259c78bdf20ec470ef324fe))
+* **browserbase:** remove llm credential prompts ([35df682](https://github.com/trycompai/comp/commit/35df68219ac6d3e363ff150e73ef01f1f241ded0))
+* **browserbase:** request identity encoded api responses ([c8ed2e9](https://github.com/trycompai/comp/commit/c8ed2e910a88fbf94a4ad4e4f8213ca454ddb251))
+* **browserbase:** retry context creation failures ([a67beaf](https://github.com/trycompai/comp/commit/a67beaf70dbb48b4117f6b9e56d372eaf910c1ba))
+* **browserbase:** retry session api failures ([b3ac466](https://github.com/trycompai/comp/commit/b3ac46600aec15188c90f650513a1cecb68be494))
+* **browserbase:** retry stagehand init to survive premature close ([78030f6](https://github.com/trycompai/comp/commit/78030f63b4006bfa9e1dc77f7d93c3b7d86c5930))
+* **browserbase:** select active evidence page ([4138764](https://github.com/trycompai/comp/commit/41387640712d81b5a37ec7830dd8dcfebcaba785))
+* **browserbase:** tighten auth profile reliability ([0bc328c](https://github.com/trycompai/comp/commit/0bc328c5546ff76a1decf9a0110a159a22a554c8))
+* **bug-todo:** address cubic review ([fe7f906](https://github.com/trycompai/comp/commit/fe7f906be14a1004de7b05010341caed252a8f02))
+* **compliance:** order frameworks consistently to prevent accidental misselection ([8f43b92](https://github.com/trycompai/comp/commit/8f43b92f244a2ca5752369d9a8fc7dbc005fb09d))
+* **evidence-wizard:** add confirmation before discarding form on cancel ([aee86ec](https://github.com/trycompai/comp/commit/aee86ec22e98f0544d02d6e58a660efa5cb931c0))
+* **evidence:** display user email fallback when name is empty ([16bcdbc](https://github.com/trycompai/comp/commit/16bcdbc53b13fe2badc93120b2c40ff28c70581f))
+* **findings:** include all enabled frameworks in overview filter dropdown ([10c9c1b](https://github.com/trycompai/comp/commit/10c9c1ba66f797236ca28cd4fdbb532be13947c5))
+* **framework-editor:** family-scoped move + reject null in update DTO (FRAME-20 review) ([d3a399d](https://github.com/trycompai/comp/commit/d3a399ded46be0687ee840ae95ce7e48df83fc71))
+* **framework-editor:** fix app build + address review on framework families (FRAME-20) ([0a016ef](https://github.com/trycompai/comp/commit/0a016efdeb9efcf1cc2825efac5282ecac304f72))
+* **framework-editor:** make family delete atomic against concurrent moves (FRAME-20 review) ([116383a](https://github.com/trycompai/comp/commit/116383a38e724ffa0888de80926867323e56dfcd))
+* **framework-editor:** tiebreak requirement order by identifier, not name (FRAME-18) ([0af0c3d](https://github.com/trycompai/comp/commit/0af0c3d1e07686e0e0aaefeed17ab47b45f5eb5f))
+* **gcp-scc:** allow exceptions on public bucket findings by using fallback resource identity ([167f1c9](https://github.com/trycompai/comp/commit/167f1c966dcb16688399eb0520461dd16e3489ff))
+* **integrations:** retry transient transport errors in check runtime ([a866b3a](https://github.com/trycompai/comp/commit/a866b3a1051c68e1636b4cd7c1e9c4f5729aa6ab))
+* **members:** enable email update in employee details for admins ([0548f7a](https://github.com/trycompai/comp/commit/0548f7a8eca8bd8fd83c3fe612703c81af798c96))
+* **people:** allow reactivating deactivated members via update endpoint ([c317b77](https://github.com/trycompai/comp/commit/c317b77ec9d140af793761903549377c2f46807a))
+* **trust-portal:** review access button links to correct page ([3021cbf](https://github.com/trycompai/comp/commit/3021cbfb3764ecd76fff31473aae161b037bfc60))
+* **wizard:** restore step progress indicator on return to saved profile ([d7cca3a](https://github.com/trycompai/comp/commit/d7cca3a4f0f618831fd768a8cb45fbb961b0144f))
+
+
+### Features
+
+* **browserbase:** add per-site auth profiles ([3b40979](https://github.com/trycompai/comp/commit/3b409793d206f69c088e982f6c5012445c571f16))
+* **framework-editor:** add framework families (FRAME-20) ([e3bd813](https://github.com/trycompai/comp/commit/e3bd813e4f801ef196259f312e780a10f0c4cd9e))
+* **framework-editor:** add per-framework requirement sort order (FRAME-18) ([ee394dd](https://github.com/trycompai/comp/commit/ee394dddeca96f5825d20021d837f8f1cce8363d))
+
 ## [3.86.5](https://github.com/trycompai/comp/compare/v3.86.4...v3.86.5) (2026-06-19)
 
 
