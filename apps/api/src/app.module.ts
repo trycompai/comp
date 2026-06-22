@@ -25,6 +25,7 @@ import { ContextModule } from './context/context.module';
 import { TrustPortalModule } from './trust-portal/trust-portal.module';
 import { ControlTemplateModule } from './framework-editor/control-template/control-template.module';
 import { IsmsDocumentTemplateModule } from './framework-editor/isms-document-template/isms-document-template.module';
+import { FrameworkFamilyModule } from './framework-editor/framework-family/framework-family.module';
 import { FrameworkEditorFrameworkModule } from './framework-editor/framework/framework.module';
 import { PolicyTemplateModule } from './framework-editor/policy-template/policy-template.module';
 import { RequirementModule } from './framework-editor/requirement/requirement.module';
@@ -101,6 +102,7 @@ import { OffboardingChecklistModule } from './offboarding-checklist/offboarding-
     FrameworkEditorFrameworkModule,
     PolicyTemplateModule,
     RequirementModule,
+    FrameworkFamilyModule,
     TaskTemplateModule,
     FindingTemplateModule,
     FindingsModule,
