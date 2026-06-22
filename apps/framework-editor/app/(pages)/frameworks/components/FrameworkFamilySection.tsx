@@ -2,7 +2,7 @@
 
 import type { FrameworkEditorFrameworkFamilyStatus } from '@/db';
 import { Button } from '@trycompai/ui/button';
-import { ChevronDown, ChevronRight, Pencil, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, MoveRight, Pencil, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import type { FrameworkWithCounts } from '../FrameworksClientPage';
@@ -16,6 +16,7 @@ interface FrameworkFamilySectionProps {
   // empty-only delete rule) — independent of the possibly-filtered rows below.
   count: number;
   frameworks: FrameworkWithCounts[];
+  onMove?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
   defaultOpen?: boolean;
@@ -26,6 +27,7 @@ export function FrameworkFamilySection({
   status,
   count,
   frameworks,
+  onMove,
   onEdit,
   onDelete,
   defaultOpen = true,
@@ -51,34 +53,44 @@ export function FrameworkFamilySection({
           <span className="text-muted-foreground text-xs">{countLabel}</span>
           {status && <FamilyStatusBadge status={status} />}
         </button>
-        {isFamily && (
-          <div className="flex items-center gap-1">
-            {onEdit && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={onEdit}
-                aria-label="Edit family"
-              >
-                <Pencil className="h-4 w-4" />
-              </Button>
-            )}
-            {onDelete && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-muted-foreground hover:text-destructive h-7 w-7"
-                onClick={onDelete}
-                disabled={count > 0}
-                title={count > 0 ? 'Family must be empty to delete' : 'Delete family'}
-                aria-label="Delete family"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-        )}
+        <div className="flex items-center gap-1">
+          {onMove && count > 0 && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={onMove}
+              aria-label="Move frameworks"
+              title="Move frameworks from this group"
+            >
+              <MoveRight className="h-4 w-4" />
+            </Button>
+          )}
+          {isFamily && onEdit && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={onEdit}
+              aria-label="Edit family"
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+          )}
+          {isFamily && onDelete && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground hover:text-destructive h-7 w-7"
+              onClick={onDelete}
+              disabled={count > 0}
+              title={count > 0 ? 'Family must be empty to delete' : 'Delete family'}
+              aria-label="Delete family"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </div>
       {open && (
         <div className="overflow-x-auto">

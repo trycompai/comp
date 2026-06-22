@@ -4,7 +4,7 @@ import PageLayout from '@/app/components/PageLayout';
 import type { FrameworkEditorFramework, FrameworkEditorFrameworkFamilyStatus } from '@/db';
 import { Button } from '@trycompai/ui/button';
 import { Input } from '@trycompai/ui/input';
-import { FolderPlus, MoveRight, Plus, Upload } from 'lucide-react';
+import { FolderPlus, Plus, Upload } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { CreateFrameworkDialog } from './components/CreateFrameworkDialog';
 import { DeleteFrameworkFamilyDialog } from './components/DeleteFrameworkFamilyDialog';
@@ -41,7 +41,12 @@ export function FrameworksClientPage({
   const [search, setSearch] = useState('');
   const [isCreateFrameworkOpen, setIsCreateFrameworkOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
-  const [isMoveOpen, setIsMoveOpen] = useState(false);
+  // Move is scoped to the section it's opened from ("frameworks in the current
+  // family", per FRAME-20) — these are the source frameworks for the dialog.
+  const [moveDialog, setMoveDialog] = useState<{
+    open: boolean;
+    frameworks: FrameworkWithCounts[];
+  }>({ open: false, frameworks: [] });
   const [familyDialog, setFamilyDialog] = useState<{
     open: boolean;
     family: FrameworkFamilyWithCount | null;
@@ -79,6 +84,18 @@ export function FrameworksClientPage({
     [initialFamilies],
   );
 
+  // True (unfiltered) count of ungrouped frameworks — drives the label and the
+  // move scope regardless of the search filter.
+  const ungroupedTotal = useMemo(
+    () => initialFrameworks.filter((fw) => !fw.familyId).length,
+    [initialFrameworks],
+  );
+
+  // The full (unfiltered) framework list for a given family (null = ungrouped),
+  // used as the move dialog's scoped source.
+  const frameworksOf = (familyId: string | null) =>
+    initialFrameworks.filter((fw) => (fw.familyId ?? null) === familyId);
+
   return (
     <PageLayout breadcrumbs={[{ label: 'Frameworks', href: '/frameworks' }]}>
       <div className="flex flex-col gap-4">
@@ -93,10 +110,6 @@ export function FrameworksClientPage({
             <Button variant="outline" onClick={() => setIsImportOpen(true)}>
               <Upload className="mr-2 h-4 w-4" />
               Import
-            </Button>
-            <Button variant="outline" onClick={() => setIsMoveOpen(true)}>
-              <MoveRight className="mr-2 h-4 w-4" />
-              Move Framework
             </Button>
             <Button
               variant="outline"
@@ -124,6 +137,9 @@ export function FrameworksClientPage({
                 status={family.status}
                 count={family.frameworksCount}
                 frameworks={frameworks}
+                onMove={() =>
+                  setMoveDialog({ open: true, frameworks: frameworksOf(family.id) })
+                }
                 onEdit={() => setFamilyDialog({ open: true, family })}
                 onDelete={() => setDeleteDialog({ open: true, family })}
               />
@@ -132,8 +148,9 @@ export function FrameworksClientPage({
           {(!searching || ungrouped.length > 0) && (
             <FrameworkFamilySection
               title="Ungrouped"
-              count={ungrouped.length}
+              count={ungroupedTotal}
               frameworks={ungrouped}
+              onMove={() => setMoveDialog({ open: true, frameworks: frameworksOf(null) })}
             />
           )}
         </div>
@@ -146,9 +163,9 @@ export function FrameworksClientPage({
       />
       <ImportFrameworkDialog isOpen={isImportOpen} onOpenChange={setIsImportOpen} />
       <MoveFrameworkDialog
-        isOpen={isMoveOpen}
-        onOpenChange={setIsMoveOpen}
-        frameworks={initialFrameworks}
+        isOpen={moveDialog.open}
+        onOpenChange={(open) => setMoveDialog((s) => ({ ...s, open }))}
+        frameworks={moveDialog.frameworks}
         families={initialFamilies}
       />
       <FrameworkFamilyDialog
