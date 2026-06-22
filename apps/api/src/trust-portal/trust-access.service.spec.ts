@@ -1,6 +1,7 @@
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { db } from '@db';
 import { getSignedUrl } from '../app/s3';
+import { CreateAccessRequestDto } from './dto/trust-access.dto';
 import { TrustAccessService } from './trust-access.service';
 
 jest.mock('@db', () => ({
@@ -442,6 +443,54 @@ describe('TrustAccessService signNda NDA copy', () => {
     expect(emailService.sendAccessGrantedEmail).toHaveBeenCalledTimes(1);
     expect(emailService.sendAccessGrantedEmail).toHaveBeenCalledWith(
       expect.objectContaining({ ndaBypassed: false }),
+    );
+  });
+});
+
+describe('TrustAccessService access request notification', () => {
+  const emailService = {
+    sendAccessRequestNotification: jest.fn(),
+  };
+  const service = new TrustAccessService(
+    ...([{}, emailService, {}, {}, {}] as unknown as ConstructorParameters<
+      typeof TrustAccessService
+    >),
+  );
+
+  const ORIGINAL_BETTER_AUTH_URL = process.env.BETTER_AUTH_URL;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    process.env.BETTER_AUTH_URL = 'https://app.trycomp.ai';
+  });
+
+  afterAll(() => {
+    process.env.BETTER_AUTH_URL = ORIGINAL_BETTER_AUTH_URL;
+  });
+
+  it('points the review button at the access requests page, not the trust overview', async () => {
+    // contactEmail present -> single recipient, no member fallback lookup.
+    mockDb.trust.findUnique.mockResolvedValue({ contactEmail: 'owner@acme.com' });
+
+    const dto: CreateAccessRequestDto = {
+      name: 'Jane Doe',
+      email: 'jane@example.com',
+    };
+
+    await service['sendAccessRequestNotificationToOrg'](
+      'org_123',
+      'tar_456',
+      'Acme Inc',
+      dto,
+    );
+
+    expect(emailService.sendAccessRequestNotification).toHaveBeenCalledTimes(1);
+    // Must deep-link to the pending requests list, NOT /org_123/trust (the
+    // trust portal settings/overview page).
+    expect(emailService.sendAccessRequestNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        reviewUrl: 'https://app.trycomp.ai/org_123/trust/access-requests',
+      }),
     );
   });
 });
