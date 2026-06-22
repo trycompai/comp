@@ -11,7 +11,15 @@ export class RequirementService {
     return db.frameworkEditorRequirement.findMany({
       take,
       skip,
-      orderBy: { name: 'asc' },
+      // FRAME-18: numbered requirements first (ascending), unset rows last,
+      // then by identifier (the canonical-order key, e.g. CC6.1 / GV.OC-01),
+      // with name as a final stable tiebreak. Identifier — not name — matches
+      // the editor/app comparators and is stable when descriptive names change.
+      orderBy: [
+        { sortOrder: { sort: 'asc', nulls: 'last' } },
+        { identifier: 'asc' },
+        { name: 'asc' },
+      ],
       include: {
         framework: { select: { id: true, name: true } },
       },
@@ -21,7 +29,11 @@ export class RequirementService {
   async findAllForFramework(frameworkId: string) {
     return db.frameworkEditorRequirement.findMany({
       where: { frameworkId },
-      orderBy: { name: 'asc' },
+      orderBy: [
+        { sortOrder: { sort: 'asc', nulls: 'last' } },
+        { identifier: 'asc' },
+        { name: 'asc' },
+      ],
       include: {
         controlTemplates: { select: { id: true, name: true } },
       },
@@ -43,6 +55,7 @@ export class RequirementService {
         identifier: dto.identifier ?? '',
         description: dto.description ?? '',
         requirementFamily: dto.requirementFamily || null,
+        sortOrder: dto.sortOrder ?? null,
       },
     });
     this.logger.log(`Created requirement: ${req.name} (${req.id})`);
@@ -77,6 +90,7 @@ export class RequirementService {
       identifier?: string;
       description?: string;
       requirementFamily?: string;
+      sortOrder?: number | null;
     }>,
   ) {
     return db.$transaction(
@@ -95,6 +109,8 @@ export class RequirementService {
             ...(data.requirementFamily !== undefined && {
               requirementFamily: data.requirementFamily || null,
             }),
+            // null clears the order; undefined leaves it untouched.
+            ...(data.sortOrder !== undefined && { sortOrder: data.sortOrder }),
           },
         });
       }),

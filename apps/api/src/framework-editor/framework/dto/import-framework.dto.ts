@@ -73,6 +73,13 @@ class ImportRequirementDto {
   @IsOptional()
   @MaxLength(255)
   requirementFamily?: string;
+
+  // FRAME-18: per-framework display order, preserved across export/import.
+  @ApiPropertyOptional({ nullable: true })
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  sortOrder?: number | null;
 }
 
 class ImportControlTemplateDto {

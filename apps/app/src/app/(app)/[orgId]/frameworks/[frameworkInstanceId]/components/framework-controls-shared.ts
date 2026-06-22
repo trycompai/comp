@@ -125,6 +125,27 @@ export interface RequirementFamilyGroup {
   items: RequirementItem[];
 }
 
+/**
+ * FRAME-18: order requirements by their per-framework `sortOrder` (numbered
+ * rows first, ascending), falling back to identifier (then name) for unset
+ * rows and ties. Unset (`null`/`undefined`) rows always sort last.
+ */
+export function compareRequirementsByOrder(
+  a: Pick<FrameworkEditorRequirement, 'sortOrder' | 'identifier' | 'name'>,
+  b: Pick<FrameworkEditorRequirement, 'sortOrder' | 'identifier' | 'name'>,
+): number {
+  const ao = a.sortOrder ?? null;
+  const bo = b.sortOrder ?? null;
+  if (ao !== bo) {
+    if (ao == null) return 1;
+    if (bo == null) return -1;
+    return ao - bo;
+  }
+  return (a.identifier ?? a.name).localeCompare(b.identifier ?? b.name, undefined, {
+    numeric: true,
+  });
+}
+
 export function groupRequirementsByFamily(items: RequirementItem[]): RequirementFamilyGroup[] {
   const familyMap = new Map<string, RequirementItem[]>();
   const otherItems: RequirementItem[] = [];
@@ -143,12 +164,31 @@ export function groupRequirementsByFamily(items: RequirementItem[]): Requirement
     }
   }
 
-  const sortedFamilies = Array.from(familyMap.entries()).sort(([a], [b]) =>
-    a.localeCompare(b),
-  );
+  // FRAME-18: order families by the lowest sortOrder among their requirements so
+  // a framework's configured order also drives the family order (e.g. NIST CSF
+  // Functions GV → ID → PR → DE → RS → RC). When no requirement has a sortOrder
+  // (every existing framework today), every family's min is null and this falls
+  // back to alphabetical — identical to the previous behavior.
+  const minSortOrder = (familyItems: RequirementItem[]): number | null => {
+    let min: number | null = null;
+    for (const item of familyItems) {
+      if (item.sortOrder == null) continue;
+      if (min === null || item.sortOrder < min) min = item.sortOrder;
+    }
+    return min;
+  };
+  const sortedFamilies = Array.from(familyMap.entries()).sort(([fa, ia], [fb, ib]) => {
+    const ma = minSortOrder(ia);
+    const mb = minSortOrder(ib);
+    if (ma !== mb) {
+      if (ma === null) return 1;
+      if (mb === null) return -1;
+      return ma - mb;
+    }
+    return fa.localeCompare(fb);
+  });
 
-  const sortItems = (a: RequirementItem, b: RequirementItem) =>
-    (a.identifier ?? a.name).localeCompare(b.identifier ?? b.name, undefined, { numeric: true });
+  const sortItems = compareRequirementsByOrder;
 
   const groups: RequirementFamilyGroup[] = sortedFamilies.map(([family, familyItems]) => ({
     family,

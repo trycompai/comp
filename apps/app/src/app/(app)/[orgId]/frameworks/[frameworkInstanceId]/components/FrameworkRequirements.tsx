@@ -27,6 +27,7 @@ import { Search } from '@trycompai/design-system/icons';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { ExpandableDescription } from './ExpandableDescription';
+import { compareRequirementsByOrder } from './framework-controls-shared';
 import {
   REQUIREMENTS_TABLE_COLUMN_COUNT,
   REQUIREMENTS_TABLE_STYLE,
@@ -112,13 +113,9 @@ export function FrameworkRequirements({
     });
   }, [requirementDefinitions, frameworkInstanceWithControls.controls, tasks, evidenceSubmissions]);
 
-  const sortedItems = useMemo(
-    () =>
-      [...items].sort((a, b) =>
-        (a.identifier ?? '').localeCompare(b.identifier ?? '', undefined, { numeric: true }),
-      ),
-    [items],
-  );
+  // FRAME-18: order by the framework's configured sort order (numbered first,
+  // unset last), falling back to identifier for ties.
+  const sortedItems = useMemo(() => [...items].sort(compareRequirementsByOrder), [items]);
 
   const filteredItems = useMemo(() => {
     if (!searchTerm.trim()) return sortedItems;
