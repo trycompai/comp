@@ -43,6 +43,21 @@ interface AttachFormProps {
 
 const MAX_FILE_BYTES = 25 * 1024 * 1024;
 
+// Reports are usually PDFs, but the manual identity fallback is a passport
+// photo (JPEG/PNG/HEIC). The API accepts these same types — see
+// validateFileContent in apps/api/src/utils/file-type-validation.ts.
+const ACCEPTED_MIME_TYPES = [
+  'application/pdf',
+  'image/png',
+  'image/jpeg',
+  'image/webp',
+  'image/heic',
+  'image/heif',
+];
+
+const FILE_ACCEPT_ATTR =
+  'application/pdf,image/png,image/jpeg,image/webp,image/heic,image/heif,.pdf,.png,.jpg,.jpeg,.webp,.heic,.heif';
+
 export function BackgroundCheckAttachForm({
   values,
   onChange,
@@ -65,8 +80,8 @@ export function BackgroundCheckAttachForm({
       setFileError('File exceeds 25 MB limit.');
       return;
     }
-    if (file.type && file.type !== 'application/pdf') {
-      setFileError('Only PDF files are accepted.');
+    if (file.type && !ACCEPTED_MIME_TYPES.includes(file.type)) {
+      setFileError('Upload a PDF or image file (PDF, PNG, JPG, HEIC).');
       return;
     }
     setFileError(null);
@@ -125,10 +140,10 @@ export function BackgroundCheckAttachForm({
       <input
         ref={inputRef}
         type="file"
-        accept="application/pdf"
+        accept={FILE_ACCEPT_ATTR}
         className="sr-only"
         onChange={handleFileChange}
-        aria-label="Background check PDF"
+        aria-label="Background check report or identity document"
       />
       <div
         onDragOver={(event) => {
@@ -151,7 +166,7 @@ export function BackgroundCheckAttachForm({
             <>Selected: {values.file.name}</>
           ) : (
             <>
-              Drop the PDF here, or{' '}
+              Drop the file here, or{' '}
               <button
                 type="button"
                 onClick={handleBrowse}
@@ -163,7 +178,7 @@ export function BackgroundCheckAttachForm({
           )}
         </Text>
         <Text size="xs" variant="muted">
-          PDF · up to 25 MB · stored encrypted in your evidence vault
+          PDF or image (PNG, JPG, HEIC) · up to 25 MB · stored encrypted in your evidence vault
         </Text>
         {fileError && (
           <p className="mt-2 text-xs text-destructive">{fileError}</p>
