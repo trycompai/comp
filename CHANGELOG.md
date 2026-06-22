@@ -1,3 +1,10 @@
+## [3.87.1](https://github.com/trycompai/comp/compare/v3.87.0...v3.87.1) (2026-06-22)
+
+
+### Bug Fixes
+
+* **integrations:** persist Zoho multi-DC api_domain so OAuth tokens hit the right region ([9231286](https://github.com/trycompai/comp/commit/923128658d02057ae9a8eeeaefaf52890f464203))
+
 # [3.87.0](https://github.com/trycompai/comp/compare/v3.86.5...v3.87.0) (2026-06-22)
 
 
