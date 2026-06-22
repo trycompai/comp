@@ -28,6 +28,7 @@ function makeRow(overrides: Partial<RequirementGridRow> = {}): RequirementGridRo
     identifier: '10.3',
     description: '',
     requirementFamily: 'Access Control',
+    sortOrder: null,
     controlTemplates: [],
     controlTemplatesLength: 0,
     createdAt: new Date(),

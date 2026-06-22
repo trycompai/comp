@@ -46,6 +46,10 @@ model FrameworkEditorRequirement {
   identifier        String @default("") // Unique identifier for the requirement, e.g., "cc1-1"
   description       String
   requirementFamily String?
+  // Per-framework display order (FRAME-18). Lower numbers sort first; null rows
+  // fall back to identifier ordering and sort after numbered rows. Lets frameworks
+  // like NIST CSF use their canonical order (GV → ID → PR → DE → RS → RC).
+  sortOrder         Int?
 
   controlTemplates FrameworkEditorControlTemplate[]
   requirementMaps  RequirementMap[]

@@ -37,6 +37,7 @@ interface RequirementInput {
   identifier: string;
   description: string;
   requirementFamily?: string | null;
+  sortOrder?: number | null;
   frameworkId: string;
   createdAt: string | Date;
   updatedAt: string | Date;
@@ -85,6 +86,7 @@ export function FrameworkRequirementsClientPage({
         identifier: r.identifier ?? null,
         description: r.description ?? null,
         requirementFamily: r.requirementFamily ?? null,
+        sortOrder: r.sortOrder ?? null,
         controlTemplates: r.controlTemplates ?? [],
         controlTemplatesLength: r.controlTemplates?.length ?? 0,
         createdAt: r.createdAt ? new Date(r.createdAt) : null,
@@ -117,6 +119,38 @@ export function FrameworkRequirementsClientPage({
 
   const columns = useMemo(
     () => [
+      columnHelper.accessor('sortOrder', {
+        header: 'Order',
+        size: 90,
+        // Numbered rows ascending, unset rows last, identifier as a tiebreak.
+        // (tanstack inverts this for the desc toggle.)
+        sortingFn: (a, b) => {
+          const ao = a.original.sortOrder;
+          const bo = b.original.sortOrder;
+          if (ao !== bo) {
+            if (ao == null) return 1;
+            if (bo == null) return -1;
+            return ao - bo;
+          }
+          return (a.original.identifier ?? '').localeCompare(
+            b.original.identifier ?? '',
+            undefined,
+            { numeric: true },
+          );
+        },
+        cell: ({ row, getValue }) => {
+          const value = getValue();
+          return (
+            <EditableCell
+              value={value == null ? null : String(value)}
+              rowId={row.original.id}
+              columnId="sortOrder"
+              onUpdate={updateCell}
+              placeholder="—"
+            />
+          );
+        },
+      }),
       columnHelper.accessor('requirementFamily', {
         header: 'Family',
         size: 200,
@@ -232,7 +266,9 @@ export function FrameworkRequirementsClientPage({
     [uniqueFamilies, updateCell, updateRelational, deleteRow, createdIds],
   );
 
-  const [sorting, setSorting] = useState<SortingState>([{ id: 'identifier', desc: false }]);
+  // FRAME-18: default to the framework's configured order. Numbered requirements
+  // come first; unset rows fall back to identifier order and sort last.
+  const [sorting, setSorting] = useState<SortingState>([{ id: 'sortOrder', desc: false }]);
 
   const table = useReactTable({
     data,
@@ -251,6 +287,7 @@ export function FrameworkRequirementsClientPage({
       identifier: '',
       description: '',
       requirementFamily: null,
+      sortOrder: null,
       controlTemplates: [],
       controlTemplatesLength: 0,
       createdAt: new Date(),
