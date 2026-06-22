@@ -22,6 +22,7 @@ export interface ExportedFramework {
     identifier: string;
     description: string;
     requirementFamily?: string | null;
+    sortOrder?: number | null;
   }>;
   controlTemplates: Array<{
     name: string;
@@ -63,7 +64,7 @@ export class FrameworkExportService {
 
     const requirements = await db.frameworkEditorRequirement.findMany({
       where: { frameworkId },
-      orderBy: { name: 'asc' },
+      orderBy: [{ sortOrder: { sort: 'asc', nulls: 'last' } }, { name: 'asc' }],
     });
 
     const controlTemplates = await db.frameworkEditorControlTemplate.findMany({
@@ -131,6 +132,7 @@ export class FrameworkExportService {
         identifier: r.identifier,
         description: r.description,
         requirementFamily: r.requirementFamily || null,
+        sortOrder: r.sortOrder ?? null,
       })),
       controlTemplates: controlTemplates.map((ct) => ({
         name: ct.name,
@@ -194,6 +196,7 @@ export class FrameworkExportService {
               identifier: r.identifier ?? '',
               description: r.description,
               requirementFamily: r.requirementFamily || null,
+              sortOrder: r.sortOrder ?? null,
             },
           }),
         ),

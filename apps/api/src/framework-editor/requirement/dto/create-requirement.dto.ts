@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional, MaxLength } from 'class-validator';
+import { IsInt, IsNotEmpty, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 
 export class CreateRequirementDto {
   @ApiProperty({ example: 'frk_abc123' })
@@ -30,4 +30,13 @@ export class CreateRequirementDto {
   @IsOptional()
   @MaxLength(255)
   requirementFamily?: string;
+
+  @ApiPropertyOptional({
+    example: 10,
+    description: 'Display order within the framework (lower sorts first).',
+  })
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  sortOrder?: number;
 }

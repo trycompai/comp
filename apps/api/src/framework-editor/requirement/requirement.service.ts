@@ -11,7 +11,9 @@ export class RequirementService {
     return db.frameworkEditorRequirement.findMany({
       take,
       skip,
-      orderBy: { name: 'asc' },
+      // FRAME-18: numbered requirements first (ascending), unset rows last,
+      // then alphabetical by name as a stable tiebreak.
+      orderBy: [{ sortOrder: { sort: 'asc', nulls: 'last' } }, { name: 'asc' }],
       include: {
         framework: { select: { id: true, name: true } },
       },
@@ -21,7 +23,7 @@ export class RequirementService {
   async findAllForFramework(frameworkId: string) {
     return db.frameworkEditorRequirement.findMany({
       where: { frameworkId },
-      orderBy: { name: 'asc' },
+      orderBy: [{ sortOrder: { sort: 'asc', nulls: 'last' } }, { name: 'asc' }],
       include: {
         controlTemplates: { select: { id: true, name: true } },
       },
@@ -43,6 +45,7 @@ export class RequirementService {
         identifier: dto.identifier ?? '',
         description: dto.description ?? '',
         requirementFamily: dto.requirementFamily || null,
+        sortOrder: dto.sortOrder ?? null,
       },
     });
     this.logger.log(`Created requirement: ${req.name} (${req.id})`);
@@ -77,6 +80,7 @@ export class RequirementService {
       identifier?: string;
       description?: string;
       requirementFamily?: string;
+      sortOrder?: number | null;
     }>,
   ) {
     return db.$transaction(
@@ -95,6 +99,8 @@ export class RequirementService {
             ...(data.requirementFamily !== undefined && {
               requirementFamily: data.requirementFamily || null,
             }),
+            // null clears the order; undefined leaves it untouched.
+            ...(data.sortOrder !== undefined && { sortOrder: data.sortOrder }),
           },
         });
       }),

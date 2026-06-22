@@ -25,10 +25,24 @@ type RequirementDef = {
   identifier: string;
   description: string;
   requirementFamily?: string | null;
+  sortOrder?: number | null;
   frameworkId: string | null;
   customFrameworkId: string | null;
   kind: 'platform' | 'custom';
 };
+
+// FRAME-18: numbered requirements first (ascending), unset rows (incl. per-instance
+// custom requirements) last, then alphabetical by name as a stable tiebreak.
+function compareRequirementDefs(a: RequirementDef, b: RequirementDef): number {
+  const ao = a.sortOrder ?? null;
+  const bo = b.sortOrder ?? null;
+  if (ao !== bo) {
+    if (ao === null) return 1;
+    if (bo === null) return -1;
+    return ao - bo;
+  }
+  return a.name.localeCompare(b.name);
+}
 
 @Injectable()
 export class FrameworksService {
@@ -106,20 +120,19 @@ export class FrameworksService {
               identifier: r.identifier,
               description: r.description ?? '',
               requirementFamily: r.requirementFamily ?? null,
+              sortOrder: r.sortOrder ?? null,
               frameworkId: fi.frameworkId,
               customFrameworkId: null,
               kind: 'platform',
             }),
           );
-          return [...platformDefs, ...customDefs].sort((a, b) =>
-            a.name.localeCompare(b.name),
-          );
+          return [...platformDefs, ...customDefs].sort(compareRequirementDefs);
         }
       }
       // Fallback: instances with no pinned version (shouldn't happen post-backfill).
       const rows = await db.frameworkEditorRequirement.findMany({
         where: { frameworkId: fi.frameworkId },
-        orderBy: { name: 'asc' },
+        orderBy: [{ sortOrder: { sort: 'asc', nulls: 'last' } }, { name: 'asc' }],
       });
       const platformDefs: RequirementDef[] = rows.map((r) => ({
         id: r.id,
@@ -127,13 +140,12 @@ export class FrameworksService {
         identifier: r.identifier,
         description: r.description,
         requirementFamily: r.requirementFamily ?? null,
+        sortOrder: r.sortOrder ?? null,
         frameworkId: r.frameworkId,
         customFrameworkId: null,
         kind: 'platform',
       }));
-      return [...platformDefs, ...customDefs].sort((a, b) =>
-        a.name.localeCompare(b.name),
-      );
+      return [...platformDefs, ...customDefs].sort(compareRequirementDefs);
     }
     return [];
   }
