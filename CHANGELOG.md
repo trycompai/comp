@@ -1,3 +1,11 @@
+## [3.87.2](https://github.com/trycompai/comp/compare/v3.87.1...v3.87.2) (2026-06-22)
+
+
+### Bug Fixes
+
+* **background-checks:** accept image formats for manual passport upload ([cf41b40](https://github.com/trycompai/comp/commit/cf41b40b01978aafb1f5363eb9acdfd298c39bea))
+* **browserbase:** disable Stagehand hosted API to unblock connect ([2b5fe4a](https://github.com/trycompai/comp/commit/2b5fe4aa4a805799331e30de93a72c5eaba9683a))
+
 ## [3.87.1](https://github.com/trycompai/comp/compare/v3.87.0...v3.87.1) (2026-06-22)
 
 
