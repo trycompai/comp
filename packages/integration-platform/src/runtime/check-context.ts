@@ -80,6 +80,49 @@ function parseLinkHeader(header: string | null): { next?: string } {
   return links;
 }
 
+/**
+ * errno-style codes for transient transport-level failures — the connection
+ * never completed (TCP reset, DNS hiccup, connect/read timeout), so the request
+ * is safe to retry. Node/undici surfaces these as a thrown error (not an HTTP
+ * Response) and wraps the real network error as `TypeError: fetch failed` with
+ * the underlying error on `.cause`.
+ */
+const TRANSIENT_TRANSPORT_CODES = new Set([
+  'ECONNRESET',
+  'ECONNREFUSED',
+  'ECONNABORTED',
+  'EPIPE',
+  'ETIMEDOUT',
+  'EHOSTUNREACH',
+  'ENETUNREACH',
+  'ENETDOWN',
+  'EAI_AGAIN', // transient DNS failure
+  'ENOTFOUND', // DNS resolution failure
+  'UND_ERR_CONNECT_TIMEOUT',
+  'UND_ERR_HEADERS_TIMEOUT',
+  'UND_ERR_BODY_TIMEOUT',
+  'UND_ERR_SOCKET',
+]);
+
+const TRANSIENT_TRANSPORT_MESSAGE =
+  /fetch failed|socket hang up|network|terminated|timeout|timed out|connection (closed|refused|reset)|ECONNRESET|ETIMEDOUT|EAI_AGAIN/i;
+
+/**
+ * True when an error thrown by `fetch` is a transient transport-level failure
+ * rather than an HTTP response. HTTP errors never reach here — `fetch` resolves
+ * them as a Response, so they are handled by the status-code logic in
+ * `withRetry`/`executeRequest`. Walks the `.cause` chain because undici nests
+ * the real network error there under a generic `TypeError: fetch failed`.
+ */
+export function isTransientTransportError(error: unknown, depth = 0): boolean {
+  if (!error || typeof error !== 'object' || depth > 5) return false;
+  const code = (error as { code?: unknown }).code;
+  if (typeof code === 'string' && TRANSIENT_TRANSPORT_CODES.has(code)) return true;
+  const message = (error as { message?: unknown }).message;
+  if (typeof message === 'string' && TRANSIENT_TRANSPORT_MESSAGE.test(message)) return true;
+  return isTransientTransportError((error as { cause?: unknown }).cause, depth + 1);
+}
+
 export function createCheckContext(options: CheckContextOptions): {
   ctx: CheckContext;
   getResults: () => CheckResult;
@@ -171,7 +214,26 @@ export function createCheckContext(options: CheckContextOptions): {
   };
 
   async function withRetry(requestFn: () => Promise<Response>, attempt = 0): Promise<Response> {
-    const response = await requestFn();
+    let response: Response;
+    try {
+      response = await requestFn();
+    } catch (error) {
+      // `fetch` rejects only on transport-level failures (TCP reset, DNS hiccup,
+      // connect/read timeout) — never on HTTP status, which resolves as a Response.
+      // These blips pass on a retry, so back off and retry them exactly like a 5xx.
+      // Without this, one network blip surfaces as a failed check run that then
+      // succeeds on a manual re-run.
+      if (isTransientTransportError(error) && attempt < MAX_RETRIES) {
+        const delayMs = INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt);
+        log.warn(
+          `Network error, retry in ${delayMs}ms: ${error instanceof Error ? error.message : String(error)}`,
+          { attempt: attempt + 1 },
+        );
+        await sleep(delayMs);
+        return withRetry(requestFn, attempt + 1);
+      }
+      throw error;
+    }
 
     if (response.status === 429 && attempt < MAX_RETRIES) {
       const retryAfter = response.headers.get('Retry-After');
@@ -218,7 +280,9 @@ export function createCheckContext(options: CheckContextOptions): {
       try {
         errorBody = await response.text();
       } catch {}
-      const err = new Error(`HTTP ${response.status}: ${response.statusText}${errorBody ? ` - ${errorBody.slice(0, 500)}` : ''}`);
+      const err = new Error(
+        `HTTP ${response.status}: ${response.statusText}${errorBody ? ` - ${errorBody.slice(0, 500)}` : ''}`,
+      );
       (err as Error & { status: number }).status = response.status;
       throw err;
     }
