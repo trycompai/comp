@@ -44,19 +44,21 @@ interface AttachFormProps {
 const MAX_FILE_BYTES = 25 * 1024 * 1024;
 
 // Reports are usually PDFs, but the manual identity fallback is a passport
-// photo (JPEG/PNG/HEIC). The API accepts these same types — see
-// validateFileContent in apps/api/src/utils/file-type-validation.ts.
+// photo (JPEG/PNG/WEBP). Keep this in lock-step with what the API actually
+// accepts — validateFileContent in apps/api/src/utils/file-type-validation.ts.
+// HEIC/HEIF are intentionally excluded: the API can't validate/store them and
+// most browsers can't display them, so they'd fail server-side or store
+// unviewable evidence. (Candidates' own uploads convert HEIC->JPEG in the
+// browser via apps/web normalizeIdImage; this admin attach form does not.)
 const ACCEPTED_MIME_TYPES = [
   'application/pdf',
   'image/png',
   'image/jpeg',
   'image/webp',
-  'image/heic',
-  'image/heif',
 ];
 
 const FILE_ACCEPT_ATTR =
-  'application/pdf,image/png,image/jpeg,image/webp,image/heic,image/heif,.pdf,.png,.jpg,.jpeg,.webp,.heic,.heif';
+  'application/pdf,image/png,image/jpeg,image/webp,.pdf,.png,.jpg,.jpeg,.webp';
 
 export function BackgroundCheckAttachForm({
   values,
@@ -81,7 +83,7 @@ export function BackgroundCheckAttachForm({
       return;
     }
     if (file.type && !ACCEPTED_MIME_TYPES.includes(file.type)) {
-      setFileError('Upload a PDF or image file (PDF, PNG, JPG, HEIC).');
+      setFileError('Upload a PDF or image file (PDF, PNG, JPG, WEBP).');
       return;
     }
     setFileError(null);
@@ -178,7 +180,7 @@ export function BackgroundCheckAttachForm({
           )}
         </Text>
         <Text size="xs" variant="muted">
-          PDF or image (PNG, JPG, HEIC) · up to 25 MB · stored encrypted in your evidence vault
+          PDF or image (PNG, JPG, WEBP) · up to 25 MB · stored encrypted in your evidence vault
         </Text>
         {fileError && (
           <p className="mt-2 text-xs text-destructive">{fileError}</p>
