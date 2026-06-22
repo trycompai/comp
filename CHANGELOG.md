@@ -1,3 +1,10 @@
+## [3.87.3](https://github.com/trycompai/comp/compare/v3.87.2...v3.87.3) (2026-06-22)
+
+
+### Bug Fixes
+
+* **background-checks:** drop HEIC/HEIF from manual upload accept list ([6cbd40f](https://github.com/trycompai/comp/commit/6cbd40f7ea61a5ab74039799e93b5d673bcc0256)), closes [#3233](https://github.com/trycompai/comp/issues/3233)
+
 ## [3.87.2](https://github.com/trycompai/comp/compare/v3.87.1...v3.87.2) (2026-06-22)
 
 
