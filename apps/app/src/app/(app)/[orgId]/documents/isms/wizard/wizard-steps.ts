@@ -5,7 +5,7 @@
  * answers for that step.
  */
 
-import type { WizardFormValues } from './wizard-types';
+import type { PartialWizardAnswers, WizardFormValues } from './wizard-types';
 
 export type WizardFieldName = keyof WizardFormValues;
 
@@ -61,4 +61,24 @@ export function pickStepAnswers({
     (slice, field) => Object.assign(slice, { [field]: values[field] }),
     {},
   );
+}
+
+/**
+ * Resolve which step to open on when the wizard is reopened. A step counts as
+ * saved once every one of its fields is present in the persisted answers — each
+ * Next / Save progress POSTs that step's full field slice, so saved steps form a
+ * prefix of the rail. Returns the first not-yet-saved step (so the progress rail
+ * and the pre-filled answers stay in sync), the last step when everything is
+ * saved, and step 0 when nothing is saved.
+ */
+export function resumeStepIndex({
+  answers,
+}: {
+  answers: PartialWizardAnswers | null;
+}): number {
+  if (!answers) return 0;
+  const firstUnsaved = WIZARD_STEPS.findIndex(
+    (step) => !step.fields.every((field) => answers[field] !== undefined),
+  );
+  return firstUnsaved === -1 ? WIZARD_STEPS.length - 1 : firstUnsaved;
 }
