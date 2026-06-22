@@ -25,10 +25,30 @@ type RequirementDef = {
   identifier: string;
   description: string;
   requirementFamily?: string | null;
+  sortOrder?: number | null;
   frameworkId: string | null;
   customFrameworkId: string | null;
   kind: 'platform' | 'custom';
 };
+
+// FRAME-18: numbered requirements first (ascending), unset rows (incl. per-instance
+// custom requirements) last, then by identifier (the canonical-order key, e.g.
+// CC6.1 / GV.OC-01) with name as a final tiebreak. Mirrors the app-side
+// `compareRequirementsByOrder` so server and client agree on the order.
+function compareRequirementDefs(a: RequirementDef, b: RequirementDef): number {
+  const ao = a.sortOrder ?? null;
+  const bo = b.sortOrder ?? null;
+  if (ao !== bo) {
+    if (ao === null) return 1;
+    if (bo === null) return -1;
+    return ao - bo;
+  }
+  const byIdentifier = (a.identifier ?? '').localeCompare(b.identifier ?? '', undefined, {
+    numeric: true,
+  });
+  if (byIdentifier !== 0) return byIdentifier;
+  return a.name.localeCompare(b.name);
+}
 
 @Injectable()
 export class FrameworksService {
@@ -106,20 +126,23 @@ export class FrameworksService {
               identifier: r.identifier,
               description: r.description ?? '',
               requirementFamily: r.requirementFamily ?? null,
+              sortOrder: r.sortOrder ?? null,
               frameworkId: fi.frameworkId,
               customFrameworkId: null,
               kind: 'platform',
             }),
           );
-          return [...platformDefs, ...customDefs].sort((a, b) =>
-            a.name.localeCompare(b.name),
-          );
+          return [...platformDefs, ...customDefs].sort(compareRequirementDefs);
         }
       }
       // Fallback: instances with no pinned version (shouldn't happen post-backfill).
       const rows = await db.frameworkEditorRequirement.findMany({
         where: { frameworkId: fi.frameworkId },
-        orderBy: { name: 'asc' },
+        orderBy: [
+          { sortOrder: { sort: 'asc', nulls: 'last' } },
+          { identifier: 'asc' },
+          { name: 'asc' },
+        ],
       });
       const platformDefs: RequirementDef[] = rows.map((r) => ({
         id: r.id,
@@ -127,13 +150,12 @@ export class FrameworksService {
         identifier: r.identifier,
         description: r.description,
         requirementFamily: r.requirementFamily ?? null,
+        sortOrder: r.sortOrder ?? null,
         frameworkId: r.frameworkId,
         customFrameworkId: null,
         kind: 'platform',
       }));
-      return [...platformDefs, ...customDefs].sort((a, b) =>
-        a.name.localeCompare(b.name),
-      );
+      return [...platformDefs, ...customDefs].sort(compareRequirementDefs);
     }
     return [];
   }
@@ -403,11 +425,13 @@ export class FrameworksService {
       db.frameworkEditorFramework.findMany({
         where: { visible: true },
         include: { requirements: true },
+        orderBy: { name: 'asc' },
       }),
       organizationId
         ? db.customFramework.findMany({
             where: { organizationId },
             include: { requirements: true },
+            orderBy: { name: 'asc' },
           })
         : Promise.resolve([]),
     ]);

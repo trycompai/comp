@@ -13,6 +13,7 @@ import {
 import type { Response } from 'express';
 import {
   ApiOperation,
+  ApiBody,
   ApiParam,
   ApiResponse,
   ApiSecurity,
@@ -32,6 +33,7 @@ import {
   ContextResponseDto,
   CreateBrowserAutomationDto,
   CreateSessionDto,
+  ExecuteAutomationSessionDto,
   NavigateToUrlDto,
   RunAutomationResponseDto,
   SessionResponseDto,
@@ -171,10 +173,12 @@ export class BrowserbaseController {
     type: BrowserAutomationResponseDto,
   })
   async createAutomation(
+    @OrganizationId() organizationId: string,
     @Body() dto: CreateBrowserAutomationDto,
   ): Promise<BrowserAutomationResponseDto> {
     return (await this.browserbaseService.createBrowserAutomation(
       dto,
+      organizationId,
     )) as BrowserAutomationResponseDto;
   }
 
@@ -191,9 +195,11 @@ export class BrowserbaseController {
   })
   async getAutomationsForTask(
     @Param('taskId') taskId: string,
+    @OrganizationId() organizationId: string,
   ): Promise<BrowserAutomationResponseDto[]> {
     return (await this.browserbaseService.getAutomationsWithPresignedUrls(
       taskId,
+      organizationId,
     )) as BrowserAutomationResponseDto[];
   }
 
@@ -210,9 +216,11 @@ export class BrowserbaseController {
   })
   async getAutomation(
     @Param('automationId') automationId: string,
+    @OrganizationId() organizationId: string,
   ): Promise<BrowserAutomationResponseDto | null> {
     return (await this.browserbaseService.getBrowserAutomation(
       automationId,
+      organizationId,
     )) as BrowserAutomationResponseDto | null;
   }
 
@@ -229,11 +237,13 @@ export class BrowserbaseController {
   })
   async updateAutomation(
     @Param('automationId') automationId: string,
+    @OrganizationId() organizationId: string,
     @Body() dto: UpdateBrowserAutomationDto,
   ): Promise<BrowserAutomationResponseDto> {
     return (await this.browserbaseService.updateBrowserAutomation(
       automationId,
       dto,
+      organizationId,
     )) as BrowserAutomationResponseDto;
   }
 
@@ -249,8 +259,12 @@ export class BrowserbaseController {
   })
   async deleteAutomation(
     @Param('automationId') automationId: string,
+    @OrganizationId() organizationId: string,
   ): Promise<{ success: boolean }> {
-    await this.browserbaseService.deleteBrowserAutomation(automationId);
+    await this.browserbaseService.deleteBrowserAutomation(
+      automationId,
+      organizationId,
+    );
     return { success: true };
   }
 
@@ -291,13 +305,14 @@ export class BrowserbaseController {
     description: 'Runs the automation on a pre-created session',
   })
   @ApiParam({ name: 'automationId', description: 'Automation ID' })
+  @ApiBody({ type: ExecuteAutomationSessionDto })
   @ApiResponse({
     status: 200,
     description: 'Execution result',
   })
   async executeAutomationOnSession(
     @Param('automationId') automationId: string,
-    @Body() body: { runId: string; sessionId: string },
+    @Body() body: ExecuteAutomationSessionDto,
     @OrganizationId() organizationId: string,
   ): Promise<{
     success: boolean;
@@ -350,9 +365,12 @@ export class BrowserbaseController {
   })
   async getAutomationRuns(
     @Param('automationId') automationId: string,
+    @OrganizationId() organizationId: string,
   ): Promise<BrowserAutomationRunResponseDto[]> {
     return (await this.browserbaseService.getAutomationRuns(
       automationId,
+      20,
+      organizationId,
     )) as BrowserAutomationRunResponseDto[];
   }
 
@@ -369,9 +387,11 @@ export class BrowserbaseController {
   })
   async getRunById(
     @Param('runId') runId: string,
+    @OrganizationId() organizationId: string,
   ): Promise<BrowserAutomationRunResponseDto | null> {
     return (await this.browserbaseService.getRunWithPresignedUrl(
       runId,
+      organizationId,
     )) as BrowserAutomationRunResponseDto | null;
   }
 

@@ -11,12 +11,46 @@ model FrameworkEditorVideo {
   updatedAt DateTime @default(now()) @updatedAt
 }
 
+// FRAME-20: status shown for a framework family in the editor list. Drives the
+// color-coded badge: visible=green, hidden=black, under_construction=red,
+// partial=amber. Distinct from a framework's own `visible` boolean.
+enum FrameworkEditorFrameworkFamilyStatus {
+  visible
+  hidden
+  under_construction
+  partial
+}
+
+// FRAME-20: a "framework family" is a folder that groups related frameworks
+// (e.g. all of NIST SP800-53, or DORA's pieces) for organisation in the editor.
+// Purely organisational — no version (it's a folder, not a published artifact).
+// NOT related to `controlFamily`/`requirementFamily`, which group items WITHIN a
+// single framework.
+model FrameworkEditorFrameworkFamily {
+  id          String                               @id @default(dbgenerated("generate_prefixed_cuid('frk_fam'::text)"))
+  name        String
+  description String                               @default("")
+  status      FrameworkEditorFrameworkFamilyStatus @default(hidden)
+
+  frameworks FrameworkEditorFramework[]
+
+  // Dates
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
 model FrameworkEditorFramework {
   id          String  @id @default(dbgenerated("generate_prefixed_cuid('frk'::text)"))
   name        String // e.g., "soc2", "iso27001"
   version     String
   description String
   visible     Boolean @default(false)
+
+  // FRAME-20: the family (folder) this framework belongs to. Null = ungrouped
+  // (shown at the root "/"). Restrict enforces the "delete only when empty" rule
+  // at the DB level — the API also checks first to return a friendly error.
+  familyId String?
+  family   FrameworkEditorFrameworkFamily? @relation(fields: [familyId], references: [id], onDelete: Restrict)
 
   requirements         FrameworkEditorRequirement[]
   frameworkInstances   FrameworkInstance[]
@@ -35,6 +69,8 @@ model FrameworkEditorFramework {
   // Dates
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
+
+  @@index([familyId])
 }
 
 model FrameworkEditorRequirement {
@@ -46,6 +82,10 @@ model FrameworkEditorRequirement {
   identifier        String @default("") // Unique identifier for the requirement, e.g., "cc1-1"
   description       String
   requirementFamily String?
+  // Per-framework display order (FRAME-18). Lower numbers sort first; null rows
+  // fall back to identifier ordering and sort after numbered rows. Lets frameworks
+  // like NIST CSF use their canonical order (GV → ID → PR → DE → RS → RC).
+  sortOrder         Int?
 
   controlTemplates FrameworkEditorControlTemplate[]
   requirementMaps  RequirementMap[]

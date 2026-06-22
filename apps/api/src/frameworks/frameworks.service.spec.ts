@@ -30,6 +30,12 @@ jest.mock('@db', () => ({
     evidenceSubmission: {
       findMany: jest.fn(),
     },
+    frameworkEditorFramework: {
+      findMany: jest.fn(),
+    },
+    customFramework: {
+      findMany: jest.fn(),
+    },
   },
   // The frameworks-timeline helper imports FindingType (a Prisma enum) at module
   // load. Stub it so the spec file can be evaluated without the real client.
@@ -159,6 +165,40 @@ describe('FrameworksService', () => {
       expect(result).toEqual({
         ...mockScores,
         currentMember: null,
+      });
+    });
+  });
+
+  // Regression coverage for "GDPR framework showing as HIPAA": findAvailable
+  // feeds the setup screen, which auto-selects visibleFrameworks[0] when the
+  // user hasn't toggled a pill. Without a deterministic orderBy, Postgres
+  // returned platform frameworks in arbitrary order, so the silent default
+  // could land on the wrong framework (e.g. HIPAA when GDPR was expected).
+  describe('findAvailable', () => {
+    beforeEach(() => {
+      (mockDb.frameworkEditorFramework.findMany as jest.Mock).mockResolvedValue(
+        [],
+      );
+      (mockDb.customFramework.findMany as jest.Mock).mockResolvedValue([]);
+    });
+
+    it('orders platform frameworks deterministically by name', async () => {
+      await service.findAvailable();
+
+      expect(mockDb.frameworkEditorFramework.findMany).toHaveBeenCalledWith({
+        where: { visible: true },
+        include: { requirements: true },
+        orderBy: { name: 'asc' },
+      });
+    });
+
+    it('orders an org\'s custom frameworks deterministically by name', async () => {
+      await service.findAvailable('org_1');
+
+      expect(mockDb.customFramework.findMany).toHaveBeenCalledWith({
+        where: { organizationId: 'org_1' },
+        include: { requirements: true },
+        orderBy: { name: 'asc' },
       });
     });
   });

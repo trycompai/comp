@@ -430,8 +430,9 @@ export class TrustAccessService {
       return;
     }
 
-    // Construct review URL
-    const reviewUrl = `${process.env.BETTER_AUTH_URL}/${organizationId}/trust`;
+    // Construct review URL pointing at the pending access requests list, not
+    // the trust portal settings/overview page.
+    const reviewUrl = `${process.env.BETTER_AUTH_URL}/${organizationId}/trust/access-requests`;
 
     // Send notification to all recipients
     const emailPromises = notificationEmails.map((email) =>

@@ -1,7 +1,7 @@
 'use client';
 
-import { Button } from '@trycompai/ui/button';
-import { Loader2, MonitorPlay, MonitorSmartphone, RefreshCw } from 'lucide-react';
+import { Button, Spinner } from '@trycompai/design-system';
+import { Play, Renew, Screen } from '@trycompai/design-system/icons';
 
 interface BrowserLiveViewProps {
   title: string;
@@ -22,7 +22,7 @@ export function BrowserLiveView({
   onSave,
   onCancel,
 }: BrowserLiveViewProps) {
-  const Icon = variant === 'auth' ? MonitorSmartphone : MonitorPlay;
+  const Icon = variant === 'auth' ? Screen : Play;
   const iconClass = variant === 'execution' ? 'text-primary animate-pulse' : 'text-primary';
   const bgClass = variant === 'execution' ? 'bg-primary/10' : 'bg-muted';
 
@@ -42,23 +42,20 @@ export function BrowserLiveView({
           <div className="flex items-center gap-3">
             {variant === 'execution' && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Loader2 className="h-3 w-3 animate-spin" />
+                <Spinner />
                 Executing...
               </div>
             )}
             {variant === 'auth' && onSave && (
-              <Button variant="outline" size="sm" onClick={onSave} disabled={isChecking}>
-                {isChecking ? (
-                  <>
-                    <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                    Checking...
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="mr-2 h-3 w-3" />
-                    Save & Close
-                  </>
-                )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onSave}
+                disabled={isChecking}
+                loading={isChecking}
+                iconLeft={!isChecking ? <Renew size={12} /> : undefined}
+              >
+                {isChecking ? 'Checking...' : 'Check & Save'}
               </Button>
             )}
             <Button variant="ghost" size="sm" onClick={onCancel}>

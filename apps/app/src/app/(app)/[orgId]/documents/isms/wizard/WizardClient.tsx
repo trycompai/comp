@@ -9,7 +9,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useIsmsWizard } from '../hooks/useIsmsWizard';
 import { buildWizardDefaults } from './wizard-form-defaults';
-import { pickStepAnswers, WIZARD_STEPS } from './wizard-steps';
+import { pickStepAnswers, resumeStepIndex, WIZARD_STEPS } from './wizard-steps';
 import { WizardProgress } from './WizardProgress';
 import { WizardStepContent } from './WizardStepContent';
 import {
@@ -76,18 +76,23 @@ export function WizardClient({ organizationId, frameworkId, fallbackData }: Wiza
     defaultValues,
   });
 
-  const [stepIndex, setStepIndex] = useState(0);
+  // Resume on the first unsaved step so the progress rail (done / current) matches
+  // the pre-filled answers after Save progress / leaving and returning.
+  const [stepIndex, setStepIndex] = useState(() =>
+    resumeStepIndex({ answers: initialProfile?.answers ?? null }),
+  );
   const [isSaving, setIsSaving] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
 
   // Re-seed the form if the profile arrives after mount (e.g. SSR fallback was
   // null and SWR resolved later). Only while the user hasn't edited anything, so
-  // in-progress answers are never clobbered.
+  // in-progress answers are never clobbered; also restore the resume step.
   const hasReseeded = useRef(false);
   useEffect(() => {
     if (hasReseeded.current || !profile || formState.isDirty) return;
     hasReseeded.current = true;
     reset(defaultValues);
+    setStepIndex(resumeStepIndex({ answers: profile.answers ?? null }));
   }, [profile, defaultValues, formState.isDirty, reset]);
 
   const members = Array.isArray(initialProfile?.members) ? initialProfile.members : [];

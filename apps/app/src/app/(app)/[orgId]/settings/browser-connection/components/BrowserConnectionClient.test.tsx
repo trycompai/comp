@@ -1,4 +1,11 @@
 import { render, screen } from '@testing-library/react';
+import type {
+  ButtonHTMLAttributes,
+  HTMLAttributes,
+  InputHTMLAttributes,
+  LabelHTMLAttributes,
+  ReactNode,
+} from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   setMockPermissions,
@@ -16,44 +23,46 @@ vi.mock('@/hooks/use-permissions', () => ({
 
 vi.mock('@/lib/api-client', () => ({
   apiClient: {
-    get: vi.fn().mockResolvedValue({ data: { hasContext: false } }),
+    get: vi.fn(() => new Promise(() => undefined)),
     post: vi.fn().mockResolvedValue({ data: {} }),
   },
 }));
 
-vi.mock('@trycompai/ui/badge', () => ({
-  Badge: ({ children }: any) => <span data-testid="badge">{children}</span>,
-}));
-
-vi.mock('@trycompai/ui/button', () => ({
-  Button: ({ children, disabled, onClick, ...props }: any) => (
-    <button disabled={disabled} onClick={onClick} {...props}>
+vi.mock('@trycompai/design-system', () => ({
+  Badge: ({ children }: { children?: ReactNode }) => <span data-testid="badge">{children}</span>,
+  Button: ({
+    children,
+    iconLeft,
+    iconRight,
+    loading,
+    ...props
+  }: ButtonHTMLAttributes<HTMLButtonElement> & {
+    iconLeft?: ReactNode;
+    iconRight?: ReactNode;
+    loading?: boolean;
+  }) => (
+    <button data-loading={loading || undefined} {...props}>
+      {iconLeft}
       {children}
+      {iconRight}
     </button>
   ),
+  Card: ({ children }: HTMLAttributes<HTMLDivElement>) => <div>{children}</div>,
+  CardContent: ({ children }: HTMLAttributes<HTMLDivElement>) => <div>{children}</div>,
+  CardDescription: ({ children }: HTMLAttributes<HTMLParagraphElement>) => <p>{children}</p>,
+  CardHeader: ({ children }: HTMLAttributes<HTMLDivElement>) => <div>{children}</div>,
+  CardTitle: ({ children }: HTMLAttributes<HTMLHeadingElement>) => <h3>{children}</h3>,
+  Input: (props: InputHTMLAttributes<HTMLInputElement>) => <input {...props} />,
+  Label: ({ children, ...props }: LabelHTMLAttributes<HTMLLabelElement>) => (
+    <label {...props}>{children}</label>
+  ),
+  Spinner: () => <span data-testid="loader-icon" />,
 }));
 
-vi.mock('@trycompai/ui/card', () => ({
-  Card: ({ children }: any) => <div>{children}</div>,
-  CardContent: ({ children }: any) => <div>{children}</div>,
-  CardDescription: ({ children }: any) => <p>{children}</p>,
-  CardHeader: ({ children }: any) => <div>{children}</div>,
-  CardTitle: ({ children }: any) => <h3>{children}</h3>,
-}));
-
-vi.mock('@trycompai/ui/input', () => ({
-  Input: (props: any) => <input {...props} />,
-}));
-
-vi.mock('@trycompai/ui/label', () => ({
-  Label: ({ children, ...props }: any) => <label {...props}>{children}</label>,
-}));
-
-vi.mock('lucide-react', () => ({
+vi.mock('@trycompai/design-system/icons', () => ({
   Globe: () => <span data-testid="globe-icon" />,
-  Loader2: () => <span data-testid="loader-icon" />,
-  MonitorSmartphone: () => <span data-testid="monitor-icon" />,
-  RefreshCw: () => <span data-testid="refresh-icon" />,
+  Renew: () => <span data-testid="refresh-icon" />,
+  Screen: () => <span data-testid="monitor-icon" />,
 }));
 
 import { BrowserConnectionClient } from './BrowserConnectionClient';

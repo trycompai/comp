@@ -13942,6 +13942,98 @@
         }
       }
     },
+    "/v1/trust-portal/custom-frameworks/badge": {
+      "post": {
+        "description": "Stores a PNG/JPEG/WebP badge (max 256KB) in the organization assets bucket. Does not change the framework's portal visibility.",
+        "operationId": "TrustPortalController_uploadCustomFrameworkBadge_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadCustomFrameworkBadgeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Badge uploaded successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomFrameworkBadgeResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Upload or replace a custom framework's Trust Portal badge image",
+        "tags": [
+          "Trust Portal"
+        ],
+        "x-mint": {
+          "metadata": {
+            "title": "Upload or replace a custom framework's Trust | Comp AI API",
+            "sidebarTitle": "Upload or replace a custom framework's Trust Portal badge image",
+            "description": "Stores a PNG/JPEG/WebP badge (max 256KB) in the organization assets bucket. Does not change the framework's portal visibility.",
+            "og:title": "Upload or replace a custom framework's Trust | Comp AI API",
+            "og:description": "Stores a PNG/JPEG/WebP badge (max 256KB) in the organization assets bucket. Does not change the framework's portal visibility."
+          }
+        },
+        "x-speakeasy-mcp": {
+          "name": "upload-custom-framework-badge"
+        }
+      },
+      "delete": {
+        "operationId": "TrustPortalController_removeCustomFrameworkBadge_v1",
+        "parameters": [
+          {
+            "name": "customFrameworkId",
+            "required": true,
+            "in": "query",
+            "description": "Org-authored custom framework ID whose badge to remove",
+            "schema": {
+              "example": "cfrm_6914cd0e16e4c7dccbb54426",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Remove a custom framework's Trust Portal badge image",
+        "tags": [
+          "Trust Portal"
+        ],
+        "description": "Remove a custom framework's Trust Portal badge image in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources, documents, links, and vendor disclosures.",
+        "x-mint": {
+          "metadata": {
+            "title": "Remove a custom framework's Trust Portal | Comp AI API",
+            "sidebarTitle": "Remove a custom framework's Trust Portal badge image",
+            "description": "Remove a custom framework's Trust Portal badge image in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance.",
+            "og:title": "Remove a custom framework's Trust Portal | Comp AI API",
+            "og:description": "Remove a custom framework's Trust Portal badge image in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance."
+          }
+        },
+        "x-speakeasy-mcp": {
+          "name": "remove-custom-framework-badge"
+        }
+      }
+    },
     "/v1/trust-portal/overview": {
       "post": {
         "operationId": "TrustPortalController_updateOverview_v1",
@@ -17836,9 +17928,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Ensure ISMS foundational documents exist",
@@ -17881,9 +17970,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get an ISMS document with its latest version",
@@ -17936,9 +18022,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Map organization controls to an ISMS document",
@@ -17989,9 +18072,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Remove a control mapping from an ISMS document",
@@ -18034,9 +18114,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Derive Context-of-the-Organization issues",
@@ -18055,159 +18132,6 @@
         },
         "x-speakeasy-mcp": {
           "name": "generate"
-        }
-      }
-    },
-    "/v1/isms/documents/{id}/context-issues": {
-      "post": {
-        "operationId": "IsmsController_createContextIssue_v1",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateContextIssueDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Context issue created"
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          },
-          {
-            "oauth2": []
-          }
-        ],
-        "summary": "Create a manual context issue",
-        "tags": [
-          "ISMS"
-        ],
-        "description": "Create a manual context issue in Comp AI.",
-        "x-mint": {
-          "metadata": {
-            "title": "Create a manual context issue | Comp AI API",
-            "sidebarTitle": "Create a manual context issue",
-            "description": "Create a manual context issue in Comp AI.",
-            "og:title": "Create a manual context issue | Comp AI API",
-            "og:description": "Create a manual context issue in Comp AI."
-          }
-        },
-        "x-speakeasy-mcp": {
-          "name": "create-context-issue"
-        }
-      }
-    },
-    "/v1/isms/context-issues/{issueId}": {
-      "post": {
-        "operationId": "IsmsController_updateContextIssue_v1",
-        "parameters": [
-          {
-            "name": "issueId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateContextIssueDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Context issue updated"
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          },
-          {
-            "oauth2": []
-          }
-        ],
-        "summary": "Update a context issue",
-        "tags": [
-          "ISMS"
-        ],
-        "description": "Update a context issue in Comp AI.",
-        "x-mint": {
-          "metadata": {
-            "title": "Update a context issue | Comp AI API",
-            "sidebarTitle": "Update a context issue",
-            "description": "Update a context issue in Comp AI.",
-            "og:title": "Update a context issue | Comp AI API",
-            "og:description": "Update a context issue in Comp AI."
-          }
-        },
-        "x-speakeasy-mcp": {
-          "name": "update-context-issue"
-        }
-      },
-      "delete": {
-        "operationId": "IsmsController_deleteContextIssue_v1",
-        "parameters": [
-          {
-            "name": "issueId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Context issue deleted"
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          },
-          {
-            "oauth2": []
-          }
-        ],
-        "summary": "Delete a context issue",
-        "tags": [
-          "ISMS"
-        ],
-        "description": "Delete a context issue in Comp AI.",
-        "x-mint": {
-          "metadata": {
-            "title": "Delete a context issue | Comp AI API",
-            "sidebarTitle": "Delete a context issue",
-            "description": "Delete a context issue in Comp AI.",
-            "og:title": "Delete a context issue | Comp AI API",
-            "og:description": "Delete a context issue in Comp AI."
-          }
-        },
-        "x-speakeasy-mcp": {
-          "name": "delete-context-issue"
         }
       }
     },
@@ -18242,9 +18166,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Submit an ISMS document for approval",
@@ -18287,9 +18208,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Approve an ISMS document",
@@ -18332,9 +18250,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Decline an ISMS document",
@@ -18377,9 +18292,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Detect drift against the approved snapshot",
@@ -18432,9 +18344,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Export an ISMS document as PDF or DOCX",
@@ -18456,9 +18365,9 @@
         }
       }
     },
-    "/v1/isms/documents/{id}/interested-parties": {
+    "/v1/isms/documents/{id}/registers/{register}": {
       "post": {
-        "operationId": "IsmsRegistersController_createInterestedParty_v1",
+        "operationId": "IsmsRegistersController_createRow_v1",
         "parameters": [
           {
             "name": "id",
@@ -18467,56 +18376,9 @@
             "schema": {
               "type": "string"
             }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateInterestedPartyDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Interested party created"
-          }
-        },
-        "security": [
-          {
-            "apikey": []
           },
           {
-            "oauth2": []
-          }
-        ],
-        "summary": "Create a manual interested party",
-        "tags": [
-          "ISMS"
-        ],
-        "description": "Create a manual interested party in Comp AI.",
-        "x-mint": {
-          "metadata": {
-            "title": "Create a manual interested party | Comp AI API",
-            "sidebarTitle": "Create a manual interested party",
-            "description": "Create a manual interested party in Comp AI.",
-            "og:title": "Create a manual interested party | Comp AI API",
-            "og:description": "Create a manual interested party in Comp AI."
-          }
-        },
-        "x-speakeasy-mcp": {
-          "name": "create-interested-party"
-        }
-      }
-    },
-    "/v1/isms/interested-parties/{partyId}": {
-      "post": {
-        "operationId": "IsmsRegistersController_updateInterestedParty_v1",
-        "parameters": [
-          {
-            "name": "partyId",
+            "name": "register",
             "required": true,
             "in": "path",
             "schema": {
@@ -18526,50 +18388,251 @@
         ],
         "requestBody": {
           "required": true,
+          "description": "Register row fields (per-register; validated at runtime by zod)",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateInterestedPartyDto"
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "internal",
+                      "external"
+                    ]
+                  },
+                  "category": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "effect": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "needsExpectations": {
+                    "type": "string"
+                  },
+                  "interestedPartyId": {
+                    "type": "string"
+                  },
+                  "partyName": {
+                    "type": "string"
+                  },
+                  "requirement": {
+                    "type": "string"
+                  },
+                  "treatment": {
+                    "type": "string"
+                  },
+                  "objective": {
+                    "type": "string"
+                  },
+                  "target": {
+                    "type": "string"
+                  },
+                  "ownerMemberId": {
+                    "type": "string"
+                  },
+                  "cadence": {
+                    "type": "string"
+                  },
+                  "plan": {
+                    "type": "string"
+                  },
+                  "measurementMethod": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "not_started",
+                      "on_track",
+                      "at_risk",
+                      "met"
+                    ]
+                  },
+                  "position": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Interested party updated"
+            "description": "Register row created"
           }
         },
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
-        "summary": "Update an interested party",
+        "summary": "Create a row in an ISMS register",
         "tags": [
           "ISMS"
         ],
-        "description": "Update an interested party in Comp AI.",
+        "description": "Create a row in an ISMS register in Comp AI.",
         "x-mint": {
           "metadata": {
-            "title": "Update an interested party | Comp AI API",
-            "sidebarTitle": "Update an interested party",
-            "description": "Update an interested party in Comp AI.",
-            "og:title": "Update an interested party | Comp AI API",
-            "og:description": "Update an interested party in Comp AI."
+            "title": "Create a row in an ISMS register | Comp AI API",
+            "sidebarTitle": "Create a row in an ISMS register",
+            "description": "Create a row in an ISMS register in Comp AI.",
+            "og:title": "Create a row in an ISMS register | Comp AI API",
+            "og:description": "Create a row in an ISMS register in Comp AI."
           }
         },
         "x-speakeasy-mcp": {
-          "name": "update-interested-party"
+          "name": "create-row"
+        }
+      }
+    },
+    "/v1/isms/registers/{register}/{rowId}": {
+      "patch": {
+        "operationId": "IsmsRegistersController_updateRow_v1",
+        "parameters": [
+          {
+            "name": "register",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "rowId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Register row fields (per-register; validated at runtime by zod)",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "internal",
+                      "external"
+                    ]
+                  },
+                  "category": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "effect": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "needsExpectations": {
+                    "type": "string"
+                  },
+                  "interestedPartyId": {
+                    "type": "string"
+                  },
+                  "partyName": {
+                    "type": "string"
+                  },
+                  "requirement": {
+                    "type": "string"
+                  },
+                  "treatment": {
+                    "type": "string"
+                  },
+                  "objective": {
+                    "type": "string"
+                  },
+                  "target": {
+                    "type": "string"
+                  },
+                  "ownerMemberId": {
+                    "type": "string"
+                  },
+                  "cadence": {
+                    "type": "string"
+                  },
+                  "plan": {
+                    "type": "string"
+                  },
+                  "measurementMethod": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "not_started",
+                      "on_track",
+                      "at_risk",
+                      "met"
+                    ]
+                  },
+                  "position": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Register row updated"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Update a row in an ISMS register",
+        "tags": [
+          "ISMS"
+        ],
+        "description": "Update a row in an ISMS register in Comp AI.",
+        "x-mint": {
+          "metadata": {
+            "title": "Update a row in an ISMS register | Comp AI API",
+            "sidebarTitle": "Update a row in an ISMS register",
+            "description": "Update a row in an ISMS register in Comp AI.",
+            "og:title": "Update a row in an ISMS register | Comp AI API",
+            "og:description": "Update a row in an ISMS register in Comp AI."
+          }
+        },
+        "x-speakeasy-mcp": {
+          "name": "update-row"
         }
       },
       "delete": {
-        "operationId": "IsmsRegistersController_deleteInterestedParty_v1",
+        "operationId": "IsmsRegistersController_deleteRow_v1",
         "parameters": [
           {
-            "name": "partyId",
+            "name": "register",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "rowId",
             "required": true,
             "in": "path",
             "schema": {
@@ -18579,339 +18642,30 @@
         ],
         "responses": {
           "200": {
-            "description": "Interested party deleted"
+            "description": "Register row deleted"
           }
         },
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
-        "summary": "Delete an interested party",
+        "summary": "Delete a row in an ISMS register",
         "tags": [
           "ISMS"
         ],
-        "description": "Delete an interested party in Comp AI.",
+        "description": "Delete a row in an ISMS register in Comp AI.",
         "x-mint": {
           "metadata": {
-            "title": "Delete an interested party | Comp AI API",
-            "sidebarTitle": "Delete an interested party",
-            "description": "Delete an interested party in Comp AI.",
-            "og:title": "Delete an interested party | Comp AI API",
-            "og:description": "Delete an interested party in Comp AI."
+            "title": "Delete a row in an ISMS register | Comp AI API",
+            "sidebarTitle": "Delete a row in an ISMS register",
+            "description": "Delete a row in an ISMS register in Comp AI.",
+            "og:title": "Delete a row in an ISMS register | Comp AI API",
+            "og:description": "Delete a row in an ISMS register in Comp AI."
           }
         },
         "x-speakeasy-mcp": {
-          "name": "delete-interested-party"
-        }
-      }
-    },
-    "/v1/isms/documents/{id}/requirements": {
-      "post": {
-        "operationId": "IsmsRegistersController_createRequirement_v1",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateRequirementDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Requirement created"
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          },
-          {
-            "oauth2": []
-          }
-        ],
-        "summary": "Create a manual requirement",
-        "tags": [
-          "ISMS"
-        ],
-        "description": "Create a manual requirement in Comp AI.",
-        "x-mint": {
-          "metadata": {
-            "title": "Create a manual requirement | Comp AI API",
-            "sidebarTitle": "Create a manual requirement",
-            "description": "Create a manual requirement in Comp AI.",
-            "og:title": "Create a manual requirement | Comp AI API",
-            "og:description": "Create a manual requirement in Comp AI."
-          }
-        },
-        "x-speakeasy-mcp": {
-          "name": "create-requirement"
-        }
-      }
-    },
-    "/v1/isms/requirements/{requirementId}": {
-      "post": {
-        "operationId": "IsmsRegistersController_updateRequirement_v1",
-        "parameters": [
-          {
-            "name": "requirementId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateRequirementDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Requirement updated"
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          },
-          {
-            "oauth2": []
-          }
-        ],
-        "summary": "Update a requirement",
-        "tags": [
-          "ISMS"
-        ],
-        "description": "Update a requirement in Comp AI.",
-        "x-mint": {
-          "metadata": {
-            "title": "Update a requirement | Comp AI API",
-            "sidebarTitle": "Update a requirement",
-            "description": "Update a requirement in Comp AI.",
-            "og:title": "Update a requirement | Comp AI API",
-            "og:description": "Update a requirement in Comp AI."
-          }
-        },
-        "x-speakeasy-mcp": {
-          "name": "update-requirement"
-        }
-      },
-      "delete": {
-        "operationId": "IsmsRegistersController_deleteRequirement_v1",
-        "parameters": [
-          {
-            "name": "requirementId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Requirement deleted"
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          },
-          {
-            "oauth2": []
-          }
-        ],
-        "summary": "Delete a requirement",
-        "tags": [
-          "ISMS"
-        ],
-        "description": "Delete a requirement in Comp AI.",
-        "x-mint": {
-          "metadata": {
-            "title": "Delete a requirement | Comp AI API",
-            "sidebarTitle": "Delete a requirement",
-            "description": "Delete a requirement in Comp AI.",
-            "og:title": "Delete a requirement | Comp AI API",
-            "og:description": "Delete a requirement in Comp AI."
-          }
-        },
-        "x-speakeasy-mcp": {
-          "name": "delete-requirement"
-        }
-      }
-    },
-    "/v1/isms/documents/{id}/objectives": {
-      "post": {
-        "operationId": "IsmsRegistersController_createObjective_v1",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateObjectiveDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Objective created"
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          },
-          {
-            "oauth2": []
-          }
-        ],
-        "summary": "Create a manual objective",
-        "tags": [
-          "ISMS"
-        ],
-        "description": "Create a manual objective in Comp AI.",
-        "x-mint": {
-          "metadata": {
-            "title": "Create a manual objective | Comp AI API",
-            "sidebarTitle": "Create a manual objective",
-            "description": "Create a manual objective in Comp AI.",
-            "og:title": "Create a manual objective | Comp AI API",
-            "og:description": "Create a manual objective in Comp AI."
-          }
-        },
-        "x-speakeasy-mcp": {
-          "name": "create-objective"
-        }
-      }
-    },
-    "/v1/isms/objectives/{objectiveId}": {
-      "post": {
-        "operationId": "IsmsRegistersController_updateObjective_v1",
-        "parameters": [
-          {
-            "name": "objectiveId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateObjectiveDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Objective updated"
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          },
-          {
-            "oauth2": []
-          }
-        ],
-        "summary": "Update an objective",
-        "tags": [
-          "ISMS"
-        ],
-        "description": "Update an objective in Comp AI.",
-        "x-mint": {
-          "metadata": {
-            "title": "Update an objective | Comp AI API",
-            "sidebarTitle": "Update an objective",
-            "description": "Update an objective in Comp AI.",
-            "og:title": "Update an objective | Comp AI API",
-            "og:description": "Update an objective in Comp AI."
-          }
-        },
-        "x-speakeasy-mcp": {
-          "name": "update-objective"
-        }
-      },
-      "delete": {
-        "operationId": "IsmsRegistersController_deleteObjective_v1",
-        "parameters": [
-          {
-            "name": "objectiveId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Objective deleted"
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          },
-          {
-            "oauth2": []
-          }
-        ],
-        "summary": "Delete an objective",
-        "tags": [
-          "ISMS"
-        ],
-        "description": "Delete an objective in Comp AI.",
-        "x-mint": {
-          "metadata": {
-            "title": "Delete an objective | Comp AI API",
-            "sidebarTitle": "Delete an objective",
-            "description": "Delete an objective in Comp AI.",
-            "og:title": "Delete an objective | Comp AI API",
-            "og:description": "Delete an objective in Comp AI."
-          }
-        },
-        "x-speakeasy-mcp": {
-          "name": "delete-objective"
+          "name": "delete-row"
         }
       }
     },
@@ -18928,6 +18682,27 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "description": "Singleton document narrative payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "narrative": {
+                    "type": "object",
+                    "description": "Per-type narrative object (e.g. ISMS scope or leadership commitment), validated at runtime by zod",
+                    "additionalProperties": true
+                  }
+                },
+                "required": [
+                  "narrative"
+                ]
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Narrative saved"
@@ -18936,9 +18711,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Save a singleton document narrative",
@@ -18981,9 +18753,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get the ISMS wizard profile, defaults and members",
@@ -19007,6 +18776,35 @@
       "post": {
         "operationId": "IsmsProfileController_saveProfile_v1",
         "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Partial ISMS wizard answers (validated at runtime by zod)",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "frameworkId": {
+                    "type": "string"
+                  },
+                  "answers": {
+                    "type": "object",
+                    "description": "Deeply-partial wizard answers (any subset of the wizard steps)",
+                    "additionalProperties": true
+                  },
+                  "complete": {
+                    "type": "boolean",
+                    "description": "Whether the wizard is being finalized"
+                  }
+                },
+                "required": [
+                  "frameworkId",
+                  "answers"
+                ]
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Saved profile"
@@ -19015,9 +18813,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Save (partial) ISMS wizard answers",
@@ -19061,9 +18856,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Ensure and regenerate all ISMS documents",
@@ -23585,7 +23377,7 @@
           }
         },
         "x-speakeasy-mcp": {
-          "name": "frameworks-create-requirement"
+          "name": "create-requirement"
         }
       }
     },
@@ -24489,6 +24281,14 @@
             }
           },
           {
+            "name": "frameworkInstanceId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "formType",
             "required": true,
             "in": "path",
@@ -24509,14 +24309,6 @@
                 "tabletop_exercise",
                 "account_types"
               ],
-              "type": "string"
-            }
-          },
-          {
-            "name": "frameworkInstanceId",
-            "required": true,
-            "in": "query",
-            "schema": {
               "type": "string"
             }
           }
@@ -29046,6 +28838,52 @@
           "emails"
         ]
       },
+      "UploadCustomFrameworkBadgeDto": {
+        "type": "object",
+        "properties": {
+          "customFrameworkId": {
+            "type": "string",
+            "description": "Org-authored custom framework ID the badge belongs to",
+            "example": "cfrm_6914cd0e16e4c7dccbb54426"
+          },
+          "fileName": {
+            "type": "string",
+            "description": "Original file name (PNG, JPEG, or WebP)",
+            "example": "acme-framework-badge.png"
+          },
+          "fileType": {
+            "type": "string",
+            "description": "MIME type of the image",
+            "example": "image/png"
+          },
+          "fileData": {
+            "type": "string",
+            "description": "Base64 encoded image content (PNG/JPEG/WebP, max 256KB decoded)"
+          }
+        },
+        "required": [
+          "customFrameworkId",
+          "fileName",
+          "fileType",
+          "fileData"
+        ]
+      },
+      "CustomFrameworkBadgeResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "badgeUrl": {
+            "type": "string",
+            "description": "Signed URL to the uploaded badge for immediate display"
+          }
+        },
+        "required": [
+          "success",
+          "badgeUrl"
+        ]
+      },
       "CreateAccessRequestDto": {
         "type": "object",
         "properties": {
@@ -29115,14 +28953,6 @@
         "required": [
           "email"
         ]
-      },
-      "CreateRequirementDto": {
-        "type": "object",
-        "properties": {}
-      },
-      "UpdateRequirementDto": {
-        "type": "object",
-        "properties": {}
       },
       "CreateFindingDto": {
         "type": "object",
@@ -29577,47 +29407,78 @@
       },
       "EnsureIsmsSetupDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "frameworkId": {
+            "type": "string",
+            "description": "ID of the framework to scope the ISMS setup to",
+            "example": "frk_abc123def456"
+          }
+        },
+        "required": [
+          "frameworkId"
+        ]
       },
       "LinkIsmsControlsDto": {
         "type": "object",
-        "properties": {}
-      },
-      "CreateContextIssueDto": {
-        "type": "object",
-        "properties": {}
-      },
-      "UpdateContextIssueDto": {
-        "type": "object",
-        "properties": {}
+        "properties": {
+          "controlIds": {
+            "description": "IDs of the controls to link to the ISMS document",
+            "example": [
+              "ctl_abc123def456",
+              "ctl_ghi789jkl012"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "controlIds"
+        ]
       },
       "SubmitIsmsForApprovalDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "approverId": {
+            "type": "string",
+            "description": "Member ID of the approver to submit the ISMS to",
+            "example": "mem_abc123def456"
+          }
+        },
+        "required": [
+          "approverId"
+        ]
       },
       "ExportIsmsDocumentDto": {
         "type": "object",
-        "properties": {}
-      },
-      "CreateInterestedPartyDto": {
-        "type": "object",
-        "properties": {}
-      },
-      "UpdateInterestedPartyDto": {
-        "type": "object",
-        "properties": {}
-      },
-      "CreateObjectiveDto": {
-        "type": "object",
-        "properties": {}
-      },
-      "UpdateObjectiveDto": {
-        "type": "object",
-        "properties": {}
+        "properties": {
+          "format": {
+            "type": "string",
+            "description": "File format to export the ISMS document as",
+            "enum": [
+              "pdf",
+              "docx"
+            ],
+            "example": "pdf"
+          }
+        },
+        "required": [
+          "format"
+        ]
       },
       "GenerateAllDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "frameworkId": {
+            "type": "string",
+            "description": "ID of the framework to generate all ISMS profile documents for",
+            "example": "frk_abc123def456"
+          }
+        },
+        "required": [
+          "frameworkId"
+        ]
       },
       "CreateConnectionDto": {
         "type": "object",
