@@ -1,16 +1,14 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { Button } from '@trycompai/ui/button';
+import { Button } from '@trycompai/design-system';
 import {
   ChevronDown,
-  Loader2,
-  MonitorPlay,
-  Pencil,
+  Edit,
+  Play,
   Power,
-  PowerOff,
-  Trash2,
-} from 'lucide-react';
+  TrashCan,
+} from '@trycompai/design-system/icons';
 import { formatDistanceToNow } from 'date-fns';
 import { useState } from 'react';
 import { ScheduleSummary } from '@/components/schedule-summary';
@@ -95,34 +93,38 @@ export function AutomationItem({
               />
             </div>
           )}
+          {latestRun?.failureCode && (
+            <p className="mt-1 text-xs text-destructive">
+              {latestRun.blockedReason ||
+                latestRun.error ||
+                latestRun.failureCode.replaceAll('_', ' ')}
+            </p>
+          )}
         </div>
 
         <div className="flex items-center gap-1.5">
           {!readOnly && (
             <Button
               variant="ghost"
-              size="icon"
-              className="h-8 w-8"
+              size="icon-lg"
               onClick={() => onToggleEnabled(!automation.isEnabled)}
               aria-label={automation.isEnabled ? 'Pause automation' : 'Enable automation'}
             >
-              {automation.isEnabled ? (
-                <Power className="h-3.5 w-3.5 text-primary" />
-              ) : (
-                <PowerOff className="h-3.5 w-3.5 text-muted-foreground" />
-              )}
+              <Power
+                size={14}
+                className={automation.isEnabled ? 'text-primary' : 'text-muted-foreground'}
+              />
             </Button>
           )}
 
           {!readOnly && (
             <Button
               variant="ghost"
-              size="icon"
-              className="h-8 w-8"
+              size="icon-lg"
               onClick={onEdit}
               aria-label="Edit automation"
             >
-              <Pencil className="h-3.5 w-3.5" />
+              <Edit size={14} />
             </Button>
           )}
 
@@ -132,7 +134,6 @@ export function AutomationItem({
                 <Button
                   variant="destructive"
                   size="sm"
-                  className="h-7 text-xs"
                   onClick={() => { onDelete(); setConfirmDelete(false); }}
                 >
                   Confirm
@@ -140,7 +141,6 @@ export function AutomationItem({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-7 text-xs"
                   onClick={() => setConfirmDelete(false)}
                 >
                   Cancel
@@ -149,12 +149,11 @@ export function AutomationItem({
             ) : (
               <Button
                 variant="ghost"
-                size="icon"
-                className="h-8 w-8"
+                size="icon-lg"
                 onClick={() => setConfirmDelete(true)}
                 aria-label="Delete automation"
               >
-                <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+                <TrashCan size={14} className="text-muted-foreground hover:text-destructive" />
               </Button>
             )
           )}
@@ -165,26 +164,19 @@ export function AutomationItem({
               size="sm"
               onClick={onRun}
               disabled={isRunning || isDisabled}
+              loading={isRunning}
+              iconLeft={!isRunning ? <Play size={12} /> : undefined}
             >
-              {isRunning ? (
-                <>
-                  <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
-                  Running...
-                </>
-              ) : (
-                <>
-                  <MonitorPlay className="mr-1.5 h-3 w-3" />
-                  Run
-                </>
-              )}
+              {isRunning ? 'Running...' : 'Run'}
             </Button>
           )}
 
           {runs.length > 0 && (
-            <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={onToggleExpand}>
+            <Button size="icon-lg" variant="ghost" onClick={onToggleExpand}>
               <ChevronDown
+                size={16}
                 className={cn(
-                  'h-4 w-4 transition-transform duration-300',
+                  'transition-transform duration-300',
                   isExpanded && 'rotate-180',
                 )}
               />
@@ -208,5 +200,3 @@ export function AutomationItem({
     </div>
   );
 }
-
-

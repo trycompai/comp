@@ -1,8 +1,13 @@
 import type { IntegrationManifest } from '../../types';
+import { environmentAliasesVariable } from '../environment-aliases';
 import {
+  cloudMonitoringAlertingCheck,
   cloudSqlBackupsCheck,
+  cloudSqlEncryptionCheck,
   cloudSqlSslCheck,
+  environmentSeparationCheck,
   iamPrimitiveRolesCheck,
+  storageEncryptionCheck,
   storagePublicAccessCheck,
   vpcOpenFirewallsCheck,
 } from './checks';
@@ -154,6 +159,7 @@ This is industry standard - all GCP security monitoring tools use the same scope
         }
       },
     },
+    environmentAliasesVariable,
   ],
 
   checks: [
@@ -162,5 +168,9 @@ This is industry standard - all GCP security monitoring tools use the same scope
     vpcOpenFirewallsCheck,
     cloudSqlSslCheck,
     cloudSqlBackupsCheck,
+    cloudMonitoringAlertingCheck,
+    storageEncryptionCheck,
+    cloudSqlEncryptionCheck,
+    environmentSeparationCheck,
   ],
 };

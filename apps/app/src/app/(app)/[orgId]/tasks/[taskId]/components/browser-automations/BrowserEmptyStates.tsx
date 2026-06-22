@@ -1,9 +1,7 @@
 'use client';
 
-import { Badge } from '@trycompai/ui/badge';
-import { Button } from '@trycompai/ui/button';
-import { Input } from '@trycompai/ui/input';
-import { ArrowRight, Globe, Loader2, MonitorSmartphone, Plus } from 'lucide-react';
+import { Badge, Button, Input } from '@trycompai/design-system';
+import { Add, ArrowRight, Globe, Screen } from '@trycompai/design-system/icons';
 import { useState } from 'react';
 
 interface NoContextStateProps {
@@ -32,27 +30,32 @@ export function NoContextState({ isStartingAuth, onStartAuth }: NoContextStatePr
       <div className="p-5">
         <div className="rounded-lg border border-dashed border-border p-6 text-center">
           <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
-            <MonitorSmartphone className="h-6 w-6 text-muted-foreground" />
+            <Screen className="h-6 w-6 text-muted-foreground" />
           </div>
-          <h4 className="text-sm font-medium mb-2">Connect your browser first</h4>
+          <h4 className="text-sm font-medium mb-2">Log in to the website first</h4>
           <p className="text-xs text-muted-foreground mb-4 max-w-sm mx-auto">
-            Browser automations require authentication. Log in to sites like GitHub, Jira, or AWS to
-            capture screenshots as evidence.
+            Enter the site you want to automate. We will save a browser profile for that hostname
+            and reuse it for future evidence runs.
           </p>
           <div className="flex flex-col gap-3 max-w-xs mx-auto">
             <div className="flex gap-2">
-              <Input
-                placeholder="https://github.com"
-                value={authUrl}
-                onChange={(e) => setAuthUrl(e.target.value)}
-                className="flex-1"
-              />
-              <Button onClick={() => onStartAuth(authUrl)} disabled={isStartingAuth || !authUrl}>
-                {isStartingAuth ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Connect'}
+              <div className="flex-1">
+                <Input
+                  placeholder="https://github.com"
+                  value={authUrl}
+                  onChange={(e) => setAuthUrl(e.target.value)}
+                />
+              </div>
+              <Button
+                onClick={() => onStartAuth(authUrl)}
+                disabled={isStartingAuth || !authUrl}
+                loading={isStartingAuth}
+              >
+                {isStartingAuth ? 'Connecting...' : 'Connect'}
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Tip: Use a dedicated service account for automations
+              Use a dedicated service account for automations when possible.
             </p>
           </div>
         </div>
@@ -81,7 +84,7 @@ export function EmptyWithContextState({ onCreateClick }: EmptyWithContextStatePr
               </p>
             </div>
           </div>
-          <Badge variant="outline" className="text-xs">
+          <Badge variant="outline">
             <div className="w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5" />
             Connected
           </Badge>
@@ -93,7 +96,7 @@ export function EmptyWithContextState({ onCreateClick }: EmptyWithContextStatePr
           className="w-full flex items-center gap-4 p-4 rounded-lg border border-dashed border-border hover:border-primary/50 hover:bg-primary/5 transition-all group text-left"
         >
           <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors shrink-0">
-            <Plus className="w-5 h-5 text-primary" />
+            <Add className="w-5 h-5 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">

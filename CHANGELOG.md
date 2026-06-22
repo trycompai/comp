@@ -1,3 +1,125 @@
+## [3.86.5](https://github.com/trycompai/comp/compare/v3.86.4...v3.86.5) (2026-06-19)
+
+
+### Bug Fixes
+
+* **integrations:** harden google oauth refresh ([b8fa9bb](https://github.com/trycompai/comp/commit/b8fa9bb9a07f24a02f124563ad43f3ca97591b6b))
+
+## [3.86.4](https://github.com/trycompai/comp/compare/v3.86.3...v3.86.4) (2026-06-19)
+
+
+### Bug Fixes
+
+* **integration-platform:** surface setup instructions for non-custom auth types ([582a277](https://github.com/trycompai/comp/commit/582a2777e5316f07f6770860b577a52ce77ee1ba))
+
+## [3.86.3](https://github.com/trycompai/comp/compare/v3.86.2...v3.86.3) (2026-06-18)
+
+
+### Bug Fixes
+
+* **integrations:** scheduler skips MANUAL evidence tasks ([1ee9c9f](https://github.com/trycompai/comp/commit/1ee9c9f61e33f649382f93241e3d1333885bddc7))
+
+## [3.86.2](https://github.com/trycompai/comp/compare/v3.86.1...v3.86.2) (2026-06-18)
+
+
+### Bug Fixes
+
+* **integration-platform:** default environment separation checks off ([0455fd1](https://github.com/trycompai/comp/commit/0455fd15f4e5a17305c05098c9a000a475abcdee))
+
+## [3.86.1](https://github.com/trycompai/comp/compare/v3.86.0...v3.86.1) (2026-06-18)
+
+
+### Bug Fixes
+
+* **integration-platform:** fail closed on partial environment coverage ([35eef7f](https://github.com/trycompai/comp/commit/35eef7f75ff0049dfecf117d11276deb162d14f7))
+* **integration-platform:** reject duplicate environment aliases ([bfb7a4f](https://github.com/trycompai/comp/commit/bfb7a4fb31b07437718943c87d25366f1fbae809))
+* **integration-platform:** support environment aliases ([448f0b2](https://github.com/trycompai/comp/commit/448f0b23c771da7a65aa1fdbb984e091b1c05661))
+
+# [3.86.0](https://github.com/trycompai/comp/compare/v3.85.0...v3.86.0) (2026-06-18)
+
+
+### Bug Fixes
+
+* **integration-platform:** fail closed on capped azure env pagination ([ee53b72](https://github.com/trycompai/comp/commit/ee53b72495fa90cd3760bcf1690b10c9ecf1f196))
+* **integrations:** address env-separation review — scope, prod+non-prod bar, truncation ([adc2634](https://github.com/trycompai/comp/commit/adc2634f9b8b4bc398ef90b1a2b7574e7b696c2d)), closes [#1](https://github.com/trycompai/comp/issues/1)
+* **integrations:** env-separation classifier negation + read-failure verdicts ([1420c1c](https://github.com/trycompai/comp/commit/1420c1c6362f47e8e860d2c1fad0289d0d8b7463))
+* **integrations:** env-tag priority order + surface Azure subscription scan cap ([11696f9](https://github.com/trycompai/comp/commit/11696f9624111e2845d2c487ecee797f5232b124))
+
+
+### Features
+
+* **integrations:** add AWS & Azure Separation of Environments checks + shared env classifier ([76c505b](https://github.com/trycompai/comp/commit/76c505bf41e3d468fb3ec2005540ff4dd0e1271f))
+* **integrations:** add GCP Separation of Environments check ([393a460](https://github.com/trycompai/comp/commit/393a460193c6fab0fca0af8262f6bf1156c4c513))
+
+# [3.85.0](https://github.com/trycompai/comp/compare/v3.84.0...v3.85.0) (2026-06-17)
+
+
+### Bug Fixes
+
+* **integrations:** require a durable destination for GCP log-export prong ([600f277](https://github.com/trycompai/comp/commit/600f277e54aa4f85afcfd85dbe5e74649d27dcc0))
+
+
+### Features
+
+* **integrations:** add GCP Monitoring & Alerting and Encryption at Rest checks ([d294ba0](https://github.com/trycompai/comp/commit/d294ba0312015dd3fa30abbb50f8644d5cec0d52))
+
+# [3.84.0](https://github.com/trycompai/comp/compare/v3.83.8...v3.84.0) (2026-06-17)
+
+
+### Bug Fixes
+
+* **risk:** stop AI mitigation from reopening user-closed risks ([afd89eb](https://github.com/trycompai/comp/commit/afd89eb36eab2675fa5f56e066fb130d99ac56b9))
+* **trust-portal:** fall back to initials when a badge image fails to load ([66399a9](https://github.com/trycompai/comp/commit/66399a9a8ae76405a3f314ca1321933bed3acac1))
+* **trust-portal:** harden custom framework badge upload validation ([c248a15](https://github.com/trycompai/comp/commit/c248a15016e91b28519a8b3d922d9fd560fde2a7))
+
+
+### Features
+
+* **trust-portal:** upload custom framework badges on the trust portal ([68d187a](https://github.com/trycompai/comp/commit/68d187adeb45408c0fb555161ea3b21a164cd1c2))
+
+## [3.83.8](https://github.com/trycompai/comp/compare/v3.83.7...v3.83.8) (2026-06-17)
+
+
+### Bug Fixes
+
+* **auth:** grant admin role portal permission to submit evidence forms ([3386bb2](https://github.com/trycompai/comp/commit/3386bb260a232b7c830d141935299fa6c0cb26d7))
+
+## [3.83.7](https://github.com/trycompai/comp/compare/v3.83.6...v3.83.7) (2026-06-16)
+
+
+### Bug Fixes
+
+* **integration-platform:** parallelize S3 bucket reads to avoid gateway 504s ([23aae17](https://github.com/trycompai/comp/commit/23aae17a28d80f6d933a2f1a9b7d97379b70c458)), closes [#3133](https://github.com/trycompai/comp/issues/3133)
+
+## [3.83.6](https://github.com/trycompai/comp/compare/v3.83.5...v3.83.6) (2026-06-16)
+
+
+### Bug Fixes
+
+* **integration-platform:** run dynamic integration checks on the daily schedule ([db2db18](https://github.com/trycompai/comp/commit/db2db189ed4b3b2f53745ce743bdc01b9e7bba16))
+
+## [3.83.5](https://github.com/trycompai/comp/compare/v3.83.4...v3.83.5) (2026-06-16)
+
+
+### Bug Fixes
+
+* **tasks:** respect evidenceApprovalEnabled when gating task completion ([440f0cc](https://github.com/trycompai/comp/commit/440f0cc7a0befed74acf6ce7b49357639d94464b))
+
+## [3.83.4](https://github.com/trycompai/comp/compare/v3.83.3...v3.83.4) (2026-06-16)
+
+
+### Bug Fixes
+
+* **framework-editor:** also delete timeline templates when deleting a framework ([59aa455](https://github.com/trycompai/comp/commit/59aa455c677eae04d5c70f5baf5314a264f5c136))
+
+## [3.83.3](https://github.com/trycompai/comp/compare/v3.83.2...v3.83.3) (2026-06-16)
+
+
+### Bug Fixes
+
+* **framework-editor:** allow deleting a framework that has versions/instances ([4cf2142](https://github.com/trycompai/comp/commit/4cf2142cf67172d7aa457a58e6761b50adb7e0c1))
+* **framework-editor:** commit changes independently of publishing a version ([e06d446](https://github.com/trycompai/comp/commit/e06d44647362e33730ff36992038d207a6049343))
+
 ## [3.83.2](https://github.com/trycompai/comp/compare/v3.83.1...v3.83.2) (2026-06-16)
 
 

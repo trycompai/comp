@@ -1,9 +1,9 @@
 import { getManifest } from '@trycompai/integration-platform';
-import { db, TaskFrequency } from '@db';
+import { db, TaskAutomationStatus, TaskFrequency } from '@db';
 import { logger, schedules } from '@trigger.dev/sdk';
 import { runTaskIntegrationChecks } from './run-task-integration-checks';
 import { runDeviceSync } from './run-device-sync';
-import { parseDisabledTaskChecks } from '../../integration-platform/utils/disabled-task-checks';
+import { isCheckDisabledForTask } from '../../integration-platform/utils/disabled-task-checks';
 import { isDueToday } from '../shared/is-due-today';
 
 /**
@@ -26,6 +26,44 @@ export function filterDueTasks<
       now,
     }),
   );
+}
+
+/** A provider's check reduced to what the orchestrator needs to schedule it. */
+export interface ProviderCheck {
+  id: string;
+  taskMapping: string | null;
+}
+
+/**
+ * Resolve a connection's checks from EITHER the static code manifest (the 8
+ * built-in integrations, present in the Trigger.dev registry) OR the dynamic
+ * (DB-backed) check map for that provider slug.
+ *
+ * Dynamic integrations are absent from the Trigger.dev manifest registry, so
+ * `getManifest` returns undefined for them here and they were silently skipped —
+ * the entire reason scheduled checks never ran for them. Falling back to the DB
+ * map lets the orchestrator discover their due tasks too. Static manifests win
+ * when both exist (matching the registry, which never lets a dynamic manifest
+ * override a code one).
+ */
+export function resolveProviderChecks({
+  manifest,
+  dynamicChecks,
+}: {
+  // Loose check shape so a real `IntegrationManifest` (whose `taskMapping` is a
+  // literal-union-or-undefined) is accepted; `.map` below normalizes it.
+  manifest:
+    | { checks?: Array<{ id: string; taskMapping?: string | null }> }
+    | undefined;
+  dynamicChecks: ProviderCheck[] | undefined;
+}): ProviderCheck[] {
+  if (manifest?.checks) {
+    return manifest.checks.map((c) => ({
+      id: c.id,
+      taskMapping: c.taskMapping ?? null,
+    }));
+  }
+  return dynamicChecks ?? [];
 }
 
 /**
@@ -57,6 +95,28 @@ export const integrationChecksSchedule = schedules.task({
 
     logger.info(`Found ${activeConnections.length} active connections`);
 
+    // Dynamic (DB-backed) integrations are NOT in the Trigger.dev manifest
+    // registry, so getManifest() returns undefined for them below. Load their
+    // enabled check → task mappings straight from the DB so this orchestrator
+    // can discover their due tasks too (their checks are then run on the API
+    // server by the worker — see runOnServer in run-task-integration-checks).
+    const dynamicIntegrations = await db.dynamicIntegration.findMany({
+      where: { isActive: true },
+      select: {
+        slug: true,
+        checks: {
+          where: { isEnabled: true },
+          select: { checkSlug: true, taskMapping: true },
+        },
+      },
+    });
+    const dynamicChecksBySlug = new Map<string, ProviderCheck[]>(
+      dynamicIntegrations.map((d) => [
+        d.slug,
+        d.checks.map((c) => ({ id: c.checkSlug, taskMapping: c.taskMapping })),
+      ]),
+    );
+
     // For each connection, find tasks that have checks mapped to them
     const tasksToRun: Array<{
       taskId: string;
@@ -68,26 +128,36 @@ export const integrationChecksSchedule = schedules.task({
     }> = [];
 
     for (const connection of activeConnections) {
+      // Static providers resolve from the code manifest; dynamic ones from the
+      // DB map loaded above. Both reduce to the same { id, taskMapping } shape.
       const manifest = getManifest(connection.provider.slug);
+      const checks = resolveProviderChecks({
+        manifest,
+        dynamicChecks: dynamicChecksBySlug.get(connection.provider.slug),
+      });
 
-      if (!manifest?.checks || manifest.checks.length === 0) {
+      if (checks.length === 0) {
         continue;
       }
 
       // Get task template IDs that this integration's checks map to
-      const taskTemplateIds = manifest.checks
+      const taskTemplateIds = checks
         .map((c) => c.taskMapping)
-        .filter((id): id is NonNullable<typeof id> => !!id);
+        .filter((id): id is string => !!id);
 
       if (taskTemplateIds.length === 0) {
         continue;
       }
 
-      // Find tasks in this org that match these templates
+      // Find tasks in this org that match these templates. MANUAL tasks are
+      // excluded: the scheduler must not auto-run checks (or flip the status) on
+      // a task the customer manages manually — mirrors the UI, which hides the
+      // automation/checks tab when automationStatus is MANUAL.
       const candidateTasks = await db.task.findMany({
         where: {
           organizationId: connection.organizationId,
           taskTemplateId: { in: taskTemplateIds as string[] },
+          automationStatus: { not: TaskAutomationStatus.MANUAL },
         },
         select: {
           id: true,
@@ -109,20 +179,13 @@ export const integrationChecksSchedule = schedules.task({
         );
       }
 
-      // Per-task disabled checks are stored on the connection's metadata so
-      // users can disconnect individual checks from individual tasks without
-      // tearing down the whole integration. Resolve once per connection.
-      const disabledByTask = parseDisabledTaskChecks(connection.metadata);
-
       for (const t of tasks) {
-        const disabledForThisTask = new Set(disabledByTask[t.id] ?? []);
-
         // Find which checks apply to this task, minus any the user disabled
-        const checksForTask = manifest.checks
+        const checksForTask = checks
           .filter(
             (c) =>
               c.taskMapping === t.taskTemplateId &&
-              !disabledForThisTask.has(c.id),
+              !isCheckDisabledForTask(connection.metadata, t.id, c.id),
           )
           .map((c) => c.id);
 

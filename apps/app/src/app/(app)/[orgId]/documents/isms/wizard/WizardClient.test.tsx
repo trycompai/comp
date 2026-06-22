@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { WizardProfileResponse } from './wizard-types';
+import type { PartialWizardAnswers, WizardProfileResponse } from './wizard-types';
 
 // ─── Mock the wizard hook ────────────────────────────────────
 const mockSaveAnswers = vi.fn().mockResolvedValue({ id: 'p1', answers: {}, completedAt: null });
@@ -196,6 +196,32 @@ describe('WizardClient', () => {
     expect(screen.getByText('Leadership & accountability')).toBeInTheDocument();
     // Member option from the profile is rendered in the deputy picker.
     expect(screen.getByText('Alice Owner')).toBeInTheDocument();
+  });
+
+  it('resumes on the first unsaved step after saving and returning', () => {
+    // Saved answers covering steps 1–3 (leadership, commitments, workforce &
+    // scope). Each Next / Save persists that step's full field slice, so a saved
+    // step is one whose every field is present in the stored answers.
+    const resumedAnswers: PartialWizardAnswers = {
+      deputySpo: { memberId: 'm2', toBeNamed: false },
+      internalAuditApproach: 'in_house',
+      certificationBody: 'BSI Group',
+      insurance: { has: true, insurerName: 'Acme Insure' },
+      sectorRegulators: ['FINMA'],
+      hasContractors: true,
+      capabilitiesInProduction: ['Web app'],
+      cloudScopeSplit: { customer: ['Data'], provider: ['Underlying infrastructure'] },
+    };
+    const resumedProfile: WizardProfileResponse = { ...PROFILE, answers: resumedAnswers };
+    hookState.profile = resumedProfile;
+
+    render(<WizardClient {...baseProps} fallbackData={resumedProfile} />);
+
+    // Steps 1–3 are saved → the wizard opens on step 4 (Privacy & data), not
+    // back at step 1 with the progress reset.
+    expect(screen.getByText('Step 4 of 6')).toBeInTheDocument();
+    expect(screen.getByText('Privacy & data')).toBeInTheDocument();
+    expect(screen.queryByText('Leadership & accountability')).not.toBeInTheDocument();
   });
 
   it('saves the active step partial then advances on Next', async () => {

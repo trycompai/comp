@@ -88,3 +88,40 @@ describe('MemberQueries.updateMember — background-check exemption fields', () 
     expect(call.data).not.toHaveProperty('backgroundCheckExemptJustification');
   });
 });
+
+describe('MemberQueries.updateMember — reactivation', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (mockedDb.member.update as jest.Mock).mockResolvedValue({ id: 'mem_1' });
+  });
+
+  // Regression for "Unable to reactivate user": a member deactivated via
+  // offboarding carries deactivated:true. The status dropdown reactivates by
+  // sending { isActive: true }; without also clearing deactivated the member
+  // stays hidden from the people list, so isActive alone is not enough.
+  it('clears deactivated when reactivating via isActive: true', async () => {
+    await MemberQueries.updateMember('mem_1', 'org_1', { isActive: true });
+
+    expect(mockedDb.member.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'mem_1', organizationId: 'org_1' },
+        data: expect.objectContaining({ isActive: true, deactivated: false }),
+      }),
+    );
+  });
+
+  it('does not touch deactivated when the patch omits isActive', async () => {
+    await MemberQueries.updateMember('mem_1', 'org_1', { jobTitle: 'Engineer' });
+
+    const call = (mockedDb.member.update as jest.Mock).mock.calls[0][0];
+    expect(call.data).not.toHaveProperty('deactivated');
+  });
+
+  it('does not reactivate when deactivating via isActive: false', async () => {
+    await MemberQueries.updateMember('mem_1', 'org_1', { isActive: false });
+
+    const call = (mockedDb.member.update as jest.Mock).mock.calls[0][0];
+    expect(call.data.isActive).toBe(false);
+    expect(call.data).not.toHaveProperty('deactivated');
+  });
+});

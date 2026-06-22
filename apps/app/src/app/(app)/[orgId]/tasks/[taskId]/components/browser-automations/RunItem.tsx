@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { Badge } from '@trycompai/ui/badge';
+import { Badge } from '@trycompai/design-system';
 import { formatDistanceToNow } from 'date-fns';
 import {
   ChevronDown,
@@ -24,6 +24,7 @@ export function RunItem({ run, isLatest }: RunItemProps) {
 
   const timeAgo = formatDistanceToNow(new Date(run.createdAt), { addSuffix: true });
   const hasFailed = run.status === 'failed';
+  const isBlocked = run.status === 'blocked';
   const isCompleted = run.status === 'completed';
   const hasScreenshot = !!run.screenshotUrl;
   const evaluationPassed = run.evaluationStatus === 'pass';
@@ -34,15 +35,17 @@ export function RunItem({ run, isLatest }: RunItemProps) {
   const downloadHref = `${fullSizeHref}?download=true`;
 
   // Determine overall status: failed run, or completed but evaluation failed
-  const hasIssue = hasFailed || evaluationFailed;
+  const hasIssue = hasFailed || isBlocked || evaluationFailed;
   const statusColor = hasIssue
     ? 'text-destructive'
     : isCompleted
       ? 'text-primary'
       : 'text-muted-foreground';
-  const statusText = hasFailed
-    ? 'Failed'
-    : evaluationFailed
+  const statusText = isBlocked
+    ? 'Blocked'
+    : hasFailed
+      ? 'Failed'
+      : evaluationFailed
       ? 'Issues Found'
       : evaluationPassed
         ? 'Passed'
@@ -76,9 +79,8 @@ export function RunItem({ run, isLatest }: RunItemProps) {
                 <span className="text-muted-foreground">•</span>
                 <Badge
                   variant={evaluationPassed ? 'default' : 'destructive'}
-                  className="text-[10px] px-1.5 py-0 !text-white"
                 >
-                  {evaluationPassed ? '✓ Pass' : '✗ Fail'}
+                  {evaluationPassed ? 'Pass' : 'Fail'}
                 </Badge>
               </>
             )}
@@ -138,9 +140,16 @@ export function RunItem({ run, isLatest }: RunItemProps) {
             )}
 
             {/* Error */}
-            {run.error && (
+            {(run.error || run.blockedReason || run.failureCode) && (
               <div className="p-2 rounded-md bg-destructive/10 border border-destructive/20">
-                <p className="text-xs text-destructive">{run.error}</p>
+                {run.failureCode && (
+                  <p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-destructive">
+                    {run.failureCode.replaceAll('_', ' ')}
+                  </p>
+                )}
+                <p className="text-xs text-destructive">
+                  {run.blockedReason || run.error || 'Automation did not complete.'}
+                </p>
               </div>
             )}
 
@@ -222,5 +231,3 @@ export function RunItem({ run, isLatest }: RunItemProps) {
     </div>
   );
 }
-
-

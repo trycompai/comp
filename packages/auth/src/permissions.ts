@@ -125,6 +125,9 @@ export const admin = ac.newRole({
   pentest: ['create', 'read', 'update', 'delete'],
   // Training management
   training: ['read', 'update'],
+  // Portal self-service — admins manage GRC evidence, so they need to submit
+  // evidence forms (portal:update) just like owners do.
+  portal: ['read', 'update'],
   // Secrets manager — admin can fully manage decrypted credentials
   secret: ['create', 'read', 'update', 'delete'],
 });

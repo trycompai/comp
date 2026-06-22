@@ -1,7 +1,9 @@
 import type { IntegrationManifest } from '../../types';
+import { environmentAliasesVariable } from '../environment-aliases';
 import {
   cloudTrailEnabledCheck,
   ec2SecurityGroupsCheck,
+  environmentSeparationCheck,
   iamAccountSecurityCheck,
   kmsKeyRotationCheck,
   rdsBackupsCheck,
@@ -91,6 +93,8 @@ export const awsManifest: IntegrationManifest = {
     { id: 'appflow', name: 'AppFlow', description: 'Flow encryption, VPC configuration, and data transfer security checks', enabledByDefault: false, implemented: true },
   ],
 
+  variables: [environmentAliasesVariable],
+
   checks: [
     iamAccountSecurityCheck,
     s3EncryptionCheck,
@@ -100,5 +104,6 @@ export const awsManifest: IntegrationManifest = {
     rdsBackupsCheck,
     kmsKeyRotationCheck,
     cloudTrailEnabledCheck,
+    environmentSeparationCheck,
   ],
 };

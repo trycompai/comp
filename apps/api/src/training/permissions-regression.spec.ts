@@ -195,8 +195,10 @@ describe('Built-in role permissions — regression', () => {
       );
     });
 
-    it('should NOT have portal permissions', () => {
-      expect(perms.portal).toBeUndefined();
+    it('should have portal read/update', () => {
+      expect(perms.portal).toEqual(
+        expect.arrayContaining(['read', 'update']),
+      );
     });
 
     it('should have pentest create/read/delete', () => {

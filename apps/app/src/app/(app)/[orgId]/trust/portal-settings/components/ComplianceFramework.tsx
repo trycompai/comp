@@ -19,6 +19,7 @@ import {
 import { CertificateCheck, Download, Upload, View } from '@trycompai/design-system/icons';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { CustomFrameworkBadge } from './CustomFrameworkBadge';
 import {
   CCPA,
   CCPAInProgress,
@@ -122,6 +123,10 @@ export function ComplianceFramework({
   fileName,
   onFileUpload,
   onFilePreview,
+  isCustomFramework,
+  badgeUrl,
+  onBadgeUpload,
+  onBadgeRemove,
   frameworkKey,
   orgId,
   disabled,
@@ -135,6 +140,14 @@ export function ComplianceFramework({
   fileName?: string | null;
   onFileUpload?: (file: File, frameworkKey: string) => Promise<void>;
   onFilePreview?: (frameworkKey: string) => Promise<void>;
+  // Badge/logo — only for custom frameworks (native ones use their built-in SVG
+  // logo). `isCustomFramework` swaps the logo slot for the uploadable badge so a
+  // read-only viewer still SEES the badge; the upload/remove controls only
+  // appear when the corresponding handler is provided and the row is editable.
+  isCustomFramework?: boolean;
+  badgeUrl?: string | null;
+  onBadgeUpload?: (file: File, frameworkKey: string) => Promise<void>;
+  onBadgeRemove?: (frameworkKey: string) => Promise<void>;
   frameworkKey: string;
   orgId: string;
   disabled?: boolean;
@@ -235,7 +248,17 @@ export function ComplianceFramework({
         <CardHeader>
           <div className="flex items-center gap-4">
             <div className="shrink-0">
-              <ComplianceFrameworkLogo title={title} status={status} enabled={isEnabled} />
+              {isCustomFramework ? (
+                <CustomFrameworkBadge
+                  title={title}
+                  badgeUrl={badgeUrl}
+                  onUpload={onBadgeUpload ? (file) => onBadgeUpload(file, frameworkKey) : undefined}
+                  onRemove={onBadgeRemove ? () => onBadgeRemove(frameworkKey) : undefined}
+                  disabled={disabled}
+                />
+              ) : (
+                <ComplianceFrameworkLogo title={title} status={status} enabled={isEnabled} />
+              )}
             </div>
             <div>
               <CardTitle>{title}</CardTitle>

@@ -51,6 +51,13 @@ export interface TrustCustomFrameworkItem {
   status: 'started' | 'in_progress' | 'compliant';
   hasCertificate: boolean;
   certificateFileName: string | null;
+  /** Signed URL to the uploaded badge/logo, or null when none is set. */
+  badgeUrl: string | null;
+}
+
+interface CustomFrameworkBadgeResponse {
+  success: boolean;
+  badgeUrl: string;
 }
 
 interface UpdateCustomFrameworkData {
@@ -161,6 +168,30 @@ export function useTrustPortalSettings() {
     [api],
   );
 
+  const uploadCustomFrameworkBadge = useCallback(
+    async (customFrameworkId: string, fileName: string, fileType: string, fileData: string) => {
+      const response = await api.post<CustomFrameworkBadgeResponse>(
+        '/v1/trust-portal/custom-frameworks/badge',
+        { customFrameworkId, fileName, fileType, fileData },
+      );
+      if (response.error) throw new Error(response.error);
+      if (!response.data) throw new Error('Unexpected API response');
+      return response.data;
+    },
+    [api],
+  );
+
+  const removeCustomFrameworkBadge = useCallback(
+    async (customFrameworkId: string) => {
+      const response = await api.delete(
+        `/v1/trust-portal/custom-frameworks/badge?customFrameworkId=${encodeURIComponent(customFrameworkId)}`,
+      );
+      if (response.error) throw new Error(response.error);
+      return response.data;
+    },
+    [api],
+  );
+
   const saveOverview = useCallback(
     async (data: OverviewData) => {
       const response = await api.post('/v1/trust-portal/overview', data);
@@ -255,6 +286,8 @@ export function useTrustPortalSettings() {
     updateCustomFramework,
     uploadCustomComplianceResource,
     getCustomComplianceResourceUrl,
+    uploadCustomFrameworkBadge,
+    removeCustomFrameworkBadge,
     saveOverview,
     updateVendorTrustSettings,
     updateAllowedDomains,

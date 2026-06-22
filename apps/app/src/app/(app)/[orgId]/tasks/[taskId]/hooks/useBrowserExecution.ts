@@ -6,14 +6,11 @@ import { toast } from 'sonner';
 import type { ExecuteResponse, StartLiveResponse } from './types';
 
 interface UseBrowserExecutionOptions {
-  onNeedsReauth: () => void;
+  onNeedsReauth: (automationId: string) => void;
   onComplete: () => void;
 }
 
-export function useBrowserExecution({
-  onNeedsReauth,
-  onComplete,
-}: UseBrowserExecutionOptions) {
+export function useBrowserExecution({ onNeedsReauth, onComplete }: UseBrowserExecutionOptions) {
   const [runningAutomationId, setRunningAutomationId] = useState<string | null>(null);
   const [liveViewUrl, setLiveViewUrl] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -34,7 +31,7 @@ export function useBrowserExecution({
 
         if (startRes.data?.needsReauth) {
           toast.error('Session expired. Please re-authenticate below.');
-          onNeedsReauth();
+          onNeedsReauth(automationId);
           return;
         }
 
@@ -76,10 +73,7 @@ export function useBrowserExecution({
 
         if (startedSessionId) {
           try {
-            await apiClient.post(
-              '/v1/browserbase/session/close',
-              { sessionId: startedSessionId },
-            );
+            await apiClient.post('/v1/browserbase/session/close', { sessionId: startedSessionId });
           } catch {
             // Ignore cleanup errors (don't block UI / don't mask original error)
           }

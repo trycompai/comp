@@ -169,6 +169,14 @@ export class MemberQueries {
       updatePayload.backgroundCheckExemptJustification = null;
     }
 
+    // Reactivation: the status dropdown sends { isActive: true } via PATCH. A
+    // member deactivated via offboarding (or the skip-offboarding path) carries
+    // deactivated:true, which hides them from the people list. Clear it so
+    // isActive and deactivated stay in sync and the member is fully restored.
+    if (updatePayload.isActive === true) {
+      updatePayload.deactivated = false;
+    }
+
     const hasUserUpdates = name !== undefined || email !== undefined;
     const hasMemberUpdates = Object.keys(updatePayload).length > 0;
 

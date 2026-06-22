@@ -22,8 +22,6 @@ import {
   useRequirementChangeTracking,
   type RequirementGridRow,
 } from './hooks/useRequirementChangeTracking';
-import { PublishVersionDialog } from './versions/components/PublishVersionDialog';
-import { useFrameworkVersions } from './versions/hooks/useFrameworkVersions';
 
 interface FrameworkDetails {
   id: string;
@@ -39,6 +37,7 @@ interface RequirementInput {
   identifier: string;
   description: string;
   requirementFamily?: string | null;
+  sortOrder?: number | null;
   frameworkId: string;
   createdAt: string | Date;
   updatedAt: string | Date;
@@ -78,12 +77,6 @@ export function FrameworkRequirementsClientPage({
   // Row whose large description editor is currently open — highlighted so the
   // edited row is obvious behind the (semi-transparent) editor dialog.
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
-  // "Save and Commit" saves the edits then opens the publish flow (FRAME-4).
-  const [isPublishOpen, setIsPublishOpen] = useState(false);
-  const { data: publishedVersions, refetch: refetchVersions } = useFrameworkVersions(
-    frameworkDetails.id,
-  );
-  const latestPublishedVersion = publishedVersions?.[0]?.version;
 
   const initialGridData: RequirementGridRow[] = useMemo(
     () =>
@@ -93,6 +86,7 @@ export function FrameworkRequirementsClientPage({
         identifier: r.identifier ?? null,
         description: r.description ?? null,
         requirementFamily: r.requirementFamily ?? null,
+        sortOrder: r.sortOrder ?? null,
         controlTemplates: r.controlTemplates ?? [],
         controlTemplatesLength: r.controlTemplates?.length ?? 0,
         createdAt: r.createdAt ? new Date(r.createdAt) : null,
@@ -115,13 +109,6 @@ export function FrameworkRequirementsClientPage({
     changesSummary,
   } = useRequirementChangeTracking(initialGridData, frameworkDetails.id);
 
-  // Save edits, then (only if they all persisted) open the publish dialog so
-  // the accumulated changes can be committed as a new version.
-  const handleSaveAndCommit = useCallback(async () => {
-    const ok = await handleCommit();
-    if (ok) setIsPublishOpen(true);
-  }, [handleCommit]);
-
   const uniqueFamilies = useMemo(() => {
     const families = new Set<string>();
     for (const row of data) {
@@ -132,6 +119,38 @@ export function FrameworkRequirementsClientPage({
 
   const columns = useMemo(
     () => [
+      columnHelper.accessor('sortOrder', {
+        header: 'Order',
+        size: 90,
+        // Numbered rows ascending, unset rows last, identifier as a tiebreak.
+        // (tanstack inverts this for the desc toggle.)
+        sortingFn: (a, b) => {
+          const ao = a.original.sortOrder;
+          const bo = b.original.sortOrder;
+          if (ao !== bo) {
+            if (ao == null) return 1;
+            if (bo == null) return -1;
+            return ao - bo;
+          }
+          return (a.original.identifier ?? '').localeCompare(
+            b.original.identifier ?? '',
+            undefined,
+            { numeric: true },
+          );
+        },
+        cell: ({ row, getValue }) => {
+          const value = getValue();
+          return (
+            <EditableCell
+              value={value == null ? null : String(value)}
+              rowId={row.original.id}
+              columnId="sortOrder"
+              onUpdate={updateCell}
+              placeholder="—"
+            />
+          );
+        },
+      }),
       columnHelper.accessor('requirementFamily', {
         header: 'Family',
         size: 200,
@@ -247,7 +266,9 @@ export function FrameworkRequirementsClientPage({
     [uniqueFamilies, updateCell, updateRelational, deleteRow, createdIds],
   );
 
-  const [sorting, setSorting] = useState<SortingState>([{ id: 'identifier', desc: false }]);
+  // FRAME-18: default to the framework's configured order. Numbered requirements
+  // come first; unset rows fall back to identifier order and sort last.
+  const [sorting, setSorting] = useState<SortingState>([{ id: 'sortOrder', desc: false }]);
 
   const table = useReactTable({
     data,
@@ -266,6 +287,7 @@ export function FrameworkRequirementsClientPage({
       identifier: '',
       description: '',
       requirementFamily: null,
+      sortOrder: null,
       controlTemplates: [],
       controlTemplatesLength: 0,
       createdAt: new Date(),
@@ -319,11 +341,8 @@ export function FrameworkRequirementsClientPage({
               <Button variant="outline" onClick={handleCancel} size="sm" className="rounded-xs">
                 Cancel
               </Button>
-              <Button variant="outline" onClick={handleCommit} size="sm" className="rounded-xs">
-                Save as Draft
-              </Button>
-              <Button onClick={handleSaveAndCommit} size="sm" className="rounded-xs">
-                Save and Commit
+              <Button onClick={handleCommit} size="sm" className="rounded-xs">
+                Commit Changes
               </Button>
             </>
           )}
@@ -448,17 +467,6 @@ export function FrameworkRequirementsClientPage({
           frameworkName={frameworkDetails.name}
         />
       )}
-      <PublishVersionDialog
-        frameworkId={frameworkDetails.id}
-        open={isPublishOpen}
-        onClose={() => setIsPublishOpen(false)}
-        latestVersion={latestPublishedVersion}
-        onPublished={() => {
-          setIsPublishOpen(false);
-          void refetchVersions();
-          router.refresh();
-        }}
-      />
     </div>
   );
 }
