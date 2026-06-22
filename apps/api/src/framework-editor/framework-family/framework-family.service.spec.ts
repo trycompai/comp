@@ -6,6 +6,7 @@ jest.mock('@db', () => ({
       create: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
+      deleteMany: jest.fn(),
     },
     frameworkEditorFramework: {
       updateMany: jest.fn(),
@@ -95,30 +96,33 @@ describe('FrameworkFamilyService', () => {
   });
 
   describe('delete', () => {
-    it('refuses to delete a family that still contains frameworks', async () => {
+    it('refuses to delete a non-empty family (atomic conditional delete is a no-op)', async () => {
       familyDb.findUnique.mockResolvedValue({
         id: 'frk_fam_1',
         name: 'NIST',
         _count: { frameworks: 2 },
       });
+      familyDb.deleteMany.mockResolvedValue({ count: 0 });
       await expect(service.delete('frk_fam_1')).rejects.toBeInstanceOf(BadRequestException);
-      expect(familyDb.delete).not.toHaveBeenCalled();
     });
 
-    it('deletes an empty family', async () => {
+    it('atomically deletes only when empty (frameworks: none filter)', async () => {
       familyDb.findUnique.mockResolvedValue({
         id: 'frk_fam_1',
         name: 'NIST',
         _count: { frameworks: 0 },
       });
-      familyDb.delete.mockResolvedValue({});
+      familyDb.deleteMany.mockResolvedValue({ count: 1 });
       await service.delete('frk_fam_1');
-      expect(familyDb.delete).toHaveBeenCalledWith({ where: { id: 'frk_fam_1' } });
+      expect(familyDb.deleteMany).toHaveBeenCalledWith({
+        where: { id: 'frk_fam_1', frameworks: { none: {} } },
+      });
     });
 
     it('throws NotFound for a missing family', async () => {
       familyDb.findUnique.mockResolvedValue(null);
       await expect(service.delete('missing')).rejects.toBeInstanceOf(NotFoundException);
+      expect(familyDb.deleteMany).not.toHaveBeenCalled();
     });
   });
 

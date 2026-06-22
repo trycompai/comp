@@ -53,15 +53,25 @@ export class FrameworkFamilyService {
     return updated;
   }
 
-  /** Delete a family — only allowed once it contains no frameworks. */
+  /**
+   * Delete a family — only allowed once it contains no frameworks.
+   *
+   * The emptiness check and the delete are a single atomic statement
+   * (`deleteMany` with a `frameworks: { none: {} }` predicate the DB evaluates
+   * at delete time), so a concurrent move that adds a framework can't slip
+   * between a check and the delete: it simply makes this a no-op (count 0). The
+   * RESTRICT FK is a second backstop.
+   */
   async delete(id: string) {
     const family = await this.getOrThrow(id);
-    if (family._count.frameworks > 0) {
+    const { count } = await db.frameworkEditorFrameworkFamily.deleteMany({
+      where: { id, frameworks: { none: {} } },
+    });
+    if (count === 0) {
       throw new BadRequestException(
-        `Cannot delete "${family.name}": move or remove its ${family._count.frameworks} framework(s) first.`,
+        `Cannot delete "${family.name}": move or remove its frameworks first.`,
       );
     }
-    await db.frameworkEditorFrameworkFamily.delete({ where: { id } });
     this.logger.log(`Deleted framework family ${id}`);
     return { message: 'Framework family deleted successfully' };
   }
