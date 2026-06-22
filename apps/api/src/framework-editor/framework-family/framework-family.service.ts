@@ -42,9 +42,11 @@ export class FrameworkFamilyService {
     const updated = await db.frameworkEditorFrameworkFamily.update({
       where: { id },
       data: {
-        ...(dto.name !== undefined && { name: dto.name }),
-        ...(dto.description !== undefined && { description: dto.description }),
-        ...(dto.status !== undefined && { status: dto.status }),
+        // `!= null` (not `!== undefined`) so an explicit null is ignored rather
+        // than written to these non-nullable columns (which would 500).
+        ...(dto.name != null && { name: dto.name }),
+        ...(dto.description != null && { description: dto.description }),
+        ...(dto.status != null && { status: dto.status }),
       },
     });
     this.logger.log(`Updated framework family: ${updated.name} (${id})`);

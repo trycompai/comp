@@ -81,6 +81,17 @@ describe('FrameworkFamilyService', () => {
       await service.update('frk_fam_1', { name: 'Y' } as never);
       expect(familyDb.update.mock.calls[0][0].data).toEqual({ name: 'Y' });
     });
+
+    it('ignores explicit null fields (does not write null to non-nullable columns)', async () => {
+      familyDb.findUnique.mockResolvedValue({ id: 'frk_fam_1', _count: { frameworks: 0 } });
+      familyDb.update.mockResolvedValue({ id: 'frk_fam_1' });
+      await service.update('frk_fam_1', {
+        name: null,
+        description: null,
+        status: null,
+      } as never);
+      expect(familyDb.update.mock.calls[0][0].data).toEqual({});
+    });
   });
 
   describe('delete', () => {

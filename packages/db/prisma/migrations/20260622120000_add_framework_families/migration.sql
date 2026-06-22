@@ -18,5 +18,8 @@ CREATE TABLE "FrameworkEditorFrameworkFamily" (
 -- AlterTable: link frameworks to a family (null = ungrouped / root).
 ALTER TABLE "FrameworkEditorFramework" ADD COLUMN "familyId" TEXT;
 
--- AddForeignKey
-ALTER TABLE "FrameworkEditorFramework" ADD CONSTRAINT "FrameworkEditorFramework_familyId_fkey" FOREIGN KEY ("familyId") REFERENCES "FrameworkEditorFrameworkFamily"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+-- CreateIndex
+CREATE INDEX "FrameworkEditorFramework_familyId_idx" ON "FrameworkEditorFramework"("familyId");
+
+-- AddForeignKey: Restrict enforces "delete a family only when empty" at the DB level.
+ALTER TABLE "FrameworkEditorFramework" ADD CONSTRAINT "FrameworkEditorFramework_familyId_fkey" FOREIGN KEY ("familyId") REFERENCES "FrameworkEditorFrameworkFamily"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

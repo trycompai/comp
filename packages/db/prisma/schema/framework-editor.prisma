@@ -47,9 +47,10 @@ model FrameworkEditorFramework {
   visible     Boolean @default(false)
 
   // FRAME-20: the family (folder) this framework belongs to. Null = ungrouped
-  // (shown at the root "/"). SetNull so deleting a family ungroups its members.
+  // (shown at the root "/"). Restrict enforces the "delete only when empty" rule
+  // at the DB level — the API also checks first to return a friendly error.
   familyId String?
-  family   FrameworkEditorFrameworkFamily? @relation(fields: [familyId], references: [id], onDelete: SetNull)
+  family   FrameworkEditorFrameworkFamily? @relation(fields: [familyId], references: [id], onDelete: Restrict)
 
   requirements         FrameworkEditorRequirement[]
   frameworkInstances   FrameworkInstance[]
@@ -68,6 +69,8 @@ model FrameworkEditorFramework {
   // Dates
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
+
+  @@index([familyId])
 }
 
 model FrameworkEditorRequirement {
