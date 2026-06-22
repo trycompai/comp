@@ -54,8 +54,13 @@ export class FrameworkEditorFrameworkService {
       include: {
         requirements: {
           // FRAME-18: surface requirements in the framework's configured order
-          // (numbered first, unset last), so the editor grid opens pre-sorted.
-          orderBy: [{ sortOrder: { sort: 'asc', nulls: 'last' } }, { name: 'asc' }],
+          // (numbered first, unset last), tiebreaking by identifier (the
+          // canonical-order key) then name, so the editor grid opens pre-sorted.
+          orderBy: [
+            { sortOrder: { sort: 'asc', nulls: 'last' } },
+            { identifier: 'asc' },
+            { name: 'asc' },
+          ],
           include: {
             controlTemplates: { select: { id: true, name: true } },
           },

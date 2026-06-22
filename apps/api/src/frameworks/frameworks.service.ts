@@ -32,7 +32,9 @@ type RequirementDef = {
 };
 
 // FRAME-18: numbered requirements first (ascending), unset rows (incl. per-instance
-// custom requirements) last, then alphabetical by name as a stable tiebreak.
+// custom requirements) last, then by identifier (the canonical-order key, e.g.
+// CC6.1 / GV.OC-01) with name as a final tiebreak. Mirrors the app-side
+// `compareRequirementsByOrder` so server and client agree on the order.
 function compareRequirementDefs(a: RequirementDef, b: RequirementDef): number {
   const ao = a.sortOrder ?? null;
   const bo = b.sortOrder ?? null;
@@ -41,6 +43,10 @@ function compareRequirementDefs(a: RequirementDef, b: RequirementDef): number {
     if (bo === null) return -1;
     return ao - bo;
   }
+  const byIdentifier = (a.identifier ?? '').localeCompare(b.identifier ?? '', undefined, {
+    numeric: true,
+  });
+  if (byIdentifier !== 0) return byIdentifier;
   return a.name.localeCompare(b.name);
 }
 
@@ -132,7 +138,11 @@ export class FrameworksService {
       // Fallback: instances with no pinned version (shouldn't happen post-backfill).
       const rows = await db.frameworkEditorRequirement.findMany({
         where: { frameworkId: fi.frameworkId },
-        orderBy: [{ sortOrder: { sort: 'asc', nulls: 'last' } }, { name: 'asc' }],
+        orderBy: [
+          { sortOrder: { sort: 'asc', nulls: 'last' } },
+          { identifier: 'asc' },
+          { name: 'asc' },
+        ],
       });
       const platformDefs: RequirementDef[] = rows.map((r) => ({
         id: r.id,

@@ -116,6 +116,7 @@ describe('RequirementService — sortOrder (FRAME-18)', () => {
         .calls[0][0].orderBy;
       expect(orderBy).toEqual([
         { sortOrder: { sort: 'asc', nulls: 'last' } },
+        { identifier: 'asc' },
         { name: 'asc' },
       ]);
     });
@@ -126,6 +127,7 @@ describe('RequirementService — sortOrder (FRAME-18)', () => {
         .calls[0][0].orderBy;
       expect(orderBy).toEqual([
         { sortOrder: { sort: 'asc', nulls: 'last' } },
+        { identifier: 'asc' },
         { name: 'asc' },
       ]);
     });

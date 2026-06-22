@@ -12,8 +12,14 @@ export class RequirementService {
       take,
       skip,
       // FRAME-18: numbered requirements first (ascending), unset rows last,
-      // then alphabetical by name as a stable tiebreak.
-      orderBy: [{ sortOrder: { sort: 'asc', nulls: 'last' } }, { name: 'asc' }],
+      // then by identifier (the canonical-order key, e.g. CC6.1 / GV.OC-01),
+      // with name as a final stable tiebreak. Identifier — not name — matches
+      // the editor/app comparators and is stable when descriptive names change.
+      orderBy: [
+        { sortOrder: { sort: 'asc', nulls: 'last' } },
+        { identifier: 'asc' },
+        { name: 'asc' },
+      ],
       include: {
         framework: { select: { id: true, name: true } },
       },
@@ -23,7 +29,11 @@ export class RequirementService {
   async findAllForFramework(frameworkId: string) {
     return db.frameworkEditorRequirement.findMany({
       where: { frameworkId },
-      orderBy: [{ sortOrder: { sort: 'asc', nulls: 'last' } }, { name: 'asc' }],
+      orderBy: [
+        { sortOrder: { sort: 'asc', nulls: 'last' } },
+        { identifier: 'asc' },
+        { name: 'asc' },
+      ],
       include: {
         controlTemplates: { select: { id: true, name: true } },
       },
