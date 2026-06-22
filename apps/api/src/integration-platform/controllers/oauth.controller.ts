@@ -517,6 +517,9 @@ export class OAuthController {
     token_type?: string;
     expires_in?: number;
     scope?: string;
+    // Multi-DC providers (e.g. Zoho) return the data-center-specific API host
+    // here; it is persisted so the check runtime targets the correct region.
+    api_domain?: string;
   }> {
     const callbackUrl = `${process.env.BASE_URL || 'http://localhost:3333'}/v1/integrations/oauth/callback`;
 
