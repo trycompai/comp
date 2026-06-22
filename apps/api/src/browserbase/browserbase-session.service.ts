@@ -130,7 +130,15 @@ export class BrowserbaseSessionService {
         return await operation();
       } catch (error) {
         const retryable = isRetryableBrowserbaseUpstreamError(error);
-        if (!retryable || attempt === BROWSERBASE_API_MAX_ATTEMPTS) {
+        if (!retryable) {
+          this.logger.error(`Browserbase ${operationName} failed`, {
+            attempt,
+            error: getBrowserbaseErrorText(error),
+          });
+          throw error;
+        }
+
+        if (attempt === BROWSERBASE_API_MAX_ATTEMPTS) {
           this.logger.error(`Browserbase ${operationName} failed`, {
             attempt,
             error: getBrowserbaseErrorText(error),

@@ -98,6 +98,23 @@ describe('BrowserbaseSessionService', () => {
     expect(createContext).toHaveBeenCalledTimes(3);
   });
 
+  it('preserves non-retryable Browserbase failures', async () => {
+    const service = new BrowserbaseSessionService();
+    const browserbaseError = Object.assign(
+      new Error('Browserbase rejected request'),
+      { status: 400 },
+    );
+    const createContext = jest.fn().mockRejectedValue(browserbaseError);
+    jest
+      .spyOn(service, 'getBrowserbase')
+      .mockReturnValue(mockBrowserbaseClient({ createContext }));
+
+    await expect(service.createBrowserbaseContext()).rejects.toBe(
+      browserbaseError,
+    );
+    expect(createContext).toHaveBeenCalledTimes(1);
+  });
+
   it('retries transient Browserbase session retrieval failures', async () => {
     jest.useFakeTimers();
     const service = new BrowserbaseSessionService();
