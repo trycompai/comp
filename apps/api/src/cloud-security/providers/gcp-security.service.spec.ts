@@ -863,4 +863,40 @@ describe('GCPSecurityService.scanSecurityFindings — all-scopes-failed guard', 
       '//storage.googleapis.com/projects/acme/buckets/public-bucket',
     );
   });
+
+  // Regression: when SCC omits BOTH `finding.resourceName` AND
+  // `result.resource.name`, the old `|| ''` tail left resourceId empty — the
+  // exact state the exception resolver rejects. The chain must bottom out at
+  // `finding.name` (the finding's canonical id), which SCC always populates,
+  // so resourceId is guaranteed non-empty.
+  it('falls back to finding.name and never leaves resourceId empty when both resourceName and resource.name are absent', async () => {
+    fetchMock.mockResolvedValue(
+      sccPage([
+        {
+          finding: {
+            name: 'organizations/1/sources/-/findings/no-resource-1',
+            category: 'PUBLIC_BUCKET_ACL',
+            description: 'Bucket is public',
+            severity: 'HIGH',
+            state: 'ACTIVE',
+            resourceName: '', // SCC omitted the per-finding resource name
+            eventTime: '2026-01-01T00:00:00Z',
+            createTime: '2026-01-01T00:00:00Z',
+          },
+          // No `resource` block at all → result.resource?.name is undefined.
+        },
+      ]),
+    );
+
+    const findings = await service.scanSecurityFindings(
+      { access_token: 'tok' },
+      { project_ids: ['acme'] },
+    );
+
+    expect(findings).toHaveLength(1);
+    expect(findings[0].resourceId).not.toBe('');
+    expect(findings[0].resourceId).toBe(
+      'organizations/1/sources/-/findings/no-resource-1',
+    );
+  });
 });
