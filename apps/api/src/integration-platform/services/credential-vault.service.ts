@@ -55,6 +55,14 @@ export interface OAuthTokens {
   token_type?: string;
   expires_in?: number;
   scope?: string;
+  /**
+   * Data-center-specific API host returned by multi-DC OAuth providers. Zoho,
+   * for example, returns `api_domain: "https://www.zohoapis.eu"` and the access
+   * token is only valid against that host. When present it is persisted so the
+   * check runtime targets the correct regional host. Single-DC providers never
+   * send this field and are unaffected.
+   */
+  api_domain?: string;
 }
 
 export interface TokenRefreshConfig {
@@ -177,6 +185,32 @@ export class CredentialVaultService {
     }
     if (tokens.scope) {
       encryptedPayload.scope = tokens.scope;
+    }
+
+    // Multi-data-center OAuth providers (e.g. Zoho) return a data-center-
+    // specific API host as `api_domain` in their token/refresh responses, and
+    // the access token only works against that host — calling a hardcoded
+    // default host makes the provider reject the token (Zoho responds
+    // INVALID_TOKEN). Persist it so the check runtime can route requests to the
+    // correct region. Providers that don't send `api_domain` (the vast
+    // majority) store nothing here and behave exactly as before.
+    let apiDomain =
+      typeof tokens.api_domain === 'string' ? tokens.api_domain : undefined;
+    if (!apiDomain) {
+      // A later refresh response may omit api_domain even when the original
+      // grant included it; preserve the previously captured value instead of
+      // dropping back to the runtime's default host.
+      try {
+        const existing = await this.getDecryptedCredentials(connectionId);
+        if (typeof existing?.api_domain === 'string') {
+          apiDomain = existing.api_domain;
+        }
+      } catch {
+        // Best-effort preservation; if the prior value can't be read, skip it.
+      }
+    }
+    if (apiDomain) {
+      encryptedPayload.api_domain = apiDomain;
     }
 
     // Calculate expiration
@@ -446,6 +480,10 @@ export class CredentialVaultService {
       token_type: tokens.token_type,
       expires_in: tokens.expires_in,
       scope: tokens.scope,
+      // Carry through the data-center host on refresh. storeOAuthTokens
+      // preserves the previously captured value when a refresh response omits
+      // it, so a working api_domain is never downgraded.
+      api_domain: tokens.api_domain,
     };
 
     await this.storeOAuthTokens(connectionId, tokensToStore);
