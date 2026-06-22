@@ -425,11 +425,13 @@ export class FrameworksService {
       db.frameworkEditorFramework.findMany({
         where: { visible: true },
         include: { requirements: true },
+        orderBy: { name: 'asc' },
       }),
       organizationId
         ? db.customFramework.findMany({
             where: { organizationId },
             include: { requirements: true },
+            orderBy: { name: 'asc' },
           })
         : Promise.resolve([]),
     ]);
