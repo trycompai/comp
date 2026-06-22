@@ -167,11 +167,18 @@ export class BrowserbaseSessionService {
   async createStagehand(sessionId: string): Promise<Stagehand> {
     const Stagehand = await this.loadStagehand();
 
-    // Stagehand.init() resumes the session by calling the Browserbase API on
-    // its own internal SDK client (outside getBrowserbase()), so transient
-    // upstream failures there — e.g. "Premature close" — bypass the per-call
-    // retry that wraps our direct SDK calls. Retry init the same way, closing
-    // any half-initialized instance between attempts so we don't leak it.
+    // We create and own the Browserbase session ourselves, and this feature only
+    // needs CDP navigation plus local inference. Stagehand's default hosted-API
+    // mode adds a POST /sessions/start round-trip that is unnecessary here and is
+    // the source of opaque "Unknown error: <status>" failures. disableAPI:true
+    // skips it: the session still resumes over CDP and extract/act/agent run
+    // locally against ANTHROPIC_API_KEY.
+    //
+    // init() still performs a Browserbase API round-trip to resume the session,
+    // whose transient failures — e.g. "Premature close" — bypass the retry that
+    // wraps our direct SDK calls, so retry init too, closing any half-initialized
+    // instance between attempts to avoid leaking it. Stagehand strips upstream
+    // error bodies from its throws, so forward its error logs into our logger.
     return this.withBrowserbaseRetry({
       operationName: 'stagehand initialization',
       operation: async () => {
@@ -180,11 +187,19 @@ export class BrowserbaseSessionService {
           apiKey: process.env.BROWSERBASE_API_KEY,
           projectId: this.getProjectId(),
           browserbaseSessionID: sessionId,
+          disableAPI: true,
           model: {
             modelName: STAGEHAND_MODEL,
             apiKey: process.env.ANTHROPIC_API_KEY,
           },
           verbose: 1,
+          logger: (line) => {
+            if ((line.level ?? 1) === 0) {
+              this.logger.error(
+                `Stagehand[${line.category ?? 'log'}]: ${line.message}`,
+              );
+            }
+          },
         });
 
         try {
