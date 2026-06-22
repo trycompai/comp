@@ -188,7 +188,7 @@ async function sendTaskStatusChangeEmails(params: {
  */
 export const runBrowserAutomation = task({
   id: 'run-browser-automation',
-  maxDuration: 1000 * 60 * 10, // 10 minutes per automation
+  maxDuration: 60 * 10, // 10 minutes per automation — Trigger.dev maxDuration is in SECONDS
   queue: {
     concurrencyLimit: browserAutomationConcurrencyLimit(),
   },

@@ -238,6 +238,26 @@ describe('BrowserbaseSessionService', () => {
     expect(close).toHaveBeenCalledTimes(1);
   });
 
+  it('runs Stagehand with the hosted API disabled', async () => {
+    const service = new BrowserbaseSessionService();
+    const init = jest.fn().mockResolvedValue(undefined);
+    const close = jest.fn().mockResolvedValue(undefined);
+    const StagehandCtor = mockStagehandClass({ init, close });
+    jest.spyOn(service, 'loadStagehand').mockResolvedValue(StagehandCtor);
+
+    await service.createStagehand('session_1');
+
+    // disableAPI:true skips Stagehand's hosted POST /sessions/start (the source
+    // of "Unknown error: 400"); the session still resumes over CDP.
+    expect(StagehandCtor).toHaveBeenCalledWith(
+      expect.objectContaining({
+        env: 'BROWSERBASE',
+        browserbaseSessionID: 'session_1',
+        disableAPI: true,
+      }),
+    );
+  });
+
   it('navigateToUrl returns the friendly unavailable message when init keeps failing', async () => {
     const service = new BrowserbaseSessionService();
     jest
