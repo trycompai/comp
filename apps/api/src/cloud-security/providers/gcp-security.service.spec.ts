@@ -822,4 +822,45 @@ describe('GCPSecurityService.scanSecurityFindings — all-scopes-failed guard', 
 
     expect(findings).toEqual([]);
   });
+
+  // Regression: SCC public-bucket findings (PUBLIC_BUCKET_ACL) sometimes come
+  // back with an empty `finding.resourceName` while the resource identity lives
+  // on `result.resource.name`. Storing resourceId: "" made "Mark as exception"
+  // throw 'This finding cannot be marked as an exception — it lacks a stable
+  // check/resource identity'. The mapping must fall back to result.resource.name
+  // so the finding keeps a stable, non-empty resourceId.
+  it('falls back to result.resource.name for resourceId when finding.resourceName is empty (public bucket)', async () => {
+    fetchMock.mockResolvedValue(
+      sccPage([
+        {
+          finding: {
+            name: 'organizations/1/sources/-/findings/pub-bucket-1',
+            category: 'PUBLIC_BUCKET_ACL',
+            description: 'Bucket is public',
+            severity: 'HIGH',
+            state: 'ACTIVE',
+            resourceName: '', // SCC omitted the per-finding resource name
+            eventTime: '2026-01-01T00:00:00Z',
+            createTime: '2026-01-01T00:00:00Z',
+          },
+          resource: {
+            name: '//storage.googleapis.com/projects/acme/buckets/public-bucket',
+            type: 'storage.googleapis.com/Bucket',
+            projectDisplayName: 'acme',
+          },
+        },
+      ]),
+    );
+
+    const findings = await service.scanSecurityFindings(
+      { access_token: 'tok' },
+      { project_ids: ['acme'] },
+    );
+
+    expect(findings).toHaveLength(1);
+    // Pre-fix this was '' → resolveFindingForException rejected the finding.
+    expect(findings[0].resourceId).toBe(
+      '//storage.googleapis.com/projects/acme/buckets/public-bucket',
+    );
+  });
 });

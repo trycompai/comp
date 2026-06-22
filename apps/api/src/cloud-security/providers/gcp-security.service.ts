@@ -1415,7 +1415,12 @@ export class GCPSecurityService {
                 f.description || `Security finding: ${f.category}`,
               severity: this.mapSeverity(f.severity),
               resourceType: result.resource?.type ?? 'gcp-resource',
-              resourceId: f.resourceName,
+              // SCC sometimes omits the per-finding `resourceName` (notably
+              // PUBLIC_BUCKET_ACL findings) while the stable identity still
+              // lives on `result.resource.name`. Falling back keeps a
+              // non-empty resourceId so the finding can be marked as an
+              // exception (an empty resourceId is rejected by the resolver).
+              resourceId: f.resourceName || result.resource?.name || '',
               remediation,
               evidence: {
                 findingKey,
