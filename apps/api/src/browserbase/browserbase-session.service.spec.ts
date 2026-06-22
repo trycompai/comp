@@ -1,11 +1,27 @@
 import { ServiceUnavailableException } from '@nestjs/common';
 import Browserbase from '@browserbasehq/sdk';
 import { BrowserbaseSessionService } from './browserbase-session.service';
+import { browserbaseUnavailableException } from './browserbase-upstream-error';
 
 jest.mock('@browserbasehq/sdk', () => ({
   __esModule: true,
   default: jest.fn().mockImplementation(() => ({})),
 }));
+
+// Stagehand is loaded via a dynamic ESM import that jest cannot intercept, so
+// tests spy on the loadStagehand() seam and supply a fake constructor instead.
+type StagehandClass = Awaited<
+  ReturnType<BrowserbaseSessionService['loadStagehand']>
+>;
+
+const mockStagehandClass = ({
+  init,
+  close,
+}: {
+  init: jest.Mock;
+  close: jest.Mock;
+}): StagehandClass =>
+  jest.fn().mockImplementation(() => ({ init, close })) as unknown as StagehandClass;
 
 type BrowserbaseClient = ReturnType<
   BrowserbaseSessionService['getBrowserbase']
@@ -160,5 +176,79 @@ describe('BrowserbaseSessionService', () => {
     });
     expect(createSession).toHaveBeenCalledTimes(1);
     expect(debugSession).toHaveBeenCalledTimes(2);
+  });
+
+  it('retries transient Stagehand init failures', async () => {
+    jest.useFakeTimers();
+    const service = new BrowserbaseSessionService();
+    const init = jest
+      .fn()
+      .mockRejectedValueOnce(prematureCloseError())
+      .mockResolvedValueOnce(undefined);
+    const close = jest.fn().mockResolvedValue(undefined);
+    const StagehandCtor = mockStagehandClass({ init, close });
+    jest.spyOn(service, 'loadStagehand').mockResolvedValue(StagehandCtor);
+
+    const promise = service.createStagehand('session_1');
+    await jest.advanceTimersByTimeAsync(250);
+
+    await expect(promise).resolves.toEqual({ init, close });
+    expect(StagehandCtor).toHaveBeenCalledTimes(2);
+    expect(init).toHaveBeenCalledTimes(2);
+    // The partially-initialized instance is closed before retrying.
+    expect(close).toHaveBeenCalledTimes(1);
+  });
+
+  it('throws a service unavailable exception after Stagehand init retry exhaustion', async () => {
+    jest.useFakeTimers();
+    const service = new BrowserbaseSessionService();
+    const init = jest.fn().mockRejectedValue(prematureCloseError());
+    const close = jest.fn().mockResolvedValue(undefined);
+    jest
+      .spyOn(service, 'loadStagehand')
+      .mockResolvedValue(mockStagehandClass({ init, close }));
+
+    const promise = service.createStagehand('session_1');
+    const expectation = expect(promise).rejects.toBeInstanceOf(
+      ServiceUnavailableException,
+    );
+    await jest.advanceTimersByTimeAsync(1_000);
+
+    await expectation;
+    expect(init).toHaveBeenCalledTimes(3);
+    expect(close).toHaveBeenCalledTimes(3);
+  });
+
+  it('preserves non-retryable Stagehand init failures', async () => {
+    const service = new BrowserbaseSessionService();
+    const sessionNotFound = Object.assign(new Error('Session not found'), {
+      status: 404,
+    });
+    const init = jest.fn().mockRejectedValue(sessionNotFound);
+    const close = jest.fn().mockResolvedValue(undefined);
+    jest
+      .spyOn(service, 'loadStagehand')
+      .mockResolvedValue(mockStagehandClass({ init, close }));
+
+    await expect(service.createStagehand('session_1')).rejects.toBe(
+      sessionNotFound,
+    );
+    expect(init).toHaveBeenCalledTimes(1);
+    // Even a non-retryable failure closes the partial instance.
+    expect(close).toHaveBeenCalledTimes(1);
+  });
+
+  it('navigateToUrl returns the friendly unavailable message when init keeps failing', async () => {
+    const service = new BrowserbaseSessionService();
+    jest
+      .spyOn(service, 'createStagehand')
+      .mockRejectedValue(browserbaseUnavailableException());
+
+    await expect(
+      service.navigateToUrl('session_1', 'https://github.com'),
+    ).resolves.toEqual({
+      success: false,
+      error: 'Browserbase is temporarily unavailable. Please retry in a moment.',
+    });
   });
 });

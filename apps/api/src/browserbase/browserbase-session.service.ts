@@ -157,22 +157,47 @@ export class BrowserbaseSessionService {
     throw browserbaseUnavailableException();
   }
 
-  async createStagehand(sessionId: string): Promise<Stagehand> {
+  async loadStagehand(): Promise<
+    typeof import('@browserbasehq/stagehand').Stagehand
+  > {
     const { Stagehand } = await import('@browserbasehq/stagehand');
-    const stagehand = new Stagehand({
-      env: 'BROWSERBASE',
-      apiKey: process.env.BROWSERBASE_API_KEY,
-      projectId: this.getProjectId(),
-      browserbaseSessionID: sessionId,
-      model: {
-        modelName: STAGEHAND_MODEL,
-        apiKey: process.env.ANTHROPIC_API_KEY,
-      },
-      verbose: 1,
-    });
+    return Stagehand;
+  }
 
-    await stagehand.init();
-    return stagehand;
+  async createStagehand(sessionId: string): Promise<Stagehand> {
+    const Stagehand = await this.loadStagehand();
+
+    // Stagehand.init() resumes the session by calling the Browserbase API on
+    // its own internal SDK client (outside getBrowserbase()), so transient
+    // upstream failures there — e.g. "Premature close" — bypass the per-call
+    // retry that wraps our direct SDK calls. Retry init the same way, closing
+    // any half-initialized instance between attempts so we don't leak it.
+    return this.withBrowserbaseRetry({
+      operationName: 'stagehand initialization',
+      operation: async () => {
+        const stagehand = new Stagehand({
+          env: 'BROWSERBASE',
+          apiKey: process.env.BROWSERBASE_API_KEY,
+          projectId: this.getProjectId(),
+          browserbaseSessionID: sessionId,
+          model: {
+            modelName: STAGEHAND_MODEL,
+            apiKey: process.env.ANTHROPIC_API_KEY,
+          },
+          verbose: 1,
+        });
+
+        try {
+          await stagehand.init();
+          return stagehand;
+        } catch (error) {
+          // keepAlive:true means close() will not end the Browserbase session,
+          // so the next attempt can resume the same sessionId.
+          await this.safeCloseStagehand(stagehand);
+          throw error;
+        }
+      },
+    });
   }
 
   async safeCloseStagehand(stagehand: Stagehand): Promise<void> {
