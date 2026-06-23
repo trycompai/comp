@@ -11,6 +11,39 @@ export const GCP_SCAN_MODE_SCC = 'gcp_scc';
 export const GCP_SCAN_MODE_DIRECT = 'gcp_direct';
 
 /**
+ * Cloud Tests serviceId each GCP manifest check belongs to, so the direct-API
+ * checks honor the user's per-service disable toggle the same way the SCC path
+ * does. A check with NO entry here is never gated (always runs) — a missing
+ * mapping must never silently hide findings.
+ *
+ * We gate on `disabledServices` (the explicit user opt-out) rather than the
+ * full `enabledServices` set: `enabledServices` also requires a service to have
+ * been auto-detected, but the direct checks are the always-on baseline (the
+ * manual Scan button doesn't run detection first), so gating on detection could
+ * hide real findings for a service the user never disabled.
+ */
+const GCP_CHECK_SERVICE: Record<string, string> = {
+  'gcp-storage-no-public-access': 'cloud-storage',
+  'gcp-storage-encryption': 'cloud-storage',
+  'gcp-iam-no-primitive-roles': 'iam',
+  'gcp-vpc-no-open-firewalls': 'vpc-network',
+  'gcp-cloud-sql-ssl-enforced': 'cloud-sql',
+  'gcp-cloud-sql-backups-enabled': 'cloud-sql',
+  'gcp-cloud-sql-encryption': 'cloud-sql',
+  'gcp-cloud-monitoring-alerting': 'cloud-monitoring',
+  // gcp-environment-separation spans multiple services → intentionally ungated.
+};
+
+/** True when a check maps to a service the user explicitly disabled. */
+export function isGcpCheckServiceDisabled(
+  checkId: string,
+  disabledServices: ReadonlySet<string>,
+): boolean {
+  const service = GCP_CHECK_SERVICE[checkId];
+  return service !== undefined && disabledServices.has(service);
+}
+
+/**
  * True when an SCC error means SCC is structurally unavailable for the whole
  * connection (so the direct-API fallback is the right move), as opposed to a
  * transient/unknown error (where we'd rather preserve the prior run and let the

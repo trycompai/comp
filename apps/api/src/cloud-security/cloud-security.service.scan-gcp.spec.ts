@@ -19,6 +19,7 @@ interface ScanGcpParams {
   credentials: Record<string, unknown>;
   variables: Record<string, unknown>;
   enabledServices: string[] | undefined;
+  disabledServices: ReadonlySet<string>;
   connectionId: string;
   organizationId: string;
   providerSlug: string;
@@ -42,6 +43,7 @@ const PARAMS: ScanGcpParams = {
   credentials: { access_token: 'tok' },
   variables: { project_ids: ['p1', 'p2'] },
   enabledServices: undefined,
+  disabledServices: new Set<string>(),
   connectionId: 'icn_1',
   organizationId: 'org_1',
   providerSlug: 'gcp',
@@ -208,5 +210,49 @@ describe('CloudSecurityService.scanGcp', () => {
       passed: true,
       severity: 'info',
     });
+  });
+
+  it('excludes checks for a disabled service from the direct-API run', async () => {
+    mockGetManifest.mockReturnValue({
+      checks: [
+        { id: 'gcp-storage-no-public-access' }, // → cloud-storage
+        { id: 'gcp-iam-no-primitive-roles' }, // → iam
+      ],
+    });
+    mockRunAllChecks.mockResolvedValue(directCheckResult('failed'));
+    gcpService.scanSecurityFindings.mockRejectedValue(
+      new Error('Security Command Center Legacy has been disabled by Google.'),
+    );
+
+    await callScanGcp(service, {
+      ...PARAMS,
+      disabledServices: new Set(['cloud-storage']),
+    });
+
+    // Only the iam check is handed to the runner — the disabled storage check is dropped.
+    const firstCallArg = mockRunAllChecks.mock.calls[0][0] as {
+      manifest: { checks: Array<{ id: string }> };
+    };
+    expect(firstCallArg.manifest.checks.map((c) => c.id)).toEqual([
+      'gcp-iam-no-primitive-roles',
+    ]);
+  });
+
+  it('runs no direct checks (returns []) when every covered service is disabled', async () => {
+    mockGetManifest.mockReturnValue({
+      checks: [{ id: 'gcp-storage-no-public-access' }], // only cloud-storage
+    });
+    gcpService.scanSecurityFindings.mockRejectedValue(
+      new Error('Security Command Center Legacy has been disabled by Google.'),
+    );
+
+    const result = await callScanGcp(service, {
+      ...PARAMS,
+      disabledServices: new Set(['cloud-storage']),
+    });
+
+    expect(result.findings).toEqual([]);
+    expect(result.scanMode).toBe(GCP_SCAN_MODE_DIRECT);
+    expect(mockRunAllChecks).not.toHaveBeenCalled();
   });
 });

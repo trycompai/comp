@@ -15,6 +15,7 @@ import {
   GCP_SCAN_MODE_SCC,
   formatCheckLog,
   gcpCheckResultsToFindings,
+  isGcpCheckServiceDisabled,
   isSccStructurallyUnavailable,
   toCheckCredentials,
   toCheckVariables,
@@ -296,6 +297,7 @@ export class CloudSecurityService {
             credentials,
             variables,
             enabledServices,
+            disabledServices,
             connectionId,
             organizationId,
             providerSlug,
@@ -463,6 +465,7 @@ export class CloudSecurityService {
     credentials: Record<string, unknown>;
     variables: Record<string, unknown>;
     enabledServices: string[] | undefined;
+    disabledServices: ReadonlySet<string>;
     connectionId: string;
     organizationId: string;
     providerSlug: string;
@@ -471,6 +474,7 @@ export class CloudSecurityService {
       credentials,
       variables,
       enabledServices,
+      disabledServices,
       connectionId,
       organizationId,
       providerSlug,
@@ -480,6 +484,7 @@ export class CloudSecurityService {
       this.scanGcpDirectChecks({
         credentials,
         variables,
+        disabledServices,
         connectionId,
         organizationId,
         providerSlug,
@@ -523,15 +528,21 @@ export class CloudSecurityService {
    * check set the `run-connection-checks` task runs; we run it here so the
    * manual "Scan" button refreshes findings even when SCC is dead.
    *
-   * Guardrail: if EVERY check errored (e.g. an invalid token or missing read
-   * access), throw instead of returning [] — an empty result would store a
+   * Honors the per-service disable toggle: checks mapped to a service the user
+   * disabled are skipped (matching how the SCC path drops disabled services), so
+   * a combined run never shows findings for a service the customer turned off.
+   *
+   * Guardrail: if EVERY check that ran errored (e.g. an invalid token or missing
+   * read access), throw instead of returning [] — an empty result would store a
    * fresh "success" run with zero findings, hiding the prior good run and
    * false-resolving every finding. Throwing lets the outer catch preserve the
-   * prior run.
+   * prior run. (Zero checks because the user disabled everything is NOT a
+   * failure — that returns [] legitimately.)
    */
   private async scanGcpDirectChecks(params: {
     credentials: Record<string, unknown>;
     variables: Record<string, unknown>;
+    disabledServices: ReadonlySet<string>;
     connectionId: string;
     organizationId: string;
     providerSlug: string;
@@ -539,6 +550,7 @@ export class CloudSecurityService {
     const {
       credentials,
       variables,
+      disabledServices,
       connectionId,
       organizationId,
       providerSlug,
@@ -551,13 +563,22 @@ export class CloudSecurityService {
       );
     }
 
+    const enabledChecks = manifest.checks.filter(
+      (check) => !isGcpCheckServiceDisabled(check.id, disabledServices),
+    );
+    if (enabledChecks.length === 0) {
+      // The user disabled every service these checks cover — scan nothing here
+      // (intentional empty, not a failure). SCC may still contribute findings.
+      return [];
+    }
+
     const accessToken =
       typeof credentials.access_token === 'string'
         ? credentials.access_token
         : undefined;
 
     const result = await runAllChecks({
-      manifest,
+      manifest: { ...manifest, checks: enabledChecks },
       accessToken,
       credentials: toCheckCredentials(credentials),
       variables: toCheckVariables(variables),
