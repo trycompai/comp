@@ -29,30 +29,34 @@ export const refreshExpiringTokensSchedule = schedules.task({
       return { refreshed: 0, failed: 0, skipped: 0 };
     }
 
+    const now = new Date();
     const lookaheadMs = REFRESH_LOOKAHEAD_HOURS * 60 * 60 * 1000;
-    const expiryThreshold = new Date(Date.now() + lookaheadMs);
+    const expiryThreshold = new Date(now.getTime() + lookaheadMs);
 
-    // Find all active connections whose latest credential version expires soon
-    const expiringConnections = await db.integrationConnection.findMany({
-      where: {
-        status: 'active',
-        credentials: {
-          some: {
-            expiresAt: {
-              lte: expiryThreshold,
-              gt: new Date(), // Not already expired
-            },
-          },
-        },
-      },
+    // Find all active connections and check the expiry of the latest credential
+    // version. Older credential versions may exist, so a `some` predicate would
+    // incorrectly select connections where an older version is expiring while
+    // the latest version is still valid.
+    const activeConnections = await db.integrationConnection.findMany({
+      where: { status: 'active' },
       include: {
         organization: { select: { id: true, name: true } },
-        credentials: {
+        credentialVersions: {
           orderBy: { version: 'desc' },
           take: 1,
           select: { expiresAt: true },
         },
       },
+    });
+
+    const expiringConnections = activeConnections.filter((connection) => {
+      const expiresAt = connection.credentialVersions[0]?.expiresAt;
+      return (
+        expiresAt !== undefined &&
+        expiresAt !== null &&
+        expiresAt <= expiryThreshold &&
+        expiresAt > now
+      );
     });
 
     logger.info(`Found ${expiringConnections.length} connections with tokens expiring within ${REFRESH_LOOKAHEAD_HOURS}h`);
