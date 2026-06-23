@@ -12,6 +12,13 @@ import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { InternalTokenGuard } from '../../auth/internal-token.guard';
 import { InternalIntegrationDebugService } from '../services/internal-integration-debug.service';
 
+/** Parse an optional numeric query param, dropping non-numeric input (no NaN). */
+function parseOptionalInt(value?: string): number | undefined {
+  if (!value) return undefined;
+  const n = parseInt(value, 10);
+  return Number.isFinite(n) ? n : undefined;
+}
+
 class RunChecksBody {
   @IsOptional()
   @IsString()
@@ -66,7 +73,7 @@ export class InternalIntegrationDebugController {
       organizationId,
       providerSlug,
       connectionId,
-      limit: limit ? parseInt(limit, 10) : undefined,
+      limit: parseOptionalInt(limit),
     });
   }
 
@@ -81,7 +88,7 @@ export class InternalIntegrationDebugController {
   ) {
     return this.debugService.getConnection(
       connectionId,
-      runLimit ? parseInt(runLimit, 10) : undefined,
+      parseOptionalInt(runLimit),
     );
   }
 

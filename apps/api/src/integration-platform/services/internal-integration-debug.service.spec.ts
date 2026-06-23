@@ -1,7 +1,7 @@
 jest.mock('@db', () => ({
   db: {
     integrationConnection: { findMany: jest.fn(), findUnique: jest.fn() },
-    integrationCredentialVersion: { findUnique: jest.fn() },
+    integrationCredentialVersion: { findUnique: jest.fn(), findMany: jest.fn() },
     integrationCheckRun: { findFirst: jest.fn(), findMany: jest.fn() },
   },
 }));
@@ -20,7 +20,7 @@ const encryptedBlob = {
 
 const mockedDb = db as unknown as {
   integrationConnection: { findMany: jest.Mock; findUnique: jest.Mock };
-  integrationCredentialVersion: { findUnique: jest.Mock };
+  integrationCredentialVersion: { findUnique: jest.Mock; findMany: jest.Mock };
   integrationCheckRun: { findFirst: jest.Mock; findMany: jest.Mock };
 };
 
@@ -46,21 +46,24 @@ describe('InternalIntegrationDebugService', () => {
           activeCredentialVersionId: 'icv_1',
         },
       ]);
-      mockedDb.integrationCredentialVersion.findUnique.mockResolvedValue({
-        version: 14,
-        createdAt: new Date('2026-01-01T00:00:00.000Z'),
-        expiresAt: new Date(Date.now() + 3_600_000),
-        encryptedPayload: {
-          access_token: encryptedBlob,
-          refresh_token: encryptedBlob,
-          client_secret: 'should-be-masked-even-though-plaintext',
-          api_domain: 'https://www.zohoapis.eu',
-          scope: 'ZohoCRM.users.READ',
-          region: 'us2.ninjarmm.com',
-          token_type: 'Bearer',
+      mockedDb.integrationCredentialVersion.findMany.mockResolvedValue([
+        {
+          id: 'icv_1',
+          version: 14,
+          createdAt: new Date('2026-01-01T00:00:00.000Z'),
+          expiresAt: new Date(Date.now() + 3_600_000),
+          encryptedPayload: {
+            access_token: encryptedBlob,
+            refresh_token: encryptedBlob,
+            client_secret: 'should-be-masked-even-though-plaintext',
+            api_domain: 'https://www.zohoapis.eu',
+            scope: 'ZohoCRM.users.READ',
+            region: 'us2.ninjarmm.com',
+            token_type: 'Bearer',
+          },
         },
-      });
-      mockedDb.integrationCheckRun.findFirst.mockResolvedValue(null);
+      ]);
+      mockedDb.integrationCheckRun.findMany.mockResolvedValue([]);
 
       const service = makeService();
       const { connections } = await service.listConnections({
@@ -103,13 +106,16 @@ describe('InternalIntegrationDebugService', () => {
           activeCredentialVersionId: 'icv_2',
         },
       ]);
-      mockedDb.integrationCredentialVersion.findUnique.mockResolvedValue({
-        version: 1,
-        createdAt: new Date('2026-01-01T00:00:00.000Z'),
-        expiresAt: new Date(Date.now() - 1_000),
-        encryptedPayload: { access_token: encryptedBlob },
-      });
-      mockedDb.integrationCheckRun.findFirst.mockResolvedValue(null);
+      mockedDb.integrationCredentialVersion.findMany.mockResolvedValue([
+        {
+          id: 'icv_2',
+          version: 1,
+          createdAt: new Date('2026-01-01T00:00:00.000Z'),
+          expiresAt: new Date(Date.now() - 1_000),
+          encryptedPayload: { access_token: encryptedBlob },
+        },
+      ]);
+      mockedDb.integrationCheckRun.findMany.mockResolvedValue([]);
 
       const service = makeService();
       const { connections } = await service.listConnections({});
@@ -129,14 +135,58 @@ describe('InternalIntegrationDebugService', () => {
           activeCredentialVersionId: null,
         },
       ]);
-      mockedDb.integrationCheckRun.findFirst.mockResolvedValue(null);
+      mockedDb.integrationCheckRun.findMany.mockResolvedValue([]);
 
       const service = makeService();
       const { connections } = await service.listConnections({});
       expect(connections[0].credential).toBeNull();
+      // No active version id → we never query credential versions at all.
       expect(
-        mockedDb.integrationCredentialVersion.findUnique,
+        mockedDb.integrationCredentialVersion.findMany,
       ).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('listConnections input guards + batching', () => {
+    it('tolerates a non-numeric limit (no NaN to the DB) and maps the latest run per connection', async () => {
+      mockedDb.integrationConnection.findMany.mockResolvedValue([
+        {
+          id: 'icn_a',
+          organizationId: 'org_1',
+          provider: { slug: 'zoho-crm', name: 'Zoho CRM' },
+          status: 'active',
+          errorMessage: null,
+          updatedAt: new Date(),
+          variables: null,
+          activeCredentialVersionId: null,
+        },
+      ]);
+      mockedDb.integrationCheckRun.findMany.mockResolvedValue([
+        {
+          id: 'run_1',
+          connectionId: 'icn_a',
+          checkId: 'c',
+          status: 'failed',
+          passedCount: 0,
+          failedCount: 1,
+          completedAt: new Date(),
+          errorMessage: 'boom',
+        },
+      ]);
+
+      const service = makeService();
+      const { connections } = await service.listConnections({
+        limit: Number('not-a-number'),
+      });
+
+      expect(connections[0].latestRun).toMatchObject({
+        id: 'run_1',
+        status: 'failed',
+      });
+      // The NaN limit must be normalized before it reaches Prisma's `take`.
+      const take =
+        mockedDb.integrationConnection.findMany.mock.calls[0][0].take;
+      expect(Number.isFinite(take)).toBe(true);
     });
   });
 

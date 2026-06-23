@@ -98,26 +98,10 @@ export class InternalIntegrationDebugService {
     return this.buildCredentialMetadata(version);
   }
 
-  private async getLatestRunSummary(connectionId: string) {
-    const run = await db.integrationCheckRun.findFirst({
-      where: { connectionId },
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        checkId: true,
-        status: true,
-        passedCount: true,
-        failedCount: true,
-        completedAt: true,
-        errorMessage: true,
-      },
-    });
-    return run;
-  }
-
   /**
    * List connections, filterable by org / provider / connection id, with a
    * non-sensitive credential view and the most recent run summary for each.
+   * Related data is batch-fetched (no N+1).
    */
   async listConnections(params: {
     organizationId?: string;
@@ -126,7 +110,10 @@ export class InternalIntegrationDebugService {
     limit?: number;
   }) {
     const { organizationId, providerSlug, connectionId } = params;
-    const limit = Math.min(Math.max(params.limit ?? 50, 1), 200);
+    const rawLimit = params.limit ?? NaN;
+    const limit = Number.isFinite(rawLimit)
+      ? Math.min(Math.max(rawLimit, 1), 200)
+      : 50;
 
     const connections = await db.integrationConnection.findMany({
       where: {
@@ -139,23 +126,67 @@ export class InternalIntegrationDebugService {
       take: limit,
     });
 
-    const items = await Promise.all(
-      connections.map(async (conn) => ({
-        id: conn.id,
-        organizationId: conn.organizationId,
-        provider: conn.provider
-          ? { slug: conn.provider.slug, name: conn.provider.name }
-          : null,
-        status: conn.status,
-        errorMessage: conn.errorMessage,
-        updatedAt: conn.updatedAt,
-        variables: conn.variables ?? null,
-        credential: await this.getActiveCredentialMetadata(
-          conn.activeCredentialVersionId,
-        ),
-        latestRun: await this.getLatestRunSummary(conn.id),
-      })),
+    // Batch-fetch the active credential versions and the latest run per
+    // connection in two queries instead of two-per-connection.
+    const versionIds = connections
+      .map((c) => c.activeCredentialVersionId)
+      .filter((id): id is string => Boolean(id));
+    const connectionIds = connections.map((c) => c.id);
+
+    const [versions, latestRuns] = await Promise.all([
+      versionIds.length
+        ? db.integrationCredentialVersion.findMany({
+            where: { id: { in: versionIds } },
+            select: {
+              id: true,
+              version: true,
+              createdAt: true,
+              expiresAt: true,
+              encryptedPayload: true,
+            },
+          })
+        : Promise.resolve([]),
+      connectionIds.length
+        ? db.integrationCheckRun.findMany({
+            where: { connectionId: { in: connectionIds } },
+            orderBy: { createdAt: 'desc' },
+            distinct: ['connectionId'],
+            select: {
+              id: true,
+              connectionId: true,
+              checkId: true,
+              status: true,
+              passedCount: true,
+              failedCount: true,
+              completedAt: true,
+              errorMessage: true,
+            },
+          })
+        : Promise.resolve([]),
+    ]);
+
+    const versionById = new Map(versions.map((v) => [v.id, v] as const));
+    const latestRunByConn = new Map(
+      latestRuns.map((r) => [r.connectionId, r] as const),
     );
+
+    const items = connections.map((conn) => ({
+      id: conn.id,
+      organizationId: conn.organizationId,
+      provider: conn.provider
+        ? { slug: conn.provider.slug, name: conn.provider.name }
+        : null,
+      status: conn.status,
+      errorMessage: conn.errorMessage,
+      updatedAt: conn.updatedAt,
+      variables: conn.variables ?? null,
+      credential: conn.activeCredentialVersionId
+        ? this.buildCredentialMetadata(
+            versionById.get(conn.activeCredentialVersionId) ?? null,
+          )
+        : null,
+      latestRun: latestRunByConn.get(conn.id) ?? null,
+    }));
 
     return { connections: items, total: items.length };
   }
@@ -173,10 +204,13 @@ export class InternalIntegrationDebugService {
       throw new NotFoundException(`Connection ${connectionId} not found`);
     }
 
+    const take = Number.isFinite(runLimit)
+      ? Math.min(Math.max(runLimit, 1), 20)
+      : 5;
     const recentRuns = await db.integrationCheckRun.findMany({
       where: { connectionId },
       orderBy: { createdAt: 'desc' },
-      take: Math.min(Math.max(runLimit, 1), 20),
+      take,
       include: {
         results: {
           select: {
