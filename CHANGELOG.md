@@ -1,3 +1,19 @@
+# [3.91.0](https://github.com/trycompai/comp/compare/v3.90.1...v3.91.0) (2026-06-23)
+
+
+### Bug Fixes
+
+* **auth:** fall back to UPN/username when Microsoft omits the email claim ([6e27044](https://github.com/trycompai/comp/commit/6e27044b4f096b60c87b297245016e96cbec20e6))
+* **cloud-security:** combine GCP direct-API checks with SCC, skip SCC when unavailable ([29ddd1a](https://github.com/trycompai/comp/commit/29ddd1abdd91451a436e30ab8358b79446b05b59))
+* **cloud-security:** honor disabled-service toggle in GCP direct-API checks ([0182676](https://github.com/trycompai/comp/commit/0182676220ecd6155881298fdc35f68e4448ddca))
+* **drata:** handle non-array policy content in bulk pdf render ([33d9157](https://github.com/trycompai/comp/commit/33d91575e21ee9cfa1a34564ebd33e373f282575)), closes [#3249](https://github.com/trycompai/comp/issues/3249)
+* **policies:** use deterministic template engine for individual policy regen ([aad6a80](https://github.com/trycompai/comp/commit/aad6a802b90aa69ce1479ce45938c892fd0818fa))
+
+
+### Features
+
+* **cloud-security:** make GCP auto-fix first-class for direct-API findings ([5684b97](https://github.com/trycompai/comp/commit/5684b9774513110458826aafc9a7a4c9d4ff998b))
+
 ## [3.90.1](https://github.com/trycompai/comp/compare/v3.90.0...v3.90.1) (2026-06-23)
 
 
