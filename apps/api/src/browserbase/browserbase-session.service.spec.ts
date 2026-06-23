@@ -114,6 +114,22 @@ describe('BrowserbaseSessionService', () => {
     expect(createContext).toHaveBeenCalledTimes(3);
   });
 
+  it('includes the underlying cause in the exhausted-retry message', async () => {
+    jest.useFakeTimers();
+    const service = new BrowserbaseSessionService();
+    const createContext = jest.fn().mockRejectedValue(prematureCloseError());
+    jest
+      .spyOn(service, 'getBrowserbase')
+      .mockReturnValue(mockBrowserbaseClient({ createContext }));
+
+    const promise = service.createBrowserbaseContext().catch((error) => error);
+    await jest.advanceTimersByTimeAsync(1_000);
+    const error = await promise;
+
+    expect(error).toBeInstanceOf(ServiceUnavailableException);
+    expect(error.message).toContain('Premature close');
+  });
+
   it('preserves non-retryable Browserbase failures', async () => {
     const service = new BrowserbaseSessionService();
     const browserbaseError = Object.assign(

@@ -154,7 +154,9 @@ export class BrowserbaseSessionService {
             attempt,
             error: getBrowserbaseErrorText(error),
           });
-          throw browserbaseUnavailableException();
+          // Surface the underlying cause in the message so an exhausted retry
+          // is diagnosable from the UI/response, not just the server logs.
+          throw browserbaseUnavailableException(getBrowserbaseErrorText(error));
         }
 
         this.logger.warn(`Browserbase ${operationName} failed; retrying`, {
