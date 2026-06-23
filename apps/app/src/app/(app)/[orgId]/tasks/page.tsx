@@ -1,4 +1,5 @@
 import { serverApi } from '@/lib/api-server';
+import { filterAppAccessMembers } from '@/lib/compliance';
 import type { Member, Task, User } from '@db';
 import { Metadata } from 'next';
 import { cookies } from 'next/headers';
@@ -56,12 +57,7 @@ export default async function TasksPage({
   ]);
 
   const tasks = tasksRes.data?.data ?? [];
-  // Pass every org member to the overview + Assignee filter. A task can be assigned
-  // to anyone via the task detail sidebar (which resolves assignees from the
-  // unfiltered /v1/people list, including custom roles like "SecDev"). Pre-filtering
-  // by built-in role name here made custom-role assignees resolve to "Unassigned" on
-  // the overview and disappear from the Assignee filter (CS-571).
-  const members = membersRes.data?.data ?? [];
+  const allMembers = membersRes.data?.data ?? [];
   const options = optionsRes.data ?? {
     controls: [],
     frameworkInstances: [],
@@ -69,6 +65,12 @@ export default async function TasksPage({
     hasEvidenceExportAccess: false,
     evidenceApprovalEnabled: false,
   };
+
+  // Only members with app access can be evidence assignees. Resolve this via
+  // RBAC permissions (built-in + custom roles), not a hardcoded role allowlist,
+  // so members with a custom role (e.g. "SecDev") that grants app access still
+  // show as assignees and appear as assignee filter options.
+  const members = await filterAppAccessMembers(allMembers, orgId);
 
   // Read tab preference from cookie
   const cookieStore = await cookies();

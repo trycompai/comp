@@ -108,11 +108,10 @@ export function TaskList({
     document.cookie = `task-view-preference-${orgId}=${newTab}; expires=${expires.toUTCString()}; path=/`;
   };
 
-  // Assignee filter options: every org member, not just built-in admin/owner roles.
-  // Tasks can be assigned to anyone (auditors, custom roles like "SecDev", etc.) via
-  // the task detail sidebar, so narrowing by role name hid those assignees from the
-  // filter even though their assigned tasks exist (CS-571). Copy before sorting so we
-  // don't mutate the prop array in place.
+  // `members` is already filtered to those with app access upstream (see
+  // tasks/page.tsx → filterAppAccessMembers), so each one is a valid assignee.
+  // Re-filtering by hardcoded role names here dropped auditors and custom roles
+  // (e.g. "SecDev") that legitimately hold evidence from the assignee filter.
   const eligibleAssignees = useMemo(() => {
     return [...members].sort((a, b) => {
       const nameA = a.user.name ?? '';
