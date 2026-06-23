@@ -108,23 +108,17 @@ export function TaskList({
     document.cookie = `task-view-preference-${orgId}=${newTab}; expires=${expires.toUTCString()}; path=/`;
   };
 
+  // Assignee filter options: every org member, not just built-in admin/owner roles.
+  // Tasks can be assigned to anyone (auditors, custom roles like "SecDev", etc.) via
+  // the task detail sidebar, so narrowing by role name hid those assignees from the
+  // filter even though their assigned tasks exist (CS-571). Copy before sorting so we
+  // don't mutate the prop array in place.
   const eligibleAssignees = useMemo(() => {
-    return members
-      .filter((member) => {
-        const roleValue = member.role;
-        const roles = Array.isArray(roleValue)
-          ? roleValue.map((role) => role.trim().toLowerCase())
-          : typeof roleValue === 'string'
-            ? roleValue.split(',').map((role) => role.trim().toLowerCase())
-            : [];
-
-        return roles.some((role) => role === 'admin' || role === 'owner');
-      })
-      .sort((a, b) => {
-        const nameA = a.user.name ?? '';
-        const nameB = b.user.name ?? '';
-        return nameA.localeCompare(nameB);
-      });
+    return [...members].sort((a, b) => {
+      const nameA = a.user.name ?? '';
+      const nameB = b.user.name ?? '';
+      return nameA.localeCompare(nameB);
+    });
   }, [members]);
 
   // Build a map of control IDs to their framework instances for efficient lookup

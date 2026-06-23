@@ -56,7 +56,12 @@ export default async function TasksPage({
   ]);
 
   const tasks = tasksRes.data?.data ?? [];
-  const allMembers = membersRes.data?.data ?? [];
+  // Pass every org member to the overview + Assignee filter. A task can be assigned
+  // to anyone via the task detail sidebar (which resolves assignees from the
+  // unfiltered /v1/people list, including custom roles like "SecDev"). Pre-filtering
+  // by built-in role name here made custom-role assignees resolve to "Unassigned" on
+  // the overview and disappear from the Assignee filter (CS-571).
+  const members = membersRes.data?.data ?? [];
   const options = optionsRes.data ?? {
     controls: [],
     frameworkInstances: [],
@@ -64,16 +69,6 @@ export default async function TasksPage({
     hasEvidenceExportAccess: false,
     evidenceApprovalEnabled: false,
   };
-
-  // Filter members: exclude those with only employee/contractor roles (no app access)
-  // Auditors and anyone with owner/admin can still be assigned
-  const members = allMembers.filter((m) => {
-    const roles = m.role
-      ?.split(',')
-      .map((r) => r.trim())
-      .filter(Boolean) ?? [];
-    return roles.some((r) => ['owner', 'admin', 'auditor'].includes(r));
-  });
 
   // Read tab preference from cookie
   const cookieStore = await cookies();

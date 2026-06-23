@@ -108,4 +108,29 @@ describe('TaskList "Everyone" assignee filter', () => {
 
     expect(screen.getByText(AKMAL_EMAIL)).toBeInTheDocument();
   });
+
+  // CS-571: a customer created a custom "SecDev" role (evidence permissions) and
+  // assigned users to it. Those assignees were missing from the Assignee filter and
+  // showed as "Unassigned" on the overview, because eligibleAssignees narrowed the
+  // list to built-in admin/owner roles. Custom roles must surface in the filter just
+  // like the task detail sidebar resolves them.
+  it('includes a custom-role (SecDev) member in the Assignee filter', () => {
+    nuqs.assignee = 'mem_1';
+
+    render(
+      <TaskList
+        tasks={[]}
+        members={[
+          makeMember({ name: 'Ana Castro Borda', email: 'ana@example.com', role: 'secdev' }),
+        ]}
+        frameworkInstances={[]}
+        activeTab="categories"
+      />,
+    );
+
+    // Before the fix the SecDev member was filtered out, leaving eligibleAssignees
+    // empty so the trigger rendered "No eligible members" instead of the assignee.
+    expect(screen.getByText('Ana Castro Borda')).toBeInTheDocument();
+    expect(screen.queryByText('No eligible members')).not.toBeInTheDocument();
+  });
 });
