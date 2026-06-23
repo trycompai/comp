@@ -16431,6 +16431,7 @@
     },
     "/v1/questionnaire/answer-single": {
       "post": {
+        "description": "Generate an answer for one security questionnaire item using the organization evidence library and return source references for review.",
         "operationId": "QuestionnaireController_answerSingleQuestion_v1",
         "parameters": [],
         "requestBody": {
@@ -16494,7 +16495,6 @@
         "tags": [
           "Questionnaire"
         ],
-        "description": "Generate an answer for one security questionnaire item using the organization evidence library and return source references for review.",
         "x-mint": {
           "href": "/api-reference/questionnaire/answer-a-single-questionnaire-question",
           "metadata": {
@@ -24281,14 +24281,6 @@
             }
           },
           {
-            "name": "frameworkInstanceId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "formType",
             "required": true,
             "in": "path",
@@ -24309,6 +24301,14 @@
                 "tabletop_exercise",
                 "account_types"
               ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "frameworkInstanceId",
+            "required": true,
+            "in": "query",
+            "schema": {
               "type": "string"
             }
           }
@@ -29265,7 +29265,41 @@
       },
       "AnswerSingleQuestionDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "question": {
+            "type": "string",
+            "description": "Security questionnaire question to answer.",
+            "example": "Do you encrypt customer data at rest?"
+          },
+          "questionIndex": {
+            "type": "number",
+            "description": "Zero-based index of this question in the questionnaire or page batch.",
+            "example": 0,
+            "minimum": 0
+          },
+          "totalQuestions": {
+            "type": "number",
+            "description": "Total number of questions in the current questionnaire or page batch.",
+            "example": 12,
+            "minimum": 1
+          },
+          "organizationId": {
+            "type": "string",
+            "description": "Organization ID for validation. The API uses the authenticated active organization and overwrites this value server-side.",
+            "example": "org_abc123"
+          },
+          "questionnaireId": {
+            "type": "string",
+            "description": "Optional questionnaire record to save the generated answer into. Omit for webpage-only answer generation.",
+            "example": "qst_abc123"
+          }
+        },
+        "required": [
+          "question",
+          "questionIndex",
+          "totalQuestions",
+          "organizationId"
+        ]
       },
       "SaveAnswerDto": {
         "type": "object",

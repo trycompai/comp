@@ -1,0 +1,250 @@
+name: Security Questionnaire Extension Release
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - release
+    paths:
+      - '.github/workflows/security-questionnaire-extension-release.yml'
+      - 'apps/browser-extension/security-questionnaire-ext/**'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: security-questionnaire-extension-release
+  cancel-in-progress: false
+
+env:
+  EXTENSION_DIR: apps/browser-extension/security-questionnaire-ext
+  EXTENSION_TAG_PREFIX: security-questionnaire-ext-v
+  WXT_PUBLIC_API_BASE_URL: https://api.trycomp.ai
+  WXT_PUBLIC_APP_BASE_URL: https://app.trycomp.ai
+
+jobs:
+  release:
+    name: Publish Chrome extension
+    if: ${{ github.ref == 'refs/heads/release' }}
+    runs-on: warp-ubuntu-latest-arm64-4x
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile --ignore-scripts
+
+      - name: Compute next extension version
+        id: version
+        run: |
+          LATEST_TAG=$(git tag -l "${EXTENSION_TAG_PREFIX}*" --sort=-v:refname | grep -E "^${EXTENSION_TAG_PREFIX}[0-9]+\.[0-9]+\.[0-9]+$" | head -1)
+
+          if [ -z "$LATEST_TAG" ]; then
+            NEXT_VERSION="0.1.0"
+          else
+            CURRENT_VERSION="${LATEST_TAG#${EXTENSION_TAG_PREFIX}}"
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+            NEXT_VERSION="$MAJOR.$MINOR.$((PATCH + 1))"
+          fi
+
+          TAG_NAME="${EXTENSION_TAG_PREFIX}${NEXT_VERSION}"
+          echo "version=$NEXT_VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"
+          echo "zip_name=security-questionnaire-extension-${NEXT_VERSION}.zip" >> "$GITHUB_OUTPUT"
+
+          echo "--- Extension version ---"
+          echo "Latest tag: ${LATEST_TAG:-none}"
+          echo "Next version: $NEXT_VERSION"
+          echo "Tag name: $TAG_NAME"
+
+      - name: Set extension package version
+        working-directory: ${{ env.EXTENSION_DIR }}
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          node -e "
+            const fs = require('fs');
+            const path = 'package.json';
+            const pkg = JSON.parse(fs.readFileSync(path, 'utf8'));
+            pkg.version = process.env.VERSION;
+            fs.writeFileSync(path, JSON.stringify(pkg, null, 2) + '\n');
+          "
+
+      - name: Typecheck extension
+        run: bun run --filter '@trycompai/security-questionnaire-extension' typecheck
+
+      - name: Test extension
+        run: bun run --filter '@trycompai/security-questionnaire-extension' test
+
+      - name: Build production extension
+        env:
+          WXT_GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.SECURITY_QUESTIONNAIRE_EXTENSION_GOOGLE_OAUTH_CLIENT_ID }}
+        run: bun run --filter '@trycompai/security-questionnaire-extension' build
+
+      - name: Verify manifest version
+        env:
+          EXTENSION_DIR: ${{ env.EXTENSION_DIR }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          node -e "
+            const fs = require('fs');
+            const manifestPath = process.env.EXTENSION_DIR + '/dist/chrome-mv3/manifest.json';
+            const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+            if (manifest.version !== process.env.VERSION) {
+              throw new Error(\`Expected manifest version ${process.env.VERSION}, got ${manifest.version}\`);
+            }
+            if (!manifest.oauth2?.client_id) {
+              throw new Error('Missing oauth2.client_id in production manifest');
+            }
+          "
+
+      - name: Package extension
+        working-directory: ${{ env.EXTENSION_DIR }}/dist/chrome-mv3
+        env:
+          ZIP_NAME: ${{ steps.version.outputs.zip_name }}
+        run: zip -r "../$ZIP_NAME" .
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-questionnaire-extension-${{ steps.version.outputs.version }}
+          path: ${{ env.EXTENSION_DIR }}/dist/${{ steps.version.outputs.zip_name }}
+          if-no-files-found: error
+
+      - name: Validate Chrome Web Store secrets
+        env:
+          CLIENT_ID: ${{ secrets.CHROME_WEB_STORE_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CHROME_WEB_STORE_CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.CHROME_WEB_STORE_REFRESH_TOKEN }}
+          PUBLISHER_ID: ${{ secrets.CHROME_WEB_STORE_PUBLISHER_ID }}
+          EXTENSION_ID: ${{ secrets.SECURITY_QUESTIONNAIRE_EXTENSION_ID }}
+          OAUTH_CLIENT_ID: ${{ secrets.SECURITY_QUESTIONNAIRE_EXTENSION_GOOGLE_OAUTH_CLIENT_ID }}
+        run: |
+          missing=0
+          for name in CLIENT_ID CLIENT_SECRET REFRESH_TOKEN PUBLISHER_ID EXTENSION_ID OAUTH_CLIENT_ID; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Missing required secret: $name"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Get Chrome Web Store access token
+        id: token
+        env:
+          CLIENT_ID: ${{ secrets.CHROME_WEB_STORE_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CHROME_WEB_STORE_CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.CHROME_WEB_STORE_REFRESH_TOKEN }}
+        run: |
+          RESPONSE=$(curl -fsS "https://oauth2.googleapis.com/token" \
+            -d "client_secret=$CLIENT_SECRET" \
+            -d "grant_type=refresh_token" \
+            -d "refresh_token=$REFRESH_TOKEN" \
+            -d "client_id=$CLIENT_ID")
+
+          ACCESS_TOKEN=$(RESPONSE="$RESPONSE" node -e "
+            const response = JSON.parse(process.env.RESPONSE);
+            if (!response.access_token) throw new Error('No access_token returned');
+            process.stdout.write(response.access_token);
+          ")
+
+          echo "::add-mask::$ACCESS_TOKEN"
+          echo "access_token=$ACCESS_TOKEN" >> "$GITHUB_OUTPUT"
+
+      - name: Upload package to Chrome Web Store
+        id: upload
+        env:
+          ACCESS_TOKEN: ${{ steps.token.outputs.access_token }}
+          EXTENSION_ID: ${{ secrets.SECURITY_QUESTIONNAIRE_EXTENSION_ID }}
+          PUBLISHER_ID: ${{ secrets.CHROME_WEB_STORE_PUBLISHER_ID }}
+          ZIP_PATH: ${{ env.EXTENSION_DIR }}/dist/${{ steps.version.outputs.zip_name }}
+        run: |
+          RESPONSE=$(curl -fsS \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -H "Content-Type: application/zip" \
+            -X POST \
+            -T "$ZIP_PATH" \
+            "https://chromewebstore.googleapis.com/upload/v2/publishers/$PUBLISHER_ID/items/$EXTENSION_ID:upload")
+
+          echo "$RESPONSE"
+          UPLOAD_STATE=$(RESPONSE="$RESPONSE" node -e "
+            const response = JSON.parse(process.env.RESPONSE);
+            const state = response.uploadState;
+            if (state !== 'SUCCEEDED' && state !== 'IN_PROGRESS') {
+              throw new Error(\`Chrome upload failed with state ${state || 'unknown'}\`);
+            }
+            process.stdout.write(state);
+          ")
+
+          echo "upload_state=$UPLOAD_STATE" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for async Chrome Web Store upload
+        if: ${{ steps.upload.outputs.upload_state == 'IN_PROGRESS' }}
+        env:
+          ACCESS_TOKEN: ${{ steps.token.outputs.access_token }}
+          EXTENSION_ID: ${{ secrets.SECURITY_QUESTIONNAIRE_EXTENSION_ID }}
+          PUBLISHER_ID: ${{ secrets.CHROME_WEB_STORE_PUBLISHER_ID }}
+        run: |
+          for attempt in $(seq 1 30); do
+            RESPONSE=$(curl -fsS \
+              -H "Authorization: Bearer $ACCESS_TOKEN" \
+              "https://chromewebstore.googleapis.com/v2/publishers/$PUBLISHER_ID/items/$EXTENSION_ID:fetchStatus")
+
+            echo "$RESPONSE"
+            STATE=$(RESPONSE="$RESPONSE" node -e "
+              const response = JSON.parse(process.env.RESPONSE);
+              process.stdout.write(response.lastAsyncUploadState || 'UNKNOWN');
+            ")
+
+            if [ "$STATE" = "SUCCEEDED" ]; then
+              exit 0
+            fi
+            if [ "$STATE" = "FAILED" ]; then
+              echo "::error::Chrome Web Store async upload failed"
+              exit 1
+            fi
+
+            echo "Upload still $STATE; waiting before retry $attempt"
+            sleep 10
+          done
+
+          echo "::error::Timed out waiting for Chrome Web Store async upload"
+          exit 1
+
+      - name: Publish Chrome Web Store item
+        env:
+          ACCESS_TOKEN: ${{ steps.token.outputs.access_token }}
+          EXTENSION_ID: ${{ secrets.SECURITY_QUESTIONNAIRE_EXTENSION_ID }}
+          PUBLISHER_ID: ${{ secrets.CHROME_WEB_STORE_PUBLISHER_ID }}
+        run: |
+          RESPONSE=$(curl -fsS \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            -X POST \
+            -d '{"publishType":"DEFAULT_PUBLISH","blockOnWarnings":true}' \
+            "https://chromewebstore.googleapis.com/v2/publishers/$PUBLISHER_ID/items/$EXTENSION_ID:publish")
+
+          echo "$RESPONSE"
+
+      - name: Tag published extension version
+        env:
+          TAG_NAME: ${{ steps.version.outputs.tag_name }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG_NAME" -m "Security questionnaire extension v$VERSION"
+          git push origin "$TAG_NAME"

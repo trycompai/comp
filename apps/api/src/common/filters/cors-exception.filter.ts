@@ -5,7 +5,7 @@ import {
   HttpException,
 } from '@nestjs/common';
 import type { Response, Request } from 'express';
-import { isStaticTrustedOrigin } from '../../auth/auth.server';
+import { isStaticTrustedOriginForRequest } from '../../auth/origin-policy';
 
 @Catch(HttpException)
 export class CorsExceptionFilter implements ExceptionFilter {
@@ -21,7 +21,14 @@ export class CorsExceptionFilter implements ExceptionFilter {
     // Set CORS headers on error responses for trusted origins.
     // Uses the sync check only — the main CORS middleware already validated
     // custom domains on the way in, so this is a best-effort fallback.
-    if (origin && isStaticTrustedOrigin(origin)) {
+    if (
+      origin &&
+      isStaticTrustedOriginForRequest({
+        method: request.method,
+        origin,
+        path: request.path,
+      })
+    ) {
       response.setHeader('Access-Control-Allow-Origin', origin);
       response.setHeader('Access-Control-Allow-Credentials', 'true');
       response.setHeader(

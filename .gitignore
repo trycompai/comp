@@ -85,6 +85,8 @@ playwright/.cache/
 debug-setup-page.png
 
 packages/*/dist
+apps/browser-extension/*/.wxt
+apps/browser-extension/*/dist
 
 # Generated Prisma Client
 **/src/db/generated/

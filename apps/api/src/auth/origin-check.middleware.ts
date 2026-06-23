@@ -1,5 +1,10 @@
 import type { Request, Response, NextFunction } from 'express';
 import { isTrustedOrigin } from './auth.server';
+import {
+  isChromeExtensionOrigin,
+  isCompExtensionOrigin,
+  isCompExtensionOriginAllowedForRequest,
+} from './origin-policy';
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
@@ -32,20 +37,41 @@ export function originCheckMiddleware(
   res: Response,
   next: NextFunction,
 ): void {
-  // Allow safe (read-only) methods
+  const origin = Array.isArray(req.headers.origin)
+    ? req.headers.origin[0]
+    : req.headers.origin;
+
+  // Chrome extension origins are intentionally route-scoped.
+  if (origin && isChromeExtensionOrigin(origin)) {
+    if (
+      isCompExtensionOrigin(origin) &&
+      isCompExtensionOriginAllowedForRequest({
+        method: req.method,
+        origin,
+        path: req.path,
+      })
+    ) {
+      return next();
+    }
+    res.status(403).json({
+      statusCode: 403,
+      message: 'Forbidden',
+    });
+    return;
+  }
+
+  // Allow safe (read-only) methods for regular browser origins.
   if (SAFE_METHODS.has(req.method)) {
     return next();
   }
 
-  // Allow exempt paths (webhooks, auth, etc.)
+  // Allow exempt paths (webhooks, auth, etc.) for non-extension origins.
   const isExempt = EXEMPT_PATH_PREFIXES.some((prefix) =>
     req.path.startsWith(prefix),
   );
   if (isExempt) {
     return next();
   }
-
-  const origin = req.headers['origin'];
 
   // No Origin header = not a browser request (API key, service token, curl, etc.)
   // These are authenticated via HybridAuthGuard, not cookies, so no CSRF risk.

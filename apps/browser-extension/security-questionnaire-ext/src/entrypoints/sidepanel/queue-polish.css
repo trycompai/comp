@@ -1,0 +1,95 @@
+.row {
+  border-left: 0;
+  border-radius: 0;
+  border-right: 0;
+}
+
+.row.generated,
+.row.generating,
+.row.approved,
+.row.inserted,
+.row.flagged {
+  background: #fff;
+}
+
+.row.generated,
+.row.generating {
+  border-color: #eee7d6;
+}
+
+.row.approved {
+  border-color: #dbe4f4;
+}
+
+.row.inserted {
+  border-color: #d7eadf;
+}
+
+.row.flagged {
+  border-color: #eadcdf;
+}
+
+.answer.flagged {
+  background: #fafafa;
+  border: 1px solid #dedede;
+  border-radius: 6px;
+  box-sizing: border-box;
+  color: #52525b;
+  display: grid;
+  gap: 6px;
+}
+
+.answer.flagged strong {
+  color: #8f1d2c;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0;
+  line-height: 14px;
+  text-transform: uppercase;
+}
+
+.answer.flagged span {
+  font-size: 12px;
+  line-height: 17px;
+}
+
+.conf.low {
+  background: #f4f4f5;
+  color: #8f1d2c;
+}
+
+.paste-mark {
+  border: 1.5px solid currentColor;
+  border-radius: 2px;
+  height: 12px;
+  position: relative;
+  width: 12px;
+}
+
+.paste-mark::before {
+  border-bottom: 1.5px solid currentColor;
+  border-right: 1.5px solid currentColor;
+  content: "";
+  height: 5px;
+  left: 3px;
+  position: absolute;
+  top: -4px;
+  transform: rotate(45deg);
+  width: 5px;
+}
+
+.paste-mark::after {
+  background: currentColor;
+  content: "";
+  height: 8px;
+  left: 6px;
+  position: absolute;
+  top: -5px;
+  width: 1.5px;
+}
+
+.paste-status {
+  background: var(--surface);
+  border-radius: 6px;
+  padding: 8px;
+}
