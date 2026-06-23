@@ -26,4 +26,12 @@ describe('browserbase upstream errors', () => {
       'Browserbase is temporarily unavailable. Please retry in a moment.',
     );
   });
+
+  it('appends the underlying cause when provided', () => {
+    const error = browserbaseUnavailableException('Premature close');
+
+    expect(error.message).toBe(
+      'Browserbase is temporarily unavailable. Please retry in a moment. (Premature close)',
+    );
+  });
 });
