@@ -177,4 +177,44 @@ describe('InternalIntegrationDebugService', () => {
       expect(runChecks).not.toHaveBeenCalled();
     });
   });
+
+  describe('testCandidateCode', () => {
+    it('resolves the org and delegates candidate code to the runner (no persistence, no live edit)', async () => {
+      mockedDb.integrationConnection.findUnique.mockResolvedValue({
+        organizationId: 'org_42',
+      });
+      const runCandidateCheck = jest.fn().mockResolvedValue({
+        results: [{ checkId: 'candidate', result: { findings: [], passingResults: [{ title: 'ok' }], logs: [] } }],
+        totalFindings: 0,
+        totalPassing: 1,
+        durationMs: 7,
+      });
+      const service = makeService({ runCandidateCheck });
+
+      const result = await service.testCandidateCode({
+        connectionId: 'icn_9',
+        code: 'ctx.pass({ title: "ok", resourceType: "app", resourceId: "x" });',
+        checkId: 'zoho_crm_employee_access',
+      });
+
+      expect(runCandidateCheck).toHaveBeenCalledWith({
+        connectionId: 'icn_9',
+        organizationId: 'org_42',
+        code: 'ctx.pass({ title: "ok", resourceType: "app", resourceId: "x" });',
+        checkId: 'zoho_crm_employee_access',
+      });
+      expect(result.totalPassing).toBe(1);
+    });
+
+    it('throws NotFound when the connection does not exist', async () => {
+      mockedDb.integrationConnection.findUnique.mockResolvedValue(null);
+      const runCandidateCheck = jest.fn();
+      const service = makeService({ runCandidateCheck });
+
+      await expect(
+        service.testCandidateCode({ connectionId: 'missing', code: 'x' }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      expect(runCandidateCheck).not.toHaveBeenCalled();
+    });
+  });
 });

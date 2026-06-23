@@ -249,4 +249,34 @@ export class InternalIntegrationDebugService {
       checkId,
     });
   }
+
+  /**
+   * Run CANDIDATE check code against this connection's real credentials on the
+   * real runtime, persisting nothing and never touching the live shared check.
+   * This is the safe way to validate a fix BEFORE applying it via
+   * `PATCH /internal/dynamic-integrations/:id/checks/:checkId`.
+   */
+  async testCandidateCode(params: {
+    connectionId: string;
+    code: string;
+    checkId?: string;
+  }): Promise<RunAllChecksResult> {
+    const { connectionId, code, checkId } = params;
+    const connection = await db.integrationConnection.findUnique({
+      where: { id: connectionId },
+      select: { organizationId: true },
+    });
+    if (!connection) {
+      throw new NotFoundException(`Connection ${connectionId} not found`);
+    }
+    this.logger.log(
+      `Internal candidate-code test for connection ${connectionId}${checkId ? ` (check: ${checkId})` : ''}`,
+    );
+    return this.runner.runCandidateCheck({
+      connectionId,
+      organizationId: connection.organizationId,
+      code,
+      checkId,
+    });
+  }
 }

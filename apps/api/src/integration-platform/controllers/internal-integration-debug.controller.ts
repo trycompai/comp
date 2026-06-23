@@ -8,11 +8,23 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiExcludeController } from '@nestjs/swagger';
-import { IsOptional, IsString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { InternalTokenGuard } from '../../auth/internal-token.guard';
 import { InternalIntegrationDebugService } from '../services/internal-integration-debug.service';
 
 class RunChecksBody {
+  @IsOptional()
+  @IsString()
+  checkId?: string;
+}
+
+class TestCandidateBody {
+  /** Candidate check code to run instead of the saved version. */
+  @IsString()
+  @IsNotEmpty()
+  code!: string;
+
+  /** Optional: the checkId this candidate is for (labelling only). */
   @IsOptional()
   @IsString()
   checkId?: string;
@@ -86,6 +98,24 @@ export class InternalIntegrationDebugController {
     return this.debugService.runConnectionChecks({
       connectionId,
       checkId: body?.checkId,
+    });
+  }
+
+  /**
+   * Run CANDIDATE check code against this connection's real credentials on the
+   * real runtime, returning findings + passing results + logs. Persists nothing
+   * and never touches the live shared check — the safe way to validate a fix
+   * BEFORE applying it via `PATCH /internal/dynamic-integrations/:id/checks/:checkId`.
+   */
+  @Post('connections/:connectionId/test')
+  async testCandidateCode(
+    @Param('connectionId') connectionId: string,
+    @Body() body: TestCandidateBody,
+  ) {
+    return this.debugService.testCandidateCode({
+      connectionId,
+      code: body.code,
+      checkId: body.checkId,
     });
   }
 }
