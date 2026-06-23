@@ -1,3 +1,22 @@
+# [3.88.0](https://github.com/trycompai/comp/compare/v3.87.3...v3.88.0) (2026-06-23)
+
+
+### Bug Fixes
+
+* **api:** add daily cron to refresh OAuth tokens expiring within 24h ([e3cdfa1](https://github.com/trycompai/comp/commit/e3cdfa106726e14d4975215d10166056f03c0a6c))
+* **api:** ensure only latest versions are considered in refresh-expiring-tokens-schedule ([7375005](https://github.com/trycompai/comp/commit/7375005f0bdb8bcc35b97555093323556791fb91))
+* **api:** fix mismatched field issue in refresh-expiring-tokens-schedule ([9d30b3e](https://github.com/trycompai/comp/commit/9d30b3e754f643c7381c6e7c6716217a25382935))
+* **attachments:** accept PDFs with a leading BOM/whitespace before %PDF ([6493443](https://github.com/trycompai/comp/commit/64934434006d0d871cbe230cd1feefd37fecc954))
+* **browserbase:** attach Stagehand over CDP to avoid premature-close on resume ([a1cec9b](https://github.com/trycompai/comp/commit/a1cec9bbd9fbbfab99a3a10b0c18fdd926b978a2)), closes [#3230](https://github.com/trycompai/comp/issues/3230)
+* **browserbase:** surface the underlying cause on exhausted retries ([acdfd1e](https://github.com/trycompai/comp/commit/acdfd1ea2bb3032cdc3929e739cf7a6f61583176))
+* **evidence:** include custom roles in assignee visibility and filters ([ba85a4e](https://github.com/trycompai/comp/commit/ba85a4e622eb338fffc07d423a2245a9329a4bcc))
+* **tasks:** show custom roles in assignee filter and task overview ([87f0b55](https://github.com/trycompai/comp/commit/87f0b551536cdc504e867e9b746131a65eb702cc))
+
+
+### Features
+
+* **framework-editor:** unified Finder-style frameworks list (FRAME-20 follow-up) ([0084c43](https://github.com/trycompai/comp/commit/0084c438a853cee0e2a6c9a829ddbea0c2803c24))
+
 ## [3.87.3](https://github.com/trycompai/comp/compare/v3.87.2...v3.87.3) (2026-06-22)
 
 
