@@ -605,6 +605,89 @@ describe('OAuthController', () => {
       fetchSpy.mockRestore();
     });
 
+    it('persists the QuickBooks realmId from the callback into connection.variables (merging with existing) so checks target the company without manual entry', async () => {
+      const futureDate = new Date(Date.now() + 600000);
+      mockOAuthStateRepository.findByState.mockResolvedValue({
+        state: 'valid_qbo_state',
+        providerSlug: 'quickbooks-online',
+        organizationId: 'org_1',
+        userId: 'user_1',
+        codeVerifier: null,
+        redirectUrl: null,
+        expiresAt: futureDate,
+      });
+      mockedGetManifest.mockReturnValue({
+        id: 'quickbooks-online',
+        name: 'QuickBooks Online',
+        category: 'Productivity',
+        auth: {
+          type: 'oauth2',
+          config: {
+            authorizeUrl: 'https://appcenter.intuit.com/connect/oauth2',
+            tokenUrl:
+              'https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer',
+            clientAuthMethod: 'body',
+          },
+        },
+        capabilities: ['checks'],
+        isActive: true,
+      } as never);
+      mockOAuthCredentialsService.getCredentials.mockResolvedValue({
+        clientId: 'client_123',
+        clientSecret: 'secret_456',
+        scopes: ['com.intuit.quickbooks.accounting'],
+        source: 'platform',
+      });
+      mockProviderRepository.findBySlug.mockResolvedValue({ id: 'provider_1' });
+      // Existing connection already has an unrelated variable that must be
+      // preserved when the realmId is merged in.
+      mockConnectionRepository.findByProviderAndOrg.mockResolvedValue({
+        id: 'conn_1',
+        metadata: {},
+        variables: { existingVar: 'keep' },
+        lastSyncAt: null,
+      });
+      mockConnectionRepository.update.mockResolvedValue({
+        id: 'conn_1',
+        metadata: {},
+        variables: { existingVar: 'keep', realm_id: '9341452148944049' },
+        lastSyncAt: null,
+      });
+      mockConnectionService.activateConnection.mockResolvedValue({
+        id: 'conn_1',
+      });
+
+      const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ access_token: 'access_123' }),
+        text: () => Promise.resolve(''),
+      } as unknown as Response);
+
+      await controller.oauthCallback(
+        {
+          code: 'auth_code',
+          state: 'valid_qbo_state',
+          realmId: '9341452148944049',
+        },
+        mockRequest,
+        mockResponse,
+      );
+
+      // The realmId from the callback must be persisted under the `realm_id`
+      // variable the check reads (ctx.variables.realm_id), merged with any
+      // value the user had already configured.
+      expect(mockConnectionRepository.update).toHaveBeenCalledWith('conn_1', {
+        variables: { existingVar: 'keep', realm_id: '9341452148944049' },
+      });
+
+      const redirectUrl = (mockResponse.redirect as jest.Mock).mock.calls[0][0];
+      expect(redirectUrl).toContain('success=true');
+      expect(redirectUrl).toContain('provider=quickbooks-online');
+
+      fetchSpy.mockRestore();
+    });
+
     describe('session defense-in-depth', () => {
       const futureDate = new Date(Date.now() + 600000);
       const validState = {

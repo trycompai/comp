@@ -39,6 +39,11 @@ interface OAuthCallbackQuery {
   state: string;
   error?: string;
   error_description?: string;
+  // QuickBooks Online appends the company's Realm ID (`?realmId=...`) to the
+  // OAuth callback. It is not part of the token response, so it must be read
+  // off the callback query and persisted, or the QBO checks have no company
+  // to target. Other providers never send this param.
+  realmId?: string;
 }
 
 @Controller({ path: 'integrations/oauth', version: '1' })
@@ -236,7 +241,7 @@ export class OAuthController {
     @Req() req: Request,
     @Res() res: Response,
   ): Promise<void> {
-    const { code, state, error, error_description } = query;
+    const { code, state, error, error_description, realmId } = query;
 
     // Handle OAuth errors
     if (error) {
@@ -378,6 +383,26 @@ export class OAuthController {
       }
 
       await this.connectionService.activateConnection(connection.id);
+
+      // QuickBooks Online returns the company's Realm ID as a callback query
+      // param (`?realmId=...`) rather than in the token response. Persist it
+      // onto the connection under the `realm_id` variable the qbo_employee_access
+      // check reads (`ctx.variables.realm_id`, used to build
+      // `/v3/company/{{variables.realm_id}}/query`) so the check passes
+      // automatically instead of forcing the user to paste the Company ID by
+      // hand. Scoped to QBO (no other provider sends realmId); a reconnect
+      // refreshes the value, and connections that set it manually keep working.
+      if (oauthState.providerSlug === 'quickbooks-online' && realmId) {
+        const existingVariables =
+          connection.variables &&
+          typeof connection.variables === 'object' &&
+          !Array.isArray(connection.variables)
+            ? (connection.variables as Record<string, unknown>)
+            : {};
+        connection = await this.connectionRepository.update(connection.id, {
+          variables: { ...existingVariables, realm_id: realmId },
+        });
+      }
 
       // Provider-specific post-OAuth actions
       if (oauthState.providerSlug === 'rippling') {
