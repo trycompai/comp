@@ -44,7 +44,13 @@ export function FindingContextSection({
   const { contextByIssueId, isSaving, saveContext, removeContext } =
     usePentestFindingContexts(orgId, targetUrl);
   const existing = contextByIssueId.get(issue.id);
-  const resolvedRunId = issue.runId ?? runId ?? null;
+  // Save against the pentest run id the page is built on (run.id), NOT
+  // issue.runId. Maced's Issue.runId is a per-issue run id with no
+  // ownership-marker row, so the API's upsert → getReport →
+  // assertRunOwnership would 404 (surfaced as a bare "HTTP 404:" toast).
+  // The page run id is the one we fetched the report/issues with and that
+  // the securityPenetrationTestRun marker is keyed on.
+  const resolvedRunId = runId ?? null;
 
   const form = useForm<FindingContextForm>({
     resolver: zodResolver(findingContextSchema),
