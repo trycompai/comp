@@ -18,6 +18,25 @@ describe('validateFileContent', () => {
     ).not.toThrow();
   });
 
+  it('should accept a PDF with a leading BOM/whitespace before %PDF', () => {
+    // Some exporters/vendors (e.g. GoodHire) prepend a UTF-8 BOM or whitespace;
+    // the %PDF header is still within the first 1024 bytes, so it must be accepted.
+    const pdfBuffer = Buffer.concat([
+      Buffer.from([0xef, 0xbb, 0xbf]), // UTF-8 BOM
+      Buffer.from('\n  %PDF-1.7 rest of document'),
+    ]);
+    expect(() =>
+      validateFileContent(pdfBuffer, 'application/pdf', 'report.pdf'),
+    ).not.toThrow();
+  });
+
+  it('should reject a file declared as PDF with no %PDF header', () => {
+    const notPdf = Buffer.from('this is plainly not a pdf at all');
+    expect(() =>
+      validateFileContent(notPdf, 'application/pdf', 'fake.pdf'),
+    ).toThrow();
+  });
+
   it('should accept a valid JPEG file', () => {
     const jpegBuffer = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10]);
     expect(() =>

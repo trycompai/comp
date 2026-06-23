@@ -4,12 +4,13 @@ import PageLayout from '@/app/components/PageLayout';
 import type { FrameworkEditorFramework, FrameworkEditorFrameworkFamilyStatus } from '@/db';
 import { Button } from '@trycompai/ui/button';
 import { Input } from '@trycompai/ui/input';
-import { FolderPlus, Plus, Upload } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { FolderPlus, MoveRight, Plus, Upload } from 'lucide-react';
+import { useCallback, useMemo, useState } from 'react';
 import { CreateFrameworkDialog } from './components/CreateFrameworkDialog';
 import { DeleteFrameworkFamilyDialog } from './components/DeleteFrameworkFamilyDialog';
 import { FrameworkFamilyDialog } from './components/FrameworkFamilyDialog';
-import { FrameworkFamilySection } from './components/FrameworkFamilySection';
+import { buildFrameworkTreeRows } from './components/frameworks-tree';
+import { FrameworksTreeTable } from './components/FrameworksTreeTable';
 import { ImportFrameworkDialog } from './components/ImportFrameworkDialog';
 import { MoveFrameworkDialog } from './components/MoveFrameworkDialog';
 
@@ -41,12 +42,7 @@ export function FrameworksClientPage({
   const [search, setSearch] = useState('');
   const [isCreateFrameworkOpen, setIsCreateFrameworkOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
-  // Move is scoped to the section it's opened from ("frameworks in the current
-  // family", per FRAME-20) — these are the source frameworks for the dialog.
-  const [moveDialog, setMoveDialog] = useState<{
-    open: boolean;
-    frameworks: FrameworkWithCounts[];
-  }>({ open: false, frameworks: [] });
+  const [isMoveOpen, setIsMoveOpen] = useState(false);
   const [familyDialog, setFamilyDialog] = useState<{
     open: boolean;
     family: FrameworkFamilyWithCount | null;
@@ -55,19 +51,28 @@ export function FrameworksClientPage({
     open: boolean;
     family: FrameworkFamilyWithCount | null;
   }>({ open: false, family: null });
+  // Families default to expanded so the whole tree is visible (Finder-style).
+  const [expanded, setExpanded] = useState<Set<string>>(
+    () => new Set(initialFamilies.map((f) => f.id)),
+  );
+
+  const toggle = useCallback((familyId: string) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(familyId)) next.delete(familyId);
+      else next.add(familyId);
+      return next;
+    });
+  }, []);
 
   const searching = search.trim().length > 0;
 
-  const filtered = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    if (!term) return initialFrameworks;
-    return initialFrameworks.filter((fw) => fw.name.toLowerCase().includes(term));
-  }, [initialFrameworks, search]);
-
   const { byFamilyId, ungrouped } = useMemo(() => {
+    const term = search.trim().toLowerCase();
     const map = new Map<string, FrameworkWithCounts[]>();
     const root: FrameworkWithCounts[] = [];
-    for (const fw of filtered) {
+    for (const fw of initialFrameworks) {
+      if (term && !fw.name.toLowerCase().includes(term)) continue;
       if (fw.familyId) {
         const arr = map.get(fw.familyId);
         if (arr) arr.push(fw);
@@ -77,24 +82,22 @@ export function FrameworksClientPage({
       }
     }
     return { byFamilyId: map, ungrouped: root };
-  }, [filtered]);
+  }, [initialFrameworks, search]);
 
-  const sortedFamilies = useMemo(
-    () => [...initialFamilies].sort((a, b) => a.name.localeCompare(b.name)),
-    [initialFamilies],
+  // Unified row model: families (folders) and ungrouped frameworks (files) are
+  // intermixed alphabetically at the root; a family's frameworks appear indented
+  // beneath it when expanded.
+  const rows = useMemo(
+    () =>
+      buildFrameworkTreeRows({
+        families: initialFamilies,
+        frameworksByFamilyId: byFamilyId,
+        ungrouped,
+        expanded,
+        searching,
+      }),
+    [initialFamilies, byFamilyId, ungrouped, expanded, searching],
   );
-
-  // True (unfiltered) count of ungrouped frameworks — drives the label and the
-  // move scope regardless of the search filter.
-  const ungroupedTotal = useMemo(
-    () => initialFrameworks.filter((fw) => !fw.familyId).length,
-    [initialFrameworks],
-  );
-
-  // The full (unfiltered) framework list for a given family (null = ungrouped),
-  // used as the move dialog's scoped source.
-  const frameworksOf = (familyId: string | null) =>
-    initialFrameworks.filter((fw) => (fw.familyId ?? null) === familyId);
 
   return (
     <PageLayout breadcrumbs={[{ label: 'Frameworks', href: '/frameworks' }]}>
@@ -111,6 +114,10 @@ export function FrameworksClientPage({
               <Upload className="mr-2 h-4 w-4" />
               Import
             </Button>
+            <Button variant="outline" onClick={() => setIsMoveOpen(true)}>
+              <MoveRight className="mr-2 h-4 w-4" />
+              Move Framework
+            </Button>
             <Button
               variant="outline"
               onClick={() => setFamilyDialog({ open: true, family: null })}
@@ -125,35 +132,12 @@ export function FrameworksClientPage({
           </div>
         </div>
 
-        <div className="flex flex-col gap-3">
-          {sortedFamilies.map((family) => {
-            const frameworks = byFamilyId.get(family.id) ?? [];
-            // While searching, hide families with no matching frameworks.
-            if (searching && frameworks.length === 0) return null;
-            return (
-              <FrameworkFamilySection
-                key={family.id}
-                title={family.name}
-                status={family.status}
-                count={family.frameworksCount}
-                frameworks={frameworks}
-                onMove={() =>
-                  setMoveDialog({ open: true, frameworks: frameworksOf(family.id) })
-                }
-                onEdit={() => setFamilyDialog({ open: true, family })}
-                onDelete={() => setDeleteDialog({ open: true, family })}
-              />
-            );
-          })}
-          {(!searching || ungrouped.length > 0) && (
-            <FrameworkFamilySection
-              title="Ungrouped"
-              count={ungroupedTotal}
-              frameworks={ungrouped}
-              onMove={() => setMoveDialog({ open: true, frameworks: frameworksOf(null) })}
-            />
-          )}
-        </div>
+        <FrameworksTreeTable
+          rows={rows}
+          onToggle={toggle}
+          onEditFamily={(family) => setFamilyDialog({ open: true, family })}
+          onDeleteFamily={(family) => setDeleteDialog({ open: true, family })}
+        />
       </div>
 
       <CreateFrameworkDialog
@@ -163,9 +147,9 @@ export function FrameworksClientPage({
       />
       <ImportFrameworkDialog isOpen={isImportOpen} onOpenChange={setIsImportOpen} />
       <MoveFrameworkDialog
-        isOpen={moveDialog.open}
-        onOpenChange={(open) => setMoveDialog((s) => ({ ...s, open }))}
-        frameworks={moveDialog.frameworks}
+        isOpen={isMoveOpen}
+        onOpenChange={setIsMoveOpen}
+        frameworks={initialFrameworks}
         families={initialFamilies}
       />
       <FrameworkFamilyDialog
