@@ -343,6 +343,8 @@ export function registerDynamicTools(
       if (def.args) {
         const jsonSchema = z.toJSONSchema(z.object(def.args), {
           target: "draft-2020-12",
+          io: "input",
+          unrepresentable: "any",
         });
         schemaText += JSON.stringify(jsonSchema, null, 2);
       } else {

@@ -9405,6 +9405,66 @@ paths:
           og:description: "Enable/disable a custom framework on the trust portal and set its status in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs."
       x-speakeasy-mcp:
         name: "update-custom-framework"
+  /v1/trust-portal/custom-frameworks/badge:
+    post:
+      description: "Stores a PNG/JPEG/WebP badge (max 256KB) in the organization assets bucket. Does not change the framework's portal visibility."
+      operationId: "TrustPortalController_uploadCustomFrameworkBadge_v1"
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadCustomFrameworkBadgeDto"
+      responses:
+        "201":
+          description: "Badge uploaded successfully"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomFrameworkBadgeResponseDto"
+      security:
+        - apikey: []
+      summary: "Upload or replace a custom framework's Trust Portal badge image"
+      tags:
+        - "Trust Portal"
+      x-mint:
+        metadata:
+          title: "Upload or replace a custom framework's Trust | Comp AI API"
+          sidebarTitle: "Upload or replace a custom framework's Trust Portal badge image"
+          description: "Stores a PNG/JPEG/WebP badge (max 256KB) in the organization assets bucket. Does not change the framework's portal visibility."
+          og:title: "Upload or replace a custom framework's Trust | Comp AI API"
+          og:description: "Stores a PNG/JPEG/WebP badge (max 256KB) in the organization assets bucket. Does not change the framework's portal visibility."
+      x-speakeasy-mcp:
+        name: "upload-custom-framework-badge"
+    delete:
+      operationId: "TrustPortalController_removeCustomFrameworkBadge_v1"
+      parameters:
+        - name: "customFrameworkId"
+          required: true
+          in: "query"
+          description: "Org-authored custom framework ID whose badge to remove"
+          schema:
+            example: "cfrm_6914cd0e16e4c7dccbb54426"
+            type: "string"
+      responses:
+        "200":
+          description: ""
+      security:
+        - apikey: []
+      summary: "Remove a custom framework's Trust Portal badge image"
+      tags:
+        - "Trust Portal"
+      description: "Remove a custom framework's Trust Portal badge image in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources, documents, links, and vendor disclosures."
+      x-mint:
+        metadata:
+          title: "Remove a custom framework's Trust Portal | Comp AI API"
+          sidebarTitle: "Remove a custom framework's Trust Portal badge image"
+          description: "Remove a custom framework's Trust Portal badge image in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance."
+          og:title: "Remove a custom framework's Trust Portal | Comp AI API"
+          og:description: "Remove a custom framework's Trust Portal badge image in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance."
+      x-speakeasy-mcp:
+        name: "remove-custom-framework-badge"
   /v1/trust-portal/overview:
     post:
       operationId: "TrustPortalController_updateOverview_v1"
@@ -11954,6 +12014,638 @@ paths:
           og:description: "Export the approved Statement of Applicability document for ISO 27001 auditors, customer reviews, and internal records."
       x-speakeasy-mcp:
         name: "export-document"
+  /v1/isms/ensure-setup:
+    post:
+      operationId: "IsmsController_ensureSetup_v1"
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EnsureIsmsSetupDto"
+      responses:
+        "200":
+          description: "Setup ensured"
+      security:
+        - apikey: []
+      summary: "Ensure ISMS foundational documents exist"
+      tags:
+        - "ISMS"
+      description: "Ensure ISMS foundational documents exist in Comp AI."
+      x-mint:
+        metadata:
+          title: "Ensure ISMS foundational documents exist | Comp AI API"
+          sidebarTitle: "Ensure ISMS foundational documents exist"
+          description: "Ensure ISMS foundational documents exist in Comp AI."
+          og:title: "Ensure ISMS foundational documents exist | Comp AI API"
+          og:description: "Ensure ISMS foundational documents exist in Comp AI."
+      x-speakeasy-mcp:
+        name: "isms-ensure-setup"
+  /v1/isms/documents/{id}:
+    get:
+      operationId: "IsmsController_getDocument_v1"
+      parameters:
+        - name: "id"
+          required: true
+          in: "path"
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "ISMS document"
+      security:
+        - apikey: []
+      summary: "Get an ISMS document with its latest version"
+      tags:
+        - "ISMS"
+      description: "Get an ISMS document with its latest version in Comp AI."
+      x-mint:
+        metadata:
+          title: "Get an ISMS document with its latest version | Comp AI API"
+          sidebarTitle: "Get an ISMS document with its latest version"
+          description: "Get an ISMS document with its latest version in Comp AI."
+          og:title: "Get an ISMS document with its latest version | Comp AI API"
+          og:description: "Get an ISMS document with its latest version in Comp AI."
+      x-speakeasy-mcp:
+        name: "get-document"
+  /v1/isms/documents/{id}/controls:
+    post:
+      operationId: "IsmsController_addControls_v1"
+      parameters:
+        - name: "id"
+          required: true
+          in: "path"
+          schema:
+            type: "string"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LinkIsmsControlsDto"
+      responses:
+        "200":
+          description: "Controls linked"
+      security:
+        - apikey: []
+      summary: "Map organization controls to an ISMS document"
+      tags:
+        - "ISMS"
+      description: "Map organization controls to an ISMS document in Comp AI."
+      x-mint:
+        metadata:
+          title: "Map organization controls to an ISMS document | Comp AI API"
+          sidebarTitle: "Map organization controls to an ISMS document"
+          description: "Map organization controls to an ISMS document in Comp AI."
+          og:title: "Map organization controls to an ISMS document | Comp AI API"
+          og:description: "Map organization controls to an ISMS document in Comp AI."
+      x-speakeasy-mcp:
+        name: "add-controls"
+  /v1/isms/documents/{id}/controls/{controlId}:
+    delete:
+      operationId: "IsmsController_removeControl_v1"
+      parameters:
+        - name: "id"
+          required: true
+          in: "path"
+          schema:
+            type: "string"
+        - name: "controlId"
+          required: true
+          in: "path"
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "Control unlinked"
+      security:
+        - apikey: []
+      summary: "Remove a control mapping from an ISMS document"
+      tags:
+        - "ISMS"
+      description: "Remove a control mapping from an ISMS document in Comp AI."
+      x-mint:
+        metadata:
+          title: "Remove a control mapping from an ISMS document | Comp AI API"
+          sidebarTitle: "Remove a control mapping from an ISMS document"
+          description: "Remove a control mapping from an ISMS document in Comp AI."
+          og:title: "Remove a control mapping from an ISMS document | Comp AI API"
+          og:description: "Remove a control mapping from an ISMS document in Comp AI."
+      x-speakeasy-mcp:
+        name: "remove-control"
+  /v1/isms/documents/{id}/generate:
+    post:
+      operationId: "IsmsController_generate_v1"
+      parameters:
+        - name: "id"
+          required: true
+          in: "path"
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "Document with derived issues"
+      security:
+        - apikey: []
+      summary: "Derive Context-of-the-Organization issues"
+      tags:
+        - "ISMS"
+      description: "Derive Context-of-the-Organization issues in Comp AI."
+      x-mint:
+        metadata:
+          title: "Derive Context-of-the-Organization issues | Comp AI API"
+          sidebarTitle: "Derive Context-of-the-Organization issues"
+          description: "Derive Context-of-the-Organization issues in Comp AI."
+          og:title: "Derive Context-of-the-Organization issues | Comp AI API"
+          og:description: "Derive Context-of-the-Organization issues in Comp AI."
+      x-speakeasy-mcp:
+        name: "generate"
+  /v1/isms/documents/{id}/submit-for-approval:
+    post:
+      operationId: "IsmsController_submitForApproval_v1"
+      parameters:
+        - name: "id"
+          required: true
+          in: "path"
+          schema:
+            type: "string"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitIsmsForApprovalDto"
+      responses:
+        "200":
+          description: "Document submitted for approval"
+      security:
+        - apikey: []
+      summary: "Submit an ISMS document for approval"
+      tags:
+        - "ISMS"
+      description: "Submit an ISMS document for approval in Comp AI."
+      x-mint:
+        metadata:
+          title: "Submit an ISMS document for approval | Comp AI API"
+          sidebarTitle: "Submit an ISMS document for approval"
+          description: "Submit an ISMS document for approval in Comp AI."
+          og:title: "Submit an ISMS document for approval | Comp AI API"
+          og:description: "Submit an ISMS document for approval in Comp AI."
+      x-speakeasy-mcp:
+        name: "isms-submit-for-approval"
+  /v1/isms/documents/{id}/approve:
+    post:
+      operationId: "IsmsController_approve_v1"
+      parameters:
+        - name: "id"
+          required: true
+          in: "path"
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "Document approved"
+      security:
+        - apikey: []
+      summary: "Approve an ISMS document"
+      tags:
+        - "ISMS"
+      description: "Approve an ISMS document in Comp AI."
+      x-mint:
+        metadata:
+          title: "Approve an ISMS document | Comp AI API"
+          sidebarTitle: "Approve an ISMS document"
+          description: "Approve an ISMS document in Comp AI."
+          og:title: "Approve an ISMS document | Comp AI API"
+          og:description: "Approve an ISMS document in Comp AI."
+      x-speakeasy-mcp:
+        name: "approve"
+  /v1/isms/documents/{id}/decline:
+    post:
+      operationId: "IsmsController_decline_v1"
+      parameters:
+        - name: "id"
+          required: true
+          in: "path"
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "Document declined"
+      security:
+        - apikey: []
+      summary: "Decline an ISMS document"
+      tags:
+        - "ISMS"
+      description: "Decline an ISMS document in Comp AI."
+      x-mint:
+        metadata:
+          title: "Decline an ISMS document | Comp AI API"
+          sidebarTitle: "Decline an ISMS document"
+          description: "Decline an ISMS document in Comp AI."
+          og:title: "Decline an ISMS document | Comp AI API"
+          og:description: "Decline an ISMS document in Comp AI."
+      x-speakeasy-mcp:
+        name: "decline"
+  /v1/isms/documents/{id}/drift:
+    get:
+      operationId: "IsmsController_drift_v1"
+      parameters:
+        - name: "id"
+          required: true
+          in: "path"
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "Drift status"
+      security:
+        - apikey: []
+      summary: "Detect drift against the approved snapshot"
+      tags:
+        - "ISMS"
+      description: "Detect drift against the approved snapshot in Comp AI."
+      x-mint:
+        metadata:
+          title: "Detect drift against the approved snapshot | Comp AI API"
+          sidebarTitle: "Detect drift against the approved snapshot"
+          description: "Detect drift against the approved snapshot in Comp AI."
+          og:title: "Detect drift against the approved snapshot | Comp AI API"
+          og:description: "Detect drift against the approved snapshot in Comp AI."
+      x-speakeasy-mcp:
+        name: "drift"
+  /v1/isms/documents/{id}/export:
+    post:
+      operationId: "IsmsController_exportDocument_v1"
+      parameters:
+        - name: "id"
+          required: true
+          in: "path"
+          schema:
+            type: "string"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExportIsmsDocumentDto"
+      responses:
+        "200":
+          description: "Rendered document"
+      security:
+        - apikey: []
+      summary: "Export an ISMS document as PDF or DOCX"
+      tags:
+        - "ISMS"
+      description: "Export an ISMS document as PDF or DOCX in Comp AI."
+      x-mint:
+        metadata:
+          title: "Export an ISMS document as PDF or DOCX | Comp AI API"
+          sidebarTitle: "Export an ISMS document as PDF or DOCX"
+          description: "Export an ISMS document as PDF or DOCX in Comp AI."
+          og:title: "Export an ISMS document as PDF or DOCX | Comp AI API"
+          og:description: "Export an ISMS document as PDF or DOCX in Comp AI."
+      x-speakeasy-mcp:
+        name: "isms-export-document"
+  /v1/isms/documents/{id}/registers/{register}:
+    post:
+      operationId: "IsmsRegistersController_createRow_v1"
+      parameters:
+        - name: "id"
+          required: true
+          in: "path"
+          schema:
+            type: "string"
+        - name: "register"
+          required: true
+          in: "path"
+          schema:
+            type: "string"
+      requestBody:
+        required: true
+        description: "Register row fields (per-register; validated at runtime by zod)"
+        content:
+          application/json:
+            schema:
+              type: "object"
+              properties:
+                kind:
+                  type: "string"
+                  enum:
+                    - "internal"
+                    - "external"
+                category:
+                  type: "string"
+                description:
+                  type: "string"
+                effect:
+                  type: "string"
+                name:
+                  type: "string"
+                needsExpectations:
+                  type: "string"
+                interestedPartyId:
+                  type: "string"
+                partyName:
+                  type: "string"
+                requirement:
+                  type: "string"
+                treatment:
+                  type: "string"
+                objective:
+                  type: "string"
+                target:
+                  type: "string"
+                ownerMemberId:
+                  type: "string"
+                cadence:
+                  type: "string"
+                plan:
+                  type: "string"
+                measurementMethod:
+                  type: "string"
+                status:
+                  type: "string"
+                  enum:
+                    - "not_started"
+                    - "on_track"
+                    - "at_risk"
+                    - "met"
+                position:
+                  type: "integer"
+                  minimum: 0
+      responses:
+        "200":
+          description: "Register row created"
+      security:
+        - apikey: []
+      summary: "Create a row in an ISMS register"
+      tags:
+        - "ISMS"
+      description: "Create a row in an ISMS register in Comp AI."
+      x-mint:
+        metadata:
+          title: "Create a row in an ISMS register | Comp AI API"
+          sidebarTitle: "Create a row in an ISMS register"
+          description: "Create a row in an ISMS register in Comp AI."
+          og:title: "Create a row in an ISMS register | Comp AI API"
+          og:description: "Create a row in an ISMS register in Comp AI."
+      x-speakeasy-mcp:
+        name: "create-row"
+  /v1/isms/registers/{register}/{rowId}:
+    patch:
+      operationId: "IsmsRegistersController_updateRow_v1"
+      parameters:
+        - name: "register"
+          required: true
+          in: "path"
+          schema:
+            type: "string"
+        - name: "rowId"
+          required: true
+          in: "path"
+          schema:
+            type: "string"
+      requestBody:
+        required: true
+        description: "Register row fields (per-register; validated at runtime by zod)"
+        content:
+          application/json:
+            schema:
+              type: "object"
+              properties:
+                kind:
+                  type: "string"
+                  enum:
+                    - "internal"
+                    - "external"
+                category:
+                  type: "string"
+                description:
+                  type: "string"
+                effect:
+                  type: "string"
+                name:
+                  type: "string"
+                needsExpectations:
+                  type: "string"
+                interestedPartyId:
+                  type: "string"
+                partyName:
+                  type: "string"
+                requirement:
+                  type: "string"
+                treatment:
+                  type: "string"
+                objective:
+                  type: "string"
+                target:
+                  type: "string"
+                ownerMemberId:
+                  type: "string"
+                cadence:
+                  type: "string"
+                plan:
+                  type: "string"
+                measurementMethod:
+                  type: "string"
+                status:
+                  type: "string"
+                  enum:
+                    - "not_started"
+                    - "on_track"
+                    - "at_risk"
+                    - "met"
+                position:
+                  type: "integer"
+                  minimum: 0
+      responses:
+        "200":
+          description: "Register row updated"
+      security:
+        - apikey: []
+      summary: "Update a row in an ISMS register"
+      tags:
+        - "ISMS"
+      description: "Update a row in an ISMS register in Comp AI."
+      x-mint:
+        metadata:
+          title: "Update a row in an ISMS register | Comp AI API"
+          sidebarTitle: "Update a row in an ISMS register"
+          description: "Update a row in an ISMS register in Comp AI."
+          og:title: "Update a row in an ISMS register | Comp AI API"
+          og:description: "Update a row in an ISMS register in Comp AI."
+      x-speakeasy-mcp:
+        name: "update-row"
+    delete:
+      operationId: "IsmsRegistersController_deleteRow_v1"
+      parameters:
+        - name: "register"
+          required: true
+          in: "path"
+          schema:
+            type: "string"
+        - name: "rowId"
+          required: true
+          in: "path"
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "Register row deleted"
+      security:
+        - apikey: []
+      summary: "Delete a row in an ISMS register"
+      tags:
+        - "ISMS"
+      description: "Delete a row in an ISMS register in Comp AI."
+      x-mint:
+        metadata:
+          title: "Delete a row in an ISMS register | Comp AI API"
+          sidebarTitle: "Delete a row in an ISMS register"
+          description: "Delete a row in an ISMS register in Comp AI."
+          og:title: "Delete a row in an ISMS register | Comp AI API"
+          og:description: "Delete a row in an ISMS register in Comp AI."
+      x-speakeasy-mcp:
+        name: "delete-row"
+  /v1/isms/documents/{id}/narrative:
+    post:
+      operationId: "IsmsRegistersController_saveNarrative_v1"
+      parameters:
+        - name: "id"
+          required: true
+          in: "path"
+          schema:
+            type: "string"
+      requestBody:
+        required: true
+        description: "Singleton document narrative payload"
+        content:
+          application/json:
+            schema:
+              type: "object"
+              properties:
+                narrative:
+                  type: "object"
+                  description: "Per-type narrative object (e.g. ISMS scope or leadership commitment), validated at runtime by zod"
+                  additionalProperties: true
+              required:
+                - "narrative"
+      responses:
+        "200":
+          description: "Narrative saved"
+      security:
+        - apikey: []
+      summary: "Save a singleton document narrative"
+      tags:
+        - "ISMS"
+      description: "Save a singleton document narrative in Comp AI."
+      x-mint:
+        metadata:
+          title: "Save a singleton document narrative | Comp AI API"
+          sidebarTitle: "Save a singleton document narrative"
+          description: "Save a singleton document narrative in Comp AI."
+          og:title: "Save a singleton document narrative | Comp AI API"
+          og:description: "Save a singleton document narrative in Comp AI."
+      x-speakeasy-mcp:
+        name: "save-narrative"
+  /v1/isms/profile:
+    get:
+      operationId: "IsmsProfileController_getProfile_v1"
+      parameters:
+        - name: "frameworkId"
+          required: true
+          in: "query"
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "Wizard profile, defaults and member options"
+      security:
+        - apikey: []
+      summary: "Get the ISMS wizard profile, defaults and members"
+      tags:
+        - "ISMS"
+      description: "Get the ISMS wizard profile, defaults and members in Comp AI."
+      x-mint:
+        metadata:
+          title: "Get the ISMS wizard profile, defaults and | Comp AI API"
+          sidebarTitle: "Get the ISMS wizard profile, defaults and members"
+          description: "Get the ISMS wizard profile, defaults and members in Comp AI."
+          og:title: "Get the ISMS wizard profile, defaults and | Comp AI API"
+          og:description: "Get the ISMS wizard profile, defaults and members in Comp AI."
+      x-speakeasy-mcp:
+        name: "get-profile"
+    post:
+      operationId: "IsmsProfileController_saveProfile_v1"
+      parameters: []
+      requestBody:
+        required: true
+        description: "Partial ISMS wizard answers (validated at runtime by zod)"
+        content:
+          application/json:
+            schema:
+              type: "object"
+              properties:
+                frameworkId:
+                  type: "string"
+                answers:
+                  type: "object"
+                  description: "Deeply-partial wizard answers (any subset of the wizard steps)"
+                  additionalProperties: true
+                complete:
+                  type: "boolean"
+                  description: "Whether the wizard is being finalized"
+              required:
+                - "frameworkId"
+                - "answers"
+      responses:
+        "200":
+          description: "Saved profile"
+      security:
+        - apikey: []
+      summary: "Save (partial) ISMS wizard answers"
+      tags:
+        - "ISMS"
+      description: "Save (partial) ISMS wizard answers in Comp AI."
+      x-mint:
+        metadata:
+          title: "Save (partial) ISMS wizard answers | Comp AI API"
+          sidebarTitle: "Save (partial) ISMS wizard answers"
+          description: "Save (partial) ISMS wizard answers in Comp AI."
+          og:title: "Save (partial) ISMS wizard answers | Comp AI API"
+          og:description: "Save (partial) ISMS wizard answers in Comp AI."
+      x-speakeasy-mcp:
+        name: "save-profile"
+  /v1/isms/generate-all:
+    post:
+      operationId: "IsmsProfileController_generateAll_v1"
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateAllDto"
+      responses:
+        "200":
+          description: "Regenerated ISMS documents"
+      security:
+        - apikey: []
+      summary: "Ensure and regenerate all ISMS documents"
+      tags:
+        - "ISMS"
+      description: "Ensure and regenerate all ISMS documents in Comp AI."
+      x-mint:
+        metadata:
+          title: "Ensure and regenerate all ISMS documents | Comp AI API"
+          sidebarTitle: "Ensure and regenerate all ISMS documents"
+          description: "Ensure and regenerate all ISMS documents in Comp AI."
+          og:title: "Ensure and regenerate all ISMS documents | Comp AI API"
+          og:description: "Ensure and regenerate all ISMS documents in Comp AI."
+      x-speakeasy-mcp:
+        name: "generate-all"
   /v1/integrations/connections/providers:
     get:
       operationId: "ConnectionsController_listProviders_v1"
@@ -15481,6 +16173,11 @@ paths:
           schema:
             example: "ctl_abc123def456"
             type: "string"
+        - name: "frameworkInstanceId"
+          required: true
+          in: "query"
+          schema:
+            type: "string"
         - name: "formType"
           required: true
           in: "path"
@@ -15500,11 +16197,6 @@ paths:
               - "network_diagram"
               - "tabletop_exercise"
               - "account_types"
-            type: "string"
-        - name: "frameworkInstanceId"
-          required: true
-          in: "query"
-          schema:
             type: "string"
       responses:
         "200":
@@ -16366,6 +17058,7 @@ tags:
     description: "Create, review, update, and track audit findings, remediation activity, and finding history for an organization."
   - name: "Frameworks"
     description: "Manage SOC 2, ISO 27001, HIPAA, GDPR, and custom framework instances, requirements, scores, and sync history."
+  - name: "ISMS"
   - name: "Integrations"
     description: "Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
   - name: "Knowledge Base"
@@ -18808,6 +19501,40 @@ components:
             type: "string"
       required:
         - "emails"
+    UploadCustomFrameworkBadgeDto:
+      type: "object"
+      properties:
+        customFrameworkId:
+          type: "string"
+          description: "Org-authored custom framework ID the badge belongs to"
+          example: "cfrm_6914cd0e16e4c7dccbb54426"
+        fileName:
+          type: "string"
+          description: "Original file name (PNG, JPEG, or WebP)"
+          example: "acme-framework-badge.png"
+        fileType:
+          type: "string"
+          description: "MIME type of the image"
+          example: "image/png"
+        fileData:
+          type: "string"
+          description: "Base64 encoded image content (PNG/JPEG/WebP, max 256KB decoded)"
+      required:
+        - "customFrameworkId"
+        - "fileName"
+        - "fileType"
+        - "fileData"
+    CustomFrameworkBadgeResponseDto:
+      type: "object"
+      properties:
+        success:
+          type: "boolean"
+        badgeUrl:
+          type: "string"
+          description: "Signed URL to the uploaded badge for immediate display"
+      required:
+        - "success"
+        - "badgeUrl"
     CreateAccessRequestDto:
       type: "object"
       properties:
@@ -19192,6 +19919,58 @@ components:
     ExportSOADocumentDto:
       type: "object"
       properties: {}
+    EnsureIsmsSetupDto:
+      type: "object"
+      properties:
+        frameworkId:
+          type: "string"
+          description: "ID of the framework to scope the ISMS setup to"
+          example: "frk_abc123def456"
+      required:
+        - "frameworkId"
+    LinkIsmsControlsDto:
+      type: "object"
+      properties:
+        controlIds:
+          description: "IDs of the controls to link to the ISMS document"
+          example:
+            - "ctl_abc123def456"
+            - "ctl_ghi789jkl012"
+          type: "array"
+          items:
+            type: "string"
+      required:
+        - "controlIds"
+    SubmitIsmsForApprovalDto:
+      type: "object"
+      properties:
+        approverId:
+          type: "string"
+          description: "Member ID of the approver to submit the ISMS to"
+          example: "mem_abc123def456"
+      required:
+        - "approverId"
+    ExportIsmsDocumentDto:
+      type: "object"
+      properties:
+        format:
+          type: "string"
+          description: "File format to export the ISMS document as"
+          enum:
+            - "pdf"
+            - "docx"
+          example: "pdf"
+      required:
+        - "format"
+    GenerateAllDto:
+      type: "object"
+      properties:
+        frameworkId:
+          type: "string"
+          description: "ID of the framework to generate all ISMS profile documents for"
+          example: "frk_abc123def456"
+      required:
+        - "frameworkId"
     CreateConnectionDto:
       type: "object"
       properties:
