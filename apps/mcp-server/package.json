@@ -1,6 +1,6 @@
 {
   "name": "@trycompai/mcp-server",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "author": "Comp AI",
   "type": "module",
   "sideEffects": false,
@@ -27,7 +27,9 @@
     "zod": "^4.0.0"
   },
   "overrides": {
-    "@modelcontextprotocol/sdk": "1.26.0"
+    "@modelcontextprotocol/sdk": "1.26.0",
+    "hono": ">=4.12.25",
+    "fast-uri": ">=3.1.2"
   },
   "devDependencies": {
     "@anthropic-ai/mcpb": "^1.2.0",
