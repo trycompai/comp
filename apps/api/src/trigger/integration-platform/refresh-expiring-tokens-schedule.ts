@@ -66,13 +66,12 @@ export const refreshExpiringTokensSchedule = schedules.task({
     let skipped = 0;
 
     for (const connection of expiringConnections) {
-      const expiresAt = connection.credentials[0]?.expiresAt;
+      const expiresAt = connection.credentialVersions[0]?.expiresAt;
       const minutesUntilExpiry = expiresAt
         ? Math.round((expiresAt.getTime() - Date.now()) / 60_000)
         : null;
 
       logger.info(`Refreshing token for connection ${connection.id}`, {
-        provider: connection.providerSlug,
         organizationId: connection.organizationId,
         organizationName: connection.organization?.name,
         minutesUntilExpiry,
