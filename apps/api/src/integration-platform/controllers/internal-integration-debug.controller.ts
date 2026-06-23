@@ -125,4 +125,22 @@ export class InternalIntegrationDebugController {
       checkId: body.checkId,
     });
   }
+
+  /**
+   * Read recently captured OAuth callback errors (recorded by the frontend on a
+   * failed connect). Use this to diagnose "the integration won't connect" for
+   * any org/provider — the exact provider error is here instead of lost.
+   */
+  @Get('oauth-errors')
+  async listOAuthErrors(
+    @Query('organizationId') organizationId?: string,
+    @Query('providerSlug') providerSlug?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.debugService.listOAuthErrors({
+      organizationId,
+      providerSlug,
+      limit: parseOptionalInt(limit),
+    });
+  }
 }

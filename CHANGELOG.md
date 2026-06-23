@@ -1,3 +1,23 @@
+## [3.90.1](https://github.com/trycompai/comp/compare/v3.90.0...v3.90.1) (2026-06-23)
+
+
+### Bug Fixes
+
+* **pentest:** use run id instead of issue run id for context submission ([24353c4](https://github.com/trycompai/comp/commit/24353c4d8b9d4f00b8e7df33fefe3327433acf65))
+
+# [3.90.0](https://github.com/trycompai/comp/compare/v3.89.0...v3.90.0) (2026-06-23)
+
+
+### Bug Fixes
+
+* **framework-editor:** clean up resize listeners on unmount (FRAME-17 review) ([b75be84](https://github.com/trycompai/comp/commit/b75be840b38428b9d29062ae88910b1a679dfb96))
+
+
+### Features
+
+* **framework-editor:** resizable columns persisted to a cookie (FRAME-17) ([7756295](https://github.com/trycompai/comp/commit/77562957564200ae48d1b95eb45b10448750f02f))
+* **integration-platform:** capture + surface OAuth connect failures ([7d7792d](https://github.com/trycompai/comp/commit/7d7792d29bc481fa790708e3ccfe69a245f16f49))
+
 # [3.89.0](https://github.com/trycompai/comp/compare/v3.88.0...v3.89.0) (2026-06-23)
 
 

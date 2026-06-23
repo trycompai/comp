@@ -3,6 +3,7 @@ jest.mock('@db', () => ({
     integrationConnection: { findMany: jest.fn(), findUnique: jest.fn() },
     integrationCredentialVersion: { findUnique: jest.fn(), findMany: jest.fn() },
     integrationCheckRun: { findFirst: jest.fn(), findMany: jest.fn() },
+    integrationOAuthError: { findMany: jest.fn() },
   },
 }));
 
@@ -22,6 +23,7 @@ const mockedDb = db as unknown as {
   integrationConnection: { findMany: jest.Mock; findUnique: jest.Mock };
   integrationCredentialVersion: { findUnique: jest.Mock; findMany: jest.Mock };
   integrationCheckRun: { findFirst: jest.Mock; findMany: jest.Mock };
+  integrationOAuthError: { findMany: jest.Mock };
 };
 
 const makeService = (runner: Partial<ConnectionCheckRunnerService> = {}) =>
@@ -265,6 +267,37 @@ describe('InternalIntegrationDebugService', () => {
         service.testCandidateCode({ connectionId: 'missing', code: 'x' }),
       ).rejects.toBeInstanceOf(NotFoundException);
       expect(runCandidateCheck).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('listOAuthErrors', () => {
+    it('filters by org + provider and clamps a non-numeric limit', async () => {
+      mockedDb.integrationOAuthError.findMany.mockResolvedValue([
+        {
+          id: 'ioe_1',
+          organizationId: 'org_1',
+          providerSlug: 'quickbooks-online',
+          errorCode: 'token_exchange_failed',
+          errorDescription: 'sandbox',
+          createdAt: new Date(),
+        },
+      ]);
+      const service = makeService();
+
+      const { errors, total } = await service.listOAuthErrors({
+        organizationId: 'org_1',
+        providerSlug: 'quickbooks-online',
+        limit: Number('nope'),
+      });
+
+      expect(total).toBe(1);
+      expect(errors[0].errorCode).toBe('token_exchange_failed');
+      const args = mockedDb.integrationOAuthError.findMany.mock.calls[0][0];
+      expect(args.where).toEqual({
+        organizationId: 'org_1',
+        providerSlug: 'quickbooks-online',
+      });
+      expect(Number.isFinite(args.take)).toBe(true);
     });
   });
 });

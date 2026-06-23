@@ -1,5 +1,9 @@
 'use client';
 
+import {
+  ColumnResizeHandle,
+  useResizableColumns,
+} from '@/app/components/table/resizable-columns';
 import { Button } from '@trycompai/ui/button';
 import { ChevronDown, ChevronRight, FileText, Folder, Pencil, Trash2 } from 'lucide-react';
 import Link from 'next/link';
@@ -19,6 +23,30 @@ interface FrameworksTreeTableProps {
   onDeleteFamily: (family: FrameworkFamilyWithCount) => void;
 }
 
+// FRAME-17: resizable columns, persisted to a cookie.
+const COOKIE_NAME = 'fwk-frameworks-list-col-widths';
+const COLUMNS: {
+  key: string;
+  label: string;
+  defaultWidth: number;
+  align: 'left' | 'center';
+  resizable: boolean;
+}[] = [
+  { key: 'name', label: 'Name', defaultWidth: 360, align: 'left', resizable: true },
+  { key: 'version', label: 'Version', defaultWidth: 120, align: 'center', resizable: true },
+  { key: 'status', label: 'Status', defaultWidth: 140, align: 'center', resizable: true },
+  {
+    key: 'requirements',
+    label: 'Requirements',
+    defaultWidth: 150,
+    align: 'center',
+    resizable: true,
+  },
+  { key: 'controls', label: 'Controls', defaultWidth: 120, align: 'center', resizable: true },
+  { key: 'actions', label: '', defaultWidth: 88, align: 'center', resizable: false },
+];
+const DEFAULT_WIDTHS = Object.fromEntries(COLUMNS.map((c) => [c.key, c.defaultWidth]));
+
 // Frameworks nested in a family indent ~6 characters past the root, like a file
 // inside a folder in Finder / Windows Explorer.
 const NESTED_INDENT_PX = 48;
@@ -30,23 +58,41 @@ export function FrameworksTreeTable({
   onEditFamily,
   onDeleteFamily,
 }: FrameworksTreeTableProps) {
+  const { widths, startResize } = useResizableColumns(COOKIE_NAME, DEFAULT_WIDTHS);
+  const totalWidth = COLUMNS.reduce((sum, c) => sum + (widths[c.key] ?? c.defaultWidth), 0);
+
   return (
     <div className="scrollbar-primary border-border overflow-x-auto rounded-xs border">
-      <table className="w-full border-collapse text-sm">
+      <table
+        className="border-collapse text-sm"
+        style={{ tableLayout: 'fixed', width: totalWidth, minWidth: '100%' }}
+      >
+        <colgroup>
+          {COLUMNS.map((c) => (
+            <col key={c.key} style={{ width: widths[c.key] ?? c.defaultWidth }} />
+          ))}
+        </colgroup>
         <thead className="bg-muted/50">
           <tr className="text-muted-foreground text-xs">
-            <th className="px-3 py-2 text-left font-medium">Name</th>
-            <th className="px-3 py-2 text-center font-medium">Version</th>
-            <th className="px-3 py-2 text-center font-medium">Status</th>
-            <th className="px-3 py-2 text-center font-medium">Requirements</th>
-            <th className="px-3 py-2 text-center font-medium">Controls</th>
-            <th className="w-20 px-3 py-2" />
+            {COLUMNS.map((c) => (
+              <th
+                key={c.key}
+                className={`relative px-3 py-2 font-medium ${
+                  c.align === 'center' ? 'text-center' : 'text-left'
+                }`}
+              >
+                {c.label}
+                {c.resizable && (
+                  <ColumnResizeHandle onResizeStart={(e) => startResize(c.key, e)} />
+                )}
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>
           {rows.length === 0 && (
             <tr>
-              <td colSpan={6} className="text-muted-foreground py-8 text-center">
+              <td colSpan={COLUMNS.length} className="text-muted-foreground py-8 text-center">
                 No frameworks yet.
               </td>
             </tr>
@@ -96,12 +142,12 @@ function FamilyRow({
 
   return (
     <tr className="border-border hover:bg-muted/30 border-b transition-colors">
-      <td className="px-3 py-2">
-        <div className="flex items-center gap-1.5">
+      <td className="overflow-hidden px-3 py-2">
+        <div className="flex min-w-0 items-center gap-1.5">
           <button
             type="button"
             onClick={() => onToggle(family.id)}
-            className="text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground shrink-0"
             aria-label={expanded ? 'Collapse family' : 'Expand family'}
           >
             {expanded ? (
@@ -111,7 +157,7 @@ function FamilyRow({
             )}
           </button>
           <Folder className="text-muted-foreground h-4 w-4 shrink-0" />
-          <span className="font-medium">{family.name}</span>
+          <span className="truncate font-medium">{family.name}</span>
         </div>
       </td>
       <td className={`${CENTER_CELL} text-muted-foreground`}>{countLabel}</td>
@@ -157,15 +203,15 @@ function FrameworkRow({
 }) {
   return (
     <tr className="border-border hover:bg-muted/30 border-b transition-colors">
-      <td className="px-3 py-2">
+      <td className="overflow-hidden px-3 py-2">
         <div
-          className="flex items-center gap-1.5"
+          className="flex min-w-0 items-center gap-1.5"
           style={{ paddingLeft: indented ? NESTED_INDENT_PX : 0 }}
         >
           {/* Spacer matching the family chevron so names line up. */}
           <span className="inline-block w-4 shrink-0" />
           <FileText className="text-muted-foreground h-4 w-4 shrink-0" />
-          <Link href={`/frameworks/${framework.id}`} className="hover:underline">
+          <Link href={`/frameworks/${framework.id}`} className="truncate hover:underline">
             {framework.name}
           </Link>
         </div>
