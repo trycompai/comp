@@ -39,6 +39,10 @@ interface OAuthCallbackQuery {
   state: string;
   error?: string;
   error_description?: string;
+  // Intuit/QuickBooks returns the company (realm) id ONLY on the callback
+  // redirect (?realmId=...), never in the token response. Persisted below as a
+  // connection variable so checks can target /v3/company/{realmId}/...
+  realmId?: string;
 }
 
 @Controller({ path: 'integrations/oauth', version: '1' })
@@ -236,7 +240,7 @@ export class OAuthController {
     @Req() req: Request,
     @Res() res: Response,
   ): Promise<void> {
-    const { code, state, error, error_description } = query;
+    const { code, state, error, error_description, realmId } = query;
 
     // Handle OAuth errors
     if (error) {
@@ -373,6 +377,28 @@ export class OAuthController {
           metadata: {
             ...metadata,
             reconnectedAt: new Date().toISOString(),
+          },
+        });
+      }
+
+      // Persist the QuickBooks/Intuit company (realm) id. It arrives only as a
+      // callback query param, so without capturing it here the connection has
+      // no company to query and the employee-access check fails. Stored as a
+      // connection variable (not metadata) because only `variables` is
+      // forwarded to the check runtime as `ctx.variables`. The guard fires only
+      // for providers that supply `realmId` (Intuit), so other connections are
+      // untouched.
+      if (realmId) {
+        const existingVariables =
+          connection.variables &&
+          typeof connection.variables === 'object' &&
+          !Array.isArray(connection.variables)
+            ? (connection.variables as Record<string, unknown>)
+            : {};
+        connection = await this.connectionRepository.update(connection.id, {
+          variables: {
+            ...existingVariables,
+            realmId,
           },
         });
       }
