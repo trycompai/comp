@@ -1,3 +1,16 @@
+# [3.89.0](https://github.com/trycompai/comp/compare/v3.88.0...v3.89.0) (2026-06-23)
+
+
+### Bug Fixes
+
+* **integration-platform:** address cubic review on internal debug toolkit ([1771a37](https://github.com/trycompai/comp/commit/1771a37a2baf3f6400775c967144ac0d615e56a5))
+
+
+### Features
+
+* **integration-platform:** add candidate-code test endpoint (validate a fix before applying) ([86ce563](https://github.com/trycompai/comp/commit/86ce5633c4870bf448b22206a04cb6983e42cc29))
+* **integration-platform:** internal debug toolkit for dynamic integrations ([9723e9d](https://github.com/trycompai/comp/commit/9723e9dd9f01ab33c497c38d64d39d83b7747cf3))
+
 # [3.88.0](https://github.com/trycompai/comp/compare/v3.87.3...v3.88.0) (2026-06-23)
 
 
