@@ -108,23 +108,16 @@ export function TaskList({
     document.cookie = `task-view-preference-${orgId}=${newTab}; expires=${expires.toUTCString()}; path=/`;
   };
 
+  // `members` is already filtered to those with app access upstream (see
+  // tasks/page.tsx → filterAppAccessMembers), so each one is a valid assignee.
+  // Re-filtering by hardcoded role names here dropped auditors and custom roles
+  // (e.g. "SecDev") that legitimately hold evidence from the assignee filter.
   const eligibleAssignees = useMemo(() => {
-    return members
-      .filter((member) => {
-        const roleValue = member.role;
-        const roles = Array.isArray(roleValue)
-          ? roleValue.map((role) => role.trim().toLowerCase())
-          : typeof roleValue === 'string'
-            ? roleValue.split(',').map((role) => role.trim().toLowerCase())
-            : [];
-
-        return roles.some((role) => role === 'admin' || role === 'owner');
-      })
-      .sort((a, b) => {
-        const nameA = a.user.name ?? '';
-        const nameB = b.user.name ?? '';
-        return nameA.localeCompare(nameB);
-      });
+    return [...members].sort((a, b) => {
+      const nameA = a.user.name ?? '';
+      const nameB = b.user.name ?? '';
+      return nameA.localeCompare(nameB);
+    });
   }, [members]);
 
   // Build a map of control IDs to their framework instances for efficient lookup
