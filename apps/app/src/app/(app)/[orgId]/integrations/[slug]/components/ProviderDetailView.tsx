@@ -112,6 +112,7 @@ export function ProviderDetailView({
   const [gcpSelectedProjectIds, setGcpSelectedProjectIds] = useState<string[]>([]);
   const oauthBootstrapHandledRef = useRef(false);
   const settingsQueryHandledRef = useRef(false);
+  const oauthErrorHandledRef = useRef(false);
 
   // OAuth return (?success=true): strip query, detect org/projects (NOT services yet — user must select projects first)
   useEffect(() => {
@@ -225,6 +226,33 @@ export function ProviderDetailView({
     setSettingsOpen(true);
     router.replace(`/${orgId}/integrations/${provider.id}`, { scroll: false });
   }, [orgId, provider.id, router, searchParams, selectedConnection?.id]);
+
+  // Surface + record an OAuth failure that lands on the provider page. The
+  // backend redirects with `?error=...&error_description=...`; show the user the
+  // real reason and record it (best-effort) so failed connects are diagnosable.
+  useEffect(() => {
+    if (oauthErrorHandledRef.current) return;
+    const error = searchParams.get('error');
+    if (!error) return;
+
+    oauthErrorHandledRef.current = true;
+    const errorDescription = searchParams.get('error_description');
+    toast.error(`Connection failed: ${errorDescription || error}`);
+
+    void api
+      .post(
+        '/v1/integrations/oauth-errors',
+        {
+          providerSlug: provider.id,
+          error,
+          errorDescription: errorDescription ?? undefined,
+        },
+        orgId,
+      )
+      .catch(() => {});
+
+    router.replace(`/${orgId}/integrations/${provider.id}`, { scroll: false });
+  }, [orgId, provider.id, router, searchParams]);
 
   return (
     <>

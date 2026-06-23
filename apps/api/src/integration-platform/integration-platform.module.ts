@@ -3,6 +3,7 @@ import { AuthModule } from '../auth/auth.module';
 import { CloudSecurityModule } from '../cloud-security/cloud-security.module';
 import { OAuthController } from './controllers/oauth.controller';
 import { OAuthAppsController } from './controllers/oauth-apps.controller';
+import { OAuthErrorsController } from './controllers/oauth-errors.controller';
 import { ConnectionsController } from './controllers/connections.controller';
 import { AdminIntegrationsController } from './controllers/admin-integrations.controller';
 import { DynamicIntegrationsController } from './controllers/dynamic-integrations.controller';
@@ -42,6 +43,7 @@ import { GenericDeviceSyncService } from './services/generic-device-sync.service
   controllers: [
     OAuthController,
     OAuthAppsController,
+    OAuthErrorsController,
     ConnectionsController,
     AdminIntegrationsController,
     DynamicIntegrationsController,
