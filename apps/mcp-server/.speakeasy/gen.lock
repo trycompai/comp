@@ -1,25 +1,25 @@
 lockVersion: 2.0.0
 id: f7130d09-dac4-4515-9162-6095782b6bb6
 management:
-  docChecksum: f4af9daecfe34a4033296a586d8d6d7d
+  docChecksum: 4c47d7e665ea65c252e5e554a7bbf713
   docVersion: "1.0"
-  speakeasyVersion: 1.777.1
-  generationVersion: 2.903.2
-  releaseVersion: 0.2.0
-  configChecksum: 64655550887db248ac56f6a3d0ee7ced
+  speakeasyVersion: 1.784.1
+  generationVersion: 2.911.3
+  releaseVersion: 0.2.1
+  configChecksum: 34a8c62fecbf1b9b312551b4d5c97a36
   repoURL: https://github.com/trycompai/comp.git
   repoSubDirectory: apps/mcp-server
   installationURL: https://github.com/trycompai/comp
   published: true
 persistentEdits:
-  generation_id: a46f246e-21df-453d-ad10-468b1cf49621
-  pristine_commit_hash: 932e03063f9f9d48e3862d3763a6abf6a2665e55
-  pristine_tree_hash: 0081b81e18ab4fb87c36964d383ed327eb05600c
+  generation_id: e93b5608-fc3e-43b3-a7d1-c72d3df495a0
+  pristine_commit_hash: 6b10fd72ca1dfbdcce6c1683c1fb9baa1bed4746
+  pristine_tree_hash: 87689ba310880da2ba1605d612b75aa2a9317009
 features:
   mcp-typescript:
     additionalDependencies: 0.1.0
     constsAndDefaults: 0.1.2
-    core: 1.3.1
+    core: 1.3.4
     defaultEnabledRetries: 0.1.0
     enumUnions: 0.1.0
     globalSecurity: 0.1.3
@@ -29,7 +29,7 @@ features:
     nullables: 0.1.0
     operationTimeout: 0.1.0
     responseFormat: 0.1.1
-    retries: 0.1.0
+    retries: 0.1.1
     sdkHooks: 0.3.0
     unions: 0.2.0
 trackedFiles:
@@ -51,12 +51,12 @@ trackedFiles:
     pristine_git_object: 4f9e60a9462fc4def738d60c3aaadf8232ef185f
   manifest.json:
     id: ca642a226869
-    last_write_checksum: sha1:bfb39392ec0cd8aef95d8586beaf26c67fd529a8
-    pristine_git_object: db0fdc1fb608fbbe681d3b1623287b8023ff0bb9
+    last_write_checksum: sha1:ce78b444f55d40b93a3f537840b0c22a615920c9
+    pristine_git_object: 58b681ade53bf3ab681d9e8dcda86d6774f50dce
   package.json:
     id: 7030d0b2f71b
-    last_write_checksum: sha1:0e73c86369bcad1464f35a574145b49f932e93ff
-    pristine_git_object: b4ae779d8e01b50a0af1c4b0dc3ca2e16c0b8510
+    last_write_checksum: sha1:bab98b7fc6bd63e08be3e9aec4e6920d1968e9b2
+    pristine_git_object: e0a74fef0792900a9d6f0886a29fd210a8124b22
   src/core.ts:
     id: f431fdbcd144
     last_write_checksum: sha1:3c1fe2275a0f345cf54298150f100299284b3f0e
@@ -609,6 +609,74 @@ trackedFiles:
     id: f7889789e57c
     last_write_checksum: sha1:a782d7973e2926e21a9451121f1936d3178d5721
     pristine_git_object: b0149a81e667ece102d6c6867e9f04a6973abffd
+  src/funcs/ismsISMSControllerAddControlsV1.ts:
+    id: 5649fe6f0f49
+    last_write_checksum: sha1:343e1ab65c1ff5da5f11c62ba597704eb41ee1dd
+    pristine_git_object: ab89c455767a5f4abe7d038a07db3168c5a6b9ce
+  src/funcs/ismsISMSControllerApproveV1.ts:
+    id: 99e25eaec081
+    last_write_checksum: sha1:790fbe040e8e65cb31abbeb8f170e86d8a9e9733
+    pristine_git_object: 7ba10d160d1f7af00a43a997cee091f3a12444cc
+  src/funcs/ismsISMSControllerDeclineV1.ts:
+    id: b1adfab3e4d0
+    last_write_checksum: sha1:1200e0e596ba2fac7821a3f7dd83bab269c2b5f7
+    pristine_git_object: 08731ea313ac1a1bef46f56730c61c4ac6f6d0b3
+  src/funcs/ismsISMSControllerDriftV1.ts:
+    id: 0065cdb563db
+    last_write_checksum: sha1:9953e04761777e3542e92d9af26497ed319b7600
+    pristine_git_object: 190393d2ec107a4d1421ca13a61fc104e9fb2f30
+  src/funcs/ismsISMSControllerEnsureSetupV1.ts:
+    id: 6abfb7cfcbf6
+    last_write_checksum: sha1:2ae687db9cdcd34fa35c7ca58b268635012970a9
+    pristine_git_object: d254e7c52d2ddff059f92805e13b4a9f13e1d121
+  src/funcs/ismsISMSControllerExportDocumentV1.ts:
+    id: 73af0a621cc7
+    last_write_checksum: sha1:a3b5f2682197adb5201f63bb58914eb8afa1a48a
+    pristine_git_object: 2e1ab92e91a6656c7e99bb4c624493155aaf298c
+  src/funcs/ismsISMSControllerGenerateV1.ts:
+    id: 064c4971353a
+    last_write_checksum: sha1:3aa0f23d755a178be599499ac3611fb4c97400c3
+    pristine_git_object: 05c0a184c6d89b4c594beb66fdadf41604ffbdb4
+  src/funcs/ismsISMSControllerGetDocumentV1.ts:
+    id: 730f2b56f8f2
+    last_write_checksum: sha1:6dda80d0d448f49929c2c3d99abc884c3b98995c
+    pristine_git_object: 1adc970464d079ee6b5c19a78f8d8b91c0f082f7
+  src/funcs/ismsISMSControllerRemoveControlV1.ts:
+    id: 24b891e82464
+    last_write_checksum: sha1:2ce0224cd42019ceb541f1199bd173434351f7a7
+    pristine_git_object: a5fce0085b3fa1abee58d03c4e9ccea1fd09ea73
+  src/funcs/ismsISMSControllerSubmitForApprovalV1.ts:
+    id: 140ca9ea286f
+    last_write_checksum: sha1:757806a088c568e6284f273d4092a7ed0f099b6b
+    pristine_git_object: 1dfecfd9765c6ca22178e41c10a34e9f7fc0c157
+  src/funcs/ismsISMSProfileControllerGenerateAllV1.ts:
+    id: a45e55c89073
+    last_write_checksum: sha1:f2565263cbadabc645a859e3f3ee6442a378a800
+    pristine_git_object: 8efc493f5e2934e7c19f5a21a8176d6dd717f009
+  src/funcs/ismsISMSProfileControllerGetProfileV1.ts:
+    id: a716c980e993
+    last_write_checksum: sha1:2b2991dac4aa4f522d92d31a34286b69eaf4ef62
+    pristine_git_object: b7d98494d44d622522511700d610a59e9d86e8de
+  src/funcs/ismsISMSProfileControllerSaveProfileV1.ts:
+    id: 24b070f09481
+    last_write_checksum: sha1:124110e41205d48c636e1b4e13788b4e0f00333d
+    pristine_git_object: a43b4ae03052493733ab269db09753df592d247f
+  src/funcs/ismsISMSRegistersControllerCreateRowV1.ts:
+    id: a30d0900461a
+    last_write_checksum: sha1:62728387f30b696805c8aa40df98b47c65550ae0
+    pristine_git_object: 7d67d84870e4b772c220a16741da65caf3c61eae
+  src/funcs/ismsISMSRegistersControllerDeleteRowV1.ts:
+    id: 668e27c9dd79
+    last_write_checksum: sha1:fdf1c96a66601e1e651d59f2dfc2f65a9050a443
+    pristine_git_object: 0bb4140af955366c85a89b20b341ff5df85817cc
+  src/funcs/ismsISMSRegistersControllerSaveNarrativeV1.ts:
+    id: c17e530fd18f
+    last_write_checksum: sha1:ca906f32b39d9f70984416618b4eb9ee5de8073b
+    pristine_git_object: a364b31d25c882b081860e6fccb1b4c85e80627f
+  src/funcs/ismsISMSRegistersControllerUpdateRowV1.ts:
+    id: 43a9c0a2dbb7
+    last_write_checksum: sha1:6f254f07a7a06b9b773ac843e2d997666d12eedd
+    pristine_git_object: 73636597c01c8869e068d569071eaa088918285f
   src/funcs/knowledgeBaseKnowledgeBaseControllerCreateRunTokenV1.ts:
     id: 5eba991875b9
     last_write_checksum: sha1:10c21dc22c76c9d210c75dc3b54c00772464b2b1
@@ -1509,6 +1577,10 @@ trackedFiles:
     id: d1e3cf03def3
     last_write_checksum: sha1:4b1df911e173b0e115a818bef74623306e1e856b
     pristine_git_object: bfef24df0b510f3f97b5b2bbf9f4a31c211b4b2d
+  src/funcs/trustPortalTrustPortalControllerRemoveCustomFrameworkBadgeV1.ts:
+    id: 141c29e2fcbd
+    last_write_checksum: sha1:11b0b66154db27343e829ec685d50323b6947128
+    pristine_git_object: a3864e4c146b64320dbc28d84fb58dcf211cff17
   src/funcs/trustPortalTrustPortalControllerRemoveFaviconV1.ts:
     id: 8db650dae67f
     last_write_checksum: sha1:9cdac7f01689c0e341c93455db101e30028e4513
@@ -1557,6 +1629,10 @@ trackedFiles:
     id: 2d23478e0fe7
     last_write_checksum: sha1:e14ddb9f7986dd63702c03788e3487ba8385d713
     pristine_git_object: 60357fd0ca4fc0e7922f6e41ae09c26c023cfd1c
+  src/funcs/trustPortalTrustPortalControllerUploadCustomFrameworkBadgeV1.ts:
+    id: 7f0d78b1cda3
+    last_write_checksum: sha1:a38f2e14e7d8eeb18cd4095474c00e1dff57b19c
+    pristine_git_object: 51a2f1ef1c021dbaa330f5fcfb44a965431c8f7f
   src/funcs/trustPortalTrustPortalControllerUploadFaviconV1.ts:
     id: 986da4abd394
     last_write_checksum: sha1:39a194ff922fb8ad306007daa9fadb0472634886
@@ -1607,16 +1683,16 @@ trackedFiles:
     pristine_git_object: 9c36bf01332084f735909a71036c3544cc4c7e3a
   src/landing-page.ts:
     id: ef64a6ee46d7
-    last_write_checksum: sha1:e150f9178a75ea2a1b40a30555cf8e347529ec98
-    pristine_git_object: 6e99225096366eaac8e3a05d78d8cdebb1d7d774
+    last_write_checksum: sha1:e61dd75dcf9f6e0d604a47161bdf596b47522f38
+    pristine_git_object: 7fa965187f41c918a122a56e735a2b6ba7629d75
   src/lib/base64.ts:
     id: "598522066688"
     last_write_checksum: sha1:e9f04a037018040361043104960982f7c22db52d
     pristine_git_object: d4bd8b341290e7a828a171d840bd0b0fff7c7cd7
   src/lib/config.ts:
     id: 320761608fb3
-    last_write_checksum: sha1:02c23a9ad3f5c6fbde59bf760c7253f6d6f73c10
-    pristine_git_object: def4f2dcd8d17c3be1079ab344ed907f35730ecb
+    last_write_checksum: sha1:3f7dd7b97cf93ebc4dc001f88cbe7d7c267659c6
+    pristine_git_object: 48a4433ffa3e7b68628c9d7150776f104a340df2
   src/lib/encodings.ts:
     id: 3bd8ead98afd
     last_write_checksum: sha1:3ff4ad6809b749125820fd39c01427b84d3fe0d6
@@ -1647,8 +1723,8 @@ trackedFiles:
     pristine_git_object: ccbe51eac69dfb0da5131f14fd753c4b47c1d527
   src/lib/retries.ts:
     id: b24a69d15639
-    last_write_checksum: sha1:f3da74dffcbe2756c69393f8600205aa1dc06e68
-    pristine_git_object: e3ce9aba72150fc3c18f3105d39b21aba809377b
+    last_write_checksum: sha1:42c8f6cc4c875be236230a8c760f4f32d8c1ab68
+    pristine_git_object: 21a647e1e9ae64817fcd63b5dd6bb5a51b63d225
   src/lib/schemas.ts:
     id: deb4b531fae1
     last_write_checksum: sha1:7c7ba40781682f6d44bb585b5016e2527b52660e
@@ -1703,8 +1779,8 @@ trackedFiles:
     pristine_git_object: 35c8713b6f8c7f17e2545423d3e74401ff77d04b
   src/mcp-server/mcp-server.ts:
     id: aabbc4ab07c1
-    last_write_checksum: sha1:fa536c2fa0851175d16b7d81b75ede913df7f9f7
-    pristine_git_object: c3521094cad8c39473728d9fdaa9c623a555db67
+    last_write_checksum: sha1:3d88512aefa309f4dcb20d48648428b6438377ac
+    pristine_git_object: 376f67f80fc063843f27300dc056339ea0feb14f
   src/mcp-server/prompts.ts:
     id: 26f3d73cbf31
     last_write_checksum: sha1:cadb036e04534a6d9d765809eebb266d188c499b
@@ -1719,16 +1795,16 @@ trackedFiles:
     pristine_git_object: c25696d4c4f70e081fa5d87ad6891874c509a577
   src/mcp-server/server.ts:
     id: 2784dd48e82a
-    last_write_checksum: sha1:cf22bb0d0df287f9c63c9a707fa39eb06659a3de
-    pristine_git_object: 502eff487dc6f1a11e1dc2dcf1b63f38e86063e1
+    last_write_checksum: sha1:95a63b784c643a6ba1fe7141d9b5efe00d214f3b
+    pristine_git_object: e1e5786a84a8395919d7970226296ebd370c956c
   src/mcp-server/shared.ts:
     id: 074e80d4be1e
     last_write_checksum: sha1:19c9034032819a14f15c430de4350c8aba99d725
     pristine_git_object: bb74a74788ebd7d11262f5f63b8fdd29ab817f48
   src/mcp-server/tools.ts:
     id: 654d5d1f2062
-    last_write_checksum: sha1:39f9653cc8c2e7746410ff864a4e615edef2a558
-    pristine_git_object: 98c62c24119cead4c96afe1b43e1229c19486632
+    last_write_checksum: sha1:ef6e9944aa7a282e3ee640e5135a3c31d77b2d62
+    pristine_git_object: e2a1e15ef2605a8dc9e6a8cb3e434f926e27ee1e
   src/mcp-server/tools/attachmentsAttachmentsControllerCreateAttachmentV1.ts:
     id: 9b48ca86a642
     last_write_checksum: sha1:422b1d8ff68604c8ff048f5b267415915462cf91
@@ -2169,6 +2245,74 @@ trackedFiles:
     id: f5e29a0cee86
     last_write_checksum: sha1:ad0e1fa9f86e63556286347429d12d60f4ac0b95
     pristine_git_object: 5d6419ca9d1411cc90a08318e28908ee88061f45
+  src/mcp-server/tools/ismsISMSControllerAddControlsV1.ts:
+    id: 5d41791a346c
+    last_write_checksum: sha1:1f59cd7672265a16dae13a3f5a8c29b49e4208df
+    pristine_git_object: c9086fb194af003d20223f04e21c744b1758e26e
+  src/mcp-server/tools/ismsISMSControllerApproveV1.ts:
+    id: 3a9ff068cdbd
+    last_write_checksum: sha1:25e1372ba0a341536d15aa506c4c3b9afa11ce85
+    pristine_git_object: 7b5b46b248395cd0fa5c7afb7a7e1aafffb491f7
+  src/mcp-server/tools/ismsISMSControllerDeclineV1.ts:
+    id: d0d7f85a3726
+    last_write_checksum: sha1:6c768fc6769fb540c59cc09bc40126a811da43ab
+    pristine_git_object: fa188f50fb8e8910ce242f91b3cc32d79884ede3
+  src/mcp-server/tools/ismsISMSControllerDriftV1.ts:
+    id: 5bed3c4c844d
+    last_write_checksum: sha1:47d999687040cdc7f1a1d9af3db4d774c7fe306b
+    pristine_git_object: e13c79aebc0937539f74b8e8ddc1ac3de2cde1d6
+  src/mcp-server/tools/ismsISMSControllerEnsureSetupV1.ts:
+    id: 19443cf7a53f
+    last_write_checksum: sha1:97f8ac77afd87310c190e17155645a10126f4783
+    pristine_git_object: 6e456383e602d1019ab6a2e6c4202d9bccf6137c
+  src/mcp-server/tools/ismsISMSControllerExportDocumentV1.ts:
+    id: fce72944b3cc
+    last_write_checksum: sha1:c104415038c7434c033c940cd8f53e5f3a718e17
+    pristine_git_object: 9aefbd8d4bb45cef46722d3b7a5c3001185cd3d6
+  src/mcp-server/tools/ismsISMSControllerGenerateV1.ts:
+    id: 9e672a251ed5
+    last_write_checksum: sha1:0798369941ec17db15436738f2476094f93e99c1
+    pristine_git_object: fa873aba3b56db2fb92e14cdc05dd08cca93022d
+  src/mcp-server/tools/ismsISMSControllerGetDocumentV1.ts:
+    id: 70fe134e0bb3
+    last_write_checksum: sha1:f1eb4251e7dafce9c11a9175081b07897a5dfd9c
+    pristine_git_object: a03a487deade89225e1ccd2b522755d06e25b03c
+  src/mcp-server/tools/ismsISMSControllerRemoveControlV1.ts:
+    id: 56cf170ad78f
+    last_write_checksum: sha1:dbae79dbb31d70165172980678a6e6c20f683445
+    pristine_git_object: c218418cc3c83b645409a3b6f79e77149936babb
+  src/mcp-server/tools/ismsISMSControllerSubmitForApprovalV1.ts:
+    id: 77e27d7b5444
+    last_write_checksum: sha1:8ea8021598adda8ed33703865d9bad3efc111e66
+    pristine_git_object: da84e376c7adf1d82e3578a300350b40c76d345c
+  src/mcp-server/tools/ismsISMSProfileControllerGenerateAllV1.ts:
+    id: 81f935b20b48
+    last_write_checksum: sha1:c8cb5f915a3dc66047f8f1544430037bf930329c
+    pristine_git_object: 05e912a0c8c7ca4f2c842ae1c681d336cfe41c5c
+  src/mcp-server/tools/ismsISMSProfileControllerGetProfileV1.ts:
+    id: 75821e977805
+    last_write_checksum: sha1:64c7f8441924c38abf5e38b2ef555e9e9a627bd5
+    pristine_git_object: 0d16e72c66bcb39fd35b5a891c060f1e35310f48
+  src/mcp-server/tools/ismsISMSProfileControllerSaveProfileV1.ts:
+    id: 738041cf5c67
+    last_write_checksum: sha1:e331df3d59150506d7b933eaf5ddc68ca37475d9
+    pristine_git_object: 8fcf21eca2f673666e57e396794f38be28ddf084
+  src/mcp-server/tools/ismsISMSRegistersControllerCreateRowV1.ts:
+    id: bd8e918b2ffa
+    last_write_checksum: sha1:4d912dcac6e00a7542d2e804e8d75159c94f75a2
+    pristine_git_object: 35a13a865bd196d40c77bbf4ff07ae8aa140555f
+  src/mcp-server/tools/ismsISMSRegistersControllerDeleteRowV1.ts:
+    id: 24fdf3033493
+    last_write_checksum: sha1:27f4e93d51438ced6278ee15b6e1badbf4a60277
+    pristine_git_object: 9129cacc83a270212ebe03253028a0d06f46ff64
+  src/mcp-server/tools/ismsISMSRegistersControllerSaveNarrativeV1.ts:
+    id: dcc3467c807c
+    last_write_checksum: sha1:533f99349295833bab042d3c03dfc2ae695720ff
+    pristine_git_object: 16c227101a649cfbcae6f58782abd98d64f3d080
+  src/mcp-server/tools/ismsISMSRegistersControllerUpdateRowV1.ts:
+    id: f732be09da37
+    last_write_checksum: sha1:e242a5197b7d9b34aa23d0b33ab0a4a0b3841030
+    pristine_git_object: bf63704dba3bae3c8ab794cf3219a2a131872074
   src/mcp-server/tools/knowledgeBaseKnowledgeBaseControllerCreateRunTokenV1.ts:
     id: d3621199c500
     last_write_checksum: sha1:441d88db28ae1cd24024614cdc4cc205cc9ed508
@@ -3021,6 +3165,10 @@ trackedFiles:
     id: 94bf01d772d4
     last_write_checksum: sha1:91953f5f600642b8ab4bd5be26d883a8875c8b4b
     pristine_git_object: 30ed800c4a41c6adc2706ff253297df4e97967ad
+  src/mcp-server/tools/trustPortalTrustPortalControllerRemoveCustomFrameworkBadgeV1.ts:
+    id: a292d8347a2f
+    last_write_checksum: sha1:0e55972f908b89d850364117d2d1ae59fcbfbbc5
+    pristine_git_object: 8ae35e90acb7f90f595c9f482c05b97387c1d645
   src/mcp-server/tools/trustPortalTrustPortalControllerRemoveFaviconV1.ts:
     id: 7a824a350b20
     last_write_checksum: sha1:430e7f6ee352d79294c0e4c6631d7f7726c2d3a5
@@ -3069,6 +3217,10 @@ trackedFiles:
     id: fccf27438f43
     last_write_checksum: sha1:3f0bf007c4dd59cea40cee2058d187773d5212d5
     pristine_git_object: f662bf409a023e7487525b29629128ff6e4cbf77
+  src/mcp-server/tools/trustPortalTrustPortalControllerUploadCustomFrameworkBadgeV1.ts:
+    id: 9d34926a61ac
+    last_write_checksum: sha1:86d293dc52c626a23acc4f8ee694748a6aa5fd38
+    pristine_git_object: 1080dc23ef096218dff149670b73330a1f6fa35f
   src/mcp-server/tools/trustPortalTrustPortalControllerUploadFaviconV1.ts:
     id: af6859f074fd
     last_write_checksum: sha1:cdec47e69d91ad6d3da7d875d784449b02c98669
@@ -3435,8 +3587,8 @@ trackedFiles:
     pristine_git_object: e6e7b767b88afe5e60a347e05c7274ee1737f8a0
   src/models/controlscontrollerunlinkdocumenttypev1op.ts:
     id: edc19b966a6a
-    last_write_checksum: sha1:e7fb53854d37ff920e218a2561694372e6602ab3
-    pristine_git_object: 1298a1804fb05949e2420317f0daaeba4762dc4c
+    last_write_checksum: sha1:ce611aa5c47ad1ee56cc0d9f7552d297abc4be54
+    pristine_git_object: 70efb8dea0b90b4ba7083e51b16183fb3ab4c300
   src/models/createaccessrequestdto.ts:
     id: c099827d5497
     last_write_checksum: sha1:06ccfeae9414d617517491bb34f55bba1e7251f1
@@ -3517,6 +3669,10 @@ trackedFiles:
     id: 9f65a13f79eb
     last_write_checksum: sha1:0fcd0d2c036fb1bb62269690d4eb70b8fba88faa
     pristine_git_object: 5c12ea9501e8c12ec0769adf52dd9f716fda9e84
+  src/models/customframeworkbadgeresponsedto.ts:
+    id: 493808aa1cc6
+    last_write_checksum: sha1:c14a6ab2b8e52c287ce059c73fefd603842eb7fc
+    pristine_git_object: 22b5d78b312d2ef81f362cfdb691c3ae910a88f4
   src/models/declinesoadocumentdto.ts:
     id: 217596b381df
     last_write_checksum: sha1:43d0f91e50026e591c3b23b66f18fac202b62f42
@@ -3597,6 +3753,10 @@ trackedFiles:
     id: d8e08f600d39
     last_write_checksum: sha1:b6f76c83d5cf992a3691ee0bb9945b7ef08fe490
     pristine_git_object: a2ca6e2b328f609988c096a693437f432af7e0c2
+  src/models/ensureismssetupdto.ts:
+    id: 8630d7e9285e
+    last_write_checksum: sha1:7386308b70e55c622c721fad4a8637b562883546
+    pristine_git_object: 7e25189a5bec6505ad1abbbb95c1e104690f3525
   src/models/ensuresoasetupdto.ts:
     id: 65adcd42cfca
     last_write_checksum: sha1:324a64e5a23e4cc1ed12a2f5efbea55e5305bf0f
@@ -3689,6 +3849,10 @@ trackedFiles:
     id: f06392ff18c6
     last_write_checksum: sha1:d3c3421c829d4b7851953155499f66d55211faf0
     pristine_git_object: 47b2903c68fe3afb80c070e70c8b830c8854f90c
+  src/models/exportismsdocumentdto.ts:
+    id: befa3c437b22
+    last_write_checksum: sha1:9e6cfa72d8ecd2b6af85f38ce08fd62bf9a387e0
+    pristine_git_object: 283e5373cb9d7e190d09868ba54e0e7326c1f7ae
   src/models/exportquestionnairedto.ts:
     id: 9aa09fc1d930
     last_write_checksum: sha1:853525161d3c61f8cf40e2ca5781f75e299c2d5a
@@ -3793,6 +3957,10 @@ trackedFiles:
     id: d8d3af10ad61
     last_write_checksum: sha1:2332e44abbcc35882c6646076266a5ec2c508414
     pristine_git_object: 0be60b267078d01132bc4b3821fe71b9fb5eb5a5
+  src/models/generatealldto.ts:
+    id: 26b9d1817bbf
+    last_write_checksum: sha1:0a859d36a8868feaf3d74d1f4d6d89263811a7d5
+    pristine_git_object: 13cf5e89551875f6594a24d9308c2c824fa47aa6
   src/models/inviteitemdto.ts:
     id: 0d06f282a8f8
     last_write_checksum: sha1:87ba6dc757f9b63143a444bbb6f37f46769c9cd8
@@ -3801,6 +3969,66 @@ trackedFiles:
     id: dac74d5ee823
     last_write_checksum: sha1:ab6c27cc1e3e48a23cfd56ff45202e69f8600e77
     pristine_git_object: 51ca3a31a038213a54f851af02996d50dfc1fbf8
+  src/models/ismscontrolleraddcontrolsv1op.ts:
+    id: 200df0f50729
+    last_write_checksum: sha1:3a10e7daec98ad7359c4db03a75f20de3a860574
+    pristine_git_object: 663a2d8b2ea0ac28c9f9d778b9ec21c174016c4c
+  src/models/ismscontrollerapprovev1op.ts:
+    id: 94c834a2aa69
+    last_write_checksum: sha1:a6b3cd1423bed45c87b78c543e7d521c5ce0323d
+    pristine_git_object: 35947d2365344a14713e008e1914e48f392785ae
+  src/models/ismscontrollerdeclinev1op.ts:
+    id: ffaa3e966755
+    last_write_checksum: sha1:60487f980aa76d2504041a896a69c3d0f2ba2268
+    pristine_git_object: 5020fb108d7d84ca8333e16e7929d0298278a3e7
+  src/models/ismscontrollerdriftv1op.ts:
+    id: cb6a4e64a36b
+    last_write_checksum: sha1:f6d9cdb19d11bfe04fa1c99206184b3afd0c954f
+    pristine_git_object: 14d16ab18903e0906bdd2fe061f73c00169f58d8
+  src/models/ismscontrollerexportdocumentv1op.ts:
+    id: 7b615dad4ecc
+    last_write_checksum: sha1:ae2578c5d5d1770c3b0ed3bff06700bc69ba1fc5
+    pristine_git_object: 046d3efc4282812b0b2258cfc1688dd0d031219f
+  src/models/ismscontrollergeneratev1op.ts:
+    id: 0521c225e604
+    last_write_checksum: sha1:9c59b2a0b0d9f1d2504b7a01103f8dc80de57164
+    pristine_git_object: 44d91e0f24953fe959511d8abfc82362bd07f61f
+  src/models/ismscontrollergetdocumentv1op.ts:
+    id: edbb28012ec7
+    last_write_checksum: sha1:1a43fe8a67af8a5302c1311c05066e97d2fcb5b5
+    pristine_git_object: 3bf8745319f01fd5a6bc40f5f52eff80bd476006
+  src/models/ismscontrollerremovecontrolv1op.ts:
+    id: a0fbad374b7b
+    last_write_checksum: sha1:b570a4404098feb9dd3061987df3b835da647b13
+    pristine_git_object: 915f8a6a835daabebfb45de9e7c68d288793a1ce
+  src/models/ismscontrollersubmitforapprovalv1op.ts:
+    id: da25ff05e379
+    last_write_checksum: sha1:8799e5dcc5890efbd9188d1f5be4a1dd84a9c114
+    pristine_git_object: 17c3dcb878a2b7c10a44e036f2cad33d434c8697
+  src/models/ismsprofilecontrollergetprofilev1op.ts:
+    id: dc7b115e056f
+    last_write_checksum: sha1:024008cf29986551f8c601ab26573799e29f1700
+    pristine_git_object: f65bc824fcc5453e6b08327e19a1a1380176327a
+  src/models/ismsprofilecontrollersaveprofilev1op.ts:
+    id: 4e754d2fba31
+    last_write_checksum: sha1:d7f41f2d7625135920fea7595091205f512893d2
+    pristine_git_object: ee9f9cc32b08525d76d14b67debe97d762347ec9
+  src/models/ismsregisterscontrollercreaterowv1op.ts:
+    id: 9f076d5294c0
+    last_write_checksum: sha1:46d7757d1a0d68cdd95cda690c8c036b6201ffe9
+    pristine_git_object: 69e20134cdd9468658af2cccb64ff6b1080bfdac
+  src/models/ismsregisterscontrollerdeleterowv1op.ts:
+    id: 2a3c3e9c20ab
+    last_write_checksum: sha1:99778effb0c359cac2d9c900043015f39bd6ff41
+    pristine_git_object: 0b36a2850f28c623701b7c7965fd05fface94d0f
+  src/models/ismsregisterscontrollersavenarrativev1op.ts:
+    id: f2796ca6bf76
+    last_write_checksum: sha1:3d888cbe0544813312e235d630653baf1218ba80
+    pristine_git_object: 560ed38a1fd2f55ce151da6f5c27584f039ee7eb
+  src/models/ismsregisterscontrollerupdaterowv1op.ts:
+    id: 52527e12c047
+    last_write_checksum: sha1:9d69cbfdbf62941cc3f692b3864c1403ce79a966
+    pristine_git_object: 73ba642b21700b33083eadbd06fee7726befacd3
   src/models/knowledgebasecontrollercreateruntokenv1op.ts:
     id: 435247f848ea
     last_write_checksum: sha1:37a33eb2a331bc201b7b5dd8efff7ddd13f907e9
@@ -3829,6 +4057,10 @@ trackedFiles:
     id: 4590345cf58e
     last_write_checksum: sha1:696a366176d37ec1926bdb511af8b8ba34670632
     pristine_git_object: cade160b8e09977de386cbc6e5727ae44242bafb
+  src/models/linkismscontrolsdto.ts:
+    id: 14d6882542de
+    last_write_checksum: sha1:3e745e4013e8324388940ff036556c17f36d1b33
+    pristine_git_object: 9ec14430aeb38d750cbb6963eef428d8537bb14c
   src/models/linkpoliciesdto.ts:
     id: e180fa45bfc9
     last_write_checksum: sha1:dc310527ab9bf116550592e644b134ab8ad4ce0e
@@ -4377,6 +4609,10 @@ trackedFiles:
     id: 0f2972c8890d
     last_write_checksum: sha1:9085bf332882e38ca3599996f28ca6973c35fa74
     pristine_git_object: 0faaae6f8fd5127115b4cb7f6da4389841d5e2d9
+  src/models/submitismsforapprovaldto.ts:
+    id: 46c18b594779
+    last_write_checksum: sha1:689499fff4be2ab38509e6d06f67d182a016c6ed
+    pristine_git_object: c586872f443865b3e3a4d495d72d3357285d1939
   src/models/submitsoaforapprovaldto.ts:
     id: 52023de4de30
     last_write_checksum: sha1:60999d86a6f3f775ce12a92a5edfd7fd589c0a2c
@@ -4681,6 +4917,10 @@ trackedFiles:
     id: 8b42bf2db483
     last_write_checksum: sha1:328e32571c304700b5041dbd63deaed452298ca2
     pristine_git_object: cefa5d95e0791e453fc9597be327b51c63923268
+  src/models/trustportalcontrollerremovecustomframeworkbadgev1op.ts:
+    id: 187a29dd6e93
+    last_write_checksum: sha1:90165df75708bab73bf95aede1dc610312a8c6cd
+    pristine_git_object: bc5333433600a0d2b988be0a422baed464969847
   src/models/trustportalcontrollerupdatecustomframeworkv1op.ts:
     id: 0c0141cc1669
     last_write_checksum: sha1:5717e944537591a1bf5e59864587b166e702eec3
@@ -4777,6 +5017,10 @@ trackedFiles:
     id: 207b5be255f7
     last_write_checksum: sha1:e89512f162b2631f32fcdf6effea66723da2d7c2
     pristine_git_object: 026aa6b597c2f4207de9426ebc35d0ea57ceec64
+  src/models/uploadcustomframeworkbadgedto.ts:
+    id: aac80e0f3a2c
+    last_write_checksum: sha1:ae4c0c635c2ef60e3126a3583ccabe9f747f58f3
+    pristine_git_object: 2b46d4b6fdf862c4849cc7f9f85a0e93adb5ecde
   src/models/uploaddocumentdto.ts:
     id: fcadbde7579d
     last_write_checksum: sha1:a3f49dab9591d506a0789bcf998e1e76d59e9403
@@ -4855,12 +5099,12 @@ trackedFiles:
     pristine_git_object: d89990b1a39878e9651513ee19fcba40b01670b4
   src/tool-names.ts:
     id: a9977280f9eb
-    last_write_checksum: sha1:7ae774ca77ae00852d03e04eb8622d76923d0096
-    pristine_git_object: 684c1bcdd825e2fba019cf5a3f9357b322e37688
+    last_write_checksum: sha1:db18d786cc299f0eaacf93daaef5242df6f27a83
+    pristine_git_object: 10a3e6a2d833e0bfcfbd0afb7c899f7e3d27eec3
   src/types/async.ts:
     id: fac8da972f86
-    last_write_checksum: sha1:3ff07b3feaf390ec1aeb18ff938e139c6c4a9585
-    pristine_git_object: 689dba5de50e8769e5f3bb913e3f42a146d15bc1
+    last_write_checksum: sha1:675d04bb4b4081dc3482f18de98674f9b446e7b4
+    pristine_git_object: 1543b95cf7be9b5a871d7395f259dbd65331dc21
   src/types/bigint.ts:
     id: 3ca6e3280e43
     last_write_checksum: sha1:ebf6d4b27fc3aa7ff76dbedae9a19fb7f39e5dc7
@@ -7247,5 +7491,135 @@ examples:
       parameters:
         path:
           issueId: "<id>"
+  TrustPortalController_uploadCustomFrameworkBadge_v1:
+    speakeasy-default-trust-portal-controller-upload-custom-framework-badge-v1:
+      requestBody:
+        application/json: {"customFrameworkId": "cfrm_6914cd0e16e4c7dccbb54426", "fileName": "acme-framework-badge.png", "fileType": "image/png", "fileData": "<value>"}
+      responses:
+        "201":
+          application/json: {"success": false, "badgeUrl": "https://ample-fund.info/"}
+  TrustPortalController_removeCustomFrameworkBadge_v1:
+    speakeasy-default-trust-portal-controller-remove-custom-framework-badge-v1:
+      parameters:
+        query:
+          customFrameworkId: "cfrm_6914cd0e16e4c7dccbb54426"
+  IsmsController_ensureSetup_v1:
+    speakeasy-default-isms-controller-ensure-setup-v1:
+      requestBody:
+        application/json: {"frameworkId": "frk_abc123def456"}
+  IsmsController_getDocument_v1:
+    speakeasy-default-isms-controller-get-document-v1:
+      parameters:
+        path:
+          id: "<id>"
+  IsmsController_addControls_v1:
+    speakeasy-default-isms-controller-add-controls-v1:
+      parameters:
+        path:
+          id: "<id>"
+      requestBody:
+        application/json: {"controlIds": ["ctl_abc123def456", "ctl_ghi789jkl012"]}
+  IsmsController_removeControl_v1:
+    speakeasy-default-isms-controller-remove-control-v1:
+      parameters:
+        path:
+          id: "<id>"
+          controlId: "<id>"
+  IsmsController_generate_v1:
+    speakeasy-default-isms-controller-generate-v1:
+      parameters:
+        path:
+          id: "<id>"
+  IsmsController_submitForApproval_v1:
+    speakeasy-default-isms-controller-submit-for-approval-v1:
+      parameters:
+        path:
+          id: "<id>"
+      requestBody:
+        application/json: {"approverId": "mem_abc123def456"}
+  IsmsController_approve_v1:
+    speakeasy-default-isms-controller-approve-v1:
+      parameters:
+        path:
+          id: "<id>"
+  IsmsController_decline_v1:
+    speakeasy-default-isms-controller-decline-v1:
+      parameters:
+        path:
+          id: "<id>"
+  IsmsController_drift_v1:
+    speakeasy-default-isms-controller-drift-v1:
+      parameters:
+        path:
+          id: "<id>"
+  IsmsController_exportDocument_v1:
+    speakeasy-default-isms-controller-export-document-v1:
+      parameters:
+        path:
+          id: "<id>"
+      requestBody:
+        application/json: {"format": "pdf"}
+  IsmsRegistersController_createRow_v1:
+    speakeasy-default-isms-registers-controller-create-row-v1:
+      parameters:
+        path:
+          id: "<id>"
+          register: "<value>"
+      requestBody:
+        application/json: {}
+  IsmsRegistersController_updateRow_v1:
+    speakeasy-default-isms-registers-controller-update-row-v1:
+      parameters:
+        path:
+          register: "<value>"
+          rowId: "<id>"
+      requestBody:
+        application/json: {}
+  IsmsRegistersController_deleteRow_v1:
+    speakeasy-default-isms-registers-controller-delete-row-v1:
+      parameters:
+        path:
+          register: "<value>"
+          rowId: "<id>"
+  IsmsRegistersController_saveNarrative_v1:
+    speakeasy-default-isms-registers-controller-save-narrative-v1:
+      parameters:
+        path:
+          id: "<id>"
+      requestBody:
+        application/json: {"narrative": {"key": "<value>"}}
+  IsmsProfileController_getProfile_v1:
+    speakeasy-default-isms-profile-controller-get-profile-v1:
+      parameters:
+        query:
+          frameworkId: "<id>"
+  IsmsProfileController_saveProfile_v1:
+    speakeasy-default-isms-profile-controller-save-profile-v1:
+      requestBody:
+        application/json: {"frameworkId": "<id>", "answers": {"key": "<value>", "key1": "<value>"}}
+  IsmsProfileController_generateAll_v1:
+    speakeasy-default-isms-profile-controller-generate-all-v1:
+      requestBody:
+        application/json: {"frameworkId": "frk_abc123def456"}
 examplesVersion: 1.0.2
-releaseNotes: "## Mcp-typescript SDK Changes:\n* `CompAi.Trust Portal.TrustPortalController_listComplianceResources_v1()`:  `response.[]` **Changed** (Breaking ⚠️)\n* `CompAi.Policies.PoliciesController_createPolicyVersion_v1()`: \n  *  `request.body` **Changed** (Breaking ⚠️)\n* `CompAi.Trust Portal.TrustPortalController_uploadComplianceResource_v1()`: \n  *  `request` **Changed**\n  *  `response` **Changed** (Breaking ⚠️)\n* `CompAi.Evidence Export (Auditor).AuditorEvidenceExportController_exportAllEvidence_v1()`:  `response` **Changed** (Breaking ⚠️)\n* `CompAi.Security Penetration Tests.PentestFindingContextsController_list_v1()`: **Added**\n* `CompAi.Trust Portal.TrustPortalController_getComplianceResourceUrl_v1()`:  `request` **Changed**\n* `CompAi.Security Penetration Tests.PentestFindingContextsController_upsert_v1()`: **Added**\n* `CompAi.Security Penetration Tests.PentestFindingContextsController_remove_v1()`: **Added**\n* `CompAi.Trust Portal.TrustPortalController_listCustomFrameworks_v1()`: **Added**\n* `CompAi.Trust Portal.TrustPortalController_updateCustomFramework_v1()`: **Added**\n* `CompAi.Trust Access.TrustAccessController_getPublicCustomFrameworks_v1()`: **Added**\n* `CompAi.CloudSecurity.CloudSecurityController_resolveSession_v1()`: **Added**\n* `CompAi.Trust Portal.TrustPortalController_updateAllowedEmails_v1()`: **Added**\n* `CompAi.Findings.FindingsController_listFindings_v1()`: \n  *  `request.evidenceFormType` **Changed**\n* `CompAi.Findings.FindingsController_createFinding_v1()`: \n  *  `request.evidenceFormType.enum(account-types)` **Added**\n* `CompAi.Controls.ControlsController_create_v1()`: \n  *  `request.documentTypes[].enum(account_types)` **Added**\n* `CompAi.Controls.ControlsController_linkDocumentTypes_v1()`: \n  *  `request.body.formTypes[].enum(account_types)` **Added**\n* `CompAi.Controls.ControlsController_unlinkDocumentType_v1()`: \n  *  `request.formType` **Changed**\n* `CompAi.Security Penetration Tests.SecurityPenetrationTestsController_create_v1()`: \n  *  `request.body.additionalContext` **Added**\n"
+releaseNotes: |
+  ## Mcp-typescript SDK Changes:
+  * `CompAi.Trust Portal.TrustPortalController_uploadCustomFrameworkBadge_v1()`: **Added**
+  * `CompAi.Trust Portal.TrustPortalController_removeCustomFrameworkBadge_v1()`: **Added**
+  * `CompAi.ISMS.IsmsController_ensureSetup_v1()`: **Added**
+  * `CompAi.ISMS.IsmsController_getDocument_v1()`: **Added**
+  * `CompAi.ISMS.IsmsController_addControls_v1()`: **Added**
+  * `CompAi.ISMS.IsmsController_removeControl_v1()`: **Added**
+  * `CompAi.ISMS.IsmsController_generate_v1()`: **Added**
+  * `CompAi.ISMS.IsmsController_submitForApproval_v1()`: **Added**
+  * `CompAi.ISMS.IsmsController_approve_v1()`: **Added**
+  * `CompAi.ISMS.IsmsController_decline_v1()`: **Added**
+  * `CompAi.ISMS.IsmsController_drift_v1()`: **Added**
+  * `CompAi.ISMS.IsmsController_exportDocument_v1()`: **Added**
+  * `CompAi.ISMS.IsmsRegistersController_createRow_v1()`: **Added**
+  * `CompAi.ISMS.IsmsRegistersController_updateRow_v1()`: **Added**
+  * `CompAi.ISMS.IsmsRegistersController_deleteRow_v1()`: **Added**
+  * `CompAi.ISMS.IsmsRegistersController_saveNarrative_v1()`: **Added**
+  * `CompAi.ISMS.IsmsProfileController_getProfile_v1()`: **Added**
+  * `CompAi.ISMS.IsmsProfileController_saveProfile_v1()`: **Added**
+  * `CompAi.ISMS.IsmsProfileController_generateAll_v1()`: **Added**
