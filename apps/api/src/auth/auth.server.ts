@@ -18,6 +18,10 @@ import { ac, allRoles } from '@trycompai/auth';
 import { createAuthMiddleware } from 'better-auth/api';
 import { Redis } from '@upstash/redis';
 import type { AccessControl } from 'better-auth/plugins/access';
+import {
+  resolveMicrosoftEmail,
+  type MicrosoftEmailClaims,
+} from './microsoft-email';
 
 const MAGIC_LINK_EXPIRES_IN_SECONDS = 60 * 60; // 1 hour
 
@@ -184,6 +188,13 @@ if (
     clientSecret: process.env.AUTH_MICROSOFT_CLIENT_SECRET,
     tenantId: process.env.AUTH_MICROSOFT_TENANT_ID || 'common',
     prompt: 'select_account',
+    // Microsoft Entra often omits the `email` claim for work/school accounts,
+    // which makes better-auth abort sign-in with `email_not_found`. Fall back to
+    // the username/UPN claims so these users can sign in. Accounts that DO return
+    // an `email` claim are unaffected. See ./microsoft-email.ts.
+    mapProfileToUser: (profile: MicrosoftEmailClaims) => ({
+      email: resolveMicrosoftEmail(profile),
+    }),
   };
 }
 
