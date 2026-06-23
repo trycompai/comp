@@ -190,6 +190,14 @@ export class PolicyPdfRendererService {
   }
 
   private convertToInternalFormat(content: any[]): JSONContent[] {
+    // Imported / non-TipTap policy content (e.g. Drata migrations) can have a
+    // `content` field that is a string or object instead of a JSONContent[]
+    // array. Guard so .map never runs on a non-array and throws
+    // "content.map is not a function" — a single malformed policy used to
+    // reject the entire download-all bundle with a 500.
+    if (!Array.isArray(content)) {
+      return [];
+    }
     return content.map((item) => ({
       type: item.type || 'paragraph',
       attrs: item.attrs,
