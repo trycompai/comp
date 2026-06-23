@@ -1,4 +1,5 @@
 import { serverApi } from '@/lib/api-server';
+import { filterAppAccessMembers } from '@/lib/compliance';
 import type { Member, Task, User } from '@db';
 import { Metadata } from 'next';
 import { cookies } from 'next/headers';
@@ -65,15 +66,11 @@ export default async function TasksPage({
     evidenceApprovalEnabled: false,
   };
 
-  // Filter members: exclude those with only employee/contractor roles (no app access)
-  // Auditors and anyone with owner/admin can still be assigned
-  const members = allMembers.filter((m) => {
-    const roles = m.role
-      ?.split(',')
-      .map((r) => r.trim())
-      .filter(Boolean) ?? [];
-    return roles.some((r) => ['owner', 'admin', 'auditor'].includes(r));
-  });
+  // Only members with app access can be evidence assignees. Resolve this via
+  // RBAC permissions (built-in + custom roles), not a hardcoded role allowlist,
+  // so members with a custom role (e.g. "SecDev") that grants app access still
+  // show as assignees and appear as assignee filter options.
+  const members = await filterAppAccessMembers(allMembers, orgId);
 
   // Read tab preference from cookie
   const cookieStore = await cookies();
