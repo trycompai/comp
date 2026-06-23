@@ -26,6 +26,9 @@ export function useResizableColumns(cookieName: string, defaults: Record<string,
   const widthsRef = useRef(widths);
   widthsRef.current = widths;
 
+  // Teardown for an in-progress drag, so it can also run if we unmount mid-drag.
+  const activeCleanupRef = useRef<(() => void) | null>(null);
+
   const startResize = useCallback(
     (key: string, event: React.MouseEvent) => {
       event.preventDefault();
@@ -41,10 +44,16 @@ export function useResizableColumns(cookieName: string, defaults: Record<string,
         setWidths((prev) => (prev[key] === next ? prev : { ...prev, [key]: next }));
       };
 
-      const handleUp = () => {
+      // Detach listeners + restore selection. Safe to call from mouseup or unmount.
+      const detach = () => {
         document.removeEventListener('mousemove', handleMove);
         document.removeEventListener('mouseup', handleUp);
         document.body.style.userSelect = '';
+        activeCleanupRef.current = null;
+      };
+
+      const handleUp = () => {
+        detach();
         saveColumnWidths(cookieName, widthsRef.current);
       };
 
@@ -52,9 +61,14 @@ export function useResizableColumns(cookieName: string, defaults: Record<string,
       document.body.style.userSelect = 'none';
       document.addEventListener('mousemove', handleMove);
       document.addEventListener('mouseup', handleUp);
+      activeCleanupRef.current = detach;
     },
     [cookieName],
   );
+
+  // Fallback: unmounting mid-drag tears down the global listeners and restores
+  // text selection so nothing leaks.
+  useEffect(() => () => activeCleanupRef.current?.(), []);
 
   return { widths, startResize };
 }
