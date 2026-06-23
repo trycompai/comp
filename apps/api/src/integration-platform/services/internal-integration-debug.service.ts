@@ -313,4 +313,30 @@ export class InternalIntegrationDebugService {
       checkId,
     });
   }
+
+  /**
+   * Read recently captured OAuth callback errors (recorded by the frontend when
+   * a connect redirects back with an error). Makes a failed connect diagnosable
+   * after the fact instead of being invisible.
+   */
+  async listOAuthErrors(params: {
+    organizationId?: string;
+    providerSlug?: string;
+    limit?: number;
+  }) {
+    const { organizationId, providerSlug } = params;
+    const rawLimit = params.limit ?? NaN;
+    const limit = Number.isFinite(rawLimit)
+      ? Math.min(Math.max(rawLimit, 1), 200)
+      : 50;
+    const errors = await db.integrationOAuthError.findMany({
+      where: {
+        ...(organizationId ? { organizationId } : {}),
+        ...(providerSlug ? { providerSlug } : {}),
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+    return { errors, total: errors.length };
+  }
 }
