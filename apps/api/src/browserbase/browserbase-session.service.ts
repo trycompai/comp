@@ -114,6 +114,17 @@ export class BrowserbaseSessionService {
     return session.contextId;
   }
 
+  async getSessionConnectUrl(sessionId: string): Promise<string> {
+    const session = await this.withBrowserbaseRetry({
+      operationName: 'session connect URL lookup',
+      operation: () => this.getBrowserbase().sessions.retrieve(sessionId),
+    });
+    if (!session.connectUrl) {
+      throw new Error('Browserbase session is missing a connect URL.');
+    }
+    return session.connectUrl;
+  }
+
   private async withBrowserbaseRetry<T>({
     operation,
     operationName,
@@ -167,27 +178,25 @@ export class BrowserbaseSessionService {
   async createStagehand(sessionId: string): Promise<Stagehand> {
     const Stagehand = await this.loadStagehand();
 
-    // We create and own the Browserbase session ourselves, and this feature only
-    // needs CDP navigation plus local inference. Stagehand's default hosted-API
-    // mode adds a POST /sessions/start round-trip that is unnecessary here and is
-    // the source of opaque "Unknown error: <status>" failures. disableAPI:true
-    // skips it: the session still resumes over CDP and extract/act/agent run
-    // locally against ANTHROPIC_API_KEY.
-    //
-    // init() still performs a Browserbase API round-trip to resume the session,
-    // whose transient failures — e.g. "Premature close" — bypass the retry that
-    // wraps our direct SDK calls, so retry init too, closing any half-initialized
-    // instance between attempts to avoid leaking it. Stagehand strips upstream
-    // error bodies from its throws, so forward its error logs into our logger.
+    // Resolve the CDP connect URL ourselves with our identity-encoded client.
+    // Stagehand's BROWSERBASE mode would instead call bb.sessions.retrieve on its
+    // OWN Browserbase client, which lacks our accept-encoding:identity header and
+    // so fails deterministically with "Premature close" (response decompression
+    // mishandling) in our runtime — the same failure the identity header already
+    // fixes for our own calls. Attaching via env:'LOCAL' + cdpUrl makes Stagehand
+    // connect straight to the session over CDP without that call; extract/act/
+    // agent then run locally against ANTHROPIC_API_KEY.
+    const cdpUrl = await this.getSessionConnectUrl(sessionId);
+
+    // A transient CDP attach can still fail; retry init, closing any
+    // half-initialized instance between attempts to avoid leaking it. Stagehand
+    // strips upstream error bodies from its throws, so forward its error logs.
     return this.withBrowserbaseRetry({
       operationName: 'stagehand initialization',
       operation: async () => {
         const stagehand = new Stagehand({
-          env: 'BROWSERBASE',
-          apiKey: process.env.BROWSERBASE_API_KEY,
-          projectId: this.getProjectId(),
-          browserbaseSessionID: sessionId,
-          disableAPI: true,
+          env: 'LOCAL',
+          localBrowserLaunchOptions: { cdpUrl },
           model: {
             modelName: STAGEHAND_MODEL,
             apiKey: process.env.ANTHROPIC_API_KEY,
@@ -206,8 +215,6 @@ export class BrowserbaseSessionService {
           await stagehand.init();
           return stagehand;
         } catch (error) {
-          // keepAlive:true means close() will not end the Browserbase session,
-          // so the next attempt can resume the same sessionId.
           await this.safeCloseStagehand(stagehand);
           throw error;
         }

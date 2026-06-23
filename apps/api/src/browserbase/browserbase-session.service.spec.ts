@@ -178,6 +178,25 @@ describe('BrowserbaseSessionService', () => {
     expect(debugSession).toHaveBeenCalledTimes(2);
   });
 
+  it('resolves the session connect URL via the identity-encoded client', async () => {
+    jest.useFakeTimers();
+    const service = new BrowserbaseSessionService();
+    const retrieveSession = jest
+      .fn()
+      .mockRejectedValueOnce(prematureCloseError())
+      .mockResolvedValueOnce({ connectUrl: 'wss://connect.browserbase.test/s1' });
+    jest
+      .spyOn(service, 'getBrowserbase')
+      .mockReturnValue(mockBrowserbaseClient({ retrieveSession }));
+
+    const promise = service.getSessionConnectUrl('session_1');
+    await jest.advanceTimersByTimeAsync(250);
+
+    await expect(promise).resolves.toBe('wss://connect.browserbase.test/s1');
+    expect(retrieveSession).toHaveBeenCalledTimes(2);
+    expect(retrieveSession).toHaveBeenCalledWith('session_1');
+  });
+
   it('retries transient Stagehand init failures', async () => {
     jest.useFakeTimers();
     const service = new BrowserbaseSessionService();
@@ -188,6 +207,9 @@ describe('BrowserbaseSessionService', () => {
     const close = jest.fn().mockResolvedValue(undefined);
     const StagehandCtor = mockStagehandClass({ init, close });
     jest.spyOn(service, 'loadStagehand').mockResolvedValue(StagehandCtor);
+    jest
+      .spyOn(service, 'getSessionConnectUrl')
+      .mockResolvedValue('wss://connect.browserbase.test/s1');
 
     const promise = service.createStagehand('session_1');
     await jest.advanceTimersByTimeAsync(250);
@@ -207,6 +229,9 @@ describe('BrowserbaseSessionService', () => {
     jest
       .spyOn(service, 'loadStagehand')
       .mockResolvedValue(mockStagehandClass({ init, close }));
+    jest
+      .spyOn(service, 'getSessionConnectUrl')
+      .mockResolvedValue('wss://connect.browserbase.test/s1');
 
     const promise = service.createStagehand('session_1');
     const expectation = expect(promise).rejects.toBeInstanceOf(
@@ -229,6 +254,9 @@ describe('BrowserbaseSessionService', () => {
     jest
       .spyOn(service, 'loadStagehand')
       .mockResolvedValue(mockStagehandClass({ init, close }));
+    jest
+      .spyOn(service, 'getSessionConnectUrl')
+      .mockResolvedValue('wss://connect.browserbase.test/s1');
 
     await expect(service.createStagehand('session_1')).rejects.toBe(
       sessionNotFound,
@@ -238,22 +266,24 @@ describe('BrowserbaseSessionService', () => {
     expect(close).toHaveBeenCalledTimes(1);
   });
 
-  it('runs Stagehand with the hosted API disabled', async () => {
+  it('attaches Stagehand to the resolved CDP URL instead of resuming via Browserbase', async () => {
     const service = new BrowserbaseSessionService();
     const init = jest.fn().mockResolvedValue(undefined);
     const close = jest.fn().mockResolvedValue(undefined);
     const StagehandCtor = mockStagehandClass({ init, close });
     jest.spyOn(service, 'loadStagehand').mockResolvedValue(StagehandCtor);
+    jest
+      .spyOn(service, 'getSessionConnectUrl')
+      .mockResolvedValue('wss://connect.browserbase.test/s1');
 
     await service.createStagehand('session_1');
 
-    // disableAPI:true skips Stagehand's hosted POST /sessions/start (the source
-    // of "Unknown error: 400"); the session still resumes over CDP.
+    // env:'LOCAL' + cdpUrl attaches over CDP and avoids Stagehand's own
+    // bb.sessions.retrieve (the "Premature close" source).
     expect(StagehandCtor).toHaveBeenCalledWith(
       expect.objectContaining({
-        env: 'BROWSERBASE',
-        browserbaseSessionID: 'session_1',
-        disableAPI: true,
+        env: 'LOCAL',
+        localBrowserLaunchOptions: { cdpUrl: 'wss://connect.browserbase.test/s1' },
       }),
     );
   });
