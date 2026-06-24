@@ -80,10 +80,16 @@ export class OrganizationAccessService {
       return { hasAccess: false, autoApproved: false, reason: 'not-eligible' };
     }
 
-    const isTrycompEmail = userEmailDomain === 'trycomp.ai';
+    const isTrycompEmailDomain = userEmailDomain === 'trycomp.ai';
+
+    // Only treat an @trycomp.ai address as an internal team member once the
+    // account's email has actually been verified. The domain on its own proves
+    // nothing about who controls the mailbox.
+    const isVerifiedTrycompEmail =
+      isTrycompEmailDomain && (await this.isEmailVerified(userEmail));
 
     const canAutoApproveViaDomain =
-      !isTrycompEmail &&
+      !isTrycompEmailDomain &&
       Boolean(orgWebsiteDomain) &&
       userEmailDomain === orgWebsiteDomain &&
       !isPublicEmailDomain(userEmailDomain);
@@ -92,9 +98,9 @@ export class OrganizationAccessService {
       ? await this.stripeService.isDomainActiveCustomer(userEmailDomain)
       : false;
 
-    if (isTrycompEmail || isStripeCustomer) {
+    if (isVerifiedTrycompEmail || isStripeCustomer) {
       await this.grantAccess(organizationId);
-      const reason: AutoApproveReason = isTrycompEmail
+      const reason: AutoApproveReason = isVerifiedTrycompEmail
         ? 'trycomp-email'
         : 'stripe-customer';
       this.logger.log(
@@ -104,6 +110,17 @@ export class OrganizationAccessService {
     }
 
     return { hasAccess: false, autoApproved: false, reason: 'not-eligible' };
+  }
+
+  private async isEmailVerified(email: string | undefined): Promise<boolean> {
+    if (!email) {
+      return false;
+    }
+    const user = await db.user.findFirst({
+      where: { email },
+      select: { emailVerified: true },
+    });
+    return user?.emailVerified === true;
   }
 
   private async grantAccess(organizationId: string): Promise<void> {

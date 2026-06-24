@@ -8,6 +8,9 @@ jest.mock('@db', () => ({
       findUnique: jest.fn(),
       update: jest.fn(),
     },
+    user: {
+      findFirst: jest.fn(),
+    },
   },
 }));
 
@@ -15,6 +18,9 @@ const mockedDb = db as unknown as {
   organization: {
     findUnique: jest.Mock;
     update: jest.Mock;
+  };
+  user: {
+    findFirst: jest.Mock;
   };
 };
 
@@ -39,6 +45,7 @@ describe('OrganizationAccessService', () => {
     delete process.env.SELF_HOSTED;
     delete process.env.NEXT_PUBLIC_SELF_HOSTED;
     mockedDb.organization.update.mockResolvedValue({});
+    mockedDb.user.findFirst.mockResolvedValue({ emailVerified: true });
   });
 
   afterAll(() => {
@@ -133,6 +140,29 @@ describe('OrganizationAccessService', () => {
     });
     expect(isDomainActiveCustomer).not.toHaveBeenCalled();
     expect(mockedDb.organization.update).toHaveBeenCalled();
+  });
+
+  it('does not grant on @trycomp.ai email when the account email is unverified', async () => {
+    mockedDb.organization.findUnique.mockResolvedValue({
+      id: 'org_1',
+      hasAccess: false,
+      website: 'acme.com',
+    });
+    mockedDb.user.findFirst.mockResolvedValue({ emailVerified: false });
+    const { service, isDomainActiveCustomer } = buildService();
+
+    const result = await service.autoApproveAccess({
+      organizationId: 'org_1',
+      userEmail: 'tofik@trycomp.ai',
+    });
+
+    expect(result).toEqual({
+      hasAccess: false,
+      autoApproved: false,
+      reason: 'not-eligible',
+    });
+    expect(isDomainActiveCustomer).not.toHaveBeenCalled();
+    expect(mockedDb.organization.update).not.toHaveBeenCalled();
   });
 
   it('grants when user email domain matches org website AND is an active Stripe customer', async () => {
