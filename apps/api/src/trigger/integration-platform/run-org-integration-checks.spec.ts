@@ -108,11 +108,13 @@ describe('sendBundledFailureEmails', () => {
       { assignee: { user: { id: 'u_assignee', name: 'Ann', email: 'ann@x.com' } } },
       { assignee: null },
     ]);
-    // admin + owner + an employee (excluded) + the assignee again (deduped).
+    // admin + owner + an employee (excluded) + a substring-only custom role
+    // (must be excluded by EXACT token matching) + the assignee again (deduped).
     mockDb.member.findMany.mockResolvedValue([
       { role: 'admin', user: { id: 'u_admin', name: 'Adam', email: 'adam@x.com' } },
       { role: 'owner', user: { id: 'u_owner', name: 'Oli', email: 'oli@x.com' } },
       { role: 'employee', user: { id: 'u_emp', name: 'Eve', email: 'eve@x.com' } },
+      { role: 'co-owner', user: { id: 'u_sub', name: 'Sub', email: 'sub@x.com' } },
       {
         role: 'admin,auditor',
         user: { id: 'u_assignee', name: 'Ann', email: 'ann@x.com' },
@@ -127,14 +129,31 @@ describe('sendBundledFailureEmails', () => {
       failedTasks,
     });
 
-    // assignee + admin + owner; employee excluded; assignee not double-sent.
+    // assignee + admin + owner; employee + substring-only "co-owner" excluded;
+    // assignee not double-sent.
     expect(recipientEmails().sort()).toEqual(
       ['adam@x.com', 'ann@x.com', 'oli@x.com'].sort(),
     );
+    // EXACT-token matching: "co-owner" must NOT be treated as owner.
+    expect(recipientEmails()).not.toContain('sub@x.com');
     // Every recipient gets the FULL list of failed tasks.
     expect(emailedTaskTitles(0)).toEqual(['Task 1', 'Task 2']);
     expect(triggerEmailMock.mock.calls[0][0].subject).toBe(
       '2 tasks failed automated checks in Acme',
+    );
+  });
+
+  it('queries members WITHOUT a platform user.role filter (notifies admin/owner regardless of platform role)', async () => {
+    await sendBundledFailureEmails({
+      organizationId: 'org1',
+      organizationName: 'Acme',
+      failedTasks,
+    });
+
+    expect(mockDb.member.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { organizationId: 'org1', deactivated: false },
+      }),
     );
   });
 

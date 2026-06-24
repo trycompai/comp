@@ -79,9 +79,9 @@ function toRecipient(user: {
 
 /**
  * Recipients for an org's bundled failure email: the assignees of the failed
- * tasks UNION the org's admins/owners, deduped by user id. The recipient
- * RESOLUTION mirrors the old per-task email (same member filter + org-scoped
- * unsubscribe), just unioned over many tasks at once.
+ * tasks UNION the org's admins/owners (by EXACT member-role token), deduped by
+ * user id. Mirrors the canonical getOwnerAdminRecipients resolver in
+ * task-notifier.service.ts.
  *
  * Note the deliberate product change: every recipient receives the FULL org
  * digest (all tasks that failed this run), so a non-admin assignee now sees the
@@ -107,7 +107,6 @@ async function resolveRecipients(params: {
       where: {
         organizationId,
         deactivated: false,
-        user: { role: { not: 'admin' } },
       },
       select: {
         role: true,
@@ -124,10 +123,12 @@ async function resolveRecipients(params: {
     if (user?.id && user.email) recipientMap.set(user.id, toRecipient(user));
   }
 
-  // Org admins/owners (member.role is comma-separated, e.g. "admin,auditor").
+  // Org admins/owners. member.role is a comma-separated list (e.g.
+  // "admin,auditor"); match EXACT role tokens, not substrings, so a custom role
+  // like "co-owner" or "billing-admin" is not mistaken for owner/admin.
   for (const member of allMembers) {
-    const role = member.role ?? '';
-    if (!role.includes('admin') && !role.includes('owner')) continue;
+    const roles = (member.role ?? '').split(',').map((r) => r.trim());
+    if (!roles.includes('admin') && !roles.includes('owner')) continue;
     const user = member.user;
     if (user?.id && user.email) recipientMap.set(user.id, toRecipient(user));
   }
