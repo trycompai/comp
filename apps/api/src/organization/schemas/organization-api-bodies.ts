@@ -35,11 +35,6 @@ export const UPDATE_ORGANIZATION_BODY: ApiBodyOptions = {
         description: 'Whether onboarding is completed',
         example: true,
       },
-      hasAccess: {
-        type: 'boolean',
-        description: 'Whether organization has access to the platform',
-        example: true,
-      },
       fleetDmLabelId: {
         type: 'integer',
         description: 'FleetDM label ID for device management',
