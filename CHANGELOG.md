@@ -1,3 +1,11 @@
+## [3.92.1](https://github.com/trycompai/comp/compare/v3.92.0...v3.92.1) (2026-06-24)
+
+
+### Bug Fixes
+
+* **auth:** route auditor invite links directly to workspace instead of onboarding ([db849e2](https://github.com/trycompai/comp/commit/db849e2e0e2e4816018bd468eaafd57b63acd23b))
+* **sync:** apply user filters to dynamic provider employee sync ([8dfbec3](https://github.com/trycompai/comp/commit/8dfbec3d5ea2b884dede2b4656d0cec3eaef2ca1))
+
 # [3.92.0](https://github.com/trycompai/comp/compare/v3.91.1...v3.92.0) (2026-06-24)
 
 
