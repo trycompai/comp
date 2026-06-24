@@ -4,7 +4,11 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { getManifest, runAllChecks } from '@trycompai/integration-platform';
+import {
+  getManifest,
+  interpretDeclarativeCheck,
+  runAllChecks,
+} from '@trycompai/integration-platform';
 import { ConnectionRepository } from '../repositories/connection.repository';
 import { ProviderRepository } from '../repositories/provider.repository';
 import { CredentialVaultService } from './credential-vault.service';
@@ -51,6 +55,102 @@ export class ConnectionCheckRunnerService {
   }): Promise<RunAllChecksResult> {
     const { connectionId, organizationId, checkId } = params;
 
+    const { connection, provider, manifest } =
+      await this.loadConnectionContext(connectionId, organizationId);
+    if (!manifest.checks || manifest.checks.length === 0) {
+      throw new BadRequestException(`No checks defined for ${provider.slug}`);
+    }
+
+    const { credentials, variables, accessToken, onTokenRefresh } =
+      await this.resolveExecutionInputs(
+        connection,
+        organizationId,
+        provider,
+        manifest,
+      );
+
+    return runAllChecks({
+      manifest,
+      accessToken,
+      credentials,
+      variables,
+      connectionId,
+      organizationId,
+      checkId,
+      onTokenRefresh,
+      logger: {
+        info: (msg, data) => this.logger.log(msg, data),
+        warn: (msg, data) => this.logger.warn(msg, data),
+        error: (msg, data) => this.logger.error(msg, data),
+      },
+    });
+  }
+
+  /**
+   * Run CANDIDATE check code against a connection's real credentials on the
+   * real runtime, returning findings + passing results + logs. The candidate is
+   * executed as the integration's ONLY check but keeps the real manifest's
+   * auth/baseUrl/defaultHeaders, so it authenticates and behaves exactly as it
+   * would once saved — yet NOTHING is persisted and the live, shared check is
+   * never touched. This is the safe way to validate a fix BEFORE applying it.
+   */
+  async runCandidateCheck(params: {
+    connectionId: string;
+    organizationId: string;
+    code: string;
+    checkId?: string;
+  }): Promise<RunAllChecksResult> {
+    const { connectionId, organizationId, code, checkId } = params;
+    if (typeof code !== 'string' || code.trim().length === 0) {
+      throw new BadRequestException('Candidate code is required');
+    }
+
+    const { connection, provider, manifest } =
+      await this.loadConnectionContext(connectionId, organizationId);
+
+    const { credentials, variables, accessToken, onTokenRefresh } =
+      await this.resolveExecutionInputs(
+        connection,
+        organizationId,
+        provider,
+        manifest,
+      );
+
+    const candidateCheck = interpretDeclarativeCheck({
+      id: checkId || 'candidate',
+      name: checkId ? `Candidate: ${checkId}` : 'Candidate check',
+      description: 'Candidate code dry-run (not persisted)',
+      definition: { steps: [{ type: 'code', code }] },
+      defaultSeverity: 'medium',
+    });
+
+    const candidateManifest = { ...manifest, checks: [candidateCheck] };
+
+    return runAllChecks({
+      manifest: candidateManifest,
+      accessToken,
+      credentials,
+      variables,
+      connectionId,
+      organizationId,
+      onTokenRefresh,
+      logger: {
+        info: (msg, data) => this.logger.log(msg, data),
+        warn: (msg, data) => this.logger.warn(msg, data),
+        error: (msg, data) => this.logger.error(msg, data),
+      },
+    });
+  }
+
+  /**
+   * Resolve + validate the connection, provider and manifest for a run.
+   * Shared by runChecks and runCandidateCheck (behaviour identical to the
+   * original inline logic).
+   */
+  private async loadConnectionContext(
+    connectionId: string,
+    organizationId: string,
+  ) {
     const connection = await this.connectionRepository.findById(connectionId);
     if (!connection || connection.organizationId !== organizationId) {
       throw new NotFoundException('Connection not found');
@@ -72,9 +172,22 @@ export class ConnectionCheckRunnerService {
     if (!manifest) {
       throw new NotFoundException(`Manifest for ${provider.slug} not found`);
     }
-    if (!manifest.checks || manifest.checks.length === 0) {
-      throw new BadRequestException(`No checks defined for ${provider.slug}`);
-    }
+
+    return { connection, provider, manifest };
+  }
+
+  /**
+   * Decrypt + validate credentials, resolve variables, and build the OAuth
+   * refresh callback. Shared by runChecks and runCandidateCheck (behaviour
+   * identical to the original inline logic).
+   */
+  private async resolveExecutionInputs(
+    connection: { id: string; variables: unknown },
+    organizationId: string,
+    provider: { slug: string },
+    manifest: NonNullable<ReturnType<typeof getManifest>>,
+  ) {
+    const connectionId = connection.id;
 
     const credentials =
       await this.credentialVaultService.getDecryptedCredentials(connectionId);
@@ -160,20 +273,6 @@ export class ConnectionCheckRunnerService {
       }
     }
 
-    return runAllChecks({
-      manifest,
-      accessToken,
-      credentials,
-      variables,
-      connectionId,
-      organizationId,
-      checkId,
-      onTokenRefresh,
-      logger: {
-        info: (msg, data) => this.logger.log(msg, data),
-        warn: (msg, data) => this.logger.warn(msg, data),
-        error: (msg, data) => this.logger.error(msg, data),
-      },
-    });
+    return { credentials, variables, accessToken, onTokenRefresh };
   }
 }

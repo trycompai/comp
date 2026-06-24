@@ -65,7 +65,9 @@ export const isRetryableBrowserbaseUpstreamError = (
   return RETRYABLE_MESSAGE_PARTS.some((part) => message.includes(part));
 };
 
-export const browserbaseUnavailableException = () =>
+export const browserbaseUnavailableException = (detail?: string) =>
   new ServiceUnavailableException(
-    'Browserbase is temporarily unavailable. Please retry in a moment.',
+    detail
+      ? `Browserbase is temporarily unavailable. Please retry in a moment. (${detail})`
+      : 'Browserbase is temporarily unavailable. Please retry in a moment.',
   );

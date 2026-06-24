@@ -75,6 +75,54 @@ describe('PolicyPdfRendererService', () => {
       expect(result).toBeInstanceOf(Buffer);
     });
 
+    it('does not crash when content.content is not an array (Drata migration import)', () => {
+      // Regression for the Drata-migration download-all bug: imported,
+      // non-TipTap policy content can have `content.content` as a string/object
+      // rather than a JSONContent[] array. convertToInternalFormat used to call
+      // .map on it -> "content.map is not a function" -> the whole bundle
+      // rejected with a 500. A single malformed policy must not poison the
+      // bundle; it should degrade to an empty body.
+      const result = service.renderPoliciesPdfBuffer(
+        [
+          {
+            name: 'Imported Policy',
+            content: {
+              type: 'doc',
+              content: 'This was a plain string, not a TipTap node array.',
+            },
+          },
+        ],
+        'Test Org',
+      );
+
+      expect(result).toBeInstanceOf(Buffer);
+      expect(result.length).toBeGreaterThan(0);
+      expect(result.subarray(0, 5).toString()).toBe('%PDF-');
+    });
+
+    it('does not crash when a nested node content is not an array', () => {
+      // The malformed shape can also appear nested: a top-level array whose
+      // item has a non-array `content`. The recursive convertToInternalFormat
+      // call must guard against .map on a non-array too.
+      const result = service.renderPoliciesPdfBuffer(
+        [
+          {
+            name: 'Nested Malformed Policy',
+            content: {
+              type: 'doc',
+              content: [
+                { type: 'paragraph', content: 'plain string instead of nodes' },
+              ],
+            },
+          },
+        ],
+        'Test Org',
+      );
+
+      expect(result).toBeInstanceOf(Buffer);
+      expect(result.length).toBeGreaterThan(0);
+    });
+
     it('handles policies without organization name', () => {
       const result = service.renderPoliciesPdfBuffer([
         {
