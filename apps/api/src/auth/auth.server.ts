@@ -1,5 +1,9 @@
 import '../config/load-env';
-import { MagicLinkEmail, OTPVerificationEmail } from '@trycompai/email';
+import {
+  MagicLinkEmail,
+  OTPVerificationEmail,
+  VerifyEmail,
+} from '@trycompai/email';
 import { triggerEmail } from '../email/trigger-email';
 import { InviteEmail } from '../email/templates/invite-member';
 import { db } from '@db';
@@ -293,6 +297,20 @@ export const auth = betterAuth({
   trustedOrigins: getTrustedOrigins(),
   emailAndPassword: {
     enabled: true,
+    requireEmailVerification: true,
+  },
+  emailVerification: {
+    sendOnSignUp: true,
+    sendVerificationEmail: async ({ user, url }) => {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Auth] Sending verification email to:', user.email);
+      }
+      await triggerEmail({
+        to: user.email,
+        subject: 'Verify your email for Comp AI',
+        react: VerifyEmail({ email: user.email, url }),
+      });
+    },
   },
   advanced: {
     database: {
