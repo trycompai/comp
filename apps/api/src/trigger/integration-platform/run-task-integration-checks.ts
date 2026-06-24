@@ -1,9 +1,6 @@
 import { getManifest, runAllChecks } from '@trycompai/integration-platform';
 import { db } from '@db';
 import { logger, tags, task } from '@trigger.dev/sdk';
-import { triggerEmail } from '../../email/trigger-email';
-import { TaskStatusChangedEmail } from '../../email/templates/task-status-changed';
-import { isUserUnsubscribed } from '@trycompai/email';
 import { isCheckDisabledForTask } from '../../integration-platform/utils/disabled-task-checks';
 import {
   getAccessToken,
@@ -26,164 +23,34 @@ import {
 } from '../../integration-platform/utils/task-check-evaluation';
 
 /**
- * Send email notifications for task status change
+ * Result of one task's integration-check run. The per-org runner
+ * (run-org-integration-checks) reads the success branch to bundle every task
+ * that freshly transitioned into `failed` into a single email per recipient.
  */
-async function sendTaskStatusChangeEmails(params: {
-  organizationId: string;
-  taskId: string;
-  taskTitle: string;
-  oldStatus: string;
-  newStatus: 'done' | 'failed';
-}) {
-  const { organizationId, taskId, taskTitle, oldStatus, newStatus } = params;
-
-  try {
-    // Get organization, task assignee, and org owners
-    const [organization, task, allMembers] = await Promise.all([
-      db.organization.findUnique({
-        where: { id: organizationId },
-        select: { name: true },
-      }),
-      db.task.findUnique({
-        where: { id: taskId },
-        select: {
-          assignee: {
-            select: {
-              user: {
-                select: {
-                  id: true,
-                  name: true,
-                  email: true,
-                },
-              },
-            },
-          },
-        },
-      }),
-      db.member.findMany({
-        where: {
-          organizationId,
-          deactivated: false,
-          user: { role: { not: 'admin' } },
-        },
-        select: {
-          role: true,
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
-        },
-      }),
-    ]);
-
-    const organizationName = organization?.name ?? 'your organization';
-    const appUrl =
-      process.env.NEXT_PUBLIC_APP_URL ||
-      process.env.BETTER_AUTH_URL ||
-      'https://app.trycomp.ai';
-    const taskUrl = `${appUrl}/${organizationId}/tasks/${taskId}`;
-
-    // Filter for admins/owners
-    const adminMembers = allMembers.filter(
-      (member) =>
-        member.role &&
-        (member.role.includes('admin') || member.role.includes('owner')),
-    );
-
-    // Build recipient list: assignee + admins
-    const recipientMap = new Map<
-      string,
-      { id: string; name: string; email: string }
-    >();
-
-    // Add assignee
-    if (task?.assignee?.user?.id && task.assignee.user.email) {
-      recipientMap.set(task.assignee.user.id, {
-        id: task.assignee.user.id,
-        name:
-          task.assignee.user.name?.trim() ||
-          task.assignee.user.email?.trim() ||
-          'User',
-        email: task.assignee.user.email,
-      });
+export type TaskCheckRunResult =
+  | {
+      success: true;
+      taskId: string;
+      taskTitle: string;
+      checksRun: number;
+      totalPassing: number;
+      totalFindings: number;
+      taskStatus: 'failed' | 'done' | null;
+      statusChangedToFailed: boolean;
+      failedCount: number;
+      totalCount: number;
     }
-
-    // Add admin members
-    for (const member of adminMembers) {
-      if (member.user?.id && member.user.email) {
-        recipientMap.set(member.user.id, {
-          id: member.user.id,
-          name: member.user.name?.trim() || member.user.email?.trim() || 'User',
-          email: member.user.email,
-        });
-      }
-    }
-
-    const recipients = Array.from(recipientMap.values());
-
-    // Send emails to each recipient
-    await Promise.allSettled(
-      recipients.map(async (recipient) => {
-        // Check if user is unsubscribed
-        const isUnsubscribed = await isUserUnsubscribed(
-          db,
-          recipient.email,
-          'taskAssignments',
-          organizationId,
-        );
-
-        if (isUnsubscribed) {
-          logger.info(
-            `Skipping notification: user ${recipient.email} is unsubscribed from task assignments`,
-          );
-          return;
-        }
-
-        try {
-          await triggerEmail({
-            to: recipient.email,
-            subject: `Task "${taskTitle}" status changed to ${newStatus}`,
-            react: TaskStatusChangedEmail({
-              toName: recipient.name,
-              toEmail: recipient.email,
-              taskTitle,
-              oldStatus: oldStatus.charAt(0).toUpperCase() + oldStatus.slice(1),
-              newStatus: newStatus === 'failed' ? 'Failed' : 'Done',
-              changedByName: 'Automation',
-              organizationName,
-              taskUrl,
-            }),
-            system: true,
-          });
-
-          logger.info(`Status change email sent to ${recipient.email}`);
-        } catch (error) {
-          logger.error(
-            `Failed to send status change email to ${recipient.email}`,
-            {
-              error: error instanceof Error ? error.message : 'Unknown error',
-            },
-          );
-        }
-      }),
-    );
-
-    logger.info(
-      `Sent ${recipients.length} status change notifications for task ${taskId} (status: ${newStatus})`,
-    );
-  } catch (error) {
-    logger.error('Failed to send task status change emails', {
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
-  }
-}
+  | { success: false; taskId?: string; error: string };
 
 /**
  * Worker task that runs integration checks for a single task.
  * Triggered by the orchestrator (integration-checks-schedule).
+ *
+ * This worker no longer sends a per-task status-change email. The orchestrator
+ * fans these out one run per task, so emailing here produced one email per
+ * failing task (spam). Instead the per-task run REPORTS the transition back to
+ * its per-org parent (run-org-integration-checks), which bundles every task
+ * that failed in the run into a single email per recipient.
  */
 export const runTaskIntegrationChecks = task({
   id: 'run-task-integration-checks',
@@ -195,7 +62,7 @@ export const runTaskIntegrationChecks = task({
     providerSlug: string;
     organizationId: string;
     checkIds: string[];
-  }) => {
+  }): Promise<TaskCheckRunResult> => {
     const {
       taskId,
       taskTitle,
@@ -560,6 +427,12 @@ export const runTaskIntegrationChecks = task({
         totalFindings,
       );
 
+      // Whether THIS run flipped the task into `failed` (e.g. todo/done →
+      // failed). The per-org runner bundles only these transitions into one
+      // email, so a task that was already failed isn't re-reported every run —
+      // preserving the previous "only notify on transition" behavior.
+      let statusChangedToFailed = false;
+
       if (newStatus === 'failed') {
         // Get current status before updating
         const taskBeforeUpdate = await db.task.findUnique({
@@ -576,18 +449,10 @@ export const runTaskIntegrationChecks = task({
           `Task ${taskId} marked as failed due to ${effectiveFailures} finding(s)`,
         );
 
-        // Only send email notifications if status actually changed
-        if (oldStatus !== 'failed') {
-          await sendTaskStatusChangeEmails({
-            organizationId,
-            taskId,
-            taskTitle,
-            oldStatus,
-            newStatus: 'failed',
-          });
-        } else {
+        statusChangedToFailed = oldStatus !== 'failed';
+        if (!statusChangedToFailed) {
           logger.info(
-            `Skipping notification: task ${taskId} was already in failed status`,
+            `Task ${taskId} was already in failed status; not reporting it for the bundled email`,
           );
         }
       } else if (newStatus === 'done') {
@@ -630,10 +495,17 @@ export const runTaskIntegrationChecks = task({
       return {
         success: true,
         taskId,
+        taskTitle,
         checksRun: effectiveCheckIds.length,
         totalPassing,
         totalFindings,
         taskStatus: newStatus,
+        // Consumed by the per-org bundled-failure email
+        // (run-org-integration-checks). `statusChangedToFailed` gates inclusion;
+        // failedCount/totalCount feed the "(X/Y failed)" line per task.
+        statusChangedToFailed,
+        failedCount: effectiveFailures,
+        totalCount: totalPassing + totalFindings,
       };
     } catch (error) {
       logger.error(`Failed to run checks for task ${taskId}`, {
