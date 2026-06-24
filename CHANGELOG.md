@@ -1,3 +1,11 @@
+## [3.91.1](https://github.com/trycompai/comp/compare/v3.91.0...v3.91.1) (2026-06-24)
+
+
+### Bug Fixes
+
+* **integration-checks:** bundle per-task failure emails into one per org ([f59076c](https://github.com/trycompai/comp/commit/f59076c8bf6c17e2854cdffa5c83079b29c0cab1))
+* **integration-checks:** exact role-token recipients, drop platform-role filter ([5cbb855](https://github.com/trycompai/comp/commit/5cbb8554b6e6415445aeea58ea9db0967d7134b1))
+
 # [3.91.0](https://github.com/trycompai/comp/compare/v3.90.1...v3.91.0) (2026-06-23)
 
 
