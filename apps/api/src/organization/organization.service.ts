@@ -101,6 +101,11 @@ export class OrganizationService {
         primaryColor: updateData.primaryColor,
         advancedModeEnabled: updateData.advancedModeEnabled,
         backgroundCheckStepEnabled: updateData.backgroundCheckStepEnabled,
+        evidenceApprovalEnabled: updateData.evidenceApprovalEnabled,
+        deviceAgentStepEnabled: updateData.deviceAgentStepEnabled,
+        securityTrainingStepEnabled: updateData.securityTrainingStepEnabled,
+        whistleblowerReportEnabled: updateData.whistleblowerReportEnabled,
+        accessRequestFormEnabled: updateData.accessRequestFormEnabled,
       };
 
       const updatedOrganization = await db.organization.update({

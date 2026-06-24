@@ -64,6 +64,23 @@ describe('OrganizationService.updateById', () => {
     expect(arg.data.website).toBe('https://acme.com');
   });
 
+  it('persists the org-owned onboarding and portal toggles', async () => {
+    await service.updateById('org_1', {
+      evidenceApprovalEnabled: true,
+      deviceAgentStepEnabled: false,
+      securityTrainingStepEnabled: false,
+      whistleblowerReportEnabled: false,
+      accessRequestFormEnabled: true,
+    });
+
+    const arg = mockedDb.organization.update.mock.calls[0][0];
+    expect(arg.data.evidenceApprovalEnabled).toBe(true);
+    expect(arg.data.deviceAgentStepEnabled).toBe(false);
+    expect(arg.data.securityTrainingStepEnabled).toBe(false);
+    expect(arg.data.whistleblowerReportEnabled).toBe(false);
+    expect(arg.data.accessRequestFormEnabled).toBe(true);
+  });
+
   it('never persists hasAccess supplied through the update payload', async () => {
     const payload = {
       name: 'New Name',

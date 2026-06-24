@@ -53,4 +53,24 @@ export class UpdateOrganizationDto {
   @IsOptional()
   @IsBoolean()
   backgroundCheckStepEnabled?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  evidenceApprovalEnabled?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  deviceAgentStepEnabled?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  securityTrainingStepEnabled?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  whistleblowerReportEnabled?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  accessRequestFormEnabled?: boolean;
 }
