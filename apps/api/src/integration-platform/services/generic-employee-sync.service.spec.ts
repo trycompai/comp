@@ -237,7 +237,12 @@ describe('GenericEmployeeSyncService role validation', () => {
 
       expect(mockMemberUpdate).toHaveBeenCalledWith({
         where: { id: 'mem_1' },
-        data: { deactivated: false, isActive: true, role: 'employee' },
+        data: {
+          deactivated: false,
+          isActive: true,
+          offboardDate: null,
+          role: 'employee',
+        },
       });
     });
   });
@@ -326,6 +331,125 @@ describe('GenericEmployeeSyncService role validation', () => {
 
       expect(mockMemberUpdate).not.toHaveBeenCalled();
       expect(result.deactivated).toBe(0);
+    });
+  });
+
+  describe('sync filter (include / exclude)', () => {
+    it('imports everyone when no filter is configured (backward compatible)', async () => {
+      const result = await service.processEmployees({
+        organizationId: 'org_1',
+        employees: [
+          baseEmployee({ email: 'alice@example.com' }),
+          baseEmployee({ email: 'bob@example.com' }),
+        ],
+        options: { providerName: 'Microsoft Entra ID' },
+      });
+
+      expect(result.imported).toBe(2);
+      expect(mockMemberCreate).toHaveBeenCalledTimes(2);
+    });
+
+    it('skips importing excluded users in exclude mode', async () => {
+      const result = await service.processEmployees({
+        organizationId: 'org_1',
+        employees: [
+          baseEmployee({ email: 'alice@example.com' }),
+          baseEmployee({ email: 'excluded@example.com' }),
+        ],
+        options: {
+          providerName: 'Microsoft Entra ID',
+          syncFilter: {
+            mode: 'exclude',
+            excludedTerms: ['excluded@example.com'],
+            includedTerms: [],
+          },
+        },
+      });
+
+      expect(result.imported).toBe(1);
+      expect(mockMemberCreate).toHaveBeenCalledTimes(1);
+      const importedEmails = result.details
+        .filter((d) => d.status === 'imported')
+        .map((d) => d.email);
+      expect(importedEmails).toEqual(['alice@example.com']);
+    });
+
+    it('imports only the included subset in include mode', async () => {
+      const result = await service.processEmployees({
+        organizationId: 'org_1',
+        employees: [
+          baseEmployee({ email: 'alice@example.com' }),
+          baseEmployee({ email: 'bob@example.com' }),
+        ],
+        options: {
+          providerName: 'Microsoft Entra ID',
+          syncFilter: {
+            mode: 'include',
+            excludedTerms: [],
+            includedTerms: ['alice@example.com'],
+          },
+        },
+      });
+
+      expect(result.imported).toBe(1);
+      expect(mockMemberCreate).toHaveBeenCalledTimes(1);
+      const importedEmails = result.details
+        .filter((d) => d.status === 'imported')
+        .map((d) => d.email);
+      expect(importedEmails).toEqual(['alice@example.com']);
+    });
+
+    it('in include mode, does not deactivate present members outside the include list, but still deactivates genuine removals', async () => {
+      // bob is active in the provider but outside the include list; carol is a
+      // member who no longer exists in the provider at all.
+      mockMemberFindMany.mockResolvedValue([
+        {
+          id: 'mem_bob',
+          role: 'employee',
+          offboardDate: null,
+          user: { email: 'bob@example.com' },
+        },
+        {
+          id: 'mem_carol',
+          role: 'employee',
+          offboardDate: null,
+          user: { email: 'carol@example.com' },
+        },
+      ]);
+
+      const result = await service.processEmployees({
+        organizationId: 'org_1',
+        employees: [
+          baseEmployee({ email: 'alice@example.com' }),
+          baseEmployee({ email: 'bob@example.com' }),
+        ],
+        options: {
+          providerName: 'Microsoft Entra ID',
+          isDirectorySource: true,
+          syncFilter: {
+            mode: 'include',
+            excludedTerms: [],
+            includedTerms: ['alice@example.com'],
+          },
+        },
+      });
+
+      // bob is still in the provider → must NOT be deactivated for being
+      // outside the include subset.
+      expect(mockMemberUpdate).not.toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 'mem_bob' } }),
+      );
+      // carol is genuinely gone → still deactivated.
+      expect(mockMemberUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'mem_carol' },
+          data: expect.objectContaining({
+            deactivated: true,
+            isActive: false,
+          }),
+        }),
+      );
+      expect(result.deactivated).toBe(1);
     });
   });
 });
