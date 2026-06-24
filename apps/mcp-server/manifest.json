@@ -1,7 +1,7 @@
 {
   "manifest_version": "0.3",
   "name": "@trycompai/mcp-server",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "",
   "long_description": "Comp AI API: Compliance automation API for SOC 2, ISO 27001, HIPAA, GDPR, evidence collection, policy workflows, Trust Access, security questionnaires, integrations, cloud checks, and device compliance.",
   "author": {
@@ -669,6 +669,14 @@
       "description": "Enable/disable a custom framework on the trust portal and set its status\n\nEnable/disable a custom framework on the trust portal and set its status in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources, documents, links, and vendor disclosures."
     },
     {
+      "name": "upload-custom-framework-badge",
+      "description": "Upload or replace a custom framework's Trust Portal badge image\n\nStores a PNG/JPEG/WebP badge (max 256KB) in the organization assets bucket. Does not change the framework's portal visibility."
+    },
+    {
+      "name": "remove-custom-framework-badge",
+      "description": "Remove a custom framework's Trust Portal badge image\n\nRemove a custom framework's Trust Portal badge image in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources, documents, links, and vendor disclosures."
+    },
+    {
       "name": "update-overview",
       "description": "Update Trust Center overview\n\nUpdate the public Trust Center overview content that explains security posture and compliance status to prospects and customers."
     },
@@ -951,6 +959,74 @@
     {
       "name": "export-document",
       "description": "Export ISO 27001 SOA\n\nExport the approved Statement of Applicability document for ISO 27001 auditors, customer reviews, and internal records."
+    },
+    {
+      "name": "isms-ensure-setup",
+      "description": "Ensure ISMS foundational documents exist\n\nEnsure ISMS foundational documents exist in Comp AI."
+    },
+    {
+      "name": "get-document",
+      "description": "Get an ISMS document with its latest version\n\nGet an ISMS document with its latest version in Comp AI."
+    },
+    {
+      "name": "add-controls",
+      "description": "Map organization controls to an ISMS document\n\nMap organization controls to an ISMS document in Comp AI."
+    },
+    {
+      "name": "remove-control",
+      "description": "Remove a control mapping from an ISMS document\n\nRemove a control mapping from an ISMS document in Comp AI."
+    },
+    {
+      "name": "generate",
+      "description": "Derive Context-of-the-Organization issues\n\nDerive Context-of-the-Organization issues in Comp AI."
+    },
+    {
+      "name": "isms-submit-for-approval",
+      "description": "Submit an ISMS document for approval\n\nSubmit an ISMS document for approval in Comp AI."
+    },
+    {
+      "name": "approve",
+      "description": "Approve an ISMS document\n\nApprove an ISMS document in Comp AI."
+    },
+    {
+      "name": "decline",
+      "description": "Decline an ISMS document\n\nDecline an ISMS document in Comp AI."
+    },
+    {
+      "name": "drift",
+      "description": "Detect drift against the approved snapshot\n\nDetect drift against the approved snapshot in Comp AI."
+    },
+    {
+      "name": "isms-export-document",
+      "description": "Export an ISMS document as PDF or DOCX\n\nExport an ISMS document as PDF or DOCX in Comp AI."
+    },
+    {
+      "name": "create-row",
+      "description": "Create a row in an ISMS register\n\nCreate a row in an ISMS register in Comp AI."
+    },
+    {
+      "name": "update-row",
+      "description": "Update a row in an ISMS register\n\nUpdate a row in an ISMS register in Comp AI."
+    },
+    {
+      "name": "delete-row",
+      "description": "Delete a row in an ISMS register\n\nDelete a row in an ISMS register in Comp AI."
+    },
+    {
+      "name": "save-narrative",
+      "description": "Save a singleton document narrative\n\nSave a singleton document narrative in Comp AI."
+    },
+    {
+      "name": "get-profile",
+      "description": "Get the ISMS wizard profile, defaults and members\n\nGet the ISMS wizard profile, defaults and members in Comp AI."
+    },
+    {
+      "name": "save-profile",
+      "description": "Save (partial) ISMS wizard answers\n\nSave (partial) ISMS wizard answers in Comp AI."
+    },
+    {
+      "name": "generate-all",
+      "description": "Ensure and regenerate all ISMS documents\n\nEnsure and regenerate all ISMS documents in Comp AI."
     },
     {
       "name": "list-providers",
