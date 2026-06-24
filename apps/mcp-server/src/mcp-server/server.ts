@@ -127,6 +127,23 @@ import { tool$integrationsVariablesControllerFetchVariableOptionsV1 } from "./to
 import { tool$integrationsVariablesControllerGetConnectionVariablesV1 } from "./tools/integrationsVariablesControllerGetConnectionVariablesV1.js";
 import { tool$integrationsVariablesControllerGetProviderVariablesV1 } from "./tools/integrationsVariablesControllerGetProviderVariablesV1.js";
 import { tool$integrationsVariablesControllerSaveConnectionVariablesV1 } from "./tools/integrationsVariablesControllerSaveConnectionVariablesV1.js";
+import { tool$ismsISMSControllerAddControlsV1 } from "./tools/ismsISMSControllerAddControlsV1.js";
+import { tool$ismsISMSControllerApproveV1 } from "./tools/ismsISMSControllerApproveV1.js";
+import { tool$ismsISMSControllerDeclineV1 } from "./tools/ismsISMSControllerDeclineV1.js";
+import { tool$ismsISMSControllerDriftV1 } from "./tools/ismsISMSControllerDriftV1.js";
+import { tool$ismsISMSControllerEnsureSetupV1 } from "./tools/ismsISMSControllerEnsureSetupV1.js";
+import { tool$ismsISMSControllerExportDocumentV1 } from "./tools/ismsISMSControllerExportDocumentV1.js";
+import { tool$ismsISMSControllerGenerateV1 } from "./tools/ismsISMSControllerGenerateV1.js";
+import { tool$ismsISMSControllerGetDocumentV1 } from "./tools/ismsISMSControllerGetDocumentV1.js";
+import { tool$ismsISMSControllerRemoveControlV1 } from "./tools/ismsISMSControllerRemoveControlV1.js";
+import { tool$ismsISMSControllerSubmitForApprovalV1 } from "./tools/ismsISMSControllerSubmitForApprovalV1.js";
+import { tool$ismsISMSProfileControllerGenerateAllV1 } from "./tools/ismsISMSProfileControllerGenerateAllV1.js";
+import { tool$ismsISMSProfileControllerGetProfileV1 } from "./tools/ismsISMSProfileControllerGetProfileV1.js";
+import { tool$ismsISMSProfileControllerSaveProfileV1 } from "./tools/ismsISMSProfileControllerSaveProfileV1.js";
+import { tool$ismsISMSRegistersControllerCreateRowV1 } from "./tools/ismsISMSRegistersControllerCreateRowV1.js";
+import { tool$ismsISMSRegistersControllerDeleteRowV1 } from "./tools/ismsISMSRegistersControllerDeleteRowV1.js";
+import { tool$ismsISMSRegistersControllerSaveNarrativeV1 } from "./tools/ismsISMSRegistersControllerSaveNarrativeV1.js";
+import { tool$ismsISMSRegistersControllerUpdateRowV1 } from "./tools/ismsISMSRegistersControllerUpdateRowV1.js";
 import { tool$knowledgeBaseKnowledgeBaseControllerCreateRunTokenV1 } from "./tools/knowledgeBaseKnowledgeBaseControllerCreateRunTokenV1.js";
 import { tool$knowledgeBaseKnowledgeBaseControllerDeleteAllManualAnswersV1 } from "./tools/knowledgeBaseKnowledgeBaseControllerDeleteAllManualAnswersV1.js";
 import { tool$knowledgeBaseKnowledgeBaseControllerDeleteDocumentV1 } from "./tools/knowledgeBaseKnowledgeBaseControllerDeleteDocumentV1.js";
@@ -340,6 +357,7 @@ import { tool$trustPortalTrustPortalControllerListCustomFrameworksV1 } from "./t
 import { tool$trustPortalTrustPortalControllerListCustomLinksV1 } from "./tools/trustPortalTrustPortalControllerListCustomLinksV1.js";
 import { tool$trustPortalTrustPortalControllerListTrustDocumentsV1 } from "./tools/trustPortalTrustPortalControllerListTrustDocumentsV1.js";
 import { tool$trustPortalTrustPortalControllerListVendorsV1 } from "./tools/trustPortalTrustPortalControllerListVendorsV1.js";
+import { tool$trustPortalTrustPortalControllerRemoveCustomFrameworkBadgeV1 } from "./tools/trustPortalTrustPortalControllerRemoveCustomFrameworkBadgeV1.js";
 import { tool$trustPortalTrustPortalControllerRemoveFaviconV1 } from "./tools/trustPortalTrustPortalControllerRemoveFaviconV1.js";
 import { tool$trustPortalTrustPortalControllerReorderCustomLinksV1 } from "./tools/trustPortalTrustPortalControllerReorderCustomLinksV1.js";
 import { tool$trustPortalTrustPortalControllerTogglePortalV1 } from "./tools/trustPortalTrustPortalControllerTogglePortalV1.js";
@@ -352,6 +370,7 @@ import { tool$trustPortalTrustPortalControllerUpdateFrameworksV1 } from "./tools
 import { tool$trustPortalTrustPortalControllerUpdateOverviewV1 } from "./tools/trustPortalTrustPortalControllerUpdateOverviewV1.js";
 import { tool$trustPortalTrustPortalControllerUpdateVendorTrustSettingsV1 } from "./tools/trustPortalTrustPortalControllerUpdateVendorTrustSettingsV1.js";
 import { tool$trustPortalTrustPortalControllerUploadComplianceResourceV1 } from "./tools/trustPortalTrustPortalControllerUploadComplianceResourceV1.js";
+import { tool$trustPortalTrustPortalControllerUploadCustomFrameworkBadgeV1 } from "./tools/trustPortalTrustPortalControllerUploadCustomFrameworkBadgeV1.js";
 import { tool$trustPortalTrustPortalControllerUploadFaviconV1 } from "./tools/trustPortalTrustPortalControllerUploadFaviconV1.js";
 import { tool$trustPortalTrustPortalControllerUploadTrustDocumentV1 } from "./tools/trustPortalTrustPortalControllerUploadTrustDocumentV1.js";
 import { tool$uploadsUploadsControllerCreateUploadUrlV1 } from "./tools/uploadsUploadsControllerCreateUploadUrlV1.js";
@@ -376,7 +395,7 @@ export function createMCPServer(deps: {
 }) {
   const server = new McpServer({
     name: "CompAi",
-    version: "0.2.0",
+    version: "0.2.1",
   });
 
   const getClient = deps.getSDK || (() =>
@@ -580,6 +599,8 @@ export function createMCPServer(deps: {
   tool(tool$trustPortalTrustPortalControllerUpdateFrameworksV1);
   tool(tool$trustPortalTrustPortalControllerListCustomFrameworksV1);
   tool(tool$trustPortalTrustPortalControllerUpdateCustomFrameworkV1);
+  tool(tool$trustPortalTrustPortalControllerUploadCustomFrameworkBadgeV1);
+  tool(tool$trustPortalTrustPortalControllerRemoveCustomFrameworkBadgeV1);
   tool(tool$trustPortalTrustPortalControllerUpdateOverviewV1);
   tool(tool$trustPortalTrustPortalControllerGetOverviewV1);
   tool(tool$trustPortalTrustPortalControllerCreateCustomLinkV1);
@@ -651,6 +672,23 @@ export function createMCPServer(deps: {
   tool(tool$soaSOAControllerDeclineDocumentV1);
   tool(tool$soaSOAControllerSubmitForApprovalV1);
   tool(tool$soaSOAControllerExportDocumentV1);
+  tool(tool$ismsISMSControllerEnsureSetupV1);
+  tool(tool$ismsISMSControllerGetDocumentV1);
+  tool(tool$ismsISMSControllerAddControlsV1);
+  tool(tool$ismsISMSControllerRemoveControlV1);
+  tool(tool$ismsISMSControllerGenerateV1);
+  tool(tool$ismsISMSControllerSubmitForApprovalV1);
+  tool(tool$ismsISMSControllerApproveV1);
+  tool(tool$ismsISMSControllerDeclineV1);
+  tool(tool$ismsISMSControllerDriftV1);
+  tool(tool$ismsISMSControllerExportDocumentV1);
+  tool(tool$ismsISMSRegistersControllerCreateRowV1);
+  tool(tool$ismsISMSRegistersControllerUpdateRowV1);
+  tool(tool$ismsISMSRegistersControllerDeleteRowV1);
+  tool(tool$ismsISMSRegistersControllerSaveNarrativeV1);
+  tool(tool$ismsISMSProfileControllerGetProfileV1);
+  tool(tool$ismsISMSProfileControllerSaveProfileV1);
+  tool(tool$ismsISMSProfileControllerGenerateAllV1);
   tool(tool$integrationsConnectionsControllerListProvidersV1);
   tool(tool$integrationsConnectionsControllerGetProviderV1);
   tool(tool$integrationsConnectionsControllerListConnectionsV1);
