@@ -40,6 +40,7 @@ import {
 } from '@trycompai/integration-platform';
 import { IntegrationSyncLoggerService } from '../services/integration-sync-logger.service';
 import { GenericEmployeeSyncService } from '../services/generic-employee-sync.service';
+import { resolveSyncEmployeeFilter } from '../services/sync-employee-filter';
 import { GenericDeviceSyncService } from '../services/generic-device-sync.service';
 import { DynamicIntegrationRepository } from '../repositories/dynamic-integration.repository';
 import { CheckRunRepository } from '../repositories/check-run.repository';
@@ -1953,6 +1954,19 @@ export class SyncController {
         `[DynamicSync] Sync definition produced ${employees.length} employees for "${providerSlug}"`,
       );
 
+      // Resolve the org's configured include/exclude email filter from the
+      // connection variables. This lets dynamic providers (e.g. Microsoft
+      // Entra ID) limit which users are synced via the same
+      // sync_user_filter_mode / sync_excluded_emails / sync_included_emails
+      // variables that Google Workspace and JumpCloud already honor. Absent
+      // those variables this resolves to 'all' (import everyone — unchanged).
+      const syncFilter = resolveSyncEmployeeFilter(
+        (connection.variables as Record<string, unknown>) ?? {},
+      );
+      this.logger.log(
+        `[DynamicSync] Employee filter mode="${syncFilter.mode}" excluded=${syncFilter.excludedTerms.length} included=${syncFilter.includedTerms.length} for "${providerSlug}"`,
+      );
+
       // 8. Process employees via generic service
       const result = await this.genericSyncService.processEmployees({
         organizationId,
@@ -1966,6 +1980,7 @@ export class SyncController {
           isDirectorySource:
             (syncDefinition as { isDirectorySource?: boolean })
               .isDirectorySource ?? false,
+          syncFilter,
         },
       });
 
