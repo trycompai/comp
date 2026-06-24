@@ -35,9 +35,11 @@ export const createOrganization = authActionClientWithoutOrg
         };
       }
 
-      // Check if user email domain is trycomp.ai
+      // Internal team accounts (verified @trycomp.ai) have access provisioned up front.
       const userEmail = session.user.email;
-      const isTryCompEmail = userEmail?.endsWith('@trycomp.ai') ?? false;
+      const isVerifiedTryCompEmail =
+        (userEmail?.endsWith('@trycomp.ai') ?? false) &&
+        session.user.emailVerified === true;
 
       // Create a new organization directly in the database
       const randomSuffix = Math.floor(100000 + Math.random() * 900000).toString();
@@ -53,8 +55,9 @@ export const createOrganization = authActionClientWithoutOrg
         data: {
           name: parsedInput.organizationName,
           website: parsedInput.website,
-          // Auto-enable for trycomp.ai emails or local development
-          ...((process.env.NEXT_PUBLIC_APP_ENV !== 'production' || isTryCompEmail) && {
+          // Auto-enable for verified internal accounts or local development
+          ...((process.env.NEXT_PUBLIC_APP_ENV !== 'production' ||
+            isVerifiedTryCompEmail) && {
             hasAccess: true,
           }),
           members: {

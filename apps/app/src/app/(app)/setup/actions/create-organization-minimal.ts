@@ -42,9 +42,11 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
         };
       }
 
-      // Check if user email domain is trycomp.ai
+      // Internal team accounts (verified @trycomp.ai) have access provisioned up front.
       const userEmail = session.user.email;
-      const isTryCompEmail = userEmail?.endsWith('@trycomp.ai') ?? false;
+      const isVerifiedTryCompEmail =
+        (userEmail?.endsWith('@trycomp.ai') ?? false) &&
+        session.user.emailVerified === true;
 
       // Check if self-hosted
       const isSelfHosted = env.NEXT_PUBLIC_SELF_HOSTED === 'true';
@@ -129,9 +131,9 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
           name: parsedInput.organizationName,
           website: parsedInput.website,
           onboardingCompleted: false, // Explicitly set to false
-          // Auto-enable for trycomp.ai emails, local development, or self-hosted instances
+          // Auto-enable for verified internal accounts, local development, or self-hosted instances
           ...((process.env.NEXT_PUBLIC_APP_ENV !== 'production' ||
-            isTryCompEmail ||
+            isVerifiedTryCompEmail ||
             isSelfHosted) && {
             hasAccess: true,
           }),

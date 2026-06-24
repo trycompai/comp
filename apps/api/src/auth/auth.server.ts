@@ -293,6 +293,20 @@ export const auth = betterAuth({
   trustedOrigins: getTrustedOrigins(),
   emailAndPassword: {
     enabled: true,
+    requireEmailVerification: true,
+  },
+  emailVerification: {
+    sendOnSignUp: true,
+    sendVerificationEmail: async ({ user, url }) => {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Auth] Sending verification email to:', user.email);
+      }
+      await triggerEmail({
+        to: user.email,
+        subject: 'Verify your email for Comp AI',
+        react: MagicLinkEmail({ email: user.email, url }),
+      });
+    },
   },
   advanced: {
     database: {
