@@ -1,3 +1,10 @@
+# [3.92.0](https://github.com/trycompai/comp/compare/v3.91.1...v3.92.0) (2026-06-24)
+
+
+### Features
+
+* **email:** dedicated verification template + backfill existing accounts ([#3273](https://github.com/trycompai/comp/issues/3273)) ([1d94576](https://github.com/trycompai/comp/commit/1d94576b4300a02959a5ca5b54fe213a3dd0f24e))
+
 ## [3.91.1](https://github.com/trycompai/comp/compare/v3.91.0...v3.91.1) (2026-06-24)
 
 
