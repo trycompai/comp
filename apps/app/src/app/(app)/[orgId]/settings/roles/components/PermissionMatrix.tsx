@@ -34,6 +34,7 @@ const RESOURCE_LABELS: Record<string, { label: string; description: string }> = 
   questionnaire: { label: 'Questionnaires', description: 'Manage security questionnaires' },
   integration: { label: 'Integrations', description: 'Manage third-party integrations' },
   apiKey: { label: 'API Keys', description: 'Manage API keys for programmatic access' },
+  secret: { label: 'Secrets', description: 'Manage secrets and encrypted credentials for automations' },
   trust: { label: 'Trust Center', description: 'Manage trust portal settings and access requests' },
   pentest: { label: 'Penetration Tests', description: 'Manage penetration testing activities' },
 };
@@ -45,7 +46,7 @@ const RESOURCE_SECTIONS: Array<{ label: string; keys: string[] }> = [
     keys: [
       'organization', 'member', 'control', 'evidence', 'policy', 'risk',
       'vendor', 'task', 'framework', 'audit', 'finding', 'questionnaire',
-      'integration', 'apiKey', 'trust',
+      'integration', 'apiKey', 'secret', 'trust',
     ],
   },
   {

@@ -258,6 +258,37 @@ describe('PermissionMatrix', () => {
       expect(RESOURCES.find((r) => r.key === 'pentest')).toBeDefined();
     });
   });
+
+  // CS-591: the role editor exposed no toggle for the `secret` resource, so
+  // admins could not grant secrets access to custom roles. Users were told to
+  // use "Integrations write", which only grants `integration:*` — the Secrets
+  // page then 403s on GET /v1/secrets (RequirePermission('secret','read')) and
+  // renders empty. The matrix must surface a dedicated Secrets toggle.
+  describe('Secrets management (CS-591)', () => {
+    it('includes secret resource in RESOURCES list', () => {
+      expect(RESOURCES.find((r) => r.key === 'secret')).toBeDefined();
+    });
+
+    it('renders a Secrets row in the matrix', () => {
+      const mockOnChange = vi.fn();
+      render(<PermissionMatrix value={{}} onChange={mockOnChange} />);
+
+      expect(screen.getByText('Secrets')).toBeInTheDocument();
+    });
+
+    it('maps Write to full secret CRUD including read (unblocks the Secrets page)', () => {
+      // accessLevelToPermissions is exactly what handleAccessChange calls when
+      // an admin picks "Write"; it must include 'read' so the assigned user
+      // passes RequirePermission('secret','read') on GET /v1/secrets.
+      expect(accessLevelToPermissions('secret', 'edit')).toEqual([
+        'create', 'read', 'update', 'delete',
+      ]);
+    });
+
+    it('maps Read (view) to secret:read', () => {
+      expect(accessLevelToPermissions('secret', 'view')).toEqual(['read']);
+    });
+  });
 });
 
 describe('Utility Functions', () => {

@@ -4,6 +4,9 @@ jest.mock('@db', () => ({
       groupBy: jest.fn(),
       findMany: jest.fn(),
     },
+    integrationCheckResult: {
+      count: jest.fn(),
+    },
   },
 }));
 
@@ -18,6 +21,9 @@ const mockedCheckRun = db.integrationCheckRun as unknown as {
 };
 const mockGroupBy = mockedCheckRun.groupBy;
 const mockFindMany = mockedCheckRun.findMany;
+const mockResultCount = (
+  db.integrationCheckResult as unknown as { count: jest.Mock }
+).count;
 
 function makeRun(opts: {
   id: string;
@@ -162,6 +168,45 @@ describe('CheckRunRepository.findLatestPerConnectionAndCheckByTask', () => {
     }
   });
 
+  it('loads a BOUNDED, findings-first result window per run — never all results (CS-588)', async () => {
+    // A check can produce tens of thousands of results (e.g. a Firebase B2C
+    // tenant, one per auth user). Eager-loading every result (`results: true`)
+    // hydrates the whole set into memory and hangs/OOMs the request. Both
+    // queries must instead use a per-run `take` so the DB caps the load.
+    mockGroupBy.mockResolvedValue([
+      {
+        connectionId: 'A',
+        checkId: 'firebase-employee-access',
+        _max: { createdAt: new Date('2026-06-09T15:00:00Z') },
+      },
+    ]);
+    mockFindMany.mockResolvedValue([
+      makeRun({
+        id: 'rA',
+        connectionId: 'A',
+        createdAt: '2026-06-09T15:00:00Z',
+      }),
+    ]);
+
+    await repo.findLatestPerConnectionAndCheckByTask('task_1');
+
+    expect(mockFindMany.mock.calls.length).toBeGreaterThan(0);
+    for (const call of mockFindMany.mock.calls) {
+      const resultsInclude = call[0].include.results;
+      // NOT `results: true` (which loads every row).
+      expect(resultsInclude).not.toBe(true);
+      // A finite per-run cap is applied at the DB.
+      expect(typeof resultsInclude.take).toBe('number');
+      expect(resultsInclude.take).toBeGreaterThan(0);
+      expect(resultsInclude.take).toBeLessThanOrEqual(100);
+      // Findings-first so the UI's findings still surface when truncated.
+      expect(resultsInclude.orderBy).toEqual([
+        { passed: 'asc' },
+        { collectedAt: 'asc' },
+      ]);
+    }
+  });
+
   it('clamps an oversized historyPerGroup to the cap (no unbounded read)', async () => {
     mockGroupBy.mockResolvedValue([
       {
@@ -203,5 +248,34 @@ describe('CheckRunRepository.findLatestPerConnectionAndCheckByTask', () => {
     });
     recentCall = mockFindMany.mock.calls.find((c) => !c[0].where.OR);
     expect(recentCall?.[0].take).toBe(1 * 5); // default 5
+  });
+});
+
+describe('CheckRunRepository.countExceptedFailures', () => {
+  const repo = new CheckRunRepository();
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('short-circuits (no query) when there are no excepted resourceIds', async () => {
+    const result = await repo.countExceptedFailures('icr_1', []);
+    expect(result).toBe(0);
+    expect(mockResultCount).not.toHaveBeenCalled();
+  });
+
+  it('counts only this run’s FAILING results matching the excepted resourceIds', async () => {
+    mockResultCount.mockResolvedValue(2);
+
+    const result = await repo.countExceptedFailures('icr_1', ['b1', 'b2']);
+
+    expect(result).toBe(2);
+    expect(mockResultCount).toHaveBeenCalledWith({
+      where: {
+        checkRunId: 'icr_1',
+        passed: false,
+        resourceId: { in: ['b1', 'b2'] },
+      },
+    });
   });
 });
