@@ -323,18 +323,36 @@ export const runTaskIntegrationChecks = task({
         // exception) so task status can exclude explicitly-excepted ones.
         totalFindings += checkResult.result.findings.length;
         totalPassing += checkResult.result.passingResults.length;
-        for (const f of checkResult.result.findings) {
-          failingFindings.push({
-            connectionId,
-            checkId: checkResult.checkId,
-            resourceId: f.resourceId,
-            // Redacted error signals so the self-heal layer can classify
-            // our-side/transient failures and hold them as inconclusive.
-            ...failureSignalsFromEvidence(f.evidence, checkResult.status),
-          });
-        }
+        // Build this check's failing findings (with redacted signals) once —
+        // reused for the task-level decision and the per-check run status.
+        const checkFailures = checkResult.result.findings.map((f) => ({
+          connectionId,
+          checkId: checkResult.checkId,
+          resourceId: f.resourceId,
+          // Redacted error signals so the self-heal layer can classify
+          // our-side/transient failures and hold them as inconclusive.
+          ...failureSignalsFromEvidence(f.evidence, checkResult.status),
+        }));
+        failingFindings.push(...checkFailures);
         if (checkResult.status === 'error') {
           hasExecutionErrors = true;
+        }
+
+        // Per-check run status. For DYNAMIC integrations a check that failed for
+        // an our-side/transient reason (or threw) is recorded as 'inconclusive'
+        // instead of 'failed' — this is the self-heal agent's work queue.
+        // Static/AWS keep the existing mapping.
+        let runStatus: 'success' | 'failed' | 'inconclusive' =
+          checkResult.status === 'error' ? 'failed' : checkResult.status;
+        if (isDynamic) {
+          if (checkResult.status === 'error') {
+            runStatus = 'inconclusive';
+          } else if (
+            checkFailures.length > 0 &&
+            splitFailuresByDisposition(checkFailures).effective.length === 0
+          ) {
+            runStatus = 'inconclusive';
+          }
         }
 
         // Store check run
@@ -344,8 +362,7 @@ export const runTaskIntegrationChecks = task({
             taskId,
             checkId: checkResult.checkId,
             checkName: checkResult.checkName,
-            status:
-              checkResult.status === 'error' ? 'failed' : checkResult.status,
+            status: runStatus,
             startedAt: new Date(),
             completedAt: new Date(),
             durationMs: checkResult.durationMs,
