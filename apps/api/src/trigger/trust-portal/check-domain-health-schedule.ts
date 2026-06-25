@@ -15,10 +15,9 @@ async function isDomainMisconfigured(
   domain: string,
 ): Promise<boolean | null> {
   const teamId = process.env.VERCEL_TEAM_ID;
-  const trustProjectId = process.env.TRUST_PORTAL_PROJECT_ID;
   const vercelToken = process.env.VERCEL_AUTH_TOKEN;
 
-  if (!teamId || !trustProjectId || !vercelToken) {
+  if (!teamId || !vercelToken) {
     return null;
   }
 
@@ -89,7 +88,6 @@ export const checkDomainHealthSchedule = schedules.task({
 
     const vercelConfigured =
       !!process.env.VERCEL_TEAM_ID &&
-      !!process.env.TRUST_PORTAL_PROJECT_ID &&
       !!process.env.VERCEL_AUTH_TOKEN;
 
     if (!vercelConfigured) {
