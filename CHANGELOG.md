@@ -1,3 +1,13 @@
+## [3.92.2](https://github.com/trycompai/comp/compare/v3.92.1...v3.92.2) (2026-06-25)
+
+
+### Bug Fixes
+
+* address follow-up ([c2e38f3](https://github.com/trycompai/comp/commit/c2e38f3c5b03504140eeff32faa03c8db5845f73))
+* **employee-access:** prevent automations tab crash on large run history payloads ([c6b3fb4](https://github.com/trycompai/comp/commit/c6b3fb4bde75deb10c2fd04854713960d5b817b2))
+* **findings:** wrap long urls in comment containers ([b6e353b](https://github.com/trycompai/comp/commit/b6e353b6674f98fce8b880e22f9772ef925a5db8))
+* **rbac:** add secrets permission to custom role editor ui ([5f43411](https://github.com/trycompai/comp/commit/5f43411d8cee1928c355d72c3b6dfe920f081652))
+
 ## [3.92.1](https://github.com/trycompai/comp/compare/v3.92.0...v3.92.1) (2026-06-24)
 
 
