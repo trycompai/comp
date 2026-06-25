@@ -1,4 +1,5 @@
 import { ActiveExceptionSet } from '../../cloud-security/finding-exceptions';
+import { classifyCheckFailure } from '../services/check-failure-classifier';
 
 /** A failing finding, identified the same way an exception is keyed. */
 export interface FailingFinding {
@@ -44,4 +45,57 @@ export function decideTaskStatus(
   if (effectiveFailures > 0) return 'failed';
   if (totalPassing > 0 || totalFindings > 0) return 'done';
   return null;
+}
+
+/** A failing finding plus the signals needed to classify WHY it failed. */
+export interface ClassifiableFailure extends FailingFinding {
+  /** HTTP status the failure carried, if any. */
+  httpStatus?: number | null;
+  /** Error text from the finding's evidence. MUST be pre-redacted of secrets. */
+  errorText?: string | null;
+  /** True if the runtime threw rather than the vendor returning an error. */
+  threw?: boolean;
+}
+
+export interface FailureDisposition {
+  /** Genuine failures — fail the task + show (compliance findings + proven customer-side). */
+  effective: ClassifiableFailure[];
+  /** Held failures — our-side bug / transient. Task NOT failed; surfaced as inconclusive. */
+  held: ClassifiableFailure[];
+}
+
+/**
+ * Split failing findings into those that should fail the task (real compliance
+ * findings + proven customer-side issues) vs those to HOLD as inconclusive
+ * (our-side bug / transient), so a customer never sees a red for our problem.
+ *
+ * For DYNAMIC integrations only — the caller gates this; static/AWS checks keep
+ * their existing behavior. The classifier is conservative (never blames the
+ * customer without proof), so ambiguous failures are held, not shown.
+ *
+ * `fleet` (optional) is the same check's pass/fail counts across the provider's
+ * other active connections — a fleet-wide failure is held even if it looks
+ * customer-like.
+ */
+export function splitFailuresByDisposition(
+  failing: ClassifiableFailure[],
+  fleet?: { passing: number; failing: number } | null,
+): FailureDisposition {
+  const effective: ClassifiableFailure[] = [];
+  const held: ClassifiableFailure[] = [];
+  for (const f of failing) {
+    const { class: cls } = classifyCheckFailure({
+      httpStatus: f.httpStatus,
+      errorText: f.errorText,
+      threw: f.threw,
+      fleet,
+    });
+    if (cls === 'our_side' || cls === 'transient') {
+      held.push(f);
+    } else {
+      // 'compliance' + 'customer_side' → show the customer.
+      effective.push(f);
+    }
+  }
+  return { effective, held };
 }
