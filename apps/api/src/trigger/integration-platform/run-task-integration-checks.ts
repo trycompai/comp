@@ -19,7 +19,9 @@ import { loadActiveExceptionSet } from '../../cloud-security/finding-exceptions'
 import {
   countEffectiveFailures,
   decideTaskStatus,
-  type FailingFinding,
+  splitFailuresByDisposition,
+  failureSignalsFromEvidence,
+  type ClassifiableFailure,
 } from '../../integration-platform/utils/task-check-evaluation';
 
 /**
@@ -224,8 +226,9 @@ export const runTaskIntegrationChecks = task({
     let totalPassing = 0;
     let hasExecutionErrors = false;
     // Failing findings (keyed like an exception) so task status can exclude
-    // explicitly-excepted ones below.
-    const failingFindings: FailingFinding[] = [];
+    // explicitly-excepted ones below. Carries redacted error signals so the
+    // self-heal layer can classify our-side failures (dynamic integrations).
+    const failingFindings: ClassifiableFailure[] = [];
 
     // Run only the checks that apply to this task
     try {
@@ -325,6 +328,9 @@ export const runTaskIntegrationChecks = task({
             connectionId,
             checkId: checkResult.checkId,
             resourceId: f.resourceId,
+            // Redacted error signals so the self-heal layer can classify
+            // our-side/transient failures and hold them as inconclusive.
+            ...failureSignalsFromEvidence(f.evidence, checkResult.status),
           });
         }
         if (checkResult.status === 'error') {
@@ -417,14 +423,30 @@ export const runTaskIntegrationChecks = task({
       // the shared helpers). Execution errors don't drive status here; they gate
       // integrationLastRunAt above so the next tick retries.
       const exceptions = await loadActiveExceptionSet(organizationId);
+      // For DYNAMIC integrations, hold our-side/transient failures as
+      // inconclusive: they must not fail the task or send a "task failed" email —
+      // the self-heal layer investigates/fixes them. Static/AWS behavior is
+      // unchanged. Safe degradation: a finding with no readable error signal
+      // classifies as a real (compliance) failure, exactly as today.
+      const statusFailures = isDynamic
+        ? splitFailuresByDisposition(failingFindings).effective
+        : failingFindings;
+      const heldCount = failingFindings.length - statusFailures.length;
+      if (heldCount > 0) {
+        logger.info(
+          `Held ${heldCount} our-side/transient finding(s) as inconclusive for task ${taskId} (not shown as failed)`,
+        );
+      }
       const effectiveFailures = countEffectiveFailures(
-        failingFindings,
+        statusFailures,
         exceptions,
       );
+      // Held findings are indeterminate (like an all-errored run) — they must not
+      // flip the task to "done" either, so exclude them from the finding count.
       const newStatus = decideTaskStatus(
         effectiveFailures,
         totalPassing,
-        totalFindings,
+        totalFindings - heldCount,
       );
 
       // Whether THIS run flipped the task into `failed` (e.g. todo/done →

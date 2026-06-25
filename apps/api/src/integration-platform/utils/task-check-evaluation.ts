@@ -1,5 +1,6 @@
 import { ActiveExceptionSet } from '../../cloud-security/finding-exceptions';
 import { classifyCheckFailure } from '../services/check-failure-classifier';
+import { redactSecrets } from './redact-secrets';
 
 /** A failing finding, identified the same way an exception is keyed. */
 export interface FailingFinding {
@@ -98,4 +99,39 @@ export function splitFailuresByDisposition(
     }
   }
   return { effective, held };
+}
+
+/**
+ * Extract classification signals from a failing finding's evidence. `errorText`
+ * is REDACTED of secrets/PII before it leaves this function.
+ *
+ * Defensive about the heterogeneous evidence shapes checks emit: if no signal is
+ * found, returns empty signals → the failure is treated as a genuine compliance
+ * finding (today's behavior), so a check is never wrongly held. `resultStatus`
+ * of 'error' means the check threw → an execution failure.
+ */
+export function failureSignalsFromEvidence(
+  evidence: Record<string, unknown> | null | undefined,
+  resultStatus?: string,
+): { httpStatus: number | null; errorText: string | null; threw: boolean } {
+  const ev = evidence ?? {};
+  const errStr = typeof ev.error === 'string' ? ev.error : null;
+  const msgStr = typeof ev.message === 'string' ? ev.message : null;
+
+  let httpStatus: number | null = null;
+  // e.g. evidence.error === 'http_404'
+  if (errStr) {
+    const m = errStr.match(/http[_-]?(\d{3})/i);
+    if (m) httpStatus = Number(m[1]);
+  }
+  // e.g. evidence.status === 404
+  if (httpStatus == null && typeof ev.status === 'number') {
+    httpStatus = ev.status;
+  }
+
+  const rawText = msgStr ?? errStr ?? '';
+  const errorText = rawText ? redactSecrets(rawText) : null;
+  const threw = resultStatus === 'error';
+
+  return { httpStatus, errorText, threw };
 }
