@@ -151,6 +151,7 @@ export class TrustEmailService {
         domain,
         settingsUrl,
       }),
+      trustPortal: true,
     });
 
     this.logger.log(
