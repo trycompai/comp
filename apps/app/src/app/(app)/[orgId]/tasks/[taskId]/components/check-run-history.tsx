@@ -160,6 +160,18 @@ export function CheckRunItem({
   const excepted = run.results.filter((r) => r.excepted);
   const passing = run.results.filter((r) => r.passed);
 
+  // `run.results` is capped server-side — a check can produce tens of thousands
+  // of results (e.g. a Firebase B2C tenant) which would otherwise ship a
+  // multi-MB payload and OOM the browser. Show the first few from the (bounded)
+  // array, but derive the "+N more" counts from the run's authoritative summary
+  // counts so the totals are still correct.
+  const shownFindings = findings.slice(0, 3);
+  const shownExcepted = excepted.slice(0, 3);
+  const shownPassing = passing.slice(0, 3);
+  const moreFindings = Math.max(0, run.failedCount - shownFindings.length);
+  const moreExcepted = Math.max(0, (run.exceptedCount ?? 0) - shownExcepted.length);
+  const morePassing = Math.max(0, run.passedCount - shownPassing.length);
+
   const statusColor = hasError ? 'text-destructive' : hasFailed ? 'text-warning' : 'text-primary';
 
   const statusText = hasError ? 'Error' : hasFailed ? 'Issues Found' : 'Passed';
@@ -226,9 +238,9 @@ export function CheckRunItem({
             )}
 
             {/* Findings */}
-            {findings.length > 0 && (
+            {shownFindings.length > 0 && (
               <div className="space-y-2">
-                {findings.slice(0, 3).map((finding) => (
+                {shownFindings.map((finding) => (
                   <div key={finding.id} className="space-y-2">
                     <div>
                       <p className="text-sm font-medium text-foreground">{finding.title}</p>
@@ -263,9 +275,9 @@ export function CheckRunItem({
                     )}
                   </div>
                 ))}
-                {findings.length > 3 && (
+                {moreFindings > 0 && (
                   <p className="text-sm text-muted-foreground">
-                    +{findings.length - 3} more issues
+                    +{moreFindings} more issues
                   </p>
                 )}
               </div>
@@ -273,9 +285,9 @@ export function CheckRunItem({
 
             {/* Excepted - failing findings the customer marked as an exception.
                 Shown muted (not an issue) so it's clear the exception applied. */}
-            {excepted.length > 0 && (
+            {shownExcepted.length > 0 && (
               <div className="space-y-2">
-                {excepted.slice(0, 3).map((finding) => (
+                {shownExcepted.map((finding) => (
                   <div key={finding.id}>
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-medium text-muted-foreground">{finding.title}</p>
@@ -290,22 +302,22 @@ export function CheckRunItem({
                     </div>
                   </div>
                 ))}
-                {excepted.length > 3 && (
+                {moreExcepted > 0 && (
                   <p className="text-sm text-muted-foreground">
-                    +{excepted.length - 3} more excepted
+                    +{moreExcepted} more excepted
                   </p>
                 )}
               </div>
             )}
 
             {/* Passing Results - always show when there are passing results */}
-            {passing.length > 0 && (
-              <details className="text-xs" open={findings.length === 0}>
+            {shownPassing.length > 0 && (
+              <details className="text-xs" open={run.failedCount === 0}>
                 <summary className="text-sm font-medium text-primary cursor-pointer flex items-center gap-2">
-                  <span>✓ {passing.length} passed</span>
+                  <span>✓ {run.passedCount} passed</span>
                 </summary>
                 <div className="mt-2 space-y-2 pl-4 border-l-2 border-primary/20">
-                  {passing.slice(0, 3).map((result) => (
+                  {shownPassing.map((result) => (
                     <div key={result.id} className="space-y-2">
                       <div>
                         <p className="text-sm font-medium text-foreground">{result.title}</p>
@@ -330,9 +342,9 @@ export function CheckRunItem({
                       )}
                     </div>
                   ))}
-                  {passing.length > 3 && (
+                  {morePassing > 0 && (
                     <p className="text-sm text-muted-foreground">
-                      +{passing.length - 3} more passed
+                      +{morePassing} more passed
                     </p>
                   )}
                 </div>

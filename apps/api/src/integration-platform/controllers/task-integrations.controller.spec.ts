@@ -169,6 +169,7 @@ describe('TaskIntegrationsController', () => {
     complete: jest.fn(),
     addResults: jest.fn(),
     findLatestPerConnectionAndCheckByTask: jest.fn(),
+    countExceptedFailures: jest.fn(),
   };
   const mockCredentialVaultService = { getDecryptedCredentials: jest.fn() };
   const mockOAuthCredentialsService = {
@@ -229,6 +230,9 @@ describe('TaskIntegrationsController', () => {
     );
     mockCheckRunRepository.complete.mockResolvedValue({});
     mockCheckRunRepository.addResults.mockResolvedValue({});
+    // Default: nothing excepted (no count query needed). Exception tests
+    // override this to the exact excepted-failure count for the run.
+    mockCheckRunRepository.countExceptedFailures.mockResolvedValue(0);
     mockCredentialVaultService.getDecryptedCredentials.mockResolvedValue(
       VALID_CREDS,
     );
@@ -564,6 +568,10 @@ describe('TaskIntegrationsController', () => {
           resourceId: 'reports-bucket',
         },
       ]);
+      // The excepted-failure count is now computed via a targeted query (the
+      // full result set is no longer loaded). reports-bucket is the one
+      // excepted failing result for this run.
+      mockCheckRunRepository.countExceptedFailures.mockResolvedValue(1);
 
       const { runs } = await controller.getTaskCheckRuns('task_1', 'org_1');
 
@@ -571,6 +579,12 @@ describe('TaskIntegrationsController', () => {
       expect(runs[0].exceptedCount).toBe(1);
       expect(runs[0].status).toBe('success');
       expect(runs[0].results[0].excepted).toBe(true);
+      // Exact count is computed via the targeted query, scoped to this run's
+      // excepted resourceIds (not by loading + filtering every result).
+      expect(mockCheckRunRepository.countExceptedFailures).toHaveBeenCalledWith(
+        'icr_1',
+        ['reports-bucket'],
+      );
     });
 
     it('keeps an execution-error run as failed (no findings, not excepted)', async () => {
@@ -620,6 +634,109 @@ describe('TaskIntegrationsController', () => {
       expect(
         mockCheckRunRepository.findLatestPerConnectionAndCheckByTask,
       ).not.toHaveBeenCalled();
+    });
+
+    it('bounds a run with a huge result set + logs so the payload stays small (CS-588)', async () => {
+      // Defense-in-depth response cap: even if a run somehow carries a large
+      // result/log set, the serialized response is bounded (results per
+      // category, evidence size, log count) while the run's summary counts stay
+      // accurate. The PRIMARY fix — never LOADING all result rows from the DB —
+      // lives in CheckRunRepository.findLatestPerConnectionAndCheckByTask and is
+      // covered in check-run.repository.spec.ts.
+      const HUGE = 5000;
+      const results = [
+        // First finding carries an oversized evidence blob.
+        {
+          id: 'icx_finding_0',
+          passed: false,
+          resourceType: 'firebase-user',
+          resourceId: 'user_0',
+          title: 'finding 0',
+          description: 'd',
+          severity: 'high',
+          remediation: 'fix',
+          evidence: { blob: 'x'.repeat(30_000) },
+          collectedAt: new Date(),
+        },
+        ...Array.from({ length: HUGE - 1 }, (_, i) => ({
+          id: `icx_finding_${i + 1}`,
+          passed: false,
+          resourceType: 'firebase-user',
+          resourceId: `user_f_${i + 1}`,
+          title: 'finding',
+          description: 'd',
+          severity: 'high',
+          remediation: 'fix',
+          evidence: { ok: true },
+          collectedAt: new Date(),
+        })),
+        ...Array.from({ length: HUGE }, (_, i) => ({
+          id: `icx_pass_${i}`,
+          passed: true,
+          resourceType: 'firebase-user',
+          resourceId: `user_p_${i}`,
+          title: 'passing',
+          description: 'd',
+          evidence: { ok: true },
+          collectedAt: new Date(),
+        })),
+      ];
+      const logs = Array.from({ length: HUGE }, (_, i) => ({
+        level: 'info',
+        message: `log ${i}`,
+        timestamp: new Date().toISOString(),
+      }));
+
+      mockCheckRunRepository.findLatestPerConnectionAndCheckByTask.mockResolvedValue(
+        [
+          {
+            id: 'icr_huge',
+            checkId: 'firebase-employee-access',
+            checkName: 'Employee Access',
+            status: 'failed',
+            startedAt: new Date(),
+            completedAt: new Date(),
+            durationMs: 10,
+            totalChecked: HUGE * 2,
+            passedCount: HUGE,
+            failedCount: HUGE,
+            errorMessage: null,
+            logs,
+            connectionId: 'conn_1',
+            createdAt: new Date(),
+            results,
+            connection: {
+              id: 'conn_1',
+              metadata: { connectionName: 'Firebase' },
+              provider: { slug: 'firebase', name: 'Firebase' },
+            },
+          },
+        ],
+      );
+
+      const { runs } = await controller.getTaskCheckRuns('task_1', 'org_1');
+
+      // Result detail is bounded (a few findings + a few passing), NOT 10000.
+      expect(runs[0].results.length).toBeLessThanOrEqual(15);
+      expect(runs[0].results.length).toBeLessThan(results.length);
+      // Logs are bounded too.
+      expect(Array.isArray(runs[0].logs)).toBe(true);
+      if (Array.isArray(runs[0].logs)) {
+        expect(runs[0].logs.length).toBeLessThanOrEqual(100);
+      }
+      // Summary counts remain authoritative (computed from the full set).
+      expect(runs[0].passedCount).toBe(HUGE);
+      expect(runs[0].failedCount).toBe(HUGE);
+      expect(runs[0].exceptedCount).toBe(0);
+      // The oversized evidence blob is replaced with a compact placeholder.
+      const shippedFinding = runs[0].results.find(
+        (r) => r.id === 'icx_finding_0',
+      );
+      expect(shippedFinding).toBeDefined();
+      expect(shippedFinding?.evidence).toMatchObject({ truncated: true });
+      // Normal small evidence is left intact.
+      const shippedPass = runs[0].results.find((r) => r.passed);
+      expect(shippedPass?.evidence).toEqual({ ok: true });
     });
   });
 });
