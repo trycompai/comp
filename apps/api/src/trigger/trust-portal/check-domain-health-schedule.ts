@@ -97,65 +97,77 @@ export const checkDomainHealthSchedule = schedules.task({
       return { checked: 0, misconfigured: 0, notified: 0 };
     }
 
-    let checked = 0;
-    let misconfigured = 0;
-    let notified = 0;
+    const results = await Promise.all(
+      trusts.map(async (trust) => {
+        const domain = trust.domain!;
 
-    for (const trust of trusts) {
-      const domain = trust.domain!;
-      checked++;
+        const broken = await isDomainMisconfigured(domain);
 
-      const broken = await isDomainMisconfigured(domain);
-
-      if (broken === null) {
-        logger.warn(`Skipping domain ${domain} — Vercel API request failed`);
-        continue;
-      }
-
-      if (!broken) {
-        continue;
-      }
-
-      misconfigured++;
-      logger.warn(`Domain misconfigured: ${domain}`, {
-        organizationId: trust.organizationId,
-      });
-
-      await db.trust.update({
-        where: { organizationId: trust.organizationId },
-        data: { domainVerified: false },
-      });
-
-      const adminOrOwnerMembers = trust.organization.members.filter(
-        (m) =>
-          m.role &&
-          (m.role.includes('owner') || m.role.includes('admin')) &&
-          m.user?.email,
-      );
-
-      const settingsUrl = `${APP_BASE_URL}/${trust.organizationId}/trust/portal-settings`;
-
-      for (const member of adminOrOwnerMembers) {
-        if (!member.user?.email) continue;
-
-        try {
-          await emailService.sendDomainMisconfiguredEmail({
-            toEmail: member.user.email,
-            toName:
-              member.user.name?.trim() || member.user.email,
-            organizationName: trust.organization.name,
-            domain,
-            settingsUrl,
-          });
-          notified++;
-        } catch (err) {
-          logger.error(
-            `Failed to send domain misconfigured email to ${member.user.email}`,
-            { error: err instanceof Error ? err.message : String(err) },
-          );
+        if (broken === null) {
+          logger.warn(`Skipping domain ${domain} — Vercel API request failed`);
+          return { misconfigured: 0, notified: 0 };
         }
-      }
-    }
+
+        if (!broken) {
+          return { misconfigured: 0, notified: 0 };
+        }
+
+        logger.warn(`Domain misconfigured: ${domain}`, {
+          organizationId: trust.organizationId,
+        });
+
+        await db.trust.update({
+          where: { organizationId: trust.organizationId },
+          data: { domainVerified: false },
+        });
+
+        const adminOrOwnerMembers = trust.organization.members.filter(
+          (m) =>
+            m.role &&
+            (m.role.includes('owner') || m.role.includes('admin')) &&
+            m.user?.email,
+        );
+
+        const settingsUrl = `${APP_BASE_URL}/${trust.organizationId}/trust/portal-settings`;
+
+        const emailResults = await Promise.allSettled(
+          adminOrOwnerMembers
+            .filter((m) => m.user?.email)
+            .map((member) =>
+              emailService.sendDomainMisconfiguredEmail({
+                toEmail: member.user!.email!,
+                toName: member.user!.name?.trim() || member.user!.email!,
+                organizationName: trust.organization.name,
+                domain,
+                settingsUrl,
+              }),
+            ),
+        );
+
+        emailResults.forEach((result, i) => {
+          if (result.status === 'rejected') {
+            logger.error(
+              `Failed to send domain misconfigured email to ${adminOrOwnerMembers[i].user?.email}`,
+              {
+                error:
+                  result.reason instanceof Error
+                    ? result.reason.message
+                    : String(result.reason),
+              },
+            );
+          }
+        });
+
+        return {
+          misconfigured: 1,
+          notified: emailResults.filter((r) => r.status === 'fulfilled').length,
+        };
+      }),
+    );
+
+    const checked = trusts.length;
+    const misconfigured = results.reduce((sum, r) => sum + r.misconfigured, 0);
+    const notified = results.reduce((sum, r) => sum + r.notified, 0);
 
     logger.info('Trust Portal domain health check complete', {
       checked,
