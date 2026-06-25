@@ -54,7 +54,7 @@ async function isDomainMisconfigured(
 export const checkDomainHealthSchedule = schedules.task({
   id: 'trust-portal-check-domain-health',
   cron: '0 6 * * *',
-  maxDuration: 1000 * 60 * 15, // 15 minutes
+  maxDuration: 60 * 15, // 15 minutes
   run: async (payload) => {
     logger.info('Starting Trust Portal domain health check', {
       scheduledAt: payload.timestamp,
@@ -87,6 +87,18 @@ export const checkDomainHealthSchedule = schedules.task({
 
     logger.info(`Found ${trusts.length} trusts with verified custom domains`);
 
+    const vercelConfigured =
+      !!process.env.VERCEL_TEAM_ID &&
+      !!process.env.TRUST_PORTAL_PROJECT_ID &&
+      !!process.env.VERCEL_AUTH_TOKEN;
+
+    if (!vercelConfigured) {
+      logger.info(
+        'Skipping domain health check — Vercel not configured on this server',
+      );
+      return { checked: 0, misconfigured: 0, notified: 0 };
+    }
+
     let checked = 0;
     let misconfigured = 0;
     let notified = 0;
@@ -98,10 +110,8 @@ export const checkDomainHealthSchedule = schedules.task({
       const broken = await isDomainMisconfigured(domain);
 
       if (broken === null) {
-        logger.info(
-          'Skipping domain health check — Vercel not configured on this server',
-        );
-        break;
+        logger.warn(`Skipping domain ${domain} — Vercel API request failed`);
+        continue;
       }
 
       if (!broken) {
