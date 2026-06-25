@@ -96,7 +96,39 @@ model DynamicCheck {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  /// Edit history (snapshots taken before each change) for rollback + audit
+  versions DynamicCheckVersion[]
+
   @@unique([integrationId, checkSlug])
   @@index([integrationId])
   @@index([isEnabled])
+}
+
+/// Immutable snapshot of a DynamicCheck's logic taken BEFORE each change, so an
+/// edit (manual, via the API, or by the self-heal agent) can be rolled back and
+/// audited. Only the logic-bearing fields are versioned (definition + variables);
+/// rolling back replaces those on the live check.
+model DynamicCheckVersion {
+  id String @id @default(dbgenerated("generate_prefixed_cuid('dckv'::text)"))
+
+  /// The check this snapshot belongs to
+  checkId String
+  check   DynamicCheck @relation(fields: [checkId], references: [id], onDelete: Cascade)
+
+  /// Snapshot of the check's `definition` (the step code) at this version
+  definition Json
+
+  /// Snapshot of the check's `variables` at this version
+  variables Json
+
+  /// What produced this version: 'manual' | 'agent' | 'api' | 'restore' (free-form)
+  source String @default("api")
+
+  /// Optional note describing the change (e.g. agent fix summary). NEVER store secrets here.
+  note String?
+
+  createdAt DateTime @default(now())
+
+  @@index([checkId])
+  @@index([createdAt])
 }
