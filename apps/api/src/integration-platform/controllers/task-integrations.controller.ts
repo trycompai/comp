@@ -42,6 +42,9 @@ import { loadActiveExceptionSet } from '../../cloud-security/finding-exceptions'
 import {
   countEffectiveFailures,
   decideTaskStatus,
+  splitFailuresByDisposition,
+  failureSignalsFromEvidence,
+  type ClassifiableFailure,
 } from '../utils/task-check-evaluation';
 import {
   capEvidence,
@@ -62,8 +65,9 @@ interface ConnectionCheckOutcome {
   status: 'success' | 'failed' | 'error';
   findings: number;
   passing: number;
-  /** resourceIds of this account's failing findings, for exception filtering. */
-  failingResourceIds: string[];
+  /** This account's failing findings (+ redacted error signals) for exception
+   *  filtering and self-heal classification. */
+  failures: ClassifiableFailure[];
 }
 
 interface TaskIntegrationCheck {
@@ -397,11 +401,7 @@ export class TaskIntegrationsController {
     let lastCheckRunId: string | undefined;
     // Failing findings across all accounts (keyed like an exception) so task
     // status can exclude explicitly-excepted ones below.
-    const failingFindings: Array<{
-      connectionId: string;
-      checkId: string;
-      resourceId: string;
-    }> = [];
+    const failingFindings: ClassifiableFailure[] = [];
 
     // Sequential so each per-account run commits as it completes — a slow or
     // failing account still leaves the earlier accounts' results persisted.
@@ -421,9 +421,7 @@ export class TaskIntegrationsController {
       totalFindings += outcome.findings;
       totalPassing += outcome.passing;
       if (outcome.status === 'error') hasExecutionError = true;
-      for (const resourceId of outcome.failingResourceIds) {
-        failingFindings.push({ connectionId: conn.id, checkId, resourceId });
-      }
+      failingFindings.push(...outcome.failures);
       lastCheckRunId = outcome.checkRunId;
     }
 
@@ -440,14 +438,30 @@ export class TaskIntegrationsController {
     // rule, via the shared helpers). Any real (non-excepted) finding → failed;
     // else any passing result → done; else leave unchanged.
     const exceptions = await loadActiveExceptionSet(organizationId);
-    const effectiveFailures = countEffectiveFailures(
-      failingFindings,
-      exceptions,
-    );
+    // For DYNAMIC integrations, hold our-side/transient failures as inconclusive
+    // (same rule as the scheduled path): they must not fail the task. Static/AWS
+    // behavior is unchanged. Safe degradation: a finding with no readable error
+    // signal classifies as a real failure, exactly as today.
+    const isDynamic = !!(await db.dynamicIntegration.findFirst({
+      where: { slug: provider.slug, isActive: true },
+      select: { id: true },
+    }));
+    const statusFailures = isDynamic
+      ? splitFailuresByDisposition(failingFindings).effective
+      : failingFindings;
+    const heldCount = failingFindings.length - statusFailures.length;
+    if (heldCount > 0) {
+      this.logger.log(
+        `Held ${heldCount} our-side/transient finding(s) as inconclusive for task ${taskId} (manual run; not shown as failed)`,
+      );
+    }
+    const effectiveFailures = countEffectiveFailures(statusFailures, exceptions);
+    // Held findings are indeterminate — exclude them from the finding count so an
+    // all-held run doesn't flip the task to "done" either.
     const newStatus = decideTaskStatus(
       effectiveFailures,
       totalPassing,
-      totalFindings,
+      totalFindings - heldCount,
     );
 
     if (newStatus) {
@@ -603,7 +617,7 @@ export class TaskIntegrationsController {
           status: 'error',
           findings: 0,
           passing: 0,
-          failingResourceIds: [],
+          failures: [],
         };
       }
 
@@ -659,9 +673,13 @@ export class TaskIntegrationsController {
         status: checkResult.status,
         findings: checkResult.result.findings.length,
         passing: checkResult.result.passingResults.length,
-        failingResourceIds: checkResult.result.findings.map(
-          (f) => f.resourceId,
-        ),
+        failures: checkResult.result.findings.map((f) => ({
+          connectionId,
+          checkId: checkDef.id,
+          resourceId: f.resourceId,
+          // Redacted error signals for self-heal classification (dynamic only).
+          ...failureSignalsFromEvidence(f.evidence, checkResult.status),
+        })),
       };
     } catch (error) {
       await this.checkRunRepository.complete(checkRun.id, {
@@ -683,7 +701,7 @@ export class TaskIntegrationsController {
         status: 'error',
         findings: 0,
         passing: 0,
-        failingResourceIds: [],
+        failures: [],
       };
     }
   }
