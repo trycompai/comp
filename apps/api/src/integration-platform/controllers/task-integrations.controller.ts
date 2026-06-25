@@ -773,13 +773,31 @@ export class TaskIntegrationsController {
     // untouched in the DB; this only affects the response.
     const exceptions = await loadActiveExceptionSet(organizationId);
 
-    return {
-      runs: runs.map((run) => {
+    const mappedRuns = await Promise.all(
+      runs.map(async (run) => {
         const provider = getProviderSummary(run.connection);
 
-        // Map ALL results first so the summary counts below reflect the full
-        // result set, then ship only a bounded slice (see run-history-limits).
-        const allResults = run.results.map((r) => ({
+        // `run.results` is a BOUNDED, findings-first sample — the repo caps how
+        // many rows it loads per run (a check can produce tens of thousands, so
+        // loading them all hangs/OOMs the request). The effective failure count
+        // is therefore computed EXACTLY via a targeted count query over the
+        // full set, NOT by filtering this sample. The query is skipped when
+        // this (connection, check) has no exceptions — the common case.
+        const exceptedResourceIds = exceptions.exceptedResourceIds(
+          run.connectionId,
+          run.checkId,
+        );
+        const exceptedCount =
+          await this.checkRunRepository.countExceptedFailures(
+            run.id,
+            exceptedResourceIds,
+          );
+
+        // Tag each sampled result with whether it's excepted (for display);
+        // authoritative totals come from the run's summary columns +
+        // exceptedCount above. Cap evidence so one oversized blob can't bloat
+        // the payload that the browser must parse + render.
+        const sample = run.results.map((r) => ({
           id: r.id,
           passed: r.passed,
           resourceType: r.resourceType,
@@ -794,18 +812,11 @@ export class TaskIntegrationsController {
             !r.passed &&
             exceptions.has(run.connectionId, run.checkId, r.resourceId),
         }));
-
-        const exceptedCount = allResults.filter((r) => r.excepted).length;
-
-        // Cap the heavy parts so a check with a very large result set (e.g. a
-        // Firebase B2C tenant with tens of thousands of users) can't ship a
-        // multi-MB payload that OOM-crashes the browser. The summary counts
-        // above are computed from the full set, so they stay accurate and the
-        // UI derives "+N more" from them, not from this trimmed array.
-        const results = capResultsForList(allResults).map((r) => ({
+        const results = capResultsForList(sample).map((r) => ({
           ...r,
           evidence: capEvidence(r.evidence),
         }));
+
         const effectiveFailed = Math.max(0, run.failedCount - exceptedCount);
         // Only downgrade failed → success when the failures were actually
         // EXCEPTED. A failed run with no findings (e.g. an execution error,
@@ -840,6 +851,8 @@ export class TaskIntegrationsController {
           createdAt: run.createdAt,
         };
       }),
-    };
+    );
+
+    return { runs: mappedRuns };
   }
 }

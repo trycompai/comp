@@ -169,6 +169,7 @@ describe('TaskIntegrationsController', () => {
     complete: jest.fn(),
     addResults: jest.fn(),
     findLatestPerConnectionAndCheckByTask: jest.fn(),
+    countExceptedFailures: jest.fn(),
   };
   const mockCredentialVaultService = { getDecryptedCredentials: jest.fn() };
   const mockOAuthCredentialsService = {
@@ -229,6 +230,9 @@ describe('TaskIntegrationsController', () => {
     );
     mockCheckRunRepository.complete.mockResolvedValue({});
     mockCheckRunRepository.addResults.mockResolvedValue({});
+    // Default: nothing excepted (no count query needed). Exception tests
+    // override this to the exact excepted-failure count for the run.
+    mockCheckRunRepository.countExceptedFailures.mockResolvedValue(0);
     mockCredentialVaultService.getDecryptedCredentials.mockResolvedValue(
       VALID_CREDS,
     );
@@ -564,6 +568,10 @@ describe('TaskIntegrationsController', () => {
           resourceId: 'reports-bucket',
         },
       ]);
+      // The excepted-failure count is now computed via a targeted query (the
+      // full result set is no longer loaded). reports-bucket is the one
+      // excepted failing result for this run.
+      mockCheckRunRepository.countExceptedFailures.mockResolvedValue(1);
 
       const { runs } = await controller.getTaskCheckRuns('task_1', 'org_1');
 
@@ -571,6 +579,12 @@ describe('TaskIntegrationsController', () => {
       expect(runs[0].exceptedCount).toBe(1);
       expect(runs[0].status).toBe('success');
       expect(runs[0].results[0].excepted).toBe(true);
+      // Exact count is computed via the targeted query, scoped to this run's
+      // excepted resourceIds (not by loading + filtering every result).
+      expect(mockCheckRunRepository.countExceptedFailures).toHaveBeenCalledWith(
+        'icr_1',
+        ['reports-bucket'],
+      );
     });
 
     it('keeps an execution-error run as failed (no findings, not excepted)', async () => {
@@ -623,11 +637,12 @@ describe('TaskIntegrationsController', () => {
     });
 
     it('bounds a run with a huge result set + logs so the payload stays small (CS-588)', async () => {
-      // A check that produced tens of thousands of results (e.g. a Firebase
-      // B2C tenant enumerating every auth user) used to embed every result —
-      // with full evidence — plus the full log array in the /runs response.
-      // The multi-MB payload OOM-crashed the browser. The response must be
-      // bounded while the run's summary counts stay accurate.
+      // Defense-in-depth response cap: even if a run somehow carries a large
+      // result/log set, the serialized response is bounded (results per
+      // category, evidence size, log count) while the run's summary counts stay
+      // accurate. The PRIMARY fix — never LOADING all result rows from the DB —
+      // lives in CheckRunRepository.findLatestPerConnectionAndCheckByTask and is
+      // covered in check-run.repository.spec.ts.
       const HUGE = 5000;
       const results = [
         // First finding carries an oversized evidence blob.
