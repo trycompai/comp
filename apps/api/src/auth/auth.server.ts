@@ -1,5 +1,9 @@
 import '../config/load-env';
-import { MagicLinkEmail, OTPVerificationEmail } from '@trycompai/email';
+import {
+  MagicLinkEmail,
+  OTPVerificationEmail,
+  VerifyEmail,
+} from '@trycompai/email';
 import { triggerEmail } from '../email/trigger-email';
 import { InviteEmail } from '../email/templates/invite-member';
 import { db } from '@db';
@@ -18,6 +22,10 @@ import { ac, allRoles } from '@trycompai/auth';
 import { createAuthMiddleware } from 'better-auth/api';
 import { Redis } from '@upstash/redis';
 import type { AccessControl } from 'better-auth/plugins/access';
+import {
+  resolveMicrosoftEmail,
+  type MicrosoftEmailClaims,
+} from './microsoft-email';
 
 const MAGIC_LINK_EXPIRES_IN_SECONDS = 60 * 60; // 1 hour
 
@@ -184,6 +192,13 @@ if (
     clientSecret: process.env.AUTH_MICROSOFT_CLIENT_SECRET,
     tenantId: process.env.AUTH_MICROSOFT_TENANT_ID || 'common',
     prompt: 'select_account',
+    // Microsoft Entra often omits the `email` claim for work/school accounts,
+    // which makes better-auth abort sign-in with `email_not_found`. Fall back to
+    // the username/UPN claims so these users can sign in. Accounts that DO return
+    // an `email` claim are unaffected. See ./microsoft-email.ts.
+    mapProfileToUser: (profile: MicrosoftEmailClaims) => ({
+      email: resolveMicrosoftEmail(profile),
+    }),
   };
 }
 
@@ -282,6 +297,20 @@ export const auth = betterAuth({
   trustedOrigins: getTrustedOrigins(),
   emailAndPassword: {
     enabled: true,
+    requireEmailVerification: true,
+  },
+  emailVerification: {
+    sendOnSignUp: true,
+    sendVerificationEmail: async ({ user, url }) => {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Auth] Sending verification email to:', user.email);
+      }
+      await triggerEmail({
+        to: user.email,
+        subject: 'Verify your email for Comp AI',
+        react: VerifyEmail({ email: user.email, url }),
+      });
+    },
   },
   advanced: {
     database: {

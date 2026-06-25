@@ -125,6 +125,39 @@ describe('FindingContextSection', () => {
     });
   });
 
+  it('saves against the page run id, not the provider per-issue runId', async () => {
+    // Maced's Issue.runId is a per-issue run id that has no ownership-marker
+    // row, so sending it makes the API's upsert → getReport → assertRunOwnership
+    // 404 (the bare "HTTP 404:" toast). The PUT must carry the pentest run id
+    // the page is built on.
+    permissionsMock.canUpdatePentest = true;
+    contextsMock.saveContext.mockResolvedValue(undefined);
+    const user = userEvent.setup();
+
+    render(
+      <FindingContextSection
+        orgId="org_1"
+        issue={{ ...issue, runId: 'run_maced_per_issue' }}
+        runId="run_page"
+        targetUrl="https://app.example.com"
+      />,
+    );
+
+    await user.type(
+      screen.getByRole('textbox'),
+      'Accepted by design — reads are non-sensitive.',
+    );
+    await user.click(screen.getByRole('button', { name: /save context/i }));
+
+    await waitFor(() => {
+      expect(contextsMock.saveContext).toHaveBeenCalledWith({
+        issueId: 'issue_1',
+        runId: 'run_page',
+        context: 'Accepted by design — reads are non-sensitive.',
+      });
+    });
+  });
+
   it('lets pentest:update users remove a saved note', async () => {
     permissionsMock.canUpdatePentest = true;
     contextsMock.contextByIssueId = new Map([['issue_1', savedNote]]);

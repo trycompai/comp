@@ -18,9 +18,31 @@ import { db } from '@db';
  */
 export class ActiveExceptionSet {
   private readonly keys: Set<string>;
+  /**
+   * Excepted resourceIds grouped by `connectionId::checkId`. Lets a caller
+   * count a run's excepted failures with a targeted query instead of loading
+   * every result row into memory.
+   */
+  private readonly resourceIdsByConnCheck: Map<string, Set<string>>;
 
   constructor(keys: Iterable<string>) {
     this.keys = new Set(keys);
+    this.resourceIdsByConnCheck = new Map();
+    for (const key of this.keys) {
+      // key = `${connectionId}::${checkId}::${resourceId}`. A resourceId can
+      // itself contain "::", so take the first two segments and rejoin the
+      // rest — reconstructing exactly the resourceId used to build the key.
+      const parts = key.split('::');
+      if (parts.length < 3) continue;
+      const groupKey = `${parts[0]}::${parts[1]}`;
+      const resourceId = parts.slice(2).join('::');
+      let ids = this.resourceIdsByConnCheck.get(groupKey);
+      if (!ids) {
+        ids = new Set();
+        this.resourceIdsByConnCheck.set(groupKey, ids);
+      }
+      ids.add(resourceId);
+    }
   }
 
   /** Canonical key. The only place this format is defined. */
@@ -40,6 +62,18 @@ export class ActiveExceptionSet {
     return this.keys.has(
       ActiveExceptionSet.key(connectionId, checkId, resourceId),
     );
+  }
+
+  /**
+   * The excepted resourceIds for a (connection, check) pair. Empty when nothing
+   * is excepted for that pair — callers use this to skip the count query
+   * entirely (the common case: no exceptions).
+   */
+  exceptedResourceIds(connectionId: string, checkId: string): string[] {
+    const ids = this.resourceIdsByConnCheck.get(
+      `${connectionId}::${checkId}`,
+    );
+    return ids ? Array.from(ids) : [];
   }
 }
 

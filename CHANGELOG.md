@@ -1,3 +1,94 @@
+## [3.92.1](https://github.com/trycompai/comp/compare/v3.92.0...v3.92.1) (2026-06-24)
+
+
+### Bug Fixes
+
+* **auth:** route auditor invite links directly to workspace instead of onboarding ([db849e2](https://github.com/trycompai/comp/commit/db849e2e0e2e4816018bd468eaafd57b63acd23b))
+* **sync:** apply user filters to dynamic provider employee sync ([8dfbec3](https://github.com/trycompai/comp/commit/8dfbec3d5ea2b884dede2b4656d0cec3eaef2ca1))
+
+# [3.92.0](https://github.com/trycompai/comp/compare/v3.91.1...v3.92.0) (2026-06-24)
+
+
+### Features
+
+* **email:** dedicated verification template + backfill existing accounts ([#3273](https://github.com/trycompai/comp/issues/3273)) ([1d94576](https://github.com/trycompai/comp/commit/1d94576b4300a02959a5ca5b54fe213a3dd0f24e))
+
+## [3.91.1](https://github.com/trycompai/comp/compare/v3.91.0...v3.91.1) (2026-06-24)
+
+
+### Bug Fixes
+
+* **integration-checks:** bundle per-task failure emails into one per org ([f59076c](https://github.com/trycompai/comp/commit/f59076c8bf6c17e2854cdffa5c83079b29c0cab1))
+* **integration-checks:** exact role-token recipients, drop platform-role filter ([5cbb855](https://github.com/trycompai/comp/commit/5cbb8554b6e6415445aeea58ea9db0967d7134b1))
+
+# [3.91.0](https://github.com/trycompai/comp/compare/v3.90.1...v3.91.0) (2026-06-23)
+
+
+### Bug Fixes
+
+* **auth:** fall back to UPN/username when Microsoft omits the email claim ([6e27044](https://github.com/trycompai/comp/commit/6e27044b4f096b60c87b297245016e96cbec20e6))
+* **cloud-security:** combine GCP direct-API checks with SCC, skip SCC when unavailable ([29ddd1a](https://github.com/trycompai/comp/commit/29ddd1abdd91451a436e30ab8358b79446b05b59))
+* **cloud-security:** honor disabled-service toggle in GCP direct-API checks ([0182676](https://github.com/trycompai/comp/commit/0182676220ecd6155881298fdc35f68e4448ddca))
+* **drata:** handle non-array policy content in bulk pdf render ([33d9157](https://github.com/trycompai/comp/commit/33d91575e21ee9cfa1a34564ebd33e373f282575)), closes [#3249](https://github.com/trycompai/comp/issues/3249)
+* **policies:** use deterministic template engine for individual policy regen ([aad6a80](https://github.com/trycompai/comp/commit/aad6a802b90aa69ce1479ce45938c892fd0818fa))
+
+
+### Features
+
+* **cloud-security:** make GCP auto-fix first-class for direct-API findings ([5684b97](https://github.com/trycompai/comp/commit/5684b9774513110458826aafc9a7a4c9d4ff998b))
+
+## [3.90.1](https://github.com/trycompai/comp/compare/v3.90.0...v3.90.1) (2026-06-23)
+
+
+### Bug Fixes
+
+* **pentest:** use run id instead of issue run id for context submission ([24353c4](https://github.com/trycompai/comp/commit/24353c4d8b9d4f00b8e7df33fefe3327433acf65))
+
+# [3.90.0](https://github.com/trycompai/comp/compare/v3.89.0...v3.90.0) (2026-06-23)
+
+
+### Bug Fixes
+
+* **framework-editor:** clean up resize listeners on unmount (FRAME-17 review) ([b75be84](https://github.com/trycompai/comp/commit/b75be840b38428b9d29062ae88910b1a679dfb96))
+
+
+### Features
+
+* **framework-editor:** resizable columns persisted to a cookie (FRAME-17) ([7756295](https://github.com/trycompai/comp/commit/77562957564200ae48d1b95eb45b10448750f02f))
+* **integration-platform:** capture + surface OAuth connect failures ([7d7792d](https://github.com/trycompai/comp/commit/7d7792d29bc481fa790708e3ccfe69a245f16f49))
+
+# [3.89.0](https://github.com/trycompai/comp/compare/v3.88.0...v3.89.0) (2026-06-23)
+
+
+### Bug Fixes
+
+* **integration-platform:** address cubic review on internal debug toolkit ([1771a37](https://github.com/trycompai/comp/commit/1771a37a2baf3f6400775c967144ac0d615e56a5))
+
+
+### Features
+
+* **integration-platform:** add candidate-code test endpoint (validate a fix before applying) ([86ce563](https://github.com/trycompai/comp/commit/86ce5633c4870bf448b22206a04cb6983e42cc29))
+* **integration-platform:** internal debug toolkit for dynamic integrations ([9723e9d](https://github.com/trycompai/comp/commit/9723e9dd9f01ab33c497c38d64d39d83b7747cf3))
+
+# [3.88.0](https://github.com/trycompai/comp/compare/v3.87.3...v3.88.0) (2026-06-23)
+
+
+### Bug Fixes
+
+* **api:** add daily cron to refresh OAuth tokens expiring within 24h ([e3cdfa1](https://github.com/trycompai/comp/commit/e3cdfa106726e14d4975215d10166056f03c0a6c))
+* **api:** ensure only latest versions are considered in refresh-expiring-tokens-schedule ([7375005](https://github.com/trycompai/comp/commit/7375005f0bdb8bcc35b97555093323556791fb91))
+* **api:** fix mismatched field issue in refresh-expiring-tokens-schedule ([9d30b3e](https://github.com/trycompai/comp/commit/9d30b3e754f643c7381c6e7c6716217a25382935))
+* **attachments:** accept PDFs with a leading BOM/whitespace before %PDF ([6493443](https://github.com/trycompai/comp/commit/64934434006d0d871cbe230cd1feefd37fecc954))
+* **browserbase:** attach Stagehand over CDP to avoid premature-close on resume ([a1cec9b](https://github.com/trycompai/comp/commit/a1cec9bbd9fbbfab99a3a10b0c18fdd926b978a2)), closes [#3230](https://github.com/trycompai/comp/issues/3230)
+* **browserbase:** surface the underlying cause on exhausted retries ([acdfd1e](https://github.com/trycompai/comp/commit/acdfd1ea2bb3032cdc3929e739cf7a6f61583176))
+* **evidence:** include custom roles in assignee visibility and filters ([ba85a4e](https://github.com/trycompai/comp/commit/ba85a4e622eb338fffc07d423a2245a9329a4bcc))
+* **tasks:** show custom roles in assignee filter and task overview ([87f0b55](https://github.com/trycompai/comp/commit/87f0b551536cdc504e867e9b746131a65eb702cc))
+
+
+### Features
+
+* **framework-editor:** unified Finder-style frameworks list (FRAME-20 follow-up) ([0084c43](https://github.com/trycompai/comp/commit/0084c438a853cee0e2a6c9a829ddbea0c2803c24))
+
 ## [3.87.3](https://github.com/trycompai/comp/compare/v3.87.2...v3.87.3) (2026-06-22)
 
 

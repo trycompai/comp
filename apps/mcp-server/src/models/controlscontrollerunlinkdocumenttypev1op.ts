@@ -55,8 +55,8 @@ export const ControlsControllerUnlinkDocumentTypeV1FormType$zodSchema = z.enum([
 
 export type ControlsControllerUnlinkDocumentTypeV1Request = {
   id: string;
-  formType: ControlsControllerUnlinkDocumentTypeV1FormType;
   frameworkInstanceId: string;
+  formType: ControlsControllerUnlinkDocumentTypeV1FormType;
 };
 
 export const ControlsControllerUnlinkDocumentTypeV1Request$zodSchema: z.ZodType<
