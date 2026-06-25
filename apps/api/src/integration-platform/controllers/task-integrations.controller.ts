@@ -43,6 +43,11 @@ import {
   countEffectiveFailures,
   decideTaskStatus,
 } from '../utils/task-check-evaluation';
+import {
+  capEvidence,
+  capLogs,
+  capResultsForList,
+} from '../utils/run-history-limits';
 import { db } from '@db';
 import type { IntegrationConnection, Prisma } from '@db';
 
@@ -772,7 +777,9 @@ export class TaskIntegrationsController {
       runs: runs.map((run) => {
         const provider = getProviderSummary(run.connection);
 
-        const results = run.results.map((r) => ({
+        // Map ALL results first so the summary counts below reflect the full
+        // result set, then ship only a bounded slice (see run-history-limits).
+        const allResults = run.results.map((r) => ({
           id: r.id,
           passed: r.passed,
           resourceType: r.resourceType,
@@ -788,7 +795,17 @@ export class TaskIntegrationsController {
             exceptions.has(run.connectionId, run.checkId, r.resourceId),
         }));
 
-        const exceptedCount = results.filter((r) => r.excepted).length;
+        const exceptedCount = allResults.filter((r) => r.excepted).length;
+
+        // Cap the heavy parts so a check with a very large result set (e.g. a
+        // Firebase B2C tenant with tens of thousands of users) can't ship a
+        // multi-MB payload that OOM-crashes the browser. The summary counts
+        // above are computed from the full set, so they stay accurate and the
+        // UI derives "+N more" from them, not from this trimmed array.
+        const results = capResultsForList(allResults).map((r) => ({
+          ...r,
+          evidence: capEvidence(r.evidence),
+        }));
         const effectiveFailed = Math.max(0, run.failedCount - exceptedCount);
         // Only downgrade failed → success when the failures were actually
         // EXCEPTED. A failed run with no findings (e.g. an execution error,
@@ -812,7 +829,7 @@ export class TaskIntegrationsController {
           failedCount: effectiveFailed,
           exceptedCount,
           errorMessage: run.errorMessage,
-          logs: run.logs,
+          logs: capLogs(run.logs),
           connectionId: run.connectionId,
           connectionLabel: getConnectionLabel(run.connection),
           provider: {

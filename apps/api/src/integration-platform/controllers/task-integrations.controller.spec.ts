@@ -621,5 +621,107 @@ describe('TaskIntegrationsController', () => {
         mockCheckRunRepository.findLatestPerConnectionAndCheckByTask,
       ).not.toHaveBeenCalled();
     });
+
+    it('bounds a run with a huge result set + logs so the payload stays small (CS-588)', async () => {
+      // A check that produced tens of thousands of results (e.g. a Firebase
+      // B2C tenant enumerating every auth user) used to embed every result —
+      // with full evidence — plus the full log array in the /runs response.
+      // The multi-MB payload OOM-crashed the browser. The response must be
+      // bounded while the run's summary counts stay accurate.
+      const HUGE = 5000;
+      const results = [
+        // First finding carries an oversized evidence blob.
+        {
+          id: 'icx_finding_0',
+          passed: false,
+          resourceType: 'firebase-user',
+          resourceId: 'user_0',
+          title: 'finding 0',
+          description: 'd',
+          severity: 'high',
+          remediation: 'fix',
+          evidence: { blob: 'x'.repeat(30_000) },
+          collectedAt: new Date(),
+        },
+        ...Array.from({ length: HUGE - 1 }, (_, i) => ({
+          id: `icx_finding_${i + 1}`,
+          passed: false,
+          resourceType: 'firebase-user',
+          resourceId: `user_f_${i + 1}`,
+          title: 'finding',
+          description: 'd',
+          severity: 'high',
+          remediation: 'fix',
+          evidence: { ok: true },
+          collectedAt: new Date(),
+        })),
+        ...Array.from({ length: HUGE }, (_, i) => ({
+          id: `icx_pass_${i}`,
+          passed: true,
+          resourceType: 'firebase-user',
+          resourceId: `user_p_${i}`,
+          title: 'passing',
+          description: 'd',
+          evidence: { ok: true },
+          collectedAt: new Date(),
+        })),
+      ];
+      const logs = Array.from({ length: HUGE }, (_, i) => ({
+        level: 'info',
+        message: `log ${i}`,
+        timestamp: new Date().toISOString(),
+      }));
+
+      mockCheckRunRepository.findLatestPerConnectionAndCheckByTask.mockResolvedValue(
+        [
+          {
+            id: 'icr_huge',
+            checkId: 'firebase-employee-access',
+            checkName: 'Employee Access',
+            status: 'failed',
+            startedAt: new Date(),
+            completedAt: new Date(),
+            durationMs: 10,
+            totalChecked: HUGE * 2,
+            passedCount: HUGE,
+            failedCount: HUGE,
+            errorMessage: null,
+            logs,
+            connectionId: 'conn_1',
+            createdAt: new Date(),
+            results,
+            connection: {
+              id: 'conn_1',
+              metadata: { connectionName: 'Firebase' },
+              provider: { slug: 'firebase', name: 'Firebase' },
+            },
+          },
+        ],
+      );
+
+      const { runs } = await controller.getTaskCheckRuns('task_1', 'org_1');
+
+      // Result detail is bounded (a few findings + a few passing), NOT 10000.
+      expect(runs[0].results.length).toBeLessThanOrEqual(15);
+      expect(runs[0].results.length).toBeLessThan(results.length);
+      // Logs are bounded too.
+      expect(Array.isArray(runs[0].logs)).toBe(true);
+      if (Array.isArray(runs[0].logs)) {
+        expect(runs[0].logs.length).toBeLessThanOrEqual(100);
+      }
+      // Summary counts remain authoritative (computed from the full set).
+      expect(runs[0].passedCount).toBe(HUGE);
+      expect(runs[0].failedCount).toBe(HUGE);
+      expect(runs[0].exceptedCount).toBe(0);
+      // The oversized evidence blob is replaced with a compact placeholder.
+      const shippedFinding = runs[0].results.find(
+        (r) => r.id === 'icx_finding_0',
+      );
+      expect(shippedFinding).toBeDefined();
+      expect(shippedFinding?.evidence).toMatchObject({ truncated: true });
+      // Normal small evidence is left intact.
+      const shippedPass = runs[0].results.find((r) => r.passed);
+      expect(shippedPass?.evidence).toEqual({ ok: true });
+    });
   });
 });
