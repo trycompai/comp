@@ -339,4 +339,59 @@ export class InternalIntegrationDebugService {
     });
     return { errors, total: errors.length };
   }
+
+  /**
+   * The self-heal agent's work queue: check runs HELD as inconclusive (an
+   * our-side / transient failure the customer never saw as a red "failed"). The
+   * agent polls this, then diagnoses + fixes each via run/test/PATCH. Newest
+   * first. Failing results (with evidence) are included so the agent can classify
+   * without an extra round-trip.
+   */
+  async listInconclusiveRuns(params: {
+    providerSlug?: string;
+    organizationId?: string;
+    limit?: number;
+  }) {
+    const { providerSlug, organizationId } = params;
+    const rawLimit = params.limit ?? NaN;
+    const limit = Number.isFinite(rawLimit)
+      ? Math.min(Math.max(rawLimit, 1), 200)
+      : 50;
+    const runs = await db.integrationCheckRun.findMany({
+      where: {
+        status: 'inconclusive',
+        connection: {
+          ...(organizationId ? { organizationId } : {}),
+          ...(providerSlug ? { provider: { slug: providerSlug } } : {}),
+        },
+      },
+      orderBy: { completedAt: 'desc' },
+      take: limit,
+      select: {
+        id: true,
+        checkId: true,
+        checkName: true,
+        status: true,
+        completedAt: true,
+        connection: {
+          select: {
+            id: true,
+            organizationId: true,
+            provider: { select: { slug: true, name: true } },
+          },
+        },
+        results: {
+          where: { passed: false },
+          select: {
+            resourceId: true,
+            resourceType: true,
+            title: true,
+            description: true,
+            evidence: true,
+          },
+        },
+      },
+    });
+    return { runs, total: runs.length };
+  }
 }

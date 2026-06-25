@@ -300,4 +300,46 @@ describe('InternalIntegrationDebugService', () => {
       expect(Number.isFinite(args.take)).toBe(true);
     });
   });
+
+  describe('listInconclusiveRuns (self-heal work queue)', () => {
+    it('queries only inconclusive runs, filtered by provider, newest first', async () => {
+      mockedDb.integrationCheckRun.findMany.mockResolvedValue([
+        {
+          id: 'icr_1',
+          checkId: 'neon_app_availability',
+          checkName: 'App Availability',
+          status: 'inconclusive',
+          completedAt: new Date(),
+          connection: {
+            id: 'icn_1',
+            organizationId: 'org_1',
+            provider: { slug: 'neon', name: 'Neon' },
+          },
+          results: [
+            {
+              resourceId: 'neon',
+              resourceType: 'platform',
+              title: 'x',
+              description: 'y',
+              evidence: { error: 'http_404' },
+            },
+          ],
+        },
+      ]);
+
+      const service = makeService();
+      const { runs, total } = await service.listInconclusiveRuns({
+        providerSlug: 'neon',
+        limit: 10,
+      });
+
+      expect(total).toBe(1);
+      expect(runs[0].status).toBe('inconclusive');
+      const args = mockedDb.integrationCheckRun.findMany.mock.calls[0][0];
+      expect(args.where.status).toBe('inconclusive');
+      expect(args.where.connection.provider).toEqual({ slug: 'neon' });
+      expect(args.orderBy).toEqual({ completedAt: 'desc' });
+      expect(args.take).toBe(10);
+    });
+  });
 });

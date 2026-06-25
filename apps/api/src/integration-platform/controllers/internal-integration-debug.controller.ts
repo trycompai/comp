@@ -143,4 +143,22 @@ export class InternalIntegrationDebugController {
       limit: parseOptionalInt(limit),
     });
   }
+
+  /**
+   * The self-heal agent's work queue: check runs HELD as inconclusive (our-side /
+   * transient failures, never shown to the customer as red). The agent polls
+   * this, then diagnoses + fixes each. Filter by provider / org.
+   */
+  @Get('inconclusive-runs')
+  async listInconclusiveRuns(
+    @Query('providerSlug') providerSlug?: string,
+    @Query('organizationId') organizationId?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.debugService.listInconclusiveRuns({
+      providerSlug,
+      organizationId,
+      limit: parseOptionalInt(limit),
+    });
+  }
 }
