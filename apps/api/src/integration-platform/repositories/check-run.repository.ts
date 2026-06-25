@@ -6,6 +6,19 @@ import type { Prisma } from '@db';
 const DEFAULT_HISTORY_PER_GROUP = 5;
 const MAX_HISTORY_PER_GROUP = 50;
 
+/**
+ * Max result rows loaded PER RUN for the task run-history view. A single check
+ * can legitimately produce tens of thousands of results — e.g. a Firebase B2C
+ * tenant whose check yields one result per auth user. Eager-loading them all
+ * (`results: true`) hydrates the entire set into memory for every run in the
+ * window, which hangs or OOMs the request (the task UI then never loads). The
+ * UI only renders a few results per category, so we load a small findings-first
+ * window. Authoritative totals come from the run's summary columns + a targeted
+ * exception count (see {@link CheckRunRepository.countExceptedFailures}), never
+ * from this sample.
+ */
+const DISPLAY_RESULTS_PER_RUN = 30;
+
 export interface CreateCheckRunDto {
   connectionId: string;
   taskId?: string;
@@ -180,10 +193,18 @@ export class CheckRunRepository {
         ? Math.min(historyPerGroup, MAX_HISTORY_PER_GROUP)
         : DEFAULT_HISTORY_PER_GROUP;
 
+    // Bounded, findings-first result load. `take` is applied PER RUN by Prisma
+    // (correlated limit at the DB), so a run with a huge result set can never
+    // pull more than DISPLAY_RESULTS_PER_RUN rows. Failing first (`passed asc`)
+    // so the UI's findings always surface even when truncated; passing fills
+    // any remaining slots.
     const include = {
-      results: true,
+      results: {
+        take: DISPLAY_RESULTS_PER_RUN,
+        orderBy: [{ passed: 'asc' }, { collectedAt: 'asc' }],
+      },
       connection: { include: { provider: true } },
-    } as const;
+    } satisfies Prisma.IntegrationCheckRunInclude;
 
     const where = {
       taskId,
@@ -234,6 +255,28 @@ export class CheckRunRepository {
     return Array.from(byId.values()).sort(
       (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
     );
+  }
+
+  /**
+   * Count a run's FAILING results whose resourceId is under an active exception.
+   * Lets the task UI compute the effective (non-excepted) failure count exactly
+   * WITHOUT loading every result row — only the bounded display sample is
+   * hydrated; this count covers the full set. `resourceIds` is the excepted set
+   * for the run's (connection, check); callers pass an empty list (and skip the
+   * call) when nothing is excepted, which is the common case.
+   */
+  async countExceptedFailures(
+    runId: string,
+    resourceIds: string[],
+  ): Promise<number> {
+    if (resourceIds.length === 0) return 0;
+    return db.integrationCheckResult.count({
+      where: {
+        checkRunId: runId,
+        passed: false,
+        resourceId: { in: resourceIds },
+      },
+    });
   }
 
   /**
