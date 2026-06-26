@@ -455,6 +455,7 @@ export const runTaskIntegrationChecks = task({
         effectiveFailures,
         totalPassing,
         totalFindings - heldCount,
+        heldCount,
       );
 
       // Whether THIS run flipped the task into `failed` (e.g. todo/done →

@@ -402,6 +402,74 @@ describe('TaskIntegrationsController', () => {
       );
     });
 
+    it('does NOT mark a dynamic task done when a finding is held, even with passes', async () => {
+      mockProviderRepository.findById.mockResolvedValue({
+        id: 'prov_neon',
+        slug: 'neon',
+      });
+      mockDynamicIntegrationFindFirst.mockResolvedValue({ id: 'din_neon' });
+      mockConnectionRepository.findById.mockResolvedValue({
+        id: 'conn_1',
+        organizationId: 'org_1',
+        providerId: 'prov_neon',
+        status: 'active',
+      });
+      mockConnectionRepository.findActiveByProviderAndOrg.mockResolvedValue([
+        {
+          id: 'conn_1',
+          organizationId: 'org_1',
+          providerId: 'prov_neon',
+          metadata: {},
+          variables: {},
+        },
+      ]);
+      // One passing result + one our-side (404) held finding.
+      mockedRunAllChecks.mockResolvedValue({
+        results: [
+          {
+            checkId: 'aws-s3-encryption',
+            checkName: 'X',
+            status: 'failed',
+            durationMs: 10,
+            error: undefined,
+            result: {
+              findings: [
+                {
+                  resourceType: 'platform',
+                  resourceId: 'neon',
+                  title: 'unhealthy',
+                  description: '404',
+                  severity: 'high',
+                  remediation: 'x',
+                  evidence: { error: 'http_404' },
+                },
+              ],
+              passingResults: [
+                {
+                  resourceType: 't',
+                  resourceId: 'ok1',
+                  title: 'ok',
+                  description: 'ok',
+                },
+              ],
+              summary: { totalChecked: 2 },
+              logs: [],
+            },
+          },
+        ],
+      });
+
+      const result = await controller.runCheckForTask('task_1', 'org_1', {
+        connectionId: 'conn_1',
+        checkId: 'aws-s3-encryption',
+      });
+
+      // A held check is unresolved → the task must NOT go done (which would hide
+      // it behind the passing result); it stays indeterminate until the fix lands.
+      expect(result.taskStatus).toBeNull();
+      expect(mockTaskUpdate).not.toHaveBeenCalled();
+    });
+
     it('still fails the task for a dynamic integration on a REAL finding', async () => {
       // Same dynamic provider, but a genuine compliance finding (no error signal).
       mockProviderRepository.findById.mockResolvedValue({

@@ -42,8 +42,16 @@ export function decideTaskStatus(
   effectiveFailures: number,
   totalPassing: number,
   totalFindings: number,
+  heldCount = 0,
 ): 'failed' | 'done' | null {
   if (effectiveFailures > 0) return 'failed';
+  // Held (our-side/transient) failures are UNRESOLVED — the self-heal agent is
+  // still fixing them. Never declare the task done while any check is held, even
+  // if other checks passed; that would hide an unresolved failure behind a green
+  // task. Leave it unchanged (indeterminate) until the held checks actually pass
+  // — the agent's re-run then produces a clean pass and a later run goes done.
+  // heldCount is always 0 for non-dynamic (static/AWS/GCP/Azure), so unchanged.
+  if (heldCount > 0) return null;
   if (totalPassing > 0 || totalFindings > 0) return 'done';
   return null;
 }
@@ -152,11 +160,13 @@ export function failureSignalsFromEvidence(
   const msgStr = typeof ev.message === 'string' ? ev.message : null;
 
   let httpStatus: number | null = null;
-  // e.g. evidence.error === 'http_404'
-  if (errStr) {
-    const m = errStr.match(/http[_-]?(\d{3})/i);
-    if (m) httpStatus = Number(m[1]);
-  }
+  // Search BOTH error and message — the status often lives in the human message
+  // ('HTTP 401 Unauthorized'), not the error code. Tolerate space/colon/_/-
+  // separators so 'http_404', 'HTTP 401', 'HTTP: 403', 'HTTP-429' all parse;
+  // otherwise a customer-actionable 401/403 would be missed and default to
+  // our_side (held) instead of customer_side (shown). Won't match a URL.
+  const m = `${errStr ?? ''} ${msgStr ?? ''}`.match(/\bhttp[\s:_-]*(\d{3})\b/i);
+  if (m) httpStatus = Number(m[1]);
   // e.g. evidence.status === 404
   if (httpStatus == null && typeof ev.status === 'number') {
     httpStatus = ev.status;

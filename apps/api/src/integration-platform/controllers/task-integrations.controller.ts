@@ -472,6 +472,7 @@ export class TaskIntegrationsController {
       effectiveFailures,
       totalPassing,
       totalFindings - heldCount,
+      heldCount,
     );
 
     if (newStatus) {
