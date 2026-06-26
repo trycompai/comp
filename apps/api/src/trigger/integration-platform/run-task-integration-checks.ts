@@ -362,7 +362,13 @@ export const runTaskIntegrationChecks = task({
               checkResult.result.passingResults.length +
                 checkResult.result.findings.length,
             passedCount: checkResult.result.passingResults.length,
-            failedCount: checkResult.result.findings.length,
+            // A held (inconclusive) run has no CONFIRMED failures — its findings
+            // are our-side/transient, not real fails — so failedCount is 0. The
+            // raw findings still persist as results for the agent to diagnose.
+            failedCount:
+              runStatus === 'inconclusive'
+                ? 0
+                : checkResult.result.findings.length,
             errorMessage: checkResult.error,
             logs: JSON.parse(JSON.stringify(checkResult.result.logs)),
           },

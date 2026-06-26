@@ -540,7 +540,10 @@ export class InternalIntegrationDebugService {
         checkResult.result.passingResults.length +
           checkResult.result.findings.length,
       passedCount: checkResult.result.passingResults.length,
-      failedCount: checkResult.result.findings.length,
+      // Held (inconclusive) runs have no CONFIRMED failures — findings persist as
+      // results for the agent, but the run shows 0 failures.
+      failedCount:
+        status === 'inconclusive' ? 0 : checkResult.result.findings.length,
       errorMessage: checkResult.error,
       logs: JSON.parse(
         JSON.stringify(checkResult.result.logs),

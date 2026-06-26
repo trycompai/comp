@@ -394,11 +394,12 @@ describe('TaskIntegrationsController', () => {
       // Held → indeterminate: task is neither failed nor flipped to done.
       expect(result.taskStatus).toBeNull();
       expect(mockTaskUpdate).not.toHaveBeenCalled();
-      // The run ROW is held as 'inconclusive' (not 'failed') so the customer
-      // never sees it in the task UI and the self-heal agent picks it up.
+      // The run ROW is held as 'inconclusive' (not 'failed') with failedCount 0
+      // (held findings are not confirmed failures) so no consumer can read it as
+      // a failure; the self-heal agent still picks it up via the stored results.
       expect(mockCheckRunRepository.complete).toHaveBeenCalledWith(
         'icr_x',
-        expect.objectContaining({ status: 'inconclusive' }),
+        expect.objectContaining({ status: 'inconclusive', failedCount: 0 }),
       );
     });
 

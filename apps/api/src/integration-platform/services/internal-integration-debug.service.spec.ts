@@ -524,7 +524,7 @@ describe('InternalIntegrationDebugService', () => {
       expect(out.status).toBe('inconclusive');
       expect(repo.complete).toHaveBeenCalledWith(
         'icr_new',
-        expect.objectContaining({ status: 'inconclusive' }),
+        expect.objectContaining({ status: 'inconclusive', failedCount: 0 }),
       );
     });
   });
