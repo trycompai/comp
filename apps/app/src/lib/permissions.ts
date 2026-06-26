@@ -21,6 +21,25 @@ export function parseRolesString(rolesStr: string | null | undefined): string[] 
     .filter((r) => r.length > 0);
 }
 
+/** Sort + de-dupe a comma-separated role string into a canonical form. */
+export function normalizeRoleString(rolesStr: string | null | undefined): string {
+  return [...new Set(parseRolesString(rolesStr))].sort().join(',');
+}
+
+/**
+ * Union the invited roles into an existing comma-separated role string.
+ * Used when an existing member is (re-)invited: we add the new roles rather
+ * than replacing, so a member is never stripped of a role they already hold.
+ */
+export function mergeRoleStrings(
+  existingRoles: string | null | undefined,
+  invitedRoles: string | null | undefined,
+): string {
+  return [...new Set([...parseRolesString(existingRoles), ...parseRolesString(invitedRoles)])]
+    .sort()
+    .join(',');
+}
+
 /**
  * Check if a role name is a built-in role.
  */

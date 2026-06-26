@@ -6,6 +6,8 @@ import {
   canAccessRoute,
   getDefaultRoute,
   hasPermission,
+  mergeRoleStrings,
+  normalizeRoleString,
   type UserPermissions,
 } from './permissions';
 
@@ -45,6 +47,47 @@ describe('canAccessApp', () => {
   it('returns false for users with only policy:read', () => {
     const permissions: UserPermissions = { policy: ['read'] };
     expect(canAccessApp(permissions)).toBe(false);
+  });
+});
+
+describe('normalizeRoleString', () => {
+  it('sorts and de-dupes a role string', () => {
+    expect(normalizeRoleString('employee,admin,employee')).toBe('admin,employee');
+  });
+
+  it('trims whitespace and ignores empty segments', () => {
+    expect(normalizeRoleString(' admin , , employee ')).toBe('admin,employee');
+  });
+
+  it('returns empty string for null/undefined/empty', () => {
+    expect(normalizeRoleString(null)).toBe('');
+    expect(normalizeRoleString(undefined)).toBe('');
+    expect(normalizeRoleString('')).toBe('');
+  });
+});
+
+describe('mergeRoleStrings', () => {
+  it('unions invited roles into existing roles (employee promoted to admin)', () => {
+    expect(mergeRoleStrings('employee', 'admin')).toBe('admin,employee');
+  });
+
+  it('preserves existing roles not present in the invite (never strips a role)', () => {
+    // An owner re-invited as employee keeps owner.
+    expect(mergeRoleStrings('owner', 'employee')).toBe('employee,owner');
+  });
+
+  it('is a no-op (set-equal) when the member already holds the invited roles', () => {
+    const existing = 'admin,employee';
+    expect(mergeRoleStrings(existing, 'admin')).toBe(normalizeRoleString(existing));
+    expect(mergeRoleStrings(existing, 'employee,admin')).toBe(normalizeRoleString(existing));
+  });
+
+  it('handles multi-role invite strings and de-dupes', () => {
+    expect(mergeRoleStrings('employee', 'admin,employee')).toBe('admin,employee');
+  });
+
+  it('handles a missing existing role (acts like the invited roles)', () => {
+    expect(mergeRoleStrings(null, 'admin,employee')).toBe('admin,employee');
   });
 });
 
