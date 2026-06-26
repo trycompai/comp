@@ -209,6 +209,13 @@ export class CheckRunRepository {
     const where = {
       taskId,
       connection: { status: { not: 'disconnected' } },
+      // Held (our-side/transient) runs are stored as `inconclusive` so the
+      // self-heal agent can fix them under the hood, but the customer must NEVER
+      // see them. Excluding them here means the task UI shows each account's
+      // latest REAL (non-held) run — or nothing if a check has only ever been
+      // held ("not run yet") — never a red caused by our own bug. Once the
+      // agent's fix lands, the next real run surfaces here normally.
+      status: { not: 'inconclusive' },
     } satisfies Prisma.IntegrationCheckRunWhereInput;
 
     // Every (connection, check) group that has runs for this task, with its
