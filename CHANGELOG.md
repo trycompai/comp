@@ -1,3 +1,10 @@
+## [3.92.4](https://github.com/trycompai/comp/compare/v3.92.3...v3.92.4) (2026-06-26)
+
+
+### Bug Fixes
+
+* **people:** upgrade an existing active member's role on invite/accept ([dc46128](https://github.com/trycompai/comp/commit/dc46128a3470c1dabd0e4d5bc80e179223d2294b))
+
 ## [3.92.3](https://github.com/trycompai/comp/compare/v3.92.2...v3.92.3) (2026-06-26)
 
 
