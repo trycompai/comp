@@ -182,6 +182,10 @@ enum IntegrationRunStatus {
   success
   failed
   cancelled
+  /// The check could not be evaluated for a non-customer reason (our bug, a
+  /// changed/deprecated vendor endpoint, or a transient error). Held instead of
+  /// shown as a red "failed" — the self-heal layer investigates/fixes it.
+  inconclusive
 }
 
 /// Stores findings/results from integration syncs
