@@ -11,10 +11,12 @@
 const PATTERNS: Array<[RegExp, string]> = [
   // Authorization headers / bearer + basic tokens
   [/\b(bearer|basic)\s+[A-Za-z0-9._+/=-]+/gi, '$1 [redacted]'],
-  // Sensitive key/value pairs in any shape — incl. quoted JSON keys/values
-  // (`"client_secret": "x"`, `{"pwd":"x"}`) which the first-token form missed.
+  // Sensitive key/value pairs in any shape — incl. quoted JSON keys/values with
+  // SPACES (`"client_secret": "a b c"`, `{"pwd":"x"}`). The value matches a full
+  // double/single-quoted string or an unquoted token, so a spaced secret can't
+  // leak its tail (the first-token form did). Keeps the key name for context.
   [
-    /(["']?\b(?:authorization|x-api-key|api[_-]?key|client[_-]?secret|access[_-]?token|refresh[_-]?token|password|passwd|pwd|secret|token)\b["']?\s*[:=]\s*)(["']?)[^\s"',}]+\2/gi,
+    /(["']?\b(?:authorization|x-api-key|api[_-]?key|client[_-]?secret|access[_-]?token|refresh[_-]?token|password|passwd|pwd|secret|token)\b["']?\s*[:=]\s*)(?:"[^"]*"|'[^']*'|[^\s"',}]+)/gi,
     '$1[redacted]',
   ],
   // Common provider key prefixes (sk-, lin_api_, ghp_, xoxb-, AKIA…, etc.)

@@ -22,6 +22,12 @@ describe('redactSecrets', () => {
     expect(out).not.toContain('xyz789');
     expect(redactSecrets('password=hunter2')).not.toContain('hunter2');
     expect(redactSecrets('"pwd":"p1"')).not.toContain('p1');
+    // A quoted value with SPACES must be fully redacted (not just first token).
+    const spaced = redactSecrets(
+      '{"password": "correct horse battery staple"}',
+    );
+    expect(spaced).not.toContain('horse');
+    expect(spaced).not.toContain('staple');
   });
 
   it('redacts common provider key prefixes', () => {
