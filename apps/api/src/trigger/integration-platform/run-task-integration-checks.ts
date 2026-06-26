@@ -11,15 +11,15 @@ import {
   runChecksOnServer,
   type RunAllChecksResult,
 } from './run-checks-on-server';
-import {
-  isActiveDynamicProvider,
-  shouldRunOnServer,
-} from './dynamic-provider';
+import { isActiveDynamicProvider, shouldRunOnServer } from './dynamic-provider';
 import { loadActiveExceptionSet } from '../../cloud-security/finding-exceptions';
 import {
   countEffectiveFailures,
   decideTaskStatus,
-  type FailingFinding,
+  decideRunStatus,
+  splitFailuresByDisposition,
+  failureSignalsFromEvidence,
+  type ClassifiableFailure,
 } from '../../integration-platform/utils/task-check-evaluation';
 
 /**
@@ -224,8 +224,9 @@ export const runTaskIntegrationChecks = task({
     let totalPassing = 0;
     let hasExecutionErrors = false;
     // Failing findings (keyed like an exception) so task status can exclude
-    // explicitly-excepted ones below.
-    const failingFindings: FailingFinding[] = [];
+    // explicitly-excepted ones below. Carries redacted error signals so the
+    // self-heal layer can classify our-side failures (dynamic integrations).
+    const failingFindings: ClassifiableFailure[] = [];
 
     // Run only the checks that apply to this task
     try {
@@ -297,7 +298,15 @@ export const runTaskIntegrationChecks = task({
               taskId,
               checkId,
               checkName: checkDef?.name ?? checkId,
-              status: 'failed',
+              // A transport blip (Trigger→server) is an execution error, so
+              // route it through the SAME shared rule as every other run: dynamic
+              // → 'inconclusive' (hidden + self-heal queue, so a network hiccup
+              // never shows the customer a red), static/AWS → 'failed'.
+              status: decideRunStatus({
+                resultStatus: 'error',
+                failures: [],
+                isDynamic,
+              }),
               startedAt: new Date(),
               completedAt: new Date(),
               durationMs: 0,
@@ -320,16 +329,30 @@ export const runTaskIntegrationChecks = task({
         // exception) so task status can exclude explicitly-excepted ones.
         totalFindings += checkResult.result.findings.length;
         totalPassing += checkResult.result.passingResults.length;
-        for (const f of checkResult.result.findings) {
-          failingFindings.push({
-            connectionId,
-            checkId: checkResult.checkId,
-            resourceId: f.resourceId,
-          });
-        }
+        // Build this check's failing findings (with redacted signals) once —
+        // reused for the task-level decision and the per-check run status.
+        const checkFailures = checkResult.result.findings.map((f) => ({
+          connectionId,
+          checkId: checkResult.checkId,
+          resourceId: f.resourceId,
+          // Redacted error signals so the self-heal layer can classify
+          // our-side/transient failures and hold them as inconclusive.
+          ...failureSignalsFromEvidence(f.evidence, checkResult.status),
+        }));
+        failingFindings.push(...checkFailures);
         if (checkResult.status === 'error') {
           hasExecutionErrors = true;
         }
+
+        // Per-check run status (shared rule). For DYNAMIC integrations a check
+        // that failed for an our-side/transient reason (or threw) is recorded as
+        // 'inconclusive' — the self-heal agent's queue. Static/AWS keep the
+        // base success/failed mapping.
+        const runStatus = decideRunStatus({
+          resultStatus: checkResult.status,
+          failures: checkFailures,
+          isDynamic,
+        });
 
         // Store check run
         const checkRun = await db.integrationCheckRun.create({
@@ -338,8 +361,7 @@ export const runTaskIntegrationChecks = task({
             taskId,
             checkId: checkResult.checkId,
             checkName: checkResult.checkName,
-            status:
-              checkResult.status === 'error' ? 'failed' : checkResult.status,
+            status: runStatus,
             startedAt: new Date(),
             completedAt: new Date(),
             durationMs: checkResult.durationMs,
@@ -348,7 +370,13 @@ export const runTaskIntegrationChecks = task({
               checkResult.result.passingResults.length +
                 checkResult.result.findings.length,
             passedCount: checkResult.result.passingResults.length,
-            failedCount: checkResult.result.findings.length,
+            // A held (inconclusive) run has no CONFIRMED failures — its findings
+            // are our-side/transient, not real fails — so failedCount is 0. The
+            // raw findings still persist as results for the agent to diagnose.
+            failedCount:
+              runStatus === 'inconclusive'
+                ? 0
+                : checkResult.result.findings.length,
             errorMessage: checkResult.error,
             logs: JSON.parse(JSON.stringify(checkResult.result.logs)),
           },
@@ -417,14 +445,31 @@ export const runTaskIntegrationChecks = task({
       // the shared helpers). Execution errors don't drive status here; they gate
       // integrationLastRunAt above so the next tick retries.
       const exceptions = await loadActiveExceptionSet(organizationId);
+      // For DYNAMIC integrations, hold our-side/transient failures as
+      // inconclusive: they must not fail the task or send a "task failed" email —
+      // the self-heal layer investigates/fixes them. Static/AWS behavior is
+      // unchanged. Safe degradation: a finding with no readable error signal
+      // classifies as a real (compliance) failure, exactly as today.
+      const statusFailures = isDynamic
+        ? splitFailuresByDisposition(failingFindings).effective
+        : failingFindings;
+      const heldCount = failingFindings.length - statusFailures.length;
+      if (heldCount > 0) {
+        logger.info(
+          `Held ${heldCount} our-side/transient finding(s) as inconclusive for task ${taskId} (not shown as failed)`,
+        );
+      }
       const effectiveFailures = countEffectiveFailures(
-        failingFindings,
+        statusFailures,
         exceptions,
       );
+      // Held findings are indeterminate (like an all-errored run) — they must not
+      // flip the task to "done" either, so exclude them from the finding count.
       const newStatus = decideTaskStatus(
         effectiveFailures,
         totalPassing,
-        totalFindings,
+        totalFindings - heldCount,
+        heldCount,
       );
 
       // Whether THIS run flipped the task into `failed` (e.g. todo/done →

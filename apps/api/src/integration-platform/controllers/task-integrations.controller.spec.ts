@@ -22,6 +22,10 @@ jest.mock('@db', () => ({
   db: {
     task: { findUnique: jest.fn(), update: jest.fn() },
     findingException: { findMany: jest.fn() },
+    // Self-heal hold gates on whether the provider is a dynamic integration.
+    // Default (undefined → not dynamic) keeps these static-manifest tests on
+    // their existing path.
+    dynamicIntegration: { findFirst: jest.fn() },
   },
 }));
 
@@ -46,6 +50,9 @@ const mockTaskUpdate = mockedTask.update;
 const mockFindingExceptionFindMany = (
   db as unknown as { findingException: { findMany: jest.Mock } }
 ).findingException.findMany;
+const mockDynamicIntegrationFindFirst = (
+  db as unknown as { dynamicIntegration: { findFirst: jest.Mock } }
+).dynamicIntegration.findFirst;
 
 const MANIFEST = {
   id: 'aws',
@@ -107,6 +114,41 @@ function failingResult() {
               description: 'x',
               severity: 'high',
               remediation: 'fix',
+            },
+          ],
+          passingResults: [],
+          summary: { totalChecked: 1 },
+          logs: [],
+        },
+      },
+    ],
+  };
+}
+
+// A check that "failed" for an OUR-SIDE reason (the finding's evidence carries an
+// http_404), as the self-heal layer should hold rather than show.
+function ourSideFailingResult() {
+  return {
+    results: [
+      {
+        checkId: 'aws-s3-encryption',
+        checkName: 'S3 — default encryption enabled',
+        status: 'failed',
+        durationMs: 10,
+        error: undefined,
+        result: {
+          findings: [
+            {
+              resourceType: 'platform',
+              resourceId: 'neon',
+              title: 'endpoint unhealthy',
+              description: '/projects returned HTTP 404',
+              severity: 'high',
+              remediation: 'x',
+              evidence: {
+                error: 'http_404',
+                message: '/projects returned HTTP 404',
+              },
             },
           ],
           passingResults: [],
@@ -316,6 +358,154 @@ describe('TaskIntegrationsController', () => {
         expect.objectContaining({
           data: expect.objectContaining({ status: 'failed' }),
         }),
+      );
+    });
+
+    it('HOLDS an our-side failure for a dynamic integration (task NOT failed)', async () => {
+      // Provider is a dynamic integration → the hold applies.
+      mockProviderRepository.findById.mockResolvedValue({
+        id: 'prov_neon',
+        slug: 'neon',
+      });
+      mockDynamicIntegrationFindFirst.mockResolvedValue({ id: 'din_neon' });
+      mockConnectionRepository.findById.mockResolvedValue({
+        id: 'conn_1',
+        organizationId: 'org_1',
+        providerId: 'prov_neon',
+        status: 'active',
+      });
+      mockConnectionRepository.findActiveByProviderAndOrg.mockResolvedValue([
+        {
+          id: 'conn_1',
+          organizationId: 'org_1',
+          providerId: 'prov_neon',
+          metadata: {},
+          variables: {},
+        },
+      ]);
+      // The only finding failed for an our-side reason (404).
+      mockedRunAllChecks.mockResolvedValue(ourSideFailingResult());
+
+      const result = await controller.runCheckForTask('task_1', 'org_1', {
+        connectionId: 'conn_1',
+        checkId: 'aws-s3-encryption',
+      });
+
+      // Held → indeterminate: task is neither failed nor flipped to done.
+      expect(result.taskStatus).toBeNull();
+      expect(mockTaskUpdate).not.toHaveBeenCalled();
+      // The run ROW is held as 'inconclusive' (not 'failed') with failedCount 0
+      // (held findings are not confirmed failures) so no consumer can read it as
+      // a failure; the self-heal agent still picks it up via the stored results.
+      expect(mockCheckRunRepository.complete).toHaveBeenCalledWith(
+        'icr_x',
+        expect.objectContaining({ status: 'inconclusive', failedCount: 0 }),
+      );
+    });
+
+    it('does NOT mark a dynamic task done when a finding is held, even with passes', async () => {
+      mockProviderRepository.findById.mockResolvedValue({
+        id: 'prov_neon',
+        slug: 'neon',
+      });
+      mockDynamicIntegrationFindFirst.mockResolvedValue({ id: 'din_neon' });
+      mockConnectionRepository.findById.mockResolvedValue({
+        id: 'conn_1',
+        organizationId: 'org_1',
+        providerId: 'prov_neon',
+        status: 'active',
+      });
+      mockConnectionRepository.findActiveByProviderAndOrg.mockResolvedValue([
+        {
+          id: 'conn_1',
+          organizationId: 'org_1',
+          providerId: 'prov_neon',
+          metadata: {},
+          variables: {},
+        },
+      ]);
+      // One passing result + one our-side (404) held finding.
+      mockedRunAllChecks.mockResolvedValue({
+        results: [
+          {
+            checkId: 'aws-s3-encryption',
+            checkName: 'X',
+            status: 'failed',
+            durationMs: 10,
+            error: undefined,
+            result: {
+              findings: [
+                {
+                  resourceType: 'platform',
+                  resourceId: 'neon',
+                  title: 'unhealthy',
+                  description: '404',
+                  severity: 'high',
+                  remediation: 'x',
+                  evidence: { error: 'http_404' },
+                },
+              ],
+              passingResults: [
+                {
+                  resourceType: 't',
+                  resourceId: 'ok1',
+                  title: 'ok',
+                  description: 'ok',
+                },
+              ],
+              summary: { totalChecked: 2 },
+              logs: [],
+            },
+          },
+        ],
+      });
+
+      const result = await controller.runCheckForTask('task_1', 'org_1', {
+        connectionId: 'conn_1',
+        checkId: 'aws-s3-encryption',
+      });
+
+      // A held check is unresolved → the task must NOT go done (which would hide
+      // it behind the passing result); it stays indeterminate until the fix lands.
+      expect(result.taskStatus).toBeNull();
+      expect(mockTaskUpdate).not.toHaveBeenCalled();
+    });
+
+    it('still fails the task for a dynamic integration on a REAL finding', async () => {
+      // Same dynamic provider, but a genuine compliance finding (no error signal).
+      mockProviderRepository.findById.mockResolvedValue({
+        id: 'prov_neon',
+        slug: 'neon',
+      });
+      mockDynamicIntegrationFindFirst.mockResolvedValue({ id: 'din_neon' });
+      mockConnectionRepository.findById.mockResolvedValue({
+        id: 'conn_1',
+        organizationId: 'org_1',
+        providerId: 'prov_neon',
+        status: 'active',
+      });
+      mockConnectionRepository.findActiveByProviderAndOrg.mockResolvedValue([
+        {
+          id: 'conn_1',
+          organizationId: 'org_1',
+          providerId: 'prov_neon',
+          metadata: {},
+          variables: {},
+        },
+      ]);
+      mockedRunAllChecks.mockResolvedValue(failingResult());
+
+      const result = await controller.runCheckForTask('task_1', 'org_1', {
+        connectionId: 'conn_1',
+        checkId: 'aws-s3-encryption',
+      });
+
+      expect(result.taskStatus).toBe('failed');
+      // A genuine compliance finding is a REAL failure — the run row stays
+      // 'failed' (visible to the customer), never held.
+      expect(mockCheckRunRepository.complete).toHaveBeenCalledWith(
+        'icr_x',
+        expect.objectContaining({ status: 'failed' }),
       );
     });
 
