@@ -129,6 +129,7 @@ model DynamicCheckVersion {
 
   createdAt DateTime @default(now())
 
-  @@index([checkId])
-  @@index([createdAt])
+  // Composite serves the only read pattern — listVersions(checkId) ordered by
+  // createdAt desc — and its leading checkId column also covers the FK/cascade.
+  @@index([checkId, createdAt])
 }

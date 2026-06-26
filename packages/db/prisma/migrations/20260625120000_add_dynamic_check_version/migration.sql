@@ -16,10 +16,9 @@ CREATE TABLE "DynamicCheckVersion" (
 );
 
 -- CreateIndex
-CREATE INDEX "DynamicCheckVersion_checkId_idx" ON "DynamicCheckVersion"("checkId");
-
--- CreateIndex
-CREATE INDEX "DynamicCheckVersion_createdAt_idx" ON "DynamicCheckVersion"("createdAt");
+-- Composite serves the only read pattern (versions for one check, newest first)
+-- and its leading checkId column also indexes the FK for cascade deletes.
+CREATE INDEX "DynamicCheckVersion_checkId_createdAt_idx" ON "DynamicCheckVersion"("checkId", "createdAt");
 
 -- AddForeignKey
 ALTER TABLE "DynamicCheckVersion" ADD CONSTRAINT "DynamicCheckVersion_checkId_fkey" FOREIGN KEY ("checkId") REFERENCES "DynamicCheck"("id") ON DELETE CASCADE ON UPDATE CASCADE;
