@@ -2,7 +2,9 @@ import { redactSecrets } from './redact-secrets';
 
 describe('redactSecrets', () => {
   it('redacts bearer tokens', () => {
-    const out = redactSecrets('failed with Authorization: Bearer abc123SECRETtoken9999');
+    const out = redactSecrets(
+      'failed with Authorization: Bearer abc123SECRETtoken9999',
+    );
     expect(out).not.toContain('abc123SECRETtoken9999');
     expect(out).toContain('[redacted]');
   });
@@ -12,9 +14,23 @@ describe('redactSecrets', () => {
     expect(out).not.toContain('sk-livesomethingverysecret123456');
   });
 
+  it('redacts quoted JSON keys/values + short secrets (not only long tokens)', () => {
+    const out = redactSecrets(
+      '{"api_key": "short1", "client_secret":"xyz789"}',
+    );
+    expect(out).not.toContain('short1');
+    expect(out).not.toContain('xyz789');
+    expect(redactSecrets('password=hunter2')).not.toContain('hunter2');
+    expect(redactSecrets('"pwd":"p1"')).not.toContain('p1');
+  });
+
   it('redacts common provider key prefixes', () => {
-    expect(redactSecrets('used lin_api_B0KvAzszsMGg8Xyw')).not.toContain('B0KvAzsz');
-    expect(redactSecrets('token ghp_abcdef 1234567890')).not.toContain('ghp_abcdef');
+    expect(redactSecrets('used lin_api_B0KvAzszsMGg8Xyw')).not.toContain(
+      'B0KvAzsz',
+    );
+    expect(redactSecrets('token ghp_abcdef 1234567890')).not.toContain(
+      'ghp_abcdef',
+    );
   });
 
   it('redacts JWTs', () => {
