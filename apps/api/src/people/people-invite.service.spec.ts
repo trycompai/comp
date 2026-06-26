@@ -356,6 +356,97 @@ describe('PeopleInviteService', () => {
       );
     });
 
+    // Regression (CS): promoting an EXISTING ACTIVE member must upgrade their
+    // role in place. Previously an active member's role was left unchanged, so
+    // adding admin to an existing employee never granted app access and the
+    // user hit "Access Denied" after accepting.
+    it('upgrades an existing active member in place when promoted (no invitation, no email)', async () => {
+      (mockDb.user.findFirst as jest.Mock).mockResolvedValue({
+        id: 'user_existing',
+        email: 'zub@example.com',
+      });
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({
+        id: 'member_existing',
+        role: 'employee',
+        deactivated: false,
+        isActive: true,
+      });
+      (mockDb.member.update as jest.Mock).mockResolvedValue({
+        id: 'member_existing',
+      });
+
+      const results = await service.inviteMembers({
+        ...baseParams,
+        invites: [{ email: 'zub@example.com', roles: ['admin', 'employee'] }],
+      });
+
+      expect(results[0].success).toBe(true);
+      // Role is unioned (sorted, de-duped) onto the existing membership.
+      expect(mockDb.member.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'member_existing' },
+          data: { role: 'admin,employee' },
+        }),
+      );
+      // An already-active member is upgraded directly — no re-invitation, no email.
+      expect(mockDb.invitation.create).not.toHaveBeenCalled();
+      expect(mockTriggerEmail).not.toHaveBeenCalled();
+    });
+
+    it('does not rewrite an active member who already holds the invited roles', async () => {
+      (mockDb.user.findFirst as jest.Mock).mockResolvedValue({
+        id: 'user_existing',
+        email: 'a@example.com',
+      });
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({
+        id: 'member_existing',
+        role: 'admin,employee',
+        deactivated: false,
+        isActive: true,
+      });
+
+      const results = await service.inviteMembers({
+        ...baseParams,
+        invites: [{ email: 'a@example.com', roles: ['admin'] }],
+      });
+
+      expect(results[0].success).toBe(true);
+      expect(mockDb.member.update).not.toHaveBeenCalled();
+      expect(mockDb.invitation.create).not.toHaveBeenCalled();
+    });
+
+    it('unions roles for an active member re-added via the employee path', async () => {
+      (mockDb.organization.findUnique as jest.Mock).mockResolvedValue({
+        name: 'Test Org',
+      });
+      (mockDb.user.findFirst as jest.Mock).mockResolvedValue({
+        id: 'user_existing',
+        email: 'c@example.com',
+      });
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({
+        id: 'member_existing',
+        role: 'contractor',
+        deactivated: false,
+        isActive: true,
+      });
+      (mockDb.member.update as jest.Mock).mockResolvedValue({
+        id: 'member_existing',
+      });
+
+      const results = await service.inviteMembers({
+        ...baseParams,
+        invites: [{ email: 'c@example.com', roles: ['employee'] }],
+      });
+
+      expect(results[0].success).toBe(true);
+      expect(mockDb.member.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'member_existing' },
+          data: { role: 'contractor,employee' },
+        }),
+      );
+    });
+
     it('should handle multiple invites', async () => {
       (mockDb.organization.findUnique as jest.Mock).mockResolvedValue({
         name: 'Test Org',
