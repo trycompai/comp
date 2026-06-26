@@ -43,12 +43,14 @@ export class InternalIntegrationDebugService {
    * Build a non-sensitive view of a credential payload. Never decrypts; never
    * returns a secret value.
    */
-  private buildCredentialMetadata(version: {
-    version: number;
-    createdAt: Date;
-    expiresAt: Date | null;
-    encryptedPayload: unknown;
-  } | null) {
+  private buildCredentialMetadata(
+    version: {
+      version: number;
+      createdAt: Date;
+      expiresAt: Date | null;
+      encryptedPayload: unknown;
+    } | null,
+  ) {
     if (!version) return null;
     const payload =
       version.encryptedPayload && typeof version.encryptedPayload === 'object'
@@ -77,7 +79,9 @@ export class InternalIntegrationDebugService {
       version: version.version,
       createdAt: version.createdAt,
       expiresAt: version.expiresAt,
-      expired: version.expiresAt ? version.expiresAt.getTime() < Date.now() : false,
+      expired: version.expiresAt
+        ? version.expiresAt.getTime() < Date.now()
+        : false,
       fields,
     };
   }
@@ -357,7 +361,7 @@ export class InternalIntegrationDebugService {
     const limit = Number.isFinite(rawLimit)
       ? Math.min(Math.max(rawLimit, 1), 200)
       : 50;
-    const runs = await db.integrationCheckRun.findMany({
+    const candidates = await db.integrationCheckRun.findMany({
       where: {
         status: 'inconclusive',
         connection: {
@@ -391,6 +395,41 @@ export class InternalIntegrationDebugService {
           },
         },
       },
+    });
+    if (candidates.length === 0) return { runs: [], total: 0 };
+
+    // Runs are append-only and a held `inconclusive` status is never cleared, so
+    // once a check recovers (or we fix it) a newer run exists and the old
+    // inconclusive row becomes stale. Surface a check only if its LATEST run is
+    // still inconclusive — otherwise the agent would re-attempt already-healthy
+    // checks on every poll. (The agent also re-verifies live as a backstop.)
+    const pairs = new Map<string, { connectionId: string; checkId: string }>();
+    for (const run of candidates) {
+      const key = `${run.connection.id} ${run.checkId}`;
+      if (!pairs.has(key)) {
+        pairs.set(key, {
+          connectionId: run.connection.id,
+          checkId: run.checkId,
+        });
+      }
+    }
+    const latestPerPair = await db.integrationCheckRun.groupBy({
+      by: ['connectionId', 'checkId'],
+      where: { OR: Array.from(pairs.values()) },
+      _max: { completedAt: true },
+    });
+    const latestByPair = new Map(
+      latestPerPair.map((g) => [
+        `${g.connectionId} ${g.checkId}`,
+        g._max.completedAt?.getTime() ?? 0,
+      ]),
+    );
+    const runs = candidates.filter((run) => {
+      const latest =
+        latestByPair.get(`${run.connection.id} ${run.checkId}`) ?? 0;
+      // Keep only if this inconclusive run is the latest for its (conn, check) —
+      // i.e. no newer run (of any status) has superseded it.
+      return (run.completedAt?.getTime() ?? 0) >= latest;
     });
     return { runs, total: runs.length };
   }

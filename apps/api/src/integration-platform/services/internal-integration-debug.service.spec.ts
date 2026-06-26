@@ -1,8 +1,15 @@
 jest.mock('@db', () => ({
   db: {
     integrationConnection: { findMany: jest.fn(), findUnique: jest.fn() },
-    integrationCredentialVersion: { findUnique: jest.fn(), findMany: jest.fn() },
-    integrationCheckRun: { findFirst: jest.fn(), findMany: jest.fn() },
+    integrationCredentialVersion: {
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+    },
+    integrationCheckRun: {
+      findFirst: jest.fn(),
+      findMany: jest.fn(),
+      groupBy: jest.fn(),
+    },
     integrationOAuthError: { findMany: jest.fn() },
   },
 }));
@@ -22,14 +29,16 @@ const encryptedBlob = {
 const mockedDb = db as unknown as {
   integrationConnection: { findMany: jest.Mock; findUnique: jest.Mock };
   integrationCredentialVersion: { findUnique: jest.Mock; findMany: jest.Mock };
-  integrationCheckRun: { findFirst: jest.Mock; findMany: jest.Mock };
+  integrationCheckRun: {
+    findFirst: jest.Mock;
+    findMany: jest.Mock;
+    groupBy: jest.Mock;
+  };
   integrationOAuthError: { findMany: jest.Mock };
 };
 
 const makeService = (runner: Partial<ConnectionCheckRunnerService> = {}) =>
-  new InternalIntegrationDebugService(
-    runner as ConnectionCheckRunnerService,
-  );
+  new InternalIntegrationDebugService(runner as ConnectionCheckRunnerService);
 
 describe('InternalIntegrationDebugService', () => {
   afterEach(() => jest.clearAllMocks());
@@ -87,8 +96,14 @@ describe('InternalIntegrationDebugService', () => {
         present: true,
         value: 'https://www.zohoapis.eu',
       });
-      expect(fields.scope).toEqual({ present: true, value: 'ZohoCRM.users.READ' });
-      expect(fields.region).toEqual({ present: true, value: 'us2.ninjarmm.com' });
+      expect(fields.scope).toEqual({
+        present: true,
+        value: 'ZohoCRM.users.READ',
+      });
+      expect(fields.region).toEqual({
+        present: true,
+        value: 'us2.ninjarmm.com',
+      });
 
       // Absolutely no plaintext secret value anywhere in the response.
       expect(JSON.stringify(connections)).not.toContain('should-be-masked');
@@ -236,7 +251,16 @@ describe('InternalIntegrationDebugService', () => {
         organizationId: 'org_42',
       });
       const runCandidateCheck = jest.fn().mockResolvedValue({
-        results: [{ checkId: 'candidate', result: { findings: [], passingResults: [{ title: 'ok' }], logs: [] } }],
+        results: [
+          {
+            checkId: 'candidate',
+            result: {
+              findings: [],
+              passingResults: [{ title: 'ok' }],
+              logs: [],
+            },
+          },
+        ],
         totalFindings: 0,
         totalPassing: 1,
         durationMs: 7,
@@ -303,13 +327,14 @@ describe('InternalIntegrationDebugService', () => {
 
   describe('listInconclusiveRuns (self-heal work queue)', () => {
     it('queries only inconclusive runs, filtered by provider, newest first', async () => {
+      const completedAt = new Date();
       mockedDb.integrationCheckRun.findMany.mockResolvedValue([
         {
           id: 'icr_1',
           checkId: 'neon_app_availability',
           checkName: 'App Availability',
           status: 'inconclusive',
-          completedAt: new Date(),
+          completedAt,
           connection: {
             id: 'icn_1',
             organizationId: 'org_1',
@@ -326,6 +351,14 @@ describe('InternalIntegrationDebugService', () => {
           ],
         },
       ]);
+      // Latest run for this (conn, check) IS the inconclusive one → kept.
+      mockedDb.integrationCheckRun.groupBy.mockResolvedValue([
+        {
+          connectionId: 'icn_1',
+          checkId: 'neon_app_availability',
+          _max: { completedAt },
+        },
+      ]);
 
       const service = makeService();
       const { runs, total } = await service.listInconclusiveRuns({
@@ -340,6 +373,54 @@ describe('InternalIntegrationDebugService', () => {
       expect(args.where.connection.provider).toEqual({ slug: 'neon' });
       expect(args.orderBy).toEqual({ completedAt: 'desc' });
       expect(args.take).toBe(10);
+    });
+
+    it('drops a stale inconclusive run when a newer run superseded it', async () => {
+      const stale = new Date('2026-06-01T00:00:00Z');
+      const newer = new Date('2026-06-02T00:00:00Z');
+      mockedDb.integrationCheckRun.findMany.mockResolvedValue([
+        {
+          id: 'icr_old',
+          checkId: 'neon_app_availability',
+          checkName: 'App Availability',
+          status: 'inconclusive',
+          completedAt: stale,
+          connection: {
+            id: 'icn_1',
+            organizationId: 'org_1',
+            provider: { slug: 'neon', name: 'Neon' },
+          },
+          results: [],
+        },
+      ]);
+      // A newer run (e.g. a success after we fixed it) exists for the same pair.
+      mockedDb.integrationCheckRun.groupBy.mockResolvedValue([
+        {
+          connectionId: 'icn_1',
+          checkId: 'neon_app_availability',
+          _max: { completedAt: newer },
+        },
+      ]);
+
+      const service = makeService();
+      const { runs, total } = await service.listInconclusiveRuns({
+        providerSlug: 'neon',
+        limit: 10,
+      });
+
+      expect(total).toBe(0);
+      expect(runs).toHaveLength(0);
+    });
+
+    it('returns empty without a groupBy query when nothing is held', async () => {
+      mockedDb.integrationCheckRun.findMany.mockResolvedValue([]);
+
+      const service = makeService();
+      const { runs, total } = await service.listInconclusiveRuns({ limit: 10 });
+
+      expect(total).toBe(0);
+      expect(runs).toHaveLength(0);
+      expect(mockedDb.integrationCheckRun.groupBy).not.toHaveBeenCalled();
     });
   });
 });
