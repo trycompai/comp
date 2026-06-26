@@ -27,7 +27,9 @@ export interface CreateCheckRunDto {
 }
 
 export interface CompleteCheckRunDto {
-  status: 'success' | 'failed';
+  // 'inconclusive' = held our-side/transient failure (dynamic self-heal queue);
+  // hidden from the customer and picked up by the agent. See run paths.
+  status: 'success' | 'failed' | 'inconclusive';
   durationMs: number;
   totalChecked: number;
   passedCount: number;

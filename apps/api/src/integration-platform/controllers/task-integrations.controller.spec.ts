@@ -394,6 +394,12 @@ describe('TaskIntegrationsController', () => {
       // Held → indeterminate: task is neither failed nor flipped to done.
       expect(result.taskStatus).toBeNull();
       expect(mockTaskUpdate).not.toHaveBeenCalled();
+      // The run ROW is held as 'inconclusive' (not 'failed') so the customer
+      // never sees it in the task UI and the self-heal agent picks it up.
+      expect(mockCheckRunRepository.complete).toHaveBeenCalledWith(
+        'icr_x',
+        expect.objectContaining({ status: 'inconclusive' }),
+      );
     });
 
     it('still fails the task for a dynamic integration on a REAL finding', async () => {
@@ -426,6 +432,12 @@ describe('TaskIntegrationsController', () => {
       });
 
       expect(result.taskStatus).toBe('failed');
+      // A genuine compliance finding is a REAL failure — the run row stays
+      // 'failed' (visible to the customer), never held.
+      expect(mockCheckRunRepository.complete).toHaveBeenCalledWith(
+        'icr_x',
+        expect.objectContaining({ status: 'failed' }),
+      );
     });
 
     it('does NOT fail the task when the only finding is excepted (goes done)', async () => {

@@ -394,6 +394,15 @@ export class TaskIntegrationsController {
     const connections =
       activeConnections.length > 0 ? activeConnections : [referencedConnection];
 
+    // Determined once: a dynamic integration holds our-side/transient failures
+    // as 'inconclusive' — both on each per-account run row (so the customer never
+    // sees it and the self-heal agent picks it up) AND excluded from task status
+    // below. Mirrors the scheduled path.
+    const isDynamic = !!(await db.dynamicIntegration.findFirst({
+      where: { slug: provider.slug, isActive: true },
+      select: { id: true },
+    }));
+
     let totalFindings = 0;
     let totalPassing = 0;
     let accountsRun = 0;
@@ -416,6 +425,7 @@ export class TaskIntegrationsController {
         checkDef,
         taskId,
         organizationId,
+        isDynamic,
       });
       accountsRun += 1;
       totalFindings += outcome.findings;
@@ -442,10 +452,6 @@ export class TaskIntegrationsController {
     // (same rule as the scheduled path): they must not fail the task. Static/AWS
     // behavior is unchanged. Safe degradation: a finding with no readable error
     // signal classifies as a real failure, exactly as today.
-    const isDynamic = !!(await db.dynamicIntegration.findFirst({
-      where: { slug: provider.slug, isActive: true },
-      select: { id: true },
-    }));
     const statusFailures = isDynamic
       ? splitFailuresByDisposition(failingFindings).effective
       : failingFindings;
@@ -455,7 +461,10 @@ export class TaskIntegrationsController {
         `Held ${heldCount} our-side/transient finding(s) as inconclusive for task ${taskId} (manual run; not shown as failed)`,
       );
     }
-    const effectiveFailures = countEffectiveFailures(statusFailures, exceptions);
+    const effectiveFailures = countEffectiveFailures(
+      statusFailures,
+      exceptions,
+    );
     // Held findings are indeterminate — exclude them from the finding count so an
     // all-held run doesn't flip the task to "done" either.
     const newStatus = decideTaskStatus(
@@ -521,8 +530,16 @@ export class TaskIntegrationsController {
     checkDef: IntegrationCheckDef;
     taskId: string;
     organizationId: string;
+    isDynamic: boolean;
   }): Promise<ConnectionCheckOutcome> {
-    const { connection, manifest, checkDef, taskId, organizationId } = params;
+    const {
+      connection,
+      manifest,
+      checkDef,
+      taskId,
+      organizationId,
+      isDynamic,
+    } = params;
     const connectionId = connection.id;
 
     // Create the run up front so even an account that fails credential
@@ -648,8 +665,37 @@ export class TaskIntegrationsController {
         await this.checkRunRepository.addResults(resultsToStore);
       }
 
+      // Classifiable failures for this account — built once, used for both the
+      // held-run decision below and the returned outcome (the caller aggregates
+      // them for task status).
+      const failures = checkResult.result.findings.map((f) => ({
+        connectionId,
+        checkId: checkDef.id,
+        resourceId: f.resourceId,
+        // Redacted error signals for self-heal classification (dynamic only).
+        ...failureSignalsFromEvidence(f.evidence, checkResult.status),
+      }));
+
+      // Per-account run status. For DYNAMIC integrations, a run that failed only
+      // for our-side/transient reasons is recorded as 'inconclusive' (the
+      // self-heal queue) instead of 'failed' — so the customer never sees it and
+      // the agent fixes it. Identical rule to the scheduled path; static
+      // integrations keep the success/failed mapping.
+      let runStatus: 'success' | 'failed' | 'inconclusive' =
+        checkResult.status === 'error' ? 'failed' : checkResult.status;
+      if (isDynamic) {
+        if (checkResult.status === 'error') {
+          runStatus = 'inconclusive';
+        } else if (
+          failures.length > 0 &&
+          splitFailuresByDisposition(failures).effective.length === 0
+        ) {
+          runStatus = 'inconclusive';
+        }
+      }
+
       await this.checkRunRepository.complete(checkRun.id, {
-        status: checkResult.status === 'error' ? 'failed' : checkResult.status,
+        status: runStatus,
         durationMs: checkResult.durationMs,
         totalChecked:
           checkResult.result.summary?.totalChecked ||
@@ -664,7 +710,7 @@ export class TaskIntegrationsController {
       });
 
       this.logger.log(
-        `Check ${checkDef.id} for task ${taskId} (connection ${connectionId}): ${checkResult.status} - ${checkResult.result.findings.length} findings, ${checkResult.result.passingResults.length} passing`,
+        `Check ${checkDef.id} for task ${taskId} (connection ${connectionId}): ${runStatus} - ${checkResult.result.findings.length} findings, ${checkResult.result.passingResults.length} passing`,
       );
 
       return {
@@ -673,13 +719,7 @@ export class TaskIntegrationsController {
         status: checkResult.status,
         findings: checkResult.result.findings.length,
         passing: checkResult.result.passingResults.length,
-        failures: checkResult.result.findings.map((f) => ({
-          connectionId,
-          checkId: checkDef.id,
-          resourceId: f.resourceId,
-          // Redacted error signals for self-heal classification (dynamic only).
-          ...failureSignalsFromEvidence(f.evidence, checkResult.status),
-        })),
+        failures,
       };
     } catch (error) {
       await this.checkRunRepository.complete(checkRun.id, {
