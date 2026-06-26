@@ -42,6 +42,7 @@ import { loadActiveExceptionSet } from '../../cloud-security/finding-exceptions'
 import {
   countEffectiveFailures,
   decideTaskStatus,
+  decideRunStatus,
   splitFailuresByDisposition,
   failureSignalsFromEvidence,
   type ClassifiableFailure,
@@ -676,23 +677,14 @@ export class TaskIntegrationsController {
         ...failureSignalsFromEvidence(f.evidence, checkResult.status),
       }));
 
-      // Per-account run status. For DYNAMIC integrations, a run that failed only
-      // for our-side/transient reasons is recorded as 'inconclusive' (the
-      // self-heal queue) instead of 'failed' — so the customer never sees it and
-      // the agent fixes it. Identical rule to the scheduled path; static
-      // integrations keep the success/failed mapping.
-      let runStatus: 'success' | 'failed' | 'inconclusive' =
-        checkResult.status === 'error' ? 'failed' : checkResult.status;
-      if (isDynamic) {
-        if (checkResult.status === 'error') {
-          runStatus = 'inconclusive';
-        } else if (
-          failures.length > 0 &&
-          splitFailuresByDisposition(failures).effective.length === 0
-        ) {
-          runStatus = 'inconclusive';
-        }
-      }
+      // Per-account run status (shared rule): a dynamic run that failed only for
+      // our-side/transient reasons is held as 'inconclusive' (customer never sees
+      // it; the agent fixes it). Static integrations keep success/failed.
+      const runStatus = decideRunStatus({
+        resultStatus: checkResult.status,
+        failures,
+        isDynamic,
+      });
 
       await this.checkRunRepository.complete(checkRun.id, {
         status: runStatus,

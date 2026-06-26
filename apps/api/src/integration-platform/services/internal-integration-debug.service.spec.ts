@@ -11,6 +11,7 @@ jest.mock('@db', () => ({
       groupBy: jest.fn(),
     },
     integrationOAuthError: { findMany: jest.fn() },
+    dynamicIntegration: { findFirst: jest.fn() },
   },
 }));
 
@@ -18,6 +19,7 @@ import { NotFoundException } from '@nestjs/common';
 import { db } from '@db';
 import { InternalIntegrationDebugService } from './internal-integration-debug.service';
 import type { ConnectionCheckRunnerService } from './connection-check-runner.service';
+import type { CheckRunRepository } from '../repositories/check-run.repository';
 
 const encryptedBlob = {
   encrypted: 'Y2lwaGVydGV4dA==',
@@ -35,10 +37,17 @@ const mockedDb = db as unknown as {
     groupBy: jest.Mock;
   };
   integrationOAuthError: { findMany: jest.Mock };
+  dynamicIntegration: { findFirst: jest.Mock };
 };
 
-const makeService = (runner: Partial<ConnectionCheckRunnerService> = {}) =>
-  new InternalIntegrationDebugService(runner as ConnectionCheckRunnerService);
+const makeService = (
+  runner: Partial<ConnectionCheckRunnerService> = {},
+  checkRunRepo: Partial<CheckRunRepository> = {},
+) =>
+  new InternalIntegrationDebugService(
+    runner as ConnectionCheckRunnerService,
+    checkRunRepo as CheckRunRepository,
+  );
 
 describe('InternalIntegrationDebugService', () => {
   afterEach(() => jest.clearAllMocks());
@@ -421,6 +430,102 @@ describe('InternalIntegrationDebugService', () => {
       expect(total).toBe(0);
       expect(runs).toHaveLength(0);
       expect(mockedDb.integrationCheckRun.groupBy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('rerunAndPersistCheck (self-heal re-run + persist)', () => {
+    const runResult = (status: string, findings: unknown[] = []) => ({
+      results: [
+        {
+          checkId: 'neon_x',
+          checkName: 'Neon X',
+          status,
+          durationMs: 5,
+          error: undefined,
+          result: {
+            findings,
+            passingResults:
+              status === 'success'
+                ? [
+                    {
+                      resourceType: 't',
+                      resourceId: 'r',
+                      title: 'ok',
+                      description: 'ok',
+                    },
+                  ]
+                : [],
+            summary: { totalChecked: 1 },
+            logs: [],
+          },
+        },
+      ],
+    });
+
+    const makeRepo = () => ({
+      create: jest.fn().mockResolvedValue({ id: 'icr_new' }),
+      addResults: jest.fn().mockResolvedValue({}),
+      complete: jest.fn().mockResolvedValue({}),
+    });
+
+    it('persists a fresh SUCCESS run when the fixed check now passes', async () => {
+      mockedDb.integrationConnection.findUnique.mockResolvedValue({
+        organizationId: 'org_1',
+        provider: { slug: 'neon' },
+      });
+      mockedDb.dynamicIntegration.findFirst.mockResolvedValue({
+        id: 'din_neon',
+      });
+      const runChecks = jest.fn().mockResolvedValue(runResult('success'));
+      const repo = makeRepo();
+
+      const service = makeService({ runChecks }, repo);
+      const out = await service.rerunAndPersistCheck({
+        connectionId: 'icn_1',
+        checkId: 'neon_x',
+        taskId: 'task_1',
+      });
+
+      expect(out.status).toBe('success');
+      expect(repo.complete).toHaveBeenCalledWith(
+        'icr_new',
+        expect.objectContaining({ status: 'success' }),
+      );
+    });
+
+    it('re-holds as INCONCLUSIVE when the check still fails our-side (404)', async () => {
+      mockedDb.integrationConnection.findUnique.mockResolvedValue({
+        organizationId: 'org_1',
+        provider: { slug: 'neon' },
+      });
+      mockedDb.dynamicIntegration.findFirst.mockResolvedValue({
+        id: 'din_neon',
+      });
+      const runChecks = jest.fn().mockResolvedValue(
+        runResult('failed', [
+          {
+            resourceType: 'platform',
+            resourceId: 'neon',
+            title: 'unhealthy',
+            description: '404',
+            evidence: { error: 'http_404' },
+          },
+        ]),
+      );
+      const repo = makeRepo();
+
+      const service = makeService({ runChecks }, repo);
+      const out = await service.rerunAndPersistCheck({
+        connectionId: 'icn_1',
+        checkId: 'neon_x',
+        taskId: 'task_1',
+      });
+
+      expect(out.status).toBe('inconclusive');
+      expect(repo.complete).toHaveBeenCalledWith(
+        'icr_new',
+        expect.objectContaining({ status: 'inconclusive' }),
+      );
     });
   });
 });

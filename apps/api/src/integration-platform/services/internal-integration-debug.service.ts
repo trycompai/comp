@@ -1,9 +1,15 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { db } from '@db';
+import type { Prisma } from '@db';
 import {
   ConnectionCheckRunnerService,
   type RunAllChecksResult,
 } from './connection-check-runner.service';
+import { CheckRunRepository } from '../repositories/check-run.repository';
+import {
+  decideRunStatus,
+  failureSignalsFromEvidence,
+} from '../utils/task-check-evaluation';
 
 /**
  * Read-only/diagnostic toolkit for dynamic integrations, used by internal
@@ -26,7 +32,10 @@ export class InternalIntegrationDebugService {
   private static readonly SECRET_KEY_RE =
     /(secret|password|passwd|pwd|private|access[_-]?token|refresh[_-]?token|client[_-]?secret|api[_-]?key|apikey|bearer|signing)/i;
 
-  constructor(private readonly runner: ConnectionCheckRunnerService) {}
+  constructor(
+    private readonly runner: ConnectionCheckRunnerService,
+    private readonly checkRunRepository: CheckRunRepository,
+  ) {}
 
   private isEncryptedData(value: unknown): boolean {
     return (
@@ -377,6 +386,8 @@ export class InternalIntegrationDebugService {
         checkName: true,
         status: true,
         completedAt: true,
+        // taskId so the agent can re-run + persist for the right task after a fix.
+        taskId: true,
         connection: {
           select: {
             id: true,
@@ -432,5 +443,113 @@ export class InternalIntegrationDebugService {
       return (run.completedAt?.getTime() ?? 0) >= latest;
     });
     return { runs, total: runs.length };
+  }
+
+  /**
+   * Re-run ONE check for ONE connection AND PERSIST a fresh run. Used by the
+   * self-heal agent right after it applies a fix: re-running every affected
+   * customer's connection means a now-fixed check produces a fresh 'success'
+   * (the customer sees green without doing anything), while one still failing
+   * for an our-side reason is re-held as 'inconclusive' (still hidden). Unlike
+   * /run + /test (verification-only, never persist) this writes a real run via
+   * the same create -> addResults -> complete path the run paths use, so the run
+   * status is decided by the SAME shared rule (held vs shown).
+   */
+  async rerunAndPersistCheck(params: {
+    connectionId: string;
+    checkId: string;
+    taskId?: string | null;
+  }): Promise<{ status: 'success' | 'failed' | 'inconclusive' }> {
+    const { connectionId, checkId, taskId } = params;
+    const connection = await db.integrationConnection.findUnique({
+      where: { id: connectionId },
+      select: { organizationId: true, provider: { select: { slug: true } } },
+    });
+    if (!connection) {
+      throw new NotFoundException(`Connection ${connectionId} not found`);
+    }
+
+    // Execute on the real runtime in-process (runChecks never persists).
+    const result = await this.runner.runChecks({
+      connectionId,
+      organizationId: connection.organizationId,
+      checkId,
+    });
+    const checkResult = result.results[0];
+    if (!checkResult) {
+      throw new NotFoundException(
+        `Check ${checkId} produced no result for connection ${connectionId}`,
+      );
+    }
+
+    const isDynamic = !!(await db.dynamicIntegration.findFirst({
+      where: { slug: connection.provider?.slug ?? '', isActive: true },
+      select: { id: true },
+    }));
+
+    const failures = checkResult.result.findings.map((f) => ({
+      connectionId,
+      checkId,
+      resourceId: f.resourceId,
+      ...failureSignalsFromEvidence(f.evidence, checkResult.status),
+    }));
+    const status = decideRunStatus({
+      resultStatus: checkResult.status,
+      failures,
+      isDynamic,
+    });
+
+    const checkRun = await this.checkRunRepository.create({
+      connectionId,
+      taskId: taskId ?? undefined,
+      checkId,
+      checkName: checkResult.checkName,
+    });
+    const resultsToStore = [
+      ...checkResult.result.passingResults.map((r) => ({
+        checkRunId: checkRun.id,
+        passed: true,
+        resourceType: r.resourceType,
+        resourceId: r.resourceId,
+        title: r.title,
+        description: r.description,
+        evidence: r.evidence
+          ? (JSON.parse(JSON.stringify(r.evidence)) as Prisma.InputJsonValue)
+          : undefined,
+      })),
+      ...checkResult.result.findings.map((f) => ({
+        checkRunId: checkRun.id,
+        passed: false,
+        resourceType: f.resourceType,
+        resourceId: f.resourceId,
+        title: f.title,
+        description: f.description,
+        severity: f.severity,
+        remediation: f.remediation,
+        evidence: f.evidence as Prisma.InputJsonValue,
+      })),
+    ];
+    if (resultsToStore.length > 0) {
+      await this.checkRunRepository.addResults(resultsToStore);
+    }
+    await this.checkRunRepository.complete(checkRun.id, {
+      status,
+      durationMs: checkResult.durationMs,
+      totalChecked:
+        checkResult.result.summary?.totalChecked ??
+        checkResult.result.passingResults.length +
+          checkResult.result.findings.length,
+      passedCount: checkResult.result.passingResults.length,
+      failedCount: checkResult.result.findings.length,
+      errorMessage: checkResult.error,
+      logs: JSON.parse(
+        JSON.stringify(checkResult.result.logs),
+      ) as Prisma.InputJsonValue,
+    });
+
+    this.logger.log(
+      `Self-heal re-run: connection ${connectionId}, check ${checkId} -> ${status}`,
+    );
+    return { status };
   }
 }

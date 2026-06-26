@@ -11,14 +11,12 @@ import {
   runChecksOnServer,
   type RunAllChecksResult,
 } from './run-checks-on-server';
-import {
-  isActiveDynamicProvider,
-  shouldRunOnServer,
-} from './dynamic-provider';
+import { isActiveDynamicProvider, shouldRunOnServer } from './dynamic-provider';
 import { loadActiveExceptionSet } from '../../cloud-security/finding-exceptions';
 import {
   countEffectiveFailures,
   decideTaskStatus,
+  decideRunStatus,
   splitFailuresByDisposition,
   failureSignalsFromEvidence,
   type ClassifiableFailure,
@@ -338,22 +336,15 @@ export const runTaskIntegrationChecks = task({
           hasExecutionErrors = true;
         }
 
-        // Per-check run status. For DYNAMIC integrations a check that failed for
-        // an our-side/transient reason (or threw) is recorded as 'inconclusive'
-        // instead of 'failed' — this is the self-heal agent's work queue.
-        // Static/AWS keep the existing mapping.
-        let runStatus: 'success' | 'failed' | 'inconclusive' =
-          checkResult.status === 'error' ? 'failed' : checkResult.status;
-        if (isDynamic) {
-          if (checkResult.status === 'error') {
-            runStatus = 'inconclusive';
-          } else if (
-            checkFailures.length > 0 &&
-            splitFailuresByDisposition(checkFailures).effective.length === 0
-          ) {
-            runStatus = 'inconclusive';
-          }
-        }
+        // Per-check run status (shared rule). For DYNAMIC integrations a check
+        // that failed for an our-side/transient reason (or threw) is recorded as
+        // 'inconclusive' — the self-heal agent's queue. Static/AWS keep the
+        // base success/failed mapping.
+        const runStatus = decideRunStatus({
+          resultStatus: checkResult.status,
+          failures: checkFailures,
+          isDynamic,
+        });
 
         // Store check run
         const checkRun = await db.integrationCheckRun.create({

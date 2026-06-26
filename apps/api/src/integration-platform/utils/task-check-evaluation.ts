@@ -102,6 +102,39 @@ export function splitFailuresByDisposition(
 }
 
 /**
+ * Decide the per-run status stored on an IntegrationCheckRun. Canonical rule,
+ * shared by ALL run paths (scheduled, manual, and the agent re-run) so a held
+ * run is classified identically everywhere:
+ *   - base: an execution 'error' → 'failed'; otherwise the raw success/failed.
+ *   - DYNAMIC only: an execution error, or a run whose failures are ALL held
+ *     (our-side/transient → no effective failures), becomes 'inconclusive' —
+ *     the self-heal queue, hidden from the customer. Static/AWS keep the base.
+ *
+ * `failures` carries the per-finding signals (from {@link failureSignalsFromEvidence}).
+ */
+export function decideRunStatus(params: {
+  resultStatus: string;
+  failures: ClassifiableFailure[];
+  isDynamic: boolean;
+  fleet?: { passing: number; failing: number } | null;
+}): 'success' | 'failed' | 'inconclusive' {
+  const { resultStatus, failures, isDynamic, fleet } = params;
+  let runStatus: 'success' | 'failed' | 'inconclusive' =
+    resultStatus === 'success' ? 'success' : 'failed';
+  if (isDynamic) {
+    if (resultStatus === 'error') {
+      runStatus = 'inconclusive';
+    } else if (
+      failures.length > 0 &&
+      splitFailuresByDisposition(failures, fleet).effective.length === 0
+    ) {
+      runStatus = 'inconclusive';
+    }
+  }
+  return runStatus;
+}
+
+/**
  * Extract classification signals from a failing finding's evidence. `errorText`
  * is REDACTED of secrets/PII before it leaves this function.
  *
