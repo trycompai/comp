@@ -298,10 +298,15 @@ export const runTaskIntegrationChecks = task({
               taskId,
               checkId,
               checkName: checkDef?.name ?? checkId,
-              // A transport blip is our-side/transient. For DYNAMIC providers
-              // hold it as inconclusive (hidden + self-heal queue) so a network
-              // hiccup never shows the customer a red; static/AWS keep 'failed'.
-              status: isDynamic ? 'inconclusive' : 'failed',
+              // A transport blip (Trigger→server) is an execution error, so
+              // route it through the SAME shared rule as every other run: dynamic
+              // → 'inconclusive' (hidden + self-heal queue, so a network hiccup
+              // never shows the customer a red), static/AWS → 'failed'.
+              status: decideRunStatus({
+                resultStatus: 'error',
+                failures: [],
+                isDynamic,
+              }),
               startedAt: new Date(),
               completedAt: new Date(),
               durationMs: 0,

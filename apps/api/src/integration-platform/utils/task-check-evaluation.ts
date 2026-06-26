@@ -167,12 +167,18 @@ export function failureSignalsFromEvidence(
   // our_side (held) instead of customer_side (shown). Won't match a URL.
   const m = `${errStr ?? ''} ${msgStr ?? ''}`.match(/\bhttp[\s:_-]*(\d{3})\b/i);
   if (m) httpStatus = Number(m[1]);
-  // evidence.status may be a number (404) OR a string ('404', '401 Unauthorized').
+  // evidence.status may be a number (404) OR a status-code string ('404',
+  // '401 Unauthorized'). For strings the code must be at the START (anchored) so
+  // we don't grab an unrelated 3-digit run from arbitrary text (e.g. 'build 200').
   if (httpStatus == null && ev.status != null) {
     const n =
       typeof ev.status === 'number'
         ? ev.status
-        : Number(String(ev.status).match(/\d{3}/)?.[0]);
+        : Number(
+            String(ev.status)
+              .trim()
+              .match(/^(\d{3})\b/)?.[1],
+          );
     if (Number.isFinite(n) && n >= 100 && n < 600) httpStatus = n;
   }
 

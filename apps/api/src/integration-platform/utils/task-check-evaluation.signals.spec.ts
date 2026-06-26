@@ -54,6 +54,10 @@ describe('failureSignalsFromEvidence', () => {
     expect(
       failureSignalsFromEvidence({ status: 'weird' }).httpStatus,
     ).toBeNull();
+    // Code must be at the START — don't grab an unrelated 3-digit run.
+    expect(
+      failureSignalsFromEvidence({ status: 'build 200 ok' }).httpStatus,
+    ).toBeNull();
   });
 
   it('marks threw when the result status is "error"', () => {
