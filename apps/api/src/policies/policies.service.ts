@@ -508,7 +508,24 @@ export class PoliciesService {
           existingPolicy.status !== 'published'
         ) {
           updatePayload.lastPublishedAt = new Date();
-          updatePayload.signedBy = [];
+
+          // A policy flagged for *periodic* review by the policy-schedule cron
+          // reaches `needs_review` with no pending version — the content nobody
+          // edited is unchanged. Re-publishing it is a re-affirmation, not new
+          // content going live, so existing acknowledgments must be preserved.
+          // We also advance the review date to the next cycle; otherwise the
+          // cron immediately re-flags the policy as needs_review again.
+          const isPeriodicReviewRepublish =
+            existingPolicy.status === 'needs_review' &&
+            !existingPolicy.pendingVersionId;
+
+          if (isPeriodicReviewRepublish) {
+            updatePayload.reviewDate = computeNextReviewDate(
+              existingPolicy.frequency,
+            );
+          } else {
+            updatePayload.signedBy = [];
+          }
         }
 
         const policy = await tx.policy.update({
