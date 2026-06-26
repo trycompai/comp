@@ -193,7 +193,17 @@ export class PeopleInviteService {
           data: { deactivated: false, isActive: true, role: roleString },
         });
       } else {
-        member = existingMember;
+        // Active member re-added: union the new roles into their existing roles
+        // so we never strip a role they already have, and so adding a role
+        // actually takes effect instead of silently no-op'ing.
+        const mergedRole = this.mergeRoleString(existingMember.role, roles);
+        member =
+          mergedRole === this.normalizeRoleString(existingMember.role)
+            ? existingMember
+            : await db.member.update({
+                where: { id: existingMember.id },
+                data: { role: mergedRole },
+              });
       }
     } else {
       member = await db.member.create({
@@ -276,14 +286,18 @@ export class PeopleInviteService {
           return;
         }
 
-        await this.sendInvitationEmailToExistingMember({
-          email,
-          roles,
-          organizationId,
-          inviterId: currentUserId,
-          sendPortalEmail,
-          sendAppEmail,
-        });
+        // Already an active member: an invitation/accept round-trip can't grant
+        // new roles to someone who is already in the org (and historically left
+        // their role unchanged, so promoting an employee to admin silently
+        // failed and the user hit "Access Denied"). Upgrade their role in place
+        // by unioning the new roles into their existing roles.
+        const mergedRole = this.mergeRoleString(existingMember.role, roles);
+        if (mergedRole !== this.normalizeRoleString(existingMember.role)) {
+          await db.member.update({
+            where: { id: existingMember.id },
+            data: { role: mergedRole },
+          });
+        }
         return;
       }
     }
@@ -319,51 +333,36 @@ export class PeopleInviteService {
     });
   }
 
-  private async sendInvitationEmailToExistingMember(params: {
-    email: string;
-    roles: string[];
-    organizationId: string;
-    inviterId: string;
-    sendPortalEmail?: boolean;
-    sendAppEmail?: boolean;
-  }): Promise<void> {
-    const {
-      email,
-      roles,
-      organizationId,
-      inviterId,
-      sendPortalEmail,
-      sendAppEmail,
-    } = params;
+  /** Sort + de-dupe a comma-separated role string into a canonical form. */
+  private normalizeRoleString(role: string | null | undefined): string {
+    return [
+      ...new Set(
+        (role ?? '')
+          .split(',')
+          .map((r) => r.trim())
+          .filter(Boolean),
+      ),
+    ]
+      .sort()
+      .join(',');
+  }
 
-    const organization = await db.organization.findUnique({
-      where: { id: organizationId },
-      select: { name: true },
-    });
-
-    if (!organization) {
-      throw new BadRequestException('Organization not found.');
-    }
-
-    const invitation = await db.invitation.create({
-      data: {
-        email: email.toLowerCase(),
-        organizationId,
-        role: roles.length === 1 ? roles[0] : roles.join(','),
-        status: 'pending',
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        inviterId,
-      },
-    });
-
-    await this.sendInviteEmails({
-      email: email.toLowerCase(),
-      organizationName: organization.name,
-      sendPortalEmail,
-      sendAppEmail,
-      portalLink: this.buildPortalUrl(organizationId),
-      appLink: this.buildInviteLink(invitation.id),
-    });
+  /** Union new roles into an existing comma-separated role string. */
+  private mergeRoleString(
+    existingRole: string | null | undefined,
+    addedRoles: string[],
+  ): string {
+    return [
+      ...new Set([
+        ...(existingRole ?? '')
+          .split(',')
+          .map((r) => r.trim())
+          .filter(Boolean),
+        ...addedRoles.map((r) => r.trim()).filter(Boolean),
+      ]),
+    ]
+      .sort()
+      .join(',');
   }
 
   async resendPortalInvite(params: {

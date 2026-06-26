@@ -30,12 +30,20 @@ const MIN_SIMILARITY_SCORE = 0.2;
 // Maximum results to fetch from Upstash Vector (their limit is 1000, but 100 is practical)
 const MAX_TOP_K = 100;
 
+// Maximum distinct chunks returned to the answer generator. Upstash hands back up
+// to MAX_TOP_K candidates above the 0.2 noise floor, but feeding all of them to the
+// LLM floods "Show Sources" with every loosely matching policy (21-24 per question,
+// CS-594) and dilutes the prompt. Keep only the highest-scoring chunks. Mirrors the
+// app-side findSimilarContent limit used by the same auto-answer flow.
+const MAX_RESULTS = 5;
+
 /**
  * Finds similar content using semantic search in Upstash Vector
  * Optimized for RAG (Retrieval-Augmented Generation) answer generation
  *
- * Returns ALL results above the similarity threshold - no artificial limit.
- * This ensures the LLM receives all potentially relevant organizational data.
+ * Returns the highest-scoring results above the similarity threshold, capped at
+ * MAX_RESULTS so the LLM receives the most relevant organizational data without
+ * being flooded by every loosely matching chunk.
  *
  * @param question - The question or query text to search for
  * @param organizationId - Filter results to this organization only
@@ -67,10 +75,12 @@ export async function findSimilarContent(
       filter: `organizationId = "${organizationId}"`,
     });
 
-    // Filter by minimum similarity score only - no artificial limit
-    // All relevant organizational data should reach the LLM
+    // Filter by minimum similarity score, then keep only the highest-scoring
+    // chunks (results are returned sorted by score descending). Without this cap
+    // every chunk above the 0.2 noise floor reaches the LLM and "Show Sources".
     const filteredResults: SimilarContentResult[] = results
       .filter((result) => result.score >= MIN_SIMILARITY_SCORE)
+      .slice(0, MAX_RESULTS)
       .map((result): SimilarContentResult => {
         const metadata = result.metadata as any;
         return {
@@ -193,6 +203,7 @@ export async function findSimilarContentBatch(
     for (const { index, results } of queryResults) {
       const filtered = results
         .filter((result) => result.score >= MIN_SIMILARITY_SCORE)
+        .slice(0, MAX_RESULTS)
         .map((result): SimilarContentResult => {
           const metadata = result.metadata as any;
           return {
