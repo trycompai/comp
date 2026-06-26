@@ -36,6 +36,26 @@ describe('failureSignalsFromEvidence', () => {
     ).toBeNull();
   });
 
+  it('does NOT let an empty message mask the error text', () => {
+    // `msgStr ?? errStr` kept '' (not null) — an empty message hid the error.
+    const s = failureSignalsFromEvidence({
+      error: 'http_500 upstream boom',
+      message: '',
+    });
+    expect(s.errorText).toContain('boom');
+    expect(s.httpStatus).toBe(500);
+  });
+
+  it('parses a STRING evidence.status (e.g. "401", "403 Forbidden")', () => {
+    expect(failureSignalsFromEvidence({ status: '401' }).httpStatus).toBe(401);
+    expect(
+      failureSignalsFromEvidence({ status: '403 Forbidden' }).httpStatus,
+    ).toBe(403);
+    expect(
+      failureSignalsFromEvidence({ status: 'weird' }).httpStatus,
+    ).toBeNull();
+  });
+
   it('marks threw when the result status is "error"', () => {
     expect(failureSignalsFromEvidence({}, 'error').threw).toBe(true);
   });

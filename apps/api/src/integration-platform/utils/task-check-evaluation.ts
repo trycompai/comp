@@ -167,12 +167,18 @@ export function failureSignalsFromEvidence(
   // our_side (held) instead of customer_side (shown). Won't match a URL.
   const m = `${errStr ?? ''} ${msgStr ?? ''}`.match(/\bhttp[\s:_-]*(\d{3})\b/i);
   if (m) httpStatus = Number(m[1]);
-  // e.g. evidence.status === 404
-  if (httpStatus == null && typeof ev.status === 'number') {
-    httpStatus = ev.status;
+  // evidence.status may be a number (404) OR a string ('404', '401 Unauthorized').
+  if (httpStatus == null && ev.status != null) {
+    const n =
+      typeof ev.status === 'number'
+        ? ev.status
+        : Number(String(ev.status).match(/\d{3}/)?.[0]);
+    if (Number.isFinite(n) && n >= 100 && n < 600) httpStatus = n;
   }
 
-  const rawText = msgStr ?? errStr ?? '';
+  // Use the message ONLY when it has content; an empty-string message must not
+  // mask the error text (?? keeps '' because it's not null/undefined).
+  const rawText = msgStr && msgStr.trim() ? msgStr : (errStr ?? '');
   const errorText = rawText ? redactSecrets(rawText) : null;
   const threw = resultStatus === 'error';
 

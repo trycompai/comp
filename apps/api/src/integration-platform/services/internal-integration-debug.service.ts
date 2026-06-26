@@ -397,6 +397,11 @@ export class InternalIntegrationDebugService {
         },
         results: {
           where: { passed: false },
+          // Bound the nested failing results: a check can produce thousands of
+          // findings (each with evidence). The agent only needs a sample to
+          // diagnose (it reads the first few), so cap the payload per run.
+          take: 20,
+          orderBy: { collectedAt: 'asc' },
           select: {
             resourceId: true,
             resourceType: true,

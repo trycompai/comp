@@ -382,6 +382,9 @@ describe('InternalIntegrationDebugService', () => {
       expect(args.where.connection.provider).toEqual({ slug: 'neon' });
       expect(args.orderBy).toEqual({ completedAt: 'desc' });
       expect(args.take).toBe(10);
+      // Nested failing results are BOUNDED so a check with thousands of findings
+      // can't dump an unbounded payload to the agent poller.
+      expect(args.select.results.take).toBe(20);
     });
 
     it('drops a stale inconclusive run when a newer run superseded it', async () => {
