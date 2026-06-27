@@ -1,3 +1,10 @@
+## [3.92.5](https://github.com/trycompai/comp/compare/v3.92.4...v3.92.5) (2026-06-27)
+
+
+### Bug Fixes
+
+* **auth:** disable unused email/password login ([a9d887f](https://github.com/trycompai/comp/commit/a9d887f9a4bf18493403d157c2e6e26897abbec2))
+
 ## [3.92.4](https://github.com/trycompai/comp/compare/v3.92.3...v3.92.4) (2026-06-26)
 
 
