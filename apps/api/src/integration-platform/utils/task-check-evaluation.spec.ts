@@ -90,5 +90,25 @@ describe('task-check-evaluation', () => {
     it('null (leave unchanged) when the check evaluated nothing (e.g. all errored)', () => {
       expect(decideTaskStatus(0, 0, 0)).toBeNull();
     });
+    it('NOT done when there are held failures, even with passing results', () => {
+      // (effectiveFailures=0, passing>0, findings adjusted, heldCount=1) → a held
+      // (our-side) check is unresolved; the task must not go done and hide it.
+      expect(decideTaskStatus(0, 5, 0, 1)).toBeNull();
+    });
+    it('still failed when there are real failures regardless of held count', () => {
+      expect(decideTaskStatus(2, 5, 2, 1)).toBe('failed');
+    });
+    it('done as before when nothing is held (heldCount 0)', () => {
+      expect(decideTaskStatus(0, 5, 0, 0)).toBe('done');
+    });
+    it('returns null (leave unchanged) on a held outcome — a previously-done task stays done', () => {
+      // DELIBERATE: a held check is our-side/transient; the agent re-runs after a
+      // fix and the task reconciles within minutes. We return null (no
+      // transition) rather than pulling a done task out of done — that would show
+      // the customer a regression for OUR bug, which the hold exists to prevent.
+      // There is also no clean "held/checking" task status to move it to.
+      expect(decideTaskStatus(0, 0, 0, 2)).toBeNull();
+      expect(decideTaskStatus(0, 10, 0, 1)).toBeNull();
+    });
   });
 });
