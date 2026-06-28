@@ -98,7 +98,7 @@
         "class-validator": "^0.14.2",
         "docx": "^9.7.1",
         "dotenv": "^17.2.3",
-        "esbuild": "^0.27.1",
+        "esbuild": "^0.28.1",
         "exceljs": "^4.4.0",
         "express": "^4.21.2",
         "helmet": "^8.1.0",
