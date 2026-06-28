@@ -250,6 +250,70 @@ describe('PoliciesService', () => {
       expect(updateArg.data.signedBy).toBeUndefined();
     });
 
+    // CS-587: the policy-schedule cron flips a published policy to
+    // needs_review (with no pending version) once its periodic review is due.
+    // Re-publishing that policy must NOT force the whole org to re-acknowledge
+    // unchanged content, and must advance the review date so the cron doesn't
+    // immediately re-flag it.
+    it('preserves signedBy and advances reviewDate when re-publishing a periodic-review policy (no pending version)', async () => {
+      const orgId = 'org_abc';
+      const existing = {
+        id: 'pol_1',
+        organizationId: orgId,
+        status: 'needs_review',
+        pendingVersionId: null,
+        approverId: null,
+        frequency: 'yearly',
+        pdfUrl: null,
+        signedBy: ['usr_a', 'usr_b'],
+      };
+      const updatedResult = { ...existing, status: 'published', name: 'Test Policy' };
+
+      db.$transaction.mockImplementation(async (callback: (tx: unknown) => Promise<unknown>) => {
+        const tx = { policy: { findFirst: db.policy.findFirst, update: db.policy.update } };
+        return callback(tx);
+      });
+      db.policy.findFirst.mockResolvedValueOnce(existing);
+      db.policy.update.mockResolvedValueOnce(updatedResult);
+
+      await service.updateById('pol_1', orgId, { status: 'published' } as never);
+
+      const updateArg = db.policy.update.mock.calls[0][0];
+      // Acknowledgments are NOT wiped — content never changed.
+      expect(updateArg.data.signedBy).toBeUndefined();
+      expect(updateArg.data.status).toBe('published');
+      // Review date is pushed to the next cycle so the cron doesn't re-flag it.
+      expect(updateArg.data.reviewDate).toBeInstanceOf(Date);
+      expect(updateArg.data.reviewDate.getTime()).toBeGreaterThan(Date.now());
+    });
+
+    it('still clears signedBy when re-publishing a needs_review policy that has a pending approval version', async () => {
+      const orgId = 'org_abc';
+      const existing = {
+        id: 'pol_1',
+        organizationId: orgId,
+        status: 'needs_review',
+        pendingVersionId: 'pv_pending',
+        approverId: 'mem_1',
+        frequency: 'yearly',
+        pdfUrl: null,
+        signedBy: ['usr_a'],
+      };
+      const updatedResult = { ...existing, status: 'published', name: 'Test Policy' };
+
+      db.$transaction.mockImplementation(async (callback: (tx: unknown) => Promise<unknown>) => {
+        const tx = { policy: { findFirst: db.policy.findFirst, update: db.policy.update } };
+        return callback(tx);
+      });
+      db.policy.findFirst.mockResolvedValueOnce(existing);
+      db.policy.update.mockResolvedValueOnce(updatedResult);
+
+      await service.updateById('pol_1', orgId, { status: 'published' } as never);
+
+      const updateArg = db.policy.update.mock.calls[0][0];
+      expect(updateArg.data.signedBy).toEqual([]);
+    });
+
     // Auto-route: content update on a non-draft policy creates a new
     // PolicyVersion and publishes it, rather than mutating the published
     // version's content in place. This lets MCP/API consumers say
