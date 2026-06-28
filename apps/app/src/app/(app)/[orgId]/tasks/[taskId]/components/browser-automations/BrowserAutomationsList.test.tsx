@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import type { HTMLAttributes } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   setMockPermissions,
@@ -15,9 +16,10 @@ vi.mock('@/hooks/use-permissions', () => ({
   }),
 }));
 
-// Mock @trycompai/ui/badge
-vi.mock('@trycompai/ui/badge', () => ({
-  Badge: ({ children, ...props }: any) => <span {...props}>{children}</span>,
+vi.mock('@trycompai/design-system', () => ({
+  Badge: ({ children, ...props }: HTMLAttributes<HTMLSpanElement>) => (
+    <span {...props}>{children}</span>
+  ),
 }));
 
 // Mock date-fns
@@ -27,7 +29,13 @@ vi.mock('date-fns', () => ({
 
 // Mock AutomationItem
 vi.mock('./AutomationItem', () => ({
-  AutomationItem: ({ automation, readOnly }: any) => (
+  AutomationItem: ({
+    automation,
+    readOnly,
+  }: {
+    automation: { id: string; name: string };
+    readOnly?: boolean;
+  }) => (
     <div data-testid={`automation-item-${automation.id}`} data-readonly={String(readOnly)}>
       {automation.name}
     </div>

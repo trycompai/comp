@@ -1,6 +1,7 @@
 'use client';
 
 import { updateRiskSchema } from '@/actions/schema';
+import { DepartmentSelect } from '@/components/DepartmentSelect';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { StatusIndicator } from '@/components/status-indicator';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -134,22 +135,11 @@ export function UpdateRiskOverview({
 
           <Stack gap="sm">
             <Label>Department</Label>
-            <Select
-              value={form.watch('department')}
-              onValueChange={(value) => form.setValue('department', value as Departments, { shouldDirty: true })}
+            <DepartmentSelect
+              value={form.watch('department') || ''}
+              onChange={(value) => form.setValue('department', value, { shouldDirty: true })}
               disabled={!canUpdate}
-            >
-              <SelectTrigger>
-                {(form.watch('department') || '').toUpperCase()}
-              </SelectTrigger>
-              <SelectContent>
-                {Object.values(Departments).map((department) => (
-                  <SelectItem key={department} value={department}>
-                    {department.toUpperCase()}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            />
           </Stack>
         </Grid>
 

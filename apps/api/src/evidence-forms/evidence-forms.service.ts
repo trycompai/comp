@@ -648,7 +648,7 @@ export class EvidenceFormsService {
   async uploadSubmission(params: {
     organizationId: string;
     formType: string;
-    authContext: AuthContext;
+    userId: string;
     payload: unknown;
   }) {
     const parsedType = evidenceFormTypeSchema.safeParse(params.formType);
@@ -656,7 +656,7 @@ export class EvidenceFormsService {
       throw new BadRequestException('Unsupported form type');
     }
 
-    const userId = this.requireJwtUser(params.authContext);
+    const { userId } = params;
 
     const parsed = uploadSubmissionBodySchema.safeParse(params.payload);
     if (!parsed.success) {

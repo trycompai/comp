@@ -1,26 +1,6 @@
 'use client';
 
-import type { Control, FrameworkEditorRequirement, Task } from '@db';
-import {
-  Badge,
-
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-  Text,
-} from '@trycompai/design-system';
-import { Search } from '@trycompai/design-system/icons';
-import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
-
-const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
-import type { FrameworkInstanceWithControls } from '@/lib/types/framework';
+import type { StatusType } from '@/components/status-indicator';
 import {
   type EvidenceSubmissionInfo,
   type RequirementArtifactCounts,
@@ -30,7 +10,32 @@ import {
   getRequirementCompliancePercent,
   getRequirementStatus,
 } from '@/lib/control-compliance';
-import type { StatusType } from '@/components/status-indicator';
+import type { FrameworkInstanceWithControls } from '@/lib/types/framework';
+import type { Control, FrameworkEditorRequirement, Task } from '@db';
+import {
+  Badge,
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  Table,
+  TableBody,
+  TableCell,
+  TableRow,
+  Text,
+} from '@trycompai/design-system';
+import { Search } from '@trycompai/design-system/icons';
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
+import { ExpandableDescription } from './ExpandableDescription';
+import { compareRequirementsByOrder } from './framework-controls-shared';
+import {
+  REQUIREMENTS_TABLE_COLUMN_COUNT,
+  REQUIREMENTS_TABLE_STYLE,
+  RequirementsTableColumnGroup,
+  RequirementsTableHeader,
+} from './requirements-table-layout';
+
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
 interface RequirementItem extends FrameworkEditorRequirement {
   mappedControlsCount: number;
@@ -108,12 +113,9 @@ export function FrameworkRequirements({
     });
   }, [requirementDefinitions, frameworkInstanceWithControls.controls, tasks, evidenceSubmissions]);
 
-  const sortedItems = useMemo(
-    () => [...items].sort((a, b) =>
-      (a.identifier ?? '').localeCompare(b.identifier ?? '', undefined, { numeric: true }),
-    ),
-    [items],
-  );
+  // FRAME-18: order by the framework's configured sort order (numbered first,
+  // unset last), falling back to identifier for ties.
+  const sortedItems = useMemo(() => [...items].sort(compareRequirementsByOrder), [items]);
 
   const filteredItems = useMemo(() => {
     if (!searchTerm.trim()) return sortedItems;
@@ -151,12 +153,15 @@ export function FrameworkRequirements({
           <InputGroupInput
             placeholder="Search requirements..."
             value={searchTerm}
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(event.target.value)}
+            onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+              setSearchTerm(event.target.value)
+            }
           />
         </InputGroup>
       </div>
       <Table
         variant="bordered"
+        style={REQUIREMENTS_TABLE_STYLE}
         pagination={{
           page,
           pageCount,
@@ -169,23 +174,12 @@ export function FrameworkRequirements({
           },
         }}
       >
-        <TableHeader>
-          <TableRow>
-            <TableHead>Identifier</TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead>Description</TableHead>
-            <TableHead>Compliance</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Controls</TableHead>
-            <TableHead>Policies</TableHead>
-            <TableHead>Tasks</TableHead>
-            <TableHead>Documents</TableHead>
-          </TableRow>
-        </TableHeader>
+        <RequirementsTableColumnGroup />
+        <RequirementsTableHeader />
         <TableBody>
           {paginatedItems.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={9}>
+              <TableCell colSpan={REQUIREMENTS_TABLE_COLUMN_COUNT}>
                 <Text size="sm" variant="muted">
                   No requirements found.
                 </Text>
@@ -214,24 +208,20 @@ export function FrameworkRequirements({
                     <span className="text-sm">{identifier || '—'}</span>
                   </TableCell>
                   <TableCell>
-                    <span
-                      className="block max-w-[280px] truncate text-sm"
-                      title={item.name}
-                    >
+                    <span className="block truncate text-sm" title={item.name}>
                       {item.name}
                     </span>
                   </TableCell>
                   <TableCell>
-                    <span
-                      className="block max-w-[240px] truncate text-sm"
-                      title={item.description || ''}
-                    >
-                      {item.description || '—'}
-                    </span>
+                    <ExpandableDescription
+                      description={item.description}
+                      identifier={item.identifier}
+                      name={item.name}
+                    />
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2 min-w-[100px]">
-                      <div className="flex-1 rounded-full bg-muted/50 h-1.5">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <div className="h-1.5 min-w-0 flex-1 rounded-full bg-muted/50">
                         <div
                           className="h-full rounded-full bg-primary transition-all duration-300"
                           style={{ width: `${item.compliancePercent}%` }}
@@ -257,7 +247,8 @@ export function FrameworkRequirements({
                   <TableCell>
                     <div className="tabular-nums">
                       <Text size="sm" variant="muted">
-                        {item.artifactCounts.policies.completed}/{item.artifactCounts.policies.total}
+                        {item.artifactCounts.policies.completed}/
+                        {item.artifactCounts.policies.total}
                       </Text>
                     </div>
                   </TableCell>
@@ -271,7 +262,8 @@ export function FrameworkRequirements({
                   <TableCell>
                     <div className="tabular-nums">
                       <Text size="sm" variant="muted">
-                        {item.artifactCounts.documents.completed}/{item.artifactCounts.documents.total}
+                        {item.artifactCounts.documents.completed}/
+                        {item.artifactCounts.documents.total}
                       </Text>
                     </div>
                   </TableCell>

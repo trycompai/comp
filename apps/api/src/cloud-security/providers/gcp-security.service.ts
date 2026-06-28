@@ -130,6 +130,7 @@ const SERVICE_NAMES: Record<string, string> = {
   bigquery: 'BigQuery',
   pubsub: 'Pub/Sub',
   'cloud-armor': 'Cloud Armor',
+  'vertex-ai': 'Vertex AI',
   'security-command-center': 'Security Command Center',
 };
 
@@ -151,7 +152,39 @@ const GCP_API_TO_SERVICE: Record<string, string[]> = {
   'networksecurity.googleapis.com': ['cloud-armor'],
   'iam.googleapis.com': ['iam'],
   'iamcredentials.googleapis.com': ['iam'],
+  'aiplatform.googleapis.com': ['vertex-ai'],
+  'notebooks.googleapis.com': ['vertex-ai'],
 };
+
+/**
+ * GCP resource-type hosts that map to a Cloud Tests service, checked BEFORE the
+ * finding category. SCC names AI detector categories inconsistently across
+ * resources (Dataset/Model/Endpoint/Workbench, CMEK/access/policy, etc.), so
+ * grouping by the authoritative resource type is far more robust than trying to
+ * enumerate every category string. Any finding on an `aiplatform`/`notebooks`
+ * resource is grouped under "Vertex AI".
+ */
+const RESOURCE_TYPE_HOST_TO_SERVICE: Array<[string, string]> = [
+  ['aiplatform.googleapis.com', 'vertex-ai'],
+  ['notebooks.googleapis.com', 'vertex-ai'],
+];
+
+/**
+ * Resolve the Cloud Tests service ID for an SCC finding. Prefer the resource
+ * type (authoritative) over the category, then fall back to the generic
+ * Security Command Center bucket so nothing is ever dropped.
+ */
+export function resolveGcpServiceId(
+  category: string,
+  resourceType: string | undefined,
+  resourceName: string | undefined,
+): string {
+  const haystack = `${resourceType ?? ''} ${resourceName ?? ''}`;
+  for (const [host, service] of RESOURCE_TYPE_HOST_TO_SERVICE) {
+    if (haystack.includes(host)) return service;
+  }
+  return CATEGORY_TO_SERVICE[category] ?? 'security-command-center';
+}
 
 export type GcpSetupStepId =
   | 'enable_security_command_center_api'
@@ -1342,6 +1375,11 @@ export class GCPSecurityService {
     const allFindings: SecurityFinding[] = [];
     const enabledServiceSet = enabledServices ? new Set(enabledServices) : null;
     const seenIds = new Set<string>();
+    // Track per-scope outcomes so a scan where EVERY scope errored fails loudly
+    // instead of silently returning [] (see the all-scopes-failed guard below).
+    const successfulScopes = new Set<string>();
+    const failedScopes = new Set<string>();
+    let firstScopeError: Error | null = null;
 
     for (const scope of scopes) {
       try {
@@ -1359,8 +1397,11 @@ export class GCPSecurityService {
             if (seenIds.has(f.name)) continue;
             seenIds.add(f.name);
 
-            const serviceId =
-              CATEGORY_TO_SERVICE[f.category] ?? 'security-command-center';
+            const serviceId = resolveGcpServiceId(
+              f.category,
+              result.resource?.type,
+              f.resourceName,
+            );
             if (enabledServiceSet && !enabledServiceSet.has(serviceId)) {
               continue;
             }
@@ -1374,7 +1415,15 @@ export class GCPSecurityService {
                 f.description || `Security finding: ${f.category}`,
               severity: this.mapSeverity(f.severity),
               resourceType: result.resource?.type ?? 'gcp-resource',
-              resourceId: f.resourceName,
+              // SCC sometimes omits the per-finding `resourceName` (notably
+              // PUBLIC_BUCKET_ACL findings) while the stable identity still
+              // lives on `result.resource.name`. If both are absent, fall back
+              // to `f.name` — the finding's own canonical id (also used for
+              // dedup above and as `id`), which SCC always populates. Ending
+              // the chain there keeps resourceId guaranteed non-empty so the
+              // finding can be marked as an exception (an empty resourceId is
+              // rejected by the resolver).
+              resourceId: f.resourceName || result.resource?.name || f.name,
               remediation,
               evidence: {
                 findingKey,
@@ -1398,12 +1447,32 @@ export class GCPSecurityService {
 
           pageToken = response.nextPageToken;
         } while (pageToken);
+        successfulScopes.add(scope.id);
       } catch (err) {
-        // Log and continue with remaining projects — don't fail the whole scan
+        // Log and continue with the remaining scopes — one bad project must not
+        // abort the others. But remember the failure: if EVERY scope fails we
+        // surface it below instead of reporting a misleading "0 findings".
+        const error = err instanceof Error ? err : new Error(String(err));
         this.logger.warn(
-          `GCP SCC query failed for ${scope.type} ${scope.id}: ${err instanceof Error ? err.message : String(err)}`,
+          `GCP SCC query failed for ${scope.type} ${scope.id}: ${error.message}`,
         );
+        failedScopes.add(scope.id);
+        if (!firstScopeError) firstScopeError = error;
       }
+    }
+
+    // If every configured scope errored, fail the scan instead of returning [].
+    // A silent [] is stored as a fresh "success" run with 0 findings, which
+    // (a) hides the previous good results — the UI shows only the latest run —
+    // and (b) makes reconciliation mark every prior finding as falsely
+    // "resolved". Re-throw the underlying SCC error so its actionable message
+    // (SCC_NOT_ACTIVATED / PERMISSION_DENIED / …) reaches the user. Mirrors the
+    // AWS all-regions-failed guard in aws-security.service.ts.
+    if (successfulScopes.size === 0 && failedScopes.size > 0) {
+      throw (
+        firstScopeError ??
+        new Error(`All ${failedScopes.size} GCP scope(s) failed to scan`)
+      );
     }
 
     this.logger.log(`Found ${allFindings.length} GCP security findings`);
@@ -1452,6 +1521,18 @@ export class GCPSecurityService {
       ) {
         throw new Error(
           'SCC_NOT_ACTIVATED: Security Command Center is not activated on your GCP organization. ' +
+            'Enable it at https://console.cloud.google.com/security/command-center — the Standard tier is free.',
+        );
+      }
+      // SCC v2 returns 404 NOT_FOUND when the scoped resource has no SCC
+      // activation record — e.g. a project-scoped query on a no-org account
+      // where SCC Standard was never activated for the project.
+      if (
+        response.status === 404 ||
+        errorText.includes('Requested entity was not found')
+      ) {
+        throw new Error(
+          `SCC_NOT_ACTIVATED: Security Command Center is not activated for ${parent.replace('/', ' ')}. ` +
             'Enable it at https://console.cloud.google.com/security/command-center — the Standard tier is free.',
         );
       }

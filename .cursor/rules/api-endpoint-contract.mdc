@@ -1,0 +1,122 @@
+---
+description: Use when writing/editing NestJS API endpoints, DTOs, or @Body() params under apps/api/src/. Ensures every endpoint is correct for OpenAPI, the MCP server (@trycompai/mcp-server), and the ValidationPipe.
+globs: apps/api/src/**/*.controller.ts,apps/api/src/**/*.dto.ts
+alwaysApply: false
+---
+
+# API Endpoint Contract (MCP-friendly NestJS endpoints)
+
+Every customer-facing endpoint in `apps/api/src/` flows into three systems: the OpenAPI spec (`packages/docs/openapi.json`), the MCP server (`@trycompai/mcp-server` on npm), and the runtime `ValidationPipe`. If any one is wrong, the endpoint silently breaks for agents or fails validation at runtime.
+
+## The 11 rules
+
+### 1. DTOs MUST be classes — never interfaces, never inline types
+
+Interfaces are erased at runtime → `@nestjs/swagger` can't introspect them → empty MCP schema → agents blind-guess the body.
+
+```ts
+// ❌ interface (erased) → empty MCP schema
+interface CreateConnectionDto { providerSlug: string; }
+
+// ❌ inline type (erased) → same problem
+async update(@Body() body: { metadata?: Record<string, unknown> }) {}
+
+// ✅ class — survives to runtime
+class CreateConnectionDto {
+  @ApiProperty({ description: '...', example: 'aws' })
+  @IsString()
+  providerSlug!: string;
+}
+```
+
+### 2. Every DTO property carries BOTH decorator stacks
+
+The global `ValidationPipe` runs with `whitelist: true, forbidNonWhitelisted: true`. `@ApiProperty` alone → ValidationPipe rejects every field with *"property X should not exist"*. `class-validator` alone → empty MCP schema. **You always need both.**
+
+```ts
+class FooDto {
+  @ApiProperty({ description: 'Name' })
+  @IsString()
+  name!: string;
+
+  @ApiPropertyOptional({ type: 'object', additionalProperties: true })
+  @IsOptional()
+  @IsObject()
+  metadata?: Record<string, unknown>;
+
+  @ApiProperty({ type: 'array', items: { type: 'string' } })
+  @IsArray()
+  @IsString({ each: true })
+  services!: string[];
+}
+```
+
+### 3. Add `@ApiBody({ type: DtoClass })` on the endpoint
+
+`@nestjs/swagger` does not reliably infer the body type from `@Body() body: DtoClass`. Declare it explicitly.
+
+### 4. Operation descriptions ≤ 240 chars
+
+`apps/api/src/openapi/seo-text.ts:71` trims every `@ApiOperation.description` to 240 chars at a word boundary. Longer text gets cut mid-sentence and the actionable instruction is lost. Keep the key step in the first 240.
+
+### 5. Use a clean MCP tool name when the auto-derived one is ugly
+
+```ts
+@ApiExtension('x-speakeasy-mcp', { name: 'generate-questionnaire-answers' })
+```
+
+Tool name budget: 52 chars max, kebab-case.
+
+### 6. Agent-callable endpoints must NOT be behind `SessionOnlyGuard`
+
+Session-only endpoints return 403 to API-key callers — the MCP tool generates but fails. Either remove `SessionOnlyGuard` or disable the tool in `apps/mcp-server/.speakeasy/mcp-uploads-overlay.yaml`.
+
+### 7. Long-running operations: async + poll
+
+Anything > ~30s returns a run handle and lets the agent poll, not a blocking call:
+
+```ts
+return { runId: handle.id, status: 'generating', totalQuestions, answeredQuestions };
+// Description tells the agent: "Poll GET /v1/X/:id until counts converge"
+```
+
+### 8. File uploads from agents: presigned URL + s3Key, never inline base64
+
+Base64-through-LLM is catastrophically slow and overflows the context window. Add an `s3Key` field to your DTO; have the service read bytes via `UploadsService.readUploadAsBase64`. Hide `fileData` from MCP via the overlay so agents are forced into the presigned path.
+
+### 9. Sensitive endpoints are deny-listed from public docs
+
+`apps/api/src/openapi/public-docs-quality.ts` strips paths matching `/\/credentials(?:\/|$)/` etc. from MCP. Endpoints handling raw secrets intentionally never reach agents.
+
+### 10. SSE / binary responses: disable the MCP tool in the overlay
+
+SSE streams (`@ApiProduces('text/event-stream')`) and binary file responses cannot be consumed by JSON-RPC tool calls. Disable them for MCP only (HTTP endpoint stays for the web UI):
+
+```yaml
+# apps/mcp-server/.speakeasy/mcp-uploads-overlay.yaml
+- target: "$.paths['/v1/questionnaire/auto-answer'].post"
+  update:
+    x-speakeasy-mcp:
+      disabled: true
+```
+
+### 11. Every endpoint MUST have a meaningful summary + description — it powers MCP discovery
+
+`@ApiOperation({ summary, description })` is **not optional**. `openapi-docs.spec.ts` (via `collectPublicOpenApiIssues`) **fails CI** on empty `summary` (`missingSummaries`), missing `description`/metadata (`missingMetadata`), or SEO metadata outside 80–160 chars / title > 60 (`invalidSeo`).
+
+The hosted MCP (Gram) uses **dynamic toolsets**: with 300+ tools the agent semantic-`search`es over names + descriptions and only loads matches. A weak/missing description = the tool is **undiscoverable**. Write it for the agent deciding whether to call the tool: what it does + when to use it (≤ 240 chars, Rule 4).
+
+## Checklist when adding a body endpoint
+
+1. `class` DTO, two decorator stacks per field, `@ApiBody({ type: DtoClass })` on the endpoint.
+2. `@ApiOperation.description` ≤ 240 chars.
+3. Override MCP tool name if auto-derived is ugly.
+4. No `SessionOnlyGuard` on agent-callable endpoints.
+5. Long-running → run handle + poll target.
+6. File input → `s3Key` field + `UploadsService.readUploadAsBase64`.
+7. Run dev (`bun run --filter '@trycompai/api' dev`) → openapi.json regenerates on boot.
+8. **`git add packages/docs/openapi.json`** — commit the regenerated spec with your API change.
+9. Verify the new schema isn't empty:
+   ```
+   node -e 'const o=require("./packages/docs/openapi.json"); console.log(o.paths["/v1/your-path"]?.post?.requestBody?.content?.["application/json"]?.schema)'
+   ```

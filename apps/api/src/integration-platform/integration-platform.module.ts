@@ -3,10 +3,13 @@ import { AuthModule } from '../auth/auth.module';
 import { CloudSecurityModule } from '../cloud-security/cloud-security.module';
 import { OAuthController } from './controllers/oauth.controller';
 import { OAuthAppsController } from './controllers/oauth-apps.controller';
+import { OAuthErrorsController } from './controllers/oauth-errors.controller';
 import { ConnectionsController } from './controllers/connections.controller';
 import { AdminIntegrationsController } from './controllers/admin-integrations.controller';
 import { DynamicIntegrationsController } from './controllers/dynamic-integrations.controller';
 import { ChecksController } from './controllers/checks.controller';
+import { InternalChecksController } from './controllers/internal-checks.controller';
+import { InternalIntegrationDebugController } from './controllers/internal-integration-debug.controller';
 import { VariablesController } from './controllers/variables.controller';
 import { TaskIntegrationsController } from './controllers/task-integrations.controller';
 import { WebhookController } from './controllers/webhook.controller';
@@ -20,6 +23,8 @@ import { ConnectionAuthTeardownService } from './services/connection-auth-teardo
 import { OAuthTokenRevocationService } from './services/oauth-token-revocation.service';
 import { DynamicManifestLoaderService } from './services/dynamic-manifest-loader.service';
 import { TaskIntegrationChecksService } from './services/task-integration-checks.service';
+import { ConnectionCheckRunnerService } from './services/connection-check-runner.service';
+import { InternalIntegrationDebugService } from './services/internal-integration-debug.service';
 import { ProviderRepository } from './repositories/provider.repository';
 import { ConnectionRepository } from './repositories/connection.repository';
 import { CredentialRepository } from './repositories/credential.repository';
@@ -31,16 +36,20 @@ import { DynamicIntegrationRepository } from './repositories/dynamic-integration
 import { DynamicCheckRepository } from './repositories/dynamic-check.repository';
 import { IntegrationSyncLoggerService } from './services/integration-sync-logger.service';
 import { GenericEmployeeSyncService } from './services/generic-employee-sync.service';
+import { GenericDeviceSyncService } from './services/generic-device-sync.service';
 
 @Module({
   imports: [AuthModule, forwardRef(() => CloudSecurityModule)],
   controllers: [
     OAuthController,
     OAuthAppsController,
+    OAuthErrorsController,
     ConnectionsController,
     AdminIntegrationsController,
     DynamicIntegrationsController,
     ChecksController,
+    InternalChecksController,
+    InternalIntegrationDebugController,
     VariablesController,
     TaskIntegrationsController,
     WebhookController,
@@ -57,8 +66,11 @@ import { GenericEmployeeSyncService } from './services/generic-employee-sync.ser
     ConnectionAuthTeardownService,
     DynamicManifestLoaderService,
     TaskIntegrationChecksService,
+    ConnectionCheckRunnerService,
+    InternalIntegrationDebugService,
     IntegrationSyncLoggerService,
     GenericEmployeeSyncService,
+    GenericDeviceSyncService,
     // Repositories
     ProviderRepository,
     ConnectionRepository,

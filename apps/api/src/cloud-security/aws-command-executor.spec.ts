@@ -2,6 +2,8 @@ import type { AwsCommandStep } from './ai-remediation.prompt';
 import {
   REQUIRED_PARAMS,
   looksLikeValidationError,
+  normalizeConfigRecordingGroup,
+  normalizeMetricFilterTransformations,
   validatePlanSteps,
 } from './aws-command-executor';
 
@@ -300,5 +302,211 @@ describe('validatePlanSteps — pre-existing behavior preserved', () => {
     expect(
       errors.find((e) => /Contains placeholder values/.test(e)),
     ).toBeDefined();
+  });
+});
+
+/**
+ * AWS Config recorder: `allSupported:true` is mutually exclusive with
+ * `recordingStrategy` / `exclusionByResourceTypes` / `resourceTypes`. The AI
+ * (and a customer's existing exclusion-based recorder) frequently echoes those
+ * fields back alongside allSupported:true, which AWS rejects with a
+ * ValidationException. normalizeConfigRecordingGroup collapses the group to the
+ * single valid "record everything (incl. global IAM)" shape.
+ */
+describe('normalizeConfigRecordingGroup', () => {
+  it('strips conflicting fields when an exclusion-based group is converted to all-supported', () => {
+    const input: Record<string, unknown> = {
+      ConfigurationRecorder: {
+        name: 'default',
+        roleARN: 'arn:aws:iam::123:role/aws-service-role/config',
+        recordingGroup: {
+          allSupported: true,
+          recordingStrategy: { useOnly: 'EXCLUSION_BY_RESOURCE_TYPES' },
+          exclusionByResourceTypes: {
+            resourceTypes: ['AWS::IAM::User', 'AWS::IAM::Role'],
+          },
+        },
+      },
+    };
+    normalizeConfigRecordingGroup(input);
+    const recorder = input.ConfigurationRecorder as Record<string, unknown>;
+    expect(recorder.recordingGroup).toEqual({
+      allSupported: true,
+      includeGlobalResourceTypes: true,
+    });
+    // name + roleARN are preserved untouched.
+    expect(recorder.name).toBe('default');
+    expect(recorder.roleARN).toBe(
+      'arn:aws:iam::123:role/aws-service-role/config',
+    );
+  });
+
+  it('converts a pure exclusion strategy (allSupported absent) to all-supported', () => {
+    const input: Record<string, unknown> = {
+      ConfigurationRecorder: {
+        name: 'default',
+        recordingGroup: {
+          recordingStrategy: { useOnly: 'EXCLUSION_BY_RESOURCE_TYPES' },
+          exclusionByResourceTypes: { resourceTypes: ['AWS::IAM::Role'] },
+        },
+      },
+    };
+    normalizeConfigRecordingGroup(input);
+    const recorder = input.ConfigurationRecorder as Record<string, unknown>;
+    expect(recorder.recordingGroup).toEqual({
+      allSupported: true,
+      includeGlobalResourceTypes: true,
+    });
+  });
+
+  it('cleans an ALL_SUPPORTED_RESOURCE_TYPES strategy to the minimal valid shape', () => {
+    const input: Record<string, unknown> = {
+      ConfigurationRecorder: {
+        name: 'default',
+        recordingGroup: {
+          allSupported: true,
+          recordingStrategy: { useOnly: 'ALL_SUPPORTED_RESOURCE_TYPES' },
+        },
+      },
+    };
+    normalizeConfigRecordingGroup(input);
+    expect(
+      (input.ConfigurationRecorder as Record<string, unknown>).recordingGroup,
+    ).toEqual({ allSupported: true, includeGlobalResourceTypes: true });
+  });
+
+  it('leaves an INCLUSION_BY_RESOURCE_TYPES recorder untouched (records only specific types)', () => {
+    const recordingGroup = {
+      allSupported: false,
+      recordingStrategy: { useOnly: 'INCLUSION_BY_RESOURCE_TYPES' },
+      resourceTypes: ['AWS::S3::Bucket'],
+    };
+    const input: Record<string, unknown> = {
+      ConfigurationRecorder: { name: 'default', recordingGroup },
+    };
+    normalizeConfigRecordingGroup(input);
+    expect(
+      (input.ConfigurationRecorder as Record<string, unknown>).recordingGroup,
+    ).toEqual(recordingGroup);
+  });
+
+  it('is a no-op when there is no ConfigurationRecorder/recordingGroup', () => {
+    const input: Record<string, unknown> = {};
+    expect(() => normalizeConfigRecordingGroup(input)).not.toThrow();
+    expect(input).toEqual({});
+
+    const input2: Record<string, unknown> = {
+      ConfigurationRecorder: { name: 'default' },
+    };
+    normalizeConfigRecordingGroup(input2);
+    expect(input2).toEqual({ ConfigurationRecorder: { name: 'default' } });
+  });
+});
+
+/**
+ * CloudWatch metric filters: `metricTransformations` is a required, non-empty
+ * array whose entries' `metricValue` must be a string. The model often emits a
+ * single object or a numeric metricValue, which AWS rejects ("metric
+ * transformations were not properly provided…") and sends the auto-fix to
+ * manual steps. normalizeMetricFilterTransformations coerces the valid shape;
+ * REQUIRED_PARAMS catches a truly-missing field before execution.
+ */
+describe('PutMetricFilterCommand required params + normalization', () => {
+  it('enforces the required PutMetricFilter params', () => {
+    const errors = validatePlanSteps([
+      step({
+        service: 'cloudwatch-logs',
+        command: 'PutMetricFilterCommand',
+        params: { logGroupName: 'lg', filterName: 'fn' }, // missing pattern + transforms
+      }),
+    ]);
+    expect(errors).toEqual(
+      expect.arrayContaining([
+        // filterPattern must be PRESENT (but may be empty), so a missing one is
+        // reported via the present-check, not the non-empty REQUIRED_PARAMS one.
+        expect.stringMatching(/Required param "filterPattern" must be provided/),
+        expect.stringMatching(/Required param "metricTransformations" is missing/),
+      ]),
+    );
+  });
+
+  it('allows an empty filterPattern (AWS accepts "" — it matches all events)', () => {
+    const errors = validatePlanSteps([
+      step({
+        service: 'cloudwatch-logs',
+        command: 'PutMetricFilterCommand',
+        params: {
+          logGroupName: 'lg',
+          filterName: 'fn',
+          filterPattern: '',
+          metricTransformations: [
+            { metricName: 'm', metricNamespace: 'CloudTrailMetrics', metricValue: '1' },
+          ],
+        },
+      }),
+    ]);
+    expect(errors.filter((e) => /filterPattern/.test(e))).toHaveLength(0);
+  });
+
+  it('does not error when all PutMetricFilter params are present', () => {
+    const errors = validatePlanSteps([
+      step({
+        service: 'cloudwatch-logs',
+        command: 'PutMetricFilterCommand',
+        params: {
+          logGroupName: 'lg',
+          filterName: 'fn',
+          filterPattern: '{ $.eventName = "X" }',
+          metricTransformations: [
+            { metricName: 'm', metricNamespace: 'CloudTrailMetrics', metricValue: '1' },
+          ],
+        },
+      }),
+    ]);
+    expect(
+      errors.filter((e) => e.includes('PutMetricFilterCommand')),
+    ).toHaveLength(0);
+  });
+
+  it('wraps a single metricTransformations object in an array', () => {
+    const input: Record<string, unknown> = {
+      logGroupName: 'lg',
+      metricTransformations: {
+        metricName: 'm',
+        metricNamespace: 'CloudTrailMetrics',
+        metricValue: '1',
+      },
+    };
+    normalizeMetricFilterTransformations(input);
+    expect(input.metricTransformations).toEqual([
+      { metricName: 'm', metricNamespace: 'CloudTrailMetrics', metricValue: '1' },
+    ]);
+  });
+
+  it('coerces a numeric metricValue to a string', () => {
+    const input: Record<string, unknown> = {
+      metricTransformations: [
+        { metricName: 'm', metricNamespace: 'CloudTrailMetrics', metricValue: 1 },
+      ],
+    };
+    normalizeMetricFilterTransformations(input);
+    expect(input.metricTransformations).toEqual([
+      { metricName: 'm', metricNamespace: 'CloudTrailMetrics', metricValue: '1' },
+    ]);
+  });
+
+  it('leaves a well-formed metricTransformations array untouched', () => {
+    const good = [
+      { metricName: 'm', metricNamespace: 'CloudTrailMetrics', metricValue: '1' },
+    ];
+    const input: Record<string, unknown> = { metricTransformations: good };
+    normalizeMetricFilterTransformations(input);
+    expect(input.metricTransformations).toEqual(good);
+  });
+
+  it('is a no-op when metricTransformations is absent', () => {
+    const input: Record<string, unknown> = { logGroupName: 'lg' };
+    expect(() => normalizeMetricFilterTransformations(input)).not.toThrow();
+    expect(input).toEqual({ logGroupName: 'lg' });
   });
 });

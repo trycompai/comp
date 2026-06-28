@@ -2,6 +2,7 @@
 
 import { initializeOrganization } from '@/actions/organization/lib/initialize-organization';
 import { authActionClientWithoutOrg } from '@/actions/safe-action';
+import { serverApi } from '@/lib/api-server';
 import { createTrainingVideoEntries } from '@/lib/db/employee';
 import { createFleetLabelForOrg } from '@/trigger/tasks/device/create-fleet-label-for-org';
 import { onboardOrganization as onboardOrganizationTask } from '@/trigger/tasks/onboarding/onboard-organization';
@@ -34,9 +35,11 @@ export const createOrganization = authActionClientWithoutOrg
         };
       }
 
-      // Check if user email domain is trycomp.ai
+      // Internal team accounts (verified @trycomp.ai) have access provisioned up front.
       const userEmail = session.user.email;
-      const isTryCompEmail = userEmail?.endsWith('@trycomp.ai') ?? false;
+      const isVerifiedTryCompEmail =
+        (userEmail?.endsWith('@trycomp.ai') ?? false) &&
+        session.user.emailVerified === true;
 
       // Create a new organization directly in the database
       const randomSuffix = Math.floor(100000 + Math.random() * 900000).toString();
@@ -52,8 +55,9 @@ export const createOrganization = authActionClientWithoutOrg
         data: {
           name: parsedInput.organizationName,
           website: parsedInput.website,
-          // Auto-enable for trycomp.ai emails or local development
-          ...((process.env.NEXT_PUBLIC_APP_ENV !== 'production' || isTryCompEmail) && {
+          // Auto-enable for verified internal accounts or local development
+          ...((process.env.NEXT_PUBLIC_APP_ENV !== 'production' ||
+            isVerifiedTryCompEmail) && {
             hasAccess: true,
           }),
           members: {
@@ -115,6 +119,14 @@ export const createOrganization = authActionClientWithoutOrg
           organizationId: orgId,
         },
       });
+
+      // Publish the trust portal so trust.inc/{slug} is live immediately, even
+      // while empty. Goes through the guarded API (GET settings lazily creates a
+      // published Trust row with a slug). Non-fatal — onboarding must still run.
+      const trustPortalResponse = await serverApi.get('/v1/trust-portal/settings');
+      if (trustPortalResponse.error) {
+        console.error('Non-critical: failed to publish trust portal:', trustPortalResponse.error);
+      }
 
       const userOrgs = await db.member.findMany({
         where: {

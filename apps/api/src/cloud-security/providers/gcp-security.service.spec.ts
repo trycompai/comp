@@ -4,7 +4,10 @@
 // importing the service.
 jest.mock('@db', () => ({ db: {} }));
 
-import { GCPSecurityService } from './gcp-security.service';
+import {
+  GCPSecurityService,
+  resolveGcpServiceId,
+} from './gcp-security.service';
 
 /**
  * Helper: build a Response-like object for a single page of the GCP
@@ -637,5 +640,263 @@ describe('GCPSecurityService — project detection', () => {
       const result = await service.detectProjectsForOrg('token', '777');
       expect(result.map((p) => p.id)).toEqual(['good-proj']);
     });
+  });
+});
+
+describe('resolveGcpServiceId — Vertex AI grouping', () => {
+  it('maps an aiplatform resource type to vertex-ai (regardless of category)', () => {
+    expect(
+      resolveGcpServiceId(
+        'SOME_UNMAPPED_AI_CATEGORY',
+        'aiplatform.googleapis.com/Dataset',
+        '//aiplatform.googleapis.com/projects/p/locations/l/datasets/123',
+      ),
+    ).toBe('vertex-ai');
+  });
+
+  it('maps a Workbench (notebooks) resource type to vertex-ai', () => {
+    expect(
+      resolveGcpServiceId(
+        'NOTEBOOK_PUBLIC_IP',
+        'notebooks.googleapis.com/Instance',
+        undefined,
+      ),
+    ).toBe('vertex-ai');
+  });
+
+  it('matches on resourceName when resource type is absent', () => {
+    expect(
+      resolveGcpServiceId(
+        'X',
+        undefined,
+        '//aiplatform.googleapis.com/projects/p/locations/l/models/m',
+      ),
+    ).toBe('vertex-ai');
+  });
+
+  it('resource type takes precedence over a category mapping', () => {
+    // PUBLIC_BUCKET_ACL maps to cloud-storage, but an aiplatform resource
+    // must still group under vertex-ai (resource type is authoritative).
+    expect(
+      resolveGcpServiceId(
+        'PUBLIC_BUCKET_ACL',
+        'aiplatform.googleapis.com/Endpoint',
+        undefined,
+      ),
+    ).toBe('vertex-ai');
+  });
+
+  it('falls back to the category mapping for non-AI findings', () => {
+    expect(
+      resolveGcpServiceId('PUBLIC_BUCKET_ACL', 'storage.googleapis.com/Bucket', undefined),
+    ).toBe('cloud-storage');
+  });
+
+  it('falls back to security-command-center for unmapped, non-AI findings', () => {
+    expect(resolveGcpServiceId('TOTALLY_UNKNOWN', 'compute.googleapis.com/Foo', undefined)).toBe(
+      'security-command-center',
+    );
+  });
+});
+
+// ── SCC findings response helpers ───────────────────────────────────────────
+function sccPage(
+  findings: Array<Record<string, unknown>>,
+  nextPageToken?: string,
+): { ok: true; json: () => Promise<unknown> } {
+  return {
+    ok: true,
+    json: async () => ({
+      listFindingsResults: findings,
+      ...(nextPageToken ? { nextPageToken } : {}),
+    }),
+  };
+}
+
+function sccError(
+  status: number,
+  text: string,
+): { ok: false; status: number; text: () => Promise<string> } {
+  return { ok: false, status, text: async () => text };
+}
+
+function sccFinding(project: string): Record<string, unknown> {
+  return {
+    finding: {
+      name: `organizations/1/sources/-/findings/${project}-1`,
+      category: 'PUBLIC_BUCKET_ACL',
+      description: 'desc',
+      severity: 'HIGH',
+      state: 'ACTIVE',
+      resourceName: `//storage.googleapis.com/projects/${project}/buckets/b`,
+      eventTime: '2026-01-01T00:00:00Z',
+      createTime: '2026-01-01T00:00:00Z',
+    },
+    resource: {
+      type: 'storage.googleapis.com/Bucket',
+      projectDisplayName: project,
+    },
+  };
+}
+
+describe('GCPSecurityService.scanSecurityFindings — all-scopes-failed guard', () => {
+  let service: GCPSecurityService;
+  let fetchMock: jest.Mock;
+  const originalFetch = global.fetch;
+
+  beforeEach(() => {
+    fetchMock = jest.fn();
+    // @ts-expect-error replacing global fetch with a mock for these tests
+    global.fetch = fetchMock;
+    service = new GCPSecurityService();
+  });
+
+  afterAll(() => {
+    global.fetch = originalFetch;
+  });
+
+  // The bug: when the only scope errored, the scan used to swallow the error and
+  // return [] — which got stored as a fresh "success" run with 0 findings,
+  // hiding the previous good results. It must now throw so nothing is stored.
+  it('throws (re-throwing the actionable SCC error) when the only scope errors, instead of returning []', async () => {
+    fetchMock.mockResolvedValue(
+      sccError(403, 'PERMISSION_DENIED: caller lacks securitycenter.findings.list'),
+    );
+
+    await expect(
+      service.scanSecurityFindings(
+        { access_token: 'tok' },
+        { project_ids: ['wasimil-prod'] },
+      ),
+    ).rejects.toThrow(/Permission denied/);
+  });
+
+  // The exact case from the customer report: project-scoped SCC query on a
+  // no-org account returns 404 NOT_FOUND (SCC never activated for the project).
+  it('maps a 404 NOT_FOUND to the actionable SCC_NOT_ACTIVATED error', async () => {
+    fetchMock.mockResolvedValue(
+      sccError(404, '{"error":{"code":404,"message":"Requested entity was not found.","status":"NOT_FOUND"}}'),
+    );
+
+    await expect(
+      service.scanSecurityFindings(
+        { access_token: 'tok' },
+        { project_ids: ['wasimil-prod'] },
+      ),
+    ).rejects.toThrow(/SCC_NOT_ACTIVATED/);
+  });
+
+  it('throws when EVERY configured scope errors', async () => {
+    fetchMock.mockResolvedValue(sccError(500, 'internal error'));
+
+    await expect(
+      service.scanSecurityFindings(
+        { access_token: 'tok' },
+        { project_ids: ['p1', 'p2'] },
+      ),
+    ).rejects.toThrow();
+  });
+
+  it('does NOT throw when at least one scope succeeds — returns the surviving scope’s findings', async () => {
+    fetchMock.mockImplementation(async (url: string) => {
+      if (url.includes('projects/p1')) return sccError(403, 'PERMISSION_DENIED');
+      return sccPage([sccFinding('p2')]);
+    });
+
+    const findings = await service.scanSecurityFindings(
+      { access_token: 'tok' },
+      { project_ids: ['p1', 'p2'] },
+    );
+
+    expect(findings).toHaveLength(1);
+    expect(findings[0].resourceId).toContain('projects/p2');
+  });
+
+  it('does NOT throw when a scope succeeds with zero findings (genuinely clean account)', async () => {
+    fetchMock.mockResolvedValue(sccPage([]));
+
+    const findings = await service.scanSecurityFindings(
+      { access_token: 'tok' },
+      { project_ids: ['wasimil-prod'] },
+    );
+
+    expect(findings).toEqual([]);
+  });
+
+  // Regression: SCC public-bucket findings (PUBLIC_BUCKET_ACL) sometimes come
+  // back with an empty `finding.resourceName` while the resource identity lives
+  // on `result.resource.name`. Storing resourceId: "" made "Mark as exception"
+  // throw 'This finding cannot be marked as an exception — it lacks a stable
+  // check/resource identity'. The mapping must fall back to result.resource.name
+  // so the finding keeps a stable, non-empty resourceId.
+  it('falls back to result.resource.name for resourceId when finding.resourceName is empty (public bucket)', async () => {
+    fetchMock.mockResolvedValue(
+      sccPage([
+        {
+          finding: {
+            name: 'organizations/1/sources/-/findings/pub-bucket-1',
+            category: 'PUBLIC_BUCKET_ACL',
+            description: 'Bucket is public',
+            severity: 'HIGH',
+            state: 'ACTIVE',
+            resourceName: '', // SCC omitted the per-finding resource name
+            eventTime: '2026-01-01T00:00:00Z',
+            createTime: '2026-01-01T00:00:00Z',
+          },
+          resource: {
+            name: '//storage.googleapis.com/projects/acme/buckets/public-bucket',
+            type: 'storage.googleapis.com/Bucket',
+            projectDisplayName: 'acme',
+          },
+        },
+      ]),
+    );
+
+    const findings = await service.scanSecurityFindings(
+      { access_token: 'tok' },
+      { project_ids: ['acme'] },
+    );
+
+    expect(findings).toHaveLength(1);
+    // Pre-fix this was '' → resolveFindingForException rejected the finding.
+    expect(findings[0].resourceId).toBe(
+      '//storage.googleapis.com/projects/acme/buckets/public-bucket',
+    );
+  });
+
+  // Regression: when SCC omits BOTH `finding.resourceName` AND
+  // `result.resource.name`, the old `|| ''` tail left resourceId empty — the
+  // exact state the exception resolver rejects. The chain must bottom out at
+  // `finding.name` (the finding's canonical id), which SCC always populates,
+  // so resourceId is guaranteed non-empty.
+  it('falls back to finding.name and never leaves resourceId empty when both resourceName and resource.name are absent', async () => {
+    fetchMock.mockResolvedValue(
+      sccPage([
+        {
+          finding: {
+            name: 'organizations/1/sources/-/findings/no-resource-1',
+            category: 'PUBLIC_BUCKET_ACL',
+            description: 'Bucket is public',
+            severity: 'HIGH',
+            state: 'ACTIVE',
+            resourceName: '', // SCC omitted the per-finding resource name
+            eventTime: '2026-01-01T00:00:00Z',
+            createTime: '2026-01-01T00:00:00Z',
+          },
+          // No `resource` block at all → result.resource?.name is undefined.
+        },
+      ]),
+    );
+
+    const findings = await service.scanSecurityFindings(
+      { access_token: 'tok' },
+      { project_ids: ['acme'] },
+    );
+
+    expect(findings).toHaveLength(1);
+    expect(findings[0].resourceId).not.toBe('');
+    expect(findings[0].resourceId).toBe(
+      'organizations/1/sources/-/findings/no-resource-1',
+    );
   });
 });

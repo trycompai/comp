@@ -36,13 +36,38 @@ export class PeopleInviteService {
     invites: InviteItemDto[];
     callerUserId: string;
     callerRole: string;
+    isApiKey?: boolean;
+    apiKeyScopes?: string[];
   }): Promise<InviteResult[]> {
-    const { organizationId, invites, callerUserId, callerRole } = params;
+    const {
+      organizationId,
+      invites,
+      callerUserId,
+      callerRole,
+      isApiKey,
+      apiKeyScopes,
+    } = params;
 
     const callerMemberActions = await this.resolveCallerMemberActions(
       callerRole,
       organizationId,
+      { isApiKey, apiKeyScopes },
     );
+
+    // Invitation records require a valid inviter user (FK to User). API-key auth
+    // has no caller user, so fall back to an org owner/admin — but only resolve
+    // it lazily, when an invitation is actually created and after the role check
+    // passes, so role errors aren't masked by inviter-resolution errors.
+    let cachedInviterId: string | undefined;
+    const getInviterId = async (): Promise<string> => {
+      if (cachedInviterId === undefined) {
+        cachedInviterId = await this.resolveInviterUserId(
+          organizationId,
+          callerUserId,
+        );
+      }
+      return cachedInviterId;
+    };
 
     const results: InviteResult[] = [];
 
@@ -81,14 +106,17 @@ export class PeopleInviteService {
           results.push({
             email: invite.email,
             success: true,
-            emailSent: result.emailSent,
+            // Only surface email status when we actually attempted to send, so
+            // the UI's "invite email could not be sent" warning never fires for
+            // an intentional skip (portal invite unchecked).
+            ...(shouldSendPortalEmail ? { emailSent: result.emailSent } : {}),
           });
         } else {
           await this.inviteWithCheck({
             email,
             roles: invite.roles,
             organizationId,
-            currentUserId: callerUserId,
+            currentUserId: await getInviterId(),
             sendPortalEmail: shouldSendPortalEmail,
             sendAppEmail: shouldSendAppEmail,
           });
@@ -165,7 +193,17 @@ export class PeopleInviteService {
           data: { deactivated: false, isActive: true, role: roleString },
         });
       } else {
-        member = existingMember;
+        // Active member re-added: union the new roles into their existing roles
+        // so we never strip a role they already have, and so adding a role
+        // actually takes effect instead of silently no-op'ing.
+        const mergedRole = this.mergeRoleString(existingMember.role, roles);
+        member =
+          mergedRole === this.normalizeRoleString(existingMember.role)
+            ? existingMember
+            : await db.member.update({
+                where: { id: existingMember.id },
+                data: { role: mergedRole },
+              });
       }
     } else {
       member = await db.member.create({
@@ -183,10 +221,12 @@ export class PeopleInviteService {
       await this.createTrainingVideoEntries(member.id, organizationId);
     }
 
-    // Send invite email (non-fatal)
-    let emailSent = true;
-    try {
-      if (sendPortalEmail) {
+    // Send the portal invite email only when requested (non-fatal). When the
+    // admin opts out ("Send portal invite email" unchecked) we add the member
+    // silently and send no email at all.
+    let emailSent = false;
+    if (sendPortalEmail) {
+      try {
         const inviteLink = this.buildPortalUrl(organizationId);
         await triggerEmail({
           to: email,
@@ -197,20 +237,14 @@ export class PeopleInviteService {
             email,
           }),
         });
-      } else {
-        const inviteLink = this.buildPortalUrl(organizationId);
-        await triggerEmail({
-          to: email,
-          subject: `You've been invited to join ${organization.name} on Comp AI`,
-          react: InviteEmail({ organizationName: organization.name, inviteLink }),
-        });
+        emailSent = true;
+      } catch (emailErr) {
+        emailSent = false;
+        this.logger.error(
+          `Portal invite email failed after member was added: ${email}`,
+          emailErr instanceof Error ? emailErr.message : 'Unknown error',
+        );
       }
-    } catch (emailErr) {
-      emailSent = false;
-      this.logger.error(
-        `Invite email failed after member was added: ${email}`,
-        emailErr instanceof Error ? emailErr.message : 'Unknown error',
-      );
     }
 
     return { emailSent };
@@ -252,14 +286,18 @@ export class PeopleInviteService {
           return;
         }
 
-        await this.sendInvitationEmailToExistingMember({
-          email,
-          roles,
-          organizationId,
-          inviterId: currentUserId,
-          sendPortalEmail,
-          sendAppEmail,
-        });
+        // Already an active member: an invitation/accept round-trip can't grant
+        // new roles to someone who is already in the org (and historically left
+        // their role unchanged, so promoting an employee to admin silently
+        // failed and the user hit "Access Denied"). Upgrade their role in place
+        // by unioning the new roles into their existing roles.
+        const mergedRole = this.mergeRoleString(existingMember.role, roles);
+        if (mergedRole !== this.normalizeRoleString(existingMember.role)) {
+          await db.member.update({
+            where: { id: existingMember.id },
+            data: { role: mergedRole },
+          });
+        }
         return;
       }
     }
@@ -295,51 +333,36 @@ export class PeopleInviteService {
     });
   }
 
-  private async sendInvitationEmailToExistingMember(params: {
-    email: string;
-    roles: string[];
-    organizationId: string;
-    inviterId: string;
-    sendPortalEmail?: boolean;
-    sendAppEmail?: boolean;
-  }): Promise<void> {
-    const {
-      email,
-      roles,
-      organizationId,
-      inviterId,
-      sendPortalEmail,
-      sendAppEmail,
-    } = params;
+  /** Sort + de-dupe a comma-separated role string into a canonical form. */
+  private normalizeRoleString(role: string | null | undefined): string {
+    return [
+      ...new Set(
+        (role ?? '')
+          .split(',')
+          .map((r) => r.trim())
+          .filter(Boolean),
+      ),
+    ]
+      .sort()
+      .join(',');
+  }
 
-    const organization = await db.organization.findUnique({
-      where: { id: organizationId },
-      select: { name: true },
-    });
-
-    if (!organization) {
-      throw new BadRequestException('Organization not found.');
-    }
-
-    const invitation = await db.invitation.create({
-      data: {
-        email: email.toLowerCase(),
-        organizationId,
-        role: roles.length === 1 ? roles[0] : roles.join(','),
-        status: 'pending',
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        inviterId,
-      },
-    });
-
-    await this.sendInviteEmails({
-      email: email.toLowerCase(),
-      organizationName: organization.name,
-      sendPortalEmail,
-      sendAppEmail,
-      portalLink: this.buildPortalUrl(organizationId),
-      appLink: this.buildInviteLink(invitation.id),
-    });
+  /** Union new roles into an existing comma-separated role string. */
+  private mergeRoleString(
+    existingRole: string | null | undefined,
+    addedRoles: string[],
+  ): string {
+    return [
+      ...new Set([
+        ...(existingRole ?? '')
+          .split(',')
+          .map((r) => r.trim())
+          .filter(Boolean),
+        ...addedRoles.map((r) => r.trim()).filter(Boolean),
+      ]),
+    ]
+      .sort()
+      .join(',');
   }
 
   async resendPortalInvite(params: {
@@ -531,10 +554,62 @@ export class PeopleInviteService {
     return null;
   }
 
+  /**
+   * Resolve the user to attribute an invitation to. Session callers use their
+   * own userId. API-key callers have no user, so fall back to an active org
+   * owner (then admin). Invitation.inviterId is a required FK, so this must
+   * return a valid user id.
+   */
+  private async resolveInviterUserId(
+    organizationId: string,
+    callerUserId: string,
+  ): Promise<string> {
+    if (callerUserId) return callerUserId;
+
+    for (const roleNeedle of ['owner', 'admin']) {
+      const member = await db.member.findFirst({
+        where: {
+          organizationId,
+          isActive: true,
+          deactivated: false,
+          role: { contains: roleNeedle },
+        },
+        select: { userId: true },
+        orderBy: { createdAt: 'asc' },
+      });
+      if (member?.userId) return member.userId;
+    }
+
+    throw new BadRequestException(
+      'Cannot determine an inviter: the organization has no active owner or admin to attribute the invitation to.',
+    );
+  }
+
   private async resolveCallerMemberActions(
     callerRole: string,
     organizationId: string,
+    apiKey?: { isApiKey?: boolean; apiKeyScopes?: string[] },
   ): Promise<Set<string>> {
+    // API key auth has no member role — derive member actions from the key's
+    // scopes instead. This mirrors the PermissionGuard's scope model so a key
+    // with full member management (or legacy full-access) can assign any role,
+    // while a key scoped to only `member:create` stays restricted.
+    if (apiKey?.isApiKey) {
+      const scopes = apiKey.apiKeyScopes;
+      // Legacy keys (empty scopes) = full access.
+      if (!scopes || scopes.length === 0) {
+        return new Set(['create', 'read', 'update', 'delete']);
+      }
+      const apiKeyActions = new Set<string>();
+      for (const scope of scopes) {
+        const [resource, action] = scope.split(':');
+        if (resource === 'member' && action) {
+          apiKeyActions.add(action);
+        }
+      }
+      return apiKeyActions;
+    }
+
     const roles = callerRole.split(',').map((r) => r.trim());
     const actions = new Set<string>();
     const customRoleNames: string[] = [];

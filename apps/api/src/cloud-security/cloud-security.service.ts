@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { db, Prisma } from '@db';
-import { getManifest } from '@trycompai/integration-platform';
+import { getManifest, runAllChecks } from '@trycompai/integration-platform';
 import { runs, tasks } from '@trigger.dev/sdk';
 import { CredentialVaultService } from '../integration-platform/services/credential-vault.service';
 import { OAuthCredentialsService } from '../integration-platform/services/oauth-credentials.service';
@@ -9,7 +9,17 @@ import { AWSSecurityService } from './providers/aws-security.service';
 import { AzureSecurityService } from './providers/azure-security.service';
 import { AWS_SERVICE_TASK_MAPPINGS } from './aws-task-mappings';
 import { CloudReconciliationService } from './reconciliation.service';
-import { type AwsScanMode, resolveAwsScanMode } from './aws-scan-mode';
+import { resolveAwsScanMode } from './aws-scan-mode';
+import {
+  GCP_SCAN_MODE_DIRECT,
+  GCP_SCAN_MODE_SCC,
+  formatCheckLog,
+  gcpCheckResultsToFindings,
+  isGcpCheckServiceDisabled,
+  isSccStructurallyUnavailable,
+  toCheckCredentials,
+  toCheckVariables,
+} from './gcp-scan-fallback';
 
 export interface SecurityFinding {
   id: string;
@@ -31,6 +41,23 @@ export interface ScanResult {
   scannedAt: string;
   error?: string;
 }
+
+/**
+ * Outcome of resolving short-lived AWS session credentials for a connection.
+ * `not_configured` = nothing to do (check should no-op); `assume_failed` = the
+ * assume genuinely failed and the check should surface a finding.
+ */
+export type ResolveAwsSessionResult =
+  | {
+      ok: true;
+      session: {
+        accessKeyId: string;
+        secretAccessKey: string;
+        sessionToken: string;
+      };
+    }
+  | { ok: false; reason: 'not_configured' }
+  | { ok: false; reason: 'assume_failed'; error: string };
 
 export class ConnectionNotFoundError extends Error {
   constructor() {
@@ -113,18 +140,28 @@ export class CloudSecurityService {
         const accessToken =
           await this.credentialVaultService.getValidAccessToken(connectionId, {
             tokenUrl: oauthConfig.tokenUrl,
+            refreshUrl: oauthConfig.refreshUrl,
             clientId: oauthCreds.clientId,
             clientSecret: oauthCreds.clientSecret,
             clientAuthMethod: oauthConfig.clientAuthMethod,
+            scope: oauthCreds.scopes.join(' '),
+            tokenParams: oauthConfig.tokenParams,
           });
 
         if (!accessToken) {
+          const refreshedConnection = await db.integrationConnection.findUnique({
+            where: { id: connectionId },
+            select: { errorMessage: true },
+          });
+
           return {
             success: false,
             provider: providerSlug,
             findings: [],
             scannedAt: new Date().toISOString(),
-            error: 'OAuth token expired. Please reconnect the integration.',
+            error:
+              refreshedConnection?.errorMessage ??
+              'OAuth token expired. Please reconnect the integration.',
           };
         }
 
@@ -246,26 +283,37 @@ export class CloudSecurityService {
         }
       }
 
-      // AWS-only — which engine produced this scan. Persisted on the run
-      // so reconciliation only diffs like-for-like (cross-mode findingKeys
-      // live in different namespaces). Null for GCP / Azure runs.
-      let awsScanMode: AwsScanMode | null = null;
+      // Which detection engine produced this scan. Persisted on the run so
+      // reconciliation only diffs like-for-like — different engines emit
+      // findingKeys in different namespaces, so a cross-engine diff would mark
+      // every prior finding falsely "resolved". Null for Azure.
+      //   - AWS: 'comp_scanners' | 'security_hub'
+      //   - GCP: 'gcp_scc' (Security Command Center) | 'gcp_direct' (API checks)
+      let runScanMode: string | null = null;
 
       switch (providerSlug) {
-        case 'gcp':
-          findings = await this.gcpService.scanSecurityFindings(
+        case 'gcp': {
+          const gcp = await this.scanGcp({
             credentials,
             variables,
             enabledServices,
-          );
+            disabledServices,
+            connectionId,
+            organizationId,
+            providerSlug,
+          });
+          findings = gcp.findings;
+          runScanMode = gcp.scanMode;
           break;
+        }
         case 'aws': {
           // AWS scan-mode lives on connection.metadata (non-secret, frontend-
           // readable); credentials are encrypted blobs intended for the AWS
           // SDK. Read from metadata so a single source of truth.
           const metadata =
             (connection.metadata as Record<string, unknown> | null) ?? {};
-          awsScanMode = resolveAwsScanMode(metadata.awsScanMode);
+          const awsScanMode = resolveAwsScanMode(metadata.awsScanMode);
+          runScanMode = awsScanMode;
           findings = await this.awsService.scanSecurityFindings(
             credentials,
             variables,
@@ -296,7 +344,7 @@ export class CloudSecurityService {
         connectionId,
         providerSlug,
         findings,
-        awsScanMode,
+        runScanMode,
       );
 
       // Reconcile against the prior scan to record resolutions and regressions.
@@ -385,6 +433,224 @@ export class CloudSecurityService {
         findings: [],
         scannedAt: new Date().toISOString(),
         error: errorMessage,
+      };
+    }
+  }
+
+  /**
+   * GCP Cloud Tests scan = our direct-API checks (always) + Security Command
+   * Center (when available), combined into one finding list.
+   *
+   * Our direct-API manifest checks (storage / IAM / firewall / Cloud SQL / …)
+   * read the GCP APIs directly with the OAuth token, so they always work and
+   * are the baseline. SCC is a supplement that adds its own findings (60+
+   * detector categories) on top.
+   *
+   * Google retired the free "Legacy" SCC tier, so orgs that haven't activated
+   * SCC Standard/Premium error on every SCC query. That must NOT fail the scan
+   * — it previously aborted everything and froze the dashboard (CS issue,
+   * bevri.ai 2026-06). So an SCC error just drops the SCC layer for that run;
+   * the customer still gets the direct-API checks.
+   *
+   * Both sources run in parallel. The only hard failure is when our OWN checks
+   * can't run at all (e.g. a dead token) — `scanGcpDirectChecks` throws then so
+   * the outer catch preserves the prior good run rather than storing nothing.
+   *
+   * The returned scanMode tags the run by whether SCC contributed, so
+   * reconciliation never diffs an SCC-bearing run (findings carry findingKeys)
+   * against a direct-only run (no findingKeys) — a cross-source diff would mark
+   * every prior finding falsely "resolved".
+   */
+  private async scanGcp(params: {
+    credentials: Record<string, unknown>;
+    variables: Record<string, unknown>;
+    enabledServices: string[] | undefined;
+    disabledServices: ReadonlySet<string>;
+    connectionId: string;
+    organizationId: string;
+    providerSlug: string;
+  }): Promise<{ findings: SecurityFinding[]; scanMode: string }> {
+    const {
+      credentials,
+      variables,
+      enabledServices,
+      disabledServices,
+      connectionId,
+      organizationId,
+      providerSlug,
+    } = params;
+
+    const [directResult, sccResult] = await Promise.allSettled([
+      this.scanGcpDirectChecks({
+        credentials,
+        variables,
+        disabledServices,
+        connectionId,
+        organizationId,
+        providerSlug,
+      }),
+      this.gcpService.scanSecurityFindings(
+        credentials,
+        variables,
+        enabledServices,
+      ),
+    ]);
+
+    // Our checks are the baseline. If they couldn't run at all, fail the scan so
+    // the prior good run is preserved (don't overwrite it with a thin result).
+    if (directResult.status === 'rejected') {
+      throw directResult.reason;
+    }
+    const directFindings = directResult.value;
+
+    // SCC is best-effort. When it works, append its findings (one combined
+    // list); when it doesn't, log why and show the direct-API checks only.
+    if (sccResult.status === 'fulfilled') {
+      return {
+        findings: [...directFindings, ...sccResult.value],
+        scanMode: GCP_SCAN_MODE_SCC,
+      };
+    }
+
+    const err = sccResult.reason;
+    const message = err instanceof Error ? err.message : String(err);
+    this.logger.warn(
+      isSccStructurallyUnavailable(err)
+        ? `GCP SCC not available for connection ${connectionId} (${message}); showing direct-API checks only`
+        : `GCP SCC scan errored for connection ${connectionId} (${message}); showing direct-API checks only this run`,
+    );
+    return { findings: directFindings, scanMode: GCP_SCAN_MODE_DIRECT };
+  }
+
+  /**
+   * Run the GCP integration-platform manifest checks (direct GCP API reads)
+   * in-process and convert their results to SecurityFindings. This is the same
+   * check set the `run-connection-checks` task runs; we run it here so the
+   * manual "Scan" button refreshes findings even when SCC is dead.
+   *
+   * Honors the per-service disable toggle: checks mapped to a service the user
+   * disabled are skipped (matching how the SCC path drops disabled services), so
+   * a combined run never shows findings for a service the customer turned off.
+   *
+   * Guardrail: if EVERY check that ran errored (e.g. an invalid token or missing
+   * read access), throw instead of returning [] — an empty result would store a
+   * fresh "success" run with zero findings, hiding the prior good run and
+   * false-resolving every finding. Throwing lets the outer catch preserve the
+   * prior run. (Zero checks because the user disabled everything is NOT a
+   * failure — that returns [] legitimately.)
+   */
+  private async scanGcpDirectChecks(params: {
+    credentials: Record<string, unknown>;
+    variables: Record<string, unknown>;
+    disabledServices: ReadonlySet<string>;
+    connectionId: string;
+    organizationId: string;
+    providerSlug: string;
+  }): Promise<SecurityFinding[]> {
+    const {
+      credentials,
+      variables,
+      disabledServices,
+      connectionId,
+      organizationId,
+      providerSlug,
+    } = params;
+
+    const manifest = getManifest(providerSlug);
+    if (!manifest?.checks || manifest.checks.length === 0) {
+      throw new Error(
+        `GCP direct-API checks unavailable: no manifest checks for ${providerSlug}`,
+      );
+    }
+
+    const enabledChecks = manifest.checks.filter(
+      (check) => !isGcpCheckServiceDisabled(check.id, disabledServices),
+    );
+    if (enabledChecks.length === 0) {
+      // The user disabled every service these checks cover — scan nothing here
+      // (intentional empty, not a failure). SCC may still contribute findings.
+      return [];
+    }
+
+    const accessToken =
+      typeof credentials.access_token === 'string'
+        ? credentials.access_token
+        : undefined;
+
+    const result = await runAllChecks({
+      manifest: { ...manifest, checks: enabledChecks },
+      accessToken,
+      credentials: toCheckCredentials(credentials),
+      variables: toCheckVariables(variables),
+      connectionId,
+      organizationId,
+      logger: {
+        info: (msg, data) => this.logger.log(formatCheckLog(msg, data)),
+        warn: (msg, data) => this.logger.warn(formatCheckLog(msg, data)),
+        error: (msg, data) => this.logger.error(formatCheckLog(msg, data)),
+      },
+    });
+
+    const anyCheckSucceeded = result.results.some((r) => r.status !== 'error');
+    if (!anyCheckSucceeded) {
+      const firstError = result.results.find((r) => r.error)?.error;
+      throw new Error(
+        `GCP direct-API checks all failed${firstError ? `: ${firstError}` : ''}`,
+      );
+    }
+
+    return gcpCheckResultsToFindings(result);
+  }
+
+  /**
+   * Resolve short-lived, customer-scoped AWS credentials for a connection's
+   * IAM role — performed here in ECS, which holds the roleAssumer task role and
+   * the SECURITY_HUB_ROLE_ASSUMER_ARN env.
+   *
+   * The Cloud Tests CHECK path runs in the Trigger.dev runtime, which has no
+   * base AWS credentials or roleAssumer ARN, so it cannot assume the
+   * cross-account role itself. It calls this (via the internal `resolve-session`
+   * endpoint) and injects the returned temp creds into the check credentials,
+   * so the cross-tenant master credential never leaves ECS.
+   *
+   * Org-scoped: a service-token caller cannot resolve another org's connection.
+   */
+  async resolveAwsSession(
+    connectionId: string,
+    organizationId: string,
+  ): Promise<ResolveAwsSessionResult> {
+    const connection = await db.integrationConnection.findFirst({
+      where: { id: connectionId, organizationId, status: 'active' },
+      include: { provider: true },
+    });
+
+    if (!connection) {
+      throw new ConnectionNotFoundError();
+    }
+
+    if (connection.provider.slug !== 'aws') {
+      return { ok: false, reason: 'not_configured' };
+    }
+
+    const decrypted =
+      await this.credentialVaultService.getDecryptedCredentials(connectionId);
+    if (!decrypted || !(decrypted.roleArn && decrypted.externalId)) {
+      return { ok: false, reason: 'not_configured' };
+    }
+
+    const variables = (connection.variables as Record<string, unknown>) || {};
+
+    try {
+      const session = await this.awsService.resolveRoleSession(
+        decrypted,
+        variables,
+      );
+      return { ok: true, session };
+    } catch (error) {
+      return {
+        ok: false,
+        reason: 'assume_failed',
+        error: error instanceof Error ? error.message : String(error),
       };
     }
   }
@@ -588,9 +854,11 @@ export class CloudSecurityService {
     connectionId: string,
     provider: string,
     findings: SecurityFinding[],
-    // AWS only — which engine produced these findings. Stored on the run so
-    // reconciliation can avoid cross-mode diffs. Null for GCP / Azure runs.
-    awsScanMode: AwsScanMode | null,
+    // Detection engine that produced these findings — AWS scan mode
+    // ('comp_scanners'/'security_hub') or GCP source ('gcp_scc'/'gcp_direct').
+    // Stored on the run so reconciliation only diffs same-engine runs. Null for
+    // Azure / untagged runs.
+    scanMode: string | null,
   ): Promise<string> {
     const passedCount = findings.filter((f) => f.passed).length;
     const failedCount = findings.filter((f) => !f.passed).length;
@@ -625,7 +893,7 @@ export class CloudSecurityService {
           passedCount,
           failedCount,
           scannedServices,
-          scanMode: awsScanMode,
+          scanMode,
         },
       });
 

@@ -49,7 +49,7 @@ import type { BackgroundCheckStatus, MemberWithUser, TaskCompletion } from './Te
 
 interface MemberRowProps {
   member: MemberWithUser;
-  onRemove: (memberId: string) => void;
+  onRemove: (memberId: string, options: { skipOffboarding: boolean }) => void;
   onRemoveDevice: (memberId: string) => void;
   onUpdateRole: (memberId: string, roles: string[]) => void;
   onReactivate: (memberId: string) => void;
@@ -149,6 +149,7 @@ export function MemberRow({
   const currentRoles = parseRoles(member.role);
 
   const isOwner = currentRoles.includes('owner');
+  const isAuditorOnly = currentRoles.length > 0 && currentRoles.every((role) => role === 'auditor');
   const isPlatformAdmin = member.user.role === 'admin';
   const canRemove = !isOwner;
   const isDeactivated = member.deactivated || !member.isActive;
@@ -190,7 +191,7 @@ export function MemberRow({
     });
   }
 
-  if (shouldShowTaskRequirements && backgroundCheckStepEnabled && !memberExempt) {
+  if (shouldShowTaskRequirements && backgroundCheckStepEnabled && !memberExempt && !isAuditorOnly) {
     taskItems.push({
       label: 'Background check',
       completed: hasCompletedBackgroundCheck ? 1 : 0,
@@ -225,12 +226,12 @@ export function MemberRow({
     setIsUpdateRolesOpen(false);
   };
 
-  const handleRemoveClick = async () => {
+  const handleRemoveClick = async (options: { skipOffboarding: boolean }) => {
     if (!canRemove) return;
     setIsRemoveAlertOpen(false);
     setIsRemoving(true);
     try {
-      await onRemove(memberId);
+      await onRemove(memberId, options);
     } finally {
       setIsRemoving(false);
     }

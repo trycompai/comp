@@ -36,6 +36,7 @@ import {
   TrustDocumentUrlResponseDto,
   UploadTrustDocumentDto,
 } from './dto/trust-document.dto';
+import { isTrustPortalConfigured } from './is-trust-portal-configured';
 
 interface VercelDomainVerification {
   type: string;
@@ -307,22 +308,34 @@ export class TrustPortalService {
     dto: UploadComplianceResourceDto,
   ): Promise<ComplianceResourceResponseDto> {
     this.ensureS3Availability();
-    await this.assertFrameworkIsCompliant(dto.organizationId, dto.framework);
+    const target = this.assertExactlyOneFrameworkRef(
+      dto.framework,
+      dto.customFrameworkId,
+    );
+
+    let slug: string;
+    if (target.kind === 'native') {
+      await this.assertFrameworkIsCompliant(
+        dto.organizationId,
+        target.framework,
+      );
+      slug = TrustPortalService.FRAMEWORK_CONFIG[target.framework].slug;
+    } else {
+      await this.assertCustomFrameworkIsCompliant(
+        dto.organizationId,
+        target.customFrameworkId,
+      );
+      slug = `custom-${target.customFrameworkId}`;
+    }
 
     const { fileBuffer, sanitizedFileName } = this.preparePdfPayload(dto);
-    const slug = TrustPortalService.FRAMEWORK_CONFIG[dto.framework].slug;
     const timestamp = Date.now();
     const s3Prefix = `${dto.organizationId}/resources/${slug}`;
     const s3Key = `${s3Prefix}/${timestamp}-${sanitizedFileName}`;
 
-    const existingResource = await db.trustResource.findUnique({
-      where: {
-        organizationId_framework: {
-          organizationId: dto.organizationId,
-          framework: dto.framework,
-        },
-      },
-    });
+    const where = this.buildResourceWhere(dto.organizationId, target);
+
+    const existingResource = await db.trustResource.findUnique({ where });
 
     if (existingResource) {
       await this.safeDeleteObject(existingResource.s3Key);
@@ -342,13 +355,13 @@ export class TrustPortalService {
 
     await s3Client!.send(putCommand);
 
+    const frameworkRef =
+      target.kind === 'native'
+        ? { framework: target.framework }
+        : { customFrameworkId: target.customFrameworkId };
+
     const record = await db.trustResource.upsert({
-      where: {
-        organizationId_framework: {
-          organizationId: dto.organizationId,
-          framework: dto.framework,
-        },
-      },
+      where,
       update: {
         s3Key,
         fileName: dto.fileName,
@@ -356,7 +369,7 @@ export class TrustPortalService {
       },
       create: {
         organizationId: dto.organizationId,
-        framework: dto.framework,
+        ...frameworkRef,
         s3Key,
         fileName: dto.fileName,
         fileSize: fileBuffer.length,
@@ -365,6 +378,7 @@ export class TrustPortalService {
 
     return {
       framework: record.framework,
+      customFrameworkId: record.customFrameworkId,
       fileName: record.fileName,
       fileSize: record.fileSize,
       updatedAt: record.updatedAt.toISOString(),
@@ -385,6 +399,7 @@ export class TrustPortalService {
 
     return records.map((record) => ({
       framework: record.framework,
+      customFrameworkId: record.customFrameworkId,
       fileName: record.fileName,
       fileSize: record.fileSize,
       updatedAt: record.updatedAt.toISOString(),
@@ -395,19 +410,20 @@ export class TrustPortalService {
     dto: ComplianceResourceSignedUrlDto,
   ): Promise<ComplianceResourceUrlResponseDto> {
     this.ensureS3Availability();
+    const target = this.assertExactlyOneFrameworkRef(
+      dto.framework,
+      dto.customFrameworkId,
+    );
 
     const record = await db.trustResource.findUnique({
-      where: {
-        organizationId_framework: {
-          organizationId: dto.organizationId,
-          framework: dto.framework,
-        },
-      },
+      where: this.buildResourceWhere(dto.organizationId, target),
     });
 
     if (!record) {
       throw new NotFoundException(
-        `No certificate uploaded for framework ${dto.framework}`,
+        target.kind === 'native'
+          ? `No certificate uploaded for framework ${target.framework}`
+          : 'No certificate uploaded for this custom framework',
       );
     }
 
@@ -609,6 +625,20 @@ export class TrustPortalService {
       where: { organizationId },
       update: { allowedDomains: normalizedDomains },
       create: { organizationId, allowedDomains: normalizedDomains },
+    });
+
+    return { success: true };
+  }
+
+  async updateAllowedEmails(organizationId: string, emails: string[]) {
+    const normalizedEmails = [
+      ...new Set(emails.map((e) => e.toLowerCase().trim())),
+    ];
+
+    await db.trust.upsert({
+      where: { organizationId },
+      update: { allowedEmails: normalizedEmails },
+      create: { organizationId, allowedEmails: normalizedEmails },
     });
 
     return { success: true };
@@ -1209,6 +1239,96 @@ export class TrustPortalService {
     };
   }
 
+  /**
+   * A compliance certificate targets EITHER a native framework OR a custom
+   * framework — never both, never neither. Validates the DTO and returns a
+   * discriminated target the cert methods branch on.
+   */
+  private assertExactlyOneFrameworkRef(
+    framework: TrustFramework | undefined,
+    customFrameworkId: string | undefined,
+  ):
+    | { kind: 'native'; framework: TrustFramework }
+    | { kind: 'custom'; customFrameworkId: string } {
+    const hasNative = framework !== undefined && framework !== null;
+    const hasCustom = Boolean(customFrameworkId);
+    if (hasNative === hasCustom) {
+      throw new BadRequestException(
+        'Provide exactly one of `framework` or `customFrameworkId`',
+      );
+    }
+    return hasNative
+      ? { kind: 'native', framework: framework as TrustFramework }
+      : { kind: 'custom', customFrameworkId: customFrameworkId as string };
+  }
+
+  private buildResourceWhere(
+    organizationId: string,
+    target:
+      | { kind: 'native'; framework: TrustFramework }
+      | { kind: 'custom'; customFrameworkId: string },
+  ): Prisma.TrustResourceWhereUniqueInput {
+    return target.kind === 'native'
+      ? {
+          organizationId_framework: {
+            organizationId,
+            framework: target.framework,
+          },
+        }
+      : {
+          organizationId_customFrameworkId: {
+            organizationId,
+            customFrameworkId: target.customFrameworkId,
+          },
+        };
+  }
+
+  /**
+   * Custom-framework analog of assertFrameworkIsCompliant: the framework must be
+   * selected for the portal and marked compliant before a certificate can be
+   * uploaded. Mirrors native by auto-enabling display on upload.
+   */
+  private async assertCustomFrameworkIsCompliant(
+    organizationId: string,
+    customFrameworkId: string,
+  ): Promise<void> {
+    const customFramework = await db.customFramework.findFirst({
+      where: { id: customFrameworkId, organizationId },
+      select: { id: true },
+    });
+
+    if (!customFramework) {
+      throw new BadRequestException(
+        'Custom framework not found for organization',
+      );
+    }
+
+    const selection = await db.trustCustomFramework.findUnique({
+      where: {
+        organizationId_customFrameworkId: { organizationId, customFrameworkId },
+      },
+      select: { status: true, enabled: true },
+    });
+
+    if (!selection || selection.status !== 'compliant') {
+      throw new BadRequestException(
+        'Custom framework must be marked as compliant before uploading a certificate',
+      );
+    }
+
+    if (!selection.enabled) {
+      await db.trustCustomFramework.update({
+        where: {
+          organizationId_customFrameworkId: {
+            organizationId,
+            customFrameworkId,
+          },
+        },
+        data: { enabled: true },
+      });
+    }
+  }
+
   private async assertFrameworkIsCompliant(
     organizationId: string,
     framework: TrustFramework,
@@ -1533,8 +1653,42 @@ export class TrustPortalService {
       defaultOverviewContent = missionContext?.answer ?? null;
     }
 
+    const [trustDocumentCount, trustResourceCount, trustCustomLinkCount] =
+      await Promise.all([
+        db.trustDocument.count({ where: { organizationId } }),
+        db.trustResource.count({ where: { organizationId } }),
+        db.trustCustomLink.count({ where: { organizationId } }),
+      ]);
+
+    const isConfigured = isTrustPortalConfigured({
+      domain: trust.domain,
+      contactEmail: trust.contactEmail,
+      overviewContent: trust.overviewContent, // raw column, not the Context fallback
+      favicon: trust.favicon,
+      faqs: org.trustPortalFaqs,
+      frameworkFlags: [
+        trust.soc2, // legacy column; folded into soc2type2 in the response but still a "configured" signal
+        trust.soc2type1,
+        trust.soc2type2,
+        trust.soc3,
+        trust.iso27001,
+        trust.iso42001,
+        trust.nen7510,
+        trust.gdpr,
+        trust.hipaa,
+        trust.pci_dss,
+        trust.iso9001,
+        trust.pipeda,
+        trust.ccpa,
+      ],
+      documentCount: trustDocumentCount,
+      resourceCount: trustResourceCount,
+      customLinkCount: trustCustomLinkCount,
+    });
+
     return {
       enabled: trust.status === 'published',
+      isConfigured,
       friendlyUrl: trust.friendlyUrl,
       domain: trust.domain ?? '',
       domainVerified: trust.domainVerified ?? false,
@@ -1542,6 +1696,7 @@ export class TrustPortalService {
       vercelVerification: trust.vercelVerification ?? null,
       contactEmail: trust.contactEmail ?? null,
       allowedDomains: trust.allowedDomains ?? [],
+      allowedEmails: trust.allowedEmails ?? [],
       // Framework flags
       soc2type1: trust.soc2type1 ?? false,
       soc2type2: trust.soc2type2 || trust.soc2 || false,

@@ -126,6 +126,14 @@ export default function Chat() {
   const transport = new DefaultChatTransport({
     api: `${API_URL}/v1/assistant-chat/completions`,
     credentials: 'include',
+    // Scope the AI (and its org-data tools) to the org the user is viewing,
+    // not the session's ambient active org which can lag for multi-org users.
+    // Read the ref at request time so a stale transport closure can't send the
+    // wrong org after the user switches.
+    headers: (): Record<string, string> => {
+      const orgId = resolvedOrganizationIdRef.current;
+      return orgId ? { 'X-Organization-Id': orgId } : {};
+    },
   });
 
   const { messages, sendMessage, error, status, stop, setMessages } = useChat({
@@ -153,6 +161,7 @@ export default function Chat() {
     void (async () => {
       const res = await apiClient.get<{ messages: AssistantStoredMessage[] }>(
         '/v1/assistant-chat/history',
+        orgIdAtStart,
       );
 
       if (res.error || res.status !== 200) {
@@ -225,12 +234,14 @@ export default function Chat() {
     }
 
     const delayMs = isLoading ? 300 : 0;
+    const orgForSave = resolvedOrganizationId;
     const timeout = window.setTimeout(() => {
       void apiClient.call(
         '/v1/assistant-chat/history',
         {
           method: 'PUT',
           body: JSON.stringify({ messages: storedMessages }),
+          organizationId: orgForSave,
         },
       );
     }, delayMs);
@@ -246,11 +257,16 @@ export default function Chat() {
       const snapshot = latestSnapshotRef.current;
       if (!snapshot || snapshot.messages.length === 0) return;
 
+      // Persist under the org the snapshot belongs to — NOT the current org.
+      // On an org switch this cleanup fires after the URL/active org has already
+      // moved on, so keying by the snapshot's org prevents one org's chat from
+      // being written into another org's history.
       void apiClient.call(
         '/v1/assistant-chat/history',
         {
           method: 'PUT',
           body: JSON.stringify({ messages: snapshot.messages }),
+          organizationId: snapshot.organizationId,
           keepalive: true,
         },
       );
@@ -269,7 +285,10 @@ export default function Chat() {
           disabled={isLoading || messages.length === 0 || !resolvedOrganizationId || !userId}
           onClick={() => {
             if (!resolvedOrganizationId || !userId) return;
-            void apiClient.delete('/v1/assistant-chat/history');
+            void apiClient.delete(
+              '/v1/assistant-chat/history',
+              resolvedOrganizationId,
+            );
             setMessages([]);
             setInput('');
           }}

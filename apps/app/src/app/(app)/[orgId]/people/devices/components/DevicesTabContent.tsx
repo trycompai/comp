@@ -6,6 +6,7 @@ import { useAgentDevices } from '../hooks/useAgentDevices';
 import { useFleetHosts } from '../hooks/useFleetHosts';
 import { DeviceAgentDevicesList } from './DeviceAgentDevicesList';
 import { DeviceComplianceChart } from './DeviceComplianceChart';
+import { DeviceSyncProviderSelector } from './DeviceSyncProviderSelector';
 import { EmployeeDevicesList } from './EmployeeDevicesList';
 
 interface DevicesTabContentProps {
@@ -60,6 +61,7 @@ export function DevicesTabContent({ isCurrentUserOwner }: DevicesTabContentProps
 
   return (
     <div className="space-y-6">
+      <DeviceSyncProviderSelector />
       <DeviceComplianceChart
         fleetDevices={filteredFleetDevices}
         agentDevices={agentDevices}

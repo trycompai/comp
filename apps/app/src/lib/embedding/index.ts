@@ -1,6 +1,5 @@
 import 'server-only';
 
-import { Departments } from '@db';
 import { Index } from '@upstash/vector';
 import { openai } from '@ai-sdk/openai';
 import { embedMany } from 'ai';
@@ -11,7 +10,7 @@ export type EntityKind = 'risk' | 'vendor' | 'task';
 interface EntityInput {
   id: string;
   text: string;
-  department?: Departments;
+  department?: string;
 }
 
 interface UpsertOptions {
@@ -47,7 +46,7 @@ interface FindSimilarTasksOptions {
 export interface SimilarTaskResult {
   id: string; // raw task id (sourceId), not the prefixed embedding id
   score: number;
-  department?: Departments;
+  department?: string;
 }
 
 // `text-embedding-3-large` truncated to 1536 dims via Matryoshka. The
@@ -92,7 +91,7 @@ export function computeEntityContentHash({
   department,
 }: {
   text: string;
-  department?: Departments;
+  department?: string;
 }): string {
   return createHash('sha256')
     .update(`${EMBEDDING_MODEL}:${EMBEDDING_DIMENSIONS}:${department ?? ''}:${text}`)
@@ -190,7 +189,7 @@ export async function findSimilarTasks({
     return {
       id: meta.sourceId ?? String(r.id),
       score: r.score,
-      department: meta.department ? (meta.department as Departments) : undefined,
+      department: meta.department ?? undefined,
     };
   });
 }

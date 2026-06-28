@@ -10,15 +10,14 @@ import {
   type SortingState,
 } from '@tanstack/react-table';
 import { Button } from '@trycompai/ui';
-import { ArrowDown, ArrowUp, ArrowUpDown, Link, Plus, Settings, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Link, Plus, Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import {
   AddExistingItemDialog,
   type ExistingItemRaw,
 } from '../../components/AddExistingItemDialog';
-import { ManageFamiliesDialog } from './ManageFamiliesDialog';
+import type { RequirementOption } from '../../components/ControlRequirementSelect';
 import {
-  ComboboxCell,
   DateCell,
   EditableCell,
   MultiSelectCell,
@@ -27,7 +26,6 @@ import {
 } from '../../components/table';
 import { DOCUMENT_TYPE_OPTIONS } from './document-type-options';
 import { simpleUUID, useChangeTracking, type ControlMutations } from './hooks/useChangeTracking';
-import { useFamiliesManagement } from './hooks/useFamiliesManagement';
 import type { ControlsPageGridData, FrameworkEditorControlTemplateWithRelatedData } from './types';
 
 interface RequirementApiItem {
@@ -41,21 +39,55 @@ async function fetchAllPolicyTemplates(): Promise<RelationalItem[]> {
   return apiClient<RelationalItem[]>('/policy-template');
 }
 
+function toRequirementItem(r: RequirementApiItem): RelationalItem {
+  let displayName = r.identifier;
+  if (r.identifier && r.name) {
+    displayName = `${r.identifier} - ${r.name}`;
+  } else if (r.name) {
+    displayName = r.name;
+  }
+  return {
+    id: r.id,
+    name: displayName || 'Unnamed Requirement',
+    sublabel: r.framework?.name,
+  };
+}
+
 async function fetchAllRequirements(): Promise<RelationalItem[]> {
   const reqs = await apiClient<RequirementApiItem[]>('/requirement');
-  return reqs.map((r) => {
-    let displayName = r.identifier;
-    if (r.identifier && r.name) {
-      displayName = `${r.identifier} - ${r.name}`;
-    } else if (r.name) {
-      displayName = r.name;
-    }
-    return {
-      id: r.id,
-      name: displayName || 'Unnamed Requirement',
-      sublabel: r.framework?.name,
-    };
-  });
+  return reqs.map(toRequirementItem);
+}
+
+// On a framework's Controls tab only this framework's requirements are
+// linkable — links to them are what makes a control show up on the tab.
+async function fetchRequirementsForFramework(
+  frameworkId: string,
+): Promise<RelationalItem[]> {
+  const framework = await apiClient<{
+    name: string;
+    requirements: Array<{ id: string; name: string; identifier: string }>;
+  }>(`/framework/${frameworkId}`);
+  return framework.requirements.map((r) =>
+    toRequirementItem({ ...r, framework: { name: framework.name } }),
+  );
+}
+
+// Requirement options for the "Add Existing Control" picker, oldest-first so
+// the just-created requirement sits at the bottom of the list.
+async function fetchFrameworkRequirementOptions(
+  frameworkId: string,
+): Promise<RequirementOption[]> {
+  const framework = await apiClient<{
+    requirements: Array<{
+      id: string;
+      name: string;
+      identifier: string | null;
+      createdAt?: string;
+    }>;
+  }>(`/framework/${frameworkId}`);
+  return [...framework.requirements]
+    .sort((a, b) => (a.createdAt ?? '').localeCompare(b.createdAt ?? ''))
+    .map((r) => ({ id: r.id, name: r.name, identifier: r.identifier }));
 }
 
 async function fetchAllTaskTemplates(): Promise<RelationalItem[]> {
@@ -115,6 +147,17 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
         apiClient(`/control-template/${id}`, {
           method: 'DELETE',
         }),
+      linkRequirement: (controlId: string, requirementId: string) =>
+        linkControlRelation(controlId, 'requirements', requirementId),
+      // Policy/task links are framework-scoped; only offered on a framework tab.
+      ...(frameworkId
+        ? {
+            linkPolicyTemplate: (controlId: string, policyTemplateId: string) =>
+              linkControlRelation(controlId, 'policy-templates', policyTemplateId, frameworkId),
+            linkTaskTemplate: (controlId: string, taskTemplateId: string) =>
+              linkControlRelation(controlId, 'task-templates', taskTemplateId, frameworkId),
+          }
+        : {}),
     }),
     [frameworkId],
   );
@@ -147,7 +190,6 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
   const {
     data,
     updateCell,
-    batchUpdateCells,
     updateRelational,
     addRow,
     deleteRow,
@@ -157,22 +199,21 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
     isDirty,
     createdIds,
     changesSummary,
-  } = useChangeTracking(initialGridData, mutations);
-
-  const {
-    families,
-    uniqueFamilies,
-    manageFamiliesOpen,
-    setManageFamiliesOpen,
-    handleRenameFamily,
-    handleDeleteFamily,
-  } = useFamiliesManagement({ data, batchUpdateCells });
+  } = useChangeTracking(initialGridData, mutations, {
+    requireRequirementLink: !!frameworkId,
+  });
 
   const handleDocumentTypesUpdate = useCallback(
     (rowId: string, values: string[]) => {
       updateCell(rowId, 'documentTypes', values);
     },
     [updateCell],
+  );
+
+  const getRequirementItems = useCallback(
+    () =>
+      frameworkId ? fetchRequirementsForFramework(frameworkId) : fetchAllRequirements(),
+    [frameworkId],
   );
 
   const columns = useMemo(
@@ -199,20 +240,8 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
             rowId={row.original.id}
             columnId="description"
             onUpdate={updateCell}
-          />
-        ),
-      }),
-      columnHelper.accessor('controlFamily', {
-        header: 'Control Family',
-        size: 200,
-        cell: ({ row, getValue }) => (
-          <ComboboxCell
-            value={getValue()}
-            rowId={row.original.id}
-            columnId="controlFamily"
-            options={uniqueFamilies}
-            onUpdate={updateCell}
-            placeholder="Select family..."
+            expandable
+            expandTitle="Edit Control Description"
           />
         ),
       }),
@@ -226,6 +255,7 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
               items={getValue()}
               rowId={row.original.id}
               isNewRow={createdIds.has(row.original.id)}
+              allowSelectOnNewRows={!!frameworkId}
               getAllItems={fetchAllPolicyTemplates}
               onLink={(controlId: string, ptId: string) =>
                 linkControlRelation(controlId, 'policy-templates', ptId, frameworkId)
@@ -252,7 +282,8 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
               items={getValue()}
               rowId={row.original.id}
               isNewRow={createdIds.has(row.original.id)}
-              getAllItems={fetchAllRequirements}
+              allowSelectOnNewRows
+              getAllItems={getRequirementItems}
               onLink={(controlId: string, reqId: string) =>
                 linkControlRelation(controlId, 'requirements', reqId)
               }
@@ -278,6 +309,7 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
               items={getValue()}
               rowId={row.original.id}
               isNewRow={createdIds.has(row.original.id)}
+              allowSelectOnNewRows={!!frameworkId}
               getAllItems={fetchAllTaskTemplates}
               onLink={(controlId: string, ttId: string) =>
                 linkControlRelation(controlId, 'task-templates', ttId, frameworkId)
@@ -346,10 +378,12 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
         ),
       }),
     ],
-    [uniqueFamilies, updateCell, updateRelational, deleteRow, createdIds, handleDocumentTypesUpdate, frameworkId],
+    [updateCell, updateRelational, deleteRow, createdIds, handleDocumentTypesUpdate, frameworkId, getRequirementItems],
   );
 
-  const [sorting, setSorting] = useState<SortingState>([]);
+  // Default to Name A–Z so the tab always opens in a predictable order
+  // (the grid remounts on every tab switch, resetting this state).
+  const [sorting, setSorting] = useState<SortingState>([{ id: 'name', desc: false }]);
 
   const table = useReactTable({
     data,
@@ -409,17 +443,6 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
           )}
         </div>
         <div className="flex items-center gap-2">
-          {families.length > 0 && (
-            <Button
-              variant="outline"
-              onClick={() => setManageFamiliesOpen(true)}
-              size="sm"
-              className="rounded-xs"
-            >
-              <Settings className="mr-1 h-4 w-4" />
-              Manage Families
-            </Button>
-          )}
           {frameworkId && (
             <Button
               variant="outline"
@@ -446,16 +469,10 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
           itemType="control"
           existingItemIds={existingControlIds}
           fetchAllItems={fetchAllControlsForDialog}
+          fetchRequirements={() => fetchFrameworkRequirementOptions(frameworkId)}
         />
       )}
 
-      <ManageFamiliesDialog
-        open={manageFamiliesOpen}
-        onOpenChange={setManageFamiliesOpen}
-        families={families}
-        onRename={handleRenameFamily}
-        onDelete={handleDeleteFamily}
-      />
 
       <div className="scrollbar-primary border-border min-h-0 flex-1 overflow-auto rounded-xs border">
         <table className="w-full border-collapse">

@@ -2,6 +2,7 @@ import { db, TaskFrequency } from '@db';
 import { logger, schedules } from '@trigger.dev/sdk';
 import { runBrowserAutomation } from './run-browser-automation';
 import { isDueToday } from '../shared/is-due-today';
+import { normalizeHostnameFromUrl } from '../../browserbase/browserbase-url';
 
 /**
  * Pure helper extracted for unit testing. Filters a list of candidate
@@ -25,6 +26,66 @@ export function filterDueAutomations<
   );
 }
 
+const parsePositiveInt = (
+  value: string | undefined,
+  fallback: number,
+): number => {
+  if (!value) return fallback;
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+export function limitAutomationBatch<
+  T extends {
+    id?: string;
+    lastRunAt?: Date | null;
+    targetUrl: string;
+    task: { organizationId: string };
+  },
+>({
+  automations,
+  maxPerOrg,
+  maxPerHostname,
+}: {
+  automations: T[];
+  maxPerOrg: number;
+  maxPerHostname: number;
+}): T[] {
+  const orgCounts = new Map<string, number>();
+  const hostnameCounts = new Map<string, number>();
+  const selected: T[] = [];
+  const sortedAutomations = [...automations].sort(
+    (a, b) => (a.lastRunAt?.getTime() ?? 0) - (b.lastRunAt?.getTime() ?? 0),
+  );
+
+  for (const automation of sortedAutomations) {
+    const organizationId = automation.task.organizationId;
+    let hostname: string;
+    try {
+      hostname = normalizeHostnameFromUrl(automation.targetUrl);
+    } catch (error) {
+      logger.warn('Skipping browser automation with invalid target URL', {
+        automationId: automation.id,
+        targetUrl: automation.targetUrl,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      continue;
+    }
+    const orgCount = orgCounts.get(organizationId) ?? 0;
+    const hostnameCount = hostnameCounts.get(hostname) ?? 0;
+
+    if (orgCount >= maxPerOrg || hostnameCount >= maxPerHostname) {
+      continue;
+    }
+
+    orgCounts.set(organizationId, orgCount + 1);
+    hostnameCounts.set(hostname, hostnameCount + 1);
+    selected.push(automation);
+  }
+
+  return selected;
+}
+
 /**
  * Daily scheduled task (orchestrator) that finds all enabled browser automations
  * and triggers individual runs for each.
@@ -32,7 +93,7 @@ export function filterDueAutomations<
 export const browserAutomationsSchedule = schedules.task({
   id: 'browser-automations-schedule',
   cron: '0 5 * * *', // Daily at 5:00 AM UTC
-  maxDuration: 1000 * 60 * 30, // 30 minutes
+  maxDuration: 60 * 30, // 30 minutes — Trigger.dev maxDuration is in SECONDS
   run: async (payload) => {
     logger.info('Starting daily browser automations orchestrator', {
       scheduledAt: payload.timestamp,
@@ -48,6 +109,7 @@ export const browserAutomationsSchedule = schedules.task({
         id: true,
         name: true,
         taskId: true,
+        targetUrl: true,
         scheduleFrequency: true,
         lastRunAt: true,
         task: {
@@ -89,8 +151,26 @@ export const browserAutomationsSchedule = schedules.task({
       return { success: true, automationsTriggered: 0 };
     }
 
+    const limitedAutomations = limitAutomationBatch({
+      automations,
+      maxPerOrg: parsePositiveInt(
+        process.env.BROWSER_AUTOMATION_ORG_CONCURRENCY,
+        5,
+      ),
+      maxPerHostname: parsePositiveInt(
+        process.env.BROWSER_AUTOMATION_HOST_CONCURRENCY,
+        3,
+      ),
+    });
+
+    if (limitedAutomations.length < automations.length) {
+      logger.info(
+        `Deferred ${automations.length - limitedAutomations.length} automation(s) due to org/domain concurrency limits`,
+      );
+    }
+
     // Build payloads for batch triggering
-    const triggerPayloads = automations.map((automation) => ({
+    const triggerPayloads = limitedAutomations.map((automation) => ({
       payload: {
         automationId: automation.id,
         automationName: automation.name,

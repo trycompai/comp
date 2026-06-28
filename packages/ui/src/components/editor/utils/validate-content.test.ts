@@ -337,6 +337,79 @@ describe('validateAndFixTipTapContent', () => {
     });
   });
 
+  describe('table header preservation (CS-418)', () => {
+    it('preserves a tableHeader row instead of collapsing it to an empty cell', () => {
+      const content = {
+        type: 'doc',
+        content: [
+          {
+            type: 'table',
+            content: [
+              {
+                type: 'tableRow',
+                content: [
+                  { type: 'tableHeader', attrs: { colspan: 1, rowspan: 1 }, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Name' }] }] },
+                  { type: 'tableHeader', attrs: { colspan: 1, rowspan: 1 }, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Role' }] }] },
+                ],
+              },
+              {
+                type: 'tableRow',
+                content: [
+                  { type: 'tableCell', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Alice' }] }] },
+                  { type: 'tableCell', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Admin' }] }] },
+                ],
+              },
+            ],
+          },
+        ],
+      };
+
+      const fixed = validateAndFixTipTapContent(content);
+      const table = (fixed.content as any[])[0];
+      expect(table.type).toBe('table');
+
+      const headerRow = table.content[0];
+      expect(headerRow.content).toHaveLength(2);
+      expect(headerRow.content[0].type).toBe('tableHeader');
+      expect(headerRow.content[1].type).toBe('tableHeader');
+      // Header text must survive
+      expect(headerRow.content[0].content[0].content[0].text).toBe('Name');
+      expect(headerRow.content[1].content[0].content[0].text).toBe('Role');
+      // Header attrs (colspan/rowspan/colwidth) must survive
+      expect(headerRow.content[0].attrs).toEqual({ colspan: 1, rowspan: 1 });
+
+      // Body row still works
+      const bodyRow = table.content[1];
+      expect(bodyRow.content[0].type).toBe('tableCell');
+      expect(bodyRow.content[0].content[0].content[0].text).toBe('Alice');
+    });
+
+    it('preserves mixed header + cell within a single row', () => {
+      const content = {
+        type: 'doc',
+        content: [
+          {
+            type: 'table',
+            content: [
+              {
+                type: 'tableRow',
+                content: [
+                  { type: 'tableHeader', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Key' }] }] },
+                  { type: 'tableCell', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Value' }] }] },
+                ],
+              },
+            ],
+          },
+        ],
+      };
+
+      const fixed = validateAndFixTipTapContent(content);
+      const row = (fixed.content as any[])[0].content[0];
+      expect(row.content[0].type).toBe('tableHeader');
+      expect(row.content[1].type).toBe('tableCell');
+    });
+  });
+
   describe('empty text node handling', () => {
     const strip = (s: string) => s.replace(/[\u00A0\u200B\u202F]/g, '').trim();
 

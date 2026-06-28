@@ -8,6 +8,7 @@ import {
   type ConnectionListItem,
   type IntegrationProvider,
 } from '@/hooks/use-integration-platform';
+import { usePermissions } from '@/hooks/use-permissions';
 import { api } from '@/lib/api-client';
 import { CLOUD_RECONNECT_CUTOFF_LABEL, requiresCloudReconnect } from '@/lib/cloud-reconnect-policy';
 import { Breadcrumb, Button, Stack } from '@trycompai/design-system';
@@ -42,6 +43,8 @@ export function ProviderDetailView({
   const searchParams = useSearchParams();
   const { connections: allConnections, refresh: refreshConnections } = useIntegrationConnections();
   const { startOAuth } = useIntegrationMutations();
+  const { hasPermission } = usePermissions();
+  const canCreateConnection = hasPermission('integration', 'create');
   const [showAddAccount, setShowAddAccount] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [reconnectDialogOpen, setReconnectDialogOpen] = useState(false);
@@ -75,6 +78,7 @@ export function ProviderDetailView({
             name: string;
             description: string;
             implemented?: boolean;
+            mappedTasks?: Array<{ id: string; name: string }>;
           }>;
         }
       ).services ?? [],
@@ -97,9 +101,7 @@ export function ProviderDetailView({
     services: connectionServices,
     meta: servicesMeta,
     refresh: refreshServices,
-    updateServices,
   } = useConnectionServices(selectedConnection?.id ?? null);
-  const [togglingService, setTogglingService] = useState<string | null>(null);
   const [gcpOrgs, setGcpOrgs] = useState<
     Array<{
       id: string;
@@ -110,25 +112,7 @@ export function ProviderDetailView({
   const [gcpSelectedProjectIds, setGcpSelectedProjectIds] = useState<string[]>([]);
   const oauthBootstrapHandledRef = useRef(false);
   const settingsQueryHandledRef = useRef(false);
-
-  const handleToggleService = useCallback(
-    async (serviceId: string, enabled: boolean): Promise<boolean> => {
-      setTogglingService(serviceId);
-      try {
-        await updateServices(serviceId, enabled);
-        toast.success(
-          `${services.find((s) => s.id === serviceId)?.name ?? serviceId} ${enabled ? 'enabled' : 'disabled'}`,
-        );
-        return true;
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Failed to update');
-        return false;
-      } finally {
-        setTogglingService(null);
-      }
-    },
-    [updateServices, services],
-  );
+  const oauthErrorHandledRef = useRef(false);
 
   // OAuth return (?success=true): strip query, detect org/projects (NOT services yet — user must select projects first)
   useEffect(() => {
@@ -243,6 +227,33 @@ export function ProviderDetailView({
     router.replace(`/${orgId}/integrations/${provider.id}`, { scroll: false });
   }, [orgId, provider.id, router, searchParams, selectedConnection?.id]);
 
+  // Surface + record an OAuth failure that lands on the provider page. The
+  // backend redirects with `?error=...&error_description=...`; show the user the
+  // real reason and record it (best-effort) so failed connects are diagnosable.
+  useEffect(() => {
+    if (oauthErrorHandledRef.current) return;
+    const error = searchParams.get('error');
+    if (!error) return;
+
+    oauthErrorHandledRef.current = true;
+    const errorDescription = searchParams.get('error_description');
+    toast.error(`Connection failed: ${errorDescription || error}`);
+
+    void api
+      .post(
+        '/v1/integrations/oauth-errors',
+        {
+          providerSlug: provider.id,
+          error,
+          errorDescription: errorDescription ?? undefined,
+        },
+        orgId,
+      )
+      .catch(() => {});
+
+    router.replace(`/${orgId}/integrations/${provider.id}`, { scroll: false });
+  }, [orgId, provider.id, router, searchParams]);
+
   return (
     <>
       <Stack gap="lg">
@@ -260,6 +271,7 @@ export function ProviderDetailView({
         <IntegrationProviderHero
           provider={provider}
           isConnected={isConnected}
+          canCreateConnection={canCreateConnection}
           activeConnections={activeConnections}
           selectedConnection={selectedConnection}
           onSelectConnection={(id) => setSelectedConnectionId(id)}
@@ -415,8 +427,9 @@ export function ProviderDetailView({
                     services={services}
                     connectionServices={connectionServices}
                     connectionId={selectedConnection?.id ?? null}
-                    onToggle={handleToggleService}
-                    togglingService={togglingService}
+                    orgId={orgId}
+                    slug={provider.id}
+                    taskTemplates={taskTemplates}
                   />
                 )}
               </div>

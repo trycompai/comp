@@ -35,11 +35,6 @@ export const UPDATE_ORGANIZATION_BODY: ApiBodyOptions = {
         description: 'Whether onboarding is completed',
         example: true,
       },
-      hasAccess: {
-        type: 'boolean',
-        description: 'Whether organization has access to the platform',
-        example: true,
-      },
       fleetDmLabelId: {
         type: 'integer',
         description: 'FleetDM label ID for device management',
@@ -54,6 +49,42 @@ export const UPDATE_ORGANIZATION_BODY: ApiBodyOptions = {
         type: 'string',
         description: 'Organization primary color in hex format',
         example: '#3B82F6',
+      },
+      advancedModeEnabled: {
+        type: 'boolean',
+        description: 'Whether advanced mode is enabled for the organization',
+        example: false,
+      },
+      backgroundCheckStepEnabled: {
+        type: 'boolean',
+        description:
+          'Whether the background-check step is required during member onboarding. Set to false to turn off the "Require background checks" setting; true to require it.',
+        example: true,
+      },
+      evidenceApprovalEnabled: {
+        type: 'boolean',
+        description: 'Whether evidence requires approval before it is accepted.',
+        example: false,
+      },
+      deviceAgentStepEnabled: {
+        type: 'boolean',
+        description: 'Whether the device-agent step is enabled during member onboarding.',
+        example: true,
+      },
+      securityTrainingStepEnabled: {
+        type: 'boolean',
+        description: 'Whether the security-training step is enabled during member onboarding.',
+        example: true,
+      },
+      whistleblowerReportEnabled: {
+        type: 'boolean',
+        description: 'Whether the whistleblower reporting feature is enabled.',
+        example: true,
+      },
+      accessRequestFormEnabled: {
+        type: 'boolean',
+        description: 'Whether the trust-portal access request form is enabled.',
+        example: true,
       },
     },
     additionalProperties: false,

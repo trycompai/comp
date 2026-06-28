@@ -17,6 +17,8 @@ import { TrustEmailService } from './email.service';
 import { NdaPdfService } from './nda-pdf.service';
 import { AttachmentsService } from '../attachments/attachments.service';
 import { PolicyPdfRendererService } from './policy-pdf-renderer.service';
+import { TrustCustomFrameworkService } from './trust-custom-framework.service';
+import type { TrustCustomFrameworkPublicItem } from './dto/trust-custom-framework.dto';
 import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { APP_AWS_ORG_ASSETS_BUCKET, s3Client, getSignedUrl } from '../app/s3';
 import { Prisma, TrustFramework } from '@db';
@@ -234,6 +236,7 @@ export class TrustAccessService {
     private readonly emailService: TrustEmailService,
     private readonly attachmentsService: AttachmentsService,
     private readonly pdfRendererService: PolicyPdfRendererService,
+    private readonly trustCustomFrameworkService: TrustCustomFrameworkService,
   ) {
     if (
       !process.env.TRUST_APP_URL &&
@@ -427,8 +430,9 @@ export class TrustAccessService {
       return;
     }
 
-    // Construct review URL
-    const reviewUrl = `${process.env.BETTER_AUTH_URL}/${organizationId}/trust`;
+    // Construct review URL pointing at the pending access requests list, not
+    // the trust portal settings/overview page.
+    const reviewUrl = `${process.env.BETTER_AUTH_URL}/${organizationId}/trust/access-requests`;
 
     // Send notification to all recipients
     const emailPromises = notificationEmails.map((email) =>
@@ -530,6 +534,24 @@ export class TrustAccessService {
     );
   }
 
+  /**
+   * Check if the email address is in the allow list (bypasses NDA requirement)
+   */
+  private isEmailInAllowList(email: string, allowedEmails: string[]): boolean {
+    if (!allowedEmails || allowedEmails.length === 0) {
+      return false;
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    if (!normalizedEmail) {
+      return false;
+    }
+
+    return allowedEmails.some(
+      (allowed) => allowed.toLowerCase().trim() === normalizedEmail,
+    );
+  }
+
   async approveRequest(
     organizationId: string,
     requestId: string,
@@ -570,25 +592,30 @@ export class TrustAccessService {
       throw new BadRequestException('Invalid member ID');
     }
 
-    // Check if email domain is in the allow list
+    // Check if the email or its domain is in the allow list
     const trust = await db.trust.findUnique({
       where: { organizationId },
-      select: { allowedDomains: true },
+      select: { allowedDomains: true, allowedEmails: true },
     });
 
     const isAllowedDomain = this.isDomainInAllowList(
       request.email,
       trust?.allowedDomains ?? [],
     );
+    const isAllowedEmail = this.isEmailInAllowList(
+      request.email,
+      trust?.allowedEmails ?? [],
+    );
 
-    // If domain is in allow list, skip NDA and grant access directly
-    if (isAllowedDomain) {
+    // If the email or domain is in the allow list, skip NDA and grant access directly
+    if (isAllowedDomain || isAllowedEmail) {
       return this.approveWithoutNda({
         organizationId,
         requestId,
         request,
         member,
         durationDays,
+        bypassReason: isAllowedEmail ? 'allowed email' : 'allowed domain',
       });
     }
 
@@ -654,7 +681,7 @@ export class TrustAccessService {
   }
 
   /**
-   * Approve request without NDA for allowed domains - grants immediate access
+   * Approve request without NDA for allowlisted domains/emails - grants immediate access
    */
   private async approveWithoutNda({
     organizationId,
@@ -662,6 +689,7 @@ export class TrustAccessService {
     request,
     member,
     durationDays,
+    bypassReason,
   }: {
     organizationId: string;
     requestId: string;
@@ -672,6 +700,7 @@ export class TrustAccessService {
     };
     member: { id: string; userId: string };
     durationDays: number;
+    bypassReason: 'allowed domain' | 'allowed email';
   }) {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + durationDays);
@@ -709,12 +738,13 @@ export class TrustAccessService {
           memberId: member.id,
           entityType: 'trust',
           entityId: requestId,
-          description: `Access request approved for ${request.email} (allowed domain - NDA bypassed)`,
+          description: `Access request approved for ${request.email} (${bypassReason} - NDA bypassed)`,
           data: {
             requestId,
             grantId: grant.id,
             durationDays,
             ndaBypassed: true,
+            bypassReason,
           },
         },
       });
@@ -734,12 +764,13 @@ export class TrustAccessService {
       organizationName: request.organization.name,
       expiresAt: result.grant.expiresAt,
       portalUrl,
+      ndaBypassed: true,
     });
 
     return {
       request: result.request,
       grant: result.grant,
-      message: 'Access granted', // NDA bypassed for allowed domain
+      message: 'Access granted', // NDA bypassed for allowlisted domain/email
     };
   }
 
@@ -947,6 +978,9 @@ export class TrustAccessService {
             },
           },
         },
+        ndaAgreement: {
+          select: { status: true },
+        },
       },
     });
 
@@ -999,6 +1033,9 @@ export class TrustAccessService {
       organizationName: grant.accessRequest.organization.name,
       expiresAt: grant.expiresAt,
       portalUrl,
+      // A bypassed grant has no NDA agreement; an NDA-signed grant links a
+      // 'signed' one. Mirror the original email's copy when resending.
+      ndaBypassed: grant.ndaAgreement?.status !== 'signed',
     });
 
     return { message: 'Access email resent successfully' };
@@ -1210,6 +1247,7 @@ export class TrustAccessService {
       organizationName: nda.accessRequest.organization.name,
       expiresAt: result.grant.expiresAt,
       portalUrl,
+      ndaBypassed: false,
     });
 
     const pdfUrl = await this.ndaPdfService.getSignedUrl(pdfKey);
@@ -1661,6 +1699,8 @@ export class TrustAccessService {
       },
       select: {
         framework: true,
+        customFrameworkId: true,
+        customFramework: { select: { name: true } },
         fileName: true,
         fileSize: true,
         updatedAt: true,
@@ -1670,9 +1710,13 @@ export class TrustAccessService {
       },
     });
 
-    // Return all resources - the download endpoint will auto-enable frameworks as needed
+    // Return all resources - the download endpoint will auto-enable frameworks as needed.
+    // Custom-framework certificates carry customFrameworkId + the framework name so the
+    // gated access page can label and download them (native ones keep `framework`).
     return complianceResources.map((resource) => ({
       framework: resource.framework,
+      customFrameworkId: resource.customFrameworkId,
+      customFrameworkName: resource.customFramework?.name ?? null,
       fileName: resource.fileName,
       fileSize: resource.fileSize,
       updatedAt: resource.updatedAt.toISOString(),
@@ -1907,6 +1951,74 @@ export class TrustAccessService {
     return { faqs: Array.isArray(faqs) ? faqs : null };
   }
 
+  /**
+   * Shared certificate-download pipeline for trust-portal resources (native
+   * and custom frameworks): fetch the stored PDF from S3, watermark it for the
+   * requesting grant, re-upload the watermarked copy, and return a signed URL.
+   * The two callers differ only in the trustResource lookup and the doc/file
+   * naming, which they pass in.
+   */
+  private async watermarkAndSignTrustResource(params: {
+    s3Key: string;
+    fileName: string;
+    recipientName: string;
+    recipientEmail: string;
+    organizationId: string;
+    grantId: string;
+    docId: string;
+    downloadFileName: string;
+  }): Promise<{ signedUrl: string; fileName: string; fileSize: number }> {
+    if (!s3Client || !APP_AWS_ORG_ASSETS_BUCKET) {
+      throw new InternalServerErrorException(
+        'Organization assets bucket is not configured',
+      );
+    }
+
+    const response = await s3Client.send(
+      new GetObjectCommand({
+        Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+        Key: params.s3Key,
+      }),
+    );
+    if (!response.Body) {
+      throw new InternalServerErrorException('No file data received from S3');
+    }
+
+    const chunks: Uint8Array[] = [];
+    for await (const chunk of response.Body as Readable) {
+      chunks.push(chunk);
+    }
+    const originalPdfBuffer = Buffer.concat(chunks);
+
+    const watermarked = await this.ndaPdfService.watermarkExistingPdf(
+      originalPdfBuffer,
+      {
+        name: params.recipientName,
+        email: params.recipientEmail,
+        docId: params.docId,
+        watermarkText: 'Comp AI',
+      },
+    );
+
+    const key = await this.attachmentsService.uploadToS3(
+      watermarked,
+      params.downloadFileName,
+      'application/pdf',
+      params.organizationId,
+      'trust_compliance_downloads',
+      params.grantId,
+    );
+
+    const downloadUrl =
+      await this.attachmentsService.getPresignedDownloadUrl(key);
+
+    return {
+      signedUrl: downloadUrl,
+      fileName: params.fileName,
+      fileSize: watermarked.length,
+    };
+  }
+
   async getComplianceResourceUrlByAccessToken(
     token: string,
     framework: TrustFramework,
@@ -1984,56 +2096,72 @@ export class TrustAccessService {
       });
     }
 
-    // Download the original PDF from S3
-    const getCommand = new GetObjectCommand({
-      Bucket: APP_AWS_ORG_ASSETS_BUCKET,
-      Key: record.s3Key,
+    // Download → watermark → re-upload → signed URL (shared pipeline).
+    return this.watermarkAndSignTrustResource({
+      s3Key: record.s3Key,
+      fileName: record.fileName,
+      recipientName: grant.accessRequest.name,
+      recipientEmail: grant.subjectEmail,
+      organizationId: grant.accessRequest.organizationId,
+      grantId: `${grant.id}`,
+      docId: `compliance-${grant.id}-${framework}-${Date.now()}`,
+      downloadFileName: `compliance-${framework}-grant-${grant.id}-${Date.now()}.pdf`,
+    });
+  }
+
+  /**
+   * Gated download of a custom-framework certificate (token + NDA required).
+   * Mirrors getComplianceResourceUrlByAccessToken but keyed by customFrameworkId.
+   * No framework auto-enable: custom display visibility is governed separately by
+   * TrustCustomFramework.enabled.
+   */
+  async getCustomComplianceResourceUrlByAccessToken(
+    token: string,
+    customFrameworkId: string,
+  ) {
+    const grant = await this.validateAccessToken(token);
+
+    if (!s3Client || !APP_AWS_ORG_ASSETS_BUCKET) {
+      throw new InternalServerErrorException(
+        'Organization assets bucket is not configured',
+      );
+    }
+
+    const record = await db.trustResource.findUnique({
+      where: {
+        organizationId_customFrameworkId: {
+          organizationId: grant.accessRequest.organizationId,
+          customFrameworkId,
+        },
+      },
     });
 
-    const response = await s3Client.send(getCommand);
-    const chunks: Uint8Array[] = [];
-
-    if (!response.Body) {
-      throw new InternalServerErrorException('No file data received from S3');
+    if (!record) {
+      throw new NotFoundException(
+        'No certificate uploaded for this custom framework',
+      );
     }
 
-    for await (const chunk of response.Body as any) {
-      chunks.push(chunk);
-    }
-
-    const originalPdfBuffer = Buffer.concat(chunks);
-
-    // Watermark the PDF
-    const docId = `compliance-${grant.id}-${framework}-${Date.now()}`;
-    const watermarked = await this.ndaPdfService.watermarkExistingPdf(
-      originalPdfBuffer,
-      {
-        name: grant.accessRequest.name,
-        email: grant.subjectEmail,
-        docId,
-        watermarkText: 'Comp AI',
-      },
-    );
-
-    // Upload watermarked PDF to S3
-    const key = await this.attachmentsService.uploadToS3(
-      watermarked,
-      `compliance-${framework}-grant-${grant.id}-${Date.now()}.pdf`,
-      'application/pdf',
-      grant.accessRequest.organizationId,
-      'trust_compliance_downloads',
-      `${grant.id}`,
-    );
-
-    // Generate signed URL for the watermarked PDF
-    const downloadUrl =
-      await this.attachmentsService.getPresignedDownloadUrl(key);
-
-    return {
-      signedUrl: downloadUrl,
+    // Download → watermark → re-upload → signed URL (shared pipeline).
+    return this.watermarkAndSignTrustResource({
+      s3Key: record.s3Key,
       fileName: record.fileName,
-      fileSize: watermarked.length,
-    };
+      recipientName: grant.accessRequest.name,
+      recipientEmail: grant.subjectEmail,
+      organizationId: grant.accessRequest.organizationId,
+      grantId: `${grant.id}`,
+      docId: `compliance-${grant.id}-custom-${customFrameworkId}-${Date.now()}`,
+      downloadFileName: `compliance-custom-${customFrameworkId}-grant-${grant.id}-${Date.now()}.pdf`,
+    });
+  }
+
+  /** Custom frameworks shown on the public portal (delegates to the dedicated service). */
+  async getPublicCustomFrameworks(
+    friendlyUrl: string,
+  ): Promise<TrustCustomFrameworkPublicItem[]> {
+    return this.trustCustomFrameworkService.getPublicCustomFrameworks(
+      friendlyUrl,
+    );
   }
 
   async downloadAllPoliciesByAccessToken(token: string) {

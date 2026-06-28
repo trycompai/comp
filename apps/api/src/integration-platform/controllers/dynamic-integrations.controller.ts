@@ -65,6 +65,11 @@ export class DynamicIntegrationsController {
       ? SyncDefinitionSchema.parse(rawSyncDef)
       : undefined;
 
+    const rawDeviceSyncDef = body.deviceSyncDefinition;
+    const validatedDeviceSyncDef = rawDeviceSyncDef
+      ? SyncDefinitionSchema.parse(rawDeviceSyncDef)
+      : undefined;
+
     // Upsert the integration
     const integration = await this.dynamicIntegrationRepo.upsertBySlug({
       slug: def.slug,
@@ -81,6 +86,11 @@ export class DynamicIntegrationsController {
       syncDefinition: validatedSyncDef
         ? (JSON.parse(
             JSON.stringify(validatedSyncDef),
+          ) as Prisma.InputJsonValue)
+        : null,
+      deviceSyncDefinition: validatedDeviceSyncDef
+        ? (JSON.parse(
+            JSON.stringify(validatedDeviceSyncDef),
           ) as Prisma.InputJsonValue)
         : null,
       services: (def.services as unknown as Prisma.InputJsonValue) ?? undefined,
@@ -167,6 +177,12 @@ export class DynamicIntegrationsController {
     const validatedSyncDefCreate = rawSyncDefCreate
       ? SyncDefinitionSchema.parse(rawSyncDefCreate)
       : undefined;
+
+    const rawDeviceSyncDefCreate = body.deviceSyncDefinition;
+    const validatedDeviceSyncDefCreate = rawDeviceSyncDefCreate
+      ? SyncDefinitionSchema.parse(rawDeviceSyncDefCreate)
+      : undefined;
+
     const integration = await this.dynamicIntegrationRepo.create({
       slug: def.slug,
       name: def.name,
@@ -182,6 +198,11 @@ export class DynamicIntegrationsController {
       syncDefinition: validatedSyncDefCreate
         ? (JSON.parse(
             JSON.stringify(validatedSyncDefCreate),
+          ) as Prisma.InputJsonValue)
+        : undefined,
+      deviceSyncDefinition: validatedDeviceSyncDefCreate
+        ? (JSON.parse(
+            JSON.stringify(validatedDeviceSyncDefCreate),
           ) as Prisma.InputJsonValue)
         : undefined,
     });
@@ -342,7 +363,27 @@ export class DynamicIntegrationsController {
       throw new HttpException('Check not found', HttpStatus.NOT_FOUND);
     }
 
-    await this.dynamicCheckRepo.update(checkId, body);
+    // `source`/`note` are versioning metadata, not check columns — pull them out
+    // so they're never forwarded to the check update.
+    const { source, note, ...updateData } = body;
+
+    // Snapshot the current (pre-change) logic so this edit can be rolled back.
+    // Best-effort: a versioning failure must NEVER block the actual update.
+    try {
+      await this.dynamicCheckRepo.recordVersion({
+        checkId,
+        definition: check.definition as Prisma.InputJsonValue,
+        variables: check.variables as Prisma.InputJsonValue,
+        source: typeof source === 'string' ? source : 'api',
+        note: typeof note === 'string' ? note : undefined,
+      });
+    } catch (err) {
+      this.logger.error(
+        `Failed to record version for check ${checkId} (update proceeding): ${err}`,
+      );
+    }
+
+    await this.dynamicCheckRepo.update(checkId, updateData);
     await this.loaderService.invalidateCache();
 
     return { success: true };
@@ -365,6 +406,70 @@ export class DynamicIntegrationsController {
     await this.loaderService.invalidateCache();
 
     return { success: true };
+  }
+
+  /**
+   * List a check's edit history (newest first). Includes the snapshotted
+   * definition/variables so a caller can preview or diff a prior version.
+   */
+  @Get(':id/checks/:checkId/versions')
+  async listCheckVersions(
+    @Param('id') id: string,
+    @Param('checkId') checkId: string,
+  ) {
+    const check = await this.dynamicCheckRepo.findById(checkId);
+    if (!check || check.integrationId !== id) {
+      throw new HttpException('Check not found', HttpStatus.NOT_FOUND);
+    }
+
+    const versions = await this.dynamicCheckRepo.listVersions(checkId);
+    return { versions };
+  }
+
+  /**
+   * Roll a check back to a previous version. Snapshots the current logic first
+   * (so the rollback is itself reversible), then restores the chosen version's
+   * definition + variables onto the live check.
+   */
+  @Post(':id/checks/:checkId/restore/:versionId')
+  async restoreCheckVersion(
+    @Param('id') id: string,
+    @Param('checkId') checkId: string,
+    @Param('versionId') versionId: string,
+  ) {
+    const check = await this.dynamicCheckRepo.findById(checkId);
+    if (!check || check.integrationId !== id) {
+      throw new HttpException('Check not found', HttpStatus.NOT_FOUND);
+    }
+
+    const version = await this.dynamicCheckRepo.findVersionById(versionId);
+    if (!version || version.checkId !== checkId) {
+      throw new HttpException('Version not found', HttpStatus.NOT_FOUND);
+    }
+
+    // Snapshot the current state first so a restore can itself be undone.
+    // Best-effort: never block the restore on a versioning failure.
+    try {
+      await this.dynamicCheckRepo.recordVersion({
+        checkId,
+        definition: check.definition as Prisma.InputJsonValue,
+        variables: check.variables as Prisma.InputJsonValue,
+        source: 'restore',
+        note: `Restored to version ${versionId}`,
+      });
+    } catch (err) {
+      this.logger.error(
+        `Failed to snapshot before restore for check ${checkId} (restore proceeding): ${err}`,
+      );
+    }
+
+    await this.dynamicCheckRepo.update(checkId, {
+      definition: version.definition as Prisma.InputJsonValue,
+      variables: version.variables as Prisma.InputJsonValue,
+    });
+    await this.loaderService.invalidateCache();
+
+    return { success: true, restoredFrom: versionId };
   }
 
   // ==================== Activation ====================

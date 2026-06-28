@@ -13,7 +13,21 @@ import {
   Logger,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiSecurity, ApiOperation } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiOperation,
+  ApiProperty,
+  ApiPropertyOptional,
+  ApiSecurity,
+  ApiTags,
+} from '@nestjs/swagger';
+import {
+  IsArray,
+  IsBoolean,
+  IsObject,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { db } from '@db';
 import {
   AssumeRoleCommand,
@@ -47,10 +61,145 @@ import {
   parseAwsRoleArn,
   validateAwsPartitionConfig,
 } from '../../cloud-security/aws-partition.utils';
+import { getProviderSummary } from '../utils/provider-summary';
 
-interface CreateConnectionDto {
-  providerSlug: string;
+// Class (not interface) so @nestjs/swagger can introspect it — interfaces are
+// erased at runtime and produce an empty OpenAPI body schema, which means MCP
+// tools have no input fields and agents have to blind-guess the body.
+//
+// IMPORTANT: every property also carries class-validator decorators
+// (@IsString / @IsOptional / @IsObject). The global ValidationPipe runs with
+// `whitelist: true, forbidNonWhitelisted: true`, so a class with @ApiProperty
+// but no class-validator metadata would have zero "known" properties — the
+// pipe would reject the body with "property X should not exist". Keep both
+// decorator stacks in sync when you add fields here.
+class CreateConnectionDto {
+  // The UI historically posts `organizationId` in the body even though the
+  // controller derives it from auth via @OrganizationId(). Accept it as
+  // optional so strict ValidationPipe (whitelist + forbidNonWhitelisted)
+  // doesn't 400 the request. Handler ignores this field.
+  @ApiPropertyOptional({
+    description:
+      'Auto-resolved from your API key / session. You can omit this; it is ignored by the server.',
+  })
+  @IsOptional()
+  @IsString()
+  organizationId?: string;
+
+  @ApiProperty({
+    description:
+      "Provider slug for the integration. Call list-providers first to see the available slugs (e.g. 'aws', 'gcp', 'azure', 'github').",
+    example: 'aws',
+  })
+  @IsString()
+  providerSlug!: string;
+
+  @ApiPropertyOptional({
+    description:
+      "Provider-specific credential fields. Keys differ by provider — call get-provider-details for the exact shape. For AWS (Cloud Tests) the fields are: connectionName (display name), awsType ('aws-commercial' or 'aws-govcloud'), roleArn (auditor role), externalId (typically your org id), regions (string array), and optionally remediationRoleArn and awsScanMode ('comp_scanners' or 'security_hub'). Omit credentials for OAuth providers — use POST /v1/integrations/oauth/start instead.",
+    type: 'object',
+    additionalProperties: true,
+    example: {
+      connectionName: 'Production AWS',
+      awsType: 'aws-commercial',
+      roleArn: 'arn:aws:iam::123456789012:role/CompAI-Auditor',
+      externalId: 'org_abc123',
+      regions: ['us-east-1', 'us-west-2'],
+      remediationRoleArn: 'arn:aws:iam::123456789012:role/CompAI-Remediator',
+      awsScanMode: 'comp_scanners',
+    },
+  })
+  @IsOptional()
+  @IsObject()
   credentials?: Record<string, string | string[]>;
+}
+
+// Body for PATCH /v1/integrations/connections/:id (update connection metadata).
+// Same dual-decorator pattern as CreateConnectionDto: @ApiProperty drives the
+// MCP/docs schema, class-validator decorators keep the ValidationPipe happy.
+class UpdateConnectionDto {
+  // UI sends organizationId in the body; ignored by the handler (derived from auth).
+  @ApiPropertyOptional({
+    description:
+      'Auto-resolved from your API key / session. You can omit this; it is ignored by the server.',
+  })
+  @IsOptional()
+  @IsString()
+  organizationId?: string;
+
+  @ApiPropertyOptional({
+    description:
+      "Connection metadata to merge into the existing record. Common AWS keys: connectionName, regions (string array), awsScanMode ('comp_scanners' or 'security_hub'). The server shallow-merges this with the existing metadata, so include only the keys you want to change.",
+    type: 'object',
+    additionalProperties: true,
+    example: {
+      connectionName: 'Production AWS (renamed)',
+      regions: ['us-east-1', 'us-west-2'],
+    },
+  })
+  @IsOptional()
+  @IsObject()
+  metadata?: Record<string, unknown>;
+}
+
+// Body for PUT /v1/integrations/connections/:id/services (set enabled services).
+class UpdateConnectionServicesDto {
+  // UI sends organizationId in the body; ignored by the handler (derived from auth).
+  @ApiPropertyOptional({
+    description:
+      'Auto-resolved from your API key / session. You can omit this; it is ignored by the server.',
+  })
+  @IsOptional()
+  @IsString()
+  organizationId?: string;
+
+  @ApiProperty({
+    description:
+      "Service IDs to enable on this connection. Any service IDs from the provider's manifest that are NOT in this list become disabled. Pass an empty array to disable all services.",
+    type: 'array',
+    items: { type: 'string' },
+    example: ['s3', 'iam', 'cloudtrail'],
+  })
+  @IsArray()
+  @IsString({ each: true })
+  services!: string[];
+}
+
+// Body for PUT /v1/integrations/connections/:id/credentials (rotate credentials
+// on a connection that's already established).
+class UpdateConnectionCredentialsDto {
+  // UI sends organizationId in the body; ignored by the handler (derived from auth).
+  @ApiPropertyOptional({
+    description:
+      'Auto-resolved from your API key / session. You can omit this; it is ignored by the server.',
+  })
+  @IsOptional()
+  @IsString()
+  organizationId?: string;
+
+  @ApiProperty({
+    description:
+      "New credential fields for the connection. Keys match the provider's auth shape (same shape used when the connection was created — see create-connection for the AWS field list).",
+    type: 'object',
+    additionalProperties: true,
+    example: {
+      roleArn: 'arn:aws:iam::123456789012:role/CompAI-Auditor',
+      externalId: 'org_abc123',
+    },
+  })
+  @IsObject()
+  credentials!: Record<string, string | string[]>;
+}
+
+class EnsureValidCredentialsDto {
+  @ApiPropertyOptional({
+    description:
+      'Force an OAuth token refresh even when the stored expiry has not been reached. Use after a provider returns 401.',
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  forceRefresh?: boolean;
 }
 
 const hasCredentialValue = (value?: string | string[]): boolean => {
@@ -107,9 +256,13 @@ export class ConnectionsController {
           ? m.auth.config.credentialFields
           : m.credentialFields;
 
-      // Get setup instructions for custom auth
+      // Surface setup instructions for any credential-entry auth type (custom, api_key,
+      // basic, jwt) — not just custom. oauth2 is excluded because its setupInstructions are
+      // admin app-creation steps, not customer connect steps.
       const setupInstructions =
-        m.auth.type === 'custom' ? m.auth.config.setupInstructions : undefined;
+        m.auth.type !== 'oauth2' && 'setupInstructions' in m.auth.config
+          ? m.auth.config.setupInstructions
+          : undefined;
 
       const setupScript =
         m.auth.type === 'custom' ? m.auth.config.setupScript : undefined;
@@ -174,9 +327,32 @@ export class ConnectionsController {
             description: s.description,
             enabledByDefault: s.enabledByDefault ?? true,
             implemented: s.implemented ?? true,
+            mappedTasks: this.buildServiceTaskMappings(m.checks, s.id),
           })) ?? [],
       };
     });
+  }
+
+  /**
+   * Evidence tasks a single service's checks satisfy: distinct taskMappings of
+   * the manifest checks whose `service` equals serviceId, resolved to names.
+   */
+  private buildServiceTaskMappings(
+    checks:
+      | ReadonlyArray<{ service?: string; taskMapping?: TaskTemplateId }>
+      | undefined,
+    serviceId: string,
+  ): Array<{ id: string; name: string }> {
+    const out: Array<{ id: string; name: string }> = [];
+    const seen = new Set<string>();
+    for (const check of checks ?? []) {
+      if (check.service !== serviceId || !check.taskMapping) continue;
+      if (seen.has(check.taskMapping)) continue;
+      seen.add(check.taskMapping);
+      const info = TASK_TEMPLATE_INFO[check.taskMapping];
+      if (info) out.push({ id: check.taskMapping, name: info.name });
+    }
+    return out;
   }
 
   /**
@@ -200,9 +376,12 @@ export class ConnectionsController {
         ? manifest.auth.config.credentialFields
         : manifest.credentialFields;
 
-    // Get setup instructions for custom auth
+    // Surface setup instructions for any credential-entry auth type (custom, api_key,
+    // basic, jwt) — not just custom. oauth2 is excluded because its setupInstructions are
+    // admin app-creation steps, not customer connect steps.
     const setupInstructions =
-      manifest.auth.type === 'custom'
+      manifest.auth.type !== 'oauth2' &&
+      'setupInstructions' in manifest.auth.config
         ? manifest.auth.config.setupInstructions
         : undefined;
 
@@ -267,6 +446,7 @@ export class ConnectionsController {
           description: s.description,
           enabledByDefault: s.enabledByDefault ?? true,
           implemented: s.implemented ?? true,
+          mappedTasks: this.buildServiceTaskMappings(manifest.checks, s.id),
         })) ?? [],
     };
   }
@@ -283,20 +463,24 @@ export class ConnectionsController {
 
     return connections
       .filter((c) => c.status !== 'disconnected')
-      .map((c) => ({
-        id: c.id,
-        providerId: c.providerId,
-        providerSlug: (c as any).provider?.slug,
-        providerName: (c as any).provider?.name,
-        status: c.status,
-        authStrategy: c.authStrategy,
-        lastSyncAt: c.lastSyncAt,
-        nextSyncAt: c.nextSyncAt,
-        errorMessage: c.errorMessage,
-        variables: c.variables,
-        metadata: c.metadata,
-        createdAt: c.createdAt,
-      }));
+      .map((c) => {
+        const provider = getProviderSummary(c);
+
+        return {
+          id: c.id,
+          providerId: c.providerId,
+          providerSlug: provider?.slug,
+          providerName: provider?.name,
+          status: c.status,
+          authStrategy: c.authStrategy,
+          lastSyncAt: c.lastSyncAt,
+          nextSyncAt: c.nextSyncAt,
+          errorMessage: c.errorMessage,
+          variables: c.variables,
+          metadata: c.metadata,
+          createdAt: c.createdAt,
+        };
+      });
   }
 
   /**
@@ -313,8 +497,7 @@ export class ConnectionsController {
       id,
       organizationId,
     );
-    const providerSlug = (connection as { provider?: { slug: string } })
-      .provider?.slug;
+    const providerSlug = getProviderSummary(connection)?.slug;
 
     // Get credential fields for custom auth integrations
     let credentialFields: Array<{
@@ -398,6 +581,7 @@ export class ConnectionsController {
    */
   @Post()
   @ApiOperation({ summary: 'Create an integration connection' })
+  @ApiBody({ type: CreateConnectionDto })
   @RequirePermission('integration', 'create')
   async createConnection(
     @OrganizationId() organizationId: string,
@@ -733,7 +917,7 @@ export class ConnectionsController {
       id,
       organizationId,
     );
-    const providerSlug = (connection as any).provider?.slug;
+    const providerSlug = getProviderSummary(connection)?.slug;
 
     if (!providerSlug) {
       throw new HttpException(
@@ -881,11 +1065,12 @@ export class ConnectionsController {
    */
   @Patch(':id')
   @ApiOperation({ summary: 'Update an integration connection' })
+  @ApiBody({ type: UpdateConnectionDto })
   @RequirePermission('integration', 'update')
   async updateConnection(
     @Param('id') id: string,
     @OrganizationId() organizationId: string,
-    @Body() body: { metadata?: Record<string, unknown> },
+    @Body() body: UpdateConnectionDto,
   ) {
     const connection = await this.connectionService.getConnectionForOrg(
       id,
@@ -915,10 +1100,12 @@ export class ConnectionsController {
    */
   @Post(':id/ensure-valid-credentials')
   @ApiOperation({ summary: 'Ensure valid credentials for a connection' })
+  @ApiBody({ type: EnsureValidCredentialsDto, required: false })
   @RequirePermission('integration', 'update')
   async ensureValidCredentials(
     @Param('id') id: string,
     @OrganizationId() organizationId: string,
+    @Body() body?: EnsureValidCredentialsDto,
   ) {
     const connection = await this.connectionService.getConnectionForOrg(
       id,
@@ -932,8 +1119,7 @@ export class ConnectionsController {
       );
     }
 
-    const providerSlug = (connection as { provider?: { slug: string } })
-      .provider?.slug;
+    const providerSlug = getProviderSummary(connection)?.slug;
     if (!providerSlug) {
       throw new HttpException(
         'Provider not found for connection',
@@ -957,11 +1143,15 @@ export class ConnectionsController {
       const supportsRefresh = oauthConfig.supportsRefreshToken !== false;
 
       if (supportsRefresh) {
-        const needsRefresh = await this.credentialVaultService.needsRefresh(id);
+        const forceRefresh = body?.forceRefresh === true;
+        const needsRefresh =
+          forceRefresh || (await this.credentialVaultService.needsRefresh(id));
 
         if (needsRefresh) {
           this.logger.log(
-            `Token needs refresh for connection ${id}, attempting refresh...`,
+            forceRefresh
+              ? `Force refreshing token for connection ${id}...`
+              : `Token needs refresh for connection ${id}, attempting refresh...`,
           );
 
           const oauthCredentials =
@@ -985,18 +1175,28 @@ export class ConnectionsController {
               clientId: oauthCredentials.clientId,
               clientSecret: oauthCredentials.clientSecret,
               clientAuthMethod: oauthConfig.clientAuthMethod,
+              scope: oauthCredentials.scopes.join(' '),
+              tokenParams: oauthConfig.tokenParams,
             },
           );
 
           if (!newToken) {
-            // Refresh failed - connection needs to be re-established
-            await this.connectionService.setConnectionError(
-              id,
-              'OAuth token expired and refresh failed. Please reconnect.',
-            );
+            const refreshedConnection =
+              await this.connectionService.getConnectionForOrg(
+                id,
+                organizationId,
+              );
+            if (refreshedConnection.status === 'error') {
+              throw new HttpException(
+                refreshedConnection.errorMessage ??
+                  'Token refresh failed. Please reconnect the integration.',
+                HttpStatus.UNAUTHORIZED,
+              );
+            }
+
             throw new HttpException(
-              'Token refresh failed. Please reconnect the integration.',
-              HttpStatus.UNAUTHORIZED,
+              'Token refresh temporarily failed. Please try again.',
+              HttpStatus.SERVICE_UNAVAILABLE,
             );
           }
 
@@ -1078,10 +1278,11 @@ export class ConnectionsController {
    */
   @Put(':id/services')
   @ApiOperation({ summary: 'Set services enabled on a connection' })
+  @ApiBody({ type: UpdateConnectionServicesDto })
   @RequirePermission('integration', 'update')
   async updateConnectionServices(
     @Param('id') id: string,
-    @Body() body: { services: string[] },
+    @Body() body: UpdateConnectionServicesDto,
     @OrganizationId() organizationId: string,
   ) {
     if (!Array.isArray(body.services)) {
@@ -1147,19 +1348,19 @@ export class ConnectionsController {
    */
   @Put(':id/credentials')
   @ApiOperation({ summary: 'Update integration credentials' })
+  @ApiBody({ type: UpdateConnectionCredentialsDto })
   @RequirePermission('integration', 'update')
   async updateCredentials(
     @Param('id') id: string,
     @OrganizationId() organizationId: string,
-    @Body() body: { credentials: Record<string, string | string[]> },
+    @Body() body: UpdateConnectionCredentialsDto,
   ) {
     const connection = await this.connectionService.getConnectionForOrg(
       id,
       organizationId,
     );
 
-    const providerSlug = (connection as { provider?: { slug: string } })
-      .provider?.slug;
+    const providerSlug = getProviderSummary(connection)?.slug;
     if (!providerSlug) {
       throw new HttpException(
         'Provider not found for connection',

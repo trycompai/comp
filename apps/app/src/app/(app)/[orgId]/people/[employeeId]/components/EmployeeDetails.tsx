@@ -1,8 +1,9 @@
 'use client';
 
+import { DepartmentSelect } from '@/components/DepartmentSelect';
 import { useApi } from '@/hooks/use-api';
 import { Popover, PopoverContent, PopoverTrigger } from '@trycompai/ui/popover';
-import type { Departments, Member, User } from '@db';
+import type { Member, User } from '@db';
 import {
   Button,
   Calendar,
@@ -23,20 +24,15 @@ import { format } from 'date-fns';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
-const DEPARTMENTS: { value: string; label: string }[] = [
-  { value: 'admin', label: 'Admin' },
-  { value: 'gov', label: 'Governance' },
-  { value: 'hr', label: 'HR' },
-  { value: 'it', label: 'IT' },
-  { value: 'itsm', label: 'IT Service Management' },
-  { value: 'qms', label: 'Quality Management' },
-  { value: 'none', label: 'None' },
-];
-
 const STATUS_OPTIONS = [
   { value: 'active', label: 'Active' },
   { value: 'inactive', label: 'Inactive' },
 ];
+
+// Mirrors the backend's @IsEmail() on UpdatePeopleDto.email so the form rejects
+// values the PATCH /v1/people/:id endpoint would reject anyway.
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const isValidEmail = (value: string) => EMAIL_REGEX.test(value);
 
 export const EmployeeDetails = ({
   employee,
@@ -48,6 +44,7 @@ export const EmployeeDetails = ({
   canEdit: boolean;
 }) => {
   const [name, setName] = useState(employee.user.name ?? '');
+  const [email, setEmail] = useState(employee.user.email ?? '');
   const [jobTitle, setJobTitle] = useState(employee.jobTitle ?? '');
   const [department, setDepartment] = useState<string>(employee.department ?? 'none');
   const [status, setStatus] = useState<string>(employee.isActive ? 'active' : 'inactive');
@@ -64,6 +61,7 @@ export const EmployeeDetails = ({
 
   const hasChanges = useMemo(() => {
     const nameChanged = name !== (employee.user.name ?? '');
+    const emailChanged = email !== (employee.user.email ?? '');
     const jobTitleChanged = jobTitle !== (employee.jobTitle ?? '');
     const departmentChanged = department !== (employee.department ?? 'none');
     const statusChanged = status !== (employee.isActive ? 'active' : 'inactive');
@@ -74,8 +72,8 @@ export const EmployeeDetails = ({
       (offboardDate?.toISOString() ?? null) !==
       (employee.offboardDate ? new Date(employee.offboardDate).toISOString() : null);
 
-    return nameChanged || jobTitleChanged || departmentChanged || statusChanged || onboardDateChanged || offboardDateChanged;
-  }, [name, jobTitle, department, status, onboardDate, offboardDate, employee]);
+    return nameChanged || emailChanged || jobTitleChanged || departmentChanged || statusChanged || onboardDateChanged || offboardDateChanged;
+  }, [name, email, jobTitle, department, status, onboardDate, offboardDate, employee]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -85,8 +83,19 @@ export const EmployeeDetails = ({
       return;
     }
 
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      toast.error('Email is required');
+      return;
+    }
+    if (!isValidEmail(trimmedEmail)) {
+      toast.error('Enter a valid email address');
+      return;
+    }
+
     const updateData: {
       name?: string;
+      email?: string;
       department?: string;
       isActive?: boolean;
       jobTitle?: string;
@@ -96,6 +105,9 @@ export const EmployeeDetails = ({
 
     if (name !== (employee.user.name ?? '')) {
       updateData.name = name;
+    }
+    if (trimmedEmail !== (employee.user.email ?? '')) {
+      updateData.email = trimmedEmail;
     }
     if (jobTitle !== (employee.jobTitle ?? '')) {
       updateData.jobTitle = jobTitle;
@@ -160,15 +172,16 @@ export const EmployeeDetails = ({
               />
             </Stack>
 
-            {/* Email Field (read-only) */}
+            {/* Email Field (login email) */}
             <Stack gap="sm">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
-                value={employee.user.email ?? ''}
-                disabled
-                readOnly
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="employee@example.com"
+                disabled={!canEdit}
               />
             </Stack>
 
@@ -187,24 +200,11 @@ export const EmployeeDetails = ({
             {/* Department Field */}
             <Stack gap="sm">
               <Label htmlFor="department">Department</Label>
-              <Select
+              <DepartmentSelect
                 value={department}
+                onChange={setDepartment}
                 disabled={!canEdit}
-                onValueChange={(value) => value && setDepartment(value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select department">
-                    {DEPARTMENTS.find((d) => d.value === department)?.label ?? 'None'}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {DEPARTMENTS.map((dept) => (
-                    <SelectItem key={dept.value} value={dept.value}>
-                      {dept.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              />
             </Stack>
 
             {/* Status Field */}

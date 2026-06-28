@@ -1,5 +1,6 @@
 import {
   DISABLED_TASK_CHECKS_KEY,
+  ENABLED_TASK_CHECKS_KEY,
   isCheckDisabledForTask,
   parseDisabledTaskChecks,
   withCheckDisabled,
@@ -103,6 +104,39 @@ describe('disabled-task-checks utils', () => {
         false,
       );
     });
+
+    it('defaults environment-separation checks to disconnected until reconnected', () => {
+      for (const checkId of ['aws-environment-separation', 'gcp-environment-separation', 'azure-environment-separation']) {
+        expect(isCheckDisabledForTask(null, 'tsk_abc', checkId)).toBe(true);
+      }
+
+      expect(
+        isCheckDisabledForTask(
+          {
+            [ENABLED_TASK_CHECKS_KEY]: {
+              tsk_abc: ['gcp-environment-separation'],
+            },
+          },
+          'tsk_abc',
+          'gcp-environment-separation',
+        ),
+      ).toBe(false);
+
+      expect(
+        isCheckDisabledForTask(
+          {
+            [DISABLED_TASK_CHECKS_KEY]: {
+              tsk_abc: ['gcp-environment-separation'],
+            },
+            [ENABLED_TASK_CHECKS_KEY]: {
+              tsk_abc: ['gcp-environment-separation'],
+            },
+          },
+          'tsk_abc',
+          'gcp-environment-separation',
+        ),
+      ).toBe(true);
+    });
   });
 
   describe('withCheckDisabled', () => {
@@ -178,6 +212,20 @@ describe('disabled-task-checks utils', () => {
         tsk_xyz: ['sanitized_inputs'],
       });
     });
+
+    it('removes environment-separation opt-in when disconnecting', () => {
+      const metadata = {
+        [ENABLED_TASK_CHECKS_KEY]: {
+          tsk_abc: ['gcp-environment-separation'],
+        },
+      };
+      const result = withCheckDisabled(
+        metadata,
+        'tsk_abc',
+        'gcp-environment-separation',
+      );
+      expect(result[ENABLED_TASK_CHECKS_KEY]).toBeUndefined();
+    });
   });
 
   describe('withCheckEnabled', () => {
@@ -239,6 +287,13 @@ describe('disabled-task-checks utils', () => {
       const snapshot = JSON.stringify(metadata);
       withCheckEnabled(metadata, 'tsk_abc', 'branch_protection');
       expect(JSON.stringify(metadata)).toBe(snapshot);
+    });
+
+    it('records opt-in when reconnecting environment-separation checks', () => {
+      const result = withCheckEnabled(null, 'tsk_abc', 'gcp-environment-separation');
+      expect(result[ENABLED_TASK_CHECKS_KEY]).toEqual({
+        tsk_abc: ['gcp-environment-separation'],
+      });
     });
   });
 });

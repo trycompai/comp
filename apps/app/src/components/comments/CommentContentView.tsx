@@ -137,7 +137,7 @@ export function CommentContentView({
                   href={href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-primary underline"
+                  className="text-primary underline break-all"
                 >
                   {part}
                 </a>

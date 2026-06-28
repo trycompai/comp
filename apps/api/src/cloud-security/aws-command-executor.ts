@@ -165,6 +165,18 @@ export const REQUIRED_PARAMS: Record<string, readonly string[]> = {
   StartConfigurationRecorderCommand: ['ConfigurationRecorderName'],
   PutBucketPolicyCommand: ['Bucket', 'Policy'],
   CreateTrailCommand: ['Name', 'S3BucketName'],
+  PutMetricFilterCommand: ['logGroupName', 'filterName', 'metricTransformations'],
+};
+
+/**
+ * Params that must be PRESENT in the request but may legitimately be an empty
+ * string — unlike REQUIRED_PARAMS, which also rejects "". For example, AWS
+ * CloudWatch Logs PutMetricFilter requires `filterPattern` to be supplied but
+ * accepts an empty pattern (an empty filterPattern matches all log events), so
+ * we must reject only a missing/null value, not "".
+ */
+const REQUIRED_PRESENT_PARAMS: Record<string, readonly string[]> = {
+  PutMetricFilterCommand: ['filterPattern'],
 };
 
 const REQUIRED_PARAM_ONE_OF: Record<string, readonly (readonly string[])[]> = {
@@ -264,6 +276,90 @@ function normaliseInputParams(
     if (!input.IsMultiRegionTrail) input.IsMultiRegionTrail = true;
     if (!input.EnableLogFileValidation) input.EnableLogFileValidation = true;
   }
+
+  // Rule 4: AWS Config recorder — `allSupported: true` is mutually exclusive
+  // with `recordingStrategy`, `exclusionByResourceTypes`, and `resourceTypes`.
+  // AWS rejects the combination with a ValidationException. The AI (and a
+  // customer's existing exclusion-based recorder, e.g. one that excludes the
+  // IAM resource types) frequently echoes those fields back alongside
+  // allSupported:true. When the intent is "record all supported types",
+  // collapse recordingGroup to the single valid shape that records everything,
+  // including the global IAM resource types.
+  if (command === 'PutConfigurationRecorderCommand') {
+    normalizeConfigRecordingGroup(input);
+  }
+
+  // Rule 5: CloudWatch Logs metric filters — `metricTransformations` is a
+  // required, NON-EMPTY ARRAY of { metricName, metricNamespace, metricValue }
+  // where `metricValue` must be a STRING. The model frequently emits it as a
+  // single object instead of an array, or as a number `1` instead of `"1"`,
+  // which AWS rejects (the customer-visible "metric transformations were not
+  // properly provided to the CloudWatch Logs API" failure that sends the
+  // auto-fix to manual steps). Coerce to the one valid shape.
+  if (command === 'PutMetricFilterCommand') {
+    normalizeMetricFilterTransformations(input);
+  }
+}
+
+export function normalizeMetricFilterTransformations(
+  input: Record<string, unknown>,
+): void {
+  let transformations = input.metricTransformations;
+
+  // A single transformation object → wrap in an array (AWS expects a list).
+  if (
+    transformations &&
+    typeof transformations === 'object' &&
+    !Array.isArray(transformations)
+  ) {
+    transformations = [transformations];
+    input.metricTransformations = transformations;
+  }
+
+  if (!Array.isArray(transformations)) return;
+
+  input.metricTransformations = transformations.map((entry) => {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      return entry;
+    }
+    const transform = entry as Record<string, unknown>;
+    // metricValue must be a string (e.g. "1"); the model often emits a number.
+    if (
+      transform.metricValue != null &&
+      typeof transform.metricValue !== 'string'
+    ) {
+      return { ...transform, metricValue: String(transform.metricValue) };
+    }
+    return transform;
+  });
+}
+
+export function normalizeConfigRecordingGroup(
+  input: Record<string, unknown>,
+): void {
+  const recorder = input.ConfigurationRecorder;
+  if (!recorder || typeof recorder !== 'object' || Array.isArray(recorder)) {
+    return;
+  }
+  const recorderObj = recorder as Record<string, unknown>;
+  const group = recorderObj.recordingGroup;
+  if (!group || typeof group !== 'object' || Array.isArray(group)) return;
+
+  const groupObj = group as Record<string, unknown>;
+  const strategy = groupObj.recordingStrategy as
+    | { useOnly?: string }
+    | undefined;
+  const wantsAllSupported =
+    groupObj.allSupported === true ||
+    strategy?.useOnly === 'ALL_SUPPORTED_RESOURCE_TYPES' ||
+    groupObj.exclusionByResourceTypes != null;
+
+  if (!wantsAllSupported) return;
+
+  recorderObj.recordingGroup = {
+    allSupported: true,
+    includeGlobalResourceTypes: true,
+  };
 }
 
 /**
@@ -555,6 +651,18 @@ export function validatePlanSteps(steps: AwsCommandStep[]): string[] {
         const value = step.params?.[key];
         if (!hasRequiredParamValue(value)) {
           errors.push(`${prefix}: Required param "${key}" is missing or empty`);
+        }
+      }
+    }
+
+    const requiredPresent = REQUIRED_PRESENT_PARAMS[step.command];
+    if (requiredPresent) {
+      for (const key of requiredPresent) {
+        const value = step.params?.[key];
+        // Must be supplied, but an empty string is valid (e.g. an empty
+        // CloudWatch filterPattern matches all log events).
+        if (value === undefined || value === null) {
+          errors.push(`${prefix}: Required param "${key}" must be provided`);
         }
       }
     }

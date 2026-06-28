@@ -14,7 +14,8 @@ interface FrameworkSettingsData {
 }
 
 interface ComplianceResourceResponse {
-  framework: string;
+  framework: string | null;
+  customFrameworkId?: string | null;
   fileName: string;
   fileSize: number;
   updatedAt: string;
@@ -42,6 +43,29 @@ interface VendorTrustSettingsData {
   showOnTrustPortal: boolean;
 }
 
+export interface TrustCustomFrameworkItem {
+  customFrameworkId: string;
+  name: string;
+  description: string;
+  enabled: boolean;
+  status: 'started' | 'in_progress' | 'compliant';
+  hasCertificate: boolean;
+  certificateFileName: string | null;
+  /** Signed URL to the uploaded badge/logo, or null when none is set. */
+  badgeUrl: string | null;
+}
+
+interface CustomFrameworkBadgeResponse {
+  success: boolean;
+  badgeUrl: string;
+}
+
+interface UpdateCustomFrameworkData {
+  customFrameworkId: string;
+  enabled?: boolean;
+  status?: 'started' | 'in_progress' | 'compliant';
+}
+
 export function useTrustPortalSettings() {
   const api = useApi();
 
@@ -56,10 +80,7 @@ export function useTrustPortalSettings() {
 
   const updateFrameworkSettings = useCallback(
     async (data: FrameworkSettingsData) => {
-      const response = await api.put(
-        '/v1/trust-portal/settings/frameworks',
-        data,
-      );
+      const response = await api.put('/v1/trust-portal/settings/frameworks', data);
       if (response.error) throw new Error(response.error);
       return response.data;
     },
@@ -98,6 +119,79 @@ export function useTrustPortalSettings() {
     [api],
   );
 
+  const listCustomFrameworks = useCallback(async () => {
+    const response = await api.get<TrustCustomFrameworkItem[]>(
+      '/v1/trust-portal/custom-frameworks',
+    );
+    if (response.error) throw new Error(response.error);
+    return Array.isArray(response.data) ? response.data : [];
+  }, [api]);
+
+  const updateCustomFramework = useCallback(
+    async (data: UpdateCustomFrameworkData) => {
+      const response = await api.put('/v1/trust-portal/custom-frameworks', data);
+      if (response.error) throw new Error(response.error);
+      return response.data;
+    },
+    [api],
+  );
+
+  const uploadCustomComplianceResource = useCallback(
+    async (
+      organizationId: string,
+      customFrameworkId: string,
+      fileName: string,
+      fileType: string,
+      fileData: string,
+    ) => {
+      const response = await api.post<ComplianceResourceResponse>(
+        '/v1/trust-portal/compliance-resources/upload',
+        { organizationId, customFrameworkId, fileName, fileType, fileData },
+      );
+      if (response.error) throw new Error(response.error);
+      if (!response.data) throw new Error('Unexpected API response');
+      return response.data;
+    },
+    [api],
+  );
+
+  const getCustomComplianceResourceUrl = useCallback(
+    async (organizationId: string, customFrameworkId: string) => {
+      const response = await api.post<ComplianceResourceUrlResponse>(
+        '/v1/trust-portal/compliance-resources/signed-url',
+        { organizationId, customFrameworkId },
+      );
+      if (response.error) throw new Error(response.error);
+      if (!response.data?.signedUrl) throw new Error('Preview link unavailable');
+      return response.data;
+    },
+    [api],
+  );
+
+  const uploadCustomFrameworkBadge = useCallback(
+    async (customFrameworkId: string, fileName: string, fileType: string, fileData: string) => {
+      const response = await api.post<CustomFrameworkBadgeResponse>(
+        '/v1/trust-portal/custom-frameworks/badge',
+        { customFrameworkId, fileName, fileType, fileData },
+      );
+      if (response.error) throw new Error(response.error);
+      if (!response.data) throw new Error('Unexpected API response');
+      return response.data;
+    },
+    [api],
+  );
+
+  const removeCustomFrameworkBadge = useCallback(
+    async (customFrameworkId: string) => {
+      const response = await api.delete(
+        `/v1/trust-portal/custom-frameworks/badge?customFrameworkId=${encodeURIComponent(customFrameworkId)}`,
+      );
+      if (response.error) throw new Error(response.error);
+      return response.data;
+    },
+    [api],
+  );
+
   const saveOverview = useCallback(
     async (data: OverviewData) => {
       const response = await api.post('/v1/trust-portal/overview', data);
@@ -109,10 +203,7 @@ export function useTrustPortalSettings() {
 
   const updateVendorTrustSettings = useCallback(
     async (vendorId: string, data: VendorTrustSettingsData) => {
-      const response = await api.post(
-        `/v1/trust-portal/vendors/${vendorId}/trust-settings`,
-        data,
-      );
+      const response = await api.post(`/v1/trust-portal/vendors/${vendorId}/trust-settings`, data);
       if (response.error) throw new Error(response.error);
       return response.data;
     },
@@ -121,10 +212,16 @@ export function useTrustPortalSettings() {
 
   const updateAllowedDomains = useCallback(
     async (domains: string[]) => {
-      const response = await api.put(
-        '/v1/trust-portal/settings/allowed-domains',
-        { domains },
-      );
+      const response = await api.put('/v1/trust-portal/settings/allowed-domains', { domains });
+      if (response.error) throw new Error(response.error);
+      return response.data;
+    },
+    [api],
+  );
+
+  const updateAllowedEmails = useCallback(
+    async (emails: string[]) => {
+      const response = await api.put('/v1/trust-portal/settings/allowed-emails', { emails });
       if (response.error) throw new Error(response.error);
       return response.data;
     },
@@ -133,10 +230,11 @@ export function useTrustPortalSettings() {
 
   const uploadFavicon = useCallback(
     async (fileName: string, fileType: string, fileData: string) => {
-      const response = await api.post<FaviconUploadResponse>(
-        '/v1/trust-portal/favicon',
-        { fileName, fileType, fileData },
-      );
+      const response = await api.post<FaviconUploadResponse>('/v1/trust-portal/favicon', {
+        fileName,
+        fileType,
+        fileData,
+      });
       if (response.error) throw new Error(response.error);
       return response.data;
     },
@@ -184,9 +282,16 @@ export function useTrustPortalSettings() {
     updateFrameworkSettings,
     uploadComplianceResource,
     getComplianceResourceUrl,
+    listCustomFrameworks,
+    updateCustomFramework,
+    uploadCustomComplianceResource,
+    getCustomComplianceResourceUrl,
+    uploadCustomFrameworkBadge,
+    removeCustomFrameworkBadge,
     saveOverview,
     updateVendorTrustSettings,
     updateAllowedDomains,
+    updateAllowedEmails,
     uploadFavicon,
     removeFavicon,
     submitCustomDomain,

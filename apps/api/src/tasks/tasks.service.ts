@@ -7,7 +7,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { filterDescriptionByFrameworks } from './description-framework-filter';
-import { db, TaskStatus, Prisma, TaskFrequency, Departments } from '@db';
+import { db, TaskStatus, Prisma, TaskFrequency } from '@db';
 import { TaskResponseDto } from './dto/task-responses.dto';
 import { TaskNotifierService } from './task-notifier.service';
 import { checkAutoCompletePhases } from '../frameworks/frameworks-timeline.helper';
@@ -375,17 +375,29 @@ export class TasksService {
     notRelevantJustification?: string,
   ): Promise<{ updatedCount: number }> {
     try {
-      // Enforce approval workflow: exclude tasks that can't be bulk-updated
+      // The approval-workflow constraints only apply when evidence approval is
+      // enabled for the org. With it disabled, applying them would silently drop
+      // tasks carrying a stale approverId / in_review status from the bulk
+      // update (and throw "No tasks were updated" if all targets are dropped).
+      const organization = await db.organization.findUnique({
+        where: { id: organizationId },
+        select: { evidenceApprovalEnabled: true },
+      });
+      const evidenceApprovalEnabled =
+        organization?.evidenceApprovalEnabled ?? false;
+
       const where: Record<string, unknown> = {
         id: { in: taskIds },
         organizationId,
-        // Cannot change status of tasks currently in review
-        status: { not: 'in_review' as TaskStatus },
       };
 
-      // Cannot mark tasks as done if they have an approver assigned
-      if (status === TaskStatus.done) {
-        where.approverId = null;
+      if (evidenceApprovalEnabled) {
+        // Cannot change status of tasks currently in review
+        where.status = { not: 'in_review' as TaskStatus };
+        // Cannot mark tasks as done if they have an approver assigned
+        if (status === TaskStatus.done) {
+          where.approverId = null;
+        }
       }
 
       const justificationData =
@@ -566,7 +578,7 @@ export class TasksService {
       approverId?: string | null;
       frequency?: TaskFrequency;
       integrationScheduleFrequency?: TaskFrequency;
-      department?: string;
+      department?: string | null;
       reviewDate?: Date | null;
       notRelevantJustification?: string;
     },
@@ -586,12 +598,21 @@ export class TasksService {
           status: true,
           assigneeId: true,
           approverId: true,
+          // The submit-for-review → approve workflow only applies when the org
+          // has evidence approval enabled. When it's disabled, the approver
+          // dropdown and review flow are hidden in the UI, so a leftover
+          // approverId / in_review status must never block a direct status
+          // change (otherwise the task is wedged with no way to clear it).
+          organization: { select: { evidenceApprovalEnabled: true } },
         },
       });
 
       if (!existingTask) {
         throw new BadRequestException('Task not found or access denied');
       }
+
+      const evidenceApprovalEnabled =
+        existingTask.organization?.evidenceApprovalEnabled ?? false;
 
       // Prepare update data - Prisma handles updatedAt automatically
       const dataToUpdate: {
@@ -602,7 +623,7 @@ export class TasksService {
         approverId?: string | null;
         frequency?: TaskFrequency;
         integrationScheduleFrequency?: TaskFrequency;
-        department?: string;
+        department?: string | null;
         reviewDate?: Date | null;
         notRelevantJustification?: string | null;
       } = {};
@@ -614,25 +635,30 @@ export class TasksService {
         dataToUpdate.description = updateData.description;
       }
       if (updateData.status !== undefined) {
-        // Prevent bypassing the approval workflow via direct status change
-        if (
-          existingTask.status === 'in_review' &&
-          updateData.status !== 'in_review'
-        ) {
-          throw new BadRequestException(
-            'Cannot change status directly while task is in review. Use the approve or reject actions instead.',
-          );
-        }
-        // Prevent directly setting status to 'done' when an approver is assigned
-        // (must go through submitForReview → approveTask workflow)
-        if (
-          updateData.status === 'done' &&
-          existingTask.status !== 'done' &&
-          existingTask.approverId
-        ) {
-          throw new BadRequestException(
-            'Cannot mark task as done directly when an approver is assigned. Submit for review instead.',
-          );
+        // Only enforce the approval-workflow locks when evidence approval is
+        // enabled for the org. With it disabled, these would wedge a task that
+        // carries a stale approverId / in_review status (see comment above).
+        if (evidenceApprovalEnabled) {
+          // Prevent bypassing the approval workflow via direct status change
+          if (
+            existingTask.status === 'in_review' &&
+            updateData.status !== 'in_review'
+          ) {
+            throw new BadRequestException(
+              'Cannot change status directly while task is in review. Use the approve or reject actions instead.',
+            );
+          }
+          // Prevent directly setting status to 'done' when an approver is assigned
+          // (must go through submitForReview → approveTask workflow)
+          if (
+            updateData.status === 'done' &&
+            existingTask.status !== 'done' &&
+            existingTask.approverId
+          ) {
+            throw new BadRequestException(
+              'Cannot mark task as done directly when an approver is assigned. Submit for review instead.',
+            );
+          }
         }
         dataToUpdate.status = updateData.status;
 
@@ -661,6 +687,11 @@ export class TasksService {
       if (updateData.approverId !== undefined) {
         dataToUpdate.approverId =
           updateData.approverId === null ? null : updateData.approverId;
+      } else if (!evidenceApprovalEnabled && existingTask.approverId) {
+        // Self-heal: with approval disabled, a leftover approverId is invisible
+        // in the UI and non-functional — clear it on any update so it can't
+        // silently re-block future status changes.
+        dataToUpdate.approverId = null;
       }
       if (updateData.frequency !== undefined) {
         dataToUpdate.frequency = updateData.frequency;
@@ -871,7 +902,7 @@ export class TasksService {
           status: 'todo',
           order: 0,
           frequency: (createData.frequency as TaskFrequency) || null,
-          department: (createData.department as Departments) || null,
+          department: createData.department || null,
           automationStatus,
           taskTemplateId: createData.taskTemplateId || null,
           ...(createData.controlIds &&

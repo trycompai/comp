@@ -32,6 +32,11 @@ model User {
   offboardingChecklistCompletions OffboardingChecklistCompletion[] @relation("OffboardingChecklistCompletedBy")
   offboardingAccessRevocations    OffboardingAccessRevocation[]    @relation("AccessRevocationRevokedBy")
 
+  oauthApplications OauthApplication[]
+  oauthAccessTokens OauthAccessToken[]
+  oauthConsents     OauthConsent[]
+  mcpOrgBinding     McpOrgBinding?
+
   @@unique([email])
 }
 
@@ -95,6 +100,85 @@ model Verification {
   updatedAt  DateTime @updatedAt
 }
 
+// ── OAuth 2.0 / OIDC Provider — required by better-auth's mcp/oidcProvider plugin.
+// The MCP server is hosted on Speakeasy Gram; Gram obtains an OAuth access token
+// from this API (better-auth as the authorization server) so end users sign in
+// with Google instead of pasting an API key.
+// Field names MUST match better-auth's expected schema (clientId, redirectUrls, …).
+model OauthApplication {
+  id           String   @id @default(dbgenerated("generate_prefixed_cuid('oap'::text)"))
+  name         String
+  icon         String?
+  metadata     String?
+  clientId     String   @unique
+  clientSecret String?
+  redirectUrls String
+  type         String
+  disabled     Boolean? @default(false)
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  accessTokens OauthAccessToken[]
+  consents     OauthConsent[]
+
+  @@index([userId])
+  @@map("oauth_application")
+}
+
+model OauthAccessToken {
+  id                    String           @id @default(dbgenerated("generate_prefixed_cuid('oat'::text)"))
+  accessToken           String           @unique
+  refreshToken          String           @unique
+  accessTokenExpiresAt  DateTime
+  refreshTokenExpiresAt DateTime
+  clientId              String
+  application           OauthApplication @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
+  userId                String?
+  user                  User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scopes                String
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  @@index([clientId])
+  @@index([userId])
+  @@map("oauth_access_token")
+}
+
+model OauthConsent {
+  id           String           @id @default(dbgenerated("generate_prefixed_cuid('oac'::text)"))
+  clientId     String
+  application  OauthApplication @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
+  userId       String
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scopes       String
+  consentGiven Boolean
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([clientId])
+  @@index([userId])
+  @@map("oauth_consent")
+}
+
+// Per-user organization selection for the hosted MCP. A user who belongs to
+// multiple orgs picks which one their MCP/OAuth token acts on (chosen at connect
+// time); HybridAuthGuard reads this for MCP OAuth requests. Single-org users
+// don't need a row — their one org is used automatically.
+model McpOrgBinding {
+  id             String       @id @default(dbgenerated("generate_prefixed_cuid('mob'::text)"))
+  userId         String       @unique
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@map("mcp_org_binding")
+}
+
 // JWT Plugin - Required by Better Auth JWT plugin
 // https://www.better-auth.com/docs/plugins/jwt
 model Jwks {
@@ -116,7 +200,7 @@ model Member {
   role           String // Purposefully a string, since BetterAuth doesn't support enums this way
   createdAt      DateTime     @default(now())
 
-  department                      Departments                       @default(none)
+  department                      String                            @default("none")
   jobTitle                        String?
   isActive                        Boolean                           @default(true)
   deactivated                     Boolean                           @default(false)
@@ -133,6 +217,7 @@ model Member {
   assignedPolicies                 Policy[]                 @relation("PolicyAssignee") // Policies where this member is an assignee
   approvedPolicies                 Policy[]                 @relation("PolicyApprover") // Policies where this member is an approver
   approvedSOADocuments             SOADocument[]            @relation("SOADocumentApprover") // SOA documents where this member is an approver
+  approvedIsmsDocuments            IsmsDocument[]           @relation("IsmsDocumentApprover") // ISMS documents where this member is an approver
   risks                            Risk[]
   tasks                            Task[]
   vendors                          Vendor[]

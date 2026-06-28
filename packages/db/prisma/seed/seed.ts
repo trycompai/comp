@@ -189,6 +189,82 @@ async function seedJsonFiles(subDirectory: string) {
   }
 }
 
+// ISMS foundational document templates (CS-437). Mirrors
+// apps/api/src/isms/utils/document-types.ts ISMS_TYPE_DEFINITIONS — that file is
+// the single source of truth; this is kept in sync here because the seed (in
+// @trycompai/db) cannot import the API's `@db`-aliased module. Requirement links
+// are NOT seeded — the clause fallback resolves them and links are authored in
+// the editor.
+const ISMS_DOCUMENT_TEMPLATES = [
+  {
+    documentType: 'context_of_organization',
+    name: 'Context of the Organization',
+    clause: '4.1',
+    description:
+      'Internal and external issues relevant to the ISMS and their effect on its intended outcomes (ISO 27001 clause 4.1).',
+  },
+  {
+    documentType: 'interested_parties_register',
+    name: 'Interested Parties Register',
+    clause: '4.2',
+    description:
+      'The interested parties relevant to the ISMS together with their needs and expectations (ISO 27001 clause 4.2).',
+  },
+  {
+    documentType: 'interested_parties_requirements',
+    name: 'Interested Parties Requirements',
+    clause: '4.2',
+    description:
+      'The requirements of interested parties and how the ISMS addresses them (ISO 27001 clause 4.2).',
+  },
+  {
+    documentType: 'isms_scope',
+    name: 'ISMS Scope',
+    clause: '4.3',
+    description:
+      'The boundaries and applicability of the ISMS, including the interfaces and dependencies considered (ISO 27001 clause 4.3).',
+  },
+  {
+    documentType: 'leadership_commitment',
+    name: 'Leadership and Commitment',
+    clause: '5.1',
+    description:
+      'Evidence of top management leadership and commitment to the ISMS (ISO 27001 clause 5.1).',
+  },
+  {
+    documentType: 'objectives_plan',
+    name: 'Information Security Objectives and Plan',
+    clause: '6.2',
+    description:
+      'Measurable information security objectives and the plan to achieve them (ISO 27001 clause 6.2).',
+  },
+] as const;
+
+async function seedIsmsDocumentTemplates() {
+  for (let i = 0; i < ISMS_DOCUMENT_TEMPLATES.length; i++) {
+    const template = ISMS_DOCUMENT_TEMPLATES[i];
+    await prisma.frameworkEditorIsmsDocumentTemplate.upsert({
+      where: { documentType: template.documentType },
+      create: {
+        documentType: template.documentType,
+        name: template.name,
+        description: template.description,
+        clause: template.clause,
+        sortOrder: i,
+      },
+      update: {
+        name: template.name,
+        description: template.description,
+        clause: template.clause,
+        sortOrder: i,
+      },
+    });
+  }
+  console.log(
+    `Seeded ${ISMS_DOCUMENT_TEMPLATES.length} ISMS document templates.`,
+  );
+}
+
 async function backfillFrameworkScopedLinks() {
   const fis = await prisma.frameworkInstance.findMany({ select: { id: true } });
   for (const fi of fis) {
@@ -242,6 +318,7 @@ async function backfillFrameworkScopedLinks() {
 async function main() {
   try {
     await seedJsonFiles('primitives');
+    await seedIsmsDocumentTemplates();
     await seedJsonFiles('relations');
     // Build v1.0.0 FrameworkVersion snapshots for any framework without one.
     // On a fresh `migrate reset`, the backfill data migration runs against empty

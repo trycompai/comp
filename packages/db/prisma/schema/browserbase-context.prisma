@@ -16,6 +16,39 @@ model BrowserbaseContext {
   @@index([organizationId])
 }
 
+/// Auth state for one website identity backed by a Browserbase context.
+/// Credentials and TOTP secrets are intentionally not stored here.
+model BrowserAuthProfile {
+  id String @id @default(dbgenerated("generate_prefixed_cuid('bap'::text)"))
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  hostname      String
+  loginIdentity String @default("")
+  displayName   String
+
+  contextId        String
+  status           BrowserAuthProfileStatus @default(unverified)
+  lastVerifiedAt   DateTime?
+  lastAuthCheckUrl String?
+  blockedReason    String?
+
+  vaultProvider        String?
+  vaultExternalItemRef String?
+  vaultConnectionId    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  runs BrowserAutomationRun[]
+
+  @@unique([organizationId, hostname, loginIdentity])
+  @@index([organizationId])
+  @@index([organizationId, hostname])
+  @@index([status])
+}
+
 /// Browser automation configuration linked to a task
 model BrowserAutomation {
   id          String  @id @default(dbgenerated("generate_prefixed_cuid('bau'::text)"))
@@ -58,6 +91,10 @@ model BrowserAutomationRun {
   automationId String
   automation   BrowserAutomation @relation(fields: [automationId], references: [id], onDelete: Cascade)
 
+  /// Auth profile/context used by this run
+  profileId String?
+  profile   BrowserAuthProfile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
+
   /// Execution status
   status BrowserAutomationRunStatus @default(pending)
 
@@ -80,11 +117,30 @@ model BrowserAutomationRun {
   /// Error message (if failed)
   error String?
 
+  /// Stable failure metadata for retries, UI copy, and profile repair flows
+  failureCode  BrowserAutomationFailureCode?
+  failureStage BrowserAutomationFailureStage?
+  attemptCount Int                            @default(1)
+  blockedReason String?
+
+  /// Final browser URL and structured execution events
+  finalUrl String?
+  logs     Json?
+
   createdAt DateTime @default(now())
 
   @@index([automationId])
+  @@index([profileId])
   @@index([status])
+  @@index([failureCode])
   @@index([createdAt])
+}
+
+enum BrowserAuthProfileStatus {
+  unverified
+  verified
+  needs_reauth
+  blocked
 }
 
 enum BrowserAutomationEvaluationStatus {
@@ -97,4 +153,27 @@ enum BrowserAutomationRunStatus {
   running
   completed
   failed
+  blocked
+}
+
+enum BrowserAutomationFailureCode {
+  needs_reauth
+  needs_user_action
+  rate_limited
+  captcha_blocked
+  timeout
+  browser_session_lost
+  evaluation_failed
+  unknown
+}
+
+enum BrowserAutomationFailureStage {
+  auth
+  navigation
+  action
+  screenshot
+  evaluation
+  upload
+  session
+  unknown
 }

@@ -6,23 +6,18 @@ import { initBotId } from 'botid/client/core';
 import * as Sentry from '@sentry/nextjs';
 
 initBotId({
-  protect: [
-    { path: '/api/chat', method: 'POST' },
-    {
-      path: `${process.env.NEXT_PUBLIC_ENTERPRISE_API_URL}/api/tasks-automations/chat`,
-      method: 'POST',
-    },
-    {
-      path: `${process.env.NEXT_PUBLIC_ENTERPRISE_API_URL}/api/tasks-automations/errors`,
-      method: 'POST',
-    },
-  ],
+  protect: [{ path: '/api/chat', method: 'POST' }],
 });
 
 Sentry.init({
   dsn:
     process.env.NEXT_PUBLIC_SENTRY_DSN ??
     'https://331f1c3d4b08e9352dd1a2621e1ae845@o4509214247813120.ingest.us.sentry.io/4511304630927360',
+
+  // Only report from production. NEXT_PUBLIC_VERCEL_ENV is inlined at build time
+  // per Vercel deployment; preview/dev builds (or a missing var) keep Sentry
+  // disabled — a no-op, never an error — to avoid noise and quota burn.
+  enabled: process.env.NEXT_PUBLIC_VERCEL_ENV === 'production',
 
   integrations: [
     // Add `data-sentry-mask` (or `.sentry-mask`) to any element rendering

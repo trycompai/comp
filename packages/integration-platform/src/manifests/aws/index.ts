@@ -1,4 +1,16 @@
 import type { IntegrationManifest } from '../../types';
+import { environmentAliasesVariable } from '../environment-aliases';
+import {
+  cloudTrailEnabledCheck,
+  ec2SecurityGroupsCheck,
+  environmentSeparationCheck,
+  iamAccountSecurityCheck,
+  kmsKeyRotationCheck,
+  rdsBackupsCheck,
+  rdsEncryptionCheck,
+  s3EncryptionCheck,
+  s3PublicAccessCheck,
+} from './checks';
 import { awsCredentialFields, awsCredentialSchema, awsSetupInstructions, awsCloudShellScript } from './credentials';
 
 export const awsManifest: IntegrationManifest = {
@@ -53,6 +65,7 @@ export const awsManifest: IntegrationManifest = {
     { id: 'sns-sqs', name: 'SNS & SQS', description: 'Public topic/queue policies and encryption at rest checks', enabledByDefault: false, implemented: true },
     { id: 'ecr', name: 'ECR', description: 'Image scanning configuration and immutable tag enforcement', enabledByDefault: false, implemented: true },
     { id: 'opensearch', name: 'OpenSearch', description: 'Domain encryption, VPC deployment, and fine-grained access control checks', enabledByDefault: false, implemented: true },
+    { id: 'neptune', name: 'Neptune', description: 'Cluster encryption, deletion protection, backup retention, IAM auth, and audit log checks', enabledByDefault: false, implemented: true },
     // Lower priority — specialized use cases
     { id: 'redshift', name: 'Redshift', description: 'Cluster encryption, public accessibility, and audit logging checks', enabledByDefault: false, implemented: true },
     { id: 'macie', name: 'Macie', description: 'Sensitive data discovery and data protection monitoring', enabledByDefault: false, implemented: true },
@@ -80,5 +93,17 @@ export const awsManifest: IntegrationManifest = {
     { id: 'appflow', name: 'AppFlow', description: 'Flow encryption, VPC configuration, and data transfer security checks', enabledByDefault: false, implemented: true },
   ],
 
-  checks: [],
+  variables: [environmentAliasesVariable],
+
+  checks: [
+    iamAccountSecurityCheck,
+    s3EncryptionCheck,
+    s3PublicAccessCheck,
+    ec2SecurityGroupsCheck,
+    rdsEncryptionCheck,
+    rdsBackupsCheck,
+    kmsKeyRotationCheck,
+    cloudTrailEnabledCheck,
+    environmentSeparationCheck,
+  ],
 };

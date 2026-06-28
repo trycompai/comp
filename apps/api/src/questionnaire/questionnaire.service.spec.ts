@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { QuestionnaireService } from './questionnaire.service';
+import { UploadsService } from '../uploads/uploads.service';
 
 // Mock external dependencies
 jest.mock('@db', () => ({
@@ -7,6 +8,7 @@ jest.mock('@db', () => ({
     questionnaire: {
       findMany: jest.fn(),
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
       delete: jest.fn(),
     },
     questionnaireQuestionAnswer: {
@@ -80,7 +82,13 @@ describe('QuestionnaireService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [QuestionnaireService],
+      providers: [
+        QuestionnaireService,
+        {
+          provide: UploadsService,
+          useValue: { readUploadAsBase64: jest.fn() },
+        },
+      ],
     }).compile();
 
     service = module.get<QuestionnaireService>(QuestionnaireService);
@@ -503,6 +511,59 @@ describe('QuestionnaireService', () => {
           fileData: 'base64data',
         } as any),
       ).rejects.toThrow('Failed to upload questionnaire file to S3');
+    });
+  });
+
+  describe('triggerAutoAnswer', () => {
+    it('triggers background generation and returns a run handle', async () => {
+      (mockDb.questionnaire.findFirst as jest.Mock).mockResolvedValue({
+        id: 'qst_1',
+        totalQuestions: 23,
+        answeredQuestions: 0,
+      });
+      (tasks.trigger as jest.Mock).mockResolvedValue({
+        id: 'run_abc',
+        publicAccessToken: 'token_abc',
+      });
+
+      const result = await service.triggerAutoAnswer('qst_1', 'org_1');
+
+      expect(tasks.trigger).toHaveBeenCalledWith('auto-answer-questionnaire', {
+        questionnaireId: 'qst_1',
+        organizationId: 'org_1',
+      });
+      expect(result).toEqual(
+        expect.objectContaining({
+          questionnaireId: 'qst_1',
+          runId: 'run_abc',
+          publicAccessToken: 'token_abc',
+          status: 'generating',
+          totalQuestions: 23,
+          answeredQuestions: 0,
+        }),
+      );
+    });
+
+    it('throws NotFound when the questionnaire does not exist', async () => {
+      (mockDb.questionnaire.findFirst as jest.Mock).mockResolvedValue(null);
+
+      await expect(
+        service.triggerAutoAnswer('qst_missing', 'org_1'),
+      ).rejects.toThrow('not found');
+      expect(tasks.trigger).not.toHaveBeenCalled();
+    });
+
+    it('throws when the questionnaire has no parsed questions yet', async () => {
+      (mockDb.questionnaire.findFirst as jest.Mock).mockResolvedValue({
+        id: 'qst_1',
+        totalQuestions: 0,
+        answeredQuestions: 0,
+      });
+
+      await expect(
+        service.triggerAutoAnswer('qst_1', 'org_1'),
+      ).rejects.toThrow('no parsed questions');
+      expect(tasks.trigger).not.toHaveBeenCalled();
     });
   });
 

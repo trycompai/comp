@@ -5,14 +5,17 @@ import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import type {
   AuthStatusResponse,
+  BrowserAuthProfile,
   BrowserContextStatus,
-  ContextResponse,
+  NavigateResponse,
+  ResolveAuthProfileResponse,
   SessionResponse,
 } from './types';
 
 export function useBrowserContext() {
   const [status, setStatus] = useState<BrowserContextStatus>('loading');
   const [contextId, setContextId] = useState<string | null>(null);
+  const [profileId, setProfileId] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [liveViewUrl, setLiveViewUrl] = useState<string | null>(null);
   const [isStartingAuth, setIsStartingAuth] = useState(false);
@@ -20,80 +23,84 @@ export function useBrowserContext() {
 
   const checkContextStatus = useCallback(async () => {
     try {
-      const res = await apiClient.get<{ hasContext: boolean; contextId?: string }>(
-        '/v1/browserbase/org-context',
-      );
+      const res = await apiClient.get<BrowserAuthProfile[]>('/v1/browserbase/profiles');
       if (res.data) {
-        if (res.data.hasContext && res.data.contextId) {
-          setContextId(res.data.contextId);
+        const verifiedProfile = res.data.find((profile) => profile.status === 'verified');
+        if (verifiedProfile) {
+          setContextId(verifiedProfile.contextId);
+          setProfileId(verifiedProfile.id);
           setStatus('has-context');
         } else {
+          setContextId(null);
+          setProfileId(null);
           setStatus('no-context');
         }
+      } else {
+        setContextId(null);
+        setProfileId(null);
+        setStatus('no-context');
       }
     } catch {
       setStatus('no-context');
     }
   }, []);
 
-  const startAuth = useCallback(
-    async (url: string) => {
-      let startedSessionId: string | null = null;
-      try {
-        setIsStartingAuth(true);
+  const startAuth = useCallback(async (url: string) => {
+    let startedSessionId: string | null = null;
+    try {
+      setIsStartingAuth(true);
 
-        // Get or create org context
-        const contextRes = await apiClient.post<ContextResponse>(
-          '/v1/browserbase/org-context',
-          {},
+      const profileRes = await apiClient.post<ResolveAuthProfileResponse>(
+        '/v1/browserbase/profiles/resolve',
+        { url },
+      );
+      if (profileRes.error || !profileRes.data) {
+        throw new Error(profileRes.error || 'Failed to create auth profile');
+      }
+      setProfileId(profileRes.data.profile.id);
+
+      const sessionRes = await apiClient.post<SessionResponse>(
+        `/v1/browserbase/profiles/${profileRes.data.profile.id}/session`,
+        {},
+      );
+      if (sessionRes.error || !sessionRes.data) {
+        throw new Error(sessionRes.error || 'Failed to create session');
+      }
+      startedSessionId = sessionRes.data.sessionId;
+      setSessionId(startedSessionId);
+      setLiveViewUrl(sessionRes.data.liveViewUrl);
+
+      const navigateRes = await apiClient.post<NavigateResponse>('/v1/browserbase/navigate', {
+        sessionId: startedSessionId,
+        url,
+      });
+      if (navigateRes.error || !navigateRes.data?.success) {
+        throw new Error(
+          navigateRes.error ||
+            navigateRes.data?.error ||
+            'Failed to open the website in the browser session',
         );
-        if (contextRes.error || !contextRes.data) {
-          throw new Error(contextRes.error || 'Failed to create context');
-        }
-        setContextId(contextRes.data.contextId);
+      }
 
-        // Create session
-        const sessionRes = await apiClient.post<SessionResponse>(
-          '/v1/browserbase/session',
-          { contextId: contextRes.data.contextId },
-        );
-        if (sessionRes.error || !sessionRes.data) {
-          throw new Error(sessionRes.error || 'Failed to create session');
-        }
-        startedSessionId = sessionRes.data.sessionId;
-        setSessionId(startedSessionId);
-        setLiveViewUrl(sessionRes.data.liveViewUrl);
+      setShowAuthFlow(true);
+      setIsStartingAuth(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to start authentication');
+      setShowAuthFlow(false);
+      setLiveViewUrl(null);
+      setSessionId(null);
+      setIsStartingAuth(false);
 
-        // Navigate to the URL
-        await apiClient.post(
-          '/v1/browserbase/navigate',
-          { sessionId: startedSessionId, url },
-        );
-
-        setShowAuthFlow(true);
-        setIsStartingAuth(false);
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Failed to start authentication');
-        setShowAuthFlow(false);
-        setLiveViewUrl(null);
-        setSessionId(null);
-        setIsStartingAuth(false);
-
-        // If we created a session but navigation failed, close it to avoid orphaned sessions
-        if (startedSessionId) {
-          try {
-            await apiClient.post(
-              '/v1/browserbase/session/close',
-              { sessionId: startedSessionId },
-            );
-          } catch {
-            // Ignore cleanup errors (don't mask original error)
-          }
+      // If we created a session but navigation failed, close it to avoid orphaned sessions
+      if (startedSessionId) {
+        try {
+          await apiClient.post('/v1/browserbase/session/close', { sessionId: startedSessionId });
+        } catch {
+          // Ignore cleanup errors (don't mask original error)
         }
       }
-    },
-    [],
-  );
+    }
+  }, []);
 
   const checkAuth = useCallback(
     async (url: string) => {
@@ -102,32 +109,44 @@ export function useBrowserContext() {
       try {
         setStatus('checking');
 
-        const res = await apiClient.post<AuthStatusResponse>(
-          '/v1/browserbase/check-auth',
-          { sessionId, url },
-        );
+        if (!profileId) throw new Error('No auth profile selected');
 
-        // Close session
-        await apiClient.post('/v1/browserbase/session/close', { sessionId });
-        setSessionId(null);
-        setLiveViewUrl(null);
-        setShowAuthFlow(false);
+        const res = await apiClient.post<{
+          auth: AuthStatusResponse;
+          profile: BrowserAuthProfile;
+        }>(`/v1/browserbase/profiles/${profileId}/verify`, { sessionId, url });
 
-        if (res.data?.isLoggedIn) {
+        if (res.error || !res.data) {
+          throw new Error(res.error || 'Failed to check authentication');
+        }
+
+        if (res.data.auth.isLoggedIn) {
+          try {
+            await apiClient.post('/v1/browserbase/session/close', { sessionId });
+          } catch {
+            // Ignore cleanup errors after auth was already verified
+          }
+          setSessionId(null);
+          setLiveViewUrl(null);
+          setShowAuthFlow(false);
           toast.success(
-            res.data.username ? `Authenticated as ${res.data.username}` : 'Authentication saved',
+            res.data.auth.username
+              ? `Authenticated as ${res.data.auth.username}`
+              : 'Authentication saved',
           );
+          setContextId(res.data.profile.contextId);
+          setProfileId(res.data.profile.id);
           setStatus('has-context');
         } else {
-          toast.error('Not logged in. Please try again.');
-          setStatus('has-context');
+          toast.error('Still not logged in. Finish login, then click Check & Save again.');
+          setStatus('no-context');
         }
       } catch (err) {
         toast.error(err instanceof Error ? err.message : 'Failed to check auth');
-        setStatus('has-context');
+        setStatus('no-context');
       }
     },
-    [sessionId],
+    [sessionId, profileId],
   );
 
   const cancelAuth = useCallback(async () => {
@@ -147,6 +166,7 @@ export function useBrowserContext() {
   return {
     status,
     contextId,
+    profileId,
     sessionId,
     liveViewUrl,
     isStartingAuth,

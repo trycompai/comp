@@ -8,7 +8,6 @@ import {
   Param,
   Query,
   UseGuards,
-  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiBody,
@@ -144,11 +143,6 @@ export class TaskManagementController {
     @Body() createTaskItemDto: CreateTaskItemDto,
   ): Promise<TaskItemResponseDto> {
     try {
-      if (authContext.isApiKey) {
-        throw new BadRequestException(
-          'Task item creation is not supported with API key authentication',
-        );
-      }
       return await this.taskManagementService.createTaskItem(
         organizationId,
         authContext,
@@ -182,11 +176,6 @@ export class TaskManagementController {
     @Body() updateTaskItemDto: UpdateTaskItemDto,
   ): Promise<TaskItemResponseDto> {
     try {
-      if (authContext.isApiKey) {
-        throw new BadRequestException(
-          'Task item updates are not supported with API key authentication',
-        );
-      }
       return await this.taskManagementService.updateTaskItem(
         taskItemId,
         organizationId,
@@ -218,14 +207,10 @@ export class TaskManagementController {
     @AuthContext() authContext: AuthContextType,
   ): Promise<void> {
     try {
-      if (authContext.isApiKey) {
-        throw new BadRequestException(
-          'Task item deletion is not supported with API key authentication',
-        );
-      }
       await this.taskManagementService.deleteTaskItem(
         taskItemId,
         organizationId,
+        authContext,
       );
     } catch (error) {
       throw error;

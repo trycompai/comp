@@ -99,3 +99,12 @@ scripts/sync-release-branch.sh
 .superpowers/*
 .claude/worktrees/
 .worktrees/
+# Speakeasy CLI writes workflow files here, but GitHub Actions only reads
+# from .github/workflows/ at the repo root. We move them up. See
+# .github/workflows/sdk_generation.yaml + sdk_publish.yaml (the real ones).
+apps/mcp-server/.github/
+
+# Ad-hoc read-only prod ops scripts (contain DB creds) + any exported customer data.
+# These must never be committed. Unanchored so nested paths are covered too.
+dbq_*.js
+*.csv

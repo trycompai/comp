@@ -1,17 +1,30 @@
 'use client';
 
-import { apiClient } from '@/lib/api-client';
 import { usePermissions } from '@/hooks/use-permissions';
-import { Badge } from '@trycompai/ui/badge';
-import { Button } from '@trycompai/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui/card';
-import { Input } from '@trycompai/ui/input';
-import { Label } from '@trycompai/ui/label';
-import { Globe, Loader2, MonitorSmartphone, RefreshCw } from 'lucide-react';
+import { apiClient } from '@/lib/api-client';
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Input,
+  Label,
+  Spinner,
+} from '@trycompai/design-system';
+import { Globe, Screen } from '@trycompai/design-system/icons';
 import { useCallback, useEffect, useState } from 'react';
+import { BrowserConnectionInstructions } from './BrowserConnectionInstructions';
+import { BrowserConnectionLiveView } from './BrowserConnectionLiveView';
+import {
+  BrowserConnectionProfileList,
+  type BrowserConnectionProfile,
+} from './BrowserConnectionProfileList';
 
-interface ContextResponse {
-  contextId: string;
+interface ResolveProfileResponse {
+  profile: BrowserConnectionProfile & { contextId: string };
   isNew: boolean;
 }
 
@@ -25,6 +38,11 @@ interface AuthStatusResponse {
   username?: string;
 }
 
+interface VerifyProfileResponse {
+  profile: BrowserConnectionProfile;
+  auth: AuthStatusResponse;
+}
+
 type Status = 'idle' | 'loading' | 'session-active' | 'checking';
 
 interface BrowserConnectionClientProps {
@@ -35,23 +53,23 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
   const { hasPermission } = usePermissions();
   const canManageBrowser = hasPermission('integration', 'create');
   const [status, setStatus] = useState<Status>('idle');
-  const [hasContext, setHasContext] = useState(false);
-  const [contextId, setContextId] = useState<string | null>(null);
+  const [profileId, setProfileId] = useState<string | null>(null);
+  const [profiles, setProfiles] = useState<BrowserConnectionProfile[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [liveViewUrl, setLiveViewUrl] = useState<string | null>(null);
   const [urlToCheck, setUrlToCheck] = useState('https://github.com');
   const [authStatus, setAuthStatus] = useState<AuthStatusResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const hasContext = profiles.some((profile) => profile.status === 'verified');
 
-  // Check if org has a browser context
   const checkContextStatus = useCallback(async () => {
     try {
-      const res = await apiClient.get<{ hasContext: boolean; contextId?: string }>(
-        '/v1/browserbase/org-context',
-      );
+      const res = await apiClient.get<BrowserConnectionProfile[]>('/v1/browserbase/profiles');
       if (res.data) {
-        setHasContext(res.data.hasContext);
-        setContextId(res.data.contextId || null);
+        setProfiles(res.data);
+        const verifiedProfile = res.data.find((profile) => profile.status === 'verified');
+        const firstProfile = verifiedProfile ?? res.data[0];
+        setProfileId(firstProfile?.id ?? null);
       }
     } catch {
       // Ignore
@@ -68,21 +86,24 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
       setError(null);
       setStatus('loading');
 
-      // Get or create org context
-      const contextRes = await apiClient.post<ContextResponse>(
-        '/v1/browserbase/org-context',
-        {},
+      const profileRes = await apiClient.post<ResolveProfileResponse>(
+        '/v1/browserbase/profiles/resolve',
+        { url: urlToCheck },
       );
-      if (contextRes.error || !contextRes.data) {
-        throw new Error(contextRes.error || 'Failed to create context');
+      if (profileRes.error || !profileRes.data) {
+        throw new Error(profileRes.error || 'Failed to create auth profile');
       }
-      setContextId(contextRes.data.contextId);
-      setHasContext(true);
+      setProfileId(profileRes.data.profile.id);
+      setProfiles((currentProfiles) => {
+        const rest = currentProfiles.filter(
+          (profile) => profile.id !== profileRes.data?.profile.id,
+        );
+        return profileRes.data ? [profileRes.data.profile, ...rest] : currentProfiles;
+      });
 
-      // Create session
       const sessionRes = await apiClient.post<SessionResponse>(
-        '/v1/browserbase/session',
-        { contextId: contextRes.data.contextId },
+        `/v1/browserbase/profiles/${profileRes.data.profile.id}/session`,
+        {},
       );
       if (sessionRes.error || !sessionRes.data) {
         throw new Error(sessionRes.error || 'Failed to create session');
@@ -92,10 +113,10 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
       setLiveViewUrl(sessionRes.data.liveViewUrl);
 
       // Navigate to the URL
-      await apiClient.post(
-        '/v1/browserbase/navigate',
-        { sessionId: startedSessionId, url: urlToCheck },
-      );
+      await apiClient.post('/v1/browserbase/navigate', {
+        sessionId: startedSessionId,
+        url: urlToCheck,
+      });
 
       setStatus('session-active');
     } catch (err) {
@@ -107,10 +128,7 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
       // If we created a session but navigation failed, close it to avoid orphaned sessions
       if (startedSessionId) {
         try {
-          await apiClient.post(
-            '/v1/browserbase/session/close',
-            { sessionId: startedSessionId },
-          );
+          await apiClient.post('/v1/browserbase/session/close', { sessionId: startedSessionId });
         } catch {
           // Ignore cleanup errors (don't mask original error)
         }
@@ -119,26 +137,31 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
   };
 
   const handleCheckAuth = async () => {
-    if (!sessionId) return;
+    if (!sessionId || !profileId) return;
 
     try {
       setError(null);
       setStatus('checking');
 
-      const res = await apiClient.post<AuthStatusResponse>(
-        '/v1/browserbase/check-auth',
+      const res = await apiClient.post<VerifyProfileResponse>(
+        `/v1/browserbase/profiles/${profileId}/verify`,
         { sessionId, url: urlToCheck },
       );
       if (res.error || !res.data) {
         throw new Error(res.error || 'Failed to check auth');
       }
 
-      setAuthStatus(res.data);
+      setAuthStatus(res.data.auth);
+      setProfiles((currentProfiles) => {
+        const rest = currentProfiles.filter((profile) => profile.id !== res.data?.profile.id);
+        return res.data ? [res.data.profile, ...rest] : currentProfiles;
+      });
 
       // Close the session after checking
       await apiClient.post('/v1/browserbase/session/close', { sessionId });
       setSessionId(null);
       setLiveViewUrl(null);
+      setProfileId(null);
       setStatus('idle');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to check auth');
@@ -156,6 +179,7 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
     }
     setSessionId(null);
     setLiveViewUrl(null);
+    setProfileId(null);
     setStatus('idle');
   };
 
@@ -167,14 +191,14 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="rounded-lg bg-muted p-2">
-                <MonitorSmartphone className="h-5 w-5 text-muted-foreground" />
+                <Screen className="h-5 w-5 text-muted-foreground" />
               </div>
               <div>
-                <CardTitle className="text-base">Browser Session</CardTitle>
+                <CardTitle>Browser Session</CardTitle>
                 <CardDescription>
                   {hasContext
-                    ? 'Your organization has a browser context configured'
-                    : 'No browser context configured yet'}
+                    ? 'At least one browser auth profile is verified'
+                    : 'No verified browser auth profile yet'}
                 </CardDescription>
               </div>
             </div>
@@ -191,16 +215,20 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
               <div className="flex flex-col gap-2">
                 <Label htmlFor="url">Website URL</Label>
                 <div className="flex gap-2">
-                  <Input
-                    id="url"
-                    placeholder="https://github.com"
-                    value={urlToCheck}
-                    onChange={(e) => setUrlToCheck(e.target.value)}
-                    className="flex-1"
-                  />
+                  <div className="flex-1">
+                    <Input
+                      id="url"
+                      placeholder="https://github.com"
+                      value={urlToCheck}
+                      onChange={(e) => setUrlToCheck(e.target.value)}
+                    />
+                  </div>
                   {canManageBrowser && (
-                    <Button onClick={handleStartSession} disabled={!urlToCheck}>
-                      <Globe className="mr-2 h-4 w-4" />
+                    <Button
+                      onClick={handleStartSession}
+                      disabled={!urlToCheck}
+                      iconLeft={<Globe size={16} />}
+                    >
                       {hasContext ? 'Open Browser' : 'Connect Browser'}
                     </Button>
                   )}
@@ -232,89 +260,25 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
 
           {status === 'loading' && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Spinner />
               Starting browser session...
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Live View */}
       {(status === 'session-active' || status === 'checking') && liveViewUrl && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-base">Browser Session</CardTitle>
-                <CardDescription>
-                  Log in to websites below. Your session will be saved for automations.
-                </CardDescription>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCheckAuth}
-                  disabled={status === 'checking' || !canManageBrowser}
-                >
-                  {status === 'checking' ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Checking...
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                      Check & Save
-                    </>
-                  )}
-                </Button>
-                <Button variant="ghost" size="sm" onClick={handleCloseSession}>
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-hidden rounded-lg border">
-              <iframe
-                src={liveViewUrl}
-                className="h-[600px] w-full"
-                sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
-                allow="clipboard-read; clipboard-write"
-              />
-            </div>
-          </CardContent>
-        </Card>
+        <BrowserConnectionLiveView
+          liveViewUrl={liveViewUrl}
+          isChecking={status === 'checking'}
+          canManageBrowser={canManageBrowser}
+          onCheckAuth={handleCheckAuth}
+          onClose={handleCloseSession}
+        />
       )}
 
-      {/* Instructions */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">How it works</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ol className="list-inside list-decimal space-y-2 text-sm text-muted-foreground">
-            <li>
-              <strong className="text-foreground">Create a service account</strong> - We recommend
-              creating a dedicated account (e.g., &quot;comp-automation@yourcompany.com&quot;) for
-              browser automations.
-            </li>
-            <li>
-              <strong className="text-foreground">Authenticate once</strong> - Open the browser
-              above and log in to the websites you want to automate (GitHub, Jira, etc.).
-            </li>
-            <li>
-              <strong className="text-foreground">Session is shared</strong> - All browser
-              automations in your organization will use this authenticated session.
-            </li>
-            <li>
-              <strong className="text-foreground">Re-authenticate when needed</strong> - If a
-              session expires, come back here to log in again.
-            </li>
-          </ol>
-        </CardContent>
-      </Card>
+      <BrowserConnectionProfileList profiles={profiles} />
+      <BrowserConnectionInstructions />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { SyncDefinition } from './dsl/types';
 import type { TaskTemplateId } from './task-mappings';
 
 // ============================================================================
@@ -208,7 +209,7 @@ export type CredentialField = z.infer<typeof CredentialFieldSchema>;
 // Integration Capabilities
 // ============================================================================
 
-export type IntegrationCapability = 'checks' | 'webhook' | 'sync';
+export type IntegrationCapability = 'checks' | 'webhook' | 'sync' | 'device_sync';
 
 export const WebhookConfigSchema = z.object({
   /** Webhook endpoint path suffix */
@@ -268,8 +269,13 @@ export interface CheckContext {
   /** The OAuth access token (for oauth2 auth). Empty for custom auth types like AWS. */
   accessToken: string;
 
-  /** All credentials as key-value pairs (form fields for custom auth, or token data for OAuth) */
-  credentials: Record<string, string>;
+  /**
+   * All credentials as key-value pairs (form fields for custom auth, or token
+   * data for OAuth). Custom-auth fields can be arrays (e.g. AWS `regions`), so
+   * values are `string | string[]` — read array fields directly and use a
+   * scalar coercion only where a single string is required.
+   */
+  credentials: Record<string, string | string[]>;
 
   /** User-configured variables for this integration */
   variables: CheckVariableValues;
@@ -279,6 +285,14 @@ export interface CheckContext {
 
   /** Organization ID */
   organizationId: string;
+
+  /**
+   * The id of the check currently running (e.g. "aws-s3-public-access").
+   * Set by the runner before `run()` is invoked. AWS `emitOutcomes` uses it
+   * to stamp a stable `findingKey` on each outcome so findings can be marked
+   * as exceptions and matched across scans.
+   */
+  checkId?: string;
 
   /** Connection metadata (e.g., OAuth team/user info from token response) */
   metadata?: Record<string, unknown>;
@@ -850,6 +864,9 @@ export interface IntegrationManifest {
 
   /** Runtime handler for webhooks */
   handler?: IntegrationHandler;
+
+  /** Declarative device sync definition (same DSL as employee sync) */
+  deviceSyncDefinition?: SyncDefinition;
 
   /** Whether multiple connections per org are allowed */
   supportsMultipleConnections?: boolean;

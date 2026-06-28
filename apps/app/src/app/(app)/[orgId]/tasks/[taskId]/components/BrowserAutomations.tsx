@@ -26,14 +26,27 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
     automation?: BrowserAutomation;
   }>({ open: false, mode: 'create' });
   const [authUrl, setAuthUrl] = useState('https://github.com');
+  const authHostname = (() => {
+    try {
+      return new URL(authUrl).hostname;
+    } catch {
+      return 'this website';
+    }
+  })();
 
   // Hooks
   const context = useBrowserContext();
   const automations = useBrowserAutomations({ taskId });
 
-  const handleNeedsReauth = useCallback(() => {
-    context.startAuth(authUrl);
-  }, [context, authUrl]);
+  const handleNeedsReauth = useCallback(
+    (automationId: string) => {
+      const automation = automations.automations.find((item) => item.id === automationId);
+      const targetUrl = automation?.targetUrl ?? authUrl;
+      setAuthUrl(targetUrl);
+      context.startAuth(targetUrl);
+    },
+    [automations.automations, authUrl, context],
+  );
 
   const execution = useBrowserExecution({
     onNeedsReauth: handleNeedsReauth,
@@ -71,8 +84,8 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
   if (context.showAuthFlow && context.liveViewUrl) {
     return (
       <BrowserLiveView
-        title="Connect Browser"
-        subtitle="Log in to the website below to enable automations"
+        title={`Log in to ${authHostname}`}
+        subtitle="Complete login in this browser, then check and save the profile for this site."
         liveViewUrl={context.liveViewUrl}
         variant="auth"
         isChecking={context.status === 'checking'}
@@ -128,7 +141,9 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
         hasContext={context.status === 'has-context'}
         runningAutomationId={execution.runningAutomationId}
         onRun={execution.runAutomation}
-        onCreateClick={isManualTask ? undefined : () => setDialogState({ open: true, mode: 'create' })}
+        onCreateClick={
+          isManualTask ? undefined : () => setDialogState({ open: true, mode: 'create' })
+        }
         onEditClick={(automation) => setDialogState({ open: true, mode: 'edit', automation })}
         onDelete={automations.deleteAutomation}
         onToggleEnabled={automations.toggleAutomation}

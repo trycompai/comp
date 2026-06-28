@@ -1,5 +1,10 @@
 // Mocks must be declared before any SUT import so guards' transitive deps
 // (Prisma, better-auth) don't instantiate in Jest.
+const mockTrigger = jest.fn();
+jest.mock('@trigger.dev/sdk', () => ({
+  tasks: { trigger: mockTrigger },
+}));
+
 jest.mock('@db', () => ({
   ...jest.requireActual('@prisma/client'),
   db: {},
@@ -53,6 +58,7 @@ function makeFakeResponse() {
   const emitter = new EventEmitter();
   const res = Object.assign(emitter, {
     setHeader: jest.fn(),
+    flushHeaders: jest.fn(),
     status: jest.fn(function (this: unknown) {
       return res;
     }),
@@ -135,6 +141,7 @@ describe('EvidenceExportController', () => {
       'Content-Disposition',
       `attachment; filename="acme_mytask_evidence_2026-04-22.zip"`,
     );
+    expect(res.flushHeaders).toHaveBeenCalledTimes(1);
     expect(archive.pipe).toHaveBeenCalledWith(res);
   });
 
@@ -223,18 +230,15 @@ describe('EvidenceExportController', () => {
 
 describe('AuditorEvidenceExportController', () => {
   let controller: AuditorEvidenceExportController;
-  let service: jest.Mocked<
-    Pick<EvidenceExportService, 'streamOrganizationEvidenceZip'>
-  >;
 
   beforeEach(async () => {
-    service = {
-      streamOrganizationEvidenceZip: jest.fn(),
-    };
+    mockTrigger.mockReset().mockResolvedValue({
+      id: 'run_123',
+      publicAccessToken: 'tok_abc',
+    });
 
     const moduleRef = await Test.createTestingModule({
       controllers: [AuditorEvidenceExportController],
-      providers: [{ provide: EvidenceExportService, useValue: service }],
     })
       .overrideGuard(HybridAuthGuard)
       .useValue({ canActivate: () => true })
@@ -245,34 +249,35 @@ describe('AuditorEvidenceExportController', () => {
     controller = moduleRef.get(AuditorEvidenceExportController);
   });
 
-  it('pipes the org-wide archive to response with correct headers', async () => {
-    const archive = makeFakeArchive();
-    service.streamOrganizationEvidenceZip.mockResolvedValue({
-      archive: archive as unknown as import('archiver').Archiver,
-      filename: 'acme_all-evidence_2026-04-22.zip',
+  it('triggers a background task and returns runId + token', async () => {
+    const result = await controller.exportAllEvidence('org_1', 'true');
+
+    expect(mockTrigger).toHaveBeenCalledWith(
+      'export-organization-evidence',
+      { organizationId: 'org_1', includeJson: true },
+      {
+        concurrencyKey: 'org_1',
+        idempotencyKey: 'evidence-export:org_1:true',
+        idempotencyKeyTTL: '30m',
+      },
+    );
+    expect(result).toEqual({
+      runId: 'run_123',
+      publicAccessToken: 'tok_abc',
     });
-    const req = makeFakeRequest();
-    const res = makeFakeResponse();
+  });
 
-    await controller.exportAllEvidence(
-      'org_1',
-      'true',
-      req as unknown as import('express').Request,
-      res as unknown as import('express').Response,
-    );
+  it('serializes per-org and dedupes on org + includeJson (includeJson=false)', async () => {
+    await controller.exportAllEvidence('org_2', undefined as unknown as string);
 
-    expect(service.streamOrganizationEvidenceZip).toHaveBeenCalledWith(
-      'org_1',
-      { includeRawJson: true },
+    expect(mockTrigger).toHaveBeenCalledWith(
+      'export-organization-evidence',
+      { organizationId: 'org_2', includeJson: false },
+      {
+        concurrencyKey: 'org_2',
+        idempotencyKey: 'evidence-export:org_2:false',
+        idempotencyKeyTTL: '30m',
+      },
     );
-    expect(res.setHeader).toHaveBeenCalledWith(
-      'Content-Type',
-      'application/zip',
-    );
-    expect(res.setHeader).toHaveBeenCalledWith(
-      'Content-Disposition',
-      `attachment; filename="acme_all-evidence_2026-04-22.zip"`,
-    );
-    expect(archive.pipe).toHaveBeenCalledWith(res);
   });
 });

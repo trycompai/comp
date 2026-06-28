@@ -1,8 +1,8 @@
 'use client';
 
-import { Badge } from '@trycompai/ui/badge';
+import { Badge } from '@trycompai/design-system';
 import { formatDistanceToNow } from 'date-fns';
-import { Globe, Plus } from 'lucide-react';
+import { Add, Globe } from '@trycompai/design-system/icons';
 import { useState } from 'react';
 import type { BrowserAutomation } from '../../hooks/types';
 import { AutomationItem } from './AutomationItem';
@@ -84,7 +84,7 @@ export function BrowserAutomationsList({
             )}
 
             {hasContext && (
-              <Badge variant="outline" className="text-xs">
+              <Badge variant="outline">
                 <div className="w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5" />
                 Connected
               </Badge>
@@ -118,7 +118,7 @@ export function BrowserAutomationsList({
             onClick={onCreateClick}
             className="w-full flex items-center justify-center gap-2 py-2.5 mt-3 rounded-lg border border-dashed border-border/60 hover:border-border hover:bg-muted/30 transition-all text-xs text-muted-foreground hover:text-foreground"
           >
-            <Plus className="w-3.5 h-3.5" />
+            <Add className="w-3.5 h-3.5" />
             Create Another
           </button>
         )}

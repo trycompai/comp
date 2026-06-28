@@ -25,7 +25,12 @@ model Organization {
   // When set, the scheduled sync will only use this provider
   employeeSyncProvider String?
 
+  // Device sync provider (e.g., 'jamf', 'kandji')
+  // When set, the scheduled sync will import devices from this provider
+  deviceSyncProvider String?
+
   apiKeys                            ApiKey[]
+  mcpOrgBindings                     McpOrgBinding[]
   auditLog                           AuditLog[]
   controls                           Control[]
   frameworkInstances                 FrameworkInstance[]
@@ -45,15 +50,19 @@ model Organization {
   context                            Context[]
   secrets                            Secret[]
   securityPenetrationTestRuns        SecurityPenetrationTestRun[]
+  securityPenetrationTestFindingContexts SecurityPenetrationTestFindingContext[]
   trustAccessRequests                TrustAccessRequest[]
   trustNdaAgreements                 TrustNDAAgreement[]
   trustDocuments                     TrustDocument[]
   trustResources                     TrustResource[]                     @relation("OrganizationTrustResources")
   trustCustomLinks                   TrustCustomLink[]
+  trustCustomFrameworks              TrustCustomFramework[]
   knowledgeBaseDocuments             KnowledgeBaseDocument[]
   questionnaires                     Questionnaire[]
   securityQuestionnaireManualAnswers SecurityQuestionnaireManualAnswer[]
   soaDocuments                       SOADocument[]
+  ismsDocuments                      IsmsDocument[]
+  ismsProfiles                       IsmsProfile[]
   primaryColor                       String?
   trustPortalFaqs                    Json? // Array of { question: string, answer: string, order: number }
 
@@ -78,7 +87,8 @@ model Organization {
   billingCreditEvents   BillingCreditEvent[]
 
   // Browser Automation
-  browserbaseContext BrowserbaseContext?
+  browserbaseContext  BrowserbaseContext?
+  browserAuthProfiles BrowserAuthProfile[]
   fleetPolicyResults FleetPolicyResult[]
 
   // Findings

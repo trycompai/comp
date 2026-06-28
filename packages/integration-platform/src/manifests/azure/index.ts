@@ -1,4 +1,21 @@
 import type { IntegrationManifest } from '../../types';
+import { environmentAliasesVariable } from '../environment-aliases';
+import {
+  environmentSeparationCheck,
+  keyVaultProtectionCheck,
+  keyVaultRbacCheck,
+  monitorLoggingAlertingCheck,
+  mysqlFlexibleTlsCheck,
+  nsgNoOpenPortsCheck,
+  postgresqlFlexibleTlsCheck,
+  rbacLeastPrivilegeCheck,
+  sqlAuditingCheck,
+  sqlPublicAccessCheck,
+  sqlTlsCheck,
+  storageEncryptionCheck,
+  storageHttpsTlsCheck,
+  storagePublicAccessCheck,
+} from './checks';
 
 export const azureManifest: IntegrationManifest = {
   id: 'azure',
@@ -71,6 +88,8 @@ Our integration only makes read-only API calls for security scanning.`,
     { id: 'network-watcher', name: 'Network Watcher', description: 'Network security group and flow log monitoring', enabledByDefault: false, implemented: true },
     { id: 'storage-account', name: 'Storage Accounts', description: 'HTTPS enforcement, public access, TLS version, and encryption checks', enabledByDefault: false, implemented: true },
     { id: 'sql-database', name: 'SQL Database', description: 'Auditing, TDE, firewall rules, and public access checks', enabledByDefault: false, implemented: true },
+    { id: 'mysql-flexible', name: 'Database for MySQL', description: 'Flexible Server TLS 1.2 / secure transport enforcement checks', enabledByDefault: false, implemented: true },
+    { id: 'postgresql-flexible', name: 'Database for PostgreSQL', description: 'Flexible Server TLS 1.2 / secure transport enforcement checks', enabledByDefault: false, implemented: true },
     { id: 'virtual-machine', name: 'Virtual Machines', description: 'Disk encryption, managed identity, and secure boot checks', enabledByDefault: false, implemented: true },
     { id: 'app-service', name: 'App Service', description: 'HTTPS enforcement, TLS, managed identity, and remote debugging checks', enabledByDefault: false, implemented: true },
     { id: 'aks', name: 'AKS', description: 'Kubernetes RBAC, network policies, private cluster, and auto-upgrade checks', enabledByDefault: false, implemented: true },
@@ -80,6 +99,61 @@ Our integration only makes read-only API calls for security scanning.`,
 
   variables: [
     {
+      id: 'subscription_ids',
+      label: 'Azure Subscriptions',
+      type: 'multi-select',
+      required: false,
+      helpText:
+        'Select which subscriptions to scan (select all to scan everything). Leave empty to keep scanning the single auto-detected subscription.',
+      fetchOptions: async (ctx) => {
+        try {
+          type SubsPage = {
+            value?: Array<{
+              subscriptionId: string;
+              displayName?: string;
+              state?: string;
+            }>;
+            nextLink?: string;
+          };
+          const subs: NonNullable<SubsPage['value']> = [];
+          // ARM paginates via nextLink — follow it so large tenants can see
+          // and select every subscription. The page cap matches armListAll's
+          // (a loop guard against malformed nextLink chains, not a budget).
+          let url: string | undefined =
+            'https://management.azure.com/subscriptions?api-version=2020-01-01';
+          let pages = 0;
+          while (url && pages < 50) {
+            const data: SubsPage = await ctx.fetch<SubsPage>(url);
+            subs.push(...(data.value ?? []));
+            // only follow nextLink on the ARM host, so the bearer token can't
+            // be sent elsewhere
+            url =
+              data.nextLink &&
+              data.nextLink.startsWith('https://management.azure.com/')
+                ? data.nextLink
+                : undefined;
+            pages++;
+          }
+          return subs
+            .filter((s) => s.state === 'Enabled')
+            .sort((a, b) => (a.displayName ?? '').localeCompare(b.displayName ?? ''))
+            .map((s) => ({
+              value: s.subscriptionId,
+              label: s.displayName
+                ? `${s.displayName} (${s.subscriptionId})`
+                : s.subscriptionId,
+            }));
+        } catch {
+          // Graceful empty picker (matches the GCP project_ids precedent) —
+          // the user can still rely on the saved subscription_id default.
+          return [];
+        }
+      },
+    },
+    {
+      // Kept for the Cloud Tests product, which auto-detects and reads this
+      // value on its own path. The evidence checks scope via subscription_ids
+      // and only fall back to this when subscriptions cannot be listed.
       id: 'subscription_id',
       label: 'Azure Subscription ID',
       type: 'text',
@@ -88,7 +162,23 @@ Our integration only makes read-only API calls for security scanning.`,
         'Auto-detected after connecting. If not detected, find it at portal.azure.com → Subscriptions',
       placeholder: 'Auto-detected',
     },
+    environmentAliasesVariable,
   ],
 
-  checks: [],
+  checks: [
+    storageHttpsTlsCheck,
+    storagePublicAccessCheck,
+    storageEncryptionCheck,
+    sqlTlsCheck,
+    sqlPublicAccessCheck,
+    sqlAuditingCheck,
+    mysqlFlexibleTlsCheck,
+    postgresqlFlexibleTlsCheck,
+    keyVaultProtectionCheck,
+    keyVaultRbacCheck,
+    nsgNoOpenPortsCheck,
+    rbacLeastPrivilegeCheck,
+    monitorLoggingAlertingCheck,
+    environmentSeparationCheck,
+  ],
 };

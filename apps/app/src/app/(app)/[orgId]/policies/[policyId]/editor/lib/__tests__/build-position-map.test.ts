@@ -68,10 +68,11 @@ describe('buildPositionMap', () => {
       const result = buildPositionMap(doc(h(2, 'Purpose')));
 
       expect(result.markdown).toBe('## Purpose');
-      // The heading content line should be mapped
+      // The heading line maps to the node's outer boundary (before the node),
+      // which is position 0 for the first block.
       const pos = result.lineToPos.get(1);
       expect(pos).toBeDefined();
-      expect(pos!.from).toBe(1);
+      expect(pos!.from).toBe(0);
     });
 
     it('uses the correct number of # for each level', () => {
@@ -127,9 +128,11 @@ describe('buildPositionMap', () => {
       const result = buildPositionMap(doc(p('Hello world')));
 
       expect(result.markdown).toBe('Hello world');
+      // Maps to the paragraph's outer boundary (before the node) = 0 for the
+      // first block.
       const pos = result.lineToPos.get(1);
       expect(pos).toBeDefined();
-      expect(pos!.from).toBe(1);
+      expect(pos!.from).toBe(0);
     });
 
     it('separates consecutive paragraphs with a blank line', () => {

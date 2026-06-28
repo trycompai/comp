@@ -7,6 +7,7 @@ import {
   useIntegrationMutations,
   useIntegrationProviders,
 } from '@/hooks/use-integration-platform';
+import { api } from '@/lib/api-client';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useVendors } from '@/hooks/use-vendors';
 import { Badge } from '@trycompai/ui/badge';
@@ -38,6 +39,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { CATEGORIES, type Integration, type IntegrationCategory } from '../data/integrations';
+import { matchesIntegrationNameSearch } from './integration-search';
 import { SearchInput } from './SearchInput';
 import { TaskCard, TaskCardSkeleton } from './TaskCard';
 
@@ -128,6 +130,7 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
   const [selectedCategory, setSelectedCategory] = useState<IntegrationCategory | 'All'>('All');
   const [connectingProvider, setConnectingProvider] = useState<string | null>(null);
   const hasHandledOAuthRef = useRef(false);
+  const hasHandledOAuthErrorRef = useRef(false);
 
   // Custom integration dialog state
   const [selectedCustomIntegration, setSelectedCustomIntegration] = useState<Integration | null>(
@@ -288,18 +291,12 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
 
     // Search filter
     if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim();
-      const terms = query.split(' ').filter(Boolean);
+      const query = searchQuery.trim();
 
       filtered = filtered.filter((item) => {
-        if (item.type === 'platform') {
-          const searchText =
-            `${item.provider.name} ${item.provider.description} ${item.provider.category}`.toLowerCase();
-          return terms.every((term) => searchText.includes(term));
-        }
-        const searchText =
-          `${item.integration.name} ${item.integration.description} ${item.integration.category} ${item.integration.examplePrompts.join(' ')}`.toLowerCase();
-        return terms.every((term) => searchText.includes(term));
+        const name = item.type === 'platform' ? item.provider.name : item.integration.name;
+
+        return matchesIntegrationNameSearch(name, query);
       });
     }
 
@@ -333,6 +330,38 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
     url.searchParams.delete('provider');
     window.history.replaceState({}, '', url.toString());
   }, [searchParams, providers, loadingProviders, router, orgId]);
+
+  // Surface + record OAuth failures that land back here. The backend redirects
+  // with `?error=...&error_description=...`; previously that was shown to no one
+  // and stored nowhere. Now we tell the user the real reason and record it so a
+  // failed connect is diagnosable later (read via the internal debug API).
+  useEffect(() => {
+    if (hasHandledOAuthErrorRef.current) return;
+
+    const error = searchParams.get('error');
+    if (!error) return;
+
+    hasHandledOAuthErrorRef.current = true;
+    const errorDescription = searchParams.get('error_description');
+    const providerSlug = searchParams.get('provider') || 'unknown';
+
+    toast.error(`Connection failed: ${errorDescription || error}`);
+
+    // Best-effort — never let recording (or its failure) affect the UI.
+    void api
+      .post(
+        '/v1/integrations/oauth-errors',
+        { providerSlug, error, errorDescription: errorDescription ?? undefined },
+        orgId,
+      )
+      .catch(() => {});
+
+    const url = new URL(window.location.href);
+    url.searchParams.delete('error');
+    url.searchParams.delete('error_description');
+    url.searchParams.delete('provider');
+    window.history.replaceState({}, '', url.toString());
+  }, [searchParams, orgId]);
 
   // Create a map from templateId to taskId for quick lookup
   const templateToTaskMap = useMemo(

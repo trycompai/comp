@@ -56,9 +56,20 @@ import {
 } from './dto/trust-custom-link.dto';
 import type { UpdateTrustOverviewDto } from './dto/update-trust-overview.dto';
 import { UpdateTrustOverviewSchema } from './dto/update-trust-overview.dto';
+import { UpdateAllowedEmailsDto } from './dto/update-allowed-emails.dto';
 import type { UpdateVendorTrustSettingsDto } from './dto/trust-vendor.dto';
 import { UpdateVendorTrustSettingsSchema } from './dto/trust-vendor.dto';
+import {
+  UpdateTrustCustomFrameworkSchema,
+  type UpdateTrustCustomFrameworkDto,
+  UploadCustomFrameworkBadgeDto,
+  RemoveCustomFrameworkBadgeQueryDto,
+  CustomFrameworkBadgeResponseDto,
+} from './dto/trust-custom-framework.dto';
+import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { TrustPortalService } from './trust-portal.service';
+import { TrustCustomFrameworkService } from './trust-custom-framework.service';
+import { TrustCustomFrameworkBadgeService } from './trust-custom-framework-badge.service';
 
 class ListComplianceResourcesDto {
   @ApiProperty({
@@ -74,7 +85,11 @@ class ListComplianceResourcesDto {
 @UseGuards(HybridAuthGuard, PermissionGuard)
 @ApiSecurity('apikey')
 export class TrustPortalController {
-  constructor(private readonly trustPortalService: TrustPortalService) {}
+  constructor(
+    private readonly trustPortalService: TrustPortalService,
+    private readonly trustCustomFrameworkService: TrustCustomFrameworkService,
+    private readonly trustCustomFrameworkBadgeService: TrustCustomFrameworkBadgeService,
+  ) {}
 
   @Get('settings')
   @HttpCode(HttpStatus.OK)
@@ -381,6 +396,20 @@ export class TrustPortalController {
     );
   }
 
+  @Put('settings/allowed-emails')
+  @RequirePermission('trust', 'update')
+  @ApiOperation({ summary: 'Update allowed emails for the trust portal' })
+  @ApiBody({ type: UpdateAllowedEmailsDto })
+  async updateAllowedEmails(
+    @OrganizationId() organizationId: string,
+    @Body() body: UpdateAllowedEmailsDto,
+  ) {
+    return this.trustPortalService.updateAllowedEmails(
+      organizationId,
+      body.emails ?? [],
+    );
+  }
+
   @Put('settings/frameworks')
   @RequirePermission('trust', 'update')
   @ApiOperation({ summary: 'Update trust portal framework settings' })
@@ -389,6 +418,100 @@ export class TrustPortalController {
     @Body() body: Record<string, boolean | string | undefined>,
   ) {
     return this.trustPortalService.updateFrameworks(organizationId, body);
+  }
+
+  @Get('custom-frameworks')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('trust', 'read')
+  @ApiOperation({
+    summary:
+      'List org-authored custom frameworks with their trust portal selection',
+  })
+  async listCustomFrameworks(@OrganizationId() organizationId: string) {
+    return this.trustCustomFrameworkService.listForOrg(organizationId);
+  }
+
+  @Put('custom-frameworks')
+  @RequirePermission('trust', 'update')
+  @ApiOperation({
+    summary:
+      'Enable/disable a custom framework on the trust portal and set its status',
+  })
+  @ApiBody({
+    description: 'At least one of `enabled` or `status` must be provided.',
+    schema: {
+      type: 'object',
+      required: ['customFrameworkId'],
+      // Mirrors UpdateTrustCustomFrameworkSchema's .refine(): the id is
+      // required and at least one mutable field must be present.
+      anyOf: [{ required: ['enabled'] }, { required: ['status'] }],
+      properties: {
+        customFrameworkId: { type: 'string', minLength: 1 },
+        enabled: { type: 'boolean' },
+        status: {
+          type: 'string',
+          enum: ['started', 'in_progress', 'compliant'],
+        },
+      },
+    },
+  })
+  async updateCustomFramework(
+    @OrganizationId() organizationId: string,
+    // Validate via the pipe so a malformed body returns 400 (matching the
+    // @ApiBody/MCP contract) instead of an inline .parse() throwing a raw
+    // ZodError that surfaces as a 500.
+    @Body(new ZodValidationPipe(UpdateTrustCustomFrameworkSchema))
+    dto: UpdateTrustCustomFrameworkDto,
+  ) {
+    return this.trustCustomFrameworkService.updateSelection(
+      organizationId,
+      dto,
+    );
+  }
+
+  @Post('custom-frameworks/badge')
+  @HttpCode(HttpStatus.CREATED)
+  @RequirePermission('trust', 'update')
+  @ApiOperation({
+    summary: "Upload or replace a custom framework's Trust Portal badge image",
+    description:
+      "Stores a PNG/JPEG/WebP badge (max 256KB) in the organization assets bucket. Does not change the framework's portal visibility.",
+  })
+  @ApiBody({ type: UploadCustomFrameworkBadgeDto })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Badge uploaded successfully',
+    type: CustomFrameworkBadgeResponseDto,
+  })
+  async uploadCustomFrameworkBadge(
+    @OrganizationId() organizationId: string,
+    @Body() dto: UploadCustomFrameworkBadgeDto,
+  ): Promise<CustomFrameworkBadgeResponseDto> {
+    return this.trustCustomFrameworkBadgeService.uploadBadge(
+      organizationId,
+      dto,
+    );
+  }
+
+  @Delete('custom-frameworks/badge')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('trust', 'update')
+  @ApiOperation({
+    summary: "Remove a custom framework's Trust Portal badge image",
+  })
+  @ApiQuery({
+    name: 'customFrameworkId',
+    description: 'Org-authored custom framework ID whose badge to remove',
+    required: true,
+  })
+  async removeCustomFrameworkBadge(
+    @OrganizationId() organizationId: string,
+    @Query() query: RemoveCustomFrameworkBadgeQueryDto,
+  ) {
+    return this.trustCustomFrameworkBadgeService.removeBadge(
+      organizationId,
+      query.customFrameworkId,
+    );
   }
 
   @Post('overview')

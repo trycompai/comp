@@ -24,7 +24,7 @@ import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
 import { ApiKeyService } from '../auth/api-key.service';
 import type { AuthContext as AuthContextType } from '../auth/types';
-import type { UpdateOrganizationDto } from './dto/update-organization.dto';
+import { UpdateOrganizationDto } from './dto/update-organization.dto';
 import type { TransferOwnershipDto } from './dto/transfer-ownership.dto';
 import { OrganizationService } from './organization.service';
 import { GET_ORGANIZATION_RESPONSES } from './schemas/get-organization.responses';

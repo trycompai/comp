@@ -113,6 +113,7 @@ import { AppModule } from './app.module';
 import {
   applyPublicOpenApiMetadata,
   PUBLIC_OPENAPI_DESCRIPTION,
+  PUBLIC_OPENAPI_TIMEOUT_MS,
   PUBLIC_OPENAPI_TITLE,
   PUBLIC_SERVER_URL,
 } from './openapi/public-docs-metadata';
@@ -154,6 +155,14 @@ describe('OpenAPI document', () => {
           description: 'Production API Server',
         },
       ]);
+    });
+
+    it('bakes a finite default request timeout into the generated SDK + MCP server', () => {
+      // Without x-speakeasy-timeout the generated request funcs use -1 ("no
+      // timeout") and a hung upstream wedges the MCP connection forever.
+      expect(
+        (document as { 'x-speakeasy-timeout'?: number })['x-speakeasy-timeout'],
+      ).toBe(PUBLIC_OPENAPI_TIMEOUT_MS);
     });
 
     it('keeps the public spec complete, SEO-ready, and free of private surfaces', () => {
@@ -199,6 +208,52 @@ describe('OpenAPI document', () => {
       expect(policies?.['x-mint']?.metadata?.title).toBe(
         'List compliance policies | Comp AI API',
       );
+    });
+  });
+
+  // Guardrail against the regression in PR #2961: the Speakeasy mcp-typescript
+  // generator DROPS a tool whenever an operation declares more than one security
+  // scheme (it can no longer supply the credential from the server's global
+  // config). Adding a second auth method (oauth2) to every endpoint silently
+  // gutted ~300 of ~335 MCP tools. Rule: keep exactly ONE auth method in the
+  // base spec; handle any extra auth (e.g. OAuth) at the hosting layer, never here.
+  describe('MCP generator safety', () => {
+    it('never declares more than one security scheme on any operation', () => {
+      const offenders: string[] = [];
+
+      for (const [routePath, methods] of Object.entries(document.paths)) {
+        for (const [method, operation] of Object.entries(
+          methods as Record<string, { security?: unknown }>,
+        )) {
+          const security = operation?.security;
+          if (Array.isArray(security) && security.length > 1) {
+            offenders.push(
+              `${method.toUpperCase()} ${routePath} (${security.length} schemes)`,
+            );
+          }
+        }
+      }
+
+      // If this fails: an operation has 2+ security schemes, which breaks the
+      // Speakeasy MCP generator (it drops the tool). Move the extra auth to the
+      // hosting layer instead of the base OpenAPI spec.
+      expect(offenders).toEqual([]);
+    });
+
+    it('still gates protected operations with the API key', () => {
+      const apiKeyOps = Object.values(document.paths)
+        .flatMap((methods) =>
+          Object.values(methods as Record<string, { security?: unknown }>),
+        )
+        .filter(
+          (op) =>
+            Array.isArray(op?.security) &&
+            op.security.some(
+              (req) => req && typeof req === 'object' && 'apikey' in req,
+            ),
+        );
+
+      expect(apiKeyOps.length).toBeGreaterThan(0);
     });
   });
 });

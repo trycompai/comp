@@ -25,10 +25,30 @@ type RequirementDef = {
   identifier: string;
   description: string;
   requirementFamily?: string | null;
+  sortOrder?: number | null;
   frameworkId: string | null;
   customFrameworkId: string | null;
   kind: 'platform' | 'custom';
 };
+
+// FRAME-18: numbered requirements first (ascending), unset rows (incl. per-instance
+// custom requirements) last, then by identifier (the canonical-order key, e.g.
+// CC6.1 / GV.OC-01) with name as a final tiebreak. Mirrors the app-side
+// `compareRequirementsByOrder` so server and client agree on the order.
+function compareRequirementDefs(a: RequirementDef, b: RequirementDef): number {
+  const ao = a.sortOrder ?? null;
+  const bo = b.sortOrder ?? null;
+  if (ao !== bo) {
+    if (ao === null) return 1;
+    if (bo === null) return -1;
+    return ao - bo;
+  }
+  const byIdentifier = (a.identifier ?? '').localeCompare(b.identifier ?? '', undefined, {
+    numeric: true,
+  });
+  if (byIdentifier !== 0) return byIdentifier;
+  return a.name.localeCompare(b.name);
+}
 
 @Injectable()
 export class FrameworksService {
@@ -106,20 +126,23 @@ export class FrameworksService {
               identifier: r.identifier,
               description: r.description ?? '',
               requirementFamily: r.requirementFamily ?? null,
+              sortOrder: r.sortOrder ?? null,
               frameworkId: fi.frameworkId,
               customFrameworkId: null,
               kind: 'platform',
             }),
           );
-          return [...platformDefs, ...customDefs].sort((a, b) =>
-            a.name.localeCompare(b.name),
-          );
+          return [...platformDefs, ...customDefs].sort(compareRequirementDefs);
         }
       }
       // Fallback: instances with no pinned version (shouldn't happen post-backfill).
       const rows = await db.frameworkEditorRequirement.findMany({
         where: { frameworkId: fi.frameworkId },
-        orderBy: { name: 'asc' },
+        orderBy: [
+          { sortOrder: { sort: 'asc', nulls: 'last' } },
+          { identifier: 'asc' },
+          { name: 'asc' },
+        ],
       });
       const platformDefs: RequirementDef[] = rows.map((r) => ({
         id: r.id,
@@ -127,13 +150,12 @@ export class FrameworksService {
         identifier: r.identifier,
         description: r.description,
         requirementFamily: r.requirementFamily ?? null,
+        sortOrder: r.sortOrder ?? null,
         frameworkId: r.frameworkId,
         customFrameworkId: null,
         kind: 'platform',
       }));
-      return [...platformDefs, ...customDefs].sort((a, b) =>
-        a.name.localeCompare(b.name),
-      );
+      return [...platformDefs, ...customDefs].sort(compareRequirementDefs);
     }
     return [];
   }
@@ -403,11 +425,13 @@ export class FrameworksService {
       db.frameworkEditorFramework.findMany({
         where: { visible: true },
         include: { requirements: true },
+        orderBy: { name: 'asc' },
       }),
       organizationId
         ? db.customFramework.findMany({
             where: { organizationId },
             include: { requirements: true },
+            orderBy: { name: 'asc' },
           })
         : Promise.resolve([]),
     ]);
@@ -1022,9 +1046,6 @@ export class FrameworksService {
     if (!instance || instance.organizationId !== params.organizationId) {
       throw new NotFoundException('Framework instance not found');
     }
-    if (!instance.currentVersion) {
-      throw new BadRequestException('Instance is not on any version');
-    }
 
     const latest = await db.frameworkVersion.findFirst({
       where: { frameworkId: instance.frameworkId! },
@@ -1034,8 +1055,22 @@ export class FrameworksService {
       throw new NotFoundException('No update available');
     }
 
-    const fromManifest = instance.currentVersion
-      .manifest as unknown as FrameworkManifest;
+    // Instances that were never pinned to a version (e.g. created before
+    // versioning) have no currentVersion. Rather than dead-ending the update
+    // flow, diff from the framework's earliest published version so they can
+    // still adopt the latest — applying the sync pins currentVersionId, which
+    // heals the state for future updates.
+    const baseVersion =
+      instance.currentVersion ??
+      (await db.frameworkVersion.findFirst({
+        where: { frameworkId: instance.frameworkId! },
+        orderBy: { publishedAt: 'asc' },
+      }));
+    if (!baseVersion) {
+      throw new NotFoundException('No update available');
+    }
+
+    const fromManifest = baseVersion.manifest as unknown as FrameworkManifest;
     const toManifest = latest.manifest as unknown as FrameworkManifest;
     const templateControlIds = [
       ...new Set([
@@ -1109,8 +1144,8 @@ export class FrameworksService {
         status: p.status,
       })),
       fromVersionLabel: {
-        id: instance.currentVersion.id,
-        version: instance.currentVersion.version,
+        id: baseVersion.id,
+        version: baseVersion.version,
       },
       toVersionLabel: { id: latest.id, version: latest.version },
       releaseNotes: latest.releaseNotes,
