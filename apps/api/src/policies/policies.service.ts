@@ -1350,7 +1350,7 @@ export class PoliciesService {
     // publishAll. notificationType uses the pre-update policy state captured at
     // the top of this method (signedBy/lastPublishedAt before they were reset).
     const allMembers = await db.member.findMany({
-      where: { organizationId, deactivated: false },
+      where: { organizationId, isActive: true, deactivated: false },
       include: {
         user: { select: { email: true, name: true, role: true } },
         organization: { select: { name: true, id: true } },

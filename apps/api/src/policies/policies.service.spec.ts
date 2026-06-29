@@ -702,6 +702,42 @@ describe('PoliciesService', () => {
       ]);
     });
 
+    it('only queries active, non-deactivated members for re-acknowledgment emails', async () => {
+      // Inactive members (offboarded / pending invite) must not be emailed
+      // policy re-acknowledgment notifications, so the recipient query must
+      // scope by isActive: true in addition to deactivated: false.
+      const orgId = 'org_abc';
+      db.policy.findUnique.mockResolvedValueOnce(
+        buildPendingPolicy({
+          organizationId: orgId,
+          name: 'Background Screening',
+          signedBy: [],
+          lastPublishedAt: new Date('2026-01-01'),
+        }),
+      );
+      db.policyVersion.findUnique.mockResolvedValueOnce({
+        id: 'ver_1',
+        version: 3,
+        content: [{ type: 'paragraph' }],
+      });
+      db.member.findFirst.mockResolvedValueOnce({ id: 'mem_caller' });
+      db.member.findMany.mockResolvedValueOnce([]);
+      mockTransactionTx();
+
+      await service.acceptChanges(
+        'pol_1',
+        orgId,
+        { approverId: 'mem_approver' },
+        'usr_caller',
+      );
+
+      expect(db.member.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { organizationId: orgId, isActive: true, deactivated: false },
+        }),
+      );
+    });
+
     it('rejects when the body approverId does not match the assigned approver', async () => {
       db.policy.findUnique.mockResolvedValueOnce(buildPendingPolicy());
 
