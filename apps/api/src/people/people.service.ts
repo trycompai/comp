@@ -408,7 +408,7 @@ export class PeopleService {
         deactivated: true,
         isActive: false,
         ...(skipOffboarding
-          ? {}
+          ? { offboardDate: null }
           : { offboardDate: member.offboardDate ?? new Date() }),
       },
     });
