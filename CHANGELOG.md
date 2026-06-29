@@ -1,3 +1,15 @@
+## [3.93.1](https://github.com/trycompai/comp/compare/v3.93.0...v3.93.1) (2026-06-29)
+
+
+### Bug Fixes
+
+* **api:** clear offboardDate when removing member with skip offboarding ([99181db](https://github.com/trycompai/comp/commit/99181db5559c699468e9d8a2dda70652e4b77011))
+* **auditor:** tighten context generation prompts and feed complete vendor list ([79be921](https://github.com/trycompai/comp/commit/79be921680fb3f193c6eff0d37b0afeb300463f8))
+* **bug-todo:** address cubic review ([27f605d](https://github.com/trycompai/comp/commit/27f605dc461673f8f8a7e00388c2dd9fd0ae1982))
+* **cloud-security:** drop unsupported temperature param from auto-fix model calls ([e94bcd6](https://github.com/trycompai/comp/commit/e94bcd64bb479ab19fb4f01476f37771484b475f))
+* **policies:** send re-acknowledgment emails when policy is updated ([b24884e](https://github.com/trycompai/comp/commit/b24884e063963025a52d52834d4670f9ebef0b5c))
+* **todo:** address cubic review ([e0f8471](https://github.com/trycompai/comp/commit/e0f84711644ffb5b6dd8a83f5a3146411124b419))
+
 # [3.93.0](https://github.com/trycompai/comp/compare/v3.92.5...v3.93.0) (2026-06-29)
 
 
