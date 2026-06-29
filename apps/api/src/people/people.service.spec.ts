@@ -646,14 +646,17 @@ describe('PeopleService', () => {
     });
 
     describe('when skipOffboarding is true', () => {
-      it('should not set offboardDate', async () => {
+      it('should set offboardDate to null to clear any pre-existing date', async () => {
         await service.deleteById('mem_1', 'org_123', 'usr_actor', {
           skipOffboarding: true,
         });
 
         const updateCall = (db.member.update as jest.Mock).mock.calls[0]?.[0];
-        expect(updateCall.data).toEqual({ deactivated: true, isActive: false });
-        expect(updateCall.data).not.toHaveProperty('offboardDate');
+        expect(updateCall.data).toEqual({
+          deactivated: true,
+          isActive: false,
+          offboardDate: null,
+        });
       });
 
       it('should not collect assigned items or notify the owner', async () => {
