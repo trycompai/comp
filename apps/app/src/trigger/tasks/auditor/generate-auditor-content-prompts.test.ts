@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildContextHubText,
   buildSectionUserPrompt,
   buildVendorsBlock,
   NARRATIVE_SECTIONS,
   sectionPrompts,
+  SENSITIVE_CONTEXT_QUESTIONS,
   type VendorTabEntry,
 } from './generate-auditor-content-prompts';
 
@@ -81,6 +83,56 @@ describe('subservice-organizations prompt', () => {
 
   it('chooses only from the Vendors tab', () => {
     expect(prompt).toMatch(/VENDORS TAB/);
+  });
+});
+
+describe('buildContextHubText', () => {
+  // Mirrors a real org's Context hub, including the sensitive headcount +
+  // named-personnel rows (fake values only — no customer data).
+  const QA = [
+    { question: 'How many employees do you have?', answer: '1' },
+    { question: 'Who are your C-Suite executives?', answer: 'Jane Roe — CEO' },
+    {
+      question: 'Who will sign off on the final report?',
+      answer: 'FullName: Jane Roe\nJobTitle: CEO\nEmail: jane@example.test',
+    },
+    { question: 'What industry is your company in?', answer: 'SaaS' },
+    { question: 'Where do you host your applications and data?', answer: 'AWS' },
+    { question: 'Company Background & Overview of Operations', answer: 'prior auditor output' },
+    { question: 'Which compliance frameworks do you need?', answer: 'frk_abc123' },
+  ];
+
+  it('strips headcount and named-personnel answers so they cannot leak into narrative fields (CS-589)', () => {
+    const text = buildContextHubText(QA);
+
+    // Sensitive questions and their answers are gone entirely — prompt-level
+    // exclusions are not enough; the raw data must not be in the context.
+    expect(text).not.toMatch(/how many employees/i);
+    expect(text).not.toMatch(/c-suite/i);
+    expect(text).not.toMatch(/sign off on the final report/i);
+    expect(text).not.toContain('Jane Roe');
+    expect(text).not.toContain('jane@example.test');
+
+    // Non-sensitive org context still flows through.
+    expect(text).toContain('What industry is your company in?');
+    expect(text).toContain('SaaS');
+    expect(text).toContain('Where do you host your applications and data?');
+  });
+
+  it('still excludes auditor sections and framework selection', () => {
+    const text = buildContextHubText(QA);
+
+    expect(text).not.toContain('prior auditor output');
+    expect(text).not.toContain('frk_abc123');
+  });
+
+  it('keeps every SENSITIVE_CONTEXT_QUESTION out of the assembled context', () => {
+    const text = buildContextHubText(
+      SENSITIVE_CONTEXT_QUESTIONS.map((question) => ({ question, answer: 'SECRET_VALUE' })),
+    );
+
+    expect(text).not.toContain('SECRET_VALUE');
+    expect(text).toBe('');
   });
 });
 

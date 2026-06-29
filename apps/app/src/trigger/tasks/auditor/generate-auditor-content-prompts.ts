@@ -24,6 +24,19 @@ export const SECTION_QUESTIONS: Record<Section, string> = {
   'subservice-organizations': 'Subservice Organizations',
 };
 
+// Onboarding Q&A whose answers carry headcount or named-personnel data (team
+// size, C-Suite executives, the report signatory's name/title/email). These
+// must never reach the generation prompts: SOC 2 narrative fields are lifted
+// verbatim into the customer report, and prompt-level exclusions alone are not
+// a hard guarantee, so the raw values are stripped from the model's context
+// entirely. Strings match the onboarding step questions (setup/lib/constants.ts)
+// and the executive-context backfill task. See CS-589.
+export const SENSITIVE_CONTEXT_QUESTIONS: readonly string[] = [
+  'How many employees do you have?',
+  'Who are your C-Suite executives?',
+  'Who will sign off on the final report?',
+];
+
 // A single vendor as recorded in the org's Vendors tab.
 export type VendorTabEntry = {
   name: string;
@@ -235,4 +248,28 @@ ${contextHubText || 'No additional context.'}
 === END OF SOURCES ===
 
 Generate the content based on the sources above. Write substantively about what you find - never mention missing information:`;
+}
+
+/** A single onboarding Q&A entry from the org's Context hub. */
+export type ContextQA = { question: string; answer: string };
+
+/**
+ * Builds the org-context block concatenated into every section prompt. Excludes
+ * three groups of Q&A:
+ * 1. The auditor sections themselves — avoids feeding prior output back in.
+ * 2. Framework selection — raw framework IDs, irrelevant to the content.
+ * 3. Headcount + named-personnel answers (SENSITIVE_CONTEXT_QUESTIONS) —
+ *    CS-589: these leak verbatim into the SOC 2 narrative fields otherwise.
+ */
+export function buildContextHubText(questionsAndAnswers: ContextQA[]): string {
+  const excludedQuestions = new Set<string>([
+    ...Object.values(SECTION_QUESTIONS),
+    'Which compliance frameworks do you need?',
+    ...SENSITIVE_CONTEXT_QUESTIONS,
+  ]);
+
+  return questionsAndAnswers
+    .filter((qa) => !excludedQuestions.has(qa.question))
+    .map((qa) => `Q: ${qa.question}\nA: ${qa.answer}`)
+    .join('\n\n');
 }

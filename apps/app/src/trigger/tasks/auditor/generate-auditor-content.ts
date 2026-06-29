@@ -6,6 +6,7 @@ import { generateText } from 'ai';
 import { z } from 'zod';
 import {
   AUDITOR_SYSTEM_PROMPT,
+  buildContextHubText,
   buildSectionUserPrompt,
   buildVendorsBlock,
   type Section,
@@ -209,18 +210,12 @@ export const generateAuditorContentTask = schemaTask({
         };
       }
 
-      // Build context from organization data, excluding:
-      // 1. Auditor sections (to avoid circular reference)
-      // 2. Framework selection (contains raw IDs like "frk_xxx" and isn't relevant to auditor content)
-      const auditorQuestions = new Set(Object.values(SECTION_QUESTIONS));
-      const excludedQuestions = new Set([
-        ...auditorQuestions,
-        'Which compliance frameworks do you need?',
-      ]);
-      const contextHubText = questionsAndAnswers
-        .filter((qa) => !excludedQuestions.has(qa.question))
-        .map((qa) => `Q: ${qa.question}\nA: ${qa.answer}`)
-        .join('\n\n');
+      // Build the org-context block fed into every section prompt. The
+      // assembly — including which Q&A to exclude (auditor sections, framework
+      // IDs, and the headcount/named-personnel answers that must not leak into
+      // the verbatim narrative fields, CS-589) — lives in the pure, unit-tested
+      // prompts module.
+      const contextHubText = buildContextHubText(questionsAndAnswers);
 
       metadata.set('status', 'generating');
 
