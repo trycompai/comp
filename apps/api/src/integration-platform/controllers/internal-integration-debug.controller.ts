@@ -37,6 +37,18 @@ class TestCandidateBody {
   checkId?: string;
 }
 
+class RerunCheckBody {
+  /** The check to re-run and persist. */
+  @IsString()
+  @IsNotEmpty()
+  checkId!: string;
+
+  /** The task this run belongs to (so task-scoped history stays correct). */
+  @IsOptional()
+  @IsString()
+  taskId?: string;
+}
+
 /**
  * Internal-token-gated diagnostic toolkit for dynamic integrations. Lets an
  * operator/agent do the full debug loop over HTTP — inspect any connection,
@@ -127,6 +139,25 @@ export class InternalIntegrationDebugController {
   }
 
   /**
+   * Re-run a single check for one connection AND PERSIST a fresh run. Called by
+   * the self-heal agent right after it applies a fix, for every connection that
+   * was held — a now-fixed check produces a fresh 'success' the customer sees,
+   * while one still failing our-side is re-held as 'inconclusive'. Unlike /run +
+   * /test (verification-only), this writes a real IntegrationCheckRun.
+   */
+  @Post('connections/:connectionId/rerun')
+  async rerunConnectionCheck(
+    @Param('connectionId') connectionId: string,
+    @Body() body: RerunCheckBody,
+  ) {
+    return this.debugService.rerunAndPersistCheck({
+      connectionId,
+      checkId: body.checkId,
+      taskId: body.taskId,
+    });
+  }
+
+  /**
    * Read recently captured OAuth callback errors (recorded by the frontend on a
    * failed connect). Use this to diagnose "the integration won't connect" for
    * any org/provider — the exact provider error is here instead of lost.
@@ -140,6 +171,24 @@ export class InternalIntegrationDebugController {
     return this.debugService.listOAuthErrors({
       organizationId,
       providerSlug,
+      limit: parseOptionalInt(limit),
+    });
+  }
+
+  /**
+   * The self-heal agent's work queue: check runs HELD as inconclusive (our-side /
+   * transient failures, never shown to the customer as red). The agent polls
+   * this, then diagnoses + fixes each. Filter by provider / org.
+   */
+  @Get('inconclusive-runs')
+  async listInconclusiveRuns(
+    @Query('providerSlug') providerSlug?: string,
+    @Query('organizationId') organizationId?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.debugService.listInconclusiveRuns({
+      providerSlug,
+      organizationId,
       limit: parseOptionalInt(limit),
     });
   }

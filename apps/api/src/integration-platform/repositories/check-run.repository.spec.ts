@@ -143,7 +143,7 @@ describe('CheckRunRepository.findLatestPerConnectionAndCheckByTask', () => {
     expect(result.filter((r) => r.id === 'rA')).toHaveLength(1);
   });
 
-  it('excludes disconnected connections in both queries', async () => {
+  it('excludes disconnected connections and held (inconclusive) runs in both queries', async () => {
     mockGroupBy.mockResolvedValue([
       {
         connectionId: 'A',
@@ -165,6 +165,13 @@ describe('CheckRunRepository.findLatestPerConnectionAndCheckByTask', () => {
       expect(call[0].where.connection).toEqual({
         status: { not: 'disconnected' },
       });
+      // Held runs are never surfaced to the customer.
+      expect(call[0].where.status).toEqual({ not: 'inconclusive' });
+    }
+    // groupBy must exclude held runs too, so a check with ONLY held runs yields
+    // no group → that account shows "not run yet", never a red.
+    for (const call of mockGroupBy.mock.calls) {
+      expect(call[0].where.status).toEqual({ not: 'inconclusive' });
     }
   });
 
