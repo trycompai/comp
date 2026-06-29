@@ -388,6 +388,10 @@ export class InternalIntegrationDebugService {
         completedAt: true,
         // taskId so the agent can re-run + persist for the right task after a fix.
         taskId: true,
+        // The evidence task's title is the check's INTENT (e.g. "App
+        // availability") — the agent uses it to fix toward what the check should
+        // verify, not just to make it pass.
+        task: { select: { title: true } },
         connection: {
           select: {
             id: true,
