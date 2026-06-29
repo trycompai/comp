@@ -97,7 +97,7 @@ export const checkDomainHealthSchedule = schedules.task({
       return { checked: 0, misconfigured: 0, notified: 0 };
     }
 
-    const results = await Promise.all(
+    const settled = await Promise.allSettled(
       trusts.map(async (trust) => {
         const domain = trust.domain!;
 
@@ -164,6 +164,20 @@ export const checkDomainHealthSchedule = schedules.task({
         };
       }),
     );
+
+    const results = settled.map((s, i) => {
+      if (s.status === 'rejected') {
+        logger.error(
+          `Domain health check failed for trust ${trusts[i].organizationId}`,
+          {
+            error:
+              s.reason instanceof Error ? s.reason.message : String(s.reason),
+          },
+        );
+        return { misconfigured: 0, notified: 0 };
+      }
+      return s.value;
+    });
 
     const checked = trusts.length;
     const misconfigured = results.reduce((sum, r) => sum + r.misconfigured, 0);
