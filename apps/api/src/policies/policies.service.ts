@@ -1343,7 +1343,38 @@ export class PoliciesService {
         this.logger.warn('timeline auto-complete check failed', err);
       });
 
-    return { versionId: version.id, version: version.version };
+    // Publishing cleared signedBy[] above, so everyone with the compliance
+    // obligation must (re-)acknowledge the new version. Surface that audience so
+    // the app layer can send notification emails — the email task lives in the
+    // app's Trigger.dev project, which the API cannot trigger directly. Mirrors
+    // publishAll. notificationType uses the pre-update policy state captured at
+    // the top of this method (signedBy/lastPublishedAt before they were reset).
+    const allMembers = await db.member.findMany({
+      where: { organizationId, deactivated: false },
+      include: {
+        user: { select: { email: true, name: true, role: true } },
+        organization: { select: { name: true, id: true } },
+      },
+    });
+    const complianceMembers = await filterComplianceMembers(
+      allMembers,
+      organizationId,
+    );
+    const isNewPolicy = policy.lastPublishedAt === null;
+    const members = complianceMembers.map((m) => ({
+      email: m.user.email,
+      userName: m.user.name || m.user.email || 'Employee',
+      policyName: policy.name,
+      organizationId,
+      organizationName: m.organization.name || '',
+      notificationType: isNewPolicy
+        ? ('new' as const)
+        : policy.signedBy.includes(m.id)
+          ? ('re-acceptance' as const)
+          : ('updated' as const),
+    }));
+
+    return { versionId: version.id, version: version.version, members };
   }
 
   async denyChanges(
