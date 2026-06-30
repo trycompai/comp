@@ -1,5 +1,4 @@
 import { ActiveExceptionSet } from '../../cloud-security/finding-exceptions';
-import { classifyCheckFailure } from '../services/check-failure-classifier';
 import { redactSecrets } from './redact-secrets';
 
 /** A failing finding, identified the same way an exception is keyed. */
@@ -88,25 +87,14 @@ export interface FailureDisposition {
  */
 export function splitFailuresByDisposition(
   failing: ClassifiableFailure[],
-  fleet?: { passing: number; failing: number } | null,
+  _fleet?: { passing: number; failing: number } | null,
 ): FailureDisposition {
-  const effective: ClassifiableFailure[] = [];
-  const held: ClassifiableFailure[] = [];
-  for (const f of failing) {
-    const { class: cls } = classifyCheckFailure({
-      httpStatus: f.httpStatus,
-      errorText: f.errorText,
-      threw: f.threw,
-      fleet,
-    });
-    if (cls === 'our_side' || cls === 'transient') {
-      held.push(f);
-    } else {
-      // 'compliance' + 'customer_side' → show the customer.
-      effective.push(f);
-    }
-  }
-  return { effective, held };
+  // New model: comp does NO classification. EVERY dynamic failure is HELD as
+  // 'inconclusive' ("pending", hidden from the customer) and handed to the
+  // self-heal agent — the ONLY thing that decides our-bug (fix) vs real fail
+  // (show). So nothing is "effective" here; the agent reveals genuine fails via
+  // the internal API. (The caller gates this to dynamic integrations only.)
+  return { effective: [], held: failing };
 }
 
 /**
@@ -122,24 +110,18 @@ export function splitFailuresByDisposition(
  */
 export function decideRunStatus(params: {
   resultStatus: string;
-  failures: ClassifiableFailure[];
+  // Accepted for caller compatibility; no longer used — comp does not classify.
+  failures?: ClassifiableFailure[];
   isDynamic: boolean;
-  fleet?: { passing: number; failing: number } | null;
 }): 'success' | 'failed' | 'inconclusive' {
-  const { resultStatus, failures, isDynamic, fleet } = params;
-  let runStatus: 'success' | 'failed' | 'inconclusive' =
-    resultStatus === 'success' ? 'success' : 'failed';
-  if (isDynamic) {
-    if (resultStatus === 'error') {
-      runStatus = 'inconclusive';
-    } else if (
-      failures.length > 0 &&
-      splitFailuresByDisposition(failures, fleet).effective.length === 0
-    ) {
-      runStatus = 'inconclusive';
-    }
-  }
-  return runStatus;
+  const { resultStatus, isDynamic } = params;
+  if (resultStatus === 'success') return 'success';
+  // DYNAMIC: every non-success — a finding, a customer/transport error, OR a
+  // thrown execution error — is held as 'inconclusive' ("pending", hidden from
+  // the customer) and handed to the self-heal agent. The AGENT is the only thing
+  // that decides our-bug (fix) vs real fail (show); comp does no classification.
+  // Static/AWS/GCP/Azure keep the plain failed mapping (isDynamic = false).
+  return isDynamic ? 'inconclusive' : 'failed';
 }
 
 /**
