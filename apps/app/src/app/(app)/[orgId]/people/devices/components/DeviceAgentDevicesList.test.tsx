@@ -183,3 +183,87 @@ describe('DeviceAgentDevicesList', () => {
     ).not.toBeInTheDocument();
   });
 });
+
+function makeIntegrationDevice(
+  overrides: Partial<DeviceWithChecks> = {},
+): DeviceWithChecks {
+  return makeDevice({
+    id: 'dev_int',
+    name: 'Imported Mac',
+    // Imported devices carry no real compliance data — defaults are all false.
+    isCompliant: false,
+    diskEncryptionEnabled: false,
+    antivirusEnabled: false,
+    passwordPolicySet: false,
+    screenLockEnabled: false,
+    agentVersion: null,
+    hasActiveAgentSession: false,
+    // Even though lastCheckIn (= last sync) is fresh, the server still derives
+    // non_compliant; the UI must override this to "Not tracked" by source.
+    complianceStatus: 'non_compliant',
+    source: 'integration',
+    integrationProvider: { slug: 'kandji', name: 'Kandji' },
+    ...overrides,
+  });
+}
+
+describe('DeviceAgentDevicesList — integration-imported devices', () => {
+  it('labels the device with its integration provider in the Source column', () => {
+    render(<DeviceAgentDevicesList devices={[makeIntegrationDevice()]} />);
+    expect(screen.getByText('Kandji')).toBeInTheDocument();
+  });
+
+  it('shows "Not tracked" compliance instead of a false "No"', () => {
+    render(<DeviceAgentDevicesList devices={[makeIntegrationDevice()]} />);
+    expect(screen.getByText('Not tracked')).toBeInTheDocument();
+    expect(screen.queryByText('No')).not.toBeInTheDocument();
+    expect(screen.queryByText('Yes')).not.toBeInTheDocument();
+  });
+
+  it('renders the "not tracked" explainer tooltip trigger', () => {
+    render(<DeviceAgentDevicesList devices={[makeIntegrationDevice()]} />);
+    expect(
+      screen.getByRole('button', { name: /Why is compliance not tracked\?/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('does not present an imported device as Online or Offline', () => {
+    render(<DeviceAgentDevicesList devices={[makeIntegrationDevice()]} />);
+    // Imported devices get no live-status dot at all (a spacer, no title).
+    expect(screen.queryByTitle('Online')).not.toBeInTheDocument();
+    expect(screen.queryByTitle('Offline')).not.toBeInTheDocument();
+  });
+
+  it('renders a source filter only when more than one source is present', () => {
+    const { rerender } = render(
+      <DeviceAgentDevicesList devices={[makeDevice()]} />,
+    );
+    expect(screen.queryByLabelText('Filter by source')).not.toBeInTheDocument();
+
+    rerender(
+      <DeviceAgentDevicesList
+        devices={[makeDevice(), makeIntegrationDevice()]}
+      />,
+    );
+    expect(screen.getByLabelText('Filter by source')).toBeInTheDocument();
+  });
+
+  it('filters the table to a single source when selected', () => {
+    render(
+      <DeviceAgentDevicesList
+        devices={[
+          makeDevice({ id: 'a', name: 'Agent Mac' }),
+          makeIntegrationDevice({ id: 'b', name: 'Imported Mac' }),
+        ]}
+      />,
+    );
+    expect(screen.getByText('Agent Mac')).toBeInTheDocument();
+    expect(screen.getByText('Imported Mac')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Filter by source'), {
+      target: { value: 'Kandji' },
+    });
+    expect(screen.queryByText('Agent Mac')).not.toBeInTheDocument();
+    expect(screen.getByText('Imported Mac')).toBeInTheDocument();
+  });
+});
