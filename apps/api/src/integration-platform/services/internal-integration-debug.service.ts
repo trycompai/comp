@@ -668,6 +668,19 @@ export class InternalIntegrationDebugService {
       ) as Prisma.InputJsonValue,
     });
 
+    // Sync the TASK: a genuine fail must show on the task itself, not just in run
+    // history — otherwise the task stays green while the check failed, the exact
+    // false-success the reveal flow exists to prevent. Mirrors the run paths'
+    // decideTaskStatus → 'failed' write. A reveal that now PASSES does NOT force
+    // 'done' here: the task spans other checks and is recomputed on the next
+    // scheduled run (forcing 'done' could hide another still-failing/held check).
+    if (taskId && status === 'failed') {
+      await db.task.updateMany({
+        where: { id: taskId, status: { not: 'failed' } },
+        data: { status: 'failed' },
+      });
+    }
+
     this.logger.log(
       `Self-heal reveal: connection ${connectionId}, check ${checkId} -> ${status} (real result shown)`,
     );
