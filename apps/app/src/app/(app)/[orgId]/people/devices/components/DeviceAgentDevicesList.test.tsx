@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import type { DeviceWithChecks } from '../types';
 
@@ -261,9 +261,34 @@ describe('DeviceAgentDevicesList — integration-imported devices', () => {
     expect(screen.getByText('Imported Mac')).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText('Filter by source'), {
-      target: { value: 'Kandji' },
+      target: { value: 'integration:kandji' },
     });
     expect(screen.queryByText('Agent Mac')).not.toBeInTheDocument();
     expect(screen.getByText('Imported Mac')).toBeInTheDocument();
+  });
+
+  it('keeps distinct providers separate in the filter even with the same display name', () => {
+    render(
+      <DeviceAgentDevicesList
+        devices={[
+          makeIntegrationDevice({
+            id: 'x',
+            name: 'Device X',
+            integrationProvider: { slug: 'kandji', name: 'MDM' },
+          }),
+          makeIntegrationDevice({
+            id: 'y',
+            name: 'Device Y',
+            integrationProvider: { slug: 'intune', name: 'MDM' },
+          }),
+        ]}
+      />,
+    );
+    const select = screen.getByLabelText('Filter by source');
+    // "All sources" + two distinct providers (not merged into one "MDM").
+    expect(within(select).getAllByRole('option')).toHaveLength(3);
+    fireEvent.change(select, { target: { value: 'integration:intune' } });
+    expect(screen.queryByText('Device X')).not.toBeInTheDocument();
+    expect(screen.getByText('Device Y')).toBeInTheDocument();
   });
 });
