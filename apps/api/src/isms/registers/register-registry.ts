@@ -45,14 +45,18 @@ const schemas = {
     position,
   }),
   requirementCreate: z.object({
-    interestedPartyId: z.string().optional(),
+    // Nullish: the UI sends null for an unlinked requirement, and the service
+    // treats null/empty as "no linked party" (see IsmsRequirementService).
+    interestedPartyId: z.string().nullish(),
     partyName: z.string(),
     requirement: z.string(),
     treatment: z.string(),
     position,
   }),
   requirementUpdate: z.object({
-    interestedPartyId: z.string().optional(),
+    // Nullish, not optional: undefined = leave the link as-is, null = clear it.
+    // The service relies on this three-state contract.
+    interestedPartyId: z.string().nullish(),
     partyName: z.string().optional(),
     requirement: z.string().optional(),
     treatment: z.string().optional(),

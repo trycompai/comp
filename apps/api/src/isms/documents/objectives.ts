@@ -89,6 +89,25 @@ export function deriveObjectives(data: IsmsPlatformData): DerivedObjective[] {
   return rows.map((row, index) => ({ ...row, position: index }));
 }
 
+/**
+ * Human-readable labels for the objective status enum, mirroring the UI
+ * (apps/app/.../components/objectives-status.ts) so the export and the screen
+ * read identically. Unknown values fall back to a humanized form of the raw key.
+ */
+const STATUS_LABELS: Record<string, string> = {
+  not_started: 'Not started',
+  on_track: 'On track',
+  at_risk: 'At risk',
+  met: 'Met',
+};
+
+function formatObjectiveStatus(status: string): string {
+  const known = STATUS_LABELS[status];
+  if (known) return known;
+  const cleaned = status.replace(/[_-]+/g, ' ').trim();
+  return cleaned ? cleaned.charAt(0).toUpperCase() + cleaned.slice(1) : status;
+}
+
 export function buildObjectivesSections(
   input: DocumentExportInput,
 ): IsmsExportSection[] {
@@ -111,7 +130,7 @@ export function buildObjectivesSections(
           objective.plan ?? '—',
           objective.measurementMethod ?? '—',
           objective.cadence ?? '—',
-          objective.status,
+          formatObjectiveStatus(objective.status),
         ]),
       },
     },
