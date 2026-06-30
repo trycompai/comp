@@ -1,5 +1,6 @@
 'use server';
 
+import { grantInitialPentestCredit } from '@/actions/organization/lib/grant-initial-pentest-credit';
 import { initializeOrganization } from '@/actions/organization/lib/initialize-organization';
 import { authActionClientWithoutOrg } from '@/actions/safe-action';
 import { env } from '@/env.mjs';
@@ -112,6 +113,9 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
           console.error('Non-critical: failed to publish trust portal:', trustPortalResponse.error);
         }
 
+        // Ensure the reused org has its free pentest credit (idempotent).
+        await grantInitialPentestCredit();
+
         return {
           success: true,
           organizationId: existingOrg.id,
@@ -212,6 +216,10 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
       if (trustPortalResponse.error) {
         console.error('Non-critical: failed to publish trust portal:', trustPortalResponse.error);
       }
+
+      // Grant the new org its one free pentest credit so the owner can run a
+      // first penetration test without entering a card (non-fatal, idempotent).
+      await grantInitialPentestCredit();
 
       // Revalidate paths (non-critical, don't let failures kill the flow)
       try {

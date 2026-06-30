@@ -22,7 +22,14 @@ const CHART_COLORS = {
 };
 
 export function DeviceComplianceChart({ fleetDevices, agentDevices }: DeviceComplianceChartProps) {
-  const devices = [...(agentDevices ?? []), ...(fleetDevices ?? [])];
+  // Integration-imported devices carry no compliance data, so they must not be
+  // counted as non-compliant here — this chart reflects compliance-tracked
+  // devices only (agent + Fleet).
+  const trackedAgentDevices = React.useMemo(
+    () => (agentDevices ?? []).filter((d) => d.source === 'device_agent'),
+    [agentDevices],
+  );
+  const devices = [...trackedAgentDevices, ...(fleetDevices ?? [])];
 
   const { pieDisplayData, legendDisplayData } = React.useMemo(() => {
     if (devices.length === 0) {
@@ -33,7 +40,7 @@ export function DeviceComplianceChart({ fleetDevices, agentDevices }: DeviceComp
 
     // Count device-agent devices. Stale devices (no check-in for >= 7 days)
     // count as non-compliant to match the table's three-state rendering.
-    for (const device of agentDevices ?? []) {
+    for (const device of trackedAgentDevices) {
       if (device.complianceStatus === 'compliant') {
         compliantCount++;
       } else {
@@ -67,7 +74,7 @@ export function DeviceComplianceChart({ fleetDevices, agentDevices }: DeviceComp
       pieDisplayData: allItems.filter((item) => item.value > 0),
       legendDisplayData: allItems,
     };
-  }, [agentDevices, fleetDevices]);
+  }, [trackedAgentDevices, fleetDevices]);
 
   const totalDevices = devices.length;
 

@@ -32,7 +32,10 @@ describe('deriveRequirements', () => {
     const rows = deriveRequirements({ parties, data });
     expect(rows).toHaveLength(2);
     expect(rows[0].interestedPartyId).toBe('ip_1');
-    expect(rows[0].derivedFrom).toBe('party:ip_1');
+    // Provenance carries the party NAME (rendered verbatim in the source badge),
+    // never the raw record id — the link itself lives in interestedPartyId.
+    expect(rows[0].derivedFrom).toBe('party:Customers');
+    expect(rows[0].derivedFrom).not.toContain('ip_1');
     expect(rows.every((r) => r.source === 'derived')).toBe(true);
     expect(rows.every((r) => r.requirement.length > 0)).toBe(true);
     expect(rows.every((r) => r.treatment.length > 0)).toBe(true);
