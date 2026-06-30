@@ -144,8 +144,8 @@ export const mergeDuplicateUser = schemaTask({
 
         // Comment: memberId
         await tx.comment.updateMany({
-          where: { memberId: o },
-          data: { memberId: n },
+          where: { authorId: o },
+          data: { authorId: n },
         });
 
         // AuditLog: memberId
@@ -202,7 +202,7 @@ export const mergeDuplicateUser = schemaTask({
         const existingCompletions =
           await tx.employeeTrainingVideoCompletion.findMany({
             where: { memberId: o },
-            select: { videoId: true },
+            select: { id: true, videoId: true },
           });
 
         const newCompletions =
@@ -228,7 +228,7 @@ export const mergeDuplicateUser = schemaTask({
         logger.info('Re-pointed member relations', {
           policiesWithSignature: policiesWithSignature.length,
           trainingMigrated: toMigrate.length,
-          trainingDropped: toDrop.length,
+          trainingDropped: newCompletions.length,
         });
 
         // ── Delete old member ────────────────────────────────────────────────
