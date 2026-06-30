@@ -1,19 +1,17 @@
-import { auth } from '@/utils/auth';
 import { getFleetInstance } from '@/lib/fleet';
 import { db } from '@db/server';
-import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { requireApiPermission } from '@/lib/permissions.server';
 import type { Host } from '@/app/(app)/[orgId]/people/devices/types';
 
 const MDM_POLICY_ID = -9999;
 
-export async function GET() {
-  const session = await auth.api.getSession({ headers: await headers() });
-  const organizationId = session?.session.activeOrganizationId;
-
-  if (!organizationId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+export async function GET(req: Request) {
+  // Same RBAC as the People area (member:read) — this returns org device data
+  // and must not be reachable by an active-org session lacking people access.
+  const ctx = await requireApiPermission(req, 'member', 'read');
+  if (ctx instanceof NextResponse) return ctx;
+  const { organizationId } = ctx;
 
   const fleet = await getFleetInstance();
 
