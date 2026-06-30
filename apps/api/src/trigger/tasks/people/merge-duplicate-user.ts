@@ -231,6 +231,16 @@ export const mergeDuplicateUser = schemaTask({
           trainingDropped: existingCompletions.length - toMigrate.length,
         });
 
+        // SOADocument / IsmsDocument: approverId (SetNull on delete — re-point to preserve assignments)
+        await tx.sOADocument.updateMany({
+          where: { approverId: o },
+          data: { approverId: n },
+        });
+        await tx.ismsDocument.updateMany({
+          where: { approverId: o },
+          data: { approverId: n },
+        });
+
         // ── Delete old member ────────────────────────────────────────────────
         await tx.member.delete({ where: { id: o } });
 
