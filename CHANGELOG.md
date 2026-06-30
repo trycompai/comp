@@ -1,3 +1,57 @@
+## [3.93.1](https://github.com/trycompai/comp/compare/v3.93.0...v3.93.1) (2026-06-29)
+
+
+### Bug Fixes
+
+* **api:** clear offboardDate when removing member with skip offboarding ([99181db](https://github.com/trycompai/comp/commit/99181db5559c699468e9d8a2dda70652e4b77011))
+* **auditor:** tighten context generation prompts and feed complete vendor list ([79be921](https://github.com/trycompai/comp/commit/79be921680fb3f193c6eff0d37b0afeb300463f8))
+* **bug-todo:** address cubic review ([27f605d](https://github.com/trycompai/comp/commit/27f605dc461673f8f8a7e00388c2dd9fd0ae1982))
+* **cloud-security:** drop unsupported temperature param from auto-fix model calls ([e94bcd6](https://github.com/trycompai/comp/commit/e94bcd64bb479ab19fb4f01476f37771484b475f))
+* **policies:** send re-acknowledgment emails when policy is updated ([b24884e](https://github.com/trycompai/comp/commit/b24884e063963025a52d52834d4670f9ebef0b5c))
+* **todo:** address cubic review ([e0f8471](https://github.com/trycompai/comp/commit/e0f84711644ffb5b6dd8a83f5a3146411124b419))
+
+# [3.93.0](https://github.com/trycompai/comp/compare/v3.92.5...v3.93.0) (2026-06-29)
+
+
+### Bug Fixes
+
+* **policies:** preserve acceptances when republishing unchanged policy in review ([83915c2](https://github.com/trycompai/comp/commit/83915c221d99ea691cda35cda79f8158dbe9cad8))
+* **self-heal:** anchor status-string parse + reuse decideRunStatus in throw path ([da2e923](https://github.com/trycompai/comp/commit/da2e923df87cfdf75121088fe1f94fafa254a615))
+* **self-heal:** cubic — broaden HTTP status parse + held failures block 'done' ([425ecb6](https://github.com/trycompai/comp/commit/425ecb610f778dbfb57942310c5ee4abe97da9f8))
+* **self-heal:** cubic backlog — empty-msg mask, string status, bounded queue, throw→inconclusive ([59f8a63](https://github.com/trycompai/comp/commit/59f8a630984100e280dc26441787725ebe81118b))
+* **self-heal:** held runs store failedCount 0 + document done-on-held decision ([95b6f88](https://github.com/trycompai/comp/commit/95b6f8837e199557146f04ed4abe140f0c5fc4fd))
+* **self-heal:** hide held (inconclusive) runs from the customer task UI ([a24b9af](https://github.com/trycompai/comp/commit/a24b9af5d70be971e4d969669d60d48f728847f8))
+* **self-heal:** mark manual held dynamic runs inconclusive (consistent w/ scheduled) ([333f753](https://github.com/trycompai/comp/commit/333f753dd97a895a4ca6b05310f75ed437ae20f7))
+* **self-heal:** only surface checks whose latest run is still inconclusive ([8fdf5e1](https://github.com/trycompai/comp/commit/8fdf5e1a6c71f4c89924d0d497e0bd307fb62dcb))
+* **self-heal:** redact quoted JSON keys/values + short secrets (cubic P1) ([98201f1](https://github.com/trycompai/comp/commit/98201f1c108d60de1a79242b391790ae1b886c23))
+* **self-heal:** redact quoted secret values containing spaces (cubic P1) ([ae4cc47](https://github.com/trycompai/comp/commit/ae4cc4707144cd2361d3e090c0f8fc7023fabdef))
+
+
+### Features
+
+* **api:** add inference.net Catalyst tracing for LLM observability ([4f4c6f5](https://github.com/trycompai/comp/commit/4f4c6f51acd82607ebb7a174248023683027cdc0))
+* **integration-platform:** failure classifier for the self-heal layer ([487a4d9](https://github.com/trycompai/comp/commit/487a4d9f917856a1c66a5f172352e8f7859d3836))
+* **integration-platform:** hold our-side dynamic failures (manual run path) ([b374c89](https://github.com/trycompai/comp/commit/b374c89b6bb7c1f229b8896ffa2c201e0b3c4393))
+* **integration-platform:** hold our-side dynamic failures (scheduled run path) ([b191fcc](https://github.com/trycompai/comp/commit/b191fcc6eb8d00fb343224473364bddcfc26b14d))
+* **integration-platform:** inconclusive run status + failure partition ([aa1bba8](https://github.com/trycompai/comp/commit/aa1bba893fae4c280f0ac6f87fc53f53dbd5885b))
+* **integration-platform:** inconclusive-runs queue endpoint for the self-heal agent ([32e0295](https://github.com/trycompai/comp/commit/32e02952561038d39dd6cdb082c5a9cb0f7ee694))
+* **integration-platform:** mark held dynamic check-runs as inconclusive ([59c879e](https://github.com/trycompai/comp/commit/59c879eb350fc89f28868b8c9b4d16a1382d0f0d))
+* **integration-platform:** version + rollback for dynamic check edits ([7f7eb49](https://github.com/trycompai/comp/commit/7f7eb4903236c39ac973a71489fd6d0ae315c488))
+* **self-heal:** include the evidence-task title in the agent queue ([a14bd87](https://github.com/trycompai/comp/commit/a14bd87abb1591388a49bb1f222de79b757d79fc))
+* **self-heal:** persisting re-run endpoint so fixed checks flip customers to green ([63fb53a](https://github.com/trycompai/comp/commit/63fb53a7ece6169bd46dd886100853a3152dd87d))
+
+
+### Performance Improvements
+
+* **db:** use composite (checkId, createdAt) index for check version history ([713fe32](https://github.com/trycompai/comp/commit/713fe321e3921b4ed441607e43df399893ed9b7b))
+
+## [3.92.5](https://github.com/trycompai/comp/compare/v3.92.4...v3.92.5) (2026-06-27)
+
+
+### Bug Fixes
+
+* **auth:** disable unused email/password login ([a9d887f](https://github.com/trycompai/comp/commit/a9d887f9a4bf18493403d157c2e6e26897abbec2))
+
 ## [3.92.4](https://github.com/trycompai/comp/compare/v3.92.3...v3.92.4) (2026-06-26)
 
 
