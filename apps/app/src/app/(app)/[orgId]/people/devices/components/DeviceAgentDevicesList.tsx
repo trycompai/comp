@@ -1,12 +1,7 @@
 'use client';
 
 import {
-  Badge,
   Button,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
   Empty,
   EmptyDescription,
   EmptyHeader,
@@ -17,21 +12,11 @@ import {
   Stack,
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
-  Text,
 } from '@trycompai/design-system';
-import {
-  Download,
-  Information,
-  OverflowMenuVertical,
-  Search,
-  TrashCan,
-} from '@trycompai/design-system/icons';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
-import Link from 'next/link';
+import { Download, Search } from '@trycompai/design-system/icons';
 import { useParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -44,134 +29,13 @@ import {
   devicesCsvFilename,
   downloadDevicesCsv,
 } from '../lib/devices-csv';
+import { DeviceTableRow } from './DeviceListCells';
+import { sourceLabel } from '../lib/device-source';
 import { DeviceDetails } from './DeviceDetails';
 import { RemoveDeviceAlert } from '../../all/components/RemoveDeviceAlert';
 
 export interface DeviceAgentDevicesListProps {
   devices: DeviceWithChecks[];
-}
-
-const CHECK_FIELDS = [
-  { key: 'diskEncryptionEnabled' as const, label: 'Disk Encryption' },
-  { key: 'antivirusEnabled' as const, label: 'Antivirus' },
-  { key: 'passwordPolicySet' as const, label: 'Password Policy' },
-  { key: 'screenLockEnabled' as const, label: 'Screen Lock' },
-];
-
-const PLATFORM_LABELS: Record<string, string> = {
-  macos: 'macOS',
-  windows: 'Windows',
-  linux: 'Linux',
-};
-
-function formatTimeAgo(dateString: string | null): string {
-  if (!dateString) return 'Never';
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-
-  if (diffHours < 1) return 'Just now';
-  if (diffHours < 24) return `${diffHours}h ago`;
-  const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays}d ago`;
-}
-
-/** Device is considered online if it checked in within the last 2 hours */
-function isDeviceOnline(lastCheckIn: string | null): boolean {
-  if (!lastCheckIn) return false;
-  const diffMs = Date.now() - new Date(lastCheckIn).getTime();
-  return diffMs < 2 * 60 * 60 * 1000;
-}
-
-function staleLabel(daysSinceLastCheckIn: number | null): string {
-  return daysSinceLastCheckIn === null ? 'Stale' : `Stale (${daysSinceLastCheckIn}d)`;
-}
-
-function staleTooltipCopy(daysSinceLastCheckIn: number | null): string {
-  return daysSinceLastCheckIn === null
-    ? "This device was registered but hasn't sent a compliance check yet. If it's not new, the agent may not be running or the device may be offline."
-    : "This device hasn't reported to CompAI in over 7 days, so we can't verify its current compliance. It may be offline, the agent may need to be updated, or the device may no longer be in use. Check with the employee.";
-}
-
-function UserNameCell({ device, orgId }: { device: DeviceWithChecks; orgId: string }) {
-  const memberId = device.memberId;
-
-  if (!memberId) {
-    return (
-      <div className="flex flex-col">
-        <Text size="sm" weight="medium">{device.user.name}</Text>
-        <Text size="xs" variant="muted">{device.user.email}</Text>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col">
-      <Link
-        href={`/${orgId}/people/${memberId}`}
-        className="truncate text-sm font-medium text-primary hover:underline"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {device.user.name}
-      </Link>
-      <Text size="xs" variant="muted">{device.user.email}</Text>
-    </div>
-  );
-}
-
-function CompliantBadge({ device }: { device: DeviceWithChecks }) {
-  if (device.complianceStatus === 'stale') {
-    return (
-      <div className="flex items-center gap-1">
-        <Badge variant="secondary">{staleLabel(device.daysSinceLastCheckIn)}</Badge>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                aria-label="What does Stale mean?"
-                className="inline-flex items-center text-muted-foreground hover:text-foreground"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Information size={14} />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent className="max-w-xs text-xs">
-              {staleTooltipCopy(device.daysSinceLastCheckIn)}
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
-    );
-  }
-  if (device.complianceStatus === 'compliant') {
-    return <Badge variant="default">Yes</Badge>;
-  }
-  return <Badge variant="destructive">No</Badge>;
-}
-
-function CheckBadges({ device }: { device: DeviceWithChecks }) {
-  if (device.complianceStatus === 'stale') {
-    return (
-      <div className="flex flex-wrap gap-1">
-        {CHECK_FIELDS.map(({ key, label }) => (
-          <Badge key={key} variant="secondary" title={`${label} — unknown (device is stale)`}>
-            —
-          </Badge>
-        ))}
-      </div>
-    );
-  }
-  return (
-    <div className="flex flex-wrap gap-1">
-      {CHECK_FIELDS.map(({ key, label }) => (
-        <Badge key={key} variant={device[key] ? 'default' : 'destructive'}>
-          {label}
-        </Badge>
-      ))}
-    </div>
-  );
 }
 
 export const DeviceAgentDevicesList = ({
@@ -185,22 +49,34 @@ export const DeviceAgentDevicesList = ({
   const [selectedDevice, setSelectedDevice] = useState<DeviceWithChecks | null>(null);
   const [actionDevice, setActionDevice] = useState<DeviceWithChecks | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sourceFilter, setSourceFilter] = useState('all');
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(50);
   const [isRemoveDeviceAlertOpen, setIsRemoveDeviceAlertOpen] = useState(false);
   const [isRemovingDevice, setIsRemovingDevice] = useState(false);
 
+  // Distinct source labels present, so the filter only offers sources that exist
+  // (e.g. "Comp Agent", "Kandji").
+  const sourceOptions = useMemo(() => {
+    const labels = new Set(devices.map((d) => sourceLabel(d)));
+    return Array.from(labels).sort();
+  }, [devices]);
+
   const filteredDevices = useMemo(() => {
-    if (!searchQuery) return devices;
     const query = searchQuery.toLowerCase();
-    return devices.filter(
-      (device) =>
+    return devices.filter((device) => {
+      if (sourceFilter !== 'all' && sourceLabel(device) !== sourceFilter) {
+        return false;
+      }
+      if (!query) return true;
+      return (
         device.name.toLowerCase().includes(query) ||
         device.user.name.toLowerCase().includes(query) ||
         device.user.email.toLowerCase().includes(query) ||
-        device.platform.toLowerCase().includes(query),
-    );
-  }, [devices, searchQuery]);
+        device.platform.toLowerCase().includes(query)
+      );
+    });
+  }, [devices, searchQuery, sourceFilter]);
 
   const pageCount = Math.max(1, Math.ceil(filteredDevices.length / perPage));
   const paginatedDevices = useMemo(() => {
@@ -251,20 +127,40 @@ export const DeviceAgentDevicesList = ({
   return (
     <Stack gap="4">
       <div className="flex w-full flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <div className="w-full md:max-w-[300px]">
-          <InputGroup>
-            <InputGroupAddon>
-              <Search size={16} />
-            </InputGroupAddon>
-            <InputGroupInput
-              placeholder="Search devices..."
-              value={searchQuery}
+        <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center md:max-w-[520px]">
+          <div className="w-full sm:max-w-[300px]">
+            <InputGroup>
+              <InputGroupAddon>
+                <Search size={16} />
+              </InputGroupAddon>
+              <InputGroupInput
+                placeholder="Search devices..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setPage(1);
+                }}
+              />
+            </InputGroup>
+          </div>
+          {(sourceOptions.length > 1 || sourceFilter !== 'all') && (
+            <select
+              value={sourceFilter}
               onChange={(e) => {
-                setSearchQuery(e.target.value);
+                setSourceFilter(e.target.value);
                 setPage(1);
               }}
-            />
-          </InputGroup>
+              className="rounded-md border border-input bg-background px-3 py-1.5 text-sm"
+              aria-label="Filter by source"
+            >
+              <option value="all">All sources</option>
+              {sourceOptions.map((label) => (
+                <option key={label} value={label}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
         <Button variant="outline" iconLeft={<Download />} onClick={handleExport}>
           Export CSV
@@ -298,7 +194,8 @@ export const DeviceAgentDevicesList = ({
               <TableHead>Device Name</TableHead>
               <TableHead>User</TableHead>
               <TableHead>Platform</TableHead>
-              <TableHead>Last Check-in</TableHead>
+              <TableHead>Source</TableHead>
+              <TableHead>Last Seen</TableHead>
               <TableHead>Checks</TableHead>
               <TableHead>Compliant</TableHead>
               <TableHead>ACTIONS</TableHead>
@@ -306,73 +203,17 @@ export const DeviceAgentDevicesList = ({
           </TableHeader>
           <TableBody>
             {paginatedDevices.map((device) => (
-              <TableRow
+              <DeviceTableRow
                 key={device.id}
-                onClick={() => setSelectedDevice(device)}
-                style={{ cursor: 'pointer' }}
-              >
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`inline-block h-2 w-2 shrink-0 rounded-full ${
-                        isDeviceOnline(device.lastCheckIn)
-                          ? 'bg-green-500'
-                          : 'bg-gray-300'
-                      }`}
-                      title={isDeviceOnline(device.lastCheckIn) ? 'Online' : 'Offline'}
-                    />
-                    <Text size="sm" weight="medium">
-                      {device.name}
-                    </Text>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <UserNameCell device={device} orgId={orgId} />
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-col">
-                    <Text size="sm">{PLATFORM_LABELS[device.platform] ?? device.platform}</Text>
-                    <Text size="xs" variant="muted">
-                      {device.osVersion}
-                    </Text>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Text size="sm">{formatTimeAgo(device.lastCheckIn)}</Text>
-                </TableCell>
-                <TableCell>
-                  <CheckBadges device={device} />
-                </TableCell>
-                <TableCell>
-                  <CompliantBadge device={device} />
-                </TableCell>
-                <TableCell>
-                  <div className="flex justify-center">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        onClick={(e) => e.stopPropagation()}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                      >
-                        <OverflowMenuVertical />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" style={{ width: 'auto' }}>
-                        <DropdownMenuItem
-                          disabled={!canRemoveDevice}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActionDevice(device);
-                            setIsRemoveDeviceAlertOpen(true);
-                          }}
-                          variant="destructive"
-                        >
-                          <TrashCan size={16} className="mr-2" />
-                          <span className="whitespace-nowrap">Remove Device</span>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </TableCell>
-              </TableRow>
+                device={device}
+                orgId={orgId}
+                canRemoveDevice={canRemoveDevice}
+                onSelect={setSelectedDevice}
+                onRequestRemove={(d) => {
+                  setActionDevice(d);
+                  setIsRemoveDeviceAlertOpen(true);
+                }}
+              />
             ))}
           </TableBody>
         </Table>
@@ -384,6 +225,14 @@ export const DeviceAgentDevicesList = ({
           <>
             Are you sure you want to remove this device{' '}
             <strong>{actionDevice?.name ?? 'device'}</strong>?
+            {actionDevice?.source === 'integration' && (
+              <>
+                {' '}
+                It was imported from{' '}
+                <strong>{actionDevice.integrationProvider?.name ?? 'an integration'}</strong>{' '}
+                and may be re-added on the next sync.
+              </>
+            )}
           </>
         }
         onOpenChange={setIsRemoveDeviceAlertOpen}
