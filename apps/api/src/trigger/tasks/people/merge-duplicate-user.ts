@@ -228,7 +228,7 @@ export const mergeDuplicateUser = schemaTask({
         logger.info('Re-pointed member relations', {
           policiesWithSignature: policiesWithSignature.length,
           trainingMigrated: toMigrate.length,
-          trainingDropped: newCompletions.length,
+          trainingDropped: existingCompletions.length - toMigrate.length,
         });
 
         // ── Delete old member ────────────────────────────────────────────────
