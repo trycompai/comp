@@ -1,5 +1,6 @@
 'use server';
 
+import { grantInitialPentestCredit } from '@/actions/organization/lib/grant-initial-pentest-credit';
 import { initializeOrganization } from '@/actions/organization/lib/initialize-organization';
 import { authActionClientWithoutOrg } from '@/actions/safe-action';
 import { serverApi } from '@/lib/api-server';
@@ -127,6 +128,10 @@ export const createOrganization = authActionClientWithoutOrg
       if (trustPortalResponse.error) {
         console.error('Non-critical: failed to publish trust portal:', trustPortalResponse.error);
       }
+
+      // Grant the new org its one free pentest credit so the owner can run a
+      // first penetration test without entering a card (non-fatal, idempotent).
+      await grantInitialPentestCredit();
 
       const userOrgs = await db.member.findMany({
         where: {
