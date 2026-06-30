@@ -675,8 +675,11 @@ export class InternalIntegrationDebugService {
     // 'done' here: the task spans other checks and is recomputed on the next
     // scheduled run (forcing 'done' could hide another still-failing/held check).
     if (taskId && status === 'failed') {
+      // Only flip ACTIVE workflow statuses → failed. Never resurrect a human-set
+      // not_relevant (dismissed) or in_review (under review) task — or rewrite an
+      // already-failed one — from a self-heal reveal.
       await db.task.updateMany({
-        where: { id: taskId, status: { not: 'failed' } },
+        where: { id: taskId, status: { in: ['todo', 'in_progress', 'done'] } },
         data: { status: 'failed' },
       });
     }
