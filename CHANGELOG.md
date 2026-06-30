@@ -1,3 +1,26 @@
+# [3.94.0](https://github.com/trycompai/comp/compare/v3.93.1...v3.94.0) (2026-06-30)
+
+
+### Bug Fixes
+
+* **devices:** address cubic review on device-import display + sync definitions ([dda64db](https://github.com/trycompai/comp/commit/dda64db1c96ddf5c04af8582fd0fa45d20dd71d5))
+* **devices:** address cubic review on the device-import display PR ([#3308](https://github.com/trycompai/comp/issues/3308)) ([9056d1b](https://github.com/trycompai/comp/commit/9056d1b7c47ea8fffc56fc83fee2db77eea439ff))
+* **devices:** second cubic pass — JumpCloud error handling, a11y, untracked rendering ([ea93f29](https://github.com/trycompai/comp/commit/ea93f2900f1e1cc7d43c5405620d9eae13ebf06f))
+* **isms:** resolve back nav, approver/owner display, party tags, and status formatting ([c9a6697](https://github.com/trycompai/comp/commit/c9a66971de2231efd448bbdc3e47e817f10c2e23))
+* **pentest:** gate initial free credit to new (un-onboarded) orgs only ([199e890](https://github.com/trycompai/comp/commit/199e89053f0616164c7f9875875f82c8aed5e7d9))
+* **people:** lock sync-source dropdown while disabling auto-sync ([541a72f](https://github.com/trycompai/comp/commit/541a72fc107000eaeaa536296a504f8b1fccc71f))
+* **self-heal:** address cubic — validate task org on reveal/rerun + held error-runs keep task pending ([3cecc79](https://github.com/trycompai/comp/commit/3cecc798a6edc34ad12bc8f6bfe72fb127f67627))
+* **self-heal:** reveal also syncs the task status (cubic P1) ([9bbf38b](https://github.com/trycompai/comp/commit/9bbf38bfe8b595ac2b4f7665e810ab38518e463a))
+* **self-heal:** reveal task-sync only flips ACTIVE statuses (cubic P2) ([5e3c6e3](https://github.com/trycompai/comp/commit/5e3c6e3a8c16747b0ab2c54abd1b88146ac8e027))
+
+
+### Features
+
+* **devices:** show integration-imported devices in People tab + Intune/JumpCloud device sync ([923a9e9](https://github.com/trycompai/comp/commit/923a9e997a2a007bc80372f2f6622ca24021242d))
+* **pentest:** auto-grant one free pentest credit to new organizations ([a5f815f](https://github.com/trycompai/comp/commit/a5f815f6ab01692f6b24447020696b17746b9121))
+* **people:** add "Don't auto-sync" option to employee sync source ([ae88ec6](https://github.com/trycompai/comp/commit/ae88ec66e3ef3cbdf5c8f12508136cc531fbef32))
+* **self-heal:** add /reveal endpoint — persist the real fail (customer-side / finding) ([e2f1fc0](https://github.com/trycompai/comp/commit/e2f1fc089013e50acb2bf9d67195eaa1aa98493d))
+
 ## [3.93.1](https://github.com/trycompai/comp/compare/v3.93.0...v3.93.1) (2026-06-29)
 
 
