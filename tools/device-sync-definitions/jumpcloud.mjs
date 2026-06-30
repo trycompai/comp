@@ -59,8 +59,9 @@ const systemsById = {};
   let skip = 0;
   let more = true;
   while (more) {
+    // Stable sort so limit/skip paging stays consistent if records change mid-sync.
     const data = await getJson(
-      'https://console.jumpcloud.com/api/systems?limit=' + limit + '&skip=' + skip,
+      'https://console.jumpcloud.com/api/systems?limit=' + limit + '&skip=' + skip + '&sort=_id',
     );
     const results = (data && data.results) || [];
     for (const s of results) systemsById[s._id] = s;
@@ -77,8 +78,9 @@ const users = [];
   let skip = 0;
   let more = true;
   while (more) {
+    // Stable sort (matches the employee sync) so paging stays consistent.
     const data = await getJson(
-      'https://console.jumpcloud.com/api/systemusers?limit=' + limit + '&skip=' + skip,
+      'https://console.jumpcloud.com/api/systemusers?limit=' + limit + '&skip=' + skip + '&sort=email',
     );
     const results = (data && data.results) || [];
     users.push.apply(users, results);

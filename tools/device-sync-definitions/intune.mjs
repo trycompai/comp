@@ -49,8 +49,12 @@ async function fetchRetry(u, opts) {
 const devices = [];
 let url = 'https://graph.microsoft.com/v1.0/deviceManagement/managedDevices?$top=100';
 let pages = 0;
+// Generous safety backstop against an infinite pagination loop (~100k devices).
+// Real tenants stay well under this; hitting it means something is wrong, so we
+// fail loudly below rather than report a partial sync as success.
+const MAX_PAGES = 1000;
 
-while (url && pages < 200) {
+while (url && pages < MAX_PAGES) {
   pages++;
   const res = await fetchRetry(url, {
     headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' },
@@ -99,6 +103,14 @@ while (url && pages < 200) {
   }
 
   url = data['@odata.nextLink'] || null;
+}
+
+// If there are still more pages after the cap, abort rather than silently
+// importing a partial fleet as a "successful" sync.
+if (url) {
+  throw new Error(
+    'Intune device sync exceeded ' + MAX_PAGES + ' pages without finishing — aborting to avoid a partial import.',
+  );
 }
 
 ctx.log('Intune device sync mapped ' + devices.length + ' devices');

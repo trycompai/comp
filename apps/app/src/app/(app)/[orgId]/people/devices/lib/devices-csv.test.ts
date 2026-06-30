@@ -115,6 +115,21 @@ describe('buildDevicesCsv', () => {
     expect(cells[13]).toBe('Kandji'); // source
   });
 
+  it('neutralizes formula injection coming from an integration provider name', () => {
+    const csv = buildDevicesCsv([
+      makeDevice({
+        source: 'integration',
+        integrationProvider: { slug: 'evil', name: '=HYPERLINK("http://evil","x")' },
+      }),
+    ]);
+    const body = stripBom(csv);
+    // The provider name lands in the trailing Source cell; the leading "=" must be
+    // apostrophe-prefixed INSIDE the quotes so spreadsheets treat it as text.
+    expect(body).toContain('"\'=HYPERLINK(""http://evil"",""x"")"');
+    // And it must never appear as a bare, executable formula cell.
+    expect(body).not.toContain(',=HYPERLINK');
+  });
+
   it('represents never-synced devices with empty last-check-in and empty days', () => {
     const csv = buildDevicesCsv([
       makeDevice({

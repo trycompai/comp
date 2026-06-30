@@ -29,7 +29,8 @@ import {
   devicesCsvFilename,
   downloadDevicesCsv,
 } from '../lib/devices-csv';
-import { DeviceTableRow, sourceLabel } from './DeviceListCells';
+import { DeviceTableRow } from './DeviceListCells';
+import { sourceLabel } from '../lib/device-source';
 import { DeviceDetails } from './DeviceDetails';
 import { RemoveDeviceAlert } from '../../all/components/RemoveDeviceAlert';
 
@@ -142,7 +143,7 @@ export const DeviceAgentDevicesList = ({
               />
             </InputGroup>
           </div>
-          {sourceOptions.length > 1 && (
+          {(sourceOptions.length > 1 || sourceFilter !== 'all') && (
             <select
               value={sourceFilter}
               onChange={(e) => {

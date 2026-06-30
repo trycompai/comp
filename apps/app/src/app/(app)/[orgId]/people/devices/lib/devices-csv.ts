@@ -1,4 +1,5 @@
 import type { DeviceWithChecks } from '../types';
+import { sourceLabel } from './device-source';
 
 export const DEVICES_CSV_HEADER = [
   'Device Name',
@@ -35,12 +36,6 @@ function yesNo(value: boolean): 'yes' | 'no' {
   return value ? 'yes' : 'no';
 }
 
-function csvSourceLabel(d: DeviceWithChecks): string {
-  if (d.source === 'integration') return d.integrationProvider?.name ?? 'Integration';
-  if (d.source === 'fleet') return 'Fleet';
-  return 'Comp Agent';
-}
-
 export function buildDevicesCsv(devices: DeviceWithChecks[]): string {
   const rows = devices.map((d) => {
     // Only agent devices carry real compliance data. For imported/fleet devices,
@@ -62,7 +57,7 @@ export function buildDevicesCsv(devices: DeviceWithChecks[]): string {
       escapeCell(check(d.antivirusEnabled)),
       escapeCell(check(d.passwordPolicySet)),
       escapeCell(check(d.screenLockEnabled)),
-      escapeCell(csvSourceLabel(d)),
+      escapeCell(sourceLabel(d)),
     ].join(',');
   });
   // RFC 4180: records separated by CRLF; trailing CRLF after the final record.

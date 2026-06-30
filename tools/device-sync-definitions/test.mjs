@@ -12,9 +12,11 @@ import { code as intuneCode } from './intune.mjs';
 import { code as jumpcloudCode } from './jumpcloud.mjs';
 
 let failures = 0;
-function test(name, fn) {
+// Async-aware: awaits the callback so async assertions (incl. expectThrows) are
+// reliably caught and counted before the final summary runs.
+async function test(name, fn) {
   try {
-    fn();
+    await fn();
     console.log(`  ✓ ${name}`);
   } catch (e) {
     failures++;
@@ -69,6 +71,8 @@ function makeCtx({ accessToken, credentials, fetchImpl }) {
   };
 }
 
+// Rejects (so the enclosing test() counts a failure) unless `promise` throws
+// with a message matching `match`.
 async function expectThrows(promise, match) {
   try {
     await promise;
@@ -108,7 +112,7 @@ await (async () => {
   const raw = await runCode(intuneCode, ctx);
   const devices = validate(raw);
 
-  test('paginates and maps Windows/macOS/Linux, drops iOS + no-email', () => {
+  await test('paginates and maps Windows/macOS/Linux, drops iOS + no-email', () => {
     assert.equal(devices.length, 3);
     const byId = Object.fromEntries(devices.map((d) => [d.externalId, d]));
     assert.equal(byId.i1.platform, 'windows');
@@ -118,13 +122,13 @@ await (async () => {
     assert(!devices.some((d) => d.externalId === 'i4'), 'no-email must be dropped');
   });
 
-  test('lowercases owner email and falls back to userPrincipalName', () => {
+  await test('lowercases owner email and falls back to userPrincipalName', () => {
     const byId = Object.fromEntries(devices.map((d) => [d.externalId, d]));
     assert.equal(byId.i1.userEmail, 'win@co.com');
     assert.equal(byId.i2.userEmail, 'mac@co.com'); // UPN fallback
   });
 
-  test('carries serial, externalId, osVersion, hardwareModel', () => {
+  await test('carries serial, externalId, osVersion, hardwareModel', () => {
     const byId = Object.fromEntries(devices.map((d) => [d.externalId, d]));
     assert.equal(byId.i1.serialNumber, 'W1');
     assert.equal(byId.i1.osVersion, '10.0');
@@ -134,14 +138,14 @@ await (async () => {
 
 await (async () => {
   const ctx = makeCtx({ accessToken: 'tok', fetchImpl: async () => resp(401, 'Unauthorized') });
-  test('throws a clear error on 401', async () => {});
-  await expectThrows(runCode(intuneCode, ctx), /authorization failed/i);
+  await test('throws a clear error on 401', () =>
+    expectThrows(runCode(intuneCode, ctx), /authorization failed/i));
 })();
 
 await (async () => {
   const ctx = makeCtx({ accessToken: 'tok', fetchImpl: async () => resp(200, { value: [] }) });
   const raw = await runCode(intuneCode, ctx);
-  test('produces an empty list when no devices', () => {
+  await test('produces an empty list when no devices', () => {
     assert.deepEqual(validate(raw), []);
   });
 })();
@@ -157,7 +161,7 @@ await (async () => {
   };
   const ctx = makeCtx({ accessToken: 'tok', fetchImpl });
   const raw = await runCode(intuneCode, ctx);
-  test('retries a transient 503 then succeeds', () => {
+  await test('retries a transient 503 then succeeds', () => {
     assert.equal(validate(raw).length, 1);
     assert(calls >= 2, 'should have retried after the 503');
   });
@@ -165,8 +169,8 @@ await (async () => {
 
 await (async () => {
   const ctx = makeCtx({ accessToken: undefined, fetchImpl: async () => resp(200, { value: [] }) });
-  test('throws when there is no access token', async () => {});
-  await expectThrows(runCode(intuneCode, ctx), /no intune access token/i);
+  await test('throws when there is no access token', () =>
+    expectThrows(runCode(intuneCode, ctx), /no intune access token/i));
 })();
 
 // =========================================================================
@@ -185,7 +189,7 @@ function jumpcloudFetch({ systems, users, bindings, failSystemsStatus }) {
     if (u.includes('/api/systemusers')) {
       return resp(200, { totalCount: users.length, results: users });
     }
-    const m = u.match(/\/api\/v2\/users\/([^/]+)\/systems/);
+    const m = u.match(/\/api\/v2\/users\/([^/?]+)\/systems/);
     if (m) return resp(200, bindings[m[1]] || []);
     throw new Error('unexpected url ' + u);
   };
@@ -218,16 +222,16 @@ await (async () => {
   const raw = await runCode(jumpcloudCode, ctx);
   const devices = validate(raw);
 
-  test('joins systems→users→bindings and skips systems with no owner', () => {
+  await test('joins systems→users→bindings and skips systems with no owner', () => {
     assert.equal(devices.length, 3); // s1, s2, s4 (s3 no email, s5 no os)
     assert(!devices.some((d) => d.externalId === 's3'), 's3 has no real owner → skipped');
   });
 
-  test('skips a system whose os is not yet reported (no mislabel as linux)', () => {
+  await test('skips a system whose os is not yet reported (no mislabel as linux)', () => {
     assert(!devices.some((d) => d.externalId === 's5'), 's5 has empty os → skipped');
   });
 
-  test('maps Mac/Windows/Linux and lowercases owner email', () => {
+  await test('maps Mac/Windows/Linux and lowercases owner email', () => {
     const byId = Object.fromEntries(devices.map((d) => [d.externalId, d]));
     assert.equal(byId.s1.platform, 'macos');
     assert.equal(byId.s1.userEmail, 'alice@co.com');
@@ -236,7 +240,7 @@ await (async () => {
     assert.equal(byId.s4.userEmail, 'bob@co.com');
   });
 
-  test('reflects system.active in status and carries serial/hostname/osVersion', () => {
+  await test('reflects system.active in status and carries serial/hostname/osVersion', () => {
     const byId = Object.fromEntries(devices.map((d) => [d.externalId, d]));
     assert.equal(byId.s1.status, 'active');
     assert.equal(byId.s4.status, 'inactive');
@@ -251,14 +255,14 @@ await (async () => {
     credentials: { api_key: 'jc-key' },
     fetchImpl: jumpcloudFetch({ systems: [], users: [], bindings: {}, failSystemsStatus: 401 }),
   });
-  test('throws a clear error on 401', async () => {});
-  await expectThrows(runCode(jumpcloudCode, ctx), /api key is invalid/i);
+  await test('throws a clear error on 401', () =>
+    expectThrows(runCode(jumpcloudCode, ctx), /api key is invalid/i));
 })();
 
 await (async () => {
   const ctx = makeCtx({ credentials: {}, fetchImpl: async () => resp(200, {}) });
-  test('throws when API key is missing', async () => {});
-  await expectThrows(runCode(jumpcloudCode, ctx), /api key not found/i);
+  await test('throws when API key is missing', () =>
+    expectThrows(runCode(jumpcloudCode, ctx), /api key not found/i));
 })();
 
 // =========================================================================

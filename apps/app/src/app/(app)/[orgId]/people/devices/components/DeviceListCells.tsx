@@ -23,6 +23,7 @@ import {
 } from '@trycompai/ui/tooltip';
 import Link from 'next/link';
 import type { DeviceWithChecks } from '../types';
+import { isComplianceTracked, sourceLabel } from '../lib/device-source';
 
 export const CHECK_FIELDS = [
   { key: 'diskEncryptionEnabled' as const, label: 'Disk Encryption' },
@@ -65,20 +66,6 @@ function staleTooltipCopy(daysSinceLastCheckIn: number | null): string {
   return daysSinceLastCheckIn === null
     ? "This device was registered but hasn't sent a compliance check yet. If it's not new, the agent may not be running or the device may be offline."
     : "This device hasn't reported to CompAI in over 7 days, so we can't verify its current compliance. It may be offline, the agent may need to be updated, or the device may no longer be in use. Check with the employee.";
-}
-
-/** True for devices whose compliance posture CompAI does not collect (imported via an integration). */
-export function isComplianceTracked(device: DeviceWithChecks): boolean {
-  return device.source === 'device_agent';
-}
-
-/** Human label for where a device came from. */
-export function sourceLabel(device: DeviceWithChecks): string {
-  if (device.source === 'integration') {
-    return device.integrationProvider?.name ?? 'Integration';
-  }
-  if (device.source === 'fleet') return 'Fleet';
-  return 'Comp Agent';
 }
 
 function InfoTooltip({ label, copy }: { label: string; copy: string }) {
@@ -262,6 +249,7 @@ export function DeviceTableRow({
         <div className="flex justify-center">
           <DropdownMenu>
             <DropdownMenuTrigger
+              aria-label="Open device actions"
               onClick={(e) => e.stopPropagation()}
               className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >

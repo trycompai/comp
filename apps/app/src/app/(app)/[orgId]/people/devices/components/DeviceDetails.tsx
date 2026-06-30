@@ -126,7 +126,8 @@ export const DeviceDetails = ({ device, onClose }: DeviceDetailsProps) => {
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-2">
-                {device.source !== 'integration' && (
+                {/* Live online/offline status only applies to agent devices. */}
+                {device.source === 'device_agent' && (
                   <span
                     className={`inline-block h-2.5 w-2.5 shrink-0 rounded-full ${
                       isDeviceOnline(device.lastCheckIn)
@@ -138,13 +139,14 @@ export const DeviceDetails = ({ device, onClose }: DeviceDetailsProps) => {
                 <Text size="lg" weight="semibold">
                   {device.name}
                 </Text>
-                {device.source === 'integration' ? (
-                  <Badge variant="outline">
-                    {`Imported • ${device.integrationProvider?.name ?? 'Integration'}`}
-                  </Badge>
-                ) : (
+                {device.source === 'device_agent' && (
                   <Badge variant="outline">
                     {isDeviceOnline(device.lastCheckIn) ? 'Online' : 'Offline'}
+                  </Badge>
+                )}
+                {device.source === 'integration' && (
+                  <Badge variant="outline">
+                    {`Imported • ${device.integrationProvider?.name ?? 'Integration'}`}
                   </Badge>
                 )}
                 {device.source === 'fleet' && <Badge variant="outline">Fleet (Legacy)</Badge>}
