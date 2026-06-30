@@ -410,6 +410,9 @@ export class TaskIntegrationsController {
     // Failing findings across all accounts (keyed like an exception) so task
     // status can exclude explicitly-excepted ones below.
     const failingFindings: FailingFinding[] = [];
+    // Checks HELD ('inconclusive') across accounts this run — including error-only
+    // runs with no findings — so a held check keeps the task pending, not 'done'.
+    let heldRunCount = 0;
 
     // Sequential so each per-account run commits as it completes — a slow or
     // failing account still leaves the earlier accounts' results persisted.
@@ -430,6 +433,9 @@ export class TaskIntegrationsController {
       totalFindings += outcome.findings;
       totalPassing += outcome.passing;
       if (outcome.status === 'error') hasExecutionError = true;
+      // For dynamic, any non-success account run was held (pending) — count it so
+      // an error-only account (no findings) still keeps the task pending.
+      if (isDynamic && outcome.status !== 'success') heldRunCount++;
       failingFindings.push(...outcome.failures);
       lastCheckRunId = outcome.checkRunId;
     }
@@ -451,22 +457,19 @@ export class TaskIntegrationsController {
     // classifies; the self-heal agent decides our-bug vs real fail. So none fail
     // the task here. Static/AWS behavior is unchanged (no holding).
     const statusFailures = isDynamic ? [] : failingFindings;
-    const heldCount = failingFindings.length - statusFailures.length;
+    // heldCount = checks HELD this run (incl. error-only, no-findings) so any held
+    // check keeps the task pending instead of slipping to 'done'.
+    const heldCount = heldRunCount;
     if (heldCount > 0) {
       this.logger.log(
-        `Held ${heldCount} our-side/transient finding(s) as inconclusive for task ${taskId} (manual run; not shown as failed)`,
+        `Held ${heldCount} check(s) as inconclusive (pending) for task ${taskId} (manual run) — not failed, not done`,
       );
     }
-    const effectiveFailures = countEffectiveFailures(
-      statusFailures,
-      exceptions,
-    );
-    // Held findings are indeterminate — exclude them from the finding count so an
-    // all-held run doesn't flip the task to "done" either.
+    const effectiveFailures = countEffectiveFailures(statusFailures, exceptions);
     const newStatus = decideTaskStatus(
       effectiveFailures,
       totalPassing,
-      totalFindings - heldCount,
+      totalFindings,
       heldCount,
     );
 

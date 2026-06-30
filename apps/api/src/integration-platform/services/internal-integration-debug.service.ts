@@ -6,10 +6,7 @@ import {
   type RunAllChecksResult,
 } from './connection-check-runner.service';
 import { CheckRunRepository } from '../repositories/check-run.repository';
-import {
-  decideRunStatus,
-  failureSignalsFromEvidence,
-} from '../utils/task-check-evaluation';
+import { decideRunStatus } from '../utils/task-check-evaluation';
 
 /**
  * Read-only/diagnostic toolkit for dynamic integrations, used by internal
@@ -455,6 +452,29 @@ export class InternalIntegrationDebugService {
   }
 
   /**
+   * A persisted run may only be associated with a task in the SAME org as the
+   * connection. The agent always passes the held run's own taskId, but validate
+   * it so a wrong/forged internal call can't write into another tenant's task
+   * history or flip its status. No-op when no taskId is supplied.
+   */
+  private async assertTaskBelongsToOrg(
+    taskId: string | null | undefined,
+    organizationId: string,
+    connectionId: string,
+  ): Promise<void> {
+    if (!taskId) return;
+    const task = await db.task.findUnique({
+      where: { id: taskId },
+      select: { organizationId: true },
+    });
+    if (!task || task.organizationId !== organizationId) {
+      throw new NotFoundException(
+        `Task ${taskId} does not belong to connection ${connectionId}'s organization`,
+      );
+    }
+  }
+
+  /**
    * Re-run ONE check for ONE connection AND PERSIST a fresh run. Used by the
    * self-heal agent right after it applies a fix: re-running every affected
    * customer's connection means a now-fixed check produces a fresh 'success'
@@ -477,6 +497,7 @@ export class InternalIntegrationDebugService {
     if (!connection) {
       throw new NotFoundException(`Connection ${connectionId} not found`);
     }
+    await this.assertTaskBelongsToOrg(taskId, connection.organizationId, connectionId);
 
     // Execute on the real runtime in-process (runChecks never persists).
     const result = await this.runner.runChecks({
@@ -496,15 +517,8 @@ export class InternalIntegrationDebugService {
       select: { id: true },
     }));
 
-    const failures = checkResult.result.findings.map((f) => ({
-      connectionId,
-      checkId,
-      resourceId: f.resourceId,
-      ...failureSignalsFromEvidence(f.evidence, checkResult.status),
-    }));
     const status = decideRunStatus({
       resultStatus: checkResult.status,
-      failures,
       isDynamic,
     });
 
@@ -587,6 +601,7 @@ export class InternalIntegrationDebugService {
     if (!connection) {
       throw new NotFoundException(`Connection ${connectionId} not found`);
     }
+    await this.assertTaskBelongsToOrg(taskId, connection.organizationId, connectionId);
 
     const result = await this.runner.runChecks({
       connectionId,

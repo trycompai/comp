@@ -226,6 +226,10 @@ export const runTaskIntegrationChecks = task({
     // identity only — comp never classifies; the self-heal agent reads the stored
     // findings/evidence and decides our-bug vs real fail itself.
     const failingFindings: FailingFinding[] = [];
+    // Count of checks HELD ('inconclusive') this run — including error-only runs
+    // that produced no findings — so a held/errored check keeps the task pending
+    // (not 'done') until the self-heal agent resolves it.
+    let heldRunCount = 0;
 
     // Run only the checks that apply to this task
     try {
@@ -317,6 +321,9 @@ export const runTaskIntegrationChecks = task({
           logger.error(
             `Server-run failed for check ${checkId} on task ${taskId}: ${message}`,
           );
+          // A dynamic transport error was just held as 'inconclusive' — count it
+          // so an error-only failure (no findings) still keeps the task pending.
+          if (isDynamic) heldRunCount++;
           continue;
         }
 
@@ -348,6 +355,9 @@ export const runTaskIntegrationChecks = task({
           resultStatus: checkResult.status,
           isDynamic,
         });
+        // Any held check (a finding, a customer error, or an execution error)
+        // keeps the task pending — count it so it can't slip to 'done'.
+        if (runStatus === 'inconclusive') heldRunCount++;
 
         // Store check run
         const checkRun = await db.integrationCheckRun.create({
@@ -443,27 +453,22 @@ export const runTaskIntegrationChecks = task({
       // For DYNAMIC integrations, hold our-side/transient failures as
       // inconclusive: they must not fail the task or send a "task failed" email —
       // the self-heal layer investigates/fixes them. Static/AWS behavior is
-      // unchanged. Safe degradation: a finding with no readable error signal
-      // classifies as a real (compliance) failure, exactly as today.
       // DYNAMIC: every failure is held (pending) — comp never classifies, the
       // agent decides. Static/AWS: unchanged (no holding).
       const statusFailures = isDynamic ? [] : failingFindings;
-      const heldCount = failingFindings.length - statusFailures.length;
+      // heldCount = checks HELD this run (incl. error-only runs with NO findings),
+      // so any held check keeps the task pending instead of slipping to 'done'.
+      const heldCount = heldRunCount;
       if (heldCount > 0) {
         logger.info(
-          `Held ${heldCount} our-side/transient finding(s) as inconclusive for task ${taskId} (not shown as failed)`,
+          `Held ${heldCount} check(s) as inconclusive (pending) for task ${taskId} — not failed, not done`,
         );
       }
-      const effectiveFailures = countEffectiveFailures(
-        statusFailures,
-        exceptions,
-      );
-      // Held findings are indeterminate (like an all-errored run) — they must not
-      // flip the task to "done" either, so exclude them from the finding count.
+      const effectiveFailures = countEffectiveFailures(statusFailures, exceptions);
       const newStatus = decideTaskStatus(
         effectiveFailures,
         totalPassing,
-        totalFindings - heldCount,
+        totalFindings,
         heldCount,
       );
 
