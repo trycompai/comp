@@ -51,6 +51,31 @@ function staleTooltipCopy(daysSinceLastCheckIn: number | null): string {
 }
 
 function DeviceComplianceBadge({ device }: { device: DeviceWithChecks }) {
+  if (device.source === 'integration') {
+    const provider = device.integrationProvider?.name ?? 'an integration';
+    return (
+      <div className="flex items-center gap-1">
+        <Badge variant="secondary">Not tracked</Badge>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label="Why is compliance not tracked?"
+                className="inline-flex items-center text-muted-foreground hover:text-foreground"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Information size={14} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs text-xs">
+              {`This device was imported from ${provider}. CompAI doesn't collect compliance checks for imported devices — install the CompAI agent to track its security posture.`}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+    );
+  }
   if (device.complianceStatus === 'stale') {
     return (
       <div className="flex items-center gap-1">
@@ -101,19 +126,29 @@ export const DeviceDetails = ({ device, onClose }: DeviceDetailsProps) => {
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-2">
-                <span
-                  className={`inline-block h-2.5 w-2.5 shrink-0 rounded-full ${
-                    isDeviceOnline(device.lastCheckIn)
-                      ? 'bg-green-500'
-                      : 'bg-gray-300'
-                  }`}
-                />
+                {/* Live online/offline status only applies to agent devices. */}
+                {device.source === 'device_agent' && (
+                  <span
+                    className={`inline-block h-2.5 w-2.5 shrink-0 rounded-full ${
+                      isDeviceOnline(device.lastCheckIn)
+                        ? 'bg-green-500'
+                        : 'bg-gray-300'
+                    }`}
+                  />
+                )}
                 <Text size="lg" weight="semibold">
                   {device.name}
                 </Text>
-                <Badge variant="outline">
-                  {isDeviceOnline(device.lastCheckIn) ? 'Online' : 'Offline'}
-                </Badge>
+                {device.source === 'device_agent' && (
+                  <Badge variant="outline">
+                    {isDeviceOnline(device.lastCheckIn) ? 'Online' : 'Offline'}
+                  </Badge>
+                )}
+                {device.source === 'integration' && (
+                  <Badge variant="outline">
+                    {`Imported • ${device.integrationProvider?.name ?? 'Integration'}`}
+                  </Badge>
+                )}
                 {device.source === 'fleet' && <Badge variant="outline">Fleet (Legacy)</Badge>}
               </div>
               <Text size="sm" variant="muted">
@@ -162,7 +197,7 @@ export const DeviceDetails = ({ device, onClose }: DeviceDetailsProps) => {
             </div>
             <div>
               <Text size="sm" variant="muted">
-                Last Check-in
+                {device.source === 'integration' ? 'Last synced' : 'Last Check-in'}
               </Text>
               <Text size="sm" weight="medium">
                 {device.lastCheckIn ? new Date(device.lastCheckIn).toLocaleString() : 'Never'}
@@ -170,10 +205,12 @@ export const DeviceDetails = ({ device, onClose }: DeviceDetailsProps) => {
             </div>
             <div>
               <Text size="sm" variant="muted">
-                Agent Version
+                {device.source === 'integration' ? 'Source' : 'Agent Version'}
               </Text>
               <Text size="sm" weight="medium">
-                {device.agentVersion ?? 'N/A'}
+                {device.source === 'integration'
+                  ? (device.integrationProvider?.name ?? 'Integration')
+                  : (device.agentVersion ?? 'N/A')}
               </Text>
             </div>
             <div>
@@ -199,7 +236,13 @@ export const DeviceDetails = ({ device, onClose }: DeviceDetailsProps) => {
         </TableHeader>
         <TableBody>
           {CHECK_FIELDS.map(({ key, dbKey, label }) => {
-            const isFleetUnsupported = device.source === 'fleet' && key !== 'diskEncryptionEnabled';
+            const isIntegration = device.source === 'integration';
+            const isFleetUnsupported =
+              device.source === 'fleet' && key !== 'diskEncryptionEnabled';
+            const isUntracked = isIntegration || isFleetUnsupported;
+            const untrackedCopy = isIntegration
+              ? 'Not collected for imported devices'
+              : 'Not tracked by Fleet';
             const isStale = device.complianceStatus === 'stale';
             const passed = device[key];
             const details = device.checkDetails?.[dbKey];
@@ -212,15 +255,15 @@ export const DeviceDetails = ({ device, onClose }: DeviceDetailsProps) => {
                 </TableCell>
                 <TableCell>
                   <Text size="sm" variant="muted">
-                    {isFleetUnsupported
-                      ? 'Not tracked by Fleet'
+                    {isUntracked
+                      ? untrackedCopy
                       : isStale
                         ? '—'
                         : (details?.message ?? '—')}
                   </Text>
                 </TableCell>
                 <TableCell>
-                  {isFleetUnsupported ? (
+                  {isUntracked ? (
                     <Badge variant="outline">N/A</Badge>
                   ) : isStale ? (
                     <Badge
@@ -237,7 +280,7 @@ export const DeviceDetails = ({ device, onClose }: DeviceDetailsProps) => {
                 </TableCell>
                 <TableCell>
                   <Text size="sm" variant="muted">
-                    {isStale ? '—' : (details?.exception ?? '—')}
+                    {isUntracked || isStale ? '—' : (details?.exception ?? '—')}
                   </Text>
                 </TableCell>
               </TableRow>

@@ -34,7 +34,18 @@ export interface DeviceWithChecks {
     email: string;
   };
   /** Indicates which system reported this device */
-  source: 'device_agent' | 'fleet';
+  source: 'device_agent' | 'fleet' | 'integration';
+  /**
+   * Set only when `source === 'integration'`: the provider that imported this
+   * device, so the UI can label its provenance instead of mislabeling it as an
+   * agent device. `logoUrl` is optional — the DB provider row has no logo, so it
+   * may be filled later from the manifest registry.
+   */
+  integrationProvider?: {
+    slug: string;
+    name: string;
+    logoUrl?: string;
+  };
   /** Derived on the server; 'stale' = no check-in for >= 7 days. */
   complianceStatus: DeviceComplianceStatus;
   /** Whole days since last check-in, or null when never synced. */
