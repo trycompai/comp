@@ -564,4 +564,98 @@ export class InternalIntegrationDebugService {
     );
     return { status };
   }
+
+  /**
+   * Re-run ONE check and PERSIST the REAL result — used when the self-heal agent
+   * verdicts a held check as a GENUINE fail (the customer's creds/config are
+   * wrong, OR a real compliance finding). Unlike rerunAndPersistCheck (which
+   * applies the dynamic hold rule and may re-hold as 'inconclusive'), this writes
+   * the TRUE status: 'success' if it now passes, 'failed' (with the real findings
+   * shown, failedCount > 0) otherwise — so the customer sees the red instead of a
+   * silent "pending". It never holds and never disables.
+   */
+  async revealAndPersistCheck(params: {
+    connectionId: string;
+    checkId: string;
+    taskId?: string | null;
+  }): Promise<{ status: 'success' | 'failed' }> {
+    const { connectionId, checkId, taskId } = params;
+    const connection = await db.integrationConnection.findUnique({
+      where: { id: connectionId },
+      select: { organizationId: true },
+    });
+    if (!connection) {
+      throw new NotFoundException(`Connection ${connectionId} not found`);
+    }
+
+    const result = await this.runner.runChecks({
+      connectionId,
+      organizationId: connection.organizationId,
+      checkId,
+    });
+    const checkResult = result.results[0];
+    if (!checkResult) {
+      throw new NotFoundException(
+        `Check ${checkId} produced no result for connection ${connectionId}`,
+      );
+    }
+
+    // The REAL status — never held. A genuine fail shows red to the customer.
+    const status: 'success' | 'failed' =
+      checkResult.status === 'success' ? 'success' : 'failed';
+
+    const checkRun = await this.checkRunRepository.create({
+      connectionId,
+      taskId: taskId ?? undefined,
+      checkId,
+      checkName: checkResult.checkName,
+    });
+    const resultsToStore = [
+      ...checkResult.result.passingResults.map((r) => ({
+        checkRunId: checkRun.id,
+        passed: true,
+        resourceType: r.resourceType,
+        resourceId: r.resourceId,
+        title: r.title,
+        description: r.description,
+        evidence: r.evidence
+          ? (JSON.parse(JSON.stringify(r.evidence)) as Prisma.InputJsonValue)
+          : undefined,
+      })),
+      ...checkResult.result.findings.map((f) => ({
+        checkRunId: checkRun.id,
+        passed: false,
+        resourceType: f.resourceType,
+        resourceId: f.resourceId,
+        title: f.title,
+        description: f.description,
+        severity: f.severity,
+        remediation: f.remediation,
+        evidence: f.evidence as Prisma.InputJsonValue,
+      })),
+    ];
+    if (resultsToStore.length > 0) {
+      await this.checkRunRepository.addResults(resultsToStore);
+    }
+    await this.checkRunRepository.complete(checkRun.id, {
+      status,
+      durationMs: checkResult.durationMs,
+      totalChecked:
+        checkResult.result.summary?.totalChecked ??
+        checkResult.result.passingResults.length +
+          checkResult.result.findings.length,
+      passedCount: checkResult.result.passingResults.length,
+      // REAL fail → show the findings (NOT hidden like a held 'inconclusive' run).
+      failedCount: checkResult.result.findings.length,
+      errorMessage: checkResult.error,
+      logs: JSON.parse(
+        JSON.stringify(checkResult.result.logs),
+      ) as Prisma.InputJsonValue,
+    });
+
+    this.logger.log(
+      `Self-heal reveal: connection ${connectionId}, check ${checkId} -> ${status} (real result shown)`,
+    );
+    return { status };
+  }
 }

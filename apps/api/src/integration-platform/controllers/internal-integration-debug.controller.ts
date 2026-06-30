@@ -158,6 +158,23 @@ export class InternalIntegrationDebugController {
   }
 
   /**
+   * Persist the REAL result for a check (success/failed — never held) — called by
+   * the self-heal agent when it verdicts a held check as a genuine fail (a
+   * customer-side error or a real compliance finding) so the customer sees the red.
+   */
+  @Post('connections/:connectionId/reveal')
+  async revealConnectionCheck(
+    @Param('connectionId') connectionId: string,
+    @Body() body: RerunCheckBody,
+  ) {
+    return this.debugService.revealAndPersistCheck({
+      connectionId,
+      checkId: body.checkId,
+      taskId: body.taskId,
+    });
+  }
+
+  /**
    * Read recently captured OAuth callback errors (recorded by the frontend on a
    * failed connect). Use this to diagnose "the integration won't connect" for
    * any org/provider — the exact provider error is here instead of lost.
