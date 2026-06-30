@@ -43,11 +43,12 @@ async function getJson(url) {
     break;
   }
   if (!res.ok) {
-    if (res.status === 401) {
-      throw new Error('JumpCloud API key is invalid — reconnect the integration.');
-    }
-    const body = await res.text();
-    throw new Error('JumpCloud API error ' + res.status + ': ' + body.slice(0, 200));
+    const err =
+      res.status === 401
+        ? new Error('JumpCloud API key is invalid — reconnect the integration.')
+        : new Error('JumpCloud API error ' + res.status + ': ' + (await res.text()).slice(0, 200));
+    err.status = res.status;
+    throw err;
   }
   return res.json();
 }
@@ -103,7 +104,11 @@ for (const user of users) {
       'https://console.jumpcloud.com/api/v2/users/' + user._id + '/systems?limit=100',
     );
   } catch (e) {
-    continue; // ignore per-user binding errors, keep going
+    // Only a genuine per-user 404 (user removed mid-sync) is safe to skip.
+    // Auth/permission/5xx are systemic — rethrow so the sync fails loudly
+    // instead of silently completing with every device missing an owner.
+    if (e && e.status === 404) continue;
+    throw e;
   }
   if (!Array.isArray(bindings)) continue;
   for (const b of bindings) {

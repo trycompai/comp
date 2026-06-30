@@ -227,12 +227,11 @@ describe('DeviceAgentDevicesList — integration-imported devices', () => {
     ).toBeInTheDocument();
   });
 
-  it('does not present an imported device as Online', () => {
+  it('does not present an imported device as Online or Offline', () => {
     render(<DeviceAgentDevicesList devices={[makeIntegrationDevice()]} />);
+    // Imported devices get no live-status dot at all (a spacer, no title).
     expect(screen.queryByTitle('Online')).not.toBeInTheDocument();
-    expect(
-      screen.getByTitle('Imported device (no live status)'),
-    ).toBeInTheDocument();
+    expect(screen.queryByTitle('Offline')).not.toBeInTheDocument();
   });
 
   it('renders a source filter only when more than one source is present', () => {

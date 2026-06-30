@@ -205,21 +205,30 @@ export function DeviceTableRow({
     <TableRow onClick={() => onSelect(device)} style={{ cursor: 'pointer' }}>
       <TableCell>
         <div className="flex items-center gap-2">
-          <span
-            className={`inline-block h-2 w-2 shrink-0 rounded-full ${
-              showOnline ? 'bg-green-500' : 'bg-gray-300'
-            }`}
-            title={
-              isAgent
-                ? showOnline
-                  ? 'Online'
-                  : 'Offline'
-                : 'Imported device (no live status)'
-            }
-          />
-          <Text size="sm" weight="medium">
+          {/* Live status only applies to agent devices; imported/fleet rows get a
+              spacer so they aren't visually labeled as an offline agent. */}
+          {isAgent ? (
+            <span
+              className={`inline-block h-2 w-2 shrink-0 rounded-full ${
+                showOnline ? 'bg-green-500' : 'bg-gray-300'
+              }`}
+              title={showOnline ? 'Online' : 'Offline'}
+            />
+          ) : (
+            <span className="inline-block h-2 w-2 shrink-0" aria-hidden="true" />
+          )}
+          {/* A focusable control so the details view is reachable by keyboard,
+              not just by clicking the row. */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect(device);
+            }}
+            className="text-left text-sm font-medium hover:underline"
+          >
             {device.name}
-          </Text>
+          </button>
         </div>
       </TableCell>
       <TableCell>

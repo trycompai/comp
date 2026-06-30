@@ -280,7 +280,7 @@ export const DeviceDetails = ({ device, onClose }: DeviceDetailsProps) => {
                 </TableCell>
                 <TableCell>
                   <Text size="sm" variant="muted">
-                    {isStale ? '—' : (details?.exception ?? '—')}
+                    {isUntracked || isStale ? '—' : (details?.exception ?? '—')}
                   </Text>
                 </TableCell>
               </TableRow>
