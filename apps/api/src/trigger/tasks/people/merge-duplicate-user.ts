@@ -194,8 +194,8 @@ export const mergeDuplicateUser = schemaTask({
           data: { memberId: n },
         });
         await tx.offboardingAccessRevocation.updateMany({
-          where: { revokedById: o },
-          data: { revokedById: n },
+          where: { revokedById: oldMember.userId },
+          data: { revokedById: newMember.userId },
         });
 
         // EmployeeTrainingVideoCompletion: skip videos the old member already has
@@ -234,13 +234,53 @@ export const mergeDuplicateUser = schemaTask({
         // ── Delete old member ────────────────────────────────────────────────
         await tx.member.delete({ where: { id: o } });
 
-        // ── Migrate new user's OAuth accounts to old user ────────────────────
+        // ── Re-point user-level relations before deleting oldUser ───────────
+        // Must happen before the delete to prevent cascade wiping these records.
+
+        // OAuth accounts: move to surviving user
         await tx.account.updateMany({
           where: { userId: oldUser.id },
           data: { userId: newUser.id },
         });
 
-        // ── Delete new user sessions and the user record ─────────────────────
+        // AuditLog: onDelete Cascade — re-point to preserve history
+        await tx.auditLog.updateMany({
+          where: { userId: oldUser.id },
+          data: { userId: newUser.id },
+        });
+
+        // FleetPolicyResult: onDelete Cascade — re-point to preserve results
+        await tx.fleetPolicyResult.updateMany({
+          where: { userId: oldUser.id },
+          data: { userId: newUser.id },
+        });
+
+        // OauthAccessToken: onDelete Cascade
+        await tx.oauthAccessToken.updateMany({
+          where: { userId: oldUser.id },
+          data: { userId: newUser.id },
+        });
+
+        // OauthConsent: onDelete Cascade
+        await tx.oauthConsent.updateMany({
+          where: { userId: oldUser.id },
+          data: { userId: newUser.id },
+        });
+
+        // McpOrgBinding: onDelete Cascade, unique on userId — delete old, keep new
+        await tx.mcpOrgBinding.deleteMany({ where: { userId: oldUser.id } });
+
+        // IntegrationSyncLog / IntegrationOAuthError: nullable userId — re-point to preserve actor
+        await tx.integrationSyncLog.updateMany({
+          where: { userId: oldUser.id },
+          data: { userId: newUser.id },
+        });
+        await tx.integrationOAuthError.updateMany({
+          where: { userId: oldUser.id },
+          data: { userId: newUser.id },
+        });
+
+        // ── Delete old user sessions and the user record ─────────────────────
         await tx.session.deleteMany({ where: { userId: oldUser.id } });
         await tx.user.delete({ where: { id: oldUser.id } });
 
