@@ -133,6 +133,7 @@ export function TeamMembersClient({
 
   const lastSyncAt = employeeSyncData.lastSyncAt;
   const nextSyncAt = employeeSyncData.nextSyncAt;
+  const [isDisablingSync, setIsDisablingSync] = useState(false);
 
   const handleEmployeeSync = async (
     provider: string,
@@ -146,9 +147,16 @@ export function TeamMembersClient({
   // Turn off the daily auto-sync without disconnecting the integration (which
   // would also stop its compliance checks). Clears the org's sync provider so
   // the scheduled job skips it; already-imported people are left untouched.
+  // Sets a busy flag (mirroring isSyncing) so the dropdown is locked while the
+  // request is in flight, preventing an overlapping provider change from racing.
   const handleDisableSync = async () => {
-    if (!selectedProvider) return;
-    await setSyncProvider(null);
+    if (!selectedProvider || isDisablingSync) return;
+    setIsDisablingSync(true);
+    try {
+      await setSyncProvider(null);
+    } finally {
+      setIsDisablingSync(false);
+    }
   };
 
   const allItems = buildDisplayItems(data);
@@ -380,7 +388,7 @@ export function TeamMembersClient({
                   }
                   handleEmployeeSync(provider);
                 }}
-                disabled={isSyncing || !canManageMembers}
+                disabled={isSyncing || isDisablingSync || !canManageMembers}
               >
                 <SelectTrigger>
                   {isSyncing ? (
