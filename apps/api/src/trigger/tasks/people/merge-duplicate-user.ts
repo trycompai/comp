@@ -160,11 +160,19 @@ export const mergeDuplicateUser = schemaTask({
           data: { memberId: n },
         });
 
-        // BackgroundCheckRequest: memberId
-        await tx.backgroundCheckRequest.updateMany({
-          where: { memberId: o },
-          data: { memberId: n },
+        // BackgroundCheckRequest: unique (organizationId, memberId) — delete old if new member already has one
+        const newBgCheck = await tx.backgroundCheckRequest.findUnique({
+          where: { organizationId_memberId: { organizationId, memberId: n } },
+          select: { id: true },
         });
+        if (newBgCheck) {
+          await tx.backgroundCheckRequest.deleteMany({ where: { memberId: o } });
+        } else {
+          await tx.backgroundCheckRequest.updateMany({
+            where: { memberId: o },
+            data: { memberId: n },
+          });
+        }
 
         // TrustAccessRequest: reviewerMemberId
         await tx.trustAccessRequest.updateMany({
@@ -182,17 +190,69 @@ export const mergeDuplicateUser = schemaTask({
           data: { revokedByMemberId: n },
         });
 
-        // OffboardingChecklistCompletion: memberId
-        await tx.offboardingChecklistCompletion.updateMany({
-          where: { memberId: o },
-          data: { memberId: n },
-        });
+        // OffboardingChecklistCompletion: unique (memberId, templateItemId) — skip items new member already has
+        const existingChecklistCompletions =
+          await tx.offboardingChecklistCompletion.findMany({
+            where: { memberId: o },
+            select: { id: true, templateItemId: true },
+          });
+        const newChecklistTemplateItemIds = new Set(
+          (
+            await tx.offboardingChecklistCompletion.findMany({
+              where: { memberId: n },
+              select: { templateItemId: true },
+            })
+          ).map((c) => c.templateItemId),
+        );
+        const checklistToMigrate = existingChecklistCompletions.filter(
+          (c) => !newChecklistTemplateItemIds.has(c.templateItemId),
+        );
+        const checklistToDrop = existingChecklistCompletions.filter((c) =>
+          newChecklistTemplateItemIds.has(c.templateItemId),
+        );
+        if (checklistToMigrate.length > 0) {
+          await tx.offboardingChecklistCompletion.updateMany({
+            where: { id: { in: checklistToMigrate.map((c) => c.id) } },
+            data: { memberId: n },
+          });
+        }
+        if (checklistToDrop.length > 0) {
+          await tx.offboardingChecklistCompletion.deleteMany({
+            where: { id: { in: checklistToDrop.map((c) => c.id) } },
+          });
+        }
 
-        // OffboardingAccessRevocation: memberId, revokedById
-        await tx.offboardingAccessRevocation.updateMany({
-          where: { memberId: o },
-          data: { memberId: n },
-        });
+        // OffboardingAccessRevocation: unique (memberId, vendorId) — skip vendors new member already has
+        const existingRevocations =
+          await tx.offboardingAccessRevocation.findMany({
+            where: { memberId: o },
+            select: { id: true, vendorId: true },
+          });
+        const newRevocationVendorIds = new Set(
+          (
+            await tx.offboardingAccessRevocation.findMany({
+              where: { memberId: n },
+              select: { vendorId: true },
+            })
+          ).map((r) => r.vendorId),
+        );
+        const revocationsToMigrate = existingRevocations.filter(
+          (r) => !newRevocationVendorIds.has(r.vendorId),
+        );
+        const revocationsToDrop = existingRevocations.filter((r) =>
+          newRevocationVendorIds.has(r.vendorId),
+        );
+        if (revocationsToMigrate.length > 0) {
+          await tx.offboardingAccessRevocation.updateMany({
+            where: { id: { in: revocationsToMigrate.map((r) => r.id) } },
+            data: { memberId: n },
+          });
+        }
+        if (revocationsToDrop.length > 0) {
+          await tx.offboardingAccessRevocation.deleteMany({
+            where: { id: { in: revocationsToDrop.map((r) => r.id) } },
+          });
+        }
         await tx.offboardingAccessRevocation.updateMany({
           where: { revokedById: oldMember.userId },
           data: { revokedById: newMember.userId },
