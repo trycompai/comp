@@ -16,6 +16,10 @@ export const migrateOrgEmailDomain = schemaTask({
 
     const normalizedOldDomain = oldDomain.toLowerCase();
     const normalizedNewDomain = newDomain.toLowerCase();
+    if (normalizedOldDomain === normalizedNewDomain) {
+      logger.info('Old and new domains match after normalization', { organizationId, oldDomain, newDomain });
+      return { mergedCount: 0, failedCount: 0, pairs: [] };
+    }
 
     // Find all active members in the org with their user emails
     const members = await db.member.findMany({
