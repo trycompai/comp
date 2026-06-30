@@ -158,6 +158,10 @@ async function getMembersWithInstalledDevices({
         where: {
           organizationId,
           memberId: { in: memberIds },
+          // Integration-imported devices are inventory records, not proof that
+          // the member installed the device agent — exclude them so they don't
+          // falsely satisfy the device-agent step in the people score.
+          source: { not: 'integration' },
         },
         select: { memberId: true },
         distinct: ['memberId'],
