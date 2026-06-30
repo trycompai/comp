@@ -146,3 +146,37 @@ await (async () => {
   await test('throws when API key is missing', () =>
     expectThrows(runCode(jumpcloudCode, ctx), /api key not found/i));
 })();
+
+// Retry/transient-failure coverage for getJson: a network error, a 5xx, and a
+// 429 on the first systems fetch should each be retried and then succeed.
+for (const transient of [
+  {
+    label: 'a network error',
+    fail: () => {
+      throw new Error('ECONNRESET');
+    },
+  },
+  { label: 'a 5xx', fail: () => resp(503, 'busy') },
+  { label: 'a 429', fail: () => resp(429, 'slow down') },
+]) {
+  await (async () => {
+    let calls = 0;
+    const systems = [{ _id: 's1', displayName: 'A', os: 'Windows', serialNumber: 'SN1' }];
+    const users = [{ _id: 'u1', email: 'a@co.com' }];
+    const bindings = { u1: [{ id: 's1', type: 'system' }] };
+    const base = jumpcloudFetch({ systems, users, bindings });
+    const fetchImpl = async (url, opts) => {
+      if (String(url).includes('/api/systems')) {
+        calls++;
+        if (calls === 1) return transient.fail();
+      }
+      return base(url, opts);
+    };
+    const ctx = makeCtx({ credentials: { api_key: 'jc-key' }, fetchImpl });
+    const devices = validate(await runCode(jumpcloudCode, ctx));
+    await test('retries ' + transient.label + ' then succeeds', () => {
+      assert.equal(devices.length, 1);
+      assert(calls >= 2, 'should have retried the transient failure');
+    });
+  })();
+}
