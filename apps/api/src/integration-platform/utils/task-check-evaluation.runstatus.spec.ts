@@ -1,105 +1,32 @@
-import {
-  decideRunStatus,
-  type ClassifiableFailure,
-} from './task-check-evaluation';
-
-const fail = (
-  over: Partial<ClassifiableFailure> = {},
-): ClassifiableFailure => ({
-  connectionId: 'c',
-  checkId: 'k',
-  resourceId: 'r',
-  ...over,
-});
+import { decideRunStatus } from './task-check-evaluation';
 
 describe('decideRunStatus', () => {
-  // Static / AWS / GCP / Azure — isDynamic=false → NEVER held; identical to the
-  // historical mapping (error → failed, else raw status).
+  // Static / AWS / GCP / Azure — isDynamic=false → never held; historical mapping
+  // (error → failed, else raw status).
   describe('non-dynamic (never held)', () => {
     it('success → success', () => {
-      expect(
-        decideRunStatus({
-          resultStatus: 'success',
-          failures: [],
-          isDynamic: false,
-        }),
-      ).toBe('success');
+      expect(decideRunStatus({ resultStatus: 'success', isDynamic: false })).toBe('success');
     });
-    it('failed (even an our-side-looking 404) → failed', () => {
-      expect(
-        decideRunStatus({
-          resultStatus: 'failed',
-          failures: [fail({ httpStatus: 404 })],
-          isDynamic: false,
-        }),
-      ).toBe('failed');
+    it('failed → failed', () => {
+      expect(decideRunStatus({ resultStatus: 'failed', isDynamic: false })).toBe('failed');
     });
     it('execution error → failed', () => {
-      expect(
-        decideRunStatus({
-          resultStatus: 'error',
-          failures: [fail({ threw: true })],
-          isDynamic: false,
-        }),
-      ).toBe('failed');
+      expect(decideRunStatus({ resultStatus: 'error', isDynamic: false })).toBe('failed');
     });
   });
 
-  // Dynamic — our-side/transient held as inconclusive; real failures shown.
-  describe('dynamic', () => {
+  // Dynamic — comp does NO classification: EVERY non-success is held as
+  // 'inconclusive' ("pending") and handed to the self-heal agent, the only
+  // decider of our-bug (fix) vs real fail (show). No error-code logic at all.
+  describe('dynamic (everything non-success → pending)', () => {
     it('success → success', () => {
-      expect(
-        decideRunStatus({
-          resultStatus: 'success',
-          failures: [],
-          isDynamic: true,
-        }),
-      ).toBe('success');
+      expect(decideRunStatus({ resultStatus: 'success', isDynamic: true })).toBe('success');
     });
-    it('execution error → inconclusive (held)', () => {
-      expect(
-        decideRunStatus({
-          resultStatus: 'error',
-          failures: [],
-          isDynamic: true,
-        }),
-      ).toBe('inconclusive');
+    it('failed (a finding, a customer error, anything) → inconclusive (pending)', () => {
+      expect(decideRunStatus({ resultStatus: 'failed', isDynamic: true })).toBe('inconclusive');
     });
-    it('all failures our-side (404) → inconclusive (held)', () => {
-      expect(
-        decideRunStatus({
-          resultStatus: 'failed',
-          failures: [fail({ httpStatus: 404 })],
-          isDynamic: true,
-        }),
-      ).toBe('inconclusive');
-    });
-    it('genuine compliance finding (no error signal) → failed (shown)', () => {
-      expect(
-        decideRunStatus({
-          resultStatus: 'failed',
-          failures: [fail()],
-          isDynamic: true,
-        }),
-      ).toBe('failed');
-    });
-    it('customer-side (401) → failed (shown — action needed)', () => {
-      expect(
-        decideRunStatus({
-          resultStatus: 'failed',
-          failures: [fail({ httpStatus: 401 })],
-          isDynamic: true,
-        }),
-      ).toBe('failed');
-    });
-    it('mixed held + real → failed (any effective failure surfaces)', () => {
-      expect(
-        decideRunStatus({
-          resultStatus: 'failed',
-          failures: [fail({ httpStatus: 404 }), fail({ resourceId: 'r2' })],
-          isDynamic: true,
-        }),
-      ).toBe('failed');
+    it('execution error → inconclusive (pending)', () => {
+      expect(decideRunStatus({ resultStatus: 'error', isDynamic: true })).toBe('inconclusive');
     });
   });
 });

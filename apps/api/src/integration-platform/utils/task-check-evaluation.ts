@@ -1,5 +1,4 @@
 import { ActiveExceptionSet } from '../../cloud-security/finding-exceptions';
-import { redactSecrets } from './redact-secrets';
 
 /** A failing finding, identified the same way an exception is keyed. */
 export interface FailingFinding {
@@ -18,9 +17,7 @@ export function countEffectiveFailures(
   exceptions: ActiveExceptionSet,
 ): number {
   if (exceptions.size === 0) return failing.length;
-  return failing.filter(
-    (f) => !exceptions.has(f.connectionId, f.checkId, f.resourceId),
-  ).length;
+  return failing.filter((f) => !exceptions.has(f.connectionId, f.checkId, f.resourceId)).length;
 }
 
 /**
@@ -29,13 +26,14 @@ export function countEffectiveFailures(
  *   - any real (non-excepted) failure → failed
  *   - else if the check evaluated any resource (a passing result OR a finding,
  *     including the case where every finding is excepted) → done
- *   - else leave unchanged (nothing was evaluated, e.g. an all-errored run —
- *     indeterminate, not a violation; it retries next tick)
+ *   - else leave unchanged (nothing was evaluated, e.g. an all-errored run).
  *
- * `effectiveFailures` is the non-excepted failure count from
- * {@link countEffectiveFailures}; `totalFindings` is the RAW finding count so an
- * all-excepted run (effectiveFailures 0, no passing results) still transitions
- * to done instead of getting stuck in its prior status.
+ * For DYNAMIC integrations, EVERY failure is held as 'inconclusive' (pending) and
+ * counted in `heldCount`, never in `effectiveFailures` — so a held check never
+ * fails the task (the self-heal agent is the only decider of our-bug vs real
+ * fail). When the agent reveals a genuine fail, that run persists 'failed' and a
+ * later evaluation fails the task; when it fixes, the run passes and the task goes
+ * done. heldCount is always 0 for non-dynamic (static/AWS/GCP/Azure).
  */
 export function decideTaskStatus(
   effectiveFailures: number,
@@ -44,131 +42,26 @@ export function decideTaskStatus(
   heldCount = 0,
 ): 'failed' | 'done' | null {
   if (effectiveFailures > 0) return 'failed';
-  // Held (our-side/transient) failures are UNRESOLVED — the self-heal agent is
-  // still fixing them. Never declare the task done while any check is held, even
-  // if other checks passed; that would hide an unresolved failure behind a green
-  // task. Leave it unchanged (indeterminate) until the held checks actually pass
-  // — the agent's re-run then produces a clean pass and a later run goes done.
-  // heldCount is always 0 for non-dynamic (static/AWS/GCP/Azure), so unchanged.
+  // Any held (pending) check is UNRESOLVED — never declare the task done while one
+  // is pending; that would hide an unresolved failure behind a green task.
   if (heldCount > 0) return null;
   if (totalPassing > 0 || totalFindings > 0) return 'done';
   return null;
 }
 
-/** A failing finding plus the signals needed to classify WHY it failed. */
-export interface ClassifiableFailure extends FailingFinding {
-  /** HTTP status the failure carried, if any. */
-  httpStatus?: number | null;
-  /** Error text from the finding's evidence. MUST be pre-redacted of secrets. */
-  errorText?: string | null;
-  /** True if the runtime threw rather than the vendor returning an error. */
-  threw?: boolean;
-}
-
-export interface FailureDisposition {
-  /** Genuine failures — fail the task + show (compliance findings + proven customer-side). */
-  effective: ClassifiableFailure[];
-  /** Held failures — our-side bug / transient. Task NOT failed; surfaced as inconclusive. */
-  held: ClassifiableFailure[];
-}
-
 /**
- * Split failing findings into those that should fail the task (real compliance
- * findings + proven customer-side issues) vs those to HOLD as inconclusive
- * (our-side bug / transient), so a customer never sees a red for our problem.
- *
- * For DYNAMIC integrations only — the caller gates this; static/AWS checks keep
- * their existing behavior. The classifier is conservative (never blames the
- * customer without proof), so ambiguous failures are held, not shown.
- *
- * `fleet` (optional) is the same check's pass/fail counts across the provider's
- * other active connections — a fleet-wide failure is held even if it looks
- * customer-like.
- */
-export function splitFailuresByDisposition(
-  failing: ClassifiableFailure[],
-  _fleet?: { passing: number; failing: number } | null,
-): FailureDisposition {
-  // New model: comp does NO classification. EVERY dynamic failure is HELD as
-  // 'inconclusive' ("pending", hidden from the customer) and handed to the
-  // self-heal agent — the ONLY thing that decides our-bug (fix) vs real fail
-  // (show). So nothing is "effective" here; the agent reveals genuine fails via
-  // the internal API. (The caller gates this to dynamic integrations only.)
-  return { effective: [], held: failing };
-}
-
-/**
- * Decide the per-run status stored on an IntegrationCheckRun. Canonical rule,
- * shared by ALL run paths (scheduled, manual, and the agent re-run) so a held
- * run is classified identically everywhere:
- *   - base: an execution 'error' → 'failed'; otherwise the raw success/failed.
- *   - DYNAMIC only: an execution error, or a run whose failures are ALL held
- *     (our-side/transient → no effective failures), becomes 'inconclusive' —
- *     the self-heal queue, hidden from the customer. Static/AWS keep the base.
- *
- * `failures` carries the per-finding signals (from {@link failureSignalsFromEvidence}).
+ * Decide the per-run status stored on an IntegrationCheckRun. Shared by ALL run
+ * paths (scheduled, manual, agent re-run). comp does NO classification: for a
+ * DYNAMIC integration every non-success — a finding, a customer/transport error,
+ * or a thrown execution error — is held as 'inconclusive' ("pending", hidden from
+ * the customer) and handed to the self-heal agent, the ONLY decider of our-bug vs
+ * real fail. Static/AWS/GCP/Azure (isDynamic = false) keep the plain mapping.
  */
 export function decideRunStatus(params: {
   resultStatus: string;
-  // Accepted for caller compatibility; no longer used — comp does not classify.
-  failures?: ClassifiableFailure[];
   isDynamic: boolean;
 }): 'success' | 'failed' | 'inconclusive' {
   const { resultStatus, isDynamic } = params;
   if (resultStatus === 'success') return 'success';
-  // DYNAMIC: every non-success — a finding, a customer/transport error, OR a
-  // thrown execution error — is held as 'inconclusive' ("pending", hidden from
-  // the customer) and handed to the self-heal agent. The AGENT is the only thing
-  // that decides our-bug (fix) vs real fail (show); comp does no classification.
-  // Static/AWS/GCP/Azure keep the plain failed mapping (isDynamic = false).
   return isDynamic ? 'inconclusive' : 'failed';
-}
-
-/**
- * Extract classification signals from a failing finding's evidence. `errorText`
- * is REDACTED of secrets/PII before it leaves this function.
- *
- * Defensive about the heterogeneous evidence shapes checks emit: if no signal is
- * found, returns empty signals → the failure is treated as a genuine compliance
- * finding (today's behavior), so a check is never wrongly held. `resultStatus`
- * of 'error' means the check threw → an execution failure.
- */
-export function failureSignalsFromEvidence(
-  evidence: Record<string, unknown> | null | undefined,
-  resultStatus?: string,
-): { httpStatus: number | null; errorText: string | null; threw: boolean } {
-  const ev = evidence ?? {};
-  const errStr = typeof ev.error === 'string' ? ev.error : null;
-  const msgStr = typeof ev.message === 'string' ? ev.message : null;
-
-  let httpStatus: number | null = null;
-  // Search BOTH error and message — the status often lives in the human message
-  // ('HTTP 401 Unauthorized'), not the error code. Tolerate space/colon/_/-
-  // separators so 'http_404', 'HTTP 401', 'HTTP: 403', 'HTTP-429' all parse;
-  // otherwise a customer-actionable 401/403 would be missed and default to
-  // our_side (held) instead of customer_side (shown). Won't match a URL.
-  const m = `${errStr ?? ''} ${msgStr ?? ''}`.match(/\bhttp[\s:_-]*(\d{3})\b/i);
-  if (m) httpStatus = Number(m[1]);
-  // evidence.status may be a number (404) OR a status-code string ('404',
-  // '401 Unauthorized'). For strings the code must be at the START (anchored) so
-  // we don't grab an unrelated 3-digit run from arbitrary text (e.g. 'build 200').
-  if (httpStatus == null && ev.status != null) {
-    const n =
-      typeof ev.status === 'number'
-        ? ev.status
-        : Number(
-            String(ev.status)
-              .trim()
-              .match(/^(\d{3})\b/)?.[1],
-          );
-    if (Number.isFinite(n) && n >= 100 && n < 600) httpStatus = n;
-  }
-
-  // Use the message ONLY when it has content; an empty-string message must not
-  // mask the error text (?? keeps '' because it's not null/undefined).
-  const rawText = msgStr && msgStr.trim() ? msgStr : (errStr ?? '');
-  const errorText = rawText ? redactSecrets(rawText) : null;
-  const threw = resultStatus === 'error';
-
-  return { httpStatus, errorText, threw };
 }

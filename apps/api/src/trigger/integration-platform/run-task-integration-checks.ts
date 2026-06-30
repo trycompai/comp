@@ -17,9 +17,7 @@ import {
   countEffectiveFailures,
   decideTaskStatus,
   decideRunStatus,
-  splitFailuresByDisposition,
-  failureSignalsFromEvidence,
-  type ClassifiableFailure,
+  type FailingFinding,
 } from '../../integration-platform/utils/task-check-evaluation';
 
 /**
@@ -225,8 +223,9 @@ export const runTaskIntegrationChecks = task({
     let hasExecutionErrors = false;
     // Failing findings (keyed like an exception) so task status can exclude
     // explicitly-excepted ones below. Carries redacted error signals so the
-    // self-heal layer can classify our-side failures (dynamic integrations).
-    const failingFindings: ClassifiableFailure[] = [];
+    // identity only — comp never classifies; the self-heal agent reads the stored
+    // findings/evidence and decides our-bug vs real fail itself.
+    const failingFindings: FailingFinding[] = [];
 
     // Run only the checks that apply to this task
     try {
@@ -304,7 +303,6 @@ export const runTaskIntegrationChecks = task({
               // never shows the customer a red), static/AWS → 'failed'.
               status: decideRunStatus({
                 resultStatus: 'error',
-                failures: [],
                 isDynamic,
               }),
               startedAt: new Date(),
@@ -329,15 +327,13 @@ export const runTaskIntegrationChecks = task({
         // exception) so task status can exclude explicitly-excepted ones.
         totalFindings += checkResult.result.findings.length;
         totalPassing += checkResult.result.passingResults.length;
-        // Build this check's failing findings (with redacted signals) once —
-        // reused for the task-level decision and the per-check run status.
+        // Build this check's failing findings — identity only. comp does NOT
+        // classify; the self-heal agent reads the stored findings/evidence and
+        // decides our-bug vs real fail itself.
         const checkFailures = checkResult.result.findings.map((f) => ({
           connectionId,
           checkId: checkResult.checkId,
           resourceId: f.resourceId,
-          // Redacted error signals so the self-heal layer can classify
-          // our-side/transient failures and hold them as inconclusive.
-          ...failureSignalsFromEvidence(f.evidence, checkResult.status),
         }));
         failingFindings.push(...checkFailures);
         if (checkResult.status === 'error') {
@@ -350,7 +346,6 @@ export const runTaskIntegrationChecks = task({
         // base success/failed mapping.
         const runStatus = decideRunStatus({
           resultStatus: checkResult.status,
-          failures: checkFailures,
           isDynamic,
         });
 
@@ -450,9 +445,9 @@ export const runTaskIntegrationChecks = task({
       // the self-heal layer investigates/fixes them. Static/AWS behavior is
       // unchanged. Safe degradation: a finding with no readable error signal
       // classifies as a real (compliance) failure, exactly as today.
-      const statusFailures = isDynamic
-        ? splitFailuresByDisposition(failingFindings).effective
-        : failingFindings;
+      // DYNAMIC: every failure is held (pending) — comp never classifies, the
+      // agent decides. Static/AWS: unchanged (no holding).
+      const statusFailures = isDynamic ? [] : failingFindings;
       const heldCount = failingFindings.length - statusFailures.length;
       if (heldCount > 0) {
         logger.info(
