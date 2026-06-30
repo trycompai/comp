@@ -14,6 +14,9 @@ export const migrateOrgEmailDomain = schemaTask({
   run: async ({ organizationId, oldDomain, newDomain }) => {
     await tags.add([`org:${organizationId}`]);
 
+    const normalizedOldDomain = oldDomain.toLowerCase();
+    const normalizedNewDomain = newDomain.toLowerCase();
+
     // Find all active members in the org with their user emails
     const members = await db.member.findMany({
       where: { organizationId, isActive: true, deactivated: false },
@@ -22,26 +25,30 @@ export const migrateOrgEmailDomain = schemaTask({
       },
     });
 
-    const oldDomainSuffix = `@${oldDomain}`;
-    const newDomainSuffix = `@${newDomain}`;
+    const oldDomainSuffix = `@${normalizedOldDomain}`;
+    const newDomainSuffix = `@${normalizedNewDomain}`;
 
-    // Build a set of new-domain emails for fast lookup
-    const newDomainEmails = new Set(
-      members
-        .map((m) => m.user.email)
-        .filter((email) => email.endsWith(newDomainSuffix)),
+    // Normalize all emails to lowercase before matching
+    const normalizedEmails = members.map((m) => ({
+      original: m.user.email,
+      normalized: m.user.email.toLowerCase(),
+    }));
+
+    // Build a map from normalized new-domain email → original email for lookup
+    const newDomainEmailMap = new Map(
+      normalizedEmails
+        .filter(({ normalized }) => normalized.endsWith(newDomainSuffix))
+        .map(({ normalized, original }) => [normalized, original]),
     );
 
     // Find members with old-domain email that have a matching new-domain counterpart
-    const duplicatePairs = members
-      .map((m) => m.user.email)
-      .filter((email) => email.endsWith(oldDomainSuffix))
-      .map((oldEmail) => {
-        const username = oldEmail.slice(0, -oldDomainSuffix.length);
-        const newEmail = `${username}${newDomainSuffix}`;
-        return { oldEmail, newEmail };
-      })
-      .filter(({ newEmail }) => newDomainEmails.has(newEmail));
+    const duplicatePairs = normalizedEmails
+      .filter(({ normalized }) => normalized.endsWith(oldDomainSuffix))
+      .flatMap(({ normalized, original: oldEmail }) => {
+        const username = normalized.slice(0, -oldDomainSuffix.length);
+        const matchedNewEmail = newDomainEmailMap.get(`${username}${newDomainSuffix}`);
+        return matchedNewEmail ? [{ oldEmail, newEmail: matchedNewEmail }] : [];
+      });
 
     if (duplicatePairs.length === 0) {
       logger.info('No duplicate email pairs found', { organizationId, oldDomain, newDomain });
