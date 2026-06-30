@@ -290,9 +290,8 @@ export const mergeDuplicateUser = schemaTask({
           data: { userId: newUser.id },
         });
 
-        // ── Delete old user sessions and the user record ─────────────────────
+        // ── Delete old user sessions. ─────────────────────
         await tx.session.deleteMany({ where: { userId: oldUser.id } });
-        await tx.user.delete({ where: { id: oldUser.id } });
 
         // ── Update pending invitations ───────────────────────────────────────
         await tx.invitation.updateMany({
