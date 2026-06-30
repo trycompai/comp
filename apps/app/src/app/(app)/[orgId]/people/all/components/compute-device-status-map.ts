@@ -35,6 +35,10 @@ export function computeDeviceStatusMap({
 
   const agentRollup = new Map<string, MemberDeviceStatus>();
   for (const d of agentDevices) {
+    // Integration-imported devices carry no compliance data, so they must not
+    // set a member's status (it would falsely read non-compliant/stale) nor
+    // suppress the richer Fleet fallback below. Only true agent devices count.
+    if (d.source !== 'device_agent') continue;
     if (!d.memberId || !complianceSet.has(d.memberId)) continue;
 
     const prev = agentRollup.get(d.memberId);
