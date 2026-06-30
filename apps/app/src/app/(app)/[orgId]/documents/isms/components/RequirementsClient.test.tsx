@@ -143,6 +143,16 @@ describe('RequirementsClient', () => {
     expect(screen.getAllByText('Manual').length).toBeGreaterThan(0);
   });
 
+  it('back link returns to the ISO 27001 documents tab', () => {
+    setMockPermissions(ADMIN_PERMISSIONS);
+    render(<RequirementsClient {...baseProps} />);
+
+    expect(screen.getByRole('link', { name: 'ISMS' })).toHaveAttribute(
+      'href',
+      '/org-1/documents?tab=iso-27001',
+    );
+  });
+
   it('allows editing (shows mutating controls) for a user with evidence:update', () => {
     setMockPermissions(ADMIN_PERMISSIONS);
     render(<RequirementsClient {...baseProps} />);

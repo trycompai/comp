@@ -100,9 +100,9 @@ export function deriveRequirements({
       requirement: mapped.requirement,
       treatment: mapped.treatment,
       source: 'derived',
-      derivedFrom: party.interestedPartyId
-        ? `party:${party.interestedPartyId}`
-        : `party:${party.name}`,
+      // Provenance carries the human party name (shown verbatim in the source
+      // badge); the actual link is the separate interestedPartyId field below.
+      derivedFrom: `party:${party.name}`,
       position: index,
       interestedPartyId: party.interestedPartyId,
     };

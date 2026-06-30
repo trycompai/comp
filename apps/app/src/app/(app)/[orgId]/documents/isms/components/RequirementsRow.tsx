@@ -116,33 +116,22 @@ export function RequirementsRow({ requirement, canEdit, onSave, onDelete }: Requ
         headerEnd={actions}
       >
         <Stack gap="3">
-          <div className="grid gap-3 md:grid-cols-2">
-            <IsmsFieldLabel label="Interested party">
-              <Field>
-                <Controller
-                  control={control}
-                  name="partyName"
-                  render={({ field: { ref: _ref, ...field } }) => (
-                    <Input {...field} aria-label="Requirement party" />
-                  )}
-                />
-                <FieldError>{errors.partyName?.message}</FieldError>
-              </Field>
-            </IsmsFieldLabel>
-            <IsmsFieldLabel label="Linked party ID (optional)">
+          {/* interestedPartyId is a system-managed link (set when the row is
+              derived from an Interested Parties Register entry). It rides along
+              in the form's default values and is carried through on save, but is
+              never surfaced as a raw-id input. */}
+          <IsmsFieldLabel label="Interested party">
+            <Field>
               <Controller
                 control={control}
-                name="interestedPartyId"
+                name="partyName"
                 render={({ field: { ref: _ref, ...field } }) => (
-                  <Input
-                    {...field}
-                    placeholder="Linked party ID (optional)"
-                    aria-label="Requirement party ID"
-                  />
+                  <Input {...field} aria-label="Requirement party" />
                 )}
               />
-            </IsmsFieldLabel>
-          </div>
+              <FieldError>{errors.partyName?.message}</FieldError>
+            </Field>
+          </IsmsFieldLabel>
           <IsmsFieldLabel label="Requirement">
             <Field>
               <Controller
