@@ -1950,10 +1950,11 @@ export class TrustPortalService {
 
     if (normalized.includes('soc2') || normalized.includes('soc 2'))
       return 'soc2';
-    if (normalized.includes('iso27001') || normalized.includes('iso 27001'))
-      return 'iso27001';
-    if (normalized.includes('iso42001') || normalized.includes('iso 42001'))
-      return 'iso42001';
+    // Match ISO standards by their number. Vendors write these many ways
+    // ("ISO 27001", "ISO/IEC 27001:2022"), and the "IEC" infix breaks a naive
+    // includes('iso27001') check ("iso27001" is not a substring of "isoiec27001…").
+    if (normalized.includes('27001')) return 'iso27001';
+    if (normalized.includes('42001')) return 'iso42001';
     if (normalized.includes('gdpr')) return 'gdpr';
     if (normalized.includes('hipaa')) return 'hipaa';
     if (
@@ -1964,8 +1965,7 @@ export class TrustPortalService {
       return 'pci_dss';
     if (normalized.includes('nen7510') || normalized.includes('nen 7510'))
       return 'nen7510';
-    if (normalized.includes('iso9001') || normalized.includes('iso 9001'))
-      return 'iso9001';
+    if (normalized.includes('9001')) return 'iso9001';
 
     return null;
   }
