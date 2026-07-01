@@ -1,3 +1,10 @@
+## [3.95.1](https://github.com/trycompai/comp/compare/v3.95.0...v3.95.1) (2026-07-01)
+
+
+### Bug Fixes
+
+* **evidence-export:** raise trigger task duration ceiling to prevent timeout ([5375032](https://github.com/trycompai/comp/commit/53750326fc7b31b0a72ecd7876d6b47fdafb716f)), closes [hi#volume](https://github.com/hi/issues/volume)
+
 # [3.95.0](https://github.com/trycompai/comp/compare/v3.94.2...v3.95.0) (2026-07-01)
 
 
