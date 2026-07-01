@@ -1950,11 +1950,8 @@ export class TrustPortalService {
 
     if (normalized.includes('soc2') || normalized.includes('soc 2'))
       return 'soc2';
-    // Match ISO standards by their number. Vendors write these many ways
-    // ("ISO 27001", "ISO/IEC 27001:2022"), and the "IEC" infix breaks a naive
-    // includes('iso27001') check ("iso27001" is not a substring of "isoiec27001…").
-    if (normalized.includes('27001')) return 'iso27001';
-    if (normalized.includes('42001')) return 'iso42001';
+    if (this.matchesIsoStandard(normalized, '27001')) return 'iso27001';
+    if (this.matchesIsoStandard(normalized, '42001')) return 'iso42001';
     if (normalized.includes('gdpr')) return 'gdpr';
     if (normalized.includes('hipaa')) return 'hipaa';
     if (
@@ -1965,9 +1962,33 @@ export class TrustPortalService {
       return 'pci_dss';
     if (normalized.includes('nen7510') || normalized.includes('nen 7510'))
       return 'nen7510';
-    if (normalized.includes('9001')) return 'iso9001';
+    if (this.matchesIsoStandard(normalized, '9001')) return 'iso9001';
 
     return null;
+  }
+
+  /**
+   * Whether a normalized cert string (lowercased, alphanumerics only) names the
+   * given ISO standard number.
+   *
+   * - Requires an "iso" / "iso iec" prefix, so unrelated ids that merely contain
+   *   the digits ("19001", "127001") are not misclassified.
+   * - The optional "iec" handles joint ISO/IEC standards whose "IEC" infix would
+   *   otherwise break the match ("ISO/IEC 27001:2022" -> "isoiec270012022").
+   * - Allows an optional trailing 4-digit year ("ISO 9001:2015" -> "iso90012015")
+   *   but forbids any other trailing digit, so a longer number is not read as a
+   *   shorter standard ("ISO 90010" is not "ISO 9001", "ISO 27017" is not 27001).
+   *
+   * `standardNumber` is always a hard-coded digit literal — never user input —
+   * so building the RegExp from it carries no injection risk.
+   */
+  private matchesIsoStandard(
+    normalized: string,
+    standardNumber: string,
+  ): boolean {
+    return new RegExp(`iso(?:iec)?${standardNumber}(?:\\d{4})?(?!\\d)`).test(
+      normalized,
+    );
   }
 
   private generateLogoUrl(website: string | null): string | null {
