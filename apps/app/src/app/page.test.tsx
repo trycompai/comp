@@ -79,6 +79,18 @@ describe('RootPage onboarding-loop guard (CS-569)', () => {
     expect(mockRedirect).not.toHaveBeenCalledWith('/auth/access-removed');
   });
 
+  it('lets an explicit ?inviteCode= win over the offboard guard (hands off to /setup for downstream invite handling)', async () => {
+    // Regression (cubic P2): an offboarded user landing on /?inviteCode=... must
+    // still be able to accept the invite, not be short-circuited to access-removed.
+    mockMe({ organizations: [], pendingInvitation: null, hasInactiveMembership: true });
+
+    await expect(
+      Page({ searchParams: Promise.resolve({ inviteCode: 'inv_abc' }) }),
+    ).rejects.toThrow('REDIRECT:/setup?inviteCode=inv_abc');
+
+    expect(mockRedirect).not.toHaveBeenCalledWith('/auth/access-removed');
+  });
+
   it('prefers a pending invitation over the access-removed page', async () => {
     mockMe({
       organizations: [],

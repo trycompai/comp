@@ -59,9 +59,16 @@ export default async function RootPage({
   const memberships = meRes.data?.organizations ?? [];
 
   if (memberships.length === 0) {
-    // CS-569: route a user with no active org through the shared decision so
-    // this page and the /setup route can't diverge (invite > offboarded > new).
-    // `null` = genuinely new user → onboarding.
+    // An explicit ?inviteCode= (the user is accepting a specific invitation)
+    // always wins over the offboard guard: hand off to /setup, which preserves
+    // the code and passes it through to /invite downstream. Mirrors the /setup
+    // route precedence so an offboarded user can still accept a valid invite.
+    const inviteCode = (await searchParams)?.inviteCode;
+    if (inviteCode) {
+      return redirect(await buildUrlWithParams('/setup'));
+    }
+    // Otherwise route via the shared decision (pending invite > offboarded >
+    // new user). `null` = genuinely new user → onboarding.
     const target = resolveNoActiveOrgRedirect(meRes.data);
     return redirect(await buildUrlWithParams(target ?? '/setup'));
   }
