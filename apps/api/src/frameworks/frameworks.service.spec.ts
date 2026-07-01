@@ -178,6 +178,14 @@ describe('FrameworksService', () => {
       });
     });
 
+    it('should throw BadRequestException when no fields are provided', async () => {
+      await expect(
+        service.updateCustom('fi1', 'org_1', {}),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockDb.frameworkInstance.findUnique).not.toHaveBeenCalled();
+      expect(mockDb.customFramework.update).not.toHaveBeenCalled();
+    });
+
     it('should throw NotFoundException when instance not found', async () => {
       (mockDb.frameworkInstance.findUnique as jest.Mock).mockResolvedValue(
         null,
