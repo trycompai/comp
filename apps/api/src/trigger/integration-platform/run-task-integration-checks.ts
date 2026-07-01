@@ -11,14 +11,12 @@ import {
   runChecksOnServer,
   type RunAllChecksResult,
 } from './run-checks-on-server';
-import {
-  isActiveDynamicProvider,
-  shouldRunOnServer,
-} from './dynamic-provider';
+import { isActiveDynamicProvider, shouldRunOnServer } from './dynamic-provider';
 import { loadActiveExceptionSet } from '../../cloud-security/finding-exceptions';
 import {
   countEffectiveFailures,
   decideTaskStatus,
+  decideRunStatus,
   type FailingFinding,
 } from '../../integration-platform/utils/task-check-evaluation';
 
@@ -224,8 +222,14 @@ export const runTaskIntegrationChecks = task({
     let totalPassing = 0;
     let hasExecutionErrors = false;
     // Failing findings (keyed like an exception) so task status can exclude
-    // explicitly-excepted ones below.
+    // explicitly-excepted ones below. Carries redacted error signals so the
+    // identity only — comp never classifies; the self-heal agent reads the stored
+    // findings/evidence and decides our-bug vs real fail itself.
     const failingFindings: FailingFinding[] = [];
+    // Count of checks HELD ('inconclusive') this run — including error-only runs
+    // that produced no findings — so a held/errored check keeps the task pending
+    // (not 'done') until the self-heal agent resolves it.
+    let heldRunCount = 0;
 
     // Run only the checks that apply to this task
     try {
@@ -297,7 +301,14 @@ export const runTaskIntegrationChecks = task({
               taskId,
               checkId,
               checkName: checkDef?.name ?? checkId,
-              status: 'failed',
+              // A transport blip (Trigger→server) is an execution error, so
+              // route it through the SAME shared rule as every other run: dynamic
+              // → 'inconclusive' (hidden + self-heal queue, so a network hiccup
+              // never shows the customer a red), static/AWS → 'failed'.
+              status: decideRunStatus({
+                resultStatus: 'error',
+                isDynamic,
+              }),
               startedAt: new Date(),
               completedAt: new Date(),
               durationMs: 0,
@@ -310,6 +321,9 @@ export const runTaskIntegrationChecks = task({
           logger.error(
             `Server-run failed for check ${checkId} on task ${taskId}: ${message}`,
           );
+          // A dynamic transport error was just held as 'inconclusive' — count it
+          // so an error-only failure (no findings) still keeps the task pending.
+          if (isDynamic) heldRunCount++;
           continue;
         }
 
@@ -320,16 +334,30 @@ export const runTaskIntegrationChecks = task({
         // exception) so task status can exclude explicitly-excepted ones.
         totalFindings += checkResult.result.findings.length;
         totalPassing += checkResult.result.passingResults.length;
-        for (const f of checkResult.result.findings) {
-          failingFindings.push({
-            connectionId,
-            checkId: checkResult.checkId,
-            resourceId: f.resourceId,
-          });
-        }
+        // Build this check's failing findings — identity only. comp does NOT
+        // classify; the self-heal agent reads the stored findings/evidence and
+        // decides our-bug vs real fail itself.
+        const checkFailures = checkResult.result.findings.map((f) => ({
+          connectionId,
+          checkId: checkResult.checkId,
+          resourceId: f.resourceId,
+        }));
+        failingFindings.push(...checkFailures);
         if (checkResult.status === 'error') {
           hasExecutionErrors = true;
         }
+
+        // Per-check run status (shared rule). For DYNAMIC integrations a check
+        // that failed for an our-side/transient reason (or threw) is recorded as
+        // 'inconclusive' — the self-heal agent's queue. Static/AWS keep the
+        // base success/failed mapping.
+        const runStatus = decideRunStatus({
+          resultStatus: checkResult.status,
+          isDynamic,
+        });
+        // Any held check (a finding, a customer error, or an execution error)
+        // keeps the task pending — count it so it can't slip to 'done'.
+        if (runStatus === 'inconclusive') heldRunCount++;
 
         // Store check run
         const checkRun = await db.integrationCheckRun.create({
@@ -338,8 +366,7 @@ export const runTaskIntegrationChecks = task({
             taskId,
             checkId: checkResult.checkId,
             checkName: checkResult.checkName,
-            status:
-              checkResult.status === 'error' ? 'failed' : checkResult.status,
+            status: runStatus,
             startedAt: new Date(),
             completedAt: new Date(),
             durationMs: checkResult.durationMs,
@@ -348,7 +375,13 @@ export const runTaskIntegrationChecks = task({
               checkResult.result.passingResults.length +
                 checkResult.result.findings.length,
             passedCount: checkResult.result.passingResults.length,
-            failedCount: checkResult.result.findings.length,
+            // A held (inconclusive) run has no CONFIRMED failures — its findings
+            // are our-side/transient, not real fails — so failedCount is 0. The
+            // raw findings still persist as results for the agent to diagnose.
+            failedCount:
+              runStatus === 'inconclusive'
+                ? 0
+                : checkResult.result.findings.length,
             errorMessage: checkResult.error,
             logs: JSON.parse(JSON.stringify(checkResult.result.logs)),
           },
@@ -417,14 +450,26 @@ export const runTaskIntegrationChecks = task({
       // the shared helpers). Execution errors don't drive status here; they gate
       // integrationLastRunAt above so the next tick retries.
       const exceptions = await loadActiveExceptionSet(organizationId);
-      const effectiveFailures = countEffectiveFailures(
-        failingFindings,
-        exceptions,
-      );
+      // For DYNAMIC integrations, hold our-side/transient failures as
+      // inconclusive: they must not fail the task or send a "task failed" email —
+      // the self-heal layer investigates/fixes them. Static/AWS behavior is
+      // DYNAMIC: every failure is held (pending) — comp never classifies, the
+      // agent decides. Static/AWS: unchanged (no holding).
+      const statusFailures = isDynamic ? [] : failingFindings;
+      // heldCount = checks HELD this run (incl. error-only runs with NO findings),
+      // so any held check keeps the task pending instead of slipping to 'done'.
+      const heldCount = heldRunCount;
+      if (heldCount > 0) {
+        logger.info(
+          `Held ${heldCount} check(s) as inconclusive (pending) for task ${taskId} — not failed, not done`,
+        );
+      }
+      const effectiveFailures = countEffectiveFailures(statusFailures, exceptions);
       const newStatus = decideTaskStatus(
         effectiveFailures,
         totalPassing,
         totalFindings,
+        heldCount,
       );
 
       // Whether THIS run flipped the task into `failed` (e.g. todo/done →

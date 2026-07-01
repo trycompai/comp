@@ -293,7 +293,7 @@ const getMemberDevice = async (
   memberId: string,
   organizationId: string,
 ): Promise<DeviceWithChecks | null> => {
-  const device = await db.device.findFirst({
+  const devices = await db.device.findMany({
     where: { memberId, organizationId },
     include: {
       member: {
@@ -310,8 +310,39 @@ const getMemberDevice = async (
     orderBy: { installedAt: 'desc' },
   });
 
-  if (!device) {
+  if (devices.length === 0) {
     return null;
+  }
+
+  // An agent device carries real compliance data; an integration import does
+  // not. Prefer the richest source so the detail page never shows an imported
+  // device as a failing agent device. Order of richness: agent > fleet > integration.
+  const device =
+    devices.find((d) => d.source === 'agent') ??
+    devices.find((d) => d.source === 'fleet') ??
+    devices[0];
+
+  const source: DeviceWithChecks['source'] =
+    device.source === 'integration'
+      ? 'integration'
+      : device.source === 'fleet'
+        ? 'fleet'
+        : 'device_agent';
+
+  // Resolve the provider (name/slug) so an imported device shows its provenance
+  // instead of being mislabeled as an agent device.
+  let integrationProvider: DeviceWithChecks['integrationProvider'];
+  if (source === 'integration' && device.integrationConnectionId) {
+    const connection = await db.integrationConnection.findFirst({
+      where: { id: device.integrationConnectionId, organizationId },
+      select: { provider: { select: { slug: true, name: true } } },
+    });
+    if (connection?.provider) {
+      integrationProvider = {
+        slug: connection.provider.slug,
+        name: connection.provider.name,
+      };
+    }
   }
 
   const complianceStatus = getDeviceComplianceStatus({
@@ -336,14 +367,18 @@ const getMemberDevice = async (
     lastCheckIn: device.lastCheckIn?.toISOString() ?? null,
     agentVersion: device.agentVersion,
     installedAt: device.installedAt.toISOString(),
+    memberId: device.memberId,
     user: {
       name: device.member.user.name,
       email: device.member.user.email,
     },
-    source: 'device_agent' as const,
+    source,
+    ...(integrationProvider ? { integrationProvider } : {}),
     complianceStatus,
     daysSinceLastCheckIn: daysSinceCheckIn(device.lastCheckIn),
     hasActiveAgentSession:
-      !!device.agentSession && device.agentSession.expiresAt.getTime() > Date.now(),
+      source === 'device_agent' &&
+      !!device.agentSession &&
+      device.agentSession.expiresAt.getTime() > Date.now(),
   };
 };

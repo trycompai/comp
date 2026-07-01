@@ -72,6 +72,7 @@ describe('buildDevicesCsv', () => {
         'yes',
         'yes',
         'yes',
+        'Comp Agent',
       ].join(','),
     );
   });
@@ -90,7 +91,43 @@ describe('buildDevicesCsv', () => {
     const cells = row.split(',');
     expect(cells).toContain('stale');
     expect(cells[7]).toBe('51'); // days since sync
-    expect(cells.slice(-4)).toEqual(['no', 'no', 'yes', 'yes']);
+    expect(cells.slice(9, 13)).toEqual(['no', 'no', 'yes', 'yes']); // the four checks
+  });
+
+  it('exports imported devices as not_tracked / n/a with the provider as source', () => {
+    const csv = buildDevicesCsv([
+      makeDevice({
+        source: 'integration',
+        integrationProvider: { slug: 'kandji', name: 'Kandji' },
+        // Imported devices carry only defaults — must NOT export as non_compliant/no.
+        isCompliant: false,
+        complianceStatus: 'non_compliant',
+        diskEncryptionEnabled: false,
+        antivirusEnabled: false,
+        passwordPolicySet: false,
+        screenLockEnabled: false,
+        agentVersion: null,
+      }),
+    ]);
+    const cells = stripBom(csv).slice(0, -2).split('\r\n')[1].split(',');
+    expect(cells[8]).toBe('not_tracked'); // status
+    expect(cells.slice(9, 13)).toEqual(['n/a', 'n/a', 'n/a', 'n/a']);
+    expect(cells[13]).toBe('Kandji'); // source
+  });
+
+  it('neutralizes formula injection coming from an integration provider name', () => {
+    const csv = buildDevicesCsv([
+      makeDevice({
+        source: 'integration',
+        integrationProvider: { slug: 'evil', name: '=HYPERLINK("http://evil","x")' },
+      }),
+    ]);
+    const body = stripBom(csv);
+    // The provider name lands in the trailing Source cell; the leading "=" must be
+    // apostrophe-prefixed INSIDE the quotes so spreadsheets treat it as text.
+    expect(body).toContain('"\'=HYPERLINK(""http://evil"",""x"")"');
+    // And it must never appear as a bare, executable formula cell.
+    expect(body).not.toContain(',=HYPERLINK');
   });
 
   it('represents never-synced devices with empty last-check-in and empty days', () => {
