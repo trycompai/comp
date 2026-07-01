@@ -371,6 +371,34 @@ export const mergeDuplicateUser = schemaTask({
             data: { userId: newUser.id },
           });
 
+          // EvidenceSubmission: onDelete SetNull — re-point to preserve authorship
+          await tx.evidenceSubmission.updateMany({
+            where: { submittedById: oldUser.id },
+            data: { submittedById: newUser.id },
+          });
+          await tx.evidenceSubmission.updateMany({
+            where: { reviewedById: oldUser.id },
+            data: { reviewedById: newUser.id },
+          });
+
+          // Finding: createdByAdminId — re-point to preserve authorship
+          await tx.finding.updateMany({
+            where: { createdByAdminId: oldUser.id },
+            data: { createdByAdminId: newUser.id },
+          });
+
+          // IntegrationResult: onDelete Cascade — re-point to preserve assignment
+          await tx.integrationResult.updateMany({
+            where: { assignedUserId: oldUser.id },
+            data: { assignedUserId: newUser.id },
+          });
+
+          // OffboardingChecklistCompletion: onDelete SetNull — re-point to preserve actor
+          await tx.offboardingChecklistCompletion.updateMany({
+            where: { completedById: oldUser.id },
+            data: { completedById: newUser.id },
+          });
+
           // ── Delete old user sessions ─────────────────────
           await tx.session.deleteMany({ where: { userId: oldUser.id } });
 
