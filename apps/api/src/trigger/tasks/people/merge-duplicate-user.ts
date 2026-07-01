@@ -323,11 +323,10 @@ export const mergeDuplicateUser = schemaTask({
         // ── User-level relations & old user record ───────────────────────────
         // Only safe when the old user has no membership in any other org —
         // otherwise these relations (and the user record itself) still belong
-        // to that other org and must be left alone.
+        // to that other org and must be left alone. Everything below must
+        // run before the tx.user.delete call at the end of this block, since
+        // some of these relations cascade-delete when their user is removed.
         if (!oldUserHasOtherOrgs) {
-          // ── Re-point user-level relations before deleting oldUser ───────────
-          // Must happen before the delete to prevent cascade wiping these records.
-
           // OAuth accounts: move to surviving user
           await tx.account.updateMany({
             where: { userId: oldUser.id },
