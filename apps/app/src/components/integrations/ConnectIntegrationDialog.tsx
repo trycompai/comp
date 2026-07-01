@@ -176,6 +176,13 @@ export function ConnectIntegrationDialog({
 
   const allFields = useMemo(() => {
     if (authType === 'basic') {
+      // Prefer the catalog-defined fields (e.g. Fivetran's api_key/api_secret) so the
+      // inputs are labeled correctly and the values are stored under the keys the
+      // runtime reads to build the Basic auth header. Fall back to generic
+      // username/password only when the provider ships no credential fields.
+      if (credentialFields.length > 0) {
+        return credentialFields;
+      }
       return [
         {
           id: 'username',
