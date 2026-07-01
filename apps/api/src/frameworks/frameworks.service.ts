@@ -465,6 +465,43 @@ export class FrameworksService {
     });
   }
 
+  async updateCustom(
+    frameworkInstanceId: string,
+    organizationId: string,
+    input: { name?: string; description?: string },
+  ) {
+    const data: { name?: string; description?: string } = {};
+    if (input.name !== undefined) data.name = input.name;
+    if (input.description !== undefined) data.description = input.description;
+
+    // Reject an empty PATCH up front instead of issuing a no-op write.
+    if (Object.keys(data).length === 0) {
+      throw new BadRequestException('No fields to update');
+    }
+
+    const frameworkInstance = await db.frameworkInstance.findUnique({
+      where: { id: frameworkInstanceId, organizationId },
+      select: { customFrameworkId: true },
+    });
+
+    if (!frameworkInstance) {
+      throw new NotFoundException('Framework instance not found');
+    }
+
+    // Only org-authored custom frameworks carry editable metadata. Platform
+    // frameworks derive their name/description from the shared global template.
+    if (!frameworkInstance.customFrameworkId) {
+      throw new BadRequestException('Only custom frameworks can be edited');
+    }
+
+    // Ownership is already enforced by the org-scoped instance lookup above,
+    // so keying the update by the custom framework id is safe.
+    return db.customFramework.update({
+      where: { id: frameworkInstance.customFrameworkId },
+      data,
+    });
+  }
+
   async createRequirement(
     frameworkInstanceId: string,
     organizationId: string,

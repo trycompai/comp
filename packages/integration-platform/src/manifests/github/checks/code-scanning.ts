@@ -16,6 +16,7 @@ import type {
   GitHubTreeResponse,
 } from '../types';
 import { parseRepoBranch, targetReposVariable } from '../variables';
+import { FILE_READ_CONCURRENCY, mapWithConcurrency } from './concurrency';
 
 // Patterns that indicate code scanning is configured in a workflow
 const CODE_SCANNING_PATTERNS = [
@@ -129,16 +130,19 @@ export const codeScanningCheck: IntegrationCheck = {
           (entry.path.endsWith('.yml') || entry.path.endsWith('.yaml')),
       );
 
-      const codeScanningWorkflows: string[] = [];
+      // Read each workflow file with bounded concurrency. Serially, a
+      // workflow-heavy repo (or one under GitHub's secondary rate limit)
+      // exceeded the synchronous manual-run HTTP timeout. See concurrency.ts.
+      const scanned = await mapWithConcurrency(
+        workflowFiles,
+        FILE_READ_CONCURRENCY,
+        async (entry) => {
+          const content = await fetchFile(repoName, entry.path);
+          return content && hasCodeScanningInWorkflow(content) ? entry.path : null;
+        },
+      );
 
-      for (const entry of workflowFiles) {
-        const content = await fetchFile(repoName, entry.path);
-        if (content && hasCodeScanningInWorkflow(content)) {
-          codeScanningWorkflows.push(entry.path);
-        }
-      }
-
-      return codeScanningWorkflows;
+      return scanned.filter((path): path is string => path !== null);
     };
 
     const getCodeScanningStatus = async ({
