@@ -1954,9 +1954,11 @@ export class TrustPortalService {
     // unrelated ids that merely contain the digits (e.g. a catalog id "19001")
     // aren't misclassified. The optional "iec" handles joint ISO/IEC standards,
     // whose "IEC" infix would otherwise break a naive includes('iso27001') check
-    // ("ISO/IEC 27001:2022" normalizes to "isoiec270012022").
-    if (/iso(?:iec)?27001/.test(normalized)) return 'iso27001';
-    if (/iso(?:iec)?42001/.test(normalized)) return 'iso42001';
+    // ("ISO/IEC 27001:2022" normalizes to "isoiec270012022"). The trailing
+    // "(?:\d{4})?(?!\d)" allows an optional 4-digit year ("...:2022") but forbids
+    // any other trailing digit, so "ISO 90010" is not read as "ISO 9001".
+    if (/iso(?:iec)?27001(?:\d{4})?(?!\d)/.test(normalized)) return 'iso27001';
+    if (/iso(?:iec)?42001(?:\d{4})?(?!\d)/.test(normalized)) return 'iso42001';
     if (normalized.includes('gdpr')) return 'gdpr';
     if (normalized.includes('hipaa')) return 'hipaa';
     if (
@@ -1967,7 +1969,7 @@ export class TrustPortalService {
       return 'pci_dss';
     if (normalized.includes('nen7510') || normalized.includes('nen 7510'))
       return 'nen7510';
-    if (/iso(?:iec)?9001/.test(normalized)) return 'iso9001';
+    if (/iso(?:iec)?9001(?:\d{4})?(?!\d)/.test(normalized)) return 'iso9001';
 
     return null;
   }

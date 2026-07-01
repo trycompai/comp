@@ -151,4 +151,27 @@ describe('TrustPortalService getAllVendorsWithSync compliance badges', () => {
     // Sanity check that the sync path still ran and produced real badges.
     expect(badgeTypes).toContain('gdpr');
   });
+
+  // Regression: the ISO number must not match as a prefix of a longer number.
+  // "ISO 90010" normalizes to "iso90010" and would otherwise match iso9001;
+  // only an optional 4-digit year (e.g. ":2015") may follow the standard number.
+  it('does not read "ISO 90010" as the iso9001 badge', async () => {
+    const badgeTypes = await badgeTypesFor([
+      { type: 'ISO 90010', status: 'verified' },
+      { type: 'GDPR Compliance', status: 'verified' },
+    ]);
+
+    expect(badgeTypes).not.toContain('iso9001');
+    expect(badgeTypes).toContain('gdpr');
+  });
+
+  // Real-world boundary: ISO/IEC 27017 (cloud security) shares the "2701"
+  // prefix with 27001 but is a distinct standard and must not earn its badge.
+  it('does not read "ISO/IEC 27017:2015" as the iso27001 badge', async () => {
+    const badgeTypes = await badgeTypesFor([
+      { type: 'ISO/IEC 27017:2015', status: 'verified' },
+    ]);
+
+    expect(badgeTypes).not.toContain('iso27001');
+  });
 });
