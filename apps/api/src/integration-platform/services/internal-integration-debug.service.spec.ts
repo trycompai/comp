@@ -12,6 +12,7 @@ jest.mock('@db', () => ({
     },
     integrationOAuthError: { findMany: jest.fn() },
     dynamicIntegration: { findFirst: jest.fn() },
+    task: { findUnique: jest.fn(), updateMany: jest.fn() },
   },
 }));
 
@@ -20,6 +21,7 @@ import { db } from '@db';
 import { InternalIntegrationDebugService } from './internal-integration-debug.service';
 import type { ConnectionCheckRunnerService } from './connection-check-runner.service';
 import type { CheckRunRepository } from '../repositories/check-run.repository';
+import type { DynamicManifestLoaderService } from './dynamic-manifest-loader.service';
 
 const encryptedBlob = {
   encrypted: 'Y2lwaGVydGV4dA==',
@@ -38,15 +40,20 @@ const mockedDb = db as unknown as {
   };
   integrationOAuthError: { findMany: jest.Mock };
   dynamicIntegration: { findFirst: jest.Mock };
+  task: { findUnique: jest.Mock; updateMany: jest.Mock };
 };
 
 const makeService = (
   runner: Partial<ConnectionCheckRunnerService> = {},
   checkRunRepo: Partial<CheckRunRepository> = {},
+  manifestLoader: Partial<DynamicManifestLoaderService> = {
+    loadDynamicManifests: jest.fn().mockResolvedValue(undefined),
+  },
 ) =>
   new InternalIntegrationDebugService(
     runner as ConnectionCheckRunnerService,
     checkRunRepo as CheckRunRepository,
+    manifestLoader as DynamicManifestLoaderService,
   );
 
 describe('InternalIntegrationDebugService', () => {
@@ -471,6 +478,12 @@ describe('InternalIntegrationDebugService', () => {
       complete: jest.fn().mockResolvedValue({}),
     });
 
+    beforeEach(() => {
+      // The persisted re-run validates the taskId belongs to the connection's org
+      // (assertTaskBelongsToOrg). Default the task to the same org as the tests.
+      mockedDb.task.findUnique.mockResolvedValue({ organizationId: 'org_1' });
+    });
+
     it('persists a fresh SUCCESS run when the fixed check now passes', async () => {
       mockedDb.integrationConnection.findUnique.mockResolvedValue({
         organizationId: 'org_1',
@@ -529,6 +542,56 @@ describe('InternalIntegrationDebugService', () => {
         'icr_new',
         expect.objectContaining({ status: 'inconclusive', failedCount: 0 }),
       );
+    });
+
+    it('refreshes the manifest cache BEFORE running (so a just-patched fix is live, not the 60s-stale code)', async () => {
+      mockedDb.integrationConnection.findUnique.mockResolvedValue({
+        organizationId: 'org_1',
+        provider: { slug: 'neon' },
+      });
+      mockedDb.dynamicIntegration.findFirst.mockResolvedValue({ id: 'din_neon' });
+      const runChecks = jest.fn().mockResolvedValue(runResult('success'));
+      const loadDynamicManifests = jest.fn().mockResolvedValue(undefined);
+
+      const service = makeService({ runChecks }, makeRepo(), {
+        loadDynamicManifests,
+      });
+      await service.rerunAndPersistCheck({
+        connectionId: 'icn_1',
+        checkId: 'neon_x',
+        taskId: 'task_1',
+      });
+
+      expect(loadDynamicManifests).toHaveBeenCalledTimes(1);
+      // Refresh MUST happen before the run — otherwise the run executes stale code.
+      expect(loadDynamicManifests.mock.invocationCallOrder[0]).toBeLessThan(
+        runChecks.mock.invocationCallOrder[0],
+      );
+    });
+
+    it('still runs (falls back to cached manifests) when the refresh throws', async () => {
+      mockedDb.integrationConnection.findUnique.mockResolvedValue({
+        organizationId: 'org_1',
+        provider: { slug: 'neon' },
+      });
+      mockedDb.dynamicIntegration.findFirst.mockResolvedValue({ id: 'din_neon' });
+      const runChecks = jest.fn().mockResolvedValue(runResult('success'));
+      const loadDynamicManifests = jest
+        .fn()
+        .mockRejectedValue(new Error('db blip'));
+
+      const service = makeService({ runChecks }, makeRepo(), {
+        loadDynamicManifests,
+      });
+      const out = await service.rerunAndPersistCheck({
+        connectionId: 'icn_1',
+        checkId: 'neon_x',
+        taskId: 'task_1',
+      });
+
+      // Refresh failure is swallowed; the re-run still executes + persists.
+      expect(out.status).toBe('success');
+      expect(runChecks).toHaveBeenCalledTimes(1);
     });
   });
 });
