@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { FrameworksService } from './frameworks.service';
 import { TimelinesService } from '../timelines/timelines.service';
 
@@ -35,6 +35,7 @@ jest.mock('@db', () => ({
     },
     customFramework: {
       findMany: jest.fn(),
+      update: jest.fn(),
     },
   },
   // The frameworks-timeline helper imports FindingType (a Prisma enum) at module
@@ -132,6 +133,71 @@ describe('FrameworksService', () => {
         NotFoundException,
       );
       expect(mockDb.frameworkInstance.delete).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('updateCustom', () => {
+    it('should update the custom framework name and description', async () => {
+      (mockDb.frameworkInstance.findUnique as jest.Mock).mockResolvedValue({
+        customFrameworkId: 'cfrm_A',
+      });
+      const updated = {
+        id: 'cfrm_A',
+        name: 'CSC/CPRT',
+        description: 'Renamed',
+      };
+      (mockDb.customFramework.update as jest.Mock).mockResolvedValue(updated);
+
+      const result = await service.updateCustom('fi1', 'org_1', {
+        name: 'CSC/CPRT',
+        description: 'Renamed',
+      });
+
+      expect(result).toEqual(updated);
+      expect(mockDb.frameworkInstance.findUnique).toHaveBeenCalledWith({
+        where: { id: 'fi1', organizationId: 'org_1' },
+        select: { customFrameworkId: true },
+      });
+      expect(mockDb.customFramework.update).toHaveBeenCalledWith({
+        where: { id: 'cfrm_A' },
+        data: { name: 'CSC/CPRT', description: 'Renamed' },
+      });
+    });
+
+    it('should only update the fields that are provided', async () => {
+      (mockDb.frameworkInstance.findUnique as jest.Mock).mockResolvedValue({
+        customFrameworkId: 'cfrm_A',
+      });
+      (mockDb.customFramework.update as jest.Mock).mockResolvedValue({});
+
+      await service.updateCustom('fi1', 'org_1', { name: 'Just the name' });
+
+      expect(mockDb.customFramework.update).toHaveBeenCalledWith({
+        where: { id: 'cfrm_A' },
+        data: { name: 'Just the name' },
+      });
+    });
+
+    it('should throw NotFoundException when instance not found', async () => {
+      (mockDb.frameworkInstance.findUnique as jest.Mock).mockResolvedValue(
+        null,
+      );
+
+      await expect(
+        service.updateCustom('missing', 'org_1', { name: 'x' }),
+      ).rejects.toThrow(NotFoundException);
+      expect(mockDb.customFramework.update).not.toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestException for a platform framework', async () => {
+      (mockDb.frameworkInstance.findUnique as jest.Mock).mockResolvedValue({
+        customFrameworkId: null,
+      });
+
+      await expect(
+        service.updateCustom('fi_platform', 'org_1', { name: 'x' }),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockDb.customFramework.update).not.toHaveBeenCalled();
     });
   });
 
