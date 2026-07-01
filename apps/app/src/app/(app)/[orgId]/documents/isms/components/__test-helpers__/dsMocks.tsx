@@ -93,13 +93,16 @@ export function ismsSharedMock() {
     IsmsPageHeader: ({
       clause,
       title,
+      backHref,
       actions,
     }: {
       clause: string;
       title: string;
+      backHref?: string;
       actions?: ReactNode;
     }) => (
       <div data-testid="page-header">
+        {backHref ? <a href={backHref}>ISMS</a> : null}
         <h1>{`${clause} ${title}`}</h1>
         {actions}
       </div>

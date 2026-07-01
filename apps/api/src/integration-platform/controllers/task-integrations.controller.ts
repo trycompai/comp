@@ -43,9 +43,7 @@ import {
   countEffectiveFailures,
   decideTaskStatus,
   decideRunStatus,
-  splitFailuresByDisposition,
-  failureSignalsFromEvidence,
-  type ClassifiableFailure,
+  type FailingFinding,
 } from '../utils/task-check-evaluation';
 import {
   capEvidence,
@@ -66,9 +64,9 @@ interface ConnectionCheckOutcome {
   status: 'success' | 'failed' | 'error';
   findings: number;
   passing: number;
-  /** This account's failing findings (+ redacted error signals) for exception
-   *  filtering and self-heal classification. */
-  failures: ClassifiableFailure[];
+  /** This account's failing findings (identity only) for exception filtering.
+   *  comp does not classify — the self-heal agent decides our-bug vs real fail. */
+  failures: FailingFinding[];
 }
 
 interface TaskIntegrationCheck {
@@ -411,7 +409,10 @@ export class TaskIntegrationsController {
     let lastCheckRunId: string | undefined;
     // Failing findings across all accounts (keyed like an exception) so task
     // status can exclude explicitly-excepted ones below.
-    const failingFindings: ClassifiableFailure[] = [];
+    const failingFindings: FailingFinding[] = [];
+    // Checks HELD ('inconclusive') across accounts this run — including error-only
+    // runs with no findings — so a held check keeps the task pending, not 'done'.
+    let heldRunCount = 0;
 
     // Sequential so each per-account run commits as it completes — a slow or
     // failing account still leaves the earlier accounts' results persisted.
@@ -432,6 +433,9 @@ export class TaskIntegrationsController {
       totalFindings += outcome.findings;
       totalPassing += outcome.passing;
       if (outcome.status === 'error') hasExecutionError = true;
+      // For dynamic, any non-success account run was held (pending) — count it so
+      // an error-only account (no findings) still keeps the task pending.
+      if (isDynamic && outcome.status !== 'success') heldRunCount++;
       failingFindings.push(...outcome.failures);
       lastCheckRunId = outcome.checkRunId;
     }
@@ -449,29 +453,23 @@ export class TaskIntegrationsController {
     // rule, via the shared helpers). Any real (non-excepted) finding → failed;
     // else any passing result → done; else leave unchanged.
     const exceptions = await loadActiveExceptionSet(organizationId);
-    // For DYNAMIC integrations, hold our-side/transient failures as inconclusive
-    // (same rule as the scheduled path): they must not fail the task. Static/AWS
-    // behavior is unchanged. Safe degradation: a finding with no readable error
-    // signal classifies as a real failure, exactly as today.
-    const statusFailures = isDynamic
-      ? splitFailuresByDisposition(failingFindings).effective
-      : failingFindings;
-    const heldCount = failingFindings.length - statusFailures.length;
+    // For DYNAMIC integrations EVERY failure is held (pending) — comp never
+    // classifies; the self-heal agent decides our-bug vs real fail. So none fail
+    // the task here. Static/AWS behavior is unchanged (no holding).
+    const statusFailures = isDynamic ? [] : failingFindings;
+    // heldCount = checks HELD this run (incl. error-only, no-findings) so any held
+    // check keeps the task pending instead of slipping to 'done'.
+    const heldCount = heldRunCount;
     if (heldCount > 0) {
       this.logger.log(
-        `Held ${heldCount} our-side/transient finding(s) as inconclusive for task ${taskId} (manual run; not shown as failed)`,
+        `Held ${heldCount} check(s) as inconclusive (pending) for task ${taskId} (manual run) — not failed, not done`,
       );
     }
-    const effectiveFailures = countEffectiveFailures(
-      statusFailures,
-      exceptions,
-    );
-    // Held findings are indeterminate — exclude them from the finding count so an
-    // all-held run doesn't flip the task to "done" either.
+    const effectiveFailures = countEffectiveFailures(statusFailures, exceptions);
     const newStatus = decideTaskStatus(
       effectiveFailures,
       totalPassing,
-      totalFindings - heldCount,
+      totalFindings,
       heldCount,
     );
 
@@ -674,16 +672,13 @@ export class TaskIntegrationsController {
         connectionId,
         checkId: checkDef.id,
         resourceId: f.resourceId,
-        // Redacted error signals for self-heal classification (dynamic only).
-        ...failureSignalsFromEvidence(f.evidence, checkResult.status),
       }));
 
-      // Per-account run status (shared rule): a dynamic run that failed only for
-      // our-side/transient reasons is held as 'inconclusive' (customer never sees
-      // it; the agent fixes it). Static integrations keep success/failed.
+      // Per-account run status (shared rule): a DYNAMIC run that didn't succeed is
+      // held as 'inconclusive' (pending, hidden) and handed to the self-heal agent
+      // — comp never classifies. Static integrations keep success/failed.
       const runStatus = decideRunStatus({
         resultStatus: checkResult.status,
-        failures,
         isDynamic,
       });
 

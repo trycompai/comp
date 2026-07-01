@@ -158,6 +158,32 @@ describe('createRegisterRegistry', () => {
       });
     });
 
+    it('update accepts a null interestedPartyId (clearing the link)', async () => {
+      await registry.requirements.update({
+        rowId: 'req_1',
+        organizationId: 'org_1',
+        data: { interestedPartyId: null, requirement: 'r2' },
+      });
+      expect(requirements.update).toHaveBeenCalledWith({
+        requirementId: 'req_1',
+        organizationId: 'org_1',
+        dto: { interestedPartyId: null, requirement: 'r2' },
+      });
+    });
+
+    it('create accepts a null interestedPartyId', async () => {
+      await registry.requirements.create({
+        documentId: 'doc_1',
+        organizationId: 'org_1',
+        data: { partyName: 'C', requirement: 'r', treatment: 't', interestedPartyId: null },
+      });
+      expect(requirements.create).toHaveBeenCalledWith({
+        documentId: 'doc_1',
+        organizationId: 'org_1',
+        dto: { partyName: 'C', requirement: 'r', treatment: 't', interestedPartyId: null },
+      });
+    });
+
     it('remove dispatches with requirementId', async () => {
       await registry.requirements.remove({
         rowId: 'req_1',

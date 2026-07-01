@@ -48,31 +48,18 @@ function RequirementsFields({
 
   return (
     <form onSubmit={handleAdd} className="flex flex-col gap-3">
-      <div className="grid gap-3 md:grid-cols-2">
-        <Field>
-          <Controller
-            control={control}
-            name="partyName"
-            render={({ field: { ref: _ref, ...field } }) => (
-              <Input {...field} placeholder="Interested party" aria-label="New requirement party" />
-            )}
-          />
-          <FieldError>{errors.partyName?.message}</FieldError>
-        </Field>
-        <Field>
-          <Controller
-            control={control}
-            name="interestedPartyId"
-            render={({ field: { ref: _ref, ...field } }) => (
-              <Input
-                {...field}
-                placeholder="Linked party ID (optional)"
-                aria-label="New requirement party ID"
-              />
-            )}
-          />
-        </Field>
-      </div>
+      {/* No "Linked party ID" input: the party link is system-managed and only
+          set for rows derived from the Interested Parties Register. */}
+      <Field>
+        <Controller
+          control={control}
+          name="partyName"
+          render={({ field: { ref: _ref, ...field } }) => (
+            <Input {...field} placeholder="Interested party" aria-label="New requirement party" />
+          )}
+        />
+        <FieldError>{errors.partyName?.message}</FieldError>
+      </Field>
       <div className="grid gap-3 md:grid-cols-2">
         <Field>
           <Controller
