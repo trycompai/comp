@@ -43,6 +43,36 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
         };
       }
 
+      // CS-569 backstop: never create an org for a user whose only memberships
+      // are deactivated (0 active, >=1 inactive) — that user was offboarded and
+      // the routing layer already sends them to /auth/access-removed. This
+      // guards against a stale/replayed form POST slipping past that redirect
+      // and spawning a spurious empty org. Genuinely new users (no memberships)
+      // and users adding an additional org (have active memberships) pass.
+      const [activeMembershipCount, inactiveMembershipCount] = await Promise.all([
+        db.member.count({
+          where: {
+            userId: session.user.id,
+            isActive: true,
+            deactivated: false,
+          },
+        }),
+        db.member.count({
+          where: {
+            userId: session.user.id,
+            OR: [{ deactivated: true }, { isActive: false }],
+          },
+        }),
+      ]);
+
+      if (activeMembershipCount === 0 && inactiveMembershipCount > 0) {
+        return {
+          success: false,
+          error:
+            'Your access to this organization was removed. Contact your administrator to be re-invited.',
+        };
+      }
+
       // Internal team accounts (verified @trycomp.ai) have access provisioned up front.
       const userEmail = session.user.email;
       const isVerifiedTryCompEmail =
