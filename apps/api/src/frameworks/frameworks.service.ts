@@ -470,6 +470,15 @@ export class FrameworksService {
     organizationId: string,
     input: { name?: string; description?: string },
   ) {
+    const data: { name?: string; description?: string } = {};
+    if (input.name !== undefined) data.name = input.name;
+    if (input.description !== undefined) data.description = input.description;
+
+    // Reject an empty PATCH up front instead of issuing a no-op write.
+    if (Object.keys(data).length === 0) {
+      throw new BadRequestException('No fields to update');
+    }
+
     const frameworkInstance = await db.frameworkInstance.findUnique({
       where: { id: frameworkInstanceId, organizationId },
       select: { customFrameworkId: true },
@@ -484,10 +493,6 @@ export class FrameworksService {
     if (!frameworkInstance.customFrameworkId) {
       throw new BadRequestException('Only custom frameworks can be edited');
     }
-
-    const data: { name?: string; description?: string } = {};
-    if (input.name !== undefined) data.name = input.name;
-    if (input.description !== undefined) data.description = input.description;
 
     // Ownership is already enforced by the org-scoped instance lookup above,
     // so keying the update by the custom framework id is safe.
