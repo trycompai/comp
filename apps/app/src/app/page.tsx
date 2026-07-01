@@ -1,4 +1,5 @@
 import { serverApi } from '@/lib/api-server';
+import { resolveNoActiveOrgRedirect } from '@/lib/no-active-org-redirect';
 import { getDefaultRoute, mergePermissions, resolveBuiltInPermissions } from '@/lib/permissions';
 import { auth } from '@/utils/auth';
 import { db } from '@db/server';
@@ -56,21 +57,13 @@ export default async function RootPage({
 
   const meRes = await serverApi.get<AuthMeResponse>('/v1/auth/me');
   const memberships = meRes.data?.organizations ?? [];
-  const pendingInvitation = meRes.data?.pendingInvitation;
 
   if (memberships.length === 0) {
-    if (pendingInvitation) {
-      return redirect(await buildUrlWithParams(`/invite/${pendingInvitation.id}`));
-    }
-    // CS-569: a user whose only memberships are deactivated (offboarded) has
-    // no active org. Do NOT drop them into onboarding — that silently spawns a
-    // spurious empty org and locks them into an onboarding loop. Tell them
-    // their access was removed instead. Genuinely new users (no memberships at
-    // all) still go to /setup.
-    if (meRes.data?.hasInactiveMembership) {
-      return redirect(await buildUrlWithParams('/auth/access-removed'));
-    }
-    return redirect(await buildUrlWithParams('/setup'));
+    // CS-569: route a user with no active org through the shared decision so
+    // this page and the /setup route can't diverge (invite > offboarded > new).
+    // `null` = genuinely new user → onboarding.
+    const target = resolveNoActiveOrgRedirect(meRes.data);
+    return redirect(await buildUrlWithParams(target ?? '/setup'));
   }
 
   // Always use the org the user last switched to (stored in session)
