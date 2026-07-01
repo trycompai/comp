@@ -28,7 +28,9 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 
 const schema = z.object({
-  name: z.string().min(1, 'Name is required').max(120),
+  // trim() runs before min(1), so whitespace-only names are rejected and the
+  // stored value is trimmed.
+  name: z.string().trim().min(1, 'Name is required').max(120),
   description: z.string().max(2000),
 });
 

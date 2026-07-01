@@ -93,4 +93,18 @@ describe('EditCustomFrameworkSheet', () => {
     expect(onUpdated).toHaveBeenCalled();
     expect(onClose).toHaveBeenCalled();
   });
+
+  it('rejects a whitespace-only name and does not submit', async () => {
+    setMockPermissions(ADMIN_PERMISSIONS);
+    renderSheet();
+
+    const user = userEvent.setup();
+    const nameInput = screen.getByDisplayValue('CMMC');
+    await user.clear(nameInput);
+    await user.type(nameInput, '   ');
+    await user.click(screen.getByRole('button', { name: /save changes/i }));
+
+    expect(await screen.findByText('Name is required')).toBeInTheDocument();
+    expect(updateCustomFramework).not.toHaveBeenCalled();
+  });
 });
