@@ -1,3 +1,10 @@
+## [3.94.1](https://github.com/trycompai/comp/compare/v3.94.0...v3.94.1) (2026-07-01)
+
+
+### Bug Fixes
+
+* **self-heal:** refresh manifest cache before persisted re-run ([3783ed8](https://github.com/trycompai/comp/commit/3783ed8f4b612acd0230a3221515d91e1d8f395b))
+
 # [3.94.0](https://github.com/trycompai/comp/compare/v3.93.1...v3.94.0) (2026-06-30)
 
 
