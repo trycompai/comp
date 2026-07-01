@@ -11,6 +11,10 @@ async function validatePayload(payload: Record<string, unknown>) {
   return validate(dto, { whitelist: true, forbidNonWhitelisted: true });
 }
 
+function transform(payload: Record<string, unknown>) {
+  return plainToInstance(UpdateCustomFrameworkDto, payload);
+}
+
 describe('UpdateCustomFrameworkDto', () => {
   it('accepts a name-only payload', async () => {
     expect(await validatePayload({ name: 'Internal Controls' })).toHaveLength(0);
@@ -42,5 +46,22 @@ describe('UpdateCustomFrameworkDto', () => {
   it('rejects an empty-string name (MinLength)', async () => {
     const errors = await validatePayload({ name: '' });
     expect(propsWithErrors(errors)).toContain('name');
+  });
+
+  it('rejects a whitespace-only name (trimmed to empty)', async () => {
+    const errors = await validatePayload({ name: '   ' });
+    expect(propsWithErrors(errors)).toContain('name');
+  });
+
+  it('trims surrounding whitespace from a valid name', async () => {
+    const payload = { name: '  Internal Controls  ' };
+    expect(await validatePayload(payload)).toHaveLength(0);
+    expect(transform(payload).name).toBe('Internal Controls');
+  });
+
+  it('trims the description', async () => {
+    expect(transform({ description: '  Covers X  ' }).description).toBe(
+      'Covers X',
+    );
   });
 });
