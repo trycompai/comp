@@ -86,29 +86,29 @@ describe('MemberRow device status', () => {
     vi.clearAllMocks();
   });
 
-  it('shows "Device 0/1" when deviceStatus is not-installed', () => {
+  it('shows Device as Missing when deviceStatus is not-installed', () => {
     renderMemberRow('not-installed');
-    expect(screen.getByText('Device 0/1')).toBeInTheDocument();
+    expect(screen.getByTestId('requirement-Device')).toHaveTextContent('Missing');
   });
 
-  it('shows dash when deviceStatus is omitted (no compliance obligation)', () => {
+  it('shows no device row when deviceStatus is omitted (no compliance obligation)', () => {
     renderMemberRow();
-    expect(screen.queryByText(/^Device /)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('requirement-Device')).not.toBeInTheDocument();
   });
 
-  it('shows "Device 1/1" when deviceStatus is compliant', () => {
+  it('shows Device as Done when deviceStatus is compliant', () => {
     renderMemberRow('compliant');
-    expect(screen.getByText('Device 1/1')).toBeInTheDocument();
+    expect(screen.getByTestId('requirement-Device')).toHaveTextContent('Done');
   });
 
-  it('shows "Device 0/1" when deviceStatus is non-compliant', () => {
+  it('shows Device as Missing when deviceStatus is non-compliant', () => {
     renderMemberRow('non-compliant');
-    expect(screen.getByText('Device 0/1')).toBeInTheDocument();
+    expect(screen.getByTestId('requirement-Device')).toHaveTextContent('Missing');
   });
 
-  it('shows "Device 0/1" when deviceStatus is stale', () => {
+  it('shows Device as Missing when deviceStatus is stale', () => {
     renderMemberRow('stale');
-    expect(screen.getByText('Device 0/1')).toBeInTheDocument();
+    expect(screen.getByTestId('requirement-Device')).toHaveTextContent('Missing');
   });
 
   it('does not show device status for platform admin', () => {
@@ -134,7 +134,7 @@ describe('MemberRow device status', () => {
       </table>,
     );
 
-    expect(screen.queryByText(/^Device /)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('requirement-Device')).not.toBeInTheDocument();
   });
 
   it('does not show device status for deactivated member', () => {
@@ -160,7 +160,7 @@ describe('MemberRow device status', () => {
       </table>,
     );
 
-    expect(screen.queryByText(/^Device /)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('requirement-Device')).not.toBeInTheDocument();
   });
 
   it('does not show device status for member without compliance obligation (e.g. auditor)', () => {
@@ -186,7 +186,7 @@ describe('MemberRow device status', () => {
       </table>,
     );
 
-    expect(screen.queryByText(/^Device /)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('requirement-Device')).not.toBeInTheDocument();
   });
 
   it('still shows device status for member with compliance obligation', () => {
@@ -212,7 +212,7 @@ describe('MemberRow device status', () => {
       </table>,
     );
 
-    expect(screen.getByText('Device 1/1')).toBeInTheDocument();
+    expect(screen.getByTestId('requirement-Device')).toHaveTextContent('Done');
   });
 
   it('hides the background-check task counter and verified tick when bypassed', () => {
@@ -240,7 +240,7 @@ describe('MemberRow device status', () => {
       </table>,
     );
 
-    expect(screen.queryByText(/background check/i)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('requirement-Background')).not.toBeInTheDocument();
     expect(
       screen.queryByLabelText('Employee has completed a background check'),
     ).not.toBeInTheDocument();
@@ -273,7 +273,7 @@ describe('MemberRow device status', () => {
       </table>,
     );
 
-    expect(screen.queryByText(/background check/i)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('requirement-Background')).not.toBeInTheDocument();
     expect(
       screen.queryByLabelText('Employee has completed a background check'),
     ).not.toBeInTheDocument();
