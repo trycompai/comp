@@ -1,8 +1,11 @@
 import { db } from '@db';
 import { logger, schedules } from '@trigger.dev/sdk';
+import { parseRoles } from '../../people/utils/role-authorization';
 import { TrustEmailService } from '../../trust-portal/email.service';
 
 const emailService = new TrustEmailService();
+
+const NOTIFIABLE_ROLES = ['owner', 'admin'];
 
 const APP_BASE_URL =
   process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.trycomp.ai';
@@ -123,8 +126,7 @@ export const checkDomainHealthSchedule = schedules.task({
 
         const adminOrOwnerMembers = trust.organization.members.filter(
           (m) =>
-            m.role &&
-            (m.role.includes('owner') || m.role.includes('admin')) &&
+            parseRoles(m.role).some((role) => NOTIFIABLE_ROLES.includes(role)) &&
             m.user?.email,
         );
 
