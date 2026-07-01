@@ -131,7 +131,7 @@ describe('buildObjectivesSections', () => {
         'Operate controls and pass the audit',
         'Audit outcome',
         'Annual',
-        'on_track',
+        'On track',
       ],
     ]);
   });
@@ -155,7 +155,33 @@ describe('buildObjectivesSections', () => {
     };
     const sections = buildObjectivesSections(input);
     expect(sections[0].table?.rows).toEqual([
-      ['Reduce phishing click rate', '< 3%', '—', '—', '—', 'on_track'],
+      ['Reduce phishing click rate', '< 3%', '—', '—', '—', 'On track'],
     ]);
+  });
+
+  it('renders human-readable status labels, not raw enum values', () => {
+    const makeInput = (status: string): DocumentExportInput => ({
+      contextIssues: [],
+      interestedParties: [],
+      requirements: [],
+      objectives: [
+        {
+          objective: 'o',
+          target: null,
+          cadence: null,
+          status,
+          plan: null,
+          measurementMethod: null,
+        },
+      ],
+      narrative: null,
+    });
+    const statusCell = (status: string) =>
+      buildObjectivesSections(makeInput(status))[0].table?.rows[0].at(-1);
+
+    expect(statusCell('not_started')).toBe('Not started');
+    expect(statusCell('on_track')).toBe('On track');
+    expect(statusCell('at_risk')).toBe('At risk');
+    expect(statusCell('met')).toBe('Met');
   });
 });

@@ -125,4 +125,46 @@ describe('RequirementsRow', () => {
     );
     expect(onSave).not.toHaveBeenCalled();
   });
+
+  it('does not surface a raw "Linked party ID" input', () => {
+    render(
+      <RequirementsRow
+        requirement={makeRequirement({ interestedPartyId: 'isms_ip_abc123' })}
+        canEdit
+        onSave={vi.fn().mockResolvedValue(undefined)}
+        onDelete={vi.fn().mockResolvedValue(undefined)}
+      />,
+    );
+
+    fireEvent.click(screen.getByLabelText('Edit requirement'));
+
+    expect(screen.queryByLabelText('Requirement party ID')).not.toBeInTheDocument();
+    expect(screen.queryByText('Linked party ID (optional)')).not.toBeInTheDocument();
+  });
+
+  it('carries the system-managed party link through on save without exposing it', async () => {
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    render(
+      <RequirementsRow
+        requirement={makeRequirement({ interestedPartyId: 'isms_ip_abc123' })}
+        canEdit
+        onSave={onSave}
+        onDelete={vi.fn().mockResolvedValue(undefined)}
+      />,
+    );
+
+    fireEvent.click(screen.getByLabelText('Edit requirement'));
+    fireEvent.change(screen.getByLabelText('Requirement description'), {
+      target: { value: 'Updated requirement text' },
+    });
+    fireEvent.click(screen.getByText('Save'));
+
+    await waitFor(() => expect(onSave).toHaveBeenCalled());
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        interestedPartyId: 'isms_ip_abc123',
+        requirement: 'Updated requirement text',
+      }),
+    );
+  });
 });

@@ -25,11 +25,16 @@ export function DevicesTabContent({ isCurrentUserOwner }: DevicesTabContentProps
     error: fleetError,
   } = useFleetHosts();
 
-  // Filter out Fleet hosts for members who already have device-agent devices.
-  // Device agent takes priority over Fleet.
+  // Filter out Fleet hosts for members who already have a device-agent device.
+  // Device agent takes priority over Fleet. Integration-imported devices are
+  // inventory-only (no compliance data) and must NOT suppress a richer Fleet
+  // host, so only true agent devices count toward de-duplication.
   const filteredFleetDevices = useMemo(() => {
     const memberIdsWithAgent = new Set(
-      agentDevices.map((d) => d.memberId).filter(Boolean),
+      agentDevices
+        .filter((d) => d.source === 'device_agent')
+        .map((d) => d.memberId)
+        .filter(Boolean),
     );
     return fleetHosts.filter(
       (host) => !host.member_id || !memberIdsWithAgent.has(host.member_id),
