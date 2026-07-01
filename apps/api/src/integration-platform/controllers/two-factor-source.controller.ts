@@ -17,36 +17,12 @@ import {
 } from '@nestjs/swagger';
 import { IsOptional, IsString } from 'class-validator';
 import { db } from '@db';
-import {
-  registry,
-  TASK_TEMPLATES,
-  type IntegrationManifest,
-} from '@trycompai/integration-platform';
+import { TASK_TEMPLATES } from '@trycompai/integration-platform';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
 import { RequirePermission } from '../../auth/require-permission.decorator';
 import { OrganizationId } from '../../auth/auth-context.decorator';
-import { ConnectionRepository } from '../repositories/connection.repository';
-import { CheckRunRepository } from '../repositories/check-run.repository';
-
-/** The check on a manifest that feeds the 2FA evidence task, if any. */
-function twoFactorCheckOf(manifest: IntegrationManifest) {
-  return (
-    manifest.checks?.find(
-      (check) => check.taskMapping === TASK_TEMPLATES.twoFactorAuth,
-    ) ?? null
-  );
-}
-
-/**
- * Every active manifest — codebase OR dynamic — whose check is bound to the 2FA
- * task. Dynamic manifests are merged into the same registry, so this is uniformly
- * universal: any integration that ships a 2FA check becomes an eligible source
- * with zero per-integration wiring.
- */
-function manifestsWithTwoFactorCheck(): IntegrationManifest[] {
-  return registry.getActiveManifests().filter((m) => !!twoFactorCheckOf(m));
-}
+import { CheckResultsService } from '../services/check-results.service';
 
 // Body for POST /v1/integrations/sync/two-factor-source. Pass a provider slug to
 // set the org's 2FA source, or null/omit to clear it. Class (not inline type) so
@@ -63,7 +39,7 @@ class SetTwoFactorSourceDto {
 
   @ApiPropertyOptional({
     description:
-      'Provider slug whose 2FA check feeds the People-tab 2FA column (must have a check bound to the 2FA task — call available-2fa-sources for options). Pass null or omit to clear the source.',
+      'Provider slug whose 2FA check feeds the People-tab 2FA column (must be bound to the 2FA task — call available-2fa-sources for options). Pass null or omit to clear the source.',
     example: 'google-workspace',
     nullable: true,
   })
@@ -72,6 +48,14 @@ class SetTwoFactorSourceDto {
   provider?: string | null;
 }
 
+/**
+ * 2FA source configuration + per-employee 2FA status for the People tab.
+ *
+ * This controller owns only the 2FA-SPECIFIC concerns: the org's chosen source
+ * (`Organization.twoFactorSource`) and the enabled/missing interpretation. All
+ * the generic "read an integration check's results" work is delegated to
+ * {@link CheckResultsService} — it is consumer #1 of that universal service.
+ */
 @Controller({ path: 'integrations/sync', version: '1' })
 @ApiTags('Integrations')
 @UseGuards(HybridAuthGuard, PermissionGuard)
@@ -79,10 +63,7 @@ class SetTwoFactorSourceDto {
 export class TwoFactorSourceController {
   private readonly logger = new Logger(TwoFactorSourceController.name);
 
-  constructor(
-    private readonly connectionRepository: ConnectionRepository,
-    private readonly checkRunRepo: CheckRunRepository,
-  ) {}
+  constructor(private readonly checkResults: CheckResultsService) {}
 
   /**
    * Get the currently configured 2FA source provider.
@@ -129,19 +110,18 @@ export class TwoFactorSourceController {
     const provider = rawProvider ? rawProvider.trim() : null;
 
     if (provider) {
-      const validProviders = manifestsWithTwoFactorCheck().map((m) => m.id);
-      if (!validProviders.includes(provider)) {
+      const sources = await this.checkResults.listSourcesBoundToTask(
+        organizationId,
+        TASK_TEMPLATES.twoFactorAuth,
+      );
+      const source = sources.find((s) => s.slug === provider);
+      if (!source) {
         throw new HttpException(
-          `Invalid 2FA source. Must be one of: ${validProviders.join(', ')}`,
+          `Invalid 2FA source. Must be one of: ${sources.map((s) => s.slug).join(', ')}`,
           HttpStatus.BAD_REQUEST,
         );
       }
-
-      const connection = await this.connectionRepository.findBySlugAndOrg(
-        provider,
-        organizationId,
-      );
-      if (!connection || connection.status !== 'active') {
+      if (!source.connected) {
         throw new HttpException(
           `Provider ${provider} is not connected`,
           HttpStatus.BAD_REQUEST,
@@ -168,24 +148,20 @@ export class TwoFactorSourceController {
   @ApiOperation({ summary: 'List integrations that can supply per-user 2FA status' })
   @RequirePermission('integration', 'read')
   async getAvailableTwoFactorSources(@OrganizationId() organizationId: string) {
-    const sources = manifestsWithTwoFactorCheck();
-    const providers = await Promise.all(
-      sources.map(async (m) => {
-        const connection = await db.integrationConnection.findFirst({
-          where: { organizationId, status: 'active', provider: { slug: m.id } },
-          select: { id: true, lastSyncAt: true, nextSyncAt: true },
-        });
-        return {
-          slug: m.id,
-          name: m.name,
-          logoUrl: m.logoUrl,
-          connected: !!connection,
-          connectionId: connection?.id ?? null,
-          lastSyncAt: connection?.lastSyncAt?.toISOString() ?? null,
-          nextSyncAt: connection?.nextSyncAt?.toISOString() ?? null,
-        };
-      }),
+    const sources = await this.checkResults.listSourcesBoundToTask(
+      organizationId,
+      TASK_TEMPLATES.twoFactorAuth,
     );
+    // Expose only what the selector needs (drop the internal checkId).
+    const providers = sources.map((s) => ({
+      slug: s.slug,
+      name: s.name,
+      logoUrl: s.logoUrl,
+      connected: s.connected,
+      connectionId: s.connectionId,
+      lastSyncAt: s.lastSyncAt,
+      nextSyncAt: s.nextSyncAt,
+    }));
     return { providers };
   }
 
@@ -209,33 +185,17 @@ export class TwoFactorSourceController {
       return { configured: false, source: null, statuses: [] };
     }
 
-    const manifest = manifestsWithTwoFactorCheck().find((m) => m.id === source);
-    const check = manifest ? twoFactorCheckOf(manifest) : null;
-    if (!check) {
-      // Source no longer offers a 2FA check (removed/disabled) — treat as unset.
-      return { configured: false, source, statuses: [] };
-    }
-
-    const connection = await this.connectionRepository.findBySlugAndOrg(
-      source,
+    // Delegate the generic fetch; interpret 'user' rows here (2FA's concern).
+    const results = await this.checkResults.getLatestResultsForTask({
       organizationId,
-    );
-    if (!connection) {
-      return { configured: true, source, statuses: [] };
-    }
-
-    const latest = await this.checkRunRepo.findLatestUserResultsByConnectionAndCheck({
-      connectionId: connection.id,
-      checkId: check.id,
-      organizationId,
+      taskTemplateId: TASK_TEMPLATES.twoFactorAuth,
+      sourceSlug: source,
+      resourceType: 'user',
     });
-    if (!latest) {
-      return { configured: true, source, statuses: [] };
-    }
 
     // Dedupe by lowercased email (results aren't ordered; last row wins).
     const byEmail = new Map<string, 'enabled' | 'missing'>();
-    for (const result of latest.results) {
+    for (const result of results) {
       const email = result.resourceId.toLowerCase().trim();
       if (!email) continue;
       byEmail.set(email, result.passed ? 'enabled' : 'missing');

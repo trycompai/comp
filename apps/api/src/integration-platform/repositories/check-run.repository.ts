@@ -302,23 +302,27 @@ export class CheckRunRepository {
   }
 
   /**
-   * Latest per-USER results for a (connection, check), scoped to an org.
+   * Full results of a (connection, check)'s most recent REAL run, scoped to an
+   * org. "Real" = never `inconclusive`/held, never a disconnected connection.
    *
-   * Used by the People-tab 2FA column: returns the full, untruncated set of
-   * `resourceType='user'` results from the connection's most recent REAL run
-   * (never `inconclusive`/held, never a disconnected connection). Unlike the
-   * task-run-history read, there is NO `take` cap — every user must map to a
-   * member, so the 30-row display sample ({@link DISPLAY_RESULTS_PER_RUN}) is
-   * deliberately not reused here. Returns null when the source has no real run.
+   * This is the generic read behind {@link CheckResultsService} — any feature
+   * reusing check results goes through that service, not this method directly.
+   * Unlike the task-run-history read there is NO `take` cap: a consumer that
+   * maps every resource (e.g. one member per user row) needs the full set, so
+   * the 30-row display sample ({@link DISPLAY_RESULTS_PER_RUN}) is deliberately
+   * not reused here. Pass `resourceType` to load only rows of that kind (e.g.
+   * `'user'`); omit it to load all. Returns null when there is no real run.
    */
-  async findLatestUserResultsByConnectionAndCheck({
+  async findLatestResultsByConnectionAndCheck({
     connectionId,
     checkId,
     organizationId,
+    resourceType,
   }: {
     connectionId: string;
     checkId: string;
     organizationId: string;
+    resourceType?: string;
   }) {
     const run = await db.integrationCheckRun.findFirst({
       where: {
@@ -332,7 +336,10 @@ export class CheckRunRepository {
     if (!run) return null;
 
     const results = await db.integrationCheckResult.findMany({
-      where: { checkRunId: run.id, resourceType: 'user' },
+      where: {
+        checkRunId: run.id,
+        ...(resourceType ? { resourceType } : {}),
+      },
     });
     return { run, results };
   }

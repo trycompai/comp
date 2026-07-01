@@ -3,19 +3,8 @@ import { HttpException } from '@nestjs/common';
 jest.mock('@db', () => ({
   db: {
     organization: { findUnique: jest.fn(), update: jest.fn() },
-    integrationConnection: { findFirst: jest.fn() },
   },
 }));
-
-jest.mock('@trycompai/integration-platform', () => {
-  const actual = jest.requireActual<
-    typeof import('@trycompai/integration-platform')
-  >('@trycompai/integration-platform');
-  return {
-    ...actual,
-    registry: { getActiveManifests: jest.fn() },
-  };
-});
 
 // Break the ESM better-auth import chain pulled in via HybridAuthGuard.
 jest.mock('@trycompai/auth', () => ({
@@ -27,48 +16,34 @@ jest.mock('../../auth/auth.server', () => ({
 }));
 
 import { db } from '@db';
-import { registry, TASK_TEMPLATES } from '@trycompai/integration-platform';
 import { TwoFactorSourceController } from './two-factor-source.controller';
 
-const mockGetActiveManifests = (
-  registry as unknown as { getActiveManifests: jest.Mock }
-).getActiveManifests;
 const mockOrgFindUnique = (
   db.organization as unknown as { findUnique: jest.Mock }
 ).findUnique;
 const mockOrgUpdate = (db.organization as unknown as { update: jest.Mock })
   .update;
-const mockConnFindFirst = (
-  db.integrationConnection as unknown as { findFirst: jest.Mock }
-).findFirst;
 
-// Build a manifest whose check is bound to the 2FA task.
-function boundManifest(id: string, name = id) {
-  return {
-    id,
-    name,
-    logoUrl: null,
-    checks: [{ id: 'two-factor-auth', taskMapping: TASK_TEMPLATES.twoFactorAuth }],
-  };
-}
-// A manifest with a check NOT bound to the 2FA task.
-function unboundManifest(id: string) {
-  return {
-    id,
-    name: id,
-    logoUrl: null,
-    checks: [{ id: 'other', taskMapping: TASK_TEMPLATES.codeChanges }],
-  };
-}
-
-const mockConnRepo = { findBySlugAndOrg: jest.fn() };
-const mockCheckRunRepo = { findLatestUserResultsByConnectionAndCheck: jest.fn() };
+const mockCheckResults = {
+  listSourcesBoundToTask: jest.fn(),
+  getLatestResultsForTask: jest.fn(),
+};
 
 function makeController() {
-  return new TwoFactorSourceController(
-    mockConnRepo as never,
-    mockCheckRunRepo as never,
-  );
+  return new TwoFactorSourceController(mockCheckResults as never);
+}
+
+function source(slug: string, connected: boolean, name = slug) {
+  return {
+    slug,
+    name,
+    logoUrl: null,
+    checkId: 'two-factor-auth',
+    connected,
+    connectionId: connected ? `conn_${slug}` : null,
+    lastSyncAt: null,
+    nextSyncAt: null,
+  };
 }
 
 const ORG = 'org_1';
@@ -80,8 +55,9 @@ beforeEach(() => {
 describe('TwoFactorSourceController.getTwoFactorSource', () => {
   it('returns the configured provider', async () => {
     mockOrgFindUnique.mockResolvedValue({ twoFactorSource: 'google-workspace' });
-    const result = await makeController().getTwoFactorSource(ORG);
-    expect(result).toEqual({ provider: 'google-workspace' });
+    expect(await makeController().getTwoFactorSource(ORG)).toEqual({
+      provider: 'google-workspace',
+    });
   });
 
   it('throws when the org does not exist', async () => {
@@ -101,7 +77,9 @@ describe('TwoFactorSourceController.setTwoFactorSource', () => {
   });
 
   it('rejects a provider not bound to the 2FA task', async () => {
-    mockGetActiveManifests.mockReturnValue([boundManifest('google-workspace')]);
+    mockCheckResults.listSourcesBoundToTask.mockResolvedValue([
+      source('google-workspace', true),
+    ]);
     await expect(
       makeController().setTwoFactorSource(ORG, { provider: 'slack' }),
     ).rejects.toBeInstanceOf(HttpException);
@@ -109,8 +87,9 @@ describe('TwoFactorSourceController.setTwoFactorSource', () => {
   });
 
   it('rejects a bound provider that is not connected', async () => {
-    mockGetActiveManifests.mockReturnValue([boundManifest('google-workspace')]);
-    mockConnRepo.findBySlugAndOrg.mockResolvedValue(null);
+    mockCheckResults.listSourcesBoundToTask.mockResolvedValue([
+      source('google-workspace', false),
+    ]);
     await expect(
       makeController().setTwoFactorSource(ORG, { provider: 'google-workspace' }),
     ).rejects.toBeInstanceOf(HttpException);
@@ -118,11 +97,9 @@ describe('TwoFactorSourceController.setTwoFactorSource', () => {
   });
 
   it('sets a valid, connected, bound provider', async () => {
-    mockGetActiveManifests.mockReturnValue([boundManifest('google-workspace')]);
-    mockConnRepo.findBySlugAndOrg.mockResolvedValue({
-      id: 'conn_1',
-      status: 'active',
-    });
+    mockCheckResults.listSourcesBoundToTask.mockResolvedValue([
+      source('google-workspace', true),
+    ]);
     mockOrgUpdate.mockResolvedValue({});
 
     const result = await makeController().setTwoFactorSource(ORG, {
@@ -150,60 +127,47 @@ describe('TwoFactorSourceController.setTwoFactorSource', () => {
 });
 
 describe('TwoFactorSourceController.getAvailableTwoFactorSources', () => {
-  it('returns only manifests bound to the 2FA task, with connection state', async () => {
-    mockGetActiveManifests.mockReturnValue([
-      boundManifest('google-workspace', 'Google Workspace'),
-      unboundManifest('slack'),
-      boundManifest('github', 'GitHub'),
+  it('returns bound sources with connection state (without the internal checkId)', async () => {
+    mockCheckResults.listSourcesBoundToTask.mockResolvedValue([
+      source('google-workspace', true, 'Google Workspace'),
+      source('github', false, 'GitHub'),
     ]);
-    mockConnFindFirst.mockImplementation(
-      (args: { where: { provider: { slug: string } } }) =>
-        args.where.provider.slug === 'google-workspace'
-          ? Promise.resolve({ id: 'conn_1', lastSyncAt: null, nextSyncAt: null })
-          : Promise.resolve(null),
-    );
 
     const { providers } = await makeController().getAvailableTwoFactorSources(ORG);
 
     expect(providers.map((p) => p.slug)).toEqual(['google-workspace', 'github']);
-    expect(providers.find((p) => p.slug === 'google-workspace')?.connected).toBe(
-      true,
-    );
-    expect(providers.find((p) => p.slug === 'github')?.connected).toBe(false);
+    expect(providers[0]).not.toHaveProperty('checkId');
+    expect(providers[0].connected).toBe(true);
   });
 });
 
 describe('TwoFactorSourceController.getTwoFactorStatuses', () => {
   it('returns unconfigured when no source is set', async () => {
     mockOrgFindUnique.mockResolvedValue({ twoFactorSource: null });
-    const result = await makeController().getTwoFactorStatuses(ORG);
-    expect(result).toEqual({ configured: false, source: null, statuses: [] });
+    expect(await makeController().getTwoFactorStatuses(ORG)).toEqual({
+      configured: false,
+      source: null,
+      statuses: [],
+    });
+    expect(mockCheckResults.getLatestResultsForTask).not.toHaveBeenCalled();
   });
 
-  it('maps latest-run results to lowercased email + enabled/missing', async () => {
+  it('maps the service results to lowercased email + enabled/missing', async () => {
     mockOrgFindUnique.mockResolvedValue({ twoFactorSource: 'google-workspace' });
-    mockGetActiveManifests.mockReturnValue([boundManifest('google-workspace')]);
-    mockConnRepo.findBySlugAndOrg.mockResolvedValue({
-      id: 'conn_1',
-      status: 'active',
-    });
-    mockCheckRunRepo.findLatestUserResultsByConnectionAndCheck.mockResolvedValue({
-      run: { id: 'run_1' },
-      results: [
-        { resourceId: 'Alice@X.com', passed: true },
-        { resourceId: 'bob@x.com', passed: false },
-      ],
-    });
+    mockCheckResults.getLatestResultsForTask.mockResolvedValue([
+      { resourceId: 'Alice@X.com', passed: true },
+      { resourceId: 'bob@x.com', passed: false },
+    ]);
 
     const result = await makeController().getTwoFactorStatuses(ORG);
 
-    expect(
-      mockCheckRunRepo.findLatestUserResultsByConnectionAndCheck,
-    ).toHaveBeenCalledWith({
-      connectionId: 'conn_1',
-      checkId: 'two-factor-auth',
-      organizationId: ORG,
-    });
+    expect(mockCheckResults.getLatestResultsForTask).toHaveBeenCalledWith(
+      expect.objectContaining({
+        organizationId: ORG,
+        sourceSlug: 'google-workspace',
+        resourceType: 'user',
+      }),
+    );
     expect(result).toEqual({
       configured: true,
       source: 'google-workspace',
@@ -214,19 +178,11 @@ describe('TwoFactorSourceController.getTwoFactorStatuses', () => {
     });
   });
 
-  it('returns empty statuses when the source has no real run', async () => {
+  it('returns empty statuses when the source has no results', async () => {
     mockOrgFindUnique.mockResolvedValue({ twoFactorSource: 'google-workspace' });
-    mockGetActiveManifests.mockReturnValue([boundManifest('google-workspace')]);
-    mockConnRepo.findBySlugAndOrg.mockResolvedValue({
-      id: 'conn_1',
-      status: 'active',
-    });
-    mockCheckRunRepo.findLatestUserResultsByConnectionAndCheck.mockResolvedValue(
-      null,
-    );
+    mockCheckResults.getLatestResultsForTask.mockResolvedValue([]);
 
-    const result = await makeController().getTwoFactorStatuses(ORG);
-    expect(result).toEqual({
+    expect(await makeController().getTwoFactorStatuses(ORG)).toEqual({
       configured: true,
       source: 'google-workspace',
       statuses: [],
