@@ -15,6 +15,9 @@ interface OrgInfo {
 interface AuthMeResponse {
   organizations: OrgInfo[];
   pendingInvitation: { id: string } | null;
+  // True when the user has memberships that are all deactivated/removed
+  // (i.e. they were offboarded), used to avoid the onboarding loop (CS-569).
+  hasInactiveMembership?: boolean;
 }
 
 export default async function RootPage({
@@ -58,6 +61,14 @@ export default async function RootPage({
   if (memberships.length === 0) {
     if (pendingInvitation) {
       return redirect(await buildUrlWithParams(`/invite/${pendingInvitation.id}`));
+    }
+    // CS-569: a user whose only memberships are deactivated (offboarded) has
+    // no active org. Do NOT drop them into onboarding — that silently spawns a
+    // spurious empty org and locks them into an onboarding loop. Tell them
+    // their access was removed instead. Genuinely new users (no memberships at
+    // all) still go to /setup.
+    if (meRes.data?.hasInactiveMembership) {
+      return redirect(await buildUrlWithParams('/auth/access-removed'));
     }
     return redirect(await buildUrlWithParams('/setup'));
   }
