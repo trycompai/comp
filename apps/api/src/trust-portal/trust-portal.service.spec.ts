@@ -174,4 +174,30 @@ describe('TrustPortalService getAllVendorsWithSync compliance badges', () => {
 
     expect(badgeTypes).not.toContain('iso27001');
   });
+
+  // ISO/IEC 27018 (PII in the cloud) is another distinct 2701x standard.
+  it('does not read "ISO/IEC 27018:2019" as the iso27001 badge', async () => {
+    const badgeTypes = await badgeTypesFor([
+      { type: 'ISO/IEC 27018:2019', status: 'verified' },
+    ]);
+
+    expect(badgeTypes).not.toContain('iso27001');
+  });
+
+  // Guardrail: a realistic mix of certification names (all carrying the "ISO"
+  // prefix, as produced by the extraction schema) must still map to every badge
+  // — the precision tightening must not drop any legitimate certification.
+  it('maps a realistic mix of certifications without dropping any', async () => {
+    const badgeTypes = await badgeTypesFor([
+      { type: 'SOC 2 Type II', status: 'verified' },
+      { type: 'ISO/IEC 27001:2013', status: 'verified' },
+      { type: 'ISO 9001', status: 'verified' },
+      { type: 'ISO/IEC 42001:2023', status: 'verified' },
+      { type: 'GDPR Compliance', status: 'verified' },
+    ]);
+
+    expect(badgeTypes).toEqual(
+      expect.arrayContaining(['soc2', 'iso27001', 'iso9001', 'iso42001', 'gdpr']),
+    );
+  });
 });
