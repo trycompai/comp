@@ -419,8 +419,8 @@ export const mergeDuplicateUser = schemaTask({
       organizationId,
       oldEmail,
       newEmail,
-      survivingUserId: oldUser.id,
-      survivingMemberId: oldMember.id,
+      survivingUserId: newUser.id,
+      survivingMemberId: newMember.id,
       oldUserDeleted: !oldUserHasOtherOrgs,
     });
 
