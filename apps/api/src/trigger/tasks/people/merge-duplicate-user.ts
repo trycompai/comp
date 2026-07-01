@@ -54,6 +54,22 @@ export const mergeDuplicateUser = schemaTask({
       newMemberId: newMember.id,
     });
 
+    // ── 2b. Determine whether the old user belongs to other orgs ─────────────
+    // User-level relations (Account, sessions, etc.) are not org-scoped, so
+    // they can only be safely re-pointed/deleted if this is the old user's
+    // only org membership. Otherwise, only merge the member record for this
+    // org and leave the user record intact for their other orgs.
+    const otherOrgMemberships = await db.member.count({
+      where: { userId: oldUser.id, organizationId: { not: organizationId } },
+    });
+    const oldUserHasOtherOrgs = otherOrgMemberships > 0;
+
+    logger.info('Checked old user org memberships', {
+      oldUserId: oldUser.id,
+      otherOrgMemberships,
+      oldUserHasOtherOrgs,
+    });
+
     // ── 3. Merge inside a transaction ────────────────────────────────────────
 
     await db.$transaction(
@@ -304,54 +320,63 @@ export const mergeDuplicateUser = schemaTask({
         // ── Delete old member ────────────────────────────────────────────────
         await tx.member.delete({ where: { id: o } });
 
-        // ── Re-point user-level relations before deleting oldUser ───────────
-        // Must happen before the delete to prevent cascade wiping these records.
+        // ── User-level relations & old user record ───────────────────────────
+        // Only safe when the old user has no membership in any other org —
+        // otherwise these relations (and the user record itself) still belong
+        // to that other org and must be left alone.
+        if (!oldUserHasOtherOrgs) {
+          // ── Re-point user-level relations before deleting oldUser ───────────
+          // Must happen before the delete to prevent cascade wiping these records.
 
-        // OAuth accounts: move to surviving user
-        await tx.account.updateMany({
-          where: { userId: oldUser.id },
-          data: { userId: newUser.id },
-        });
+          // OAuth accounts: move to surviving user
+          await tx.account.updateMany({
+            where: { userId: oldUser.id },
+            data: { userId: newUser.id },
+          });
 
-        // AuditLog: onDelete Cascade — re-point to preserve history
-        await tx.auditLog.updateMany({
-          where: { userId: oldUser.id },
-          data: { userId: newUser.id },
-        });
+          // AuditLog: onDelete Cascade — re-point to preserve history
+          await tx.auditLog.updateMany({
+            where: { userId: oldUser.id },
+            data: { userId: newUser.id },
+          });
 
-        // FleetPolicyResult: onDelete Cascade — re-point to preserve results
-        await tx.fleetPolicyResult.updateMany({
-          where: { userId: oldUser.id },
-          data: { userId: newUser.id },
-        });
+          // FleetPolicyResult: onDelete Cascade — re-point to preserve results
+          await tx.fleetPolicyResult.updateMany({
+            where: { userId: oldUser.id },
+            data: { userId: newUser.id },
+          });
 
-        // OauthAccessToken: onDelete Cascade
-        await tx.oauthAccessToken.updateMany({
-          where: { userId: oldUser.id },
-          data: { userId: newUser.id },
-        });
+          // OauthAccessToken: onDelete Cascade
+          await tx.oauthAccessToken.updateMany({
+            where: { userId: oldUser.id },
+            data: { userId: newUser.id },
+          });
 
-        // OauthConsent: onDelete Cascade
-        await tx.oauthConsent.updateMany({
-          where: { userId: oldUser.id },
-          data: { userId: newUser.id },
-        });
+          // OauthConsent: onDelete Cascade
+          await tx.oauthConsent.updateMany({
+            where: { userId: oldUser.id },
+            data: { userId: newUser.id },
+          });
 
-        // McpOrgBinding: onDelete Cascade, unique on userId — delete old, keep new
-        await tx.mcpOrgBinding.deleteMany({ where: { userId: oldUser.id } });
+          // McpOrgBinding: onDelete Cascade, unique on userId — delete old, keep new
+          await tx.mcpOrgBinding.deleteMany({ where: { userId: oldUser.id } });
 
-        // IntegrationSyncLog / IntegrationOAuthError: nullable userId — re-point to preserve actor
-        await tx.integrationSyncLog.updateMany({
-          where: { userId: oldUser.id },
-          data: { userId: newUser.id },
-        });
-        await tx.integrationOAuthError.updateMany({
-          where: { userId: oldUser.id },
-          data: { userId: newUser.id },
-        });
+          // IntegrationSyncLog / IntegrationOAuthError: nullable userId — re-point to preserve actor
+          await tx.integrationSyncLog.updateMany({
+            where: { userId: oldUser.id },
+            data: { userId: newUser.id },
+          });
+          await tx.integrationOAuthError.updateMany({
+            where: { userId: oldUser.id },
+            data: { userId: newUser.id },
+          });
 
-        // ── Delete old user sessions ─────────────────────
-        await tx.session.deleteMany({ where: { userId: oldUser.id } });
+          // ── Delete old user sessions ─────────────────────
+          await tx.session.deleteMany({ where: { userId: oldUser.id } });
+
+          // ── Delete the now-orphaned old user record ──────────────────────
+          await tx.user.delete({ where: { id: oldUser.id } });
+        }
 
         // ── Update pending invitations ───────────────────────────────────────
         await tx.invitation.updateMany({
@@ -368,12 +393,14 @@ export const mergeDuplicateUser = schemaTask({
       newEmail,
       survivingUserId: oldUser.id,
       survivingMemberId: oldMember.id,
+      oldUserDeleted: !oldUserHasOtherOrgs,
     });
 
     return {
       success: true,
       survivingUserId: newUser.id,
       survivingMemberId: newMember.id,
+      oldUserDeleted: !oldUserHasOtherOrgs,
       mergedUserId: oldUser.id,
       mergedMemberId: oldMember.id,
     };
