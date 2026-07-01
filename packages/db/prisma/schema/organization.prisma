@@ -29,6 +29,10 @@ model Organization {
   // When set, the scheduled sync will import devices from this provider
   deviceSyncProvider String?
 
+  // 2FA source provider (e.g., 'google-workspace')
+  // When set, the People tab reads per-user 2FA status from this integration's latest check run
+  twoFactorSource String?
+
   apiKeys                            ApiKey[]
   mcpOrgBindings                     McpOrgBinding[]
   auditLog                           AuditLog[]

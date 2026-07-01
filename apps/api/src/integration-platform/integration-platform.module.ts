@@ -14,6 +14,7 @@ import { VariablesController } from './controllers/variables.controller';
 import { TaskIntegrationsController } from './controllers/task-integrations.controller';
 import { WebhookController } from './controllers/webhook.controller';
 import { SyncController } from './controllers/sync.controller';
+import { TwoFactorSourceController } from './controllers/two-factor-source.controller';
 import { ServicesController } from './controllers/services.controller';
 import { CredentialVaultService } from './services/credential-vault.service';
 import { ConnectionService } from './services/connection.service';
@@ -54,6 +55,7 @@ import { GenericDeviceSyncService } from './services/generic-device-sync.service
     TaskIntegrationsController,
     WebhookController,
     SyncController,
+    TwoFactorSourceController,
     ServicesController,
   ],
   providers: [

@@ -302,6 +302,42 @@ export class CheckRunRepository {
   }
 
   /**
+   * Latest per-USER results for a (connection, check), scoped to an org.
+   *
+   * Used by the People-tab 2FA column: returns the full, untruncated set of
+   * `resourceType='user'` results from the connection's most recent REAL run
+   * (never `inconclusive`/held, never a disconnected connection). Unlike the
+   * task-run-history read, there is NO `take` cap — every user must map to a
+   * member, so the 30-row display sample ({@link DISPLAY_RESULTS_PER_RUN}) is
+   * deliberately not reused here. Returns null when the source has no real run.
+   */
+  async findLatestUserResultsByConnectionAndCheck({
+    connectionId,
+    checkId,
+    organizationId,
+  }: {
+    connectionId: string;
+    checkId: string;
+    organizationId: string;
+  }) {
+    const run = await db.integrationCheckRun.findFirst({
+      where: {
+        connectionId,
+        checkId,
+        status: { not: 'inconclusive' },
+        connection: { organizationId, status: { not: 'disconnected' } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!run) return null;
+
+    const results = await db.integrationCheckResult.findMany({
+      where: { checkRunId: run.id, resourceType: 'user' },
+    });
+    return { run, results };
+  }
+
+  /**
    * Get check runs for a connection
    */
   async findByConnection(connectionId: string, limit = 20) {
