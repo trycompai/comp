@@ -58,9 +58,9 @@ function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }
 interface PeopleFiltersProps {
   statusFilter: string;
   hasOffboardFilter: boolean;
-  onStatusChange: (value: string | undefined) => void;
+  onStatusChange: (value: string | null) => void;
   roleFilter: string;
-  onRoleChange: (value: string | undefined) => void;
+  onRoleChange: (value: string | null) => void;
   onboardFrom: Date | undefined;
   onboardTo: Date | undefined;
   onOnboardApply: (from: Date | undefined, to: Date | undefined) => void;
@@ -178,7 +178,7 @@ export function PeopleFilters({
       {statusFilter && (
         <FilterChip
           label={`Status: ${STATUS_LABELS[statusFilter] ?? statusFilter}`}
-          onRemove={() => onStatusChange(undefined)}
+          onRemove={() => onStatusChange(null)}
         />
       )}
       {roleFilter && (

@@ -45,7 +45,7 @@ describe('PeopleFilters', () => {
     expect(screen.getByText('Role: Admin')).toBeInTheDocument();
 
     fireEvent.click(screen.getByLabelText('Remove filter: Status: Deactivated'));
-    expect(onStatusChange).toHaveBeenCalledWith(undefined);
+    expect(onStatusChange).toHaveBeenCalledWith(null);
   });
 
   it('shows a date chip that clears via its remove button', () => {
