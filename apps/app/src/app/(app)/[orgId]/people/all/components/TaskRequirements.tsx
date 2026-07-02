@@ -74,7 +74,7 @@ export function TaskRequirements({
         <TaskRequirementRow key={item.label} item={item} />
       ))}
       {showLoadingRow && (
-        <div className="h-3 w-16">
+        <div className="h-3 w-16" data-testid="task-requirements-loading">
           <Skeleton style={{ height: '100%', width: '100%' }} />
         </div>
       )}

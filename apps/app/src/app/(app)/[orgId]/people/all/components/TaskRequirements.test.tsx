@@ -51,6 +51,12 @@ describe('TaskRequirements', () => {
 
   it('shows a loading placeholder when showLoadingRow is set with no items', () => {
     render(<TaskRequirements items={[]} showLoadingRow />);
+    expect(screen.getByTestId('task-requirements-loading')).toBeInTheDocument();
     expect(screen.queryByText('—')).not.toBeInTheDocument();
+  });
+
+  it('shows no loading placeholder when showLoadingRow is not set', () => {
+    render(<TaskRequirements items={[count('Policies', 1, 3)]} />);
+    expect(screen.queryByTestId('task-requirements-loading')).not.toBeInTheDocument();
   });
 });
