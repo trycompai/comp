@@ -81,7 +81,7 @@ describe('TwoFactorSourceSelector — RBAC gating', () => {
 
     const { container } = render(<TwoFactorSourceSelector />);
 
-    expect(container.firstElementChild).toHaveClass('hidden', 'sm:block');
+    expect(container.firstElementChild).toHaveClass('hidden', 'sm:flex');
   });
 
   it('renders nothing while the source/selection are still loading (no placeholder flash)', () => {

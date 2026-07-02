@@ -308,7 +308,7 @@ export function TeamMembersClient({
   return (
     <Stack gap="4">
       {/* Search and Filters */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-end gap-4">
         <div className="w-full md:max-w-[300px]">
           <InputGroup>
             <InputGroupAddon>
@@ -322,7 +322,10 @@ export function TeamMembersClient({
           </InputGroup>
         </div>
         {/* Status Filter Select */}
-        <div className="hidden w-[140px] sm:block">
+        <div className="hidden w-[140px] flex-col gap-1 sm:flex">
+          <span id="people-status-filter-label" className="text-xs text-muted-foreground">
+            Status
+          </span>
           <Select
             value={statusFilter || undefined}
             onValueChange={(value) => {
@@ -330,7 +333,7 @@ export function TeamMembersClient({
               setPage(1);
             }}
           >
-            <SelectTrigger>
+            <SelectTrigger aria-labelledby="people-status-filter-label">
               <SelectValue placeholder="Active">
                 {hasOffboardFilter && !statusFilter
                   ? 'All People'
@@ -346,7 +349,10 @@ export function TeamMembersClient({
           </Select>
         </div>
         {/* Role Filter Select */}
-        <div className="hidden w-[180px] sm:block">
+        <div className="hidden w-[180px] flex-col gap-1 sm:flex">
+          <span id="people-role-filter-label" className="text-xs text-muted-foreground">
+            Role
+          </span>
           <Select
             value={roleFilter || undefined}
             onValueChange={(value) => {
@@ -354,7 +360,7 @@ export function TeamMembersClient({
               setPage(1);
             }}
           >
-            <SelectTrigger>
+            <SelectTrigger aria-labelledby="people-role-filter-label">
               <SelectValue placeholder="All Roles">
                 {{ owner: 'Owner', admin: 'Admin', auditor: 'Auditor', employee: 'Employee', contractor: 'Contractor' }[roleFilter] ?? 'All Roles'}
               </SelectValue>
@@ -384,8 +390,11 @@ export function TeamMembersClient({
           onClear={() => { setOffboardFrom(undefined); setOffboardTo(undefined); setPage(1); }}
         />
         {hasAnyConnection && (
-          <div className="flex items-center gap-2">
-            <div className="w-fit max-w-[300px]">
+          <div className="flex items-end gap-2">
+            <div className="flex w-[200px] flex-col gap-1">
+              <span id="employee-sync-source-label" className="text-xs text-muted-foreground">
+                Sync people from
+              </span>
               <Select
                 onValueChange={(value) => {
                   const provider = String(value);
@@ -398,36 +407,29 @@ export function TeamMembersClient({
                 }}
                 disabled={isSyncing || isDisablingSync || !canManageMembers}
               >
-                <SelectTrigger aria-label="Sync people from">
-                  {/* Inline "Sync people from ·" prefix mirrors the date chips;
-                      the aria-label names the combobox for screen readers
-                      (comboboxes don't take their name from contents). */}
-                  <div className="flex items-center gap-2 whitespace-nowrap">
-                    <span className="text-muted-foreground">Sync people from</span>
-                    <span className="font-medium">·</span>
-                    {isSyncing ? (
-                      <>
-                        <InProgress size={16} className="animate-spin" />
-                        Syncing...
-                      </>
-                    ) : selectedProvider ? (
-                      <>
-                        {getProviderLogo(selectedProvider) && (
-                          <Image
-                            src={getProviderLogo(selectedProvider)}
-                            alt=""
-                            width={16}
-                            height={16}
-                            className="rounded-sm"
-                            unoptimized
-                          />
-                        )}
-                        <span className="truncate">{getProviderName(selectedProvider)}</span>
-                      </>
-                    ) : (
-                      <span className="text-muted-foreground">None</span>
-                    )}
-                  </div>
+                <SelectTrigger aria-labelledby="employee-sync-source-label">
+                  {isSyncing ? (
+                    <>
+                      <InProgress size={16} className="mr-2 animate-spin" />
+                      Syncing...
+                    </>
+                  ) : selectedProvider ? (
+                    <div className="flex items-center gap-2">
+                      {getProviderLogo(selectedProvider) && (
+                        <Image
+                          src={getProviderLogo(selectedProvider)}
+                          alt=""
+                          width={16}
+                          height={16}
+                          className="rounded-sm"
+                          unoptimized
+                        />
+                      )}
+                      <span className="truncate">{getProviderName(selectedProvider)}</span>
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground">None</span>
+                  )}
                 </SelectTrigger>
               <SelectContent>
                 <div className="px-2 py-1.5 text-xs text-muted-foreground space-y-1">
@@ -708,14 +710,17 @@ function DateRangeFilter({
         ? `Until ${format(to, 'MMM d, yyyy')}`
         : 'Any time';
 
+  const labelId = `people-${label.toLowerCase()}-filter-label`;
+
   return (
-    <div className="hidden sm:block">
+    <div className="hidden flex-col gap-1 sm:flex">
+      <span id={labelId} className="text-xs text-muted-foreground">
+        {label}
+      </span>
       <Popover open={open} onOpenChange={handleOpenChange}>
-        <PopoverTrigger>
+        <PopoverTrigger aria-labelledby={labelId}>
           <div className="border-border bg-background hover:bg-muted flex h-8 items-center gap-2 whitespace-nowrap rounded-md border px-3 text-xs transition-colors cursor-pointer">
             <CalendarIcon size={13} className="text-muted-foreground" />
-            <span className="text-muted-foreground">{label}</span>
-            <span className="font-medium">·</span>
             <span className="font-medium">{displayLabel}</span>
             <ChevronDown size={12} className="text-muted-foreground" />
           </div>
