@@ -15,6 +15,18 @@
 /** Per-repo file reads to keep in flight at once. */
 export const FILE_READ_CONCURRENCY = 10;
 
+/**
+ * Repositories to check in parallel within a single run. The branch-protection
+ * check fetches protection rules (up to 3 strategies) plus recent PRs per
+ * repo/branch; running repos SERIALLY meant an org with many monitored repos
+ * (~28) issued ~250 sequential GitHub calls — with retry backoff stacking on
+ * 429s — and blew past the synchronous manual-run HTTP timeout, so the run died
+ * with no result persisted. A bounded pool keeps the run well under that ceiling
+ * while staying far below GitHub's concurrent-request limit (each repo makes at
+ * most ~2 requests in flight, so this caps total concurrency at ~16).
+ */
+export const REPO_CHECK_CONCURRENCY = 8;
+
 /** Run `fn` over `items` with at most `limit` in flight, preserving order. */
 export async function mapWithConcurrency<T, R>(
   items: T[],
