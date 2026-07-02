@@ -437,6 +437,60 @@ describe('runLinkage onPhase', () => {
     expect(result.suggestions?.tasks.map((t) => t.id)).toEqual(['tsk_b', 'tsk_a']);
   });
 
+  it('suggestionsOnly=true drops stale/orphan task vectors before the rerank-input slice (CS-681)', async () => {
+    // Regression: findSimilarTasks filters only by org + sourceType, so it can
+    // return orphan vectors for tasks no longer in the live scope (deleted, or
+    // all controls archived after a framework change) — lib/embedding never
+    // prunes them. When those orphans are the cosine-nearest they fill the
+    // top-30 rerank-input slots and get dropped in the taskById intersection,
+    // leaving the risk with zero suggestions. The one in-scope task must
+    // survive by being filtered in BEFORE the slice.
+    dbMock.risk.findMany.mockResolvedValueOnce([
+      {
+        id: 'rsk_1',
+        title: 'Data Leakage',
+        description: 'Sensitive data exposure',
+        category: 'technology',
+        department: null,
+      },
+    ]);
+    dbMock.vendor.findMany.mockResolvedValueOnce([]);
+    // Live task scope contains ONLY tsk_live — the orphans below are NOT here.
+    dbMock.task.findMany
+      .mockResolvedValueOnce([
+        { id: 'tsk_live', title: 'Encrypt Data at Rest', description: 'KMS', department: null },
+      ])
+      // Enrichment lookup for buildSuggestions (only reached once tsk_live survives).
+      .mockResolvedValueOnce([
+        { id: 'tsk_live', title: 'Encrypt Data at Rest', status: 'todo', controls: [] },
+      ]);
+
+    // 32 orphan vectors, all cosine-nearer than the one live task, followed by
+    // the live task at the bottom. 32 > SUGGESTIONS_RERANK_INPUT_TOP_K (30), so
+    // pre-fix the top-30 slice is entirely orphans and tsk_live never reaches
+    // the reranker → zero suggestions.
+    const orphans = Array.from({ length: 32 }, (_, i) => ({
+      id: `tsk_orphan_${i}`,
+      score: 0.99 - i * 0.01,
+      department: undefined,
+    }));
+    findSimilarTasksMock.mockResolvedValueOnce([
+      ...orphans,
+      { id: 'tsk_live', score: 0.5, department: undefined },
+    ]);
+
+    const result = await runLinkage({
+      organizationId: 'org_1',
+      riskId: 'rsk_1',
+      suggestionsOnly: true,
+    });
+
+    // The in-scope task survives the slice → non-empty suggestions.
+    expect(result.suggestions?.tasks.map((t) => t.id)).toEqual(['tsk_live']);
+    // No orphan leaked into the suggestions.
+    expect(result.suggestions?.tasks.some((t) => t.id.startsWith('tsk_orphan_'))).toBe(false);
+  });
+
   it('replace=false (default) does not disconnect existing links', async () => {
     dbMock.risk.findMany.mockResolvedValueOnce([
       {

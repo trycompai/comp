@@ -625,22 +625,31 @@ export async function runLinkage({
               .join(', ')})`
           : ''),
     );
+    // Intersect the cosine results with the live task scope BEFORE the
+    // top-K slice inside linkSuggestions. findSimilarTasks filters only by
+    // org + sourceType, so it can return stale/orphan vectors — tasks since
+    // deleted, or whose controls were all archived after a framework change —
+    // that lib/embedding never prunes (it has no delete path). If those
+    // orphans are the cosine-nearest, slicing first lets them consume every
+    // rerank-input slot and they'd then be dropped in the taskById lookup
+    // inside the reranker, leaving the risk with zero suggestions. Filtering
+    // here keeps the slice full of real, linkable tasks. (CS-681)
+    const inScopeSimilar = similar.filter((s) => taskById.has(s.id));
+    if (inScopeSimilar.length !== similar.length) {
+      console.warn(
+        `[linkage] risk "${risk.title}" → ${similar.length - inScopeSimilar.length} of ${similar.length} cosine matches dropped (stale vectors not in live task scope)`,
+      );
+    }
     // Both paths feed the reranker — autonomous needs it just as badly to
     // get past the 0.4-0.6 cosine band that dominates compliance prose.
     const links = linkSuggestions({
       source: { department: risk.department ?? undefined },
-      candidates: similar.map((s) => ({ id: s.id, score: s.score, department: s.department })),
+      candidates: inScopeSimilar.map((s) => ({ id: s.id, score: s.score, department: s.department })),
       threshold: 0,
       topK: suggestionsOnly ? SUGGESTIONS_RERANK_INPUT_TOP_K : AUTONOMOUS_RERANK_INPUT_TOP_K,
     });
     let count = 0;
     let perEntitySuggestions: RunLinkageOutput['suggestions'];
-    const inScopeMatches = links.filter((l) => taskById.has(l.id)).length;
-    if (inScopeMatches !== links.length) {
-      console.warn(
-        `[linkage] risk "${risk.title}" → ${links.length - inScopeMatches} of ${links.length} cosine matches dropped (not in task scope after filter)`,
-      );
-    }
     if (links.length > 0) {
       const source: RerankSource = {
         kind: 'risk',
@@ -693,9 +702,17 @@ export async function runLinkage({
       queryText: vendorQueryText(vendor),
       topK: suggestionsOnly ? SUGGESTIONS_QUERY_TOP_K : AUTONOMOUS_QUERY_TOP_K,
     });
+    // Same live-scope intersection as the risk loop above: drop stale/orphan
+    // task vectors before the top-K slice so they can't starve real matches. (CS-681)
+    const inScopeSimilar = similar.filter((s) => taskById.has(s.id));
+    if (inScopeSimilar.length !== similar.length) {
+      console.warn(
+        `[linkage] vendor "${vendor.name}" → ${similar.length - inScopeSimilar.length} of ${similar.length} cosine matches dropped (stale vectors not in live task scope)`,
+      );
+    }
     const links = linkSuggestions({
       source: {},
-      candidates: similar.map((s) => ({ id: s.id, score: s.score, department: s.department })),
+      candidates: inScopeSimilar.map((s) => ({ id: s.id, score: s.score, department: s.department })),
       threshold: 0,
       topK: suggestionsOnly ? SUGGESTIONS_RERANK_INPUT_TOP_K : AUTONOMOUS_RERANK_INPUT_TOP_K,
     });
