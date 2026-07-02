@@ -28,10 +28,18 @@ export function TwoFactorSourceSelector() {
   // Selecting a source is an integration:update action. Gate the hook itself so
   // users without the permission never hit any 2FA-source API.
   const canManage = hasPermission('integration', 'update');
-  const { selectedSource, availableSources, setSource, hasAnyConnection } =
-    use2faSource({ organizationId: orgId, enabled: canManage });
+  const {
+    selectedSource,
+    availableSources,
+    setSource,
+    hasAnyConnection,
+    isLoading,
+  } = use2faSource({ organizationId: orgId, enabled: canManage });
 
-  if (!canManage || !hasAnyConnection) {
+  // Wait for BOTH the available sources and the current selection before
+  // rendering, so the trigger never flashes the placeholder while the saved
+  // selection is still resolving.
+  if (!canManage || isLoading || !hasAnyConnection) {
     return null;
   }
 

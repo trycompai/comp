@@ -26,6 +26,7 @@ interface Use2faSourceOptions {
 interface Use2faSourceReturn {
   selectedSource: string | null;
   isLoading: boolean;
+  error?: string;
   availableSources: TwoFactorSourceProviderInfo[];
   setSource: (provider: string | null) => Promise<boolean>;
   hasAnyConnection: boolean;
@@ -39,9 +40,12 @@ export function use2faSource({
   organizationId,
   enabled = true,
 }: Use2faSourceOptions): Use2faSourceReturn {
-  const { data: sourceData, mutate: mutateSource } = useSWR<{
-    provider: string | null;
-  }>(
+  const {
+    data: sourceData,
+    error: sourceError,
+    isLoading: isLoadingSource,
+    mutate: mutateSource,
+  } = useSWR<{ provider: string | null }>(
     enabled
       ? `/v1/integrations/sync/two-factor-source?organizationId=${organizationId}`
       : null,
@@ -52,9 +56,11 @@ export function use2faSource({
     },
   );
 
-  const { data: availableData, isLoading } = useSWR<{
-    providers: TwoFactorSourceProviderInfo[];
-  }>(
+  const {
+    data: availableData,
+    error: availableError,
+    isLoading: isLoadingAvailable,
+  } = useSWR<{ providers: TwoFactorSourceProviderInfo[] }>(
     enabled
       ? `/v1/integrations/sync/available-2fa-sources?organizationId=${organizationId}`
       : null,
@@ -97,9 +103,15 @@ export function use2faSource({
     }
   };
 
+  const fetchError = sourceError ?? availableError;
+
   return {
     selectedSource,
-    isLoading,
+    // Both requests feed the selector; report loading until BOTH settle so
+    // consumers never render a half-resolved state (e.g. sources without the
+    // current selection).
+    isLoading: isLoadingSource || isLoadingAvailable,
+    error: fetchError instanceof Error ? fetchError.message : undefined,
     availableSources,
     setSource,
     hasAnyConnection: availableSources.some((p) => p.connected),

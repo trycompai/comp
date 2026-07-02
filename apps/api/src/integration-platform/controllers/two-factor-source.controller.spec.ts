@@ -178,6 +178,32 @@ describe('TwoFactorSourceController.getTwoFactorStatuses', () => {
     });
   });
 
+  it('resolves conflicting rows for one email deterministically — a fail always wins', async () => {
+    mockOrgFindUnique.mockResolvedValue({ twoFactorSource: 'google-workspace' });
+    mockCheckResults.listSourcesBoundToTask.mockResolvedValue([
+      source('google-workspace', true),
+    ]);
+
+    // Same email with pass+fail rows, in BOTH orders — result must not depend
+    // on iteration order.
+    for (const rows of [
+      [
+        { resourceId: 'dup@x.com', passed: true },
+        { resourceId: 'dup@x.com', passed: false },
+      ],
+      [
+        { resourceId: 'dup@x.com', passed: false },
+        { resourceId: 'dup@x.com', passed: true },
+      ],
+    ]) {
+      mockCheckResults.getLatestResultsForTask.mockResolvedValue(rows);
+      const result = await makeController().getTwoFactorStatuses(ORG);
+      expect(result.statuses).toEqual([
+        { email: 'dup@x.com', status: 'missing' },
+      ]);
+    }
+  });
+
   it('returns empty statuses when the source has no results', async () => {
     mockOrgFindUnique.mockResolvedValue({ twoFactorSource: 'google-workspace' });
     mockCheckResults.getLatestResultsForTask.mockResolvedValue([]);

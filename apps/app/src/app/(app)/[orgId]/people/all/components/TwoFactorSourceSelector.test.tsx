@@ -79,6 +79,20 @@ describe('TwoFactorSourceSelector — RBAC gating', () => {
     expect(container.firstElementChild).toHaveClass('hidden', 'sm:block');
   });
 
+  it('renders nothing while the source/selection are still loading (no placeholder flash)', () => {
+    mockHasPermission.mockReturnValue(true);
+    mockUse2faSource.mockReturnValue({
+      selectedSource: null,
+      isLoading: true,
+      availableSources: [source],
+      setSource: vi.fn(),
+      hasAnyConnection: true,
+    });
+
+    const { container } = render(<TwoFactorSourceSelector />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
   it('renders nothing when no bound integration is connected', () => {
     mockHasPermission.mockReturnValue(true);
     mockUse2faSource.mockReturnValue({

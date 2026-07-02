@@ -193,11 +193,15 @@ export class TwoFactorSourceController {
       resourceType: 'user',
     });
 
-    // Dedupe by lowercased email (results aren't ordered; last row wins).
+    // Dedupe by lowercased email. Result rows carry no ordering, so conflict
+    // resolution must not depend on iteration order: a failing row always wins
+    // (compliance-conservative — if any row says the user lacks 2FA, show
+    // missing; never upgrade back to enabled).
     const byEmail = new Map<string, 'enabled' | 'missing'>();
     for (const result of results) {
       const email = result.resourceId.toLowerCase().trim();
       if (!email) continue;
+      if (byEmail.get(email) === 'missing') continue;
       byEmail.set(email, result.passed ? 'enabled' : 'missing');
     }
     const statuses = Array.from(byEmail, ([email, status]) => ({
