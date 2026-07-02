@@ -61,6 +61,50 @@ export class ConnectionRepository {
     return this.findByProviderAndOrg(provider.id, organizationId);
   }
 
+  /**
+   * Active connections for a set of provider slugs, keyed by slug, in ONE query.
+   * When a provider has several active connections (e.g. AWS multi-account) the
+   * newest wins. Slugs with no active connection are simply absent from the map.
+   */
+  async findActiveBySlugsAndOrg(
+    providerSlugs: string[],
+    organizationId: string,
+  ): Promise<
+    Map<string, { id: string; lastSyncAt: Date | null; nextSyncAt: Date | null }>
+  > {
+    if (providerSlugs.length === 0) return new Map();
+
+    const connections = await db.integrationConnection.findMany({
+      where: {
+        organizationId,
+        status: 'active',
+        provider: { slug: { in: providerSlugs } },
+      },
+      select: {
+        id: true,
+        lastSyncAt: true,
+        nextSyncAt: true,
+        provider: { select: { slug: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const bySlug = new Map<
+      string,
+      { id: string; lastSyncAt: Date | null; nextSyncAt: Date | null }
+    >();
+    for (const connection of connections) {
+      if (!bySlug.has(connection.provider.slug)) {
+        bySlug.set(connection.provider.slug, {
+          id: connection.id,
+          lastSyncAt: connection.lastSyncAt,
+          nextSyncAt: connection.nextSyncAt,
+        });
+      }
+    }
+    return bySlug;
+  }
+
   async findByOrganization(
     organizationId: string,
   ): Promise<IntegrationConnection[]> {

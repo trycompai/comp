@@ -45,7 +45,12 @@ import { RemoveDeviceAlert } from './RemoveDeviceAlert';
 import { TaskRequirements, type TaskRequirementItem } from './TaskRequirements';
 import { RemoveMemberAlert } from './RemoveMemberAlert';
 import type { CustomRoleOption } from './MultiRoleCombobox';
-import type { BackgroundCheckStatus, MemberWithUser, TaskCompletion } from './TeamMembers';
+import type {
+  BackgroundCheckStatus,
+  MemberWithUser,
+  TaskCompletion,
+  TwoFactorStatus,
+} from './TeamMembers';
 
 interface MemberRowProps {
   member: MemberWithUser;
@@ -62,6 +67,8 @@ interface MemberRowProps {
   isDeviceStatusLoading?: boolean;
   backgroundCheckStatus?: BackgroundCheckStatus;
   backgroundCheckStepEnabled?: boolean;
+  /** From the org's configured 2FA source; absent when no source is configured. */
+  twoFactorStatus?: TwoFactorStatus;
 }
 
 function getInitials(name?: string | null, email?: string | null): string {
@@ -114,6 +121,7 @@ export function MemberRow({
   isDeviceStatusLoading = false,
   backgroundCheckStatus,
   backgroundCheckStepEnabled = true,
+  twoFactorStatus,
 }: MemberRowProps) {
   const { orgId } = useParams<{ orgId: string }>();
 
@@ -146,12 +154,16 @@ export function MemberRow({
   const taskItems: TaskRequirementItem[] = [];
 
   if (taskCompletion) {
-    taskItems.push({
-      label: 'Policies',
-      completed: taskCompletion.policies.completed,
-      total: taskCompletion.policies.total,
-      kind: 'count',
-    });
+    // total === 0 means "nothing to complete" (e.g. no required policies) —
+    // that's not-applicable, not incomplete, so no row at all.
+    if (taskCompletion.policies.total > 0) {
+      taskItems.push({
+        label: 'Policies',
+        completed: taskCompletion.policies.completed,
+        total: taskCompletion.policies.total,
+        kind: 'count',
+      });
+    }
 
     if (taskCompletion.training.total > 0) {
       taskItems.push({
@@ -187,6 +199,24 @@ export function MemberRow({
       completed: hasCompletedBackgroundCheck ? 1 : 0,
       total: 1,
       kind: 'binary',
+    });
+  }
+
+  // 2FA applies to EVERY non-deactivated member (platform admins included),
+  // unlike the compliance-scoped rows above. Absent status = no 2FA source
+  // configured for the org, so no row.
+  if (!isDeactivated && twoFactorStatus) {
+    taskItems.push({
+      label: '2FA',
+      completed: twoFactorStatus === 'enabled' ? 1 : 0,
+      total: 1,
+      kind: 'binary',
+      state:
+        twoFactorStatus === 'enabled'
+          ? 'done'
+          : twoFactorStatus === 'missing'
+            ? 'missing'
+            : 'not-provided',
     });
   }
 

@@ -3,9 +3,11 @@ jest.mock('@db', () => ({
     integrationCheckRun: {
       groupBy: jest.fn(),
       findMany: jest.fn(),
+      findFirst: jest.fn(),
     },
     integrationCheckResult: {
       count: jest.fn(),
+      findMany: jest.fn(),
     },
   },
 }));
@@ -24,6 +26,12 @@ const mockFindMany = mockedCheckRun.findMany;
 const mockResultCount = (
   db.integrationCheckResult as unknown as { count: jest.Mock }
 ).count;
+const mockFindFirst = (
+  db.integrationCheckRun as unknown as { findFirst: jest.Mock }
+).findFirst;
+const mockResultFindMany = (
+  db.integrationCheckResult as unknown as { findMany: jest.Mock }
+).findMany;
 
 function makeRun(opts: {
   id: string;
@@ -283,6 +291,83 @@ describe('CheckRunRepository.countExceptedFailures', () => {
         passed: false,
         resourceId: { in: ['b1', 'b2'] },
       },
+    });
+  });
+});
+
+describe('CheckRunRepository.findLatestResultsByConnectionAndCheck', () => {
+  const repo = new CheckRunRepository();
+  const params = {
+    connectionId: 'conn_1',
+    checkId: 'two-factor-auth',
+    organizationId: 'org_1',
+    resourceType: 'user',
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('returns null and never loads results when there is no real run', async () => {
+    mockFindFirst.mockResolvedValue(null);
+
+    const result = await repo.findLatestResultsByConnectionAndCheck(params);
+
+    expect(result).toBeNull();
+    expect(mockResultFindMany).not.toHaveBeenCalled();
+  });
+
+  it('scopes the run to org + connection + check, excluding held runs and disconnected connections', async () => {
+    mockFindFirst.mockResolvedValue({ id: 'run_1' });
+    mockResultFindMany.mockResolvedValue([]);
+
+    await repo.findLatestResultsByConnectionAndCheck(params);
+
+    expect(mockFindFirst).toHaveBeenCalledWith({
+      where: {
+        connectionId: 'conn_1',
+        checkId: 'two-factor-auth',
+        // Held (inconclusive) runs must never surface to the customer.
+        status: { not: 'inconclusive' },
+        connection: {
+          organizationId: 'org_1',
+          status: { not: 'disconnected' },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  });
+
+  it('loads the FULL result set for the latest run — no take cap — filtered by resourceType', async () => {
+    mockFindFirst.mockResolvedValue({ id: 'run_1' });
+    const rows = [
+      { id: 'icx_1', resourceId: 'a@x.com', passed: true },
+      { id: 'icx_2', resourceId: 'b@x.com', passed: false },
+    ];
+    mockResultFindMany.mockResolvedValue(rows);
+
+    const result = await repo.findLatestResultsByConnectionAndCheck(params);
+
+    expect(mockResultFindMany).toHaveBeenCalledWith({
+      where: { checkRunId: 'run_1', resourceType: 'user' },
+    });
+    // Every resource must map to a domain entity — the 30-row display cap is NOT reused.
+    expect(mockResultFindMany.mock.calls[0][0].take).toBeUndefined();
+    expect(result).toEqual({ run: { id: 'run_1' }, results: rows });
+  });
+
+  it('omits the resourceType filter when not provided (loads all rows)', async () => {
+    mockFindFirst.mockResolvedValue({ id: 'run_1' });
+    mockResultFindMany.mockResolvedValue([]);
+
+    await repo.findLatestResultsByConnectionAndCheck({
+      connectionId: 'conn_1',
+      checkId: 'aws-s3-encryption',
+      organizationId: 'org_1',
+    });
+
+    expect(mockResultFindMany).toHaveBeenCalledWith({
+      where: { checkRunId: 'run_1' },
     });
   });
 });

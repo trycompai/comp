@@ -278,4 +278,91 @@ describe('MemberRow device status', () => {
       screen.queryByLabelText('Employee has completed a background check'),
     ).not.toBeInTheDocument();
   });
+
+  it('hides the Policies row when there are no required policies (0/0 is not-applicable)', () => {
+    render(
+      <table>
+        <tbody>
+          <MemberRow
+            member={baseMember}
+            onRemove={noop}
+            onRemoveDevice={noop}
+            onUpdateRole={noop}
+            onReactivate={noop}
+            canEdit={false}
+            isCurrentUserOwner={false}
+            taskCompletion={{
+              completed: 0,
+              total: 0,
+              policies: { completed: 0, total: 0 },
+              training: { completed: 0, total: 0 },
+            }}
+          />
+        </tbody>
+      </table>,
+    );
+
+    expect(screen.queryByTestId('requirement-Policies')).not.toBeInTheDocument();
+  });
+});
+
+describe('MemberRow 2FA status', () => {
+  function render2fa({
+    member = baseMember,
+    twoFactorStatus,
+  }: {
+    member?: MemberWithUser;
+    twoFactorStatus?: 'enabled' | 'missing' | 'not-provided';
+  }) {
+    return render(
+      <table>
+        <tbody>
+          <MemberRow
+            member={member}
+            onRemove={noop}
+            onRemoveDevice={noop}
+            onUpdateRole={noop}
+            onReactivate={noop}
+            canEdit={false}
+            isCurrentUserOwner={false}
+            twoFactorStatus={twoFactorStatus}
+          />
+        </tbody>
+      </table>,
+    );
+  }
+
+  it('shows no 2FA row when no source is configured (status undefined)', () => {
+    render2fa({});
+    expect(screen.queryByTestId('requirement-2FA')).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ['enabled', 'Done'],
+    ['missing', 'Missing'],
+    ['not-provided', 'Not provided'],
+  ] as const)('renders %s as "%s"', (status, text) => {
+    render2fa({ twoFactorStatus: status });
+    expect(screen.getByTestId('requirement-2FA')).toHaveTextContent(text);
+  });
+
+  it('shows the 2FA row even for platform admins (2FA applies to all members)', () => {
+    const adminMember = {
+      ...baseMember,
+      user: { ...baseMember.user, role: 'admin' as const },
+    } as MemberWithUser;
+
+    render2fa({ member: adminMember, twoFactorStatus: 'enabled' });
+    expect(screen.getByTestId('requirement-2FA')).toHaveTextContent('Done');
+  });
+
+  it('hides the 2FA row for deactivated members', () => {
+    const deactivatedMember = {
+      ...baseMember,
+      deactivated: true,
+    } as MemberWithUser;
+
+    render2fa({ member: deactivatedMember, twoFactorStatus: 'missing' });
+    expect(screen.queryByTestId('requirement-2FA')).not.toBeInTheDocument();
+  });
 });
