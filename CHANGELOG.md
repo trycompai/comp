@@ -1,3 +1,46 @@
+## [3.95.2](https://github.com/trycompai/comp/compare/v3.95.1...v3.95.2) (2026-07-02)
+
+
+### Bug Fixes
+
+* **github-integration:** use concurrent mapping for branch protection checks ([5b68642](https://github.com/trycompai/comp/commit/5b68642f829e2578b586451c77ea6c84601aec02))
+* **todo:** create a ticket in team cs "[feature request/ux] - policy de ([2a6b892](https://github.com/trycompai/comp/commit/2a6b89264cc424b77210ea7cbbc0ede47bb6e64c))
+
+## [3.95.1](https://github.com/trycompai/comp/compare/v3.95.0...v3.95.1) (2026-07-01)
+
+
+### Bug Fixes
+
+* **evidence-export:** raise trigger task duration ceiling to prevent timeout ([5375032](https://github.com/trycompai/comp/commit/53750326fc7b31b0a72ecd7876d6b47fdafb716f)), closes [hi#volume](https://github.com/hi/issues/volume)
+
+# [3.95.0](https://github.com/trycompai/comp/compare/v3.94.2...v3.95.0) (2026-07-01)
+
+
+### Bug Fixes
+
+* **frameworks:** reject null fields and empty payload on custom framework update ([e5f847b](https://github.com/trycompai/comp/commit/e5f847b8d619f0bcfc9afa2d9cec5ba97d207c6d))
+* **frameworks:** reject whitespace-only custom framework name ([8db8ac5](https://github.com/trycompai/comp/commit/8db8ac5dfd84988ab2bd39961b1f1c7190598429))
+* **frameworks:** trim custom framework name/description in update DTO ([dcf3dc1](https://github.com/trycompai/comp/commit/dcf3dc156022026d8e4a64c760d8874342ad0061))
+* **integrations:** use catalog-defined field names for fivetran basic auth ([6050902](https://github.com/trycompai/comp/commit/6050902b12a73a630a1d7d4472d7fbf431dc9559))
+* **tasks:** bound sanitized inputs check to prevent timeout on manual run ([070a964](https://github.com/trycompai/comp/commit/070a964226311e8ab856e667d266af2a8cd34a99))
+
+
+### Features
+
+* **frameworks:** allow editing custom framework name and description ([4e3f9ac](https://github.com/trycompai/comp/commit/4e3f9ac20b3e2ead3f9c5315bd3a0b242ccf0edd))
+
+## [3.94.2](https://github.com/trycompai/comp/compare/v3.94.1...v3.94.2) (2026-07-01)
+
+
+### Bug Fixes
+
+* **auth:** honor explicit ?inviteCode= before the offboard guard on the root page ([ab7ba22](https://github.com/trycompai/comp/commit/ab7ba22ff8be46ba7937bd1c841c30e9058185a7))
+* **auth:** let invite flows take precedence over the offboard guard at /setup ([afb759e](https://github.com/trycompai/comp/commit/afb759eb297a7e4599287aa7a4f7ffa5be4625ea))
+* **auth:** stop offboarded users from looping into a spurious new org ([2aa20e6](https://github.com/trycompai/comp/commit/2aa20e67c00514d0bc17aa8acae37b1a255de312))
+* **trust-portal:** bound ISO cert regex so a number can't match a longer one ([514e0e5](https://github.com/trycompai/comp/commit/514e0e5bf20f27826c2c6d3cc5ad08b1eced6298)), closes [#3318](https://github.com/trycompai/comp/issues/3318)
+* **trust-portal:** sync iso 27001 certification mapping with vendor-risk task ([9f944a0](https://github.com/trycompai/comp/commit/9f944a0df8ea52dcaf209dce3d25ec17bc02b4c0))
+* **trust-portal:** tighten ISO cert badge matching to require the ISO prefix ([3b426f7](https://github.com/trycompai/comp/commit/3b426f7c8137865a9173a52808de63caa7b76a44)), closes [#3315](https://github.com/trycompai/comp/issues/3315) [#3315](https://github.com/trycompai/comp/issues/3315)
+
 ## [3.94.1](https://github.com/trycompai/comp/compare/v3.94.0...v3.94.1) (2026-07-01)
 
 

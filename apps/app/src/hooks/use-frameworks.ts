@@ -66,6 +66,20 @@ export function useFrameworks(options?: UseFrameworksOptions) {
     return response.data;
   };
 
+  const updateCustomFramework = async (
+    id: string,
+    input: { name?: string; description?: string },
+  ) => {
+    const response = await apiClient.patch<{
+      id: string;
+      name: string;
+      description: string;
+    }>(`/v1/frameworks/${id}/custom`, input);
+    if (response.error) throw new Error(response.error);
+    await mutate();
+    return response.data;
+  };
+
   const deleteFramework = async (id: string) => {
     const previous = frameworks;
     await mutate(
@@ -89,6 +103,7 @@ export function useFrameworks(options?: UseFrameworksOptions) {
     mutate,
     addFrameworks,
     createCustomFramework,
+    updateCustomFramework,
     deleteFramework,
   };
 }

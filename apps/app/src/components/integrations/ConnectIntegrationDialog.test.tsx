@@ -59,6 +59,29 @@ const mockProviders = [
     ],
     supportsMultipleConnections: true,
   },
+  {
+    // Basic-auth provider whose catalog maps the two fields to API Key / API Secret
+    // (the backend synthesizes these credentialFields from usernameField/passwordField).
+    id: 'fivetran',
+    authType: 'basic',
+    credentialFields: [
+      {
+        id: 'api_key',
+        label: 'API Key',
+        type: 'text',
+        required: true,
+        placeholder: 'Enter API Key',
+      },
+      {
+        id: 'api_secret',
+        label: 'API Secret',
+        type: 'password',
+        required: true,
+        placeholder: 'Enter API Secret',
+      },
+    ],
+    supportsMultipleConnections: false,
+  },
 ];
 
 vi.mock('@/hooks/use-integration-platform', () => ({
@@ -263,5 +286,32 @@ describe('ConnectIntegrationDialog permission gating', () => {
     setMockPermissions(ADMIN_PERMISSIONS);
     render(<ConnectIntegrationDialog {...defaultProps} open={false} />);
     expect(screen.queryByTestId('dialog')).not.toBeInTheDocument();
+  });
+});
+
+describe('ConnectIntegrationDialog basic auth credential labels', () => {
+  const fivetranProps = {
+    ...defaultProps,
+    integrationId: 'fivetran',
+    integrationName: 'Fivetran',
+    integrationLogoUrl: 'https://example.com/fivetran.png',
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    setMockPermissions(ADMIN_PERMISSIONS);
+  });
+
+  // Regression: Fivetran uses Basic auth but the two fields are API Key / API Secret.
+  // The form used to hardcode generic Username/Password ids+labels, so customers saw
+  // the wrong labels AND their creds were stored under username/password while the
+  // runtime read api_key/api_secret → empty Basic header → 401 on every check.
+  it('labels basic-auth fields from the catalog (API Key / API Secret), not generic Username / Password', () => {
+    render(<ConnectIntegrationDialog {...fivetranProps} />);
+
+    expect(screen.getByText('API Key')).toBeInTheDocument();
+    expect(screen.getByText('API Secret')).toBeInTheDocument();
+    expect(screen.queryByText('Username')).not.toBeInTheDocument();
+    expect(screen.queryByText('Password')).not.toBeInTheDocument();
   });
 });

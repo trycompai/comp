@@ -71,7 +71,12 @@ export const exportOrganizationEvidenceTask = schemaTask({
   // concurrencyLimit 1 + a per-org concurrencyKey (passed at trigger time) means
   // at most one export runs per org at a time; different orgs still run in parallel.
   queue: { name: 'evidence-export', concurrencyLimit: 1 },
-  maxDuration: 60 * 30,
+  // maxDuration is max compute time in SECONDS. Orgs with high automation
+  // volume + large outputs were exceeding the old 30-minute budget, so
+  // Trigger.dev killed the run (retry maxAttempts: 0) — a non-COMPLETED
+  // terminal state the browser reports as a failed export with no download
+  // link. Give the single-threaded stream-to-S3 pass up to an hour to finish.
+  maxDuration: 60 * 60,
   retry: { maxAttempts: 0 },
   schema: z.object({
     organizationId: z.string(),
