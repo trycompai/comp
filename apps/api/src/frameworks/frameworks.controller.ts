@@ -5,6 +5,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -12,6 +13,7 @@ import {
 import {
   ApiTags,
   ApiBearerAuth,
+  ApiBody,
   ApiOperation,
   ApiQuery,
 } from '@nestjs/swagger';
@@ -28,6 +30,7 @@ import type { AuthContext as AuthContextType } from '../auth/types';
 import { FrameworksService } from './frameworks.service';
 import { AddFrameworksDto } from './dto/add-frameworks.dto';
 import { CreateCustomFrameworkDto } from './dto/create-custom-framework.dto';
+import { UpdateCustomFrameworkDto } from './dto/update-custom-framework.dto';
 import { CreateCustomRequirementDto } from './dto/create-custom-requirement.dto';
 import { LinkRequirementsDto } from './dto/link-requirements.dto';
 import { LinkControlsDto } from './dto/link-controls.dto';
@@ -142,6 +145,22 @@ export class FrameworksController {
     @Body() dto: CreateCustomFrameworkDto,
   ) {
     return this.frameworksService.createCustom(organizationId, dto);
+  }
+
+  @Patch(':id/custom')
+  @RequirePermission('framework', 'update')
+  @ApiOperation({
+    summary: 'Update a custom framework',
+    description:
+      "Update the name and/or description of an organization's custom framework. Only custom frameworks are editable; platform frameworks return 400.",
+  })
+  @ApiBody({ type: UpdateCustomFrameworkDto })
+  async updateCustom(
+    @OrganizationId() organizationId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateCustomFrameworkDto,
+  ) {
+    return this.frameworksService.updateCustom(id, organizationId, dto);
   }
 
   @Post(':id/requirements')

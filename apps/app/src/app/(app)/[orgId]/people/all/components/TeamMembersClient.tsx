@@ -59,6 +59,11 @@ import type {
 import type { EmployeeSyncConnectionsData } from '../data/queries';
 import { useEmployeeSync } from '../hooks/useEmployeeSync';
 
+// Sentinel value for the "Don't auto-sync" item in the sync-source dropdown.
+// Radix Select items can't have an empty value, so disabling is modeled as a
+// distinct option rather than the absence of a selection.
+const NO_SYNC_VALUE = '__no_sync__';
+
 interface TeamMembersClientProps {
   data: TeamMembersData;
   organizationId: string;
@@ -127,6 +132,7 @@ export function TeamMembersClient({
     selectedProvider,
     isSyncing,
     syncEmployees,
+    setSyncProvider,
     hasAnyConnection,
     getProviderName,
     getProviderLogo,
@@ -135,6 +141,7 @@ export function TeamMembersClient({
 
   const lastSyncAt = employeeSyncData.lastSyncAt;
   const nextSyncAt = employeeSyncData.nextSyncAt;
+  const [isDisablingSync, setIsDisablingSync] = useState(false);
 
   const handleEmployeeSync = async (
     provider: string,
@@ -142,6 +149,21 @@ export function TeamMembersClient({
     const result = await syncEmployees(provider);
     if (result?.success) {
       router.refresh();
+    }
+  };
+
+  // Turn off the daily auto-sync without disconnecting the integration (which
+  // would also stop its compliance checks). Clears the org's sync provider so
+  // the scheduled job skips it; already-imported people are left untouched.
+  // Sets a busy flag (mirroring isSyncing) so the dropdown is locked while the
+  // request is in flight, preventing an overlapping provider change from racing.
+  const handleDisableSync = async () => {
+    if (!selectedProvider || isDisablingSync) return;
+    setIsDisablingSync(true);
+    try {
+      await setSyncProvider(null);
+    } finally {
+      setIsDisablingSync(false);
     }
   };
 
@@ -366,13 +388,15 @@ export function TeamMembersClient({
             <div className="w-[200px]">
               <Select
                 onValueChange={(value) => {
-                  if (value) {
-                    handleEmployeeSync(
-                      value as 'google-workspace' | 'rippling' | 'jumpcloud',
-                    );
+                  const provider = String(value);
+                  if (!provider) return;
+                  if (provider === NO_SYNC_VALUE) {
+                    handleDisableSync();
+                    return;
                   }
+                  handleEmployeeSync(provider);
                 }}
-                disabled={isSyncing || !canManageMembers}
+                disabled={isSyncing || isDisablingSync || !canManageMembers}
               >
                 <SelectTrigger>
                   {isSyncing ? (
@@ -496,6 +520,15 @@ export function TeamMembersClient({
                       </div>
                     </SelectItem>
                   ))}
+                <Separator />
+                <SelectItem value={NO_SYNC_VALUE}>
+                  <div className="flex items-center gap-2">
+                    <span>Don&apos;t auto-sync</span>
+                    {!selectedProvider && (
+                      <span className="ml-auto text-xs text-muted-foreground">Active</span>
+                    )}
+                  </div>
+                </SelectItem>
               </SelectContent>
               </Select>
             </div>
