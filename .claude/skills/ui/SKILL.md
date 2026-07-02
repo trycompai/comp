@@ -135,3 +135,12 @@ import { Plus, X } from 'lucide-react';
 <div className="bg-[#059669]">                // Hardcoded colors
 <div className="w-[847px]">                   // Arbitrary values
 ```
+
+## Responsive (MANDATORY — read the `responsive-ui` skill)
+
+Every UI change must work on mobile (375px), tablet (768px), desktop (1280px), and
+large desktop (1920px) **by default — nobody has to ask**. Tailwind is mobile-first:
+write the base (mobile) layout, widen with `sm:`/`md:`/`lg:`/`xl:`. No fixed pixel
+widths without a responsive strategy (`hidden sm:block`, `w-full md:w-[...]`, or a
+wrapping parent). Wide tables scroll inside the DS `Table` (`overflow-x-auto`), never
+the page. Full rules + repo patterns + checklist: `.claude/skills/responsive-ui/SKILL.md`.

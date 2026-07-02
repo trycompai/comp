@@ -71,6 +71,14 @@ describe('TwoFactorSourceSelector — RBAC gating', () => {
     );
   });
 
+  it('collapses on mobile like the other secondary toolbar controls (hidden sm:block)', () => {
+    mockHasPermission.mockReturnValue(true);
+
+    const { container } = render(<TwoFactorSourceSelector />);
+
+    expect(container.firstElementChild).toHaveClass('hidden', 'sm:block');
+  });
+
   it('renders nothing when no bound integration is connected', () => {
     mockHasPermission.mockReturnValue(true);
     mockUse2faSource.mockReturnValue({

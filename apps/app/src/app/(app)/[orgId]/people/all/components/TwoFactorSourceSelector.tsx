@@ -49,7 +49,11 @@ export function TwoFactorSourceSelector() {
   };
 
   return (
-    <div className="w-[200px]">
+    // hidden sm:block matches the other secondary toolbar controls (status/role/
+    // date filters): config actions collapse on phones, where the toolbar row
+    // doesn't wrap. The per-member 2FA status stays visible at every width via
+    // the table's own horizontal scroll.
+    <div className="hidden w-[200px] sm:block">
       <Select
         value={selectedSource ?? NONE_VALUE}
         onValueChange={(value) => {
