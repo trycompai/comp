@@ -62,14 +62,16 @@ export function TwoFactorSourceSelector() {
     // the table's own horizontal scroll.
     <div className="hidden w-[200px] sm:block">
       <div className="flex flex-col gap-1">
-        <span className="text-xs text-muted-foreground">2FA source</span>
+        <span id="two-factor-source-label" className="text-xs text-muted-foreground">
+          2FA source
+        </span>
         <Select
         value={selectedSource ?? NONE_VALUE}
         onValueChange={(value) => {
           if (value) void handleSourceChange(value);
         }}
       >
-        <SelectTrigger>
+        <SelectTrigger aria-labelledby="two-factor-source-label">
           {selected ? (
             <div className="flex items-center gap-2">
               {selected.logoUrl && (

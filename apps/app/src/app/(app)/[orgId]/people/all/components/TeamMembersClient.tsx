@@ -386,7 +386,9 @@ export function TeamMembersClient({
         {hasAnyConnection && (
           <div className="flex items-end gap-2">
             <div className="flex w-[200px] flex-col gap-1">
-              <span className="text-xs text-muted-foreground">Sync source</span>
+              <span id="employee-sync-source-label" className="text-xs text-muted-foreground">
+                Sync source
+              </span>
               <Select
                 onValueChange={(value) => {
                   const provider = String(value);
@@ -399,7 +401,7 @@ export function TeamMembersClient({
                 }}
                 disabled={isSyncing || isDisablingSync || !canManageMembers}
               >
-                <SelectTrigger>
+                <SelectTrigger aria-labelledby="employee-sync-source-label">
                   {isSyncing ? (
                     <>
                       <InProgress size={16} className="mr-2 animate-spin" />
