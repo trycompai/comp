@@ -320,12 +320,12 @@ export const mergeDuplicateUser = schemaTask({
         // ── Delete old member ────────────────────────────────────────────────
         await tx.member.delete({ where: { id: o } });
 
-        // ── User-level relations & old user record ───────────────────────────
+        // ── User-level relations ──────────────────────────────────────────────
         // Only safe when the old user has no membership in any other org —
-        // otherwise these relations (and the user record itself) still belong
-        // to that other org and must be left alone. Everything below must
-        // run before the tx.user.delete call at the end of this block, since
-        // some of these relations cascade-delete when their user is removed.
+        // otherwise these relations still belong to that other org and must
+        // be left alone. The old User record itself is kept (not deleted) so
+        // it remains addressable, but its sessions are cleared and every
+        // relation below moves to the surviving user.
         if (!oldUserHasOtherOrgs) {
           // OAuth accounts: move to surviving user
           await tx.account.updateMany({
@@ -400,9 +400,6 @@ export const mergeDuplicateUser = schemaTask({
 
           // ── Delete old user sessions ─────────────────────
           await tx.session.deleteMany({ where: { userId: oldUser.id } });
-
-          // ── Delete the now-orphaned old user record ──────────────────────
-          await tx.user.delete({ where: { id: oldUser.id } });
         }
 
         // ── Update pending invitations ───────────────────────────────────────
@@ -420,14 +417,14 @@ export const mergeDuplicateUser = schemaTask({
       newEmail,
       survivingUserId: newUser.id,
       survivingMemberId: newMember.id,
-      oldUserDeleted: !oldUserHasOtherOrgs,
+      userLevelRelationsMerged: !oldUserHasOtherOrgs,
     });
 
     return {
       success: true,
       survivingUserId: newUser.id,
       survivingMemberId: newMember.id,
-      oldUserDeleted: !oldUserHasOtherOrgs,
+      userLevelRelationsMerged: !oldUserHasOtherOrgs,
       mergedUserId: oldUser.id,
       mergedMemberId: oldMember.id,
     };

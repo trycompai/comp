@@ -33,7 +33,7 @@ interface MergeDuplicateUserRunnable {
     success: boolean;
     survivingUserId: string;
     survivingMemberId: string;
-    oldUserDeleted: boolean;
+    userLevelRelationsMerged: boolean;
     mergedUserId: string;
     mergedMemberId: string;
   }>;
@@ -137,7 +137,7 @@ describe('mergeDuplicateUser', () => {
       expect(result.survivingMemberId).toBe('mem_new');
     });
 
-    it('re-points user-level relations and deletes the old user record', async () => {
+    it('re-points user-level relations and clears the old user sessions', async () => {
       const result = await runMerge({
         organizationId: ORG_ID,
         oldEmail: OLD_EMAIL,
@@ -151,29 +151,15 @@ describe('mergeDuplicateUser', () => {
       expect(db.session.deleteMany).toHaveBeenCalledWith({
         where: { userId: 'usr_old' },
       });
-      expect(db.user.delete).toHaveBeenCalledWith({ where: { id: 'usr_old' } });
-      expect(result.oldUserDeleted).toBe(true);
+      expect(result.userLevelRelationsMerged).toBe(true);
       expect(result.mergedUserId).toBe('usr_old');
       expect(result.survivingUserId).toBe('usr_new');
     });
 
-    it('re-points cascade-vulnerable relations before deleting the old user, so nothing gets orphaned', async () => {
+    it('keeps the old user record instead of deleting it', async () => {
       await runMerge({ organizationId: ORG_ID, oldEmail: OLD_EMAIL, newEmail: NEW_EMAIL });
 
-      const userDeleteOrder = (db.user.delete as jest.Mock).mock
-        .invocationCallOrder[0];
-
-      // FleetPolicyResult and IntegrationResult cascade-delete on User removal;
-      // Session rows must also be cleared before the User row itself is gone.
-      for (const mock of [
-        db.fleetPolicyResult.updateMany,
-        db.integrationResult.updateMany,
-        db.session.deleteMany,
-      ]) {
-        expect((mock as jest.Mock).mock.invocationCallOrder[0]).toBeLessThan(
-          userDeleteOrder,
-        );
-      }
+      expect(db.user.delete).not.toHaveBeenCalled();
     });
   });
 
@@ -182,7 +168,7 @@ describe('mergeDuplicateUser', () => {
       (db.member.count as jest.Mock).mockResolvedValue(1);
     });
 
-    it('skips the account move, session delete, and user delete', async () => {
+    it('skips the account move and session delete', async () => {
       const result = await runMerge({
         organizationId: ORG_ID,
         oldEmail: OLD_EMAIL,
@@ -192,7 +178,7 @@ describe('mergeDuplicateUser', () => {
       expect(db.account.updateMany).not.toHaveBeenCalled();
       expect(db.session.deleteMany).not.toHaveBeenCalled();
       expect(db.user.delete).not.toHaveBeenCalled();
-      expect(result.oldUserDeleted).toBe(false);
+      expect(result.userLevelRelationsMerged).toBe(false);
     });
 
     it('still merges member-level relations and deletes the old member for this org', async () => {
