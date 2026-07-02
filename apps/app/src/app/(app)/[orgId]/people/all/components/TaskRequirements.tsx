@@ -40,12 +40,14 @@ function TaskRequirementRow({ item }: { item: TaskRequirementItem }) {
         )
       ) : (
         <>
-          <div className="w-11 shrink-0">
+          {/* pl-1.5 matches the Badge's inner padding so counts and badge text
+              share one vertical line across rows. */}
+          <div className="w-11 shrink-0 pl-1.5">
             <Text size="xs" variant={isComplete ? 'success' : completed > 0 ? 'warning' : 'muted'}>
               {completed}/{total}
             </Text>
           </div>
-          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+          <div className="h-1 w-20 shrink-0 overflow-hidden rounded-full bg-muted">
             <div
               className="h-full bg-primary transition-all"
               style={{
@@ -81,7 +83,9 @@ export function TaskRequirements({
   }
 
   return (
-    <div className="flex min-w-56 max-w-sm flex-col gap-1">
+    // Content-sized: label (w-24) + count (w-11) + bar (w-20) — no stretching,
+    // so the column stays compact regardless of table width.
+    <div className="flex w-max flex-col gap-0.5">
       {items.map((item) => (
         <TaskRequirementRow key={item.label} item={item} />
       ))}
