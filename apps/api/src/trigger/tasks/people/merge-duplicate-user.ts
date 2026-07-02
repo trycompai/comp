@@ -269,10 +269,6 @@ export const mergeDuplicateUser = schemaTask({
             where: { id: { in: revocationsToDrop.map((r) => r.id) } },
           });
         }
-        await tx.offboardingAccessRevocation.updateMany({
-          where: { revokedById: oldMember.userId },
-          data: { revokedById: newMember.userId },
-        });
 
         // EmployeeTrainingVideoCompletion: skip videos the old member already has
         const existingCompletions =
@@ -396,6 +392,12 @@ export const mergeDuplicateUser = schemaTask({
           await tx.offboardingChecklistCompletion.updateMany({
             where: { completedById: oldUser.id },
             data: { completedById: newUser.id },
+          });
+
+          // OffboardingAccessRevocation.revokedById: onDelete SetNull — re-point to preserve actor
+          await tx.offboardingAccessRevocation.updateMany({
+            where: { revokedById: oldUser.id },
+            data: { revokedById: newUser.id },
           });
 
           // ── Delete old user sessions ─────────────────────

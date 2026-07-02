@@ -168,7 +168,7 @@ describe('mergeDuplicateUser relation re-pointing', () => {
     });
   });
 
-  it('migrates non-duplicate OffboardingAccessRevocation rows, drops duplicates, and re-points revokedById', async () => {
+  it('migrates non-duplicate OffboardingAccessRevocation rows and drops duplicates', async () => {
     (db.offboardingAccessRevocation.findMany as jest.Mock).mockImplementation(
       ({ where }: { where: { memberId: string } }) =>
         where.memberId === 'mem_old'
@@ -187,10 +187,6 @@ describe('mergeDuplicateUser relation re-pointing', () => {
     });
     expect(db.offboardingAccessRevocation.deleteMany).toHaveBeenCalledWith({
       where: { id: { in: ['oar_2'] } },
-    });
-    expect(db.offboardingAccessRevocation.updateMany).toHaveBeenCalledWith({
-      where: { revokedById: 'usr_old' },
-      data: { revokedById: 'usr_new' },
     });
   });
 
@@ -252,6 +248,10 @@ describe('mergeDuplicateUser relation re-pointing', () => {
     expect(db.offboardingChecklistCompletion.updateMany).toHaveBeenCalledWith({
       where: { completedById: o },
       data: { completedById: n },
+    });
+    expect(db.offboardingAccessRevocation.updateMany).toHaveBeenCalledWith({
+      where: { revokedById: o },
+      data: { revokedById: n },
     });
   });
 

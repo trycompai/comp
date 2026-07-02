@@ -223,6 +223,10 @@ describe('mergeDuplicateUser', () => {
         where: { completedById: 'usr_old' },
         data: { completedById: 'usr_new' },
       });
+      expect(db.offboardingAccessRevocation.updateMany).not.toHaveBeenCalledWith({
+        where: { revokedById: 'usr_old' },
+        data: { revokedById: 'usr_new' },
+      });
     });
   });
 });
