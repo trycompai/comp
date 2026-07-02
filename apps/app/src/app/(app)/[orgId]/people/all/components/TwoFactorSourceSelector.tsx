@@ -59,36 +59,39 @@ export function TwoFactorSourceSelector() {
     // hidden sm:block matches the other secondary toolbar controls (status/role/
     // date filters): config actions collapse on phones, where the toolbar row
     // doesn't wrap. The per-member 2FA status stays visible at every width via
-    // the table's own horizontal scroll.
-    <div className="hidden w-[200px] sm:block">
-      <div className="flex flex-col gap-1">
-        <span id="two-factor-source-label" className="text-xs text-muted-foreground">
-          2FA source
-        </span>
-        <Select
+    // the table's own horizontal scroll. The inline "2FA source ·" prefix inside
+    // the trigger mirrors the Onboarded/Offboarded chips.
+    <div className="hidden w-fit max-w-[280px] sm:block">
+      <Select
         value={selectedSource ?? NONE_VALUE}
         onValueChange={(value) => {
           if (value) void handleSourceChange(value);
         }}
       >
-        <SelectTrigger aria-labelledby="two-factor-source-label">
-          {selected ? (
-            <div className="flex items-center gap-2">
-              {selected.logoUrl && (
-                <Image
-                  src={selected.logoUrl}
-                  alt={selected.name}
-                  width={16}
-                  height={16}
-                  className="rounded-sm"
-                  unoptimized
-                />
-              )}
-              <span className="truncate">{selected.name}</span>
-            </div>
-          ) : (
-            <span className="text-muted-foreground">None</span>
-          )}
+        {/* combobox takes its accessible name from author attrs only — the
+            inline prefix text alone can't name it, hence the aria-label. */}
+        <SelectTrigger aria-label="2FA source">
+          <div className="flex items-center gap-2 whitespace-nowrap">
+            <span className="text-muted-foreground">2FA source</span>
+            <span className="font-medium">·</span>
+            {selected ? (
+              <>
+                {selected.logoUrl && (
+                  <Image
+                    src={selected.logoUrl}
+                    alt=""
+                    width={16}
+                    height={16}
+                    className="rounded-sm"
+                    unoptimized
+                  />
+                )}
+                <span className="truncate">{selected.name}</span>
+              </>
+            ) : (
+              <span className="text-muted-foreground">None</span>
+            )}
+          </div>
         </SelectTrigger>
         <SelectContent>
           <div className="px-2 py-1.5 text-xs text-muted-foreground">
@@ -101,8 +104,7 @@ export function TwoFactorSourceSelector() {
             </SelectItem>
           ))}
         </SelectContent>
-        </Select>
-      </div>
+      </Select>
     </div>
   );
 }
