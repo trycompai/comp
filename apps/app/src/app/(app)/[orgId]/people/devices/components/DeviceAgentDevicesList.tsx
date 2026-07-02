@@ -30,7 +30,7 @@ import {
   downloadDevicesCsv,
 } from '../lib/devices-csv';
 import { DeviceTableRow } from './DeviceListCells';
-import { sourceLabel } from '../lib/device-source';
+import { sourceKey, sourceLabel } from '../lib/device-source';
 import { DeviceDetails } from './DeviceDetails';
 import { RemoveDeviceAlert } from '../../all/components/RemoveDeviceAlert';
 
@@ -55,17 +55,20 @@ export const DeviceAgentDevicesList = ({
   const [isRemoveDeviceAlertOpen, setIsRemoveDeviceAlertOpen] = useState(false);
   const [isRemovingDevice, setIsRemovingDevice] = useState(false);
 
-  // Distinct source labels present, so the filter only offers sources that exist
-  // (e.g. "Comp Agent", "Kandji").
+  // Distinct sources present, keyed by a stable id (so two providers that share
+  // a display name don't collapse into one option) with a label for display.
   const sourceOptions = useMemo(() => {
-    const labels = new Set(devices.map((d) => sourceLabel(d)));
-    return Array.from(labels).sort();
+    const byKey = new Map<string, string>();
+    for (const d of devices) byKey.set(sourceKey(d), sourceLabel(d));
+    return Array.from(byKey, ([key, label]) => ({ key, label })).sort((a, b) =>
+      a.label.localeCompare(b.label),
+    );
   }, [devices]);
 
   const filteredDevices = useMemo(() => {
     const query = searchQuery.toLowerCase();
     return devices.filter((device) => {
-      if (sourceFilter !== 'all' && sourceLabel(device) !== sourceFilter) {
+      if (sourceFilter !== 'all' && sourceKey(device) !== sourceFilter) {
         return false;
       }
       if (!query) return true;
@@ -154,8 +157,8 @@ export const DeviceAgentDevicesList = ({
               aria-label="Filter by source"
             >
               <option value="all">All sources</option>
-              {sourceOptions.map((label) => (
-                <option key={label} value={label}>
+              {sourceOptions.map(({ key, label }) => (
+                <option key={key} value={key}>
                   {label}
                 </option>
               ))}
