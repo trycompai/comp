@@ -111,16 +111,26 @@ export async function TeamMembers(props: TeamMembersProps) {
   const backgroundCheckStepEnabled = orgFlags?.backgroundCheckStepEnabled === true;
   const hasHipaaFramework = !!hipaaInstance;
 
-  if (employeeMembers.length > 0) {
+  const policies = await db.policy.findMany({
+    where: {
+      organizationId,
+      isRequiredToSign: true,
+      status: 'published',
+      isArchived: false,
+    },
+  });
 
-    const policies = await db.policy.findMany({
-      where: {
-        organizationId,
-        isRequiredToSign: true,
-        status: 'published',
-        isArchived: false,
-      },
-    });
+  // Column visibility must come from ORG-LEVEL tracking, not from member data:
+  // an org with tracking enabled but no compliance members yet still shows the
+  // columns (as dashes), never silently hides them.
+  const requirementTracking = {
+    policies: policies.length > 0,
+    training:
+      orgFlags?.securityTrainingStepEnabled === true && trainingVideosData.length > 0,
+    hipaa: hasHipaaFramework,
+  };
+
+  if (employeeMembers.length > 0) {
 
     const employeeIds = employeeMembers.map((m) => m.id);
     const trainingCompletions = orgFlags?.securityTrainingStepEnabled
@@ -181,6 +191,7 @@ export async function TeamMembers(props: TeamMembersProps) {
       complianceMemberIds={complianceMemberIds}
       backgroundCheckStepEnabled={backgroundCheckStepEnabled}
       twoFactorStatusMap={twoFactorStatusMap}
+      requirementTracking={requirementTracking}
     />
   );
 }

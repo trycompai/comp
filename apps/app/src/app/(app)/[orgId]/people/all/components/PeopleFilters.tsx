@@ -2,7 +2,6 @@
 
 import {
   Badge,
-  Button,
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -101,11 +100,14 @@ export function PeopleFilters({
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Popover>
+      {/* PopoverTrigger renders its own <button>; a styled div inside (same
+          pattern as the date chips) avoids invalid nested buttons. */}
       <PopoverTrigger>
-        <Button variant="outline" iconLeft={<Filter size={16} />}>
+        <div className="border-border bg-background hover:bg-muted flex h-8 cursor-pointer items-center gap-2 whitespace-nowrap rounded-md border px-3 text-sm transition-colors">
+          <Filter size={16} className="text-muted-foreground" />
           Filters
           {activeCount > 0 && <Badge variant="accent">{activeCount}</Badge>}
-        </Button>
+        </div>
       </PopoverTrigger>
       <PopoverContent align="start" style={{ width: 'auto' }}>
         <div className="flex w-[280px] flex-col gap-4 p-1.5">

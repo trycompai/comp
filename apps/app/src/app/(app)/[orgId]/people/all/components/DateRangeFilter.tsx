@@ -29,7 +29,8 @@ function getPresetRange(days: number): { from: Date | undefined; to: Date | unde
 }
 
 function getActivePresetLabel(from: Date | undefined, to: Date | undefined): string | null {
-  if (!from && !to) return 'Any time';
+  // Must be the exact PRESETS label so the chip renders as selected.
+  if (!from && !to) return 'All time';
   if (!from || !to) return null;
   const diffDays = Math.round((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24));
   const now = new Date();
@@ -68,6 +69,9 @@ export function DateRangeFilter({
       setDraftTo(to);
       setActivePreset(getActivePresetLabel(from, to));
     }
+    // Nested pickers must never stay open across parent close/reopen.
+    setFromPickerOpen(false);
+    setToPickerOpen(false);
     setOpen(isOpen);
   };
 

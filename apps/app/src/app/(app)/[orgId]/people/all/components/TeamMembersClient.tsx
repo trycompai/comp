@@ -72,6 +72,8 @@ interface TeamMembersClientProps {
   complianceMemberIds: string[];
   backgroundCheckStepEnabled: boolean;
   twoFactorStatusMap: Record<string, TwoFactorStatus>;
+  /** Org-level tracking flags — column visibility never depends on member data. */
+  requirementTracking: { policies: boolean; training: boolean; hipaa: boolean };
 }
 
 export function TeamMembersClient({
@@ -84,6 +86,7 @@ export function TeamMembersClient({
   complianceMemberIds,
   backgroundCheckStepEnabled,
   twoFactorStatusMap,
+  requirementTracking,
 }: TeamMembersClientProps) {
   const { agentDevices, isLoading: isAgentDevicesLoading } = useAgentDevices();
   const { fleetHosts, isLoading: isFleetHostsLoading } = useFleetHosts();
@@ -100,20 +103,17 @@ export function TeamMembersClient({
   const requirementColumns = useMemo<
     Array<{ key: RequirementColumnKey; label: string }>
   >(() => {
-    const completions = Object.values(taskCompletionMap);
     const cols: Array<{ key: RequirementColumnKey; label: string }> = [];
-    if (completions.some((c) => c.policies.total > 0))
-      cols.push({ key: 'policies', label: 'POLICIES' });
-    if (completions.some((c) => c.training.total > 0))
-      cols.push({ key: 'training', label: 'TRAINING' });
-    if (completions.some((c) => !!c.hipaa)) cols.push({ key: 'hipaa', label: 'HIPAA' });
+    if (requirementTracking.policies) cols.push({ key: 'policies', label: 'POLICIES' });
+    if (requirementTracking.training) cols.push({ key: 'training', label: 'TRAINING' });
+    if (requirementTracking.hipaa) cols.push({ key: 'hipaa', label: 'HIPAA' });
     if (complianceMemberIds.length > 0) cols.push({ key: 'device', label: 'DEVICE' });
     if (backgroundCheckStepEnabled)
       cols.push({ key: 'background', label: 'BACKGROUND' });
     if (Object.keys(twoFactorStatusMap).length > 0)
       cols.push({ key: 'twoFactor', label: '2FA' });
     return cols;
-  }, [taskCompletionMap, complianceMemberIds, backgroundCheckStepEnabled, twoFactorStatusMap]);
+  }, [requirementTracking, complianceMemberIds, backgroundCheckStepEnabled, twoFactorStatusMap]);
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
