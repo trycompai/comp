@@ -70,9 +70,9 @@ export function TwoFactorSourceSelector() {
       >
         {/* combobox takes its accessible name from author attrs only — the
             inline prefix text alone can't name it, hence the aria-label. */}
-        <SelectTrigger aria-label="2FA source">
+        <SelectTrigger aria-label="2FA status from">
           <div className="flex items-center gap-2 whitespace-nowrap">
-            <span className="text-muted-foreground">2FA source</span>
+            <span className="text-muted-foreground">2FA status from</span>
             <span className="font-medium">·</span>
             {selected ? (
               <>
@@ -95,9 +95,9 @@ export function TwoFactorSourceSelector() {
         </SelectTrigger>
         <SelectContent>
           <div className="px-2 py-1.5 text-xs text-muted-foreground">
-            Shows each person&apos;s 2FA status from this integration
+            Shows each person&apos;s 2FA status from the selected integration&apos;s latest check
           </div>
-          <SelectItem value={NONE_VALUE}>No 2FA source</SelectItem>
+          <SelectItem value={NONE_VALUE}>Don&apos;t show 2FA status</SelectItem>
           {connectedSources.map((p) => (
             <SelectItem key={p.slug} value={p.slug}>
               {p.name}

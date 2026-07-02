@@ -398,12 +398,12 @@ export function TeamMembersClient({
                 }}
                 disabled={isSyncing || isDisablingSync || !canManageMembers}
               >
-                <SelectTrigger aria-label="Sync source">
-                  {/* Inline "Sync source ·" prefix mirrors the date chips;
+                <SelectTrigger aria-label="Sync people from">
+                  {/* Inline "Sync people from ·" prefix mirrors the date chips;
                       the aria-label names the combobox for screen readers
                       (comboboxes don't take their name from contents). */}
                   <div className="flex items-center gap-2 whitespace-nowrap">
-                    <span className="text-muted-foreground">Sync source</span>
+                    <span className="text-muted-foreground">Sync people from</span>
                     <span className="font-medium">·</span>
                     {isSyncing ? (
                       <>
