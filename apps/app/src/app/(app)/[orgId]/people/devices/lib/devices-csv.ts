@@ -1,4 +1,5 @@
 import type { DeviceWithChecks } from '../types';
+import { isComplianceTracked, sourceLabel } from './device-source';
 
 export const DEVICES_CSV_HEADER = [
   'Device Name',
@@ -14,6 +15,7 @@ export const DEVICES_CSV_HEADER = [
   'Antivirus',
   'Password Policy',
   'Screen Lock',
+  'Source',
 ].join(',');
 
 const FORMULA_TRIGGER = /^[=+\-@\t\r]/;
@@ -35,8 +37,13 @@ function yesNo(value: boolean): 'yes' | 'no' {
 }
 
 export function buildDevicesCsv(devices: DeviceWithChecks[]): string {
-  const rows = devices.map((d) =>
-    [
+  const rows = devices.map((d) => {
+    // Integration-imported devices are inventory-only; agent + Fleet carry real
+    // compliance. Use the shared helper so the CSV matches the rest of the UI.
+    const tracked = isComplianceTracked(d);
+    const status = tracked ? d.complianceStatus : 'not_tracked';
+    const check = (value: boolean) => (tracked ? yesNo(value) : 'n/a');
+    return [
       escapeCell(d.name),
       escapeCell(d.user.name),
       escapeCell(d.user.email),
@@ -45,13 +52,14 @@ export function buildDevicesCsv(devices: DeviceWithChecks[]): string {
       escapeCell(d.agentVersion ?? ''),
       escapeCell(d.lastCheckIn ?? ''),
       escapeCell(d.daysSinceLastCheckIn ?? ''),
-      escapeCell(d.complianceStatus),
-      escapeCell(yesNo(d.diskEncryptionEnabled)),
-      escapeCell(yesNo(d.antivirusEnabled)),
-      escapeCell(yesNo(d.passwordPolicySet)),
-      escapeCell(yesNo(d.screenLockEnabled)),
-    ].join(','),
-  );
+      escapeCell(status),
+      escapeCell(check(d.diskEncryptionEnabled)),
+      escapeCell(check(d.antivirusEnabled)),
+      escapeCell(check(d.passwordPolicySet)),
+      escapeCell(check(d.screenLockEnabled)),
+      escapeCell(sourceLabel(d)),
+    ].join(',');
+  });
   // RFC 4180: records separated by CRLF; trailing CRLF after the final record.
   // Prepend a UTF-8 BOM so Excel correctly detects UTF-8 encoding for non-ASCII data.
   return '\uFEFF' + [DEVICES_CSV_HEADER, ...rows].join('\r\n') + '\r\n';

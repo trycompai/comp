@@ -1,5 +1,6 @@
 'use server';
 
+import { grantInitialPentestCredit } from '@/actions/organization/lib/grant-initial-pentest-credit';
 import { initializeOrganization } from '@/actions/organization/lib/initialize-organization';
 import { authActionClientWithoutOrg } from '@/actions/safe-action';
 import { env } from '@/env.mjs';
@@ -39,6 +40,36 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
         return {
           success: false,
           error: 'Not authorized.',
+        };
+      }
+
+      // CS-569 backstop: never create an org for a user whose only memberships
+      // are deactivated (0 active, >=1 inactive) — that user was offboarded and
+      // the routing layer already sends them to /auth/access-removed. This
+      // guards against a stale/replayed form POST slipping past that redirect
+      // and spawning a spurious empty org. Genuinely new users (no memberships)
+      // and users adding an additional org (have active memberships) pass.
+      const [activeMembershipCount, inactiveMembershipCount] = await Promise.all([
+        db.member.count({
+          where: {
+            userId: session.user.id,
+            isActive: true,
+            deactivated: false,
+          },
+        }),
+        db.member.count({
+          where: {
+            userId: session.user.id,
+            OR: [{ deactivated: true }, { isActive: false }],
+          },
+        }),
+      ]);
+
+      if (activeMembershipCount === 0 && inactiveMembershipCount > 0) {
+        return {
+          success: false,
+          error:
+            'Your access to this organization was removed. Contact your administrator to be re-invited.',
         };
       }
 
@@ -111,6 +142,9 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
         if (trustPortalResponse.error) {
           console.error('Non-critical: failed to publish trust portal:', trustPortalResponse.error);
         }
+
+        // Ensure the reused org has its free pentest credit (idempotent).
+        await grantInitialPentestCredit();
 
         return {
           success: true,
@@ -212,6 +246,10 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
       if (trustPortalResponse.error) {
         console.error('Non-critical: failed to publish trust portal:', trustPortalResponse.error);
       }
+
+      // Grant the new org its one free pentest credit so the owner can run a
+      // first penetration test without entering a card (non-fatal, idempotent).
+      await grantInitialPentestCredit();
 
       // Revalidate paths (non-critical, don't let failures kill the flow)
       try {

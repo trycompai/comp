@@ -26,6 +26,12 @@ function humanizeProvenance(derivedFrom?: string | null): string {
     const name = derivedFrom.slice('framework:'.length).trim();
     return name || 'Framework';
   }
+  // Requirement rows are derived per interested party; the suffix is the party
+  // name, shown verbatim (never the raw record id).
+  if (derivedFrom.startsWith('party:')) {
+    const name = derivedFrom.slice('party:'.length).trim();
+    return name || 'Interested party';
+  }
   if (derivedFrom.startsWith('wizard:')) return 'Setup wizard';
   const mapped = PROVENANCE_LABELS[derivedFrom];
   if (mapped) return mapped;
