@@ -25,7 +25,6 @@ import {
   DropdownMenuTrigger,
   HStack,
   Label,
-  Skeleton,
   TableCell,
   TableRow,
   Text,
@@ -43,6 +42,7 @@ import { toast } from 'sonner';
 import { BackgroundCheckVerifiedTick } from '../../components/BackgroundCheckVerifiedTick';
 import { MultiRoleCombobox } from './MultiRoleCombobox';
 import { RemoveDeviceAlert } from './RemoveDeviceAlert';
+import { TaskRequirements, type TaskRequirementItem } from './TaskRequirements';
 import { RemoveMemberAlert } from './RemoveMemberAlert';
 import type { CustomRoleOption } from './MultiRoleCombobox';
 import type { BackgroundCheckStatus, MemberWithUser, TaskCompletion } from './TeamMembers';
@@ -99,20 +99,6 @@ function isBackgroundCheckComplete(status?: BackgroundCheckStatus): boolean {
   return status === 'completed' || status === 'completed_with_flags';
 }
 
-interface TaskCountItem {
-  label: string;
-  completed: number;
-  total: number;
-}
-
-function TaskCountLabel({ item }: { item: TaskCountItem }) {
-  return (
-    <Text size="xs" variant="muted">
-      {item.label} {item.completed}/{item.total}
-    </Text>
-  );
-}
-
 export function MemberRow({
   member,
   onRemove,
@@ -157,13 +143,14 @@ export function MemberRow({
   const hasCompletedBackgroundCheck = isBackgroundCheckComplete(backgroundCheckStatus);
   const memberExempt = member.backgroundCheckExempt === true;
   const shouldShowTaskRequirements = !isPlatformAdmin && !isDeactivated;
-  const taskItems: TaskCountItem[] = [];
+  const taskItems: TaskRequirementItem[] = [];
 
   if (taskCompletion) {
     taskItems.push({
       label: 'Policies',
       completed: taskCompletion.policies.completed,
       total: taskCompletion.policies.total,
+      kind: 'count',
     });
 
     if (taskCompletion.training.total > 0) {
@@ -171,6 +158,7 @@ export function MemberRow({
         label: 'Training',
         completed: taskCompletion.training.completed,
         total: taskCompletion.training.total,
+        kind: 'count',
       });
     }
 
@@ -179,30 +167,30 @@ export function MemberRow({
         label: 'HIPAA',
         completed: taskCompletion.hipaa.completed,
         total: taskCompletion.hipaa.total,
+        kind: 'binary',
       });
     }
   }
 
-  if (shouldShowTaskRequirements && (deviceStatus || isDeviceStatusLoading)) {
+  if (shouldShowTaskRequirements && deviceStatus) {
     taskItems.push({
       label: 'Device',
       completed: deviceStatus === 'compliant' ? 1 : 0,
       total: 1,
+      kind: 'binary',
     });
   }
 
   if (shouldShowTaskRequirements && backgroundCheckStepEnabled && !memberExempt && !isAuditorOnly) {
     taskItems.push({
-      label: 'Background check',
+      label: 'Background',
       completed: hasCompletedBackgroundCheck ? 1 : 0,
       total: 1,
+      kind: 'binary',
     });
   }
 
-  const visibleTaskTotal = taskItems.reduce((sum, item) => sum + item.total, 0);
-  const visibleTaskCompleted = taskItems.reduce((sum, item) => sum + item.completed, 0);
-  const taskProgressPercent =
-    visibleTaskTotal > 0 ? Math.round((visibleTaskCompleted / visibleTaskTotal) * 100) : 0;
+  const isDeviceLoadingRow = shouldShowTaskRequirements && isDeviceStatusLoading && !deviceStatus;
 
   const handleEditRolesClick = () => {
     setSelectedRoles(parseRoles(member.role));
@@ -353,30 +341,7 @@ export function MemberRow({
 
         {/* TASKS */}
         <TableCell>
-          {taskItems.length > 0 ? (
-            <div className="min-w-64 max-w-sm">
-              <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                <div
-                  className="h-full bg-primary transition-all"
-                  style={{ width: `${taskProgressPercent}%` }}
-                />
-              </div>
-              <div className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5">
-                {taskItems.map((item) => (
-                  <TaskCountLabel key={item.label} item={item} />
-                ))}
-                {shouldShowTaskRequirements && isDeviceStatusLoading && (
-                  <div className="h-3 w-16">
-                    <Skeleton style={{ height: '100%', width: '100%' }} />
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <Text size="sm" variant="muted">
-              —
-            </Text>
-          )}
+          <TaskRequirements items={taskItems} showLoadingRow={isDeviceLoadingRow} />
         </TableCell>
 
         {/* ACTIONS */}
