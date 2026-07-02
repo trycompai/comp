@@ -12,9 +12,48 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@trycompai/design-system';
-import { Filter } from '@trycompai/design-system/icons';
+import { Close, Filter } from '@trycompai/design-system/icons';
+
+import { format } from 'date-fns';
 
 import { DateRangeFilter } from './DateRangeFilter';
+
+const STATUS_LABELS: Record<string, string> = {
+  all: 'All People',
+  active: 'Active',
+  pending: 'Pending',
+  deactivated: 'Deactivated',
+};
+const ROLE_LABELS: Record<string, string> = {
+  owner: 'Owner',
+  admin: 'Admin',
+  auditor: 'Auditor',
+  employee: 'Employee',
+  contractor: 'Contractor',
+};
+
+function rangeLabel(from: Date | undefined, to: Date | undefined): string {
+  if (from && to) return `${format(from, 'MMM d')} – ${format(to, 'MMM d')}`;
+  if (from) return `from ${format(from, 'MMM d')}`;
+  return `until ${format(to as Date, 'MMM d')}`;
+}
+
+/** Removable chip for one applied filter — clearable without opening the popover. */
+function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
+  return (
+    <span className="flex h-8 items-center gap-1.5 whitespace-nowrap rounded-md border border-border bg-muted/40 px-2 text-xs">
+      {label}
+      <button
+        type="button"
+        aria-label={`Remove filter: ${label}`}
+        onClick={onRemove}
+        className="text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <Close size={12} />
+      </button>
+    </span>
+  );
+}
 
 interface PeopleFiltersProps {
   statusFilter: string;
@@ -60,7 +99,8 @@ export function PeopleFilters({
   ].filter(Boolean).length;
 
   return (
-    <Popover>
+    <div className="flex flex-wrap items-center gap-2">
+      <Popover>
       <PopoverTrigger>
         <Button variant="outline" iconLeft={<Filter size={16} />}>
           Filters
@@ -131,6 +171,34 @@ export function PeopleFilters({
           />
         </div>
       </PopoverContent>
-    </Popover>
+      </Popover>
+
+      {/* Applied filters as removable chips — visible + one-click clearable
+          without reopening the popover. */}
+      {statusFilter && (
+        <FilterChip
+          label={`Status: ${STATUS_LABELS[statusFilter] ?? statusFilter}`}
+          onRemove={() => onStatusChange(undefined)}
+        />
+      )}
+      {roleFilter && (
+        <FilterChip
+          label={`Role: ${ROLE_LABELS[roleFilter] ?? roleFilter}`}
+          onRemove={() => onRoleChange('all')}
+        />
+      )}
+      {(onboardFrom || onboardTo) && (
+        <FilterChip
+          label={`Onboarded ${rangeLabel(onboardFrom, onboardTo)}`}
+          onRemove={onOnboardClear}
+        />
+      )}
+      {(offboardFrom || offboardTo) && (
+        <FilterChip
+          label={`Offboarded ${rangeLabel(offboardFrom, offboardTo)}`}
+          onRemove={onOffboardClear}
+        />
+      )}
+    </div>
   );
 }
