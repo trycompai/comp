@@ -129,10 +129,19 @@ export class TwoFactorSourceController {
       }
     }
 
-    await db.organization.update({
-      where: { id: organizationId },
-      data: { twoFactorSource: provider },
-    });
+    try {
+      await db.organization.update({
+        where: { id: organizationId },
+        data: { twoFactorSource: provider },
+      });
+    } catch (err) {
+      // Stale/deleted org context: Prisma throws P2025 on a missing row — map
+      // it to the same 404 as this controller's other org lookups, not a 500.
+      if ((err as { code?: string }).code === 'P2025') {
+        throw new HttpException('Organization not found', HttpStatus.NOT_FOUND);
+      }
+      throw err;
+    }
 
     this.logger.log(
       `Set 2FA source to ${provider ?? 'none'} for org ${organizationId}`,
@@ -180,7 +189,12 @@ export class TwoFactorSourceController {
       where: { id: organizationId },
       select: { twoFactorSource: true },
     });
-    const source = org?.twoFactorSource ?? null;
+    // Missing org context is an error, not "unconfigured" — keep it distinct
+    // so callers never mistake invalid context for a valid empty state.
+    if (!org) {
+      throw new HttpException('Organization not found', HttpStatus.NOT_FOUND);
+    }
+    const source = org.twoFactorSource ?? null;
     if (!source) {
       return { configured: false, source: null, statuses: [] };
     }

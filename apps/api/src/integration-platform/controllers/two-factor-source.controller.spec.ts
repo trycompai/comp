@@ -124,6 +124,25 @@ describe('TwoFactorSourceController.setTwoFactorSource', () => {
       data: { twoFactorSource: null },
     });
   });
+
+  it('maps a missing org row (P2025) to 404 instead of a 500', async () => {
+    mockOrgUpdate.mockRejectedValue(
+      Object.assign(new Error('No record found'), { code: 'P2025' }),
+    );
+
+    await expect(
+      makeController().setTwoFactorSource(ORG, { provider: null }),
+    ).rejects.toMatchObject({ status: 404 });
+  });
+
+  it('rethrows non-P2025 update errors untouched', async () => {
+    const dbError = new Error('connection lost');
+    mockOrgUpdate.mockRejectedValue(dbError);
+
+    await expect(
+      makeController().setTwoFactorSource(ORG, { provider: null }),
+    ).rejects.toBe(dbError);
+  });
 });
 
 describe('TwoFactorSourceController.getAvailableTwoFactorSources', () => {
@@ -150,6 +169,13 @@ describe('TwoFactorSourceController.getTwoFactorStatuses', () => {
       statuses: [],
     });
     expect(mockCheckResults.getLatestResultsForTask).not.toHaveBeenCalled();
+  });
+
+  it('404s on a missing org instead of reporting unconfigured', async () => {
+    mockOrgFindUnique.mockResolvedValue(null);
+    await expect(
+      makeController().getTwoFactorStatuses(ORG),
+    ).rejects.toMatchObject({ status: 404 });
   });
 
   it('maps the service results to lowercased email + enabled/missing', async () => {
