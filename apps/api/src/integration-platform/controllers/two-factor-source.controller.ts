@@ -109,6 +109,19 @@ export class TwoFactorSourceController {
     }
     const provider = rawProvider ? rawProvider.trim() : null;
 
+    // The org row must exist before any provider semantics are evaluated, so a
+    // stale/deleted org context always yields this endpoint's 404 contract
+    // (otherwise a dead org's empty connection list reads as a 400
+    // "not connected"). The P2025 catch below only covers a deletion racing
+    // the update itself.
+    const org = await db.organization.findUnique({
+      where: { id: organizationId },
+      select: { id: true },
+    });
+    if (!org) {
+      throw new HttpException('Organization not found', HttpStatus.NOT_FOUND);
+    }
+
     if (provider) {
       const sources = await this.checkResults.listSourcesBoundToTask(
         organizationId,

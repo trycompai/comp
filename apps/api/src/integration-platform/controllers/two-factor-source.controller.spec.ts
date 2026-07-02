@@ -50,6 +50,9 @@ const ORG = 'org_1';
 
 beforeEach(() => {
   jest.clearAllMocks();
+  // Default: the org exists (individual tests override to simulate a stale/
+  // deleted org context).
+  mockOrgFindUnique.mockResolvedValue({ id: ORG, twoFactorSource: null });
 });
 
 describe('TwoFactorSourceController.getTwoFactorSource', () => {
@@ -123,6 +126,20 @@ describe('TwoFactorSourceController.setTwoFactorSource', () => {
       where: { id: ORG },
       data: { twoFactorSource: null },
     });
+  });
+
+  it('returns 404 (not 400 "not connected") when setting a provider for a missing org', async () => {
+    mockOrgFindUnique.mockResolvedValue(null);
+    // Even with sources resolvable, the missing org must win with a 404 —
+    // a dead org's empty connection list must not surface as a 400.
+    mockCheckResults.listSourcesBoundToTask.mockResolvedValue([
+      source('google-workspace', false),
+    ]);
+
+    await expect(
+      makeController().setTwoFactorSource(ORG, { provider: 'google-workspace' }),
+    ).rejects.toMatchObject({ status: 404 });
+    expect(mockOrgUpdate).not.toHaveBeenCalled();
   });
 
   it('maps a missing org row (P2025) to 404 instead of a 500', async () => {
