@@ -53,6 +53,8 @@ describe('TwoFactorSourceSelector — RBAC gating', () => {
     render(<TwoFactorSourceSelector />);
 
     expect(screen.getByText('Google Workspace')).toBeInTheDocument();
+    // The label above the select is what tells users what this control is for.
+    expect(screen.getByText('2FA source')).toBeInTheDocument();
     // Hook is enabled (and therefore allowed to hit the 2FA-source APIs).
     expect(mockUse2faSource).toHaveBeenCalledWith(
       expect.objectContaining({ enabled: true }),

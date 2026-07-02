@@ -9,7 +9,6 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from '@trycompai/design-system';
 
 import { use2faSource } from '../hooks/use2faSource';
@@ -62,7 +61,9 @@ export function TwoFactorSourceSelector() {
     // doesn't wrap. The per-member 2FA status stays visible at every width via
     // the table's own horizontal scroll.
     <div className="hidden w-[200px] sm:block">
-      <Select
+      <div className="flex flex-col gap-1">
+        <span className="text-xs text-muted-foreground">2FA source</span>
+        <Select
         value={selectedSource ?? NONE_VALUE}
         onValueChange={(value) => {
           if (value) void handleSourceChange(value);
@@ -84,7 +85,7 @@ export function TwoFactorSourceSelector() {
               <span className="truncate">{selected.name}</span>
             </div>
           ) : (
-            <SelectValue placeholder="2FA source" />
+            <span className="text-muted-foreground">None</span>
           )}
         </SelectTrigger>
         <SelectContent>
@@ -98,7 +99,8 @@ export function TwoFactorSourceSelector() {
             </SelectItem>
           ))}
         </SelectContent>
-      </Select>
+        </Select>
+      </div>
     </div>
   );
 }

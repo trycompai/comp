@@ -308,7 +308,7 @@ export function TeamMembersClient({
   return (
     <Stack gap="4">
       {/* Search and Filters */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-end gap-4">
         <div className="w-full md:max-w-[300px]">
           <InputGroup>
             <InputGroupAddon>
@@ -384,8 +384,9 @@ export function TeamMembersClient({
           onClear={() => { setOffboardFrom(undefined); setOffboardTo(undefined); setPage(1); }}
         />
         {hasAnyConnection && (
-          <div className="flex items-center gap-2">
-            <div className="w-[200px]">
+          <div className="flex items-end gap-2">
+            <div className="flex w-[200px] flex-col gap-1">
+              <span className="text-xs text-muted-foreground">Sync source</span>
               <Select
                 onValueChange={(value) => {
                   const provider = String(value);
@@ -705,7 +706,7 @@ function DateRangeFilter({
     <div className="hidden sm:block">
       <Popover open={open} onOpenChange={handleOpenChange}>
         <PopoverTrigger>
-          <div className="border-border bg-background hover:bg-muted flex h-8 items-center gap-2 rounded-md border px-3 text-xs transition-colors cursor-pointer">
+          <div className="border-border bg-background hover:bg-muted flex h-8 items-center gap-2 whitespace-nowrap rounded-md border px-3 text-xs transition-colors cursor-pointer">
             <CalendarIcon size={13} className="text-muted-foreground" />
             <span className="text-muted-foreground">{label}</span>
             <span className="font-medium">·</span>
