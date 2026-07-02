@@ -24,13 +24,38 @@ A change is NOT done until you have reasoned through (or better, viewed via the
 `webapp-testing` skill / browser dev tools) what it looks like at 375, 768, 1280,
 and 1920. If you only checked one width, you checked none.
 
+## Works WITH the design system — precedence rules
+
+This skill layers on top of the `ui` skill; **where they touch, the design-system
+rules win**. Responsiveness is achieved THROUGH the DS, never around it:
+
+- **Never put responsive classes (or any `className`) on DS components**
+  (`Text`, `Stack`, `HStack`, `Badge`, `Button`, …) — they don't accept it. Put
+  breakpoint utilities on a wrapper `<div>` (the `ui` skill's "Layout with Wrapper
+  Divs" pattern):
+  ```tsx
+  // ✅ breakpoints on the wrapper, DS component untouched
+  <div className="hidden sm:block"><Badge variant="outline">Active</Badge></div>
+  // ❌ className on a DS component
+  <Badge className="hidden sm:block">Active</Badge>
+  ```
+- **Reach for DS layout primitives first** (`PageLayout`, `Stack`, `HStack`,
+  `Section`) — they carry responsive spacing already. Raw responsive divs are for
+  what the primitives don't cover, not a replacement for them.
+- **Arbitrary pixel values stay an anti-pattern** (`w-[847px]` ❌ — per the `ui`
+  skill). Prefer the standard Tailwind scale (`max-w-sm`, `w-48`, `max-w-xs`). A
+  fixed control width like `w-[200px]` is acceptable ONLY when it matches an
+  established pattern already used on that surface, and it must still carry a
+  responsive strategy (see below).
+
 ## Non-negotiables
 
 1. **The page body never scrolls horizontally.** Wide content (tables, code, diagrams)
    scrolls inside its own container, never the page.
-2. **No fixed pixel width without a responsive strategy.** A bare `w-[200px]` is only
+2. **No fixed width without a responsive strategy.** A fixed-width control is only
    acceptable if the element hides, shrinks, or wraps on smaller screens
-   (`hidden sm:block`, `w-full md:w-[200px]`, or a wrapping parent).
+   (`hidden sm:block`, `w-full md:max-w-xs`, or a wrapping parent) — with the
+   breakpoint classes on a wrapper div, never on a DS component.
 3. **Touch targets** on mobile: interactive elements ≥40px tall; don't rely on hover
    for anything essential (no hover on touch devices).
 4. **Test with real content lengths** — long names, emails, 33-item counts. Use

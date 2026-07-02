@@ -140,7 +140,9 @@ import { Plus, X } from 'lucide-react';
 
 Every UI change must work on mobile (375px), tablet (768px), desktop (1280px), and
 large desktop (1920px) **by default — nobody has to ask**. Tailwind is mobile-first:
-write the base (mobile) layout, widen with `sm:`/`md:`/`lg:`/`xl:`. No fixed pixel
-widths without a responsive strategy (`hidden sm:block`, `w-full md:w-[...]`, or a
-wrapping parent). Wide tables scroll inside the DS `Table` (`overflow-x-auto`), never
-the page. Full rules + repo patterns + checklist: `.claude/skills/responsive-ui/SKILL.md`.
+write the base (mobile) layout, widen with `sm:`/`md:`/`lg:`/`xl:`. No fixed widths
+without a responsive strategy (`hidden sm:block`, `w-full md:max-w-xs`, or a wrapping
+parent). All the rules above still apply: breakpoint classes go on wrapper divs, never
+on DS components, and arbitrary pixel values remain an anti-pattern. Wide tables scroll
+inside the DS `Table` (`overflow-x-auto`), never the page. Full rules + repo patterns +
+checklist: `.claude/skills/responsive-ui/SKILL.md`.
