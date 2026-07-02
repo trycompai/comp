@@ -1,6 +1,4 @@
-jest.mock('@db', () => ({
-  db: { integrationConnection: { findFirst: jest.fn() } },
-}));
+jest.mock('@db', () => ({ db: {} }));
 
 jest.mock('@trycompai/integration-platform', () => {
   const actual = jest.requireActual<
@@ -12,19 +10,18 @@ jest.mock('@trycompai/integration-platform', () => {
   };
 });
 
-import { db } from '@db';
 import { registry, TASK_TEMPLATES } from '@trycompai/integration-platform';
 import { CheckResultsService } from './check-results.service';
 
 const mockGetActiveManifests = (
   registry as unknown as { getActiveManifests: jest.Mock }
 ).getActiveManifests;
-const mockConnFindFirst = (
-  db.integrationConnection as unknown as { findFirst: jest.Mock }
-).findFirst;
 
 const mockCheckRunRepo = { findLatestResultsByConnectionAndCheck: jest.fn() };
-const mockConnRepo = { findBySlugAndOrg: jest.fn() };
+const mockConnRepo = {
+  findBySlugAndOrg: jest.fn(),
+  findActiveBySlugsAndOrg: jest.fn(),
+};
 
 function makeService() {
   return new CheckResultsService(
@@ -64,15 +61,19 @@ describe('CheckResultsService.listSourcesBoundToTask', () => {
       unboundManifest('slack'),
       boundManifest('github', 'GitHub'),
     ]);
-    mockConnFindFirst.mockImplementation(
-      (args: { where: { provider: { slug: string } } }) =>
-        args.where.provider.slug === 'google-workspace'
-          ? Promise.resolve({ id: 'c1', lastSyncAt: null, nextSyncAt: null })
-          : Promise.resolve(null),
+    mockConnRepo.findActiveBySlugsAndOrg.mockResolvedValue(
+      new Map([
+        ['google-workspace', { id: 'c1', lastSyncAt: null, nextSyncAt: null }],
+      ]),
     );
 
     const sources = await makeService().listSourcesBoundToTask(ORG, TWO_FA);
 
+    // One batched lookup for all bound slugs — not one query per manifest.
+    expect(mockConnRepo.findActiveBySlugsAndOrg).toHaveBeenCalledWith(
+      ['google-workspace', 'github'],
+      ORG,
+    );
     expect(sources.map((s) => s.slug)).toEqual(['google-workspace', 'github']);
     const gws = sources.find((s) => s.slug === 'google-workspace');
     expect(gws).toMatchObject({

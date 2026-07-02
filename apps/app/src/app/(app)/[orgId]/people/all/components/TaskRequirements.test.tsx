@@ -53,4 +53,24 @@ describe('TaskRequirements', () => {
     render(<TaskRequirements items={[]} showLoadingRow />);
     expect(screen.queryByText('—')).not.toBeInTheDocument();
   });
+
+  it('renders an explicit not-provided state distinctly from Missing', () => {
+    render(
+      <TaskRequirements
+        items={[{ label: '2FA', completed: 0, total: 1, kind: 'binary', state: 'not-provided' }]}
+      />,
+    );
+    const row = screen.getByTestId('requirement-2FA');
+    expect(row).toHaveTextContent('Not provided');
+    expect(row).not.toHaveTextContent('Missing');
+  });
+
+  it('lets an explicit state override the completed/total derivation', () => {
+    render(
+      <TaskRequirements
+        items={[{ label: '2FA', completed: 0, total: 1, kind: 'binary', state: 'done' }]}
+      />,
+    );
+    expect(screen.getByTestId('requirement-2FA')).toHaveTextContent('Done');
+  });
 });

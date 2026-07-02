@@ -48,7 +48,13 @@ import { buildDisplayItems, filterDisplayItems } from './filter-members';
 import { computeDeviceStatusMap } from './compute-device-status-map';
 import { MemberRow } from './MemberRow';
 import { PendingInvitationRow } from './PendingInvitationRow';
-import type { MemberWithUser, TaskCompletion, TeamMembersData } from './TeamMembers';
+import { TwoFactorSourceSelector } from './TwoFactorSourceSelector';
+import type {
+  MemberWithUser,
+  TaskCompletion,
+  TeamMembersData,
+  TwoFactorStatus,
+} from './TeamMembers';
 
 import type { EmployeeSyncConnectionsData } from '../data/queries';
 import { useEmployeeSync } from '../hooks/useEmployeeSync';
@@ -63,6 +69,7 @@ interface TeamMembersClientProps {
   taskCompletionMap: Record<string, TaskCompletion>;
   complianceMemberIds: string[];
   backgroundCheckStepEnabled: boolean;
+  twoFactorStatusMap: Record<string, TwoFactorStatus>;
 }
 
 export function TeamMembersClient({
@@ -74,6 +81,7 @@ export function TeamMembersClient({
   taskCompletionMap,
   complianceMemberIds,
   backgroundCheckStepEnabled,
+  twoFactorStatusMap,
 }: TeamMembersClientProps) {
   const { agentDevices, isLoading: isAgentDevicesLoading } = useAgentDevices();
   const { fleetHosts, isLoading: isFleetHostsLoading } = useFleetHosts();
@@ -493,6 +501,7 @@ export function TeamMembersClient({
             </div>
           </div>
         )}
+        <TwoFactorSourceSelector />
       </div>
 
       {/* Table */}
@@ -556,6 +565,7 @@ export function TeamMembersClient({
                     (item as MemberWithUser).backgroundCheckRequests?.[0]?.status
                   }
                   backgroundCheckStepEnabled={backgroundCheckStepEnabled}
+                  twoFactorStatus={twoFactorStatusMap[(item as MemberWithUser).id]}
                 />
               ) : (
                 <PendingInvitationRow

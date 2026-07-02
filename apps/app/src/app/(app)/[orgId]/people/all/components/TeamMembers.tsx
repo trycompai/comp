@@ -7,8 +7,13 @@ import { db } from '@db/server';
 import { getEmployeeSyncConnections } from '../data/queries';
 import { TeamMembersClient } from './TeamMembersClient';
 import type { BackgroundCheckStatus } from '../../[employeeId]/components/backgroundCheckTypes';
+import {
+  buildTwoFactorStatusMap,
+  type TwoFactorStatusesResponse,
+} from './two-factor-status-map';
 
 export type { BackgroundCheckStatus };
+export type { TwoFactorStatus } from './two-factor-status-map';
 
 export interface MemberWithUser extends Member {
   user: User;
@@ -54,12 +59,15 @@ export async function TeamMembers(props: TeamMembersProps) {
     return null;
   }
 
-  // Fetch members and invitations from API
-  const [membersRes, invitationsRes] = await Promise.all([
+  // Fetch members, invitations, and 2FA statuses from API
+  const [membersRes, invitationsRes, twoFactorRes] = await Promise.all([
     serverApi.get<{ data: MemberWithUser[]; count: number }>(
       '/v1/people?includeDeactivated=true',
     ),
     serverApi.get<{ data: Invitation[] }>('/v1/auth/invitations'),
+    serverApi.get<TwoFactorStatusesResponse>(
+      '/v1/integrations/sync/two-factor-statuses',
+    ),
   ]);
 
   const members: MemberWithUser[] = Array.isArray(membersRes.data?.data)
@@ -70,6 +78,13 @@ export async function TeamMembers(props: TeamMembersProps) {
     : [];
 
   const data: TeamMembersData = { members, pendingInvitations };
+
+  // Empty when no 2FA source is configured (or the fetch failed) — rows then
+  // show no 2FA entry rather than a wrong one.
+  const twoFactorStatusMap = buildTwoFactorStatusMap(
+    members,
+    twoFactorRes.data ?? undefined,
+  );
 
   // Fetch employee sync connections server-side
   const employeeSyncData = await getEmployeeSyncConnections(organizationId);
@@ -165,6 +180,7 @@ export async function TeamMembers(props: TeamMembersProps) {
       taskCompletionMap={taskCompletionMap}
       complianceMemberIds={complianceMemberIds}
       backgroundCheckStepEnabled={backgroundCheckStepEnabled}
+      twoFactorStatusMap={twoFactorStatusMap}
     />
   );
 }

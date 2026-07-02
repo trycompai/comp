@@ -6,13 +6,21 @@ export interface TaskRequirementItem {
   label: string;
   completed: number;
   total: number;
-  /** 'count' renders "x/y" + a progress bar; 'binary' renders a Done/Missing badge. */
+  /** 'count' renders "x/y" + a progress bar; 'binary' renders a status badge. */
   kind: 'count' | 'binary';
+  /**
+   * Explicit badge state for binary requirements whose status comes from an
+   * external source (e.g. 2FA). 'not-provided' = the source had no data for
+   * this member — distinct from 'missing' (an explicit failure). When omitted,
+   * the state derives from completed/total.
+   */
+  state?: 'done' | 'missing' | 'not-provided';
 }
 
 function TaskRequirementRow({ item }: { item: TaskRequirementItem }) {
   const { label, completed, total, kind } = item;
   const isComplete = total > 0 && completed >= total;
+  const state = item.state ?? (isComplete ? 'done' : 'missing');
 
   return (
     <div className="flex items-center gap-2" data-testid={`requirement-${label}`}>
@@ -23,9 +31,13 @@ function TaskRequirementRow({ item }: { item: TaskRequirementItem }) {
       </div>
 
       {kind === 'binary' ? (
-        <Badge variant={isComplete ? 'accent' : 'secondary'}>
-          {isComplete ? 'Done' : 'Missing'}
-        </Badge>
+        state === 'not-provided' ? (
+          <Badge variant="outline">Not provided</Badge>
+        ) : (
+          <Badge variant={state === 'done' ? 'accent' : 'secondary'}>
+            {state === 'done' ? 'Done' : 'Missing'}
+          </Badge>
+        )
       ) : (
         <>
           <div className="w-11 shrink-0">

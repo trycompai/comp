@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { db } from '@db';
 import type { Prisma } from '@db';
 import {
   registry,
+  type IntegrationCheck,
   type IntegrationManifest,
   type TaskTemplateId,
 } from '@trycompai/integration-platform';
@@ -65,28 +65,21 @@ export class CheckResultsService {
     private readonly connectionRepository: ConnectionRepository,
   ) {}
 
-  /** The check on a manifest bound to a task template, if any. */
-  private checkBoundToTask(
-    manifest: IntegrationManifest,
-    taskTemplateId: TaskTemplateId,
-  ) {
-    return (
-      manifest.checks?.find((check) => check.taskMapping === taskTemplateId) ??
-      null
-    );
-  }
-
   /**
-   * Every active manifest — codebase OR dynamic — whose check is bound to a task
-   * template. Dynamic manifests are merged into the same registry, so this is
-   * uniformly universal.
+   * Every active manifest — codebase OR dynamic — paired with its check bound to
+   * the task template. Dynamic manifests are merged into the same registry, so
+   * this is uniformly universal. Pairing (instead of re-finding the check later)
+   * lets the type system carry the "bound check exists" guarantee.
    */
-  private manifestsBoundToTask(
+  private boundPairsForTask(
     taskTemplateId: TaskTemplateId,
-  ): IntegrationManifest[] {
-    return registry
-      .getActiveManifests()
-      .filter((m) => !!this.checkBoundToTask(m, taskTemplateId));
+  ): Array<{ manifest: IntegrationManifest; check: IntegrationCheck }> {
+    return registry.getActiveManifests().flatMap((manifest) => {
+      const check = manifest.checks?.find(
+        (c) => c.taskMapping === taskTemplateId,
+      );
+      return check ? [{ manifest, check }] : [];
+    });
   }
 
   /**
@@ -99,26 +92,26 @@ export class CheckResultsService {
     organizationId: string,
     taskTemplateId: TaskTemplateId,
   ): Promise<CheckSourceInfo[]> {
-    const manifests = this.manifestsBoundToTask(taskTemplateId);
-    return Promise.all(
-      manifests.map(async (m) => {
-        const check = this.checkBoundToTask(m, taskTemplateId);
-        const connection = await db.integrationConnection.findFirst({
-          where: { organizationId, status: 'active', provider: { slug: m.id } },
-          select: { id: true, lastSyncAt: true, nextSyncAt: true },
-        });
-        return {
-          slug: m.id,
-          name: m.name,
-          logoUrl: m.logoUrl ?? null,
-          checkId: check?.id ?? '',
-          connected: !!connection,
-          connectionId: connection?.id ?? null,
-          lastSyncAt: connection?.lastSyncAt?.toISOString() ?? null,
-          nextSyncAt: connection?.nextSyncAt?.toISOString() ?? null,
-        };
-      }),
-    );
+    const pairs = this.boundPairsForTask(taskTemplateId);
+    const connectionsBySlug =
+      await this.connectionRepository.findActiveBySlugsAndOrg(
+        pairs.map((p) => p.manifest.id),
+        organizationId,
+      );
+
+    return pairs.map(({ manifest, check }) => {
+      const connection = connectionsBySlug.get(manifest.id);
+      return {
+        slug: manifest.id,
+        name: manifest.name,
+        logoUrl: manifest.logoUrl ?? null,
+        checkId: check.id,
+        connected: !!connection,
+        connectionId: connection?.id ?? null,
+        lastSyncAt: connection?.lastSyncAt?.toISOString() ?? null,
+        nextSyncAt: connection?.nextSyncAt?.toISOString() ?? null,
+      };
+    });
   }
 
   /**
@@ -172,13 +165,10 @@ export class CheckResultsService {
     sourceSlug: string;
     resourceType?: string;
   }): Promise<CheckResultRow[]> {
-    const manifest = this.manifestsBoundToTask(taskTemplateId).find(
-      (m) => m.id === sourceSlug,
+    const pair = this.boundPairsForTask(taskTemplateId).find(
+      (p) => p.manifest.id === sourceSlug,
     );
-    const check = manifest
-      ? this.checkBoundToTask(manifest, taskTemplateId)
-      : null;
-    if (!check) return [];
+    if (!pair) return [];
 
     const connection = await this.connectionRepository.findBySlugAndOrg(
       sourceSlug,
@@ -189,7 +179,7 @@ export class CheckResultsService {
     return this.getLatestResultsByCheck({
       organizationId,
       connectionId: connection.id,
-      checkId: check.id,
+      checkId: pair.check.id,
       resourceType,
     });
   }
