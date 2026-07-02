@@ -6,7 +6,7 @@ export interface TaskRequirementItem {
   label: string;
   completed: number;
   total: number;
-  /** 'count' renders "x/y" + a progress bar; 'binary' renders a status badge. */
+  /** 'count' renders a colored "x/y"; 'binary' renders a status badge. */
   kind: 'count' | 'binary';
   /**
    * Explicit badge state for binary requirements whose status comes from an
@@ -39,23 +39,14 @@ function TaskRequirementRow({ item }: { item: TaskRequirementItem }) {
           </Badge>
         )
       ) : (
-        <>
-          {/* pl-1.5 matches the Badge's inner padding so counts and badge text
-              share one vertical line across rows. */}
-          <div className="w-11 shrink-0 pl-1.5">
-            <Text size="xs" variant={isComplete ? 'success' : completed > 0 ? 'warning' : 'muted'}>
-              {completed}/{total}
-            </Text>
-          </div>
-          <div className="h-1 w-20 shrink-0 overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full bg-primary transition-all"
-              style={{
-                width: `${total > 0 ? Math.min(100, Math.round((completed / total) * 100)) : 0}%`,
-              }}
-            />
-          </div>
-        </>
+        // pl-1.5 matches the Badge's inner padding so counts and badge text
+        // share one vertical line across rows. The colored count alone carries
+        // the state (green done / amber partial / muted none) — no bar needed.
+        <div className="pl-1.5">
+          <Text size="xs" variant={isComplete ? 'success' : completed > 0 ? 'warning' : 'muted'}>
+            {completed}/{total}
+          </Text>
+        </div>
       )}
     </div>
   );
@@ -64,7 +55,7 @@ function TaskRequirementRow({ item }: { item: TaskRequirementItem }) {
 /**
  * Per-employee requirement rollup shown in the People list TASKS column.
  * Each requirement is on its own row: fractional requirements (policies, training)
- * show a count + progress bar; binary requirements (HIPAA, device, background)
+ * show a colored count; binary requirements (HIPAA, device, background)
  * show a Done/Missing badge.
  */
 export function TaskRequirements({
@@ -83,8 +74,8 @@ export function TaskRequirements({
   }
 
   return (
-    // Content-sized: label (w-24) + count (w-11) + bar (w-20) — no stretching,
-    // so the column stays compact regardless of table width.
+    // Content-sized (w-max): label column + value only — the column stays
+    // compact regardless of table width.
     <div className="flex w-max flex-col gap-0.5">
       {items.map((item) => (
         <TaskRequirementRow key={item.label} item={item} />
