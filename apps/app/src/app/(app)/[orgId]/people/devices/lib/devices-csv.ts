@@ -1,5 +1,5 @@
 import type { DeviceWithChecks } from '../types';
-import { sourceLabel } from './device-source';
+import { isComplianceTracked, sourceLabel } from './device-source';
 
 export const DEVICES_CSV_HEADER = [
   'Device Name',
@@ -38,9 +38,9 @@ function yesNo(value: boolean): 'yes' | 'no' {
 
 export function buildDevicesCsv(devices: DeviceWithChecks[]): string {
   const rows = devices.map((d) => {
-    // Only agent devices carry real compliance data. For imported/fleet devices,
-    // export "not_tracked"/"n/a" rather than a misleading non_compliant + "no".
-    const tracked = d.source === 'device_agent';
+    // Integration-imported devices are inventory-only; agent + Fleet carry real
+    // compliance. Use the shared helper so the CSV matches the rest of the UI.
+    const tracked = isComplianceTracked(d);
     const status = tracked ? d.complianceStatus : 'not_tracked';
     const check = (value: boolean) => (tracked ? yesNo(value) : 'n/a');
     return [

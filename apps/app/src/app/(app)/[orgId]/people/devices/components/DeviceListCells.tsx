@@ -23,50 +23,17 @@ import {
 } from '@trycompai/ui/tooltip';
 import Link from 'next/link';
 import type { DeviceWithChecks } from '../types';
-import { isComplianceTracked, sourceLabel } from '../lib/device-source';
-
-export const CHECK_FIELDS = [
-  { key: 'diskEncryptionEnabled' as const, label: 'Disk Encryption' },
-  { key: 'antivirusEnabled' as const, label: 'Antivirus' },
-  { key: 'passwordPolicySet' as const, label: 'Password Policy' },
-  { key: 'screenLockEnabled' as const, label: 'Screen Lock' },
-];
-
-export const PLATFORM_LABELS: Record<string, string> = {
-  macos: 'macOS',
-  windows: 'Windows',
-  linux: 'Linux',
-};
-
-export function formatTimeAgo(dateString: string | null): string {
-  if (!dateString) return 'Never';
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-
-  if (diffHours < 1) return 'Just now';
-  if (diffHours < 24) return `${diffHours}h ago`;
-  const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays}d ago`;
-}
-
-/** Device is considered online if it checked in within the last 2 hours. */
-export function isDeviceOnline(lastCheckIn: string | null): boolean {
-  if (!lastCheckIn) return false;
-  const diffMs = Date.now() - new Date(lastCheckIn).getTime();
-  return diffMs < 2 * 60 * 60 * 1000;
-}
-
-function staleLabel(daysSinceLastCheckIn: number | null): string {
-  return daysSinceLastCheckIn === null ? 'Stale' : `Stale (${daysSinceLastCheckIn}d)`;
-}
-
-function staleTooltipCopy(daysSinceLastCheckIn: number | null): string {
-  return daysSinceLastCheckIn === null
-    ? "This device was registered but hasn't sent a compliance check yet. If it's not new, the agent may not be running or the device may be offline."
-    : "This device hasn't reported to CompAI in over 7 days, so we can't verify its current compliance. It may be offline, the agent may need to be updated, or the device may no longer be in use. Check with the employee.";
-}
+import {
+  CHECK_FIELDS,
+  PLATFORM_LABELS,
+  formatTimeAgo,
+  isComplianceTracked,
+  isDeviceOnline,
+  notTrackedTooltipCopy,
+  sourceLabel,
+  staleLabel,
+  staleTooltipCopy,
+} from '../lib/device-source';
 
 function InfoTooltip({ label, copy }: { label: string; copy: string }) {
   return (
@@ -124,21 +91,28 @@ export function UserNameCell({
   );
 }
 
+/**
+ * Compliance badge for an integration-imported device. Shared with the details
+ * panel so the "Not tracked" copy and provider fallback stay consistent.
+ */
+export function NotTrackedBadge({ device }: { device: DeviceWithChecks }) {
+  return (
+    <div className="flex items-center gap-1">
+      <Badge variant="secondary">Not tracked</Badge>
+      <InfoTooltip
+        label="Why is compliance not tracked?"
+        copy={notTrackedTooltipCopy(device)}
+      />
+    </div>
+  );
+}
+
 export function CompliantBadge({ device }: { device: DeviceWithChecks }) {
   // Integration-imported devices are inventory records, not compliance records —
   // CompAI never ran security checks on them, so showing "No" (red) would be a
   // false negative. Present them as untracked instead.
   if (!isComplianceTracked(device)) {
-    const provider = device.integrationProvider?.name ?? 'an integration';
-    return (
-      <div className="flex items-center gap-1">
-        <Badge variant="secondary">Not tracked</Badge>
-        <InfoTooltip
-          label="Why is compliance not tracked?"
-          copy={`This device was imported from ${provider}. CompAI doesn't collect compliance checks for imported devices — install the CompAI agent to track its security posture.`}
-        />
-      </div>
-    );
+    return <NotTrackedBadge device={device} />;
   }
 
   if (device.complianceStatus === 'stale') {

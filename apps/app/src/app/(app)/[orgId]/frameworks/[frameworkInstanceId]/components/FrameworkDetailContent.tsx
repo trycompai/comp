@@ -15,7 +15,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@trycompai/design-system';
-import { OverflowMenuVertical, TrashCan } from '@trycompai/design-system/icons';
+import { Edit, OverflowMenuVertical, TrashCan } from '@trycompai/design-system/icons';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +26,7 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useMemo, useState } from 'react';
 import { AddCustomRequirementSheet } from './AddCustomRequirementSheet';
+import { EditCustomFrameworkSheet } from './EditCustomFrameworkSheet';
 import { FrameworkControls } from './FrameworkControls';
 import { FrameworkControlsGrouped } from './FrameworkControlsGrouped';
 import { FrameworkDeleteDialog } from './FrameworkDeleteDialog';
@@ -58,9 +59,10 @@ export function FrameworkDetailContent({
   const { hasPermission, permissions } = usePermissions();
   const complianceTimelineEnabled = useFeatureFlag('is-timeline-enabled');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editSheetOpen, setEditSheetOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  const { data } = useFrameworkInstance<any>(frameworkInstanceId, {
+  const { data, mutate } = useFrameworkInstance<any>(frameworkInstanceId, {
     fallbackData: initialFramework,
   });
   const framework = data ?? initialFramework;
@@ -126,6 +128,10 @@ export function FrameworkDetailContent({
   const requirementsCount = requirementDefinitions.length;
 
   const canDeleteFramework = hasPermission('framework', 'delete');
+  // Only org-authored custom frameworks have editable name/description; platform
+  // frameworks inherit theirs from the shared global template.
+  const canEditCustomFramework =
+    !!framework.customFramework && hasPermission('framework', 'update');
 
   return (
     <Tabs value={activeTab} onValueChange={handleTabChange}>
@@ -145,7 +151,7 @@ export function FrameworkDetailContent({
               <>
                 <LinkRequirementSheet frameworkInstanceId={frameworkInstanceId} />
                 <AddCustomRequirementSheet frameworkInstanceId={frameworkInstanceId} />
-                {canDeleteFramework && (
+                {(canEditCustomFramework || canDeleteFramework) && (
                   <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
                     <DropdownMenuTrigger asChild>
                       <Button size="sm" variant="ghost">
@@ -153,16 +159,29 @@ export function FrameworkDetailContent({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        onClick={() => {
-                          setDropdownOpen(false);
-                          setDeleteDialogOpen(true);
-                        }}
-                        className="text-destructive focus:text-destructive"
-                      >
-                        <TrashCan size={16} className="mr-2" />
-                        Delete Framework
-                      </DropdownMenuItem>
+                      {canEditCustomFramework && (
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setDropdownOpen(false);
+                            setEditSheetOpen(true);
+                          }}
+                        >
+                          <Edit size={16} className="mr-2" />
+                          Edit Framework
+                        </DropdownMenuItem>
+                      )}
+                      {canDeleteFramework && (
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setDropdownOpen(false);
+                            setDeleteDialogOpen(true);
+                          }}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <TrashCan size={16} className="mr-2" />
+                          Delete Framework
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
@@ -264,6 +283,15 @@ export function FrameworkDetailContent({
         onClose={() => setDeleteDialogOpen(false)}
         frameworkInstance={frameworkInstanceWithControls}
       />
+
+      {canEditCustomFramework && (
+        <EditCustomFrameworkSheet
+          isOpen={editSheetOpen}
+          onClose={() => setEditSheetOpen(false)}
+          frameworkInstance={frameworkInstanceWithControls}
+          onUpdated={() => mutate()}
+        />
+      )}
     </Tabs>
   );
 }

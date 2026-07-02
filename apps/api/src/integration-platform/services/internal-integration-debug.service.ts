@@ -7,6 +7,7 @@ import {
 } from './connection-check-runner.service';
 import { CheckRunRepository } from '../repositories/check-run.repository';
 import { decideRunStatus } from '../utils/task-check-evaluation';
+import { DynamicManifestLoaderService } from './dynamic-manifest-loader.service';
 
 /**
  * Read-only/diagnostic toolkit for dynamic integrations, used by internal
@@ -32,6 +33,7 @@ export class InternalIntegrationDebugService {
   constructor(
     private readonly runner: ConnectionCheckRunnerService,
     private readonly checkRunRepository: CheckRunRepository,
+    private readonly manifestLoader: DynamicManifestLoaderService,
   ) {}
 
   private isEncryptedData(value: unknown): boolean {
@@ -498,6 +500,23 @@ export class InternalIntegrationDebugService {
       throw new NotFoundException(`Connection ${connectionId} not found`);
     }
     await this.assertTaskBelongsToOrg(taskId, connection.organizationId, connectionId);
+
+    // The runner resolves dynamic check code from the in-memory manifest
+    // registry, which only refreshes from the DB every ~60s. A self-heal re-run
+    // fires seconds after the agent PATCHes a fix, so without a refresh here the
+    // re-run would execute the STALE (pre-fix) code and wrongly re-hold a check
+    // we just fixed. Refresh first so this persisted re-run reflects current DB.
+    // Best-effort: on a transient refresh failure, fall back to the cached
+    // manifests rather than failing the whole re-run.
+    try {
+      await this.manifestLoader.loadDynamicManifests();
+    } catch (err) {
+      this.logger.warn(
+        `Self-heal re-run: manifest refresh failed, using cached manifests: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
 
     // Execute on the real runtime in-process (runChecks never persists).
     const result = await this.runner.runChecks({

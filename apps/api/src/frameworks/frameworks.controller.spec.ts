@@ -41,6 +41,7 @@ describe('FrameworksController', () => {
   const mockService = {
     findAll: jest.fn(),
     findAvailable: jest.fn(),
+    updateCustom: jest.fn(),
     delete: jest.fn(),
     getUpdateStatus: jest.fn(),
     getUpdatePreview: jest.fn(),
@@ -155,6 +156,19 @@ describe('FrameworksController', () => {
       await expect(controller.delete('org_1', 'missing')).rejects.toThrow(
         NotFoundException,
       );
+    });
+  });
+
+  describe('updateCustom', () => {
+    it('should delegate to service and return the updated framework', async () => {
+      const updated = { id: 'cfrm_A', name: 'CSC/CPRT' };
+      mockService.updateCustom.mockResolvedValue(updated);
+
+      const dto = { name: 'CSC/CPRT', description: 'Renamed' };
+      const result = await controller.updateCustom('org_1', 'fi1', dto);
+
+      expect(result).toEqual(updated);
+      expect(service.updateCustom).toHaveBeenCalledWith('fi1', 'org_1', dto);
     });
   });
 

@@ -1,3 +1,76 @@
+## [3.95.2](https://github.com/trycompai/comp/compare/v3.95.1...v3.95.2) (2026-07-02)
+
+
+### Bug Fixes
+
+* **github-integration:** use concurrent mapping for branch protection checks ([5b68642](https://github.com/trycompai/comp/commit/5b68642f829e2578b586451c77ea6c84601aec02))
+* **todo:** create a ticket in team cs "[feature request/ux] - policy de ([2a6b892](https://github.com/trycompai/comp/commit/2a6b89264cc424b77210ea7cbbc0ede47bb6e64c))
+
+## [3.95.1](https://github.com/trycompai/comp/compare/v3.95.0...v3.95.1) (2026-07-01)
+
+
+### Bug Fixes
+
+* **evidence-export:** raise trigger task duration ceiling to prevent timeout ([5375032](https://github.com/trycompai/comp/commit/53750326fc7b31b0a72ecd7876d6b47fdafb716f)), closes [hi#volume](https://github.com/hi/issues/volume)
+
+# [3.95.0](https://github.com/trycompai/comp/compare/v3.94.2...v3.95.0) (2026-07-01)
+
+
+### Bug Fixes
+
+* **frameworks:** reject null fields and empty payload on custom framework update ([e5f847b](https://github.com/trycompai/comp/commit/e5f847b8d619f0bcfc9afa2d9cec5ba97d207c6d))
+* **frameworks:** reject whitespace-only custom framework name ([8db8ac5](https://github.com/trycompai/comp/commit/8db8ac5dfd84988ab2bd39961b1f1c7190598429))
+* **frameworks:** trim custom framework name/description in update DTO ([dcf3dc1](https://github.com/trycompai/comp/commit/dcf3dc156022026d8e4a64c760d8874342ad0061))
+* **integrations:** use catalog-defined field names for fivetran basic auth ([6050902](https://github.com/trycompai/comp/commit/6050902b12a73a630a1d7d4472d7fbf431dc9559))
+* **tasks:** bound sanitized inputs check to prevent timeout on manual run ([070a964](https://github.com/trycompai/comp/commit/070a964226311e8ab856e667d266af2a8cd34a99))
+
+
+### Features
+
+* **frameworks:** allow editing custom framework name and description ([4e3f9ac](https://github.com/trycompai/comp/commit/4e3f9ac20b3e2ead3f9c5315bd3a0b242ccf0edd))
+
+## [3.94.2](https://github.com/trycompai/comp/compare/v3.94.1...v3.94.2) (2026-07-01)
+
+
+### Bug Fixes
+
+* **auth:** honor explicit ?inviteCode= before the offboard guard on the root page ([ab7ba22](https://github.com/trycompai/comp/commit/ab7ba22ff8be46ba7937bd1c841c30e9058185a7))
+* **auth:** let invite flows take precedence over the offboard guard at /setup ([afb759e](https://github.com/trycompai/comp/commit/afb759eb297a7e4599287aa7a4f7ffa5be4625ea))
+* **auth:** stop offboarded users from looping into a spurious new org ([2aa20e6](https://github.com/trycompai/comp/commit/2aa20e67c00514d0bc17aa8acae37b1a255de312))
+* **trust-portal:** bound ISO cert regex so a number can't match a longer one ([514e0e5](https://github.com/trycompai/comp/commit/514e0e5bf20f27826c2c6d3cc5ad08b1eced6298)), closes [#3318](https://github.com/trycompai/comp/issues/3318)
+* **trust-portal:** sync iso 27001 certification mapping with vendor-risk task ([9f944a0](https://github.com/trycompai/comp/commit/9f944a0df8ea52dcaf209dce3d25ec17bc02b4c0))
+* **trust-portal:** tighten ISO cert badge matching to require the ISO prefix ([3b426f7](https://github.com/trycompai/comp/commit/3b426f7c8137865a9173a52808de63caa7b76a44)), closes [#3315](https://github.com/trycompai/comp/issues/3315) [#3315](https://github.com/trycompai/comp/issues/3315)
+
+## [3.94.1](https://github.com/trycompai/comp/compare/v3.94.0...v3.94.1) (2026-07-01)
+
+
+### Bug Fixes
+
+* **self-heal:** refresh manifest cache before persisted re-run ([3783ed8](https://github.com/trycompai/comp/commit/3783ed8f4b612acd0230a3221515d91e1d8f395b))
+
+# [3.94.0](https://github.com/trycompai/comp/compare/v3.93.1...v3.94.0) (2026-06-30)
+
+
+### Bug Fixes
+
+* **devices:** address cubic review on device-import display + sync definitions ([dda64db](https://github.com/trycompai/comp/commit/dda64db1c96ddf5c04af8582fd0fa45d20dd71d5))
+* **devices:** address cubic review on the device-import display PR ([#3308](https://github.com/trycompai/comp/issues/3308)) ([9056d1b](https://github.com/trycompai/comp/commit/9056d1b7c47ea8fffc56fc83fee2db77eea439ff))
+* **devices:** second cubic pass — JumpCloud error handling, a11y, untracked rendering ([ea93f29](https://github.com/trycompai/comp/commit/ea93f2900f1e1cc7d43c5405620d9eae13ebf06f))
+* **isms:** resolve back nav, approver/owner display, party tags, and status formatting ([c9a6697](https://github.com/trycompai/comp/commit/c9a66971de2231efd448bbdc3e47e817f10c2e23))
+* **pentest:** gate initial free credit to new (un-onboarded) orgs only ([199e890](https://github.com/trycompai/comp/commit/199e89053f0616164c7f9875875f82c8aed5e7d9))
+* **people:** lock sync-source dropdown while disabling auto-sync ([541a72f](https://github.com/trycompai/comp/commit/541a72fc107000eaeaa536296a504f8b1fccc71f))
+* **self-heal:** address cubic — validate task org on reveal/rerun + held error-runs keep task pending ([3cecc79](https://github.com/trycompai/comp/commit/3cecc798a6edc34ad12bc8f6bfe72fb127f67627))
+* **self-heal:** reveal also syncs the task status (cubic P1) ([9bbf38b](https://github.com/trycompai/comp/commit/9bbf38bfe8b595ac2b4f7665e810ab38518e463a))
+* **self-heal:** reveal task-sync only flips ACTIVE statuses (cubic P2) ([5e3c6e3](https://github.com/trycompai/comp/commit/5e3c6e3a8c16747b0ab2c54abd1b88146ac8e027))
+
+
+### Features
+
+* **devices:** show integration-imported devices in People tab + Intune/JumpCloud device sync ([923a9e9](https://github.com/trycompai/comp/commit/923a9e997a2a007bc80372f2f6622ca24021242d))
+* **pentest:** auto-grant one free pentest credit to new organizations ([a5f815f](https://github.com/trycompai/comp/commit/a5f815f6ab01692f6b24447020696b17746b9121))
+* **people:** add "Don't auto-sync" option to employee sync source ([ae88ec6](https://github.com/trycompai/comp/commit/ae88ec66e3ef3cbdf5c8f12508136cc531fbef32))
+* **self-heal:** add /reveal endpoint — persist the real fail (customer-side / finding) ([e2f1fc0](https://github.com/trycompai/comp/commit/e2f1fc089013e50acb2bf9d67195eaa1aa98493d))
+
 ## [3.93.1](https://github.com/trycompai/comp/compare/v3.93.0...v3.93.1) (2026-06-29)
 
 

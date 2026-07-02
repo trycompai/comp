@@ -1,7 +1,6 @@
-import { auth } from '@/utils/auth';
 import { db } from '@db/server';
-import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { requireApiPermission } from '@/lib/permissions.server';
 import {
   daysSinceCheckIn,
   getDeviceComplianceStatus,
@@ -15,13 +14,14 @@ function mapSource(source: string): DeviceWithChecks['source'] {
   return 'device_agent';
 }
 
-export async function GET() {
-  const session = await auth.api.getSession({ headers: await headers() });
-  const organizationId = session?.session.activeOrganizationId;
-
-  if (!organizationId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+export async function GET(req: Request) {
+  // Enforce the same RBAC as the People area (route permission 'people' =
+  // member:read). The session-only check was insufficient — this route returns
+  // org device + integration-provider data and can be called directly by any
+  // active-org session, so gate it explicitly.
+  const ctx = await requireApiPermission(req, 'member', 'read');
+  if (ctx instanceof NextResponse) return ctx;
+  const { organizationId } = ctx;
 
   const devices = await db.device.findMany({
     where: {
