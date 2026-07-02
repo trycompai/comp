@@ -308,7 +308,7 @@ export function TeamMembersClient({
   return (
     <Stack gap="4">
       {/* Search and Filters */}
-      <div className="flex items-end gap-4">
+      <div className="flex items-center gap-4">
         <div className="w-full md:max-w-[300px]">
           <InputGroup>
             <InputGroupAddon>
@@ -384,11 +384,8 @@ export function TeamMembersClient({
           onClear={() => { setOffboardFrom(undefined); setOffboardTo(undefined); setPage(1); }}
         />
         {hasAnyConnection && (
-          <div className="flex items-end gap-2">
-            <div className="flex w-[200px] flex-col gap-1">
-              <span id="employee-sync-source-label" className="text-xs text-muted-foreground">
-                Sync source
-              </span>
+          <div className="flex items-center gap-2">
+            <div className="w-fit max-w-[300px]">
               <Select
                 onValueChange={(value) => {
                   const provider = String(value);
@@ -401,29 +398,36 @@ export function TeamMembersClient({
                 }}
                 disabled={isSyncing || isDisablingSync || !canManageMembers}
               >
-                <SelectTrigger aria-labelledby="employee-sync-source-label">
-                  {isSyncing ? (
-                    <>
-                      <InProgress size={16} className="mr-2 animate-spin" />
-                      Syncing...
-                    </>
-                  ) : selectedProvider ? (
-                    <div className="flex items-center gap-2">
-                      {getProviderLogo(selectedProvider) && (
-                        <Image
-                          src={getProviderLogo(selectedProvider)}
-                          alt={getProviderName(selectedProvider)}
-                          width={16}
-                          height={16}
-                          className="rounded-sm"
-                          unoptimized
-                        />
-                      )}
-                      <span className="truncate">{getProviderName(selectedProvider)}</span>
-                    </div>
-                  ) : (
-                    <SelectValue placeholder="Select sync source" />
-                  )}
+                <SelectTrigger aria-label="Sync people from">
+                  {/* Inline "Sync people from ·" prefix mirrors the date chips;
+                      the aria-label names the combobox for screen readers
+                      (comboboxes don't take their name from contents). */}
+                  <div className="flex items-center gap-2 whitespace-nowrap">
+                    <span className="text-muted-foreground">Sync people from</span>
+                    <span className="font-medium">·</span>
+                    {isSyncing ? (
+                      <>
+                        <InProgress size={16} className="animate-spin" />
+                        Syncing...
+                      </>
+                    ) : selectedProvider ? (
+                      <>
+                        {getProviderLogo(selectedProvider) && (
+                          <Image
+                            src={getProviderLogo(selectedProvider)}
+                            alt=""
+                            width={16}
+                            height={16}
+                            className="rounded-sm"
+                            unoptimized
+                          />
+                        )}
+                        <span className="truncate">{getProviderName(selectedProvider)}</span>
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground">None</span>
+                    )}
+                  </div>
                 </SelectTrigger>
               <SelectContent>
                 <div className="px-2 py-1.5 text-xs text-muted-foreground space-y-1">

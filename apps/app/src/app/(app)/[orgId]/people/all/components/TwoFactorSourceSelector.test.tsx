@@ -53,14 +53,10 @@ describe('TwoFactorSourceSelector — RBAC gating', () => {
     render(<TwoFactorSourceSelector />);
 
     expect(screen.getByText('Google Workspace')).toBeInTheDocument();
-    // The label above the select is what tells users what this control is for —
-    // and it must be programmatically tied to the trigger for screen readers.
-    expect(screen.getByText('2FA source')).toHaveAttribute(
-      'id',
-      'two-factor-source-label',
-    );
+    // The inline "2FA status from ·" prefix tells users what the control is for and
+    // makes it part of the trigger's accessible name for screen readers.
     expect(
-      screen.getByRole('combobox', { name: '2FA source' }),
+      screen.getByRole('combobox', { name: /2FA status from/ }),
     ).toBeInTheDocument();
     // Hook is enabled (and therefore allowed to hit the 2FA-source APIs).
     expect(mockUse2faSource).toHaveBeenCalledWith(

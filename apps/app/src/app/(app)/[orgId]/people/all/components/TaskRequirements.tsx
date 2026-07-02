@@ -43,7 +43,9 @@ function TaskRequirementRow({ item }: { item: TaskRequirementItem }) {
         // share one vertical line across rows. The colored count alone carries
         // the state (green done / amber partial / muted none) — no bar needed.
         <div className="pl-1.5">
-          <Text size="xs" variant={isComplete ? 'success' : completed > 0 ? 'warning' : 'muted'}>
+          {/* 'primary' = the brand green — matches the Done badge (accent),
+              unlike the DS 'success' variant which is a different green. */}
+          <Text size="xs" variant={isComplete ? 'primary' : completed > 0 ? 'warning' : 'muted'}>
             {completed}/{total}
           </Text>
         </div>
