@@ -108,12 +108,26 @@ export function TwoFactorSourceSelector() {
         </SelectTrigger>
         <SelectContent portal={false}>
           <div className="px-2 py-1.5 text-xs text-muted-foreground">
-            Shows each person&apos;s 2FA status from the selected integration&apos;s latest check
+            Where each person&apos;s 2FA status comes from
           </div>
-          <SelectItem value={NONE_VALUE}>Don&apos;t show 2FA status</SelectItem>
+          <SelectItem value={NONE_VALUE}>
+            <span className="text-muted-foreground">None</span>
+          </SelectItem>
           {connectedSources.map((p) => (
             <SelectItem key={p.slug} value={p.slug}>
-              {p.name}
+              <div className="flex items-center gap-2">
+                {p.logoUrl && (
+                  <Image
+                    src={p.logoUrl}
+                    alt=""
+                    width={16}
+                    height={16}
+                    className="rounded-sm"
+                    unoptimized
+                  />
+                )}
+                {p.name}
+              </div>
             </SelectItem>
           ))}
         </SelectContent>
