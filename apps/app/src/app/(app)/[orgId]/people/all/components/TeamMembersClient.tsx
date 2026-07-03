@@ -14,7 +14,6 @@ import useSWR from 'swr';
 import type { Invitation } from '@db';
 import {
   Button,
-  Calendar,
   Empty,
   EmptyDescription,
   EmptyHeader,
@@ -22,9 +21,6 @@ import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
   Select,
   SelectContent,
   SelectItem,
@@ -38,7 +34,7 @@ import {
   TableHeader,
   TableRow,
 } from '@trycompai/design-system';
-import { Calendar as CalendarIcon, ChevronDown, InProgress, Search } from '@trycompai/design-system/icons';
+import { InProgress, Search } from '@trycompai/design-system/icons';
 
 import { apiClient } from '@/lib/api-client';
 import { useMemo } from 'react';
@@ -46,7 +42,8 @@ import { useAgentDevices } from '../../devices/hooks/useAgentDevices';
 import { useFleetHosts } from '../../devices/hooks/useFleetHosts';
 import { buildDisplayItems, filterDisplayItems } from './filter-members';
 import { computeDeviceStatusMap } from './compute-device-status-map';
-import { MemberRow } from './MemberRow';
+import { MemberRow, type RequirementColumnKey } from './MemberRow';
+import { PeopleFilters } from './PeopleFilters';
 import { PendingInvitationRow } from './PendingInvitationRow';
 import { TwoFactorSourceSelector } from './TwoFactorSourceSelector';
 import type {
@@ -75,6 +72,8 @@ interface TeamMembersClientProps {
   complianceMemberIds: string[];
   backgroundCheckStepEnabled: boolean;
   twoFactorStatusMap: Record<string, TwoFactorStatus>;
+  /** Org-level tracking flags — column visibility never depends on member data. */
+  requirementTracking: { policies: boolean; training: boolean; hipaa: boolean };
 }
 
 export function TeamMembersClient({
@@ -87,6 +86,7 @@ export function TeamMembersClient({
   complianceMemberIds,
   backgroundCheckStepEnabled,
   twoFactorStatusMap,
+  requirementTracking,
 }: TeamMembersClientProps) {
   const { agentDevices, isLoading: isAgentDevicesLoading } = useAgentDevices();
   const { fleetHosts, isLoading: isFleetHostsLoading } = useFleetHosts();
@@ -96,6 +96,24 @@ export function TeamMembersClient({
     () => computeDeviceStatusMap({ agentDevices, fleetHosts, complianceMemberIds }),
     [agentDevices, fleetHosts, complianceMemberIds],
   );
+
+  // Which requirement columns the table shows, in order. A column only exists
+  // when the underlying tracking applies to this org (flag on / framework
+  // present / 2FA source configured), so orgs never see empty dash columns.
+  const requirementColumns = useMemo<
+    Array<{ key: RequirementColumnKey; label: string }>
+  >(() => {
+    const cols: Array<{ key: RequirementColumnKey; label: string }> = [];
+    if (requirementTracking.policies) cols.push({ key: 'policies', label: 'POLICIES' });
+    if (requirementTracking.training) cols.push({ key: 'training', label: 'TRAINING' });
+    if (requirementTracking.hipaa) cols.push({ key: 'hipaa', label: 'HIPAA' });
+    if (complianceMemberIds.length > 0) cols.push({ key: 'device', label: 'DEVICE' });
+    if (backgroundCheckStepEnabled)
+      cols.push({ key: 'background', label: 'BACKGROUND' });
+    if (Object.keys(twoFactorStatusMap).length > 0)
+      cols.push({ key: 'twoFactor', label: '2FA' });
+    return cols;
+  }, [requirementTracking, complianceMemberIds, backgroundCheckStepEnabled, twoFactorStatusMap]);
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
@@ -321,73 +339,26 @@ export function TeamMembersClient({
             />
           </InputGroup>
         </div>
-        {/* Status Filter Select */}
-        <div className="hidden w-[140px] flex-col gap-1 sm:flex">
-          <span id="people-status-filter-label" className="text-xs text-muted-foreground">
-            Status
-          </span>
-          <Select
-            value={statusFilter || undefined}
-            onValueChange={(value) => {
-              setStatusFilter(value ?? '');
-              setPage(1);
-            }}
-          >
-            <SelectTrigger aria-labelledby="people-status-filter-label">
-              <SelectValue placeholder="Active">
-                {hasOffboardFilter && !statusFilter
-                  ? 'All People'
-                  : ({ all: 'All People', active: 'Active', pending: 'Pending', deactivated: 'Deactivated' }[statusFilter] ?? 'Active')}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All People</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="deactivated">Deactivated</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        {/* Role Filter Select */}
-        <div className="hidden w-[180px] flex-col gap-1 sm:flex">
-          <span id="people-role-filter-label" className="text-xs text-muted-foreground">
-            Role
-          </span>
-          <Select
-            value={roleFilter || undefined}
-            onValueChange={(value) => {
-              setRoleFilter(value === 'all' ? '' : (value ?? ''));
-              setPage(1);
-            }}
-          >
-            <SelectTrigger aria-labelledby="people-role-filter-label">
-              <SelectValue placeholder="All Roles">
-                {{ owner: 'Owner', admin: 'Admin', auditor: 'Auditor', employee: 'Employee', contractor: 'Contractor' }[roleFilter] ?? 'All Roles'}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Roles</SelectItem>
-              <SelectItem value="owner">Owner</SelectItem>
-              <SelectItem value="admin">Admin</SelectItem>
-              <SelectItem value="auditor">Auditor</SelectItem>
-              <SelectItem value="employee">Employee</SelectItem>
-              <SelectItem value="contractor">Contractor</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <DateRangeFilter
-          label="Onboarded"
-          from={onboardFrom}
-          to={onboardTo}
-          onApply={(from, to) => { setOnboardFrom(from); setOnboardTo(to); setPage(1); }}
-          onClear={() => { setOnboardFrom(undefined); setOnboardTo(undefined); setPage(1); }}
-        />
-        <DateRangeFilter
-          label="Offboarded"
-          from={offboardFrom}
-          to={offboardTo}
-          onApply={(from, to) => { setOffboardFrom(from); setOffboardTo(to); setPage(1); }}
-          onClear={() => { setOffboardFrom(undefined); setOffboardTo(undefined); setPage(1); }}
+        <PeopleFilters
+          statusFilter={statusFilter}
+          hasOffboardFilter={hasOffboardFilter}
+          onStatusChange={(value) => {
+            setStatusFilter(value ?? '');
+            setPage(1);
+          }}
+          roleFilter={roleFilter}
+          onRoleChange={(value) => {
+            setRoleFilter(value === 'all' ? '' : (value ?? ''));
+            setPage(1);
+          }}
+          onboardFrom={onboardFrom}
+          onboardTo={onboardTo}
+          onOnboardApply={(from, to) => { setOnboardFrom(from); setOnboardTo(to); setPage(1); }}
+          onOnboardClear={() => { setOnboardFrom(undefined); setOnboardTo(undefined); setPage(1); }}
+          offboardFrom={offboardFrom}
+          offboardTo={offboardTo}
+          onOffboardApply={(from, to) => { setOffboardFrom(from); setOffboardTo(to); setPage(1); }}
+          onOffboardClear={() => { setOffboardFrom(undefined); setOffboardTo(undefined); setPage(1); }}
         />
         {hasAnyConnection && (
           <div className="flex items-end gap-2">
@@ -582,7 +553,9 @@ export function TeamMembersClient({
               </TableHead>
               <TableHead>ONBOARDED</TableHead>
               <TableHead>OFFBOARDED</TableHead>
-              <TableHead>TASKS</TableHead>
+              {requirementColumns.map((col) => (
+                <TableHead key={col.key}>{col.label}</TableHead>
+              ))}
               <TableHead>ACTIONS</TableHead>
             </TableRow>
           </TableHeader>
@@ -608,10 +581,12 @@ export function TeamMembersClient({
                   }
                   backgroundCheckStepEnabled={backgroundCheckStepEnabled}
                   twoFactorStatus={twoFactorStatusMap[(item as MemberWithUser).id]}
+                  requirementColumns={requirementColumns.map((c) => c.key)}
                 />
               ) : (
                 <PendingInvitationRow
                   key={item.displayId}
+                  requirementColumnCount={requirementColumns.length}
                   invitation={item as Invitation}
                   onCancel={handleCancelInvitation}
                   canCancel={canManageMembers}
@@ -625,180 +600,3 @@ export function TeamMembersClient({
   );
 }
 
-const PRESETS = [
-  { label: 'Last 7 days', days: 7 },
-  { label: 'Last 30 days', days: 30 },
-  { label: 'This quarter', days: 90 },
-  { label: 'This year', days: 365 },
-  { label: 'All time', days: 0 },
-] as const;
-
-function getPresetRange(days: number): { from: Date | undefined; to: Date | undefined } {
-  if (days === 0) return { from: undefined, to: undefined };
-  const to = new Date();
-  const from = new Date();
-  from.setDate(from.getDate() - days);
-  from.setHours(0, 0, 0, 0);
-  return { from, to };
-}
-
-function getActivePresetLabel(from: Date | undefined, to: Date | undefined): string | null {
-  if (!from && !to) return 'Any time';
-  if (!from || !to) return null;
-  const diffDays = Math.round((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24));
-  const now = new Date();
-  const isToToday = Math.abs(to.getTime() - now.getTime()) < 1000 * 60 * 60 * 24;
-  if (!isToToday) return null;
-  for (const p of PRESETS) {
-    if (p.days === 0) continue;
-    if (Math.abs(diffDays - p.days) <= 1) return p.label;
-  }
-  return null;
-}
-
-function DateRangeFilter({
-  label,
-  from,
-  to,
-  onApply,
-  onClear,
-}: {
-  label: string;
-  from: Date | undefined;
-  to: Date | undefined;
-  onApply: (from: Date | undefined, to: Date | undefined) => void;
-  onClear: () => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [draftFrom, setDraftFrom] = useState<Date | undefined>(from);
-  const [draftTo, setDraftTo] = useState<Date | undefined>(to);
-  const [activePreset, setActivePreset] = useState<string | null>(null);
-  const [fromPickerOpen, setFromPickerOpen] = useState(false);
-  const [toPickerOpen, setToPickerOpen] = useState(false);
-
-  const handleOpenChange = (isOpen: boolean) => {
-    if (isOpen) {
-      setDraftFrom(from);
-      setDraftTo(to);
-      setActivePreset(getActivePresetLabel(from, to));
-    }
-    setOpen(isOpen);
-  };
-
-  const handlePreset = (days: number, presetLabel: string) => {
-    const range = getPresetRange(days);
-    setDraftFrom(range.from);
-    setDraftTo(range.to);
-    setActivePreset(presetLabel);
-  };
-
-  const handleApply = () => {
-    onApply(draftFrom, draftTo);
-    setOpen(false);
-  };
-
-  const handleClear = () => {
-    onClear();
-    setOpen(false);
-  };
-
-  const displayLabel = from && to
-    ? `${format(from, 'MMM d')} – ${format(to, 'MMM d, yyyy')}`
-    : from
-      ? `From ${format(from, 'MMM d, yyyy')}`
-      : to
-        ? `Until ${format(to, 'MMM d, yyyy')}`
-        : 'Any time';
-
-  const labelId = `people-${label.toLowerCase()}-filter-label`;
-
-  return (
-    <div className="hidden flex-col gap-1 sm:flex">
-      <span id={labelId} className="text-xs text-muted-foreground">
-        {label}
-      </span>
-      <Popover open={open} onOpenChange={handleOpenChange}>
-        <PopoverTrigger aria-labelledby={labelId}>
-          <div className="border-border bg-background hover:bg-muted flex h-8 items-center gap-2 whitespace-nowrap rounded-md border px-3 text-xs transition-colors cursor-pointer">
-            <CalendarIcon size={13} className="text-muted-foreground" />
-            <span className="font-medium">{displayLabel}</span>
-            <ChevronDown size={12} className="text-muted-foreground" />
-          </div>
-        </PopoverTrigger>
-        <PopoverContent align="start" style={{ width: 'auto' }}>
-          <div className="flex w-[380px] flex-col gap-4 p-1.5">
-            <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-              {label} between
-            </span>
-
-            <div className="flex flex-wrap gap-2">
-              {PRESETS.map((p) => (
-                <button
-                  key={p.label}
-                  type="button"
-                  onClick={() => handlePreset(p.days, p.label)}
-                  className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
-                    activePreset === p.label
-                      ? 'border-primary bg-primary text-primary-foreground'
-                      : 'border-border hover:bg-muted'
-                  }`}
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Popover open={fromPickerOpen} onOpenChange={setFromPickerOpen}>
-                <PopoverTrigger>
-                  <div className="border-border bg-muted/50 flex h-10 flex-1 items-center gap-2 rounded-lg border px-3 text-sm cursor-pointer">
-                    <CalendarIcon size={14} className="text-muted-foreground" />
-                    {draftFrom ? format(draftFrom, 'MMM d, yyyy') : <span className="text-muted-foreground">Start date</span>}
-                  </div>
-                </PopoverTrigger>
-                <PopoverContent align="start">
-                  <Calendar
-                    mode="single"
-                    selected={draftFrom}
-                    onSelect={(d) => { setDraftFrom(d ?? undefined); setActivePreset(null); setFromPickerOpen(false); }}
-                    captionLayout="dropdown"
-                    fromYear={2000}
-                    toYear={new Date().getFullYear() + 1}
-                  />
-                </PopoverContent>
-              </Popover>
-              <span className="text-muted-foreground">→</span>
-              <Popover open={toPickerOpen} onOpenChange={setToPickerOpen}>
-                <PopoverTrigger>
-                  <div className="border-border bg-muted/50 flex h-10 flex-1 items-center gap-2 rounded-lg border px-3 text-sm cursor-pointer">
-                    <CalendarIcon size={14} className="text-muted-foreground" />
-                    {draftTo ? format(draftTo, 'MMM d, yyyy') : <span className="text-muted-foreground">End date</span>}
-                  </div>
-                </PopoverTrigger>
-                <PopoverContent align="start">
-                  <Calendar
-                    mode="single"
-                    selected={draftTo}
-                    onSelect={(d) => { setDraftTo(d ?? undefined); setActivePreset(null); setToPickerOpen(false); }}
-                    captionLayout="dropdown"
-                    fromYear={2000}
-                    toYear={new Date().getFullYear() + 1}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 border-t pt-3">
-              <div>
-                <Button variant="ghost" size="sm" onClick={handleClear}>Clear</Button>
-              </div>
-              <div>
-                <Button size="sm" onClick={handleApply}>Apply</Button>
-              </div>
-            </div>
-          </div>
-        </PopoverContent>
-      </Popover>
-    </div>
-  );
-}
