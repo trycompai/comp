@@ -112,6 +112,7 @@ Every customer-facing API endpoint MUST have:
 - **DS components that do NOT accept `className`**: `Text`, `Stack`, `HStack`, `Badge`, `Button` — wrap in `<div>` for custom styling
 - **Layout**: Use `PageLayout`, `PageHeader`, `Stack`, `HStack`, `Section`, `SettingGroup`
 - **Patterns**: Sheet (`Sheet > SheetContent > SheetHeader + SheetBody`), Drawer, Collapsible
+- **Responsive (MANDATORY)**: every UI change must work on mobile (375px), tablet (768px), desktop (1280px), and large desktop (1920px) by default — no one has to ask. See the `responsive-ui` skill for breakpoints, repo patterns, and the checklist.
 - **After editing any frontend component**: Run the `audit-design-system` skill to catch `@trycompai/ui` or `lucide-react` imports that should be migrated
 
 ## Data Fetching

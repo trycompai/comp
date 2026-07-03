@@ -25,7 +25,6 @@ import {
   DropdownMenuTrigger,
   HStack,
   Label,
-  Skeleton,
   TableCell,
   TableRow,
   Text,
@@ -43,9 +42,37 @@ import { toast } from 'sonner';
 import { BackgroundCheckVerifiedTick } from '../../components/BackgroundCheckVerifiedTick';
 import { MultiRoleCombobox } from './MultiRoleCombobox';
 import { RemoveDeviceAlert } from './RemoveDeviceAlert';
+import {
+  RequirementBadge,
+  RequirementCount,
+  RequirementDash,
+  RequirementLoading,
+} from './RequirementCell';
+
+export type RequirementColumnKey =
+  | 'policies'
+  | 'training'
+  | 'hipaa'
+  | 'device'
+  | 'background'
+  | 'twoFactor';
+
+export const ALL_REQUIREMENT_COLUMNS: RequirementColumnKey[] = [
+  'policies',
+  'training',
+  'hipaa',
+  'device',
+  'background',
+  'twoFactor',
+];
 import { RemoveMemberAlert } from './RemoveMemberAlert';
 import type { CustomRoleOption } from './MultiRoleCombobox';
-import type { BackgroundCheckStatus, MemberWithUser, TaskCompletion } from './TeamMembers';
+import type {
+  BackgroundCheckStatus,
+  MemberWithUser,
+  TaskCompletion,
+  TwoFactorStatus,
+} from './TeamMembers';
 
 interface MemberRowProps {
   member: MemberWithUser;
@@ -62,6 +89,10 @@ interface MemberRowProps {
   isDeviceStatusLoading?: boolean;
   backgroundCheckStatus?: BackgroundCheckStatus;
   backgroundCheckStepEnabled?: boolean;
+  /** From the org's configured 2FA source; absent when no source is configured. */
+  twoFactorStatus?: TwoFactorStatus;
+  /** Which requirement columns the table is rendering, in order. */
+  requirementColumns?: RequirementColumnKey[];
 }
 
 function getInitials(name?: string | null, email?: string | null): string {
@@ -99,20 +130,6 @@ function isBackgroundCheckComplete(status?: BackgroundCheckStatus): boolean {
   return status === 'completed' || status === 'completed_with_flags';
 }
 
-interface TaskCountItem {
-  label: string;
-  completed: number;
-  total: number;
-}
-
-function TaskCountLabel({ item }: { item: TaskCountItem }) {
-  return (
-    <Text size="xs" variant="muted">
-      {item.label} {item.completed}/{item.total}
-    </Text>
-  );
-}
-
 export function MemberRow({
   member,
   onRemove,
@@ -128,6 +145,8 @@ export function MemberRow({
   isDeviceStatusLoading = false,
   backgroundCheckStatus,
   backgroundCheckStepEnabled = true,
+  twoFactorStatus,
+  requirementColumns = ALL_REQUIREMENT_COLUMNS,
 }: MemberRowProps) {
   const { orgId } = useParams<{ orgId: string }>();
 
@@ -157,52 +176,85 @@ export function MemberRow({
   const hasCompletedBackgroundCheck = isBackgroundCheckComplete(backgroundCheckStatus);
   const memberExempt = member.backgroundCheckExempt === true;
   const shouldShowTaskRequirements = !isPlatformAdmin && !isDeactivated;
-  const taskItems: TaskCountItem[] = [];
-
-  if (taskCompletion) {
-    taskItems.push({
-      label: 'Policies',
-      completed: taskCompletion.policies.completed,
-      total: taskCompletion.policies.total,
-    });
-
-    if (taskCompletion.training.total > 0) {
-      taskItems.push({
-        label: 'Training',
-        completed: taskCompletion.training.completed,
-        total: taskCompletion.training.total,
-      });
+  // One cell per requirement column. A muted dash = the requirement doesn't
+  // apply to this member (org flag off, exempt, auditor-only, admin, 0 total).
+  const renderRequirementCell = (key: RequirementColumnKey) => {
+    switch (key) {
+      case 'policies':
+        return taskCompletion && taskCompletion.policies.total > 0 ? (
+          <RequirementCount
+            label="Policies"
+            completed={taskCompletion.policies.completed}
+            total={taskCompletion.policies.total}
+          />
+        ) : (
+          <RequirementDash />
+        );
+      case 'training':
+        return taskCompletion && taskCompletion.training.total > 0 ? (
+          <RequirementCount
+            label="Training"
+            completed={taskCompletion.training.completed}
+            total={taskCompletion.training.total}
+          />
+        ) : (
+          <RequirementDash />
+        );
+      case 'hipaa':
+        return taskCompletion?.hipaa ? (
+          <RequirementBadge
+            label="HIPAA"
+            state={
+              taskCompletion.hipaa.completed >= taskCompletion.hipaa.total
+                ? 'done'
+                : 'missing'
+            }
+          />
+        ) : (
+          <RequirementDash />
+        );
+      case 'device':
+        if (!shouldShowTaskRequirements) return <RequirementDash />;
+        if (deviceStatus) {
+          return (
+            <RequirementBadge
+              label="Device"
+              state={deviceStatus === 'compliant' ? 'done' : 'missing'}
+            />
+          );
+        }
+        return isDeviceStatusLoading ? <RequirementLoading /> : <RequirementDash />;
+      case 'background':
+        return shouldShowTaskRequirements &&
+          backgroundCheckStepEnabled &&
+          !memberExempt &&
+          !isAuditorOnly ? (
+          <RequirementBadge
+            label="Background"
+            state={hasCompletedBackgroundCheck ? 'done' : 'missing'}
+          />
+        ) : (
+          <RequirementDash />
+        );
+      case 'twoFactor':
+        // 2FA applies to EVERY non-deactivated member (platform admins
+        // included). Absent status = no 2FA source configured for the org.
+        return !isDeactivated && twoFactorStatus ? (
+          <RequirementBadge
+            label="2FA"
+            state={
+              twoFactorStatus === 'enabled'
+                ? 'done'
+                : twoFactorStatus === 'missing'
+                  ? 'missing'
+                  : 'not-provided'
+            }
+          />
+        ) : (
+          <RequirementDash />
+        );
     }
-
-    if (taskCompletion.hipaa) {
-      taskItems.push({
-        label: 'HIPAA',
-        completed: taskCompletion.hipaa.completed,
-        total: taskCompletion.hipaa.total,
-      });
-    }
-  }
-
-  if (shouldShowTaskRequirements && (deviceStatus || isDeviceStatusLoading)) {
-    taskItems.push({
-      label: 'Device',
-      completed: deviceStatus === 'compliant' ? 1 : 0,
-      total: 1,
-    });
-  }
-
-  if (shouldShowTaskRequirements && backgroundCheckStepEnabled && !memberExempt && !isAuditorOnly) {
-    taskItems.push({
-      label: 'Background check',
-      completed: hasCompletedBackgroundCheck ? 1 : 0,
-      total: 1,
-    });
-  }
-
-  const visibleTaskTotal = taskItems.reduce((sum, item) => sum + item.total, 0);
-  const visibleTaskCompleted = taskItems.reduce((sum, item) => sum + item.completed, 0);
-  const taskProgressPercent =
-    visibleTaskTotal > 0 ? Math.round((visibleTaskCompleted / visibleTaskTotal) * 100) : 0;
+  };
 
   const handleEditRolesClick = () => {
     setSelectedRoles(parseRoles(member.role));
@@ -351,33 +403,10 @@ export function MemberRow({
           )}
         </TableCell>
 
-        {/* TASKS */}
-        <TableCell>
-          {taskItems.length > 0 ? (
-            <div className="min-w-64 max-w-sm">
-              <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                <div
-                  className="h-full bg-primary transition-all"
-                  style={{ width: `${taskProgressPercent}%` }}
-                />
-              </div>
-              <div className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5">
-                {taskItems.map((item) => (
-                  <TaskCountLabel key={item.label} item={item} />
-                ))}
-                {shouldShowTaskRequirements && isDeviceStatusLoading && (
-                  <div className="h-3 w-16">
-                    <Skeleton style={{ height: '100%', width: '100%' }} />
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <Text size="sm" variant="muted">
-              —
-            </Text>
-          )}
-        </TableCell>
+        {/* Requirement columns */}
+        {requirementColumns.map((key) => (
+          <TableCell key={key}>{renderRequirementCell(key)}</TableCell>
+        ))}
 
         {/* ACTIONS */}
         <TableCell>

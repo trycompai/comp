@@ -74,12 +74,12 @@ function renderRow({
 describe('MemberRow background check status', () => {
   it('shows background check as incomplete in the tasks column', () => {
     renderRow({ backgroundCheckStatus: 'invited' });
-    expect(screen.getByText('Background check 0/1')).toBeInTheDocument();
+    expect(screen.getByTestId('requirement-Background')).toHaveTextContent('Missing');
   });
 
   it('shows background check as complete in the tasks column', () => {
     renderRow({ backgroundCheckStatus: 'completed_with_flags' });
-    expect(screen.getByText('Background check 1/1')).toBeInTheDocument();
+    expect(screen.getByTestId('requirement-Background')).toHaveTextContent('Done');
     expect(screen.getByLabelText('Employee has completed a background check')).toBeInTheDocument();
   });
 
@@ -90,6 +90,6 @@ describe('MemberRow background check status', () => {
 
   it('does not show background check tracking for auditor-only members', () => {
     renderRow({ backgroundCheckStatus: 'invited', role: 'auditor' });
-    expect(screen.queryByText(/Background check/)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('requirement-Background')).not.toBeInTheDocument();
   });
 });
