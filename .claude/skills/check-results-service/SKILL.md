@@ -128,6 +128,46 @@ The People-tab 2FA column is consumer #1. Study it end to end:
   chosen source's check emits a different `resourceType` or a non-mappable `resourceId`, your
   feature should degrade gracefully (e.g. "Not provided"), not crash.
 
+## Person-in-evidence extraction: use EvidenceExtractionService
+
+If your feature needs to find **one person** (by email) inside a check's results — "what
+access does this member have", "is this employee in the roster" — do NOT write your own
+evidence parser. Use the shared companion service:
+
+- `apps/api/src/integration-platform/services/evidence-extraction.service.ts`
+- Exported from `IntegrationPlatformModule`, injectable like `CheckResultsService`.
+- Reference consumer: `PeopleAccessService` (`apps/api/src/people/people-access.service.ts`).
+
+```ts
+const extraction = await this.evidenceExtraction.extractPersonEntries({
+  results,                       // CheckResultRow[] from CheckResultsService
+  email: memberEmail,            // lowercased
+  purpose: 'employee access: roles, permissions, admin status', // context for the AI fallback
+});
+// extraction.status: 'found' | 'not-found' | 'unparsed'
+// extraction.entries: [{ summary, fields, raw, source: 'deterministic' | 'ai' }]
+```
+
+How it works (the ladder — you get all of this for free):
+1. **Deterministic** shape matching: per-user rows keyed by email, and roster arrays in
+   evidence (`employees`/`users`/`members`/`accounts`/`people`). Free, instant, preferred.
+2. **Email pre-gate**: if the email appears nowhere in the serialized evidence, the answer
+   is a confident `not-found` — no AI call is ever made (cost + hallucination guard).
+3. **Haiku fallback** (`claude-haiku-4-5` via `generateObject`): only for unknown shapes
+   where the email IS present. Strict schema, evidence-only prompt. Failure or missing
+   `ANTHROPIC_API_KEY` degrades to `unparsed` — never throws, never blocks the read path.
+
+Rules:
+- ✅ DO surface all three states honestly in the UI: found / not-found ("no match") /
+  unparsed ("needs manual review"). Never render a blank.
+- ✅ DO label `source: 'ai'` entries as AI-extracted in the UI (their `raw` is `null`).
+- ✅ DO scope AI-fallback usage to person-scoped reads (one member's detail page). For
+  org-wide lists (e.g. the People-tab 2FA column), stay deterministic — per-member AI
+  calls across a whole roster are wasteful.
+- ❌ DON'T hand-roll email matching against `evidence` in a feature.
+- ❌ DON'T pass whole evidence payloads to your own AI calls — the service already bounds
+  input to email-relevant windows.
+
 ## Source selection is NOT part of this service
 
 Which integration an org uses for a purpose (e.g. `Organization.twoFactorSource`) is

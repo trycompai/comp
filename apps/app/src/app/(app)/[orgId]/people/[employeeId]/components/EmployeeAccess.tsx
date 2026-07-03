@@ -21,14 +21,16 @@ import { ChevronDown, ChevronUp } from '@trycompai/design-system/icons';
 interface MemberAccessEntry {
   summary: string;
   fields: Record<string, string>;
+  /** Null for AI-extracted entries (no single source record to show). */
   raw: unknown;
+  source: 'deterministic' | 'ai';
 }
 
 interface MemberAccessSource {
   slug: string;
   name: string;
   logoUrl: string | null;
-  matchType: 'matched' | 'not-matched' | 'no-data';
+  matchType: 'matched' | 'not-matched' | 'unparsed' | 'no-data';
   entries: MemberAccessEntry[];
   lastCheckedAt: string | null;
 }
@@ -59,6 +61,7 @@ const MATCH_BADGE: Record<
 > = {
   matched: { label: 'Access found', variant: 'accent' },
   'not-matched': { label: 'No match for this member', variant: 'secondary' },
+  unparsed: { label: 'Needs manual review', variant: 'secondary' },
   'no-data': { label: 'Check not run yet', variant: 'outline' },
 };
 
@@ -106,6 +109,14 @@ function SourceRow({ source }: { source: MemberAccessSource }) {
           <Stack gap="3">
             {source.entries.map((entry, i) => (
               <div key={i}>
+                {entry.source === 'ai' && (
+                  <div className="mb-2 flex items-center gap-2">
+                    <Badge variant="outline">AI-extracted</Badge>
+                    <Text size="xs" variant="muted">
+                      Structured by AI from this check&apos;s evidence
+                    </Text>
+                  </div>
+                )}
                 <div className="grid grid-cols-1 gap-x-6 gap-y-1 sm:grid-cols-2">
                   {Object.entries(entry.fields).map(([label, value]) => (
                     <div key={label} className="flex items-baseline justify-between gap-4">
@@ -117,14 +128,16 @@ function SourceRow({ source }: { source: MemberAccessSource }) {
                   ))}
                 </div>
                 {/* Raw record for auditors; scrolls inside itself, never the page. */}
-                <details className="mt-2">
-                  <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground">
-                    Raw record
-                  </summary>
-                  <pre className="mt-1 max-h-64 overflow-auto rounded-md bg-muted/40 p-2 text-xs">
-                    {JSON.stringify(entry.raw, null, 2)}
-                  </pre>
-                </details>
+                {entry.raw != null && (
+                  <details className="mt-2">
+                    <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground">
+                      Raw record
+                    </summary>
+                    <pre className="mt-1 max-h-64 overflow-auto rounded-md bg-muted/40 p-2 text-xs">
+                      {JSON.stringify(entry.raw, null, 2)}
+                    </pre>
+                  </details>
+                )}
               </div>
             ))}
             {source.lastCheckedAt && (

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { EmployeeAccess } from './EmployeeAccess';
 
@@ -19,7 +19,9 @@ const source = (overrides: object) => ({
   name: 'Google Workspace',
   logoUrl: null,
   matchType: 'matched',
-  entries: [{ summary: 'Super Admin', fields: { Role: 'Super Admin' }, raw: {} }],
+  entries: [
+    { summary: 'Super Admin', fields: { Role: 'Super Admin' }, raw: {}, source: 'deterministic' },
+  ],
   lastCheckedAt: '2026-07-01T00:00:00Z',
   ...overrides,
 });
@@ -38,6 +40,44 @@ describe('EmployeeAccess', () => {
     expect(screen.getByText('Super Admin')).toBeInTheDocument();
     expect(screen.getByText('Access found')).toBeInTheDocument();
     expect(screen.getByText('No match for this member')).toBeInTheDocument();
+  });
+
+  it('labels unparsed sources as needing manual review', async () => {
+    mockGet.mockResolvedValue({
+      data: {
+        data: {
+          memberId: 'mem_3',
+          sources: [source({ matchType: 'unparsed', entries: [] })],
+        },
+      },
+    });
+
+    render(<EmployeeAccess memberId="mem_3" organizationId="org_1" />);
+
+    await waitFor(() => expect(screen.getByText('Needs manual review')).toBeInTheDocument());
+  });
+
+  it('labels AI-extracted entries and hides their raw record', async () => {
+    mockGet.mockResolvedValue({
+      data: {
+        data: {
+          memberId: 'mem_4',
+          sources: [
+            source({
+              entries: [{ summary: 'Editor seat', fields: { Role: 'Editor' }, raw: null, source: 'ai' }],
+            }),
+          ],
+        },
+      },
+    });
+
+    render(<EmployeeAccess memberId="mem_4" organizationId="org_1" />);
+
+    await waitFor(() => expect(screen.getByText('Google Workspace')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /Google Workspace/ }));
+
+    expect(screen.getByText('AI-extracted')).toBeInTheDocument();
+    expect(screen.queryByText('Raw record')).not.toBeInTheDocument();
   });
 
   it('shows the connect empty state when no integration reports access', async () => {

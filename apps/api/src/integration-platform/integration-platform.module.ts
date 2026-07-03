@@ -39,6 +39,7 @@ import { IntegrationSyncLoggerService } from './services/integration-sync-logger
 import { GenericEmployeeSyncService } from './services/generic-employee-sync.service';
 import { GenericDeviceSyncService } from './services/generic-device-sync.service';
 import { CheckResultsService } from './services/check-results.service';
+import { EvidenceExtractionService } from './services/evidence-extraction.service';
 
 @Module({
   imports: [AuthModule, forwardRef(() => CloudSecurityModule)],
@@ -75,6 +76,7 @@ import { CheckResultsService } from './services/check-results.service';
     GenericEmployeeSyncService,
     GenericDeviceSyncService,
     CheckResultsService,
+    EvidenceExtractionService,
     // Repositories
     ProviderRepository,
     ConnectionRepository,
@@ -95,6 +97,8 @@ import { CheckResultsService } from './services/check-results.service';
     // Universal, feature-agnostic access to integration check results. Any
     // feature module that needs to reuse check output injects this.
     CheckResultsService,
+    // Universal person-in-evidence extraction (deterministic + AI fallback).
+    EvidenceExtractionService,
   ],
 })
 export class IntegrationPlatformModule {}
