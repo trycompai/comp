@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -374,6 +375,23 @@ export function TeamMembersClient({
           </PopoverTrigger>
           <PopoverContent align="end" style={{ width: 'auto' }}>
             <div className="flex w-[280px] flex-col gap-4 p-1.5">
+              {/* Fresh orgs have nothing to configure yet — teach instead of
+                  showing an empty popover. */}
+              {!hasAnyConnection && (
+                <div className="flex flex-col gap-2 py-1">
+                  <span className="text-sm font-medium">No integrations connected</span>
+                  <span className="text-xs text-muted-foreground">
+                    Connect an integration like Google Workspace to sync your
+                    team automatically and show each person&apos;s 2FA status.
+                  </span>
+                  <Link
+                    href={`/${organizationId}/integrations`}
+                    className="text-xs font-medium text-primary hover:underline"
+                  >
+                    Browse integrations →
+                  </Link>
+                </div>
+              )}
         {hasAnyConnection && (
           <div className="flex w-full">
             <div className="flex w-full flex-col gap-1">
