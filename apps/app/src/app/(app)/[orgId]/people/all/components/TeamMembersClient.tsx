@@ -433,7 +433,7 @@ export function TeamMembersClient({
                     <span className="text-muted-foreground">Not syncing</span>
                   )}
                 </SelectTrigger>
-              <SelectContent portal={false}>
+              <SelectContent>
                 <div className="px-2 py-1.5 text-xs text-muted-foreground space-y-1">
                   {selectedProvider ? (
                     <>
