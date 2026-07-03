@@ -48,7 +48,7 @@ export function TwoFactorSourceSelector() {
   if (!hasAnyConnection) {
     return (
       <div className="flex w-full flex-col gap-1">
-        <span className="text-xs text-muted-foreground">2FA status from</span>
+        <span className="text-xs text-muted-foreground">2FA status</span>
         <Link
           href={`/${orgId}/integrations`}
           className="border-border text-muted-foreground hover:bg-muted flex h-8 items-center justify-between rounded-md border border-dashed px-3 text-sm transition-colors"
@@ -79,7 +79,7 @@ export function TwoFactorSourceSelector() {
     // combobox (the role ignores content for accessible names).
     <div className="flex w-full flex-col gap-1">
       <span id="two-factor-source-label" className="text-xs text-muted-foreground">
-        2FA status from
+        2FA status
       </span>
       <Select
         value={selectedSource ?? NONE_VALUE}
@@ -103,7 +103,7 @@ export function TwoFactorSourceSelector() {
               <span className="truncate">{selected.name}</span>
             </div>
           ) : (
-            <span className="text-muted-foreground">None</span>
+            <span className="text-muted-foreground">Not shown</span>
           )}
         </SelectTrigger>
         <SelectContent portal={false}>
@@ -111,7 +111,7 @@ export function TwoFactorSourceSelector() {
             Where each person&apos;s 2FA status comes from
           </div>
           <SelectItem value={NONE_VALUE}>
-            <span className="text-muted-foreground">None</span>
+            <span className="text-muted-foreground">Not shown</span>
           </SelectItem>
           {connectedSources.map((p) => (
             <SelectItem key={p.slug} value={p.slug}>
