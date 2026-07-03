@@ -76,12 +76,12 @@ describe('TwoFactorSourceSelector — RBAC gating', () => {
     );
   });
 
-  it('collapses on mobile like the other secondary toolbar controls (hidden sm:block)', () => {
+  it('fills the Sources popover width (visible at every breakpoint inside it)', () => {
     mockHasPermission.mockReturnValue(true);
 
     const { container } = render(<TwoFactorSourceSelector />);
 
-    expect(container.firstElementChild).toHaveClass('hidden', 'sm:flex');
+    expect(container.firstElementChild).toHaveClass('flex', 'w-full');
   });
 
   it('renders nothing while the source/selection are still loading (no placeholder flash)', () => {

@@ -56,12 +56,10 @@ export function TwoFactorSourceSelector() {
   };
 
   return (
-    // hidden sm:flex matches the other toolbar controls: config actions
-    // collapse on phones, where the toolbar row doesn't wrap. The per-member
-    // 2FA status stays visible at every width via the table's own horizontal
-    // scroll. Label above the input, uniform with the rest of the toolbar;
-    // aria-labelledby names the combobox (the role ignores content for names).
-    <div className="hidden w-[200px] flex-col gap-1 sm:flex">
+    // Renders inside the toolbar's Sources popover, so it fills the popover
+    // width and stays reachable at every breakpoint. aria-labelledby names the
+    // combobox (the role ignores content for accessible names).
+    <div className="flex w-full flex-col gap-1">
       <span id="two-factor-source-label" className="text-xs text-muted-foreground">
         2FA status from
       </span>

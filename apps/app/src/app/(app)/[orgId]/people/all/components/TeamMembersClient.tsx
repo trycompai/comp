@@ -21,6 +21,9 @@ import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
   Select,
   SelectContent,
   SelectItem,
@@ -34,7 +37,7 @@ import {
   TableHeader,
   TableRow,
 } from '@trycompai/design-system';
-import { InProgress, Search } from '@trycompai/design-system/icons';
+import { InProgress, Search, SettingsAdjust } from '@trycompai/design-system/icons';
 
 import { apiClient } from '@/lib/api-client';
 import { useMemo } from 'react';
@@ -360,9 +363,20 @@ export function TeamMembersClient({
           onOffboardApply={(from, to) => { setOffboardFrom(from); setOffboardTo(to); setPage(1); }}
           onOffboardClear={() => { setOffboardFrom(undefined); setOffboardTo(undefined); setPage(1); }}
         />
+        {/* Source settings (sync / 2FA) — settings, not filters, so they get
+            their own compact popover, symmetric with the Filters button. */}
+        <Popover>
+          <PopoverTrigger>
+            <div className="border-border bg-background hover:bg-muted flex h-8 cursor-pointer items-center gap-2 whitespace-nowrap rounded-md border px-3 text-sm transition-colors">
+              <SettingsAdjust size={16} className="text-muted-foreground" />
+              Sources
+            </div>
+          </PopoverTrigger>
+          <PopoverContent align="end" style={{ width: 'auto' }}>
+            <div className="flex w-[280px] flex-col gap-4 p-1.5">
         {hasAnyConnection && (
-          <div className="flex items-end gap-2">
-            <div className="flex w-[200px] flex-col gap-1">
+          <div className="flex w-full">
+            <div className="flex w-full flex-col gap-1">
               <span id="employee-sync-source-label" className="text-xs text-muted-foreground">
                 Sync people from
               </span>
@@ -515,6 +529,9 @@ export function TeamMembersClient({
           </div>
         )}
         <TwoFactorSourceSelector />
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
 
       {/* Table */}
