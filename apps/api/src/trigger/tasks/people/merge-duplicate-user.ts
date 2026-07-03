@@ -4,11 +4,17 @@ import { z } from 'zod';
 
 export const mergeDuplicateUser = schemaTask({
   id: 'merge-duplicate-user',
-  schema: z.object({
-    organizationId: z.string(),
-    oldEmail: z.string().email(),
-    newEmail: z.string().email(),
-  }),
+  schema: z
+    .object({
+      organizationId: z.string(),
+      oldEmail: z.string().email(),
+      newEmail: z.string().email(),
+    })
+    .refine(
+      ({ oldEmail, newEmail }) =>
+        oldEmail.toLowerCase() !== newEmail.toLowerCase(),
+      { path: ['newEmail'], message: 'newEmail must differ from oldEmail' },
+    ),
   run: async ({ organizationId, oldEmail, newEmail }) => {
     await tags.add([`org:${organizationId}`]);
 

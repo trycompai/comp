@@ -39,11 +39,20 @@ interface MergeDuplicateUserRunnable {
   }>;
 }
 
+interface MergeDuplicateUserSchema {
+  schema: { safeParse: (input: unknown) => { success: boolean } };
+}
+
 const runMerge = (params: {
   organizationId: string;
   oldEmail: string;
   newEmail: string;
 }) => (mergeDuplicateUser as unknown as MergeDuplicateUserRunnable).run(params);
+
+const parseInput = (input: unknown) =>
+  (mergeDuplicateUser as unknown as MergeDuplicateUserSchema).schema.safeParse(
+    input,
+  );
 
 const ORG_ID = 'org_1';
 const OLD_EMAIL = 'old@example.com';
@@ -76,6 +85,38 @@ describe('mergeDuplicateUser', () => {
 
     // Default: the old user has no membership in any other org.
     (db.member.count as jest.Mock).mockResolvedValue(0);
+  });
+
+  describe('schema validation', () => {
+    it('rejects when newEmail equals oldEmail', () => {
+      const result = parseInput({
+        organizationId: ORG_ID,
+        oldEmail: OLD_EMAIL,
+        newEmail: OLD_EMAIL,
+      });
+
+      expect(result.success).toBe(false);
+    });
+
+    it('rejects when newEmail equals oldEmail case-insensitively', () => {
+      const result = parseInput({
+        organizationId: ORG_ID,
+        oldEmail: 'User@Example.com',
+        newEmail: 'user@example.com',
+      });
+
+      expect(result.success).toBe(false);
+    });
+
+    it('accepts when oldEmail and newEmail differ', () => {
+      const result = parseInput({
+        organizationId: ORG_ID,
+        oldEmail: OLD_EMAIL,
+        newEmail: NEW_EMAIL,
+      });
+
+      expect(result.success).toBe(true);
+    });
   });
 
   it('throws when the old user cannot be resolved by email', async () => {
