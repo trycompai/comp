@@ -1,3 +1,10 @@
+## [3.96.1](https://github.com/trycompai/comp/compare/v3.96.0...v3.96.1) (2026-07-03)
+
+
+### Bug Fixes
+
+* **people:** polish the redesigned People tab (requirement columns, filters, per-employee 2FA) ([#3347](https://github.com/trycompai/comp/issues/3347)) ([#3348](https://github.com/trycompai/comp/issues/3348)) ([f0e837c](https://github.com/trycompai/comp/commit/f0e837c436f0a74c37e10cad6b56860646d5fa86))
+
 # [3.96.0](https://github.com/trycompai/comp/compare/v3.95.2...v3.96.0) (2026-07-03)
 
 
