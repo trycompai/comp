@@ -381,8 +381,7 @@ export function TeamMembersClient({
                 <div className="flex flex-col gap-2 py-1">
                   <span className="text-sm font-medium">No integrations connected</span>
                   <span className="text-xs text-muted-foreground">
-                    Connect an integration like Google Workspace to sync your
-                    team automatically and show each person&apos;s 2FA status.
+                    Data sources appear here once you connect an integration.
                   </span>
                   <Link
                     href={`/${organizationId}/integrations`}
