@@ -60,28 +60,32 @@ export const mergeDuplicateUser = schemaTask({
       newMemberId: newMember.id,
     });
 
-    // ── 2b. Determine whether the old user belongs to other orgs ─────────────
-    // User-level relations (Account, sessions, etc.) are not org-scoped, so
-    // they can only be safely re-pointed/deleted if this is the old user's
-    // only org membership. Otherwise, only merge the member record for this
-    // org and leave the user record intact for their other orgs.
-    const otherOrgMemberships = await db.member.count({
-      where: { userId: oldUser.id, organizationId: { not: organizationId } },
-    });
-    const oldUserHasOtherOrgs = otherOrgMemberships > 0;
-
-    logger.info('Checked old user org memberships', {
-      oldUserId: oldUser.id,
-      otherOrgMemberships,
-      oldUserHasOtherOrgs,
-    });
-
     // ── 3. Merge inside a transaction ────────────────────────────────────────
+
+    let oldUserHasOtherOrgs = false;
 
     await db.$transaction(
       async (tx) => {
         const o = oldMember.id;
         const n = newMember.id;
+
+        // ── 2b. Determine whether the old user belongs to other orgs ─────────
+        // User-level relations (Account, sessions, etc.) are not org-scoped, so
+        // they can only be safely re-pointed/deleted if this is the old user's
+        // only org membership. Otherwise, only merge the member record for this
+        // org and leave the user record intact for their other orgs. Computed
+        // inside the transaction (not before it) so a concurrent membership
+        // change can't make this stale relative to the mutations below.
+        const otherOrgMemberships = await tx.member.count({
+          where: { userId: oldUser.id, organizationId: { not: organizationId } },
+        });
+        oldUserHasOtherOrgs = otherOrgMemberships > 0;
+
+        logger.info('Checked old user org memberships', {
+          oldUserId: oldUser.id,
+          otherOrgMemberships,
+          oldUserHasOtherOrgs,
+        });
 
         // Policies: assigneeId, approverId, signedBy (String[] — replace in array)
         await tx.policy.updateMany({
