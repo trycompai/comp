@@ -129,3 +129,22 @@ body {
   -webkit-text-fill-color: transparent;
   animation: thinking-shimmer 3.5s ease-in-out infinite;
 }
+
+/* Data tables scroll horizontally inside their own container (DS Table wraps
+   rows in [data-slot='table-scroll']). macOS overlay scrollbars are invisible
+   until scrolled, so wide tables (e.g. People requirement columns) gave no hint
+   that more columns exist — force a slim, always-visible horizontal scrollbar. */
+[data-slot='table-scroll'] {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) transparent;
+}
+[data-slot='table-scroll']::-webkit-scrollbar {
+  height: 8px;
+}
+[data-slot='table-scroll']::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 9999px;
+}
+[data-slot='table-scroll']::-webkit-scrollbar-track {
+  background: transparent;
+}

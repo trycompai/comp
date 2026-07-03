@@ -126,6 +126,10 @@ const module = await Test.createTestingModule({
 - Use Prisma via `@trycompai/db`
 - Always scope queries by `organizationId` for multi-tenancy
 - Use transactions for operations that modify multiple records
+- **Reusing an integration check's results in a feature?** Use `CheckResultsService`
+  (`integration-platform/services/check-results.service.ts`) — the universal, read-only way
+  to get any check's per-resource results. Do NOT query `IntegrationCheckResult` /
+  `CheckRunRepository` directly from a feature. See the `check-results-service` skill.
 
 ### Gotchas
 
