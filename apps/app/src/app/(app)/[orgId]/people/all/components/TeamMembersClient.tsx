@@ -381,7 +381,7 @@ export function TeamMembersClient({
             <div className="flex w-[280px] flex-col gap-4 p-1.5">
         {!hasAnyConnection && (
           <div className="flex w-full flex-col gap-1">
-            <span className="text-xs text-muted-foreground">Sync people from</span>
+            <span className="text-xs text-muted-foreground">People</span>
             <Link
               href={`/${organizationId}/integrations`}
               className="border-border text-muted-foreground hover:bg-muted flex h-8 items-center justify-between rounded-md border border-dashed px-3 text-sm transition-colors"
@@ -395,7 +395,7 @@ export function TeamMembersClient({
           <div className="flex w-full">
             <div className="flex w-full flex-col gap-1">
               <span id="employee-sync-source-label" className="text-xs text-muted-foreground">
-                Sync people from
+                People
               </span>
               <Select
                 onValueChange={(value) => {
@@ -430,10 +430,10 @@ export function TeamMembersClient({
                       <span className="truncate">{getProviderName(selectedProvider)}</span>
                     </div>
                   ) : (
-                    <span className="text-muted-foreground">None</span>
+                    <span className="text-muted-foreground">Not syncing</span>
                   )}
                 </SelectTrigger>
-              <SelectContent>
+              <SelectContent portal={false}>
                 <div className="px-2 py-1.5 text-xs text-muted-foreground space-y-1">
                   {selectedProvider ? (
                     <>

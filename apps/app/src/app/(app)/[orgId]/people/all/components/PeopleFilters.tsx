@@ -125,7 +125,7 @@ export function PeopleFilters({
                       ] ?? 'Active')}
                 </SelectValue>
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent portal={false}>
                 <SelectItem value="all">All People</SelectItem>
                 <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
@@ -146,7 +146,7 @@ export function PeopleFilters({
                   ] ?? 'All Roles'}
                 </SelectValue>
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent portal={false}>
                 <SelectItem value="all">All Roles</SelectItem>
                 <SelectItem value="owner">Owner</SelectItem>
                 <SelectItem value="admin">Admin</SelectItem>
