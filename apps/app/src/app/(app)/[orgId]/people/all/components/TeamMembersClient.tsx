@@ -330,7 +330,10 @@ export function TeamMembersClient({
   return (
     <Stack gap="4">
       {/* Search and Filters */}
-      <div className="flex items-end gap-4">
+      {/* Left = query (search, filters); right = view configuration (data
+          sources) — the Linear/Stripe toolbar convention. */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
         <div className="w-full md:max-w-[300px]">
           <InputGroup>
             <InputGroupAddon>
@@ -364,6 +367,7 @@ export function TeamMembersClient({
           onOffboardApply={(from, to) => { setOffboardFrom(from); setOffboardTo(to); setPage(1); }}
           onOffboardClear={() => { setOffboardFrom(undefined); setOffboardTo(undefined); setPage(1); }}
         />
+        </div>
         {/* Source settings (sync / 2FA) — settings, not filters, so they get
             their own compact popover, symmetric with the Filters button. */}
         <Popover>
