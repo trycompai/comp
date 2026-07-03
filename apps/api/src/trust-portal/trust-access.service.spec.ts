@@ -380,6 +380,23 @@ describe('TrustAccessService resendAccessGrantEmail NDA copy', () => {
       expect.objectContaining({ ndaBypassed: false }),
     );
   });
+
+  it('rotates an expired token to expire with the grant, not a fixed 24h window', async () => {
+    const grantExpiresAt = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000);
+    mockDb.trustAccessGrant.findFirst.mockResolvedValue({
+      ...baseGrant,
+      expiresAt: grantExpiresAt,
+      accessTokenExpiresAt: new Date(Date.now() - 1000),
+      ndaAgreement: null,
+    });
+
+    await service.resendAccessGrantEmail('org_1', 'tag_1');
+
+    expect(mockDb.trustAccessGrant.update).toHaveBeenCalledWith({
+      where: { id: 'tag_1' },
+      data: expect.objectContaining({ accessTokenExpiresAt: grantExpiresAt }),
+    });
+  });
 });
 
 describe('TrustAccessService signNda NDA copy', () => {
@@ -444,6 +461,55 @@ describe('TrustAccessService signNda NDA copy', () => {
     expect(emailService.sendAccessGrantedEmail).toHaveBeenCalledWith(
       expect.objectContaining({ ndaBypassed: false }),
     );
+  });
+});
+
+describe('TrustAccessService reclaimAccess token rotation', () => {
+  const emailService = {
+    sendAccessReclaimEmail: jest.fn(),
+  };
+  const service = new TrustAccessService(
+    {} as any,
+    emailService as any,
+    {} as any,
+    {} as any,
+    {} as any,
+  );
+  jest
+    .spyOn(service as any, 'buildPortalAccessUrl')
+    .mockResolvedValue('https://portal.example.com/access/token');
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockDb.trust.findUnique.mockResolvedValue({
+      organizationId: 'org_1',
+      friendlyUrl: 'acme-security',
+      status: 'published',
+    });
+  });
+
+  it('rotates an expired access token to expire with the grant, not a fixed 24h window', async () => {
+    const grantExpiresAt = new Date(Date.now() + 20 * 24 * 60 * 60 * 1000);
+    mockDb.trustAccessGrant.findFirst.mockResolvedValue({
+      id: 'tag_1',
+      subjectEmail: 'chang.liu@client.com',
+      status: 'active',
+      expiresAt: grantExpiresAt,
+      accessToken: 'stale-token',
+      accessTokenExpiresAt: new Date(Date.now() - 1000),
+      accessRequest: {
+        name: 'Chang Liu',
+        organization: { name: 'Acme Security' },
+      },
+      ndaAgreement: null,
+    });
+
+    await service.reclaimAccess('acme-security', 'chang.liu@client.com');
+
+    expect(mockDb.trustAccessGrant.update).toHaveBeenCalledWith({
+      where: { id: 'tag_1' },
+      data: expect.objectContaining({ accessTokenExpiresAt: grantExpiresAt }),
+    });
   });
 });
 
