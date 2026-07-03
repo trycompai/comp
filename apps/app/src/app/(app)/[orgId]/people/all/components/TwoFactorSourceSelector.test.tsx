@@ -58,7 +58,9 @@ describe('TwoFactorSourceSelector — RBAC gating', () => {
 
     render(<TwoFactorSourceSelector />);
 
-    expect(screen.getByText('Google Workspace')).toBeInTheDocument();
+    // portal={false} keeps the inline option list mounted, so the name can
+    // appear in both the trigger and the (hidden) list.
+    expect(screen.getAllByText('Google Workspace').length).toBeGreaterThan(0);
     // The inline "2FA status from ·" prefix tells users what the control is for and
     // makes it part of the trigger's accessible name for screen readers.
     expect(

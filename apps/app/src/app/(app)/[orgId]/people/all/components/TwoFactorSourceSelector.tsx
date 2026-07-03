@@ -106,7 +106,7 @@ export function TwoFactorSourceSelector() {
             <span className="text-muted-foreground">None</span>
           )}
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent portal={false}>
           <div className="px-2 py-1.5 text-xs text-muted-foreground">
             Shows each person&apos;s 2FA status from the selected integration&apos;s latest check
           </div>
