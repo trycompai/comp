@@ -106,6 +106,10 @@ describe('mergeDuplicateUser relation re-pointing', () => {
       where: { approverId: o },
       data: { approverId: n },
     });
+    expect(db.ismsObjective.updateMany).toHaveBeenCalledWith({
+      where: { ownerMemberId: o },
+      data: { ownerMemberId: n },
+    });
   });
 
   it('replaces the old member id inside Policy.signedBy arrays', async () => {

@@ -313,6 +313,12 @@ export const mergeDuplicateUser = schemaTask({
           data: { approverId: n },
         });
 
+        // IsmsObjective: ownerMemberId (plain id, no FK — re-point to avoid dangling reference)
+        await tx.ismsObjective.updateMany({
+          where: { ownerMemberId: o },
+          data: { ownerMemberId: n },
+        });
+
         // ── Delete old member ────────────────────────────────────────────────
         await tx.member.delete({ where: { id: o } });
 
