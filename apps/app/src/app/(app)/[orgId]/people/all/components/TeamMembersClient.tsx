@@ -409,7 +409,7 @@ export function TeamMembersClient({
                 }}
                 disabled={isSyncing || isDisablingSync || !canManageMembers}
               >
-                <SelectTrigger aria-labelledby="employee-sync-source-label">
+                <SelectTrigger aria-label="Sync people from">
                   {isSyncing ? (
                     <>
                       <InProgress size={16} className="mr-2 animate-spin" />
