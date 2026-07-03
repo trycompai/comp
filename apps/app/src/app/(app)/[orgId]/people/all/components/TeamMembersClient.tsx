@@ -374,7 +374,7 @@ export function TeamMembersClient({
           <PopoverTrigger>
             <div className="border-border bg-background hover:bg-muted flex h-8 cursor-pointer items-center gap-2 whitespace-nowrap rounded-md border px-3 text-sm transition-colors">
               <SettingsAdjust size={16} className="text-muted-foreground" />
-              Data sources
+              Sync settings
             </div>
           </PopoverTrigger>
           <PopoverContent align="end" style={{ width: 'auto' }}>
