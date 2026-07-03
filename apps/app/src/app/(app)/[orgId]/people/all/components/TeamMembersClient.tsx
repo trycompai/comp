@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -21,6 +22,9 @@ import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
   Select,
   SelectContent,
   SelectItem,
@@ -34,7 +38,7 @@ import {
   TableHeader,
   TableRow,
 } from '@trycompai/design-system';
-import { InProgress, Search } from '@trycompai/design-system/icons';
+import { InProgress, Search, SettingsAdjust } from '@trycompai/design-system/icons';
 
 import { apiClient } from '@/lib/api-client';
 import { useMemo } from 'react';
@@ -326,7 +330,10 @@ export function TeamMembersClient({
   return (
     <Stack gap="4">
       {/* Search and Filters */}
-      <div className="flex items-end gap-4">
+      {/* Left = query (search, filters); right = view configuration (data
+          sources) — the Linear/Stripe toolbar convention. */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
         <div className="w-full md:max-w-[300px]">
           <InputGroup>
             <InputGroupAddon>
@@ -360,9 +367,33 @@ export function TeamMembersClient({
           onOffboardApply={(from, to) => { setOffboardFrom(from); setOffboardTo(to); setPage(1); }}
           onOffboardClear={() => { setOffboardFrom(undefined); setOffboardTo(undefined); setPage(1); }}
         />
+        </div>
+        {/* Source settings (sync / 2FA) — settings, not filters, so they get
+            their own compact popover, symmetric with the Filters button. */}
+        <Popover>
+          <PopoverTrigger>
+            <div className="border-border bg-background hover:bg-muted flex h-8 cursor-pointer items-center gap-2 whitespace-nowrap rounded-md border px-3 text-sm transition-colors">
+              <SettingsAdjust size={16} className="text-muted-foreground" />
+              Sync settings
+            </div>
+          </PopoverTrigger>
+          <PopoverContent align="end" style={{ width: 'auto' }}>
+            <div className="flex w-[280px] flex-col gap-4 p-1.5">
+        {!hasAnyConnection && (
+          <div className="flex w-full flex-col gap-1">
+            <span className="text-xs text-muted-foreground">Sync people from</span>
+            <Link
+              href={`/${organizationId}/integrations`}
+              className="border-border text-muted-foreground hover:bg-muted flex h-8 items-center justify-between rounded-md border border-dashed px-3 text-sm transition-colors"
+            >
+              Connect an integration
+              <span aria-hidden>→</span>
+            </Link>
+          </div>
+        )}
         {hasAnyConnection && (
-          <div className="flex items-end gap-2">
-            <div className="flex w-[200px] flex-col gap-1">
+          <div className="flex w-full">
+            <div className="flex w-full flex-col gap-1">
               <span id="employee-sync-source-label" className="text-xs text-muted-foreground">
                 Sync people from
               </span>
@@ -515,6 +546,9 @@ export function TeamMembersClient({
           </div>
         )}
         <TwoFactorSourceSelector />
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
 
       {/* Table */}
