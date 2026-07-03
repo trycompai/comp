@@ -90,7 +90,7 @@ export function TwoFactorSourceSelector() {
           if (provider) void handleSourceChange(provider);
         }}
       >
-        <SelectTrigger aria-labelledby="two-factor-source-label">
+        <SelectTrigger aria-label="2FA status from">
           {selected ? (
             <div className="flex items-center gap-2">
               {selected.logoUrl && (
