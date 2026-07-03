@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 
 import { usePermissions } from '@/hooks/use-permissions';
@@ -38,8 +39,25 @@ export function TwoFactorSourceSelector() {
   // Wait for BOTH the available sources and the current selection before
   // rendering, so the trigger never flashes the placeholder while the saved
   // selection is still resolving.
-  if (!canManage || isLoading || !hasAnyConnection) {
+  if (!canManage || isLoading) {
     return null;
+  }
+
+  // Empty slot instead of nothing: the labeled placeholder shows exactly what
+  // this setting is and how to unlock it.
+  if (!hasAnyConnection) {
+    return (
+      <div className="flex w-full flex-col gap-1">
+        <span className="text-xs text-muted-foreground">2FA status from</span>
+        <Link
+          href={`/${orgId}/integrations`}
+          className="border-border text-muted-foreground hover:bg-muted flex h-8 items-center justify-between rounded-md border border-dashed px-3 text-sm transition-colors"
+        >
+          Connect an integration
+          <span aria-hidden>→</span>
+        </Link>
+      </div>
+    );
   }
 
   const connectedSources = availableSources.filter((p) => p.connected);

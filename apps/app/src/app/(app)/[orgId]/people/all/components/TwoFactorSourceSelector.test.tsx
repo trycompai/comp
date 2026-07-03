@@ -8,6 +8,12 @@ const { mockHasPermission, mockUse2faSource } = vi.hoisted(() => ({
   mockUse2faSource: vi.fn(),
 }));
 
+vi.mock('next/link', () => ({
+  default: ({ children, href, ...rest }: { children: React.ReactNode; href: string }) => (
+    <a href={href} {...rest}>{children}</a>
+  ),
+}));
+
 vi.mock('next/navigation', () => ({
   useParams: () => ({ orgId: 'org_1' }),
   useRouter: () => ({ refresh: vi.fn() }),
@@ -98,7 +104,7 @@ describe('TwoFactorSourceSelector — RBAC gating', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('renders nothing when no bound integration is connected', () => {
+  it('shows a labeled connect prompt when no bound integration is connected', () => {
     mockHasPermission.mockReturnValue(true);
     mockUse2faSource.mockReturnValue({
       selectedSource: null,
@@ -108,7 +114,11 @@ describe('TwoFactorSourceSelector — RBAC gating', () => {
       hasAnyConnection: false,
     });
 
-    const { container } = render(<TwoFactorSourceSelector />);
-    expect(container).toBeEmptyDOMElement();
+    render(<TwoFactorSourceSelector />);
+    expect(screen.getByText('2FA status from')).toBeInTheDocument();
+    expect(screen.getByText('Connect an integration')).toHaveAttribute(
+      'href',
+      '/org_1/integrations',
+    );
   });
 });

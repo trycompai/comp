@@ -375,22 +375,18 @@ export function TeamMembersClient({
           </PopoverTrigger>
           <PopoverContent align="end" style={{ width: 'auto' }}>
             <div className="flex w-[280px] flex-col gap-4 p-1.5">
-              {/* Fresh orgs have nothing to configure yet — teach instead of
-                  showing an empty popover. */}
-              {!hasAnyConnection && (
-                <div className="flex flex-col gap-2 py-1">
-                  <span className="text-sm font-medium">No integrations connected</span>
-                  <span className="text-xs text-muted-foreground">
-                    Data sources appear here once you connect an integration.
-                  </span>
-                  <Link
-                    href={`/${organizationId}/integrations`}
-                    className="text-xs font-medium text-primary hover:underline"
-                  >
-                    Browse integrations →
-                  </Link>
-                </div>
-              )}
+        {!hasAnyConnection && (
+          <div className="flex w-full flex-col gap-1">
+            <span className="text-xs text-muted-foreground">Sync people from</span>
+            <Link
+              href={`/${organizationId}/integrations`}
+              className="border-border text-muted-foreground hover:bg-muted flex h-8 items-center justify-between rounded-md border border-dashed px-3 text-sm transition-colors"
+            >
+              Connect an integration
+              <span aria-hidden>→</span>
+            </Link>
+          </div>
+        )}
         {hasAnyConnection && (
           <div className="flex w-full">
             <div className="flex w-full flex-col gap-1">
