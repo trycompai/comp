@@ -1,5 +1,10 @@
 import { db } from '@db/server';
-import { upsertEntityEmbeddings, findSimilarTasks, waitForIndexed } from './index';
+import {
+  upsertEntityEmbeddings,
+  findSimilarTasks,
+  waitForIndexed,
+  pruneOrphanTaskVectors,
+} from './index';
 import { linkSuggestions } from '../link-suggestions';
 import {
   rerankSuggestions,
@@ -592,6 +597,34 @@ export async function runLinkage({
   // Map for the LLM reranker (suggestionsOnly path) to look up titles/desc
   // without an extra DB round trip.
   const taskById = new Map(tasks.map((t) => [t.id, t]));
+
+  // Prune orphan task vectors BEFORE matching. findSimilarTasks filters only by
+  // org + sourceType, so stale vectors — tasks since deleted, or whose controls
+  // were all archived (dropping them from the scope query above) — otherwise sit
+  // cosine-near real work and crowd live tasks out of the top-K recall, starving
+  // risks/vendors of suggestions. lib/embedding has no other delete path, so this
+  // is where the cleanup has to happen. Best-effort: the in-scope filter in each
+  // matching loop still keeps any straggler orphan out of this run's results if
+  // the prune fails or a delete hasn't propagated yet. (CS-681)
+  try {
+    const { deletedSourceIds } = await pruneOrphanTaskVectors({
+      organizationId,
+      liveTaskIds: new Set(taskById.keys()),
+    });
+    if (deletedSourceIds.length > 0) {
+      console.warn(
+        `[linkage] pruned ${deletedSourceIds.length} orphan task vector(s) for org ${organizationId}`,
+      );
+      // Keep "no vector" consistent with "no hash": a task re-entering scope
+      // must re-embed rather than be skipped by the dedup guard.
+      await db.task.updateMany({
+        where: { id: { in: deletedSourceIds }, organizationId },
+        data: { embeddingHash: null },
+      });
+    }
+  } catch (err) {
+    console.error('[linkage] orphan vector prune failed; continuing', err);
+  }
 
   let suggestions: RunLinkageOutput['suggestions'];
 

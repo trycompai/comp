@@ -4,12 +4,14 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 const upsertMock = vi.fn();
 const queryMock = vi.fn();
 const infoMock = vi.fn();
+const deleteMock = vi.fn();
 
 vi.mock('@upstash/vector', () => ({
   Index: vi.fn().mockImplementation(() => ({
     upsert: upsertMock,
     query: queryMock,
     info: infoMock,
+    delete: deleteMock,
   })),
 }));
 
@@ -29,6 +31,7 @@ import {
   upsertEntityEmbeddings,
   findSimilarTasks,
   waitForIndexed,
+  pruneOrphanTaskVectors,
   type EntityKind,
 } from './index';
 
@@ -36,6 +39,7 @@ beforeEach(() => {
   upsertMock.mockReset();
   queryMock.mockReset();
   infoMock.mockReset();
+  deleteMock.mockReset();
   process.env.UPSTASH_VECTOR_REST_URL = 'https://test.upstash.io';
   process.env.UPSTASH_VECTOR_REST_TOKEN = 'test-token';
 });
@@ -243,5 +247,76 @@ describe('waitForIndexed', () => {
     expect(result.waitedMs).toBeGreaterThanOrEqual(80);
     // The timeout polls + the trailing diagnostic info() call.
     expect(infoMock.mock.calls.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe('pruneOrphanTaskVectors', () => {
+  it('deletes only vectors whose sourceId is not in the live task set', async () => {
+    queryMock.mockResolvedValueOnce([
+      { id: 'task_org_1_tsk_live', score: 0.9, metadata: { sourceId: 'tsk_live' } },
+      { id: 'task_org_1_tsk_orphan1', score: 0.8, metadata: { sourceId: 'tsk_orphan1' } },
+      { id: 'task_org_1_tsk_orphan2', score: 0.7, metadata: { sourceId: 'tsk_orphan2' } },
+    ]);
+    deleteMock.mockResolvedValueOnce({ deleted: 2 });
+
+    const result = await pruneOrphanTaskVectors({
+      organizationId: 'org_1',
+      liveTaskIds: new Set(['tsk_live']),
+    });
+
+    // Enumerates the org's task vectors with the org + task filter at max topK.
+    expect(queryMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        topK: 1000,
+        includeMetadata: true,
+        filter: 'organizationId = "org_1" AND sourceType = "task"',
+      }),
+    );
+    // Deletes the orphan vectors by their prefixed embedding id — never the live one.
+    expect(deleteMock).toHaveBeenCalledTimes(1);
+    expect(deleteMock).toHaveBeenCalledWith([
+      'task_org_1_tsk_orphan1',
+      'task_org_1_tsk_orphan2',
+    ]);
+    expect(result.deletedSourceIds).toEqual(['tsk_orphan1', 'tsk_orphan2']);
+    expect(result.scanned).toBe(3);
+  });
+
+  it('does not call delete when every task vector is still live', async () => {
+    queryMock.mockResolvedValueOnce([
+      { id: 'task_org_1_tsk_a', score: 0.9, metadata: { sourceId: 'tsk_a' } },
+      { id: 'task_org_1_tsk_b', score: 0.8, metadata: { sourceId: 'tsk_b' } },
+    ]);
+
+    const result = await pruneOrphanTaskVectors({
+      organizationId: 'org_1',
+      liveTaskIds: new Set(['tsk_a', 'tsk_b']),
+    });
+
+    expect(deleteMock).not.toHaveBeenCalled();
+    expect(result.deletedSourceIds).toEqual([]);
+    expect(result.scanned).toBe(2);
+  });
+
+  it('batches deletes at 100 ids per call', async () => {
+    // 250 orphans → three delete batches (100 + 100 + 50).
+    const vectors = Array.from({ length: 250 }, (_, i) => ({
+      id: `task_org_1_tsk_${i}`,
+      score: 0.5,
+      metadata: { sourceId: `tsk_${i}` },
+    }));
+    queryMock.mockResolvedValueOnce(vectors);
+    deleteMock.mockResolvedValue({ deleted: 100 });
+
+    const result = await pruneOrphanTaskVectors({
+      organizationId: 'org_1',
+      liveTaskIds: new Set(),
+    });
+
+    expect(deleteMock).toHaveBeenCalledTimes(3);
+    expect(deleteMock.mock.calls[0][0]).toHaveLength(100);
+    expect(deleteMock.mock.calls[1][0]).toHaveLength(100);
+    expect(deleteMock.mock.calls[2][0]).toHaveLength(50);
+    expect(result.deletedSourceIds).toHaveLength(250);
   });
 });

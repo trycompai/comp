@@ -57,6 +57,11 @@ export interface SimilarTaskResult {
 const EMBEDDING_MODEL = 'text-embedding-3-large';
 const EMBEDDING_DIMENSIONS = 1536;
 const DEFAULT_TOP_K = 25;
+// Upstash Vector's max topK. A filtered query at this depth returns every one
+// of an org's task vectors (real orgs have far fewer than 1000), which is how
+// `pruneOrphanTaskVectors` enumerates them for the stale-vector sweep — Upstash
+// exposes no filtered range scan over the shared index.
+const ORPHAN_SCAN_TOP_K = 1000;
 
 let cachedIndex: Index | null = null;
 
@@ -192,6 +197,77 @@ export async function findSimilarTasks({
       department: meta.department ?? undefined,
     };
   });
+}
+
+export interface PruneOrphanTaskVectorsResult {
+  /** sourceIds of the task vectors that were deleted from Upstash. */
+  deletedSourceIds: string[];
+  /** How many of the org's task vectors were examined. */
+  scanned: number;
+}
+
+/**
+ * Delete an org's task vectors whose `sourceId` is no longer in the live task
+ * scope. `lib/embedding` only ever UPSERTS task vectors — it has no other
+ * delete path — so tasks that are deleted, or whose controls all get archived
+ * (dropping them from `runLinkage`'s scope query), leave orphan vectors behind
+ * indefinitely. Those orphans are still returned by `findSimilarTasks` (which
+ * filters on organizationId + sourceType only) and, being embedded from real
+ * compliance work, sit cosine-near the live tasks — crowding them out of the
+ * top-K recall entirely and starving risks/vendors of suggestions (CS-681).
+ *
+ * Upstash exposes no *filtered* range scan over the shared index, but a filtered
+ * `query` at the max topK returns every matching vector when the org has ≤ topK
+ * of them (real orgs do), and the probe vector only affects ordering — never
+ * membership — so a neutral probe suffices to enumerate them. The returned
+ * `deletedSourceIds` let the caller clear each task's stored `embeddingHash`,
+ * keeping "no vector" consistent with "no hash" so a task that later re-enters
+ * scope re-embeds instead of being skipped by the dedup guard.
+ */
+export async function pruneOrphanTaskVectors({
+  organizationId,
+  liveTaskIds,
+}: {
+  organizationId: string;
+  /** sourceIds of the tasks currently in the linkage scope. */
+  liveTaskIds: Set<string>;
+}): Promise<PruneOrphanTaskVectorsResult> {
+  const index = getIndex();
+
+  // Constant probe — enumeration only needs *membership*, not order. At the max
+  // topK, Upstash returns every one of the org's (filtered) task vectors when it
+  // has ≤ topK of them, whatever the probe, so we skip the cost of embedding a
+  // real query. A uniform non-zero vector has a valid cosine norm.
+  const probe = Array.from({ length: EMBEDDING_DIMENSIONS }, () => 1);
+
+  const results = await index.query({
+    vector: probe,
+    topK: ORPHAN_SCAN_TOP_K,
+    includeMetadata: true,
+    filter: `organizationId = "${organizationId}" AND sourceType = "task"`,
+  });
+
+  const orphanVectorIds: string[] = [];
+  const deletedSourceIds: string[] = [];
+  for (const r of results) {
+    const meta = (r.metadata ?? {}) as { sourceId?: string };
+    const sourceId = meta.sourceId ?? String(r.id);
+    if (liveTaskIds.has(sourceId)) continue;
+    orphanVectorIds.push(String(r.id));
+    deletedSourceIds.push(sourceId);
+  }
+
+  if (orphanVectorIds.length === 0) {
+    return { deletedSourceIds: [], scanned: results.length };
+  }
+
+  // Batch the deletes to mirror the existing vector-sync cleanup path.
+  const BATCH = 100;
+  for (let i = 0; i < orphanVectorIds.length; i += BATCH) {
+    await index.delete(orphanVectorIds.slice(i, i + BATCH));
+  }
+
+  return { deletedSourceIds, scanned: results.length };
 }
 
 interface WaitForIndexedOptions {
