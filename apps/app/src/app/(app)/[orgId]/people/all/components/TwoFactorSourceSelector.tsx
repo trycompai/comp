@@ -81,10 +81,13 @@ export function TwoFactorSourceSelector() {
       <span id="two-factor-source-label" className="text-xs text-muted-foreground">
         2FA status
       </span>
+      {/* Uncontrolled on purpose — mirrors the (working) people-sync select.
+          A controlled value re-renders mid-dismissal when SWR revalidates,
+          which breaks the parent popover's outside-click tracking. */}
       <Select
-        value={selectedSource ?? NONE_VALUE}
         onValueChange={(value) => {
-          if (value) void handleSourceChange(value);
+          const provider = String(value);
+          if (provider) void handleSourceChange(provider);
         }}
       >
         <SelectTrigger aria-labelledby="two-factor-source-label">
@@ -127,6 +130,9 @@ export function TwoFactorSourceSelector() {
                   />
                 )}
                 {p.name}
+                {selectedSource === p.slug && (
+                  <span className="ml-auto text-xs text-muted-foreground">Active</span>
+                )}
               </div>
             </SelectItem>
           ))}
