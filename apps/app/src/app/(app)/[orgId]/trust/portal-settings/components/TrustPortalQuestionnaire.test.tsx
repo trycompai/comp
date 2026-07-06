@@ -61,7 +61,7 @@ describe('TrustPortalQuestionnaire', () => {
     expect(screen.getByText('Hidden').closest('button')).toBeDisabled();
   });
 
-  it('saves disabled=false when an admin clicks Hidden', async () => {
+  it('saves enabled=false when an admin clicks Hidden', async () => {
     setMockPermissions(ADMIN_PERMISSIONS);
     render(<TrustPortalQuestionnaire {...defaultProps} />);
     await act(async () => {

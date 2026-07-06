@@ -2740,21 +2740,9 @@ export class TrustAccessService {
   async getPublicSecurityQuestionnaireEnabled(
     friendlyUrl: string,
   ): Promise<boolean> {
-    // Resolve by friendlyUrl first, then fall back to organizationId — mirrors
-    // getPublicFavicon. Two findUnique calls on unique columns give explicit
-    // precedence (friendlyUrl wins), so an org whose friendlyUrl happens to
-    // equal another org's id can't shadow that org's setting.
-    let trust = await db.trust.findUnique({
-      where: { friendlyUrl },
-      select: { securityQuestionnaireEnabled: true },
+    const trust = await this.resolveTrustByFriendlyUrl(friendlyUrl, {
+      securityQuestionnaireEnabled: true,
     });
-
-    if (!trust) {
-      trust = await db.trust.findUnique({
-        where: { organizationId: friendlyUrl },
-        select: { securityQuestionnaireEnabled: true },
-      });
-    }
 
     return trust?.securityQuestionnaireEnabled ?? true;
   }
@@ -2784,18 +2772,29 @@ export class TrustAccessService {
     });
   }
 
-  async getPublicFavicon(friendlyUrl: string): Promise<string | null> {
-    let trust = await db.trust.findUnique({
-      where: { friendlyUrl },
-      select: { favicon: true },
-    });
-
-    if (!trust) {
-      trust = await db.trust.findUnique({
+  /**
+   * Resolve a Trust by friendlyUrl, falling back to organizationId — the public
+   * portal passes either. Two findUnique calls on unique columns give explicit
+   * precedence (friendlyUrl wins), so an org whose friendlyUrl happens to equal
+   * another org's id can't shadow it. Shared by the public read endpoints.
+   */
+  private async resolveTrustByFriendlyUrl<S extends Prisma.TrustSelect>(
+    friendlyUrl: string,
+    select: S,
+  ): Promise<Prisma.TrustGetPayload<{ select: S }> | null> {
+    return (
+      (await db.trust.findUnique({ where: { friendlyUrl }, select })) ??
+      (await db.trust.findUnique({
         where: { organizationId: friendlyUrl },
-        select: { favicon: true },
-      });
-    }
+        select,
+      }))
+    );
+  }
+
+  async getPublicFavicon(friendlyUrl: string): Promise<string | null> {
+    const trust = await this.resolveTrustByFriendlyUrl(friendlyUrl, {
+      favicon: true,
+    });
 
     if (!trust?.favicon) {
       return null;
