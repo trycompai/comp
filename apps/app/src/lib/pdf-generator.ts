@@ -101,6 +101,13 @@ const convertToInternalFormat = (content: TipTapJSONContent[]): JSONContent[] =>
   }));
 };
 
+// Keep-together: minimum number of body lines that must fit on the same page
+// as a heading. If the heading plus this many lines of the following section
+// don't fit, the heading is pushed to the next page so it isn't orphaned at
+// the bottom of a page (CS-704).
+// NOTE: Keep in sync with apps/api/src/trust-portal/policy-pdf-renderer.service.ts HEADING_KEEP_WITH_LINES
+const HEADING_KEEP_WITH_LINES = 3;
+
 // Helper function to check for page breaks
 const checkPageBreak = (config: PDFConfig, requiredHeight: number = config.lineHeight) => {
   if (config.yPosition + requiredHeight > config.pageHeight - config.margin) {
@@ -178,14 +185,14 @@ const renderFormattedContent = (
 
 // Process JSON content recursively
 const processContent = (config: PDFConfig, content: JSONContent[], level: number = 0) => {
-  for (const item of content) {
+  for (const [nodeIndex, item] of content.entries()) {
     switch (item.type) {
-      case 'heading':
+      case 'heading': {
         const headingLevel = item.attrs?.level || 1;
         let fontSize: number;
         let spacingBefore: number;
         let spacingAfter: number;
-        
+
         switch (headingLevel) {
           case 1:
             fontSize = 14;
@@ -207,18 +214,43 @@ const processContent = (config: PDFConfig, content: JSONContent[], level: number
             spacingBefore = config.lineHeight;
             spacingAfter = config.lineHeight * 0.5;
         }
-        
+
         config.yPosition += spacingBefore;
-        checkPageBreak(config);
-        
-        if (item.content) {
-          const headingText = extractTextFromContent(item.content);
+
+        // Keep-together: require room for the heading itself PLUS the first
+        // few lines of the section that follows it; otherwise push the whole
+        // heading to the next page so it isn't stranded at the page bottom
+        // (CS-704). Only reserve the following-section space when content
+        // actually follows this heading.
+        const headingText = item.content
+          ? extractTextFromContent(item.content)
+          : '';
+        config.doc.setFontSize(fontSize);
+        config.doc.setFont('helvetica', 'bold');
+        const headingLineCount = headingText
+          ? config.doc.splitTextToSize(
+              cleanTextForPDF(headingText),
+              config.contentWidth,
+            ).length
+          : 0;
+        // The heading advances the cursor by its own lines plus spacingAfter,
+        // then each following body line advances (and requires) config.lineHeight
+        // — so reserve headingHeight + spacingAfter + keepWithLines * lineHeight.
+        const headingHeight = Math.max(headingLineCount, 1) * config.lineHeight;
+        const hasFollowingContent = nodeIndex < content.length - 1;
+        const requiredHeight = hasFollowingContent
+          ? headingHeight + spacingAfter + HEADING_KEEP_WITH_LINES * config.lineHeight
+          : headingHeight;
+        checkPageBreak(config, requiredHeight);
+
+        if (headingText) {
           addTextWithWrapping(config, headingText, fontSize, true);
         }
-        
+
         config.yPosition += spacingAfter;
         break;
-        
+      }
+
       case 'paragraph':
         if (item.content) {
           const paragraphText = extractTextFromContent(item.content);

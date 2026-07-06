@@ -937,6 +937,117 @@ describe('PolicyPdfRendererService', () => {
       expect(result.length).toBeGreaterThan(0);
     });
 
+    // --- CS-704: heading keep-together (no orphaned headings) ---------------
+
+    // Split an (uncompressed) jsPDF buffer into per-page visible text. jsPDF
+    // writes one content stream per page, so the concatenated (text)Tj tokens
+    // between two `endstream` markers are exactly one page's text. This lets
+    // us assert which page a given string lands on.
+    const pageTextsFrom = (buf: Buffer): string[] =>
+      buf
+        .toString('latin1')
+        .split('endstream')
+        .map((segment) => {
+          const start = segment.lastIndexOf('stream');
+          if (start === -1) return '';
+          const body = segment.slice(start + 'stream'.length);
+          const re = /\((.*?)\)\s*Tj/g;
+          let text = '';
+          let m: RegExpExecArray | null;
+          while ((m = re.exec(body)) !== null) text += m[1];
+          return text;
+        })
+        .filter((t) => t.length > 0);
+
+    const pageIndexContaining = (pages: string[], needle: string): number =>
+      pages.findIndex((t) => t.includes(needle));
+
+    it('does not orphan a heading at the bottom of a page (CS-704)', () => {
+      // Sweep headings across many vertical offsets by growing the amount of
+      // filler before each one. Without keep-together logic at least one
+      // heading lands at a page bottom with its body flowing to the next page.
+      // With the fix, every heading must share a page with the first line of
+      // its section.
+      const SECTIONS = 30;
+      const nodes: Array<Record<string, unknown>> = [];
+      for (let i = 0; i < SECTIONS; i++) {
+        for (let f = 0; f < i; f++) {
+          nodes.push({
+            type: 'paragraph',
+            content: [
+              {
+                type: 'text',
+                text: `filler ${i}-${f} advancing the cursor down the page`,
+              },
+            ],
+          });
+        }
+        nodes.push({
+          type: 'heading',
+          attrs: { level: 2 },
+          content: [{ type: 'text', text: `HEADINGMARKER${i} Section ${i}` }],
+        });
+        nodes.push({
+          type: 'paragraph',
+          content: [
+            {
+              type: 'text',
+              text: `BODYMARKER${i} first line of the section body content`,
+            },
+          ],
+        });
+      }
+
+      const result = service.renderPoliciesPdfBuffer([
+        { name: 'Keep Together Policy', content: { type: 'doc', content: nodes } },
+      ]);
+
+      const pages = pageTextsFrom(result);
+      expect(pages.length).toBeGreaterThan(1); // multi-page, or the test is moot
+
+      const orphaned: number[] = [];
+      for (let i = 0; i < SECTIONS; i++) {
+        const headingPage = pageIndexContaining(pages, `HEADINGMARKER${i}`);
+        const bodyPage = pageIndexContaining(pages, `BODYMARKER${i}`);
+        expect(headingPage).toBeGreaterThanOrEqual(0);
+        expect(bodyPage).toBeGreaterThanOrEqual(0);
+        if (headingPage !== bodyPage) orphaned.push(i);
+      }
+
+      expect(orphaned).toEqual([]);
+    });
+
+    it('does not push a trailing heading (no following content) to its own page', () => {
+      // The keep-together reserve must only apply when a section actually
+      // follows the heading — a heading that is the last node stays on the
+      // current page rather than being bumped to a fresh one.
+      const result = service.renderPoliciesPdfBuffer([
+        {
+          name: 'Trailing Heading Policy',
+          content: {
+            type: 'doc',
+            content: [
+              {
+                type: 'paragraph',
+                content: [{ type: 'text', text: 'INTROBODY opening paragraph' }],
+              },
+              {
+                type: 'heading',
+                attrs: { level: 2 },
+                content: [{ type: 'text', text: 'TRAILINGHEADING appendix' }],
+              },
+            ],
+          },
+        },
+      ]);
+
+      const pages = pageTextsFrom(result);
+      const introPage = pageIndexContaining(pages, 'INTROBODY');
+      const headingPage = pageIndexContaining(pages, 'TRAILINGHEADING');
+      expect(introPage).toBe(0);
+      expect(headingPage).toBe(0);
+    });
+
     it('applies custom primary color', () => {
       const result = service.renderPoliciesPdfBuffer(
         [

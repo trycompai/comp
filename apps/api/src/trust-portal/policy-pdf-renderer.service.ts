@@ -25,6 +25,19 @@ interface PolicyForPDF {
   content: any;
 }
 
+// Keep-together: minimum number of body lines that must fit on the same page
+// as a heading. If the heading plus this many lines of the following section
+// don't fit, the heading is pushed to the next page so it isn't orphaned at
+// the bottom of a page (CS-704).
+// NOTE: Keep in sync with apps/app/src/lib/pdf-generator.ts HEADING_KEEP_WITH_LINES
+const HEADING_KEEP_WITH_LINES = 3;
+
+// Default vertical room (mm) checkPageBreak requires below the cursor before
+// committing content to the current page. Body lines are laid out one at a
+// time and each one demands this much space, so the heading keep-together
+// reserve must include one such look-ahead for the following section.
+const DEFAULT_BREAK_SPACE = 20;
+
 @Injectable()
 export class PolicyPdfRendererService {
   /**
@@ -222,7 +235,10 @@ export class PolicyPdfRendererService {
     return text;
   }
 
-  private checkPageBreak(config: PDFConfig, requiredSpace: number = 20): void {
+  private checkPageBreak(
+    config: PDFConfig,
+    requiredSpace: number = DEFAULT_BREAK_SPACE,
+  ): void {
     if (config.yPosition + requiredSpace > config.pageHeight - config.margin) {
       config.doc.addPage();
       config.yPosition = config.margin;
@@ -256,10 +272,9 @@ export class PolicyPdfRendererService {
   }
 
   private processContent(config: PDFConfig, content: JSONContent[]): void {
-    for (const node of content) {
+    for (const [nodeIndex, node] of content.entries()) {
       switch (node.type) {
-        case 'heading':
-          this.checkPageBreak(config, 30);
+        case 'heading': {
           const level = node.attrs?.level || 1;
           const headingSizes: { [key: number]: number } = {
             1: 16,
@@ -273,25 +288,53 @@ export class PolicyPdfRendererService {
           config.doc.setFont('helvetica', 'bold');
           config.doc.setTextColor(0, 0, 0);
 
-          if (node.content) {
-            const headingText = this.cleanTextForPDF(
-              this.extractTextFromContent(node.content),
-            );
-            const lines = config.doc.splitTextToSize(
-              headingText,
-              config.contentWidth,
-            );
-            for (const line of lines) {
-              this.checkPageBreak(config);
-              config.doc.text(line, config.margin, config.yPosition);
-              config.yPosition += config.lineHeight * 1.2;
-            }
+          // Measure the heading against the heading font BEFORE deciding
+          // whether it fits, so multi-line headings are counted correctly.
+          const headingText = node.content
+            ? this.cleanTextForPDF(this.extractTextFromContent(node.content))
+            : '';
+          const headingLines = headingText
+            ? (config.doc.splitTextToSize(
+                headingText,
+                config.contentWidth,
+              ) as string[])
+            : [];
+
+          // Keep-together: require room for the heading itself PLUS the first
+          // few lines of the section that follows it; otherwise push the whole
+          // heading to the next page so it isn't stranded at the page bottom.
+          // Only reserve the following-section space when content actually
+          // follows this heading (a trailing heading shouldn't be pushed to a
+          // page of its own).
+          //
+          // The heading advances the cursor by its own height plus a trailing
+          // gap (config.lineHeight), then each following body line advances
+          // config.lineHeight and the last one still needs DEFAULT_BREAK_SPACE
+          // of look-ahead — hence: headingHeight + keepWithLines * lineHeight
+          // (trailing gap + first keepWithLines-1 advances) + one look-ahead.
+          const hasFollowingContent = nodeIndex < content.length - 1;
+          const headingHeight =
+            Math.max(headingLines.length, 1) * config.lineHeight * 1.2;
+          const requiredHeight = hasFollowingContent
+            ? headingHeight +
+              HEADING_KEEP_WITH_LINES * config.lineHeight +
+              DEFAULT_BREAK_SPACE
+            : headingHeight;
+          this.checkPageBreak(config, requiredHeight);
+
+          // The up-front check guarantees the whole heading fits, so render its
+          // lines without further page-break checks (which could split the
+          // heading across pages).
+          for (const line of headingLines) {
+            config.doc.text(line, config.margin, config.yPosition);
+            config.yPosition += config.lineHeight * 1.2;
           }
 
           config.doc.setFontSize(config.defaultFontSize);
           config.doc.setFont('helvetica', 'normal');
           config.yPosition += config.lineHeight;
           break;
+        }
 
         case 'paragraph':
           this.checkPageBreak(config);
