@@ -305,8 +305,9 @@ export class TrustAccessService {
         accessTokenExpiresAt < new Date()
       ) {
         accessToken = this.generateToken(32);
-        accessTokenExpiresAt = new Date();
-        accessTokenExpiresAt.setHours(accessTokenExpiresAt.getHours() + 24);
+        // Mirror the grant's own expiry rather than a fixed window, so the
+        // emailed link stays valid for the whole approved duration.
+        accessTokenExpiresAt = existingGrant.expiresAt;
 
         await db.trustAccessGrant.update({
           where: { id: existingGrant.id },
@@ -706,8 +707,9 @@ export class TrustAccessService {
     expiresAt.setDate(expiresAt.getDate() + durationDays);
 
     const accessToken = this.generateToken(32);
-    const accessTokenExpiresAt = new Date();
-    accessTokenExpiresAt.setHours(accessTokenExpiresAt.getHours() + 24);
+    // Mirror the grant's own expiry rather than a fixed window, so the
+    // emailed link stays valid for the whole approved duration.
+    const accessTokenExpiresAt = expiresAt;
 
     const result = await db.$transaction(async (tx) => {
       const updatedRequest = await tx.trustAccessRequest.update({
@@ -1011,9 +1013,9 @@ export class TrustAccessService {
       (grant.accessTokenExpiresAt && grant.accessTokenExpiresAt < now)
     ) {
       accessToken = this.generateToken(32);
-      const accessTokenExpiresAt = new Date(
-        now.getTime() + 24 * 60 * 60 * 1000,
-      );
+      // Mirror the grant's own expiry rather than a fixed window, so the
+      // emailed link stays valid for the whole approved duration.
+      const accessTokenExpiresAt = grant.expiresAt;
 
       await db.trustAccessGrant.update({
         where: { id: grantId },
@@ -1156,9 +1158,10 @@ export class TrustAccessService {
         : null;
 
       const accessToken = nda.grant.accessToken || this.generateToken(32);
+      // Mirror the grant's own expiry rather than a fixed window, so the
+      // emailed link stays valid for the whole approved duration.
       const accessTokenExpiresAt =
-        nda.grant.accessTokenExpiresAt ||
-        new Date(Date.now() + 24 * 60 * 60 * 1000);
+        nda.grant.accessTokenExpiresAt || nda.grant.expiresAt;
 
       if (!nda.grant.accessToken) {
         await db.trustAccessGrant.update({
@@ -1204,8 +1207,9 @@ export class TrustAccessService {
     expiresAt.setDate(expiresAt.getDate() + durationDays);
 
     const accessToken = this.generateToken(32);
-    const accessTokenExpiresAt = new Date();
-    accessTokenExpiresAt.setHours(accessTokenExpiresAt.getHours() + 24);
+    // Mirror the grant's own expiry rather than a fixed window, so the
+    // emailed link stays valid for the whole approved duration.
+    const accessTokenExpiresAt = expiresAt;
 
     const result = await db.$transaction(async (tx) => {
       const grant = await tx.trustAccessGrant.create({
@@ -1442,8 +1446,9 @@ export class TrustAccessService {
       accessTokenExpiresAt < new Date()
     ) {
       accessToken = this.generateToken(32);
-      accessTokenExpiresAt = new Date();
-      accessTokenExpiresAt.setHours(accessTokenExpiresAt.getHours() + 24);
+      // Mirror the grant's own expiry rather than a fixed window, so the
+      // emailed link stays valid for the whole approved duration.
+      accessTokenExpiresAt = grant.expiresAt;
 
       await db.trustAccessGrant.update({
         where: { id: grant.id },
