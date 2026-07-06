@@ -1048,6 +1048,71 @@ describe('PolicyPdfRendererService', () => {
       expect(headingPage).toBe(0);
     });
 
+    it('does not bump a heading when only empty nodes follow it', () => {
+      // A heading near the page bottom followed ONLY by empty paragraphs / hard
+      // breaks (common trailing nodes in TipTap docs) must be treated as a
+      // trailing heading — reserving keep-together space for a non-existent
+      // section would bump it to a lonely page.
+      const nodes: Array<Record<string, unknown>> = [];
+      for (let f = 0; f < 23; f++) {
+        nodes.push({
+          type: 'paragraph',
+          content: [
+            { type: 'text', text: `filler line ${f} to consume vertical space` },
+          ],
+        });
+      }
+      nodes.push({
+        type: 'heading',
+        attrs: { level: 2 },
+        content: [{ type: 'text', text: 'EMPTYTRAILHEADING near the bottom' }],
+      });
+      // Empty trailing content that renders nothing visible.
+      nodes.push({ type: 'paragraph' });
+      nodes.push({ type: 'paragraph', content: [{ type: 'hardBreak' }] });
+
+      const result = service.renderPoliciesPdfBuffer([
+        { name: 'Empty Trailing Policy', content: { type: 'doc', content: nodes } },
+      ]);
+
+      const pages = pageTextsFrom(result);
+      // The heading shares the page with the filler above it, rather than being
+      // pushed onto a page of its own.
+      expect(pageIndexContaining(pages, 'filler line 22')).toBe(0);
+      expect(pageIndexContaining(pages, 'EMPTYTRAILHEADING')).toBe(0);
+    });
+
+    it('paginates a heading longer than a page instead of overflowing', () => {
+      // Pathological guard: a heading that wraps to more lines than fit on one
+      // page must span multiple pages rather than run off the bottom margin.
+      const longHeadingText = Array.from(
+        { length: 200 },
+        () => 'OVERFLOWWORD',
+      ).join(' ');
+
+      const result = service.renderPoliciesPdfBuffer([
+        {
+          name: 'Giant Heading Policy',
+          content: {
+            type: 'doc',
+            content: [
+              {
+                type: 'heading',
+                attrs: { level: 1 },
+                content: [{ type: 'text', text: longHeadingText }],
+              },
+            ],
+          },
+        },
+      ]);
+
+      const pages = pageTextsFrom(result);
+      const pagesWithHeading = pages.filter((t) =>
+        t.includes('OVERFLOWWORD'),
+      ).length;
+      expect(pagesWithHeading).toBeGreaterThan(1);
+    });
+
     it('applies custom primary color', () => {
       const result = service.renderPoliciesPdfBuffer(
         [

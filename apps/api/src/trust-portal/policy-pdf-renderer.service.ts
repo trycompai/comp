@@ -235,6 +235,22 @@ export class PolicyPdfRendererService {
     return text;
   }
 
+  // Whether any sibling after `index` renders visible text. Used so the heading
+  // keep-together reserve treats a heading followed only by empty paragraphs or
+  // hard breaks as a trailing heading (all renderable node types here carry
+  // text, so an empty result means nothing visible follows).
+  private hasRenderableTextAfter(
+    content: JSONContent[],
+    index: number,
+  ): boolean {
+    for (let i = index + 1; i < content.length; i++) {
+      if (this.extractTextFromContent([content[i]]).trim().length > 0) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   private checkPageBreak(
     config: PDFConfig,
     requiredSpace: number = DEFAULT_BREAK_SPACE,
@@ -312,7 +328,10 @@ export class PolicyPdfRendererService {
           // config.lineHeight and the last one still needs DEFAULT_BREAK_SPACE
           // of look-ahead — hence: headingHeight + keepWithLines * lineHeight
           // (trailing gap + first keepWithLines-1 advances) + one look-ahead.
-          const hasFollowingContent = nodeIndex < content.length - 1;
+          const hasFollowingContent = this.hasRenderableTextAfter(
+            content,
+            nodeIndex,
+          );
           const headingHeight =
             Math.max(headingLines.length, 1) * config.lineHeight * 1.2;
           const requiredHeight = hasFollowingContent
@@ -322,10 +341,13 @@ export class PolicyPdfRendererService {
             : headingHeight;
           this.checkPageBreak(config, requiredHeight);
 
-          // The up-front check guarantees the whole heading fits, so render its
-          // lines without further page-break checks (which could split the
-          // heading across pages).
+          // For a normal heading the up-front check already reserved room, so
+          // these per-line checks never fire (the heading stays intact). They
+          // only act as a safety net for a pathological heading that wraps to
+          // more lines than fit on a page, paginating it instead of letting it
+          // overflow past the bottom margin.
           for (const line of headingLines) {
+            this.checkPageBreak(config, config.lineHeight * 1.2);
             config.doc.text(line, config.margin, config.yPosition);
             config.yPosition += config.lineHeight * 1.2;
           }

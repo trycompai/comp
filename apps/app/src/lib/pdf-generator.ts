@@ -155,6 +155,19 @@ const extractTextFromContent = (content: JSONContent[]): string => {
   }).join('');
 };
 
+// Whether any sibling after `index` renders visible text. Used so the heading
+// keep-together reserve treats a heading followed only by empty paragraphs or
+// hard breaks as a trailing heading (all renderable node types here carry
+// text, so an empty result means nothing visible follows).
+const hasRenderableTextAfter = (content: JSONContent[], index: number): boolean => {
+  for (let i = index + 1; i < content.length; i++) {
+    if (extractTextFromContent([content[i]]).trim().length > 0) {
+      return true;
+    }
+  }
+  return false;
+};
+
 // Enhanced helper function that renders text with proper formatting
 const renderFormattedContent = (
   config: PDFConfig,
@@ -237,7 +250,7 @@ const processContent = (config: PDFConfig, content: JSONContent[], level: number
         // then each following body line advances (and requires) config.lineHeight
         // — so reserve headingHeight + spacingAfter + keepWithLines * lineHeight.
         const headingHeight = Math.max(headingLineCount, 1) * config.lineHeight;
-        const hasFollowingContent = nodeIndex < content.length - 1;
+        const hasFollowingContent = hasRenderableTextAfter(content, nodeIndex);
         const requiredHeight = hasFollowingContent
           ? headingHeight + spacingAfter + HEADING_KEEP_WITH_LINES * config.lineHeight
           : headingHeight;
