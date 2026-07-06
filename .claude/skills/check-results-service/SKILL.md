@@ -54,10 +54,19 @@ Notes:
 
 ## Person-scoped results: the shape contract
 
-Checks about PEOPLE (employee access, 2FA/MFA, training) follow a standard emission shape
-(defined in the `dynamic-integrations` skill, "THE STANDARD"): one row per person,
-`resourceType: 'user'`, `resourceId` = lowercased email, details in `evidence`
-(`email`, `name`, `role`, `isAdmin`, `status`, `lastLogin` — whatever the provider knows).
+Checks about PEOPLE (employee access, 2FA/MFA, training) follow a standard emission shape —
+this section is the canonical definition of it:
+
+- **One row per person** — never a single aggregate row with a roster buried in `evidence`.
+- **`resourceType: 'user'`** (exactly this string).
+- **`resourceId` = the person's email, lowercased + trimmed.** Fallback `username || id`
+  only when the provider genuinely exposes no email (such rows won't join to members —
+  acceptable, still visible in evidence views).
+- **`evidence`** carries what the provider knows: `email`, `name`, `role`, `isAdmin`,
+  `status`, `lastLogin`, plus a `checkedAt` timestamp.
+- **Access/inventory rows always emit as pass** (having access is information, not a
+  violation); compliance-gate checks (2FA, training) pass/fail per person; error paths
+  (bad creds, missing scopes) stay org-level rows.
 
 So a feature joining check results to org members does exactly this — no parsing, no AI:
 
@@ -70,7 +79,7 @@ const forMember = rows.filter((r) => r.resourceId === member.email.toLowerCase()
 
 If a source returns zero `'user'` rows, its check hasn't been normalized to the standard
 yet (or genuinely has no per-person data) — render that as "no per-person data from this
-source", and fix the CHECK (per the dynamic-integrations skill), never by parsing
+source", and fix the CHECK to emit the shape above. Never work around it by parsing
 aggregate evidence in the feature.
 
 ## The envelope you get back
