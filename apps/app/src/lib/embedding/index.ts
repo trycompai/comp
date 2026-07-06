@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { Index } from '@upstash/vector';
+import { Index, type RangeResult } from '@upstash/vector';
 import { openai } from '@ai-sdk/openai';
 import { embedMany } from 'ai';
 import { createHash } from 'node:crypto';
@@ -57,11 +57,13 @@ export interface SimilarTaskResult {
 const EMBEDDING_MODEL = 'text-embedding-3-large';
 const EMBEDDING_DIMENSIONS = 1536;
 const DEFAULT_TOP_K = 25;
-// Upstash Vector's max topK. A filtered query at this depth returns every one
-// of an org's task vectors (real orgs have far fewer than 1000), which is how
-// `pruneOrphanTaskVectors` enumerates them for the stale-vector sweep — Upstash
-// exposes no filtered range scan over the shared index.
-const ORPHAN_SCAN_TOP_K = 1000;
+// Page size for the orphan-vector sweep. `pruneOrphanTaskVectors` paginates an
+// org's task vectors via `range` over their shared id prefix, so there is no
+// top-K ceiling — this only controls how many vectors come back per round trip.
+const ORPHAN_SCAN_PAGE_SIZE = 1000;
+// Backstop so a misbehaving cursor can't loop forever. 500 pages × 1000 = 500k
+// task vectors, far beyond any real org — hitting it signals a bug, not scale.
+const ORPHAN_SCAN_MAX_PAGES = 500;
 
 let cachedIndex: Index | null = null;
 
@@ -78,8 +80,29 @@ function getIndex(): Index {
   return cachedIndex;
 }
 
+function embeddingIdPrefix(kind: EntityKind, organizationId: string): string {
+  return `${kind}_${organizationId}_`;
+}
+
 function embeddingId(kind: EntityKind, organizationId: string, sourceId: string): string {
-  return `${kind}_${organizationId}_${sourceId}`;
+  return `${embeddingIdPrefix(kind, organizationId)}${sourceId}`;
+}
+
+/**
+ * Inverse of `embeddingId`: recover the raw source id from a prefixed embedding
+ * id. Used only as a fallback for vectors written before `metadata.sourceId`
+ * existed — treating the prefixed id as a raw source id would misidentify the
+ * entity, so `pruneOrphanTaskVectors` could delete a live task's vector (its
+ * prefixed id never matches the raw-id `liveTaskIds` set) and clear the hash of
+ * a row that doesn't exist.
+ */
+function sourceIdFromEmbeddingId(
+  kind: EntityKind,
+  organizationId: string,
+  id: string,
+): string {
+  const prefix = embeddingIdPrefix(kind, organizationId);
+  return id.startsWith(prefix) ? id.slice(prefix.length) : id;
 }
 
 /**
@@ -192,7 +215,7 @@ export async function findSimilarTasks({
   return results.map((r) => {
     const meta = (r.metadata ?? {}) as { sourceId?: string; department?: string };
     return {
-      id: meta.sourceId ?? String(r.id),
+      id: meta.sourceId ?? sourceIdFromEmbeddingId('task', organizationId, String(r.id)),
       score: r.score,
       department: meta.department ?? undefined,
     };
@@ -216,13 +239,15 @@ export interface PruneOrphanTaskVectorsResult {
  * compliance work, sit cosine-near the live tasks — crowding them out of the
  * top-K recall entirely and starving risks/vendors of suggestions (CS-681).
  *
- * Upstash exposes no *filtered* range scan over the shared index, but a filtered
- * `query` at the max topK returns every matching vector when the org has ≤ topK
- * of them (real orgs do), and the probe vector only affects ordering — never
- * membership — so a neutral probe suffices to enumerate them. The returned
+ * Every task vector is keyed `task_${organizationId}_${sourceId}` (see
+ * `embeddingId`), so a cursor-paginated `range` over that id prefix enumerates
+ * exactly this org's task vectors with no top-K ceiling — a bounded `query`
+ * would silently miss any orphans past its window on a large org. The returned
  * `deletedSourceIds` let the caller clear each task's stored `embeddingHash`,
  * keeping "no vector" consistent with "no hash" so a task that later re-enters
- * scope re-embeds instead of being skipped by the dedup guard.
+ * scope re-embeds instead of being skipped by the dedup guard. Only sourceIds
+ * whose vector was actually deleted are returned, so a transient delete failure
+ * never desynchronizes that pairing.
  */
 export async function pruneOrphanTaskVectors({
   organizationId,
@@ -233,41 +258,70 @@ export async function pruneOrphanTaskVectors({
   liveTaskIds: Set<string>;
 }): Promise<PruneOrphanTaskVectorsResult> {
   const index = getIndex();
+  const prefix = embeddingIdPrefix('task', organizationId);
 
-  // Constant probe — enumeration only needs *membership*, not order. At the max
-  // topK, Upstash returns every one of the org's (filtered) task vectors when it
-  // has ≤ topK of them, whatever the probe, so we skip the cost of embedding a
-  // real query. A uniform non-zero vector has a valid cosine norm.
-  const probe = Array.from({ length: EMBEDDING_DIMENSIONS }, () => 1);
+  // Enumerate the org's task vectors page by page over their shared id prefix.
+  // Upstash returns `nextCursor === ''` when the last page is drained; the page
+  // cap is a runaway backstop (a healthy cursor always terminates first).
+  const orphans: Array<{ vectorId: string; sourceId: string }> = [];
+  let scanned = 0;
+  let cursor: string | number = '0';
+  let enumeratedFully = false;
+  for (let page = 0; page < ORPHAN_SCAN_MAX_PAGES; page++) {
+    // Annotate the result explicitly: `cursor = nextCursor` would otherwise make
+    // TS infer `nextCursor`'s type from a binding that depends on it (TS7022).
+    const { vectors, nextCursor }: RangeResult = await index.range({
+      cursor,
+      limit: ORPHAN_SCAN_PAGE_SIZE,
+      prefix,
+      includeMetadata: true,
+    });
+    scanned += vectors.length;
+    for (const r of vectors) {
+      const meta = (r.metadata ?? {}) as { sourceId?: string };
+      const sourceId =
+        meta.sourceId ?? sourceIdFromEmbeddingId('task', organizationId, String(r.id));
+      if (liveTaskIds.has(sourceId)) continue;
+      orphans.push({ vectorId: String(r.id), sourceId });
+    }
+    if (!nextCursor) {
+      enumeratedFully = true;
+      break;
+    }
+    cursor = nextCursor;
+  }
+  if (!enumeratedFully) {
+    console.warn(
+      `[embedding] orphan sweep hit the ${ORPHAN_SCAN_MAX_PAGES}-page cap for org ${organizationId} after scanning ${scanned} vector(s); enumeration may be incomplete`,
+    );
+  }
 
-  const results = await index.query({
-    vector: probe,
-    topK: ORPHAN_SCAN_TOP_K,
-    includeMetadata: true,
-    filter: `organizationId = "${organizationId}" AND sourceType = "task"`,
-  });
+  if (orphans.length === 0) {
+    return { deletedSourceIds: [], scanned };
+  }
 
-  const orphanVectorIds: string[] = [];
+  // Delete in batches, resilient to transient failures: a failing batch is
+  // logged and skipped so later batches still run, and only the sourceIds whose
+  // vector was actually deleted are returned. That keeps hash-clearing aligned
+  // with real deletions — clearing a hash whose vector survived would leave a
+  // task that re-embeds needlessly, but never one with a cached hash and no
+  // vector (which would be skipped by the dedup guard and never re-embed).
   const deletedSourceIds: string[] = [];
-  for (const r of results) {
-    const meta = (r.metadata ?? {}) as { sourceId?: string };
-    const sourceId = meta.sourceId ?? String(r.id);
-    if (liveTaskIds.has(sourceId)) continue;
-    orphanVectorIds.push(String(r.id));
-    deletedSourceIds.push(sourceId);
-  }
-
-  if (orphanVectorIds.length === 0) {
-    return { deletedSourceIds: [], scanned: results.length };
-  }
-
-  // Batch the deletes to mirror the existing vector-sync cleanup path.
   const BATCH = 100;
-  for (let i = 0; i < orphanVectorIds.length; i += BATCH) {
-    await index.delete(orphanVectorIds.slice(i, i + BATCH));
+  for (let i = 0; i < orphans.length; i += BATCH) {
+    const batch = orphans.slice(i, i + BATCH);
+    try {
+      await index.delete(batch.map((o) => o.vectorId));
+      deletedSourceIds.push(...batch.map((o) => o.sourceId));
+    } catch (err) {
+      console.error(
+        `[embedding] orphan vector delete batch failed for org ${organizationId} (${batch.length} id(s)); continuing`,
+        err,
+      );
+    }
   }
 
-  return { deletedSourceIds, scanned: results.length };
+  return { deletedSourceIds, scanned };
 }
 
 interface WaitForIndexedOptions {

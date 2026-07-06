@@ -5,6 +5,7 @@ const upsertMock = vi.fn();
 const queryMock = vi.fn();
 const infoMock = vi.fn();
 const deleteMock = vi.fn();
+const rangeMock = vi.fn();
 
 vi.mock('@upstash/vector', () => ({
   Index: vi.fn().mockImplementation(() => ({
@@ -12,6 +13,7 @@ vi.mock('@upstash/vector', () => ({
     query: queryMock,
     info: infoMock,
     delete: deleteMock,
+    range: rangeMock,
   })),
 }));
 
@@ -32,7 +34,6 @@ import {
   findSimilarTasks,
   waitForIndexed,
   pruneOrphanTaskVectors,
-  type EntityKind,
 } from './index';
 
 beforeEach(() => {
@@ -40,6 +41,7 @@ beforeEach(() => {
   queryMock.mockReset();
   infoMock.mockReset();
   deleteMock.mockReset();
+  rangeMock.mockReset();
   process.env.UPSTASH_VECTOR_REST_URL = 'https://test.upstash.io';
   process.env.UPSTASH_VECTOR_REST_TOKEN = 'test-token';
 });
@@ -200,6 +202,22 @@ describe('findSimilarTasks', () => {
     expect(results).toEqual([]);
     expect(queryMock).not.toHaveBeenCalled();
   });
+
+  it('recovers the raw task id from the prefix when metadata.sourceId is missing', async () => {
+    // Legacy vector with no sourceId metadata. Returning the prefixed embedding
+    // id would make runLinkage drop it as "not in live scope" (taskById is keyed
+    // by raw ids), silently starving suggestions. (cubic P1)
+    queryMock.mockResolvedValueOnce([
+      { id: 'task_org_1_tsk_legacy', score: 0.8, metadata: {} },
+    ]);
+
+    const results = await findSimilarTasks({
+      organizationId: 'org_1',
+      queryText: 'phishing risk',
+    });
+
+    expect(results).toEqual([{ id: 'tsk_legacy', score: 0.8, department: undefined }]);
+  });
 });
 
 describe('waitForIndexed', () => {
@@ -251,11 +269,16 @@ describe('waitForIndexed', () => {
 });
 
 describe('pruneOrphanTaskVectors', () => {
+  // Single-page range result: `nextCursor: ''` tells the sweep it's drained.
+  function onePage(vectors: Array<{ id: string; metadata?: { sourceId?: string } }>) {
+    rangeMock.mockResolvedValueOnce({ nextCursor: '', vectors });
+  }
+
   it('deletes only vectors whose sourceId is not in the live task set', async () => {
-    queryMock.mockResolvedValueOnce([
-      { id: 'task_org_1_tsk_live', score: 0.9, metadata: { sourceId: 'tsk_live' } },
-      { id: 'task_org_1_tsk_orphan1', score: 0.8, metadata: { sourceId: 'tsk_orphan1' } },
-      { id: 'task_org_1_tsk_orphan2', score: 0.7, metadata: { sourceId: 'tsk_orphan2' } },
+    onePage([
+      { id: 'task_org_1_tsk_live', metadata: { sourceId: 'tsk_live' } },
+      { id: 'task_org_1_tsk_orphan1', metadata: { sourceId: 'tsk_orphan1' } },
+      { id: 'task_org_1_tsk_orphan2', metadata: { sourceId: 'tsk_orphan2' } },
     ]);
     deleteMock.mockResolvedValueOnce({ deleted: 2 });
 
@@ -264,14 +287,17 @@ describe('pruneOrphanTaskVectors', () => {
       liveTaskIds: new Set(['tsk_live']),
     });
 
-    // Enumerates the org's task vectors with the org + task filter at max topK.
-    expect(queryMock).toHaveBeenCalledWith(
+    // Enumerates the org's task vectors via a prefix range (no topK ceiling),
+    // starting from cursor '0'.
+    expect(rangeMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        topK: 1000,
+        cursor: '0',
+        prefix: 'task_org_1_',
         includeMetadata: true,
-        filter: 'organizationId = "org_1" AND sourceType = "task"',
       }),
     );
+    // No cosine query is used to enumerate for the prune.
+    expect(queryMock).not.toHaveBeenCalled();
     // Deletes the orphan vectors by their prefixed embedding id — never the live one.
     expect(deleteMock).toHaveBeenCalledTimes(1);
     expect(deleteMock).toHaveBeenCalledWith([
@@ -283,9 +309,9 @@ describe('pruneOrphanTaskVectors', () => {
   });
 
   it('does not call delete when every task vector is still live', async () => {
-    queryMock.mockResolvedValueOnce([
-      { id: 'task_org_1_tsk_a', score: 0.9, metadata: { sourceId: 'tsk_a' } },
-      { id: 'task_org_1_tsk_b', score: 0.8, metadata: { sourceId: 'tsk_b' } },
+    onePage([
+      { id: 'task_org_1_tsk_a', metadata: { sourceId: 'tsk_a' } },
+      { id: 'task_org_1_tsk_b', metadata: { sourceId: 'tsk_b' } },
     ]);
 
     const result = await pruneOrphanTaskVectors({
@@ -302,10 +328,9 @@ describe('pruneOrphanTaskVectors', () => {
     // 250 orphans → three delete batches (100 + 100 + 50).
     const vectors = Array.from({ length: 250 }, (_, i) => ({
       id: `task_org_1_tsk_${i}`,
-      score: 0.5,
       metadata: { sourceId: `tsk_${i}` },
     }));
-    queryMock.mockResolvedValueOnce(vectors);
+    onePage(vectors);
     deleteMock.mockResolvedValue({ deleted: 100 });
 
     const result = await pruneOrphanTaskVectors({
@@ -318,5 +343,99 @@ describe('pruneOrphanTaskVectors', () => {
     expect(deleteMock.mock.calls[1][0]).toHaveLength(100);
     expect(deleteMock.mock.calls[2][0]).toHaveLength(50);
     expect(result.deletedSourceIds).toHaveLength(250);
+  });
+
+  it('paginates the whole index via the cursor — orphans past page 1 are not missed', async () => {
+    // Two pages: page 1 hands back a cursor, page 2 drains it. An orphan on the
+    // SECOND page must still be found — the old top-1000 query would miss it on
+    // a large org. (CS-681, cubic P2)
+    rangeMock
+      .mockResolvedValueOnce({
+        nextCursor: 'cursor_2',
+        vectors: [
+          { id: 'task_org_1_tsk_live1', metadata: { sourceId: 'tsk_live1' } },
+          { id: 'task_org_1_tsk_orphan_p1', metadata: { sourceId: 'tsk_orphan_p1' } },
+        ],
+      })
+      .mockResolvedValueOnce({
+        nextCursor: '',
+        vectors: [
+          { id: 'task_org_1_tsk_live2', metadata: { sourceId: 'tsk_live2' } },
+          { id: 'task_org_1_tsk_orphan_p2', metadata: { sourceId: 'tsk_orphan_p2' } },
+        ],
+      });
+    deleteMock.mockResolvedValue({ deleted: 1 });
+
+    const result = await pruneOrphanTaskVectors({
+      organizationId: 'org_1',
+      liveTaskIds: new Set(['tsk_live1', 'tsk_live2']),
+    });
+
+    expect(rangeMock).toHaveBeenCalledTimes(2);
+    // Second call reuses the returned cursor.
+    expect(rangeMock.mock.calls[1][0]).toEqual(
+      expect.objectContaining({ cursor: 'cursor_2', prefix: 'task_org_1_' }),
+    );
+    // Both orphans deleted, including the one on page 2.
+    expect(result.deletedSourceIds.sort()).toEqual(['tsk_orphan_p1', 'tsk_orphan_p2']);
+    expect(result.scanned).toBe(4);
+  });
+
+  it('falls back to the id-prefix when metadata.sourceId is missing (does not prune a live vector)', async () => {
+    // Legacy vectors written before sourceId was stored in metadata. The raw
+    // task id must be parsed from the `task_${org}_` prefix — treating the whole
+    // prefixed id as a sourceId would (a) fail the liveTaskIds check and delete
+    // a LIVE vector, and (b) push a bogus id into deletedSourceIds. (cubic P1)
+    onePage([
+      // Live task, but its vector has no sourceId metadata.
+      { id: 'task_org_1_tsk_live', metadata: {} },
+      // Genuine orphan, also missing sourceId metadata.
+      { id: 'task_org_1_tsk_orphan', metadata: {} },
+    ]);
+    deleteMock.mockResolvedValueOnce({ deleted: 1 });
+
+    const result = await pruneOrphanTaskVectors({
+      organizationId: 'org_1',
+      liveTaskIds: new Set(['tsk_live']),
+    });
+
+    // The live vector is preserved; only the true orphan is deleted...
+    expect(deleteMock).toHaveBeenCalledTimes(1);
+    expect(deleteMock).toHaveBeenCalledWith(['task_org_1_tsk_orphan']);
+    // ...and deletedSourceIds carries the RAW task id, so the caller's
+    // embeddingHash clear targets a real row.
+    expect(result.deletedSourceIds).toEqual(['tsk_orphan']);
+  });
+
+  it('continues past a failing delete batch and returns only successfully-deleted sourceIds', async () => {
+    // 150 orphans → two batches (100 + 50). The first batch's delete throws
+    // (transient Upstash error); the sweep must still run batch 2 and must NOT
+    // report batch 1's sourceIds as deleted — clearing their hashes while the
+    // vectors survive is wasteful, but reporting them deleted while the vectors
+    // are gone-but-cached would break re-embedding. (cubic P2)
+    const vectors = Array.from({ length: 150 }, (_, i) => ({
+      id: `task_org_1_tsk_${i}`,
+      metadata: { sourceId: `tsk_${i}` },
+    }));
+    onePage(vectors);
+    deleteMock
+      .mockRejectedValueOnce(new Error('upstash 500'))
+      .mockResolvedValueOnce({ deleted: 50 });
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const result = await pruneOrphanTaskVectors({
+      organizationId: 'org_1',
+      liveTaskIds: new Set(),
+    });
+
+    // Both batches attempted despite the first throwing.
+    expect(deleteMock).toHaveBeenCalledTimes(2);
+    // Only the second (successful) batch's 50 sourceIds are returned.
+    expect(result.deletedSourceIds).toHaveLength(50);
+    expect(result.deletedSourceIds).toEqual(
+      vectors.slice(100).map((v) => v.metadata.sourceId),
+    );
+    expect(errSpy).toHaveBeenCalled();
+    errSpy.mockRestore();
   });
 });
