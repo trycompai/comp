@@ -8,6 +8,12 @@ const { mockHasPermission, mockUse2faSource } = vi.hoisted(() => ({
   mockUse2faSource: vi.fn(),
 }));
 
+vi.mock('next/link', () => ({
+  default: ({ children, href, ...rest }: { children: React.ReactNode; href: string }) => (
+    <a href={href} {...rest}>{children}</a>
+  ),
+}));
+
 vi.mock('next/navigation', () => ({
   useParams: () => ({ orgId: 'org_1' }),
   useRouter: () => ({ refresh: vi.fn() }),
@@ -52,11 +58,13 @@ describe('TwoFactorSourceSelector — RBAC gating', () => {
 
     render(<TwoFactorSourceSelector />);
 
-    expect(screen.getByText('Google Workspace')).toBeInTheDocument();
+    // portal={false} keeps the inline option list mounted, so the name can
+    // appear in both the trigger and the (hidden) list.
+    expect(screen.getAllByText('Google Workspace').length).toBeGreaterThan(0);
     // The inline "2FA status from ·" prefix tells users what the control is for and
     // makes it part of the trigger's accessible name for screen readers.
     expect(
-      screen.getByRole('combobox', { name: /2FA status from/ }),
+      screen.getByRole('combobox', { name: /2FA status/ }),
     ).toBeInTheDocument();
     // Hook is enabled (and therefore allowed to hit the 2FA-source APIs).
     expect(mockUse2faSource).toHaveBeenCalledWith(
@@ -76,12 +84,12 @@ describe('TwoFactorSourceSelector — RBAC gating', () => {
     );
   });
 
-  it('collapses on mobile like the other secondary toolbar controls (hidden sm:block)', () => {
+  it('fills the Sources popover width (visible at every breakpoint inside it)', () => {
     mockHasPermission.mockReturnValue(true);
 
     const { container } = render(<TwoFactorSourceSelector />);
 
-    expect(container.firstElementChild).toHaveClass('hidden', 'sm:flex');
+    expect(container.firstElementChild).toHaveClass('flex', 'w-full');
   });
 
   it('renders nothing while the source/selection are still loading (no placeholder flash)', () => {
@@ -98,7 +106,7 @@ describe('TwoFactorSourceSelector — RBAC gating', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('renders nothing when no bound integration is connected', () => {
+  it('shows a labeled connect prompt when no bound integration is connected', () => {
     mockHasPermission.mockReturnValue(true);
     mockUse2faSource.mockReturnValue({
       selectedSource: null,
@@ -108,7 +116,11 @@ describe('TwoFactorSourceSelector — RBAC gating', () => {
       hasAnyConnection: false,
     });
 
-    const { container } = render(<TwoFactorSourceSelector />);
-    expect(container).toBeEmptyDOMElement();
+    render(<TwoFactorSourceSelector />);
+    expect(screen.getByText('2FA status')).toBeInTheDocument();
+    expect(screen.getByText('Connect an integration')).toHaveAttribute(
+      'href',
+      '/org_1/integrations',
+    );
   });
 });

@@ -30,11 +30,12 @@ function makeService() {
   );
 }
 
-function boundManifest(id: string, name = id) {
+function boundManifest(id: string, name = id, category = 'Identity & Access') {
   return {
     id,
     name,
     logoUrl: null,
+    category,
     checks: [{ id: 'two-factor-auth', taskMapping: TASK_TEMPLATES.twoFactorAuth }],
   };
 }
@@ -57,9 +58,9 @@ beforeEach(() => {
 describe('CheckResultsService.listSourcesBoundToTask', () => {
   it('returns only manifests bound to the task, with connection state + checkId', async () => {
     mockGetActiveManifests.mockReturnValue([
-      boundManifest('google-workspace', 'Google Workspace'),
+      boundManifest('google-workspace', 'Google Workspace', 'Identity & Access'),
       unboundManifest('slack'),
-      boundManifest('github', 'GitHub'),
+      boundManifest('github', 'GitHub', 'Development'),
     ]);
     mockConnRepo.findActiveBySlugsAndOrg.mockResolvedValue(
       new Map([
@@ -80,8 +81,14 @@ describe('CheckResultsService.listSourcesBoundToTask', () => {
       connected: true,
       connectionId: 'c1',
       checkId: 'two-factor-auth',
+      // Category surfaces from the manifest so features can gate on it.
+      category: 'Identity & Access',
     });
     expect(sources.find((s) => s.slug === 'github')?.connected).toBe(false);
+    // Category flows through for every bound source.
+    expect(sources.find((s) => s.slug === 'github')?.category).toBe(
+      'Development',
+    );
   });
 });
 

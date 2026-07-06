@@ -340,6 +340,10 @@ export class CheckRunRepository {
         checkRunId: run.id,
         ...(resourceType ? { resourceType } : {}),
       },
+      // Deterministic order — without it Postgres may return the same run's
+      // rows in a different order per query, which breaks consumers that key
+      // UI state off row identity/position.
+      orderBy: { id: 'asc' },
     });
     return { run, results };
   }

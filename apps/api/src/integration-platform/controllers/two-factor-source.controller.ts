@@ -17,12 +17,26 @@ import {
 } from '@nestjs/swagger';
 import { IsOptional, IsString } from 'class-validator';
 import { db } from '@db';
-import { TASK_TEMPLATES } from '@trycompai/integration-platform';
+import {
+  TASK_TEMPLATES,
+  type IntegrationCategory,
+} from '@trycompai/integration-platform';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
 import { RequirePermission } from '../../auth/require-permission.decorator';
 import { OrganizationId } from '../../auth/auth-context.decorator';
 import { CheckResultsService } from '../services/check-results.service';
+
+/**
+ * Only identity-provider integrations are meaningful per-employee 2FA sources:
+ * they cover the whole workforce and key each person by email, so their results
+ * align with the People roster. Gating on category (rather than a hand-maintained
+ * list of slugs) means any future IdP in this category qualifies automatically,
+ * while non-identity integrations that merely expose a 2FA check do not.
+ */
+const TWO_FA_SOURCE_CATEGORIES = new Set<IntegrationCategory>([
+  'Identity & Access',
+]);
 
 // Body for POST /v1/integrations/sync/two-factor-source. Pass a provider slug to
 // set the org's 2FA source, or null/omit to clear it. Class (not inline type) so
@@ -123,10 +137,14 @@ export class TwoFactorSourceController {
     }
 
     if (provider) {
-      const sources = await this.checkResults.listSourcesBoundToTask(
-        organizationId,
-        TASK_TEMPLATES.twoFactorAuth,
-      );
+      // Mirror the selector: only identity-provider sources are acceptable
+      // (see TWO_FA_SOURCE_CATEGORIES / getAvailableTwoFactorSources).
+      const sources = (
+        await this.checkResults.listSourcesBoundToTask(
+          organizationId,
+          TASK_TEMPLATES.twoFactorAuth,
+        )
+      ).filter((s) => TWO_FA_SOURCE_CATEGORIES.has(s.category));
       const source = sources.find((s) => s.slug === provider);
       if (!source) {
         throw new HttpException(
@@ -174,16 +192,20 @@ export class TwoFactorSourceController {
       organizationId,
       TASK_TEMPLATES.twoFactorAuth,
     );
-    // Expose only what the selector needs (drop the internal checkId).
-    const providers = sources.map((s) => ({
-      slug: s.slug,
-      name: s.name,
-      logoUrl: s.logoUrl,
-      connected: s.connected,
-      connectionId: s.connectionId,
-      lastSyncAt: s.lastSyncAt,
-      nextSyncAt: s.nextSyncAt,
-    }));
+    // Offer only identity-provider sources (see TWO_FA_SOURCE_CATEGORIES) — an
+    // integration that merely exposes a 2FA check but isn't a workforce identity
+    // provider doesn't map cleanly onto the People roster, so it's not shown.
+    const providers = sources
+      .filter((s) => TWO_FA_SOURCE_CATEGORIES.has(s.category))
+      .map((s) => ({
+        slug: s.slug,
+        name: s.name,
+        logoUrl: s.logoUrl,
+        connected: s.connected,
+        connectionId: s.connectionId,
+        lastSyncAt: s.lastSyncAt,
+        nextSyncAt: s.nextSyncAt,
+      }));
     return { providers };
   }
 
