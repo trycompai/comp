@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { db } from '@db';
 import { randomBytes } from 'crypto';
+import { extractComplianceBadges } from './cert-badge-mapper';
 import {
   ApproveAccessRequestDto,
   CreateAccessRequestDto,
@@ -2876,9 +2877,14 @@ export class TrustAccessService {
             }
           }
 
-          // Extract compliance badges from riskAssessmentData when vendor record has none
-          if (!badges || !Array.isArray(badges) || badges.length === 0) {
-            badges = this.extractBadgesFromRiskData(parsed);
+          // Prefer badges freshly derived from the vendor's verified
+          // certifications so the public Trust Centre always matches the admin
+          // Vendors tab, rather than trusting a possibly-stale stored
+          // complianceBadges value (CS-688). Fall back to the stored value only
+          // when there is nothing to derive.
+          const derivedBadges = extractComplianceBadges(parsed);
+          if (derivedBadges.length > 0) {
+            badges = derivedBadges;
           }
         }
       }
@@ -2888,63 +2894,6 @@ export class TrustAccessService {
         trustPortalUrl,
       };
     });
-  }
-
-  /**
-   * Extract compliance badges from GlobalVendors riskAssessmentData certifications.
-   * Used as fallback when the vendor record has no complianceBadges synced yet.
-   */
-  private extractBadgesFromRiskData(
-    data: Record<string, unknown>,
-  ): Array<{ type: string; verified: boolean }> | null {
-    const certs = data.certifications;
-    if (!Array.isArray(certs)) return null;
-
-    const CERT_MAP: Record<string, string> = {
-      soc2: 'soc2',
-      'soc 2': 'soc2',
-      soc3: 'soc3',
-      'soc 3': 'soc3',
-      iso27001: 'iso27001',
-      'iso 27001': 'iso27001',
-      iso42001: 'iso42001',
-      'iso 42001': 'iso42001',
-      gdpr: 'gdpr',
-      hipaa: 'hipaa',
-      pcidss: 'pci_dss',
-      'pci dss': 'pci_dss',
-      pci_dss: 'pci_dss',
-      nen7510: 'nen7510',
-      'nen 7510': 'nen7510',
-      iso9001: 'iso9001',
-      'iso 9001': 'iso9001',
-      pipeda: 'pipeda',
-      ccpa: 'ccpa',
-    };
-
-    const badges: Array<{ type: string; verified: boolean }> = [];
-    const seen = new Set<string>();
-
-    for (const cert of certs) {
-      if (
-        !cert ||
-        typeof cert !== 'object' ||
-        cert.status !== 'verified' ||
-        typeof cert.type !== 'string'
-      )
-        continue;
-
-      const normalized = cert.type.toLowerCase().replace(/[^a-z0-9 _]/g, '');
-      // Use canonical slug for known certs, keep original type for unknown ones
-      const badgeType = CERT_MAP[normalized] ?? cert.type.trim();
-      const key = badgeType.toLowerCase();
-      if (badgeType && !seen.has(key)) {
-        seen.add(key);
-        badges.push({ type: badgeType, verified: true });
-      }
-    }
-
-    return badges.length > 0 ? badges : null;
   }
 
   /**
