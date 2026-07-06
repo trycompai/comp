@@ -21,6 +21,7 @@ import { TrustPortalBrandingSettings } from './TrustPortalBrandingSettings';
 import { TrustPortalCustomLinks } from './TrustPortalCustomLinks';
 import { TrustPortalFaqBuilder } from './TrustPortalFaqBuilder';
 import { TrustPortalOverview } from './TrustPortalOverview';
+import { TrustPortalQuestionnaire } from './TrustPortalQuestionnaire';
 import { TrustPortalVendors } from './TrustPortalVendors';
 
 // Client-side form schema (includes all fields for form state)
@@ -170,6 +171,7 @@ export function TrustPortalSwitch({
   vendors,
   customFrameworks,
   faviconUrl,
+  securityQuestionnaireEnabled,
 }: {
   enabled: boolean;
   slug: string;
@@ -221,6 +223,7 @@ export function TrustPortalSwitch({
   vendors: TrustVendor[];
   customFrameworks: TrustCustomFrameworkItem[];
   faviconUrl?: string | null;
+  securityQuestionnaireEnabled: boolean;
 }) {
   const { hasPermission } = usePermissions();
   const canUpdate = hasPermission('trust', 'update');
@@ -486,6 +489,7 @@ export function TrustPortalSwitch({
             <TabsTrigger value="links">Links</TabsTrigger>
             <TabsTrigger value="faq">FAQ</TabsTrigger>
             <TabsTrigger value="documents">Documents</TabsTrigger>
+            <TabsTrigger value="questionnaire">Questionnaire</TabsTrigger>
           </TabsList>
 
           {/* Compliance Frameworks Tab */}
@@ -1022,6 +1026,16 @@ export function TrustPortalSwitch({
                 organizationId={orgId}
                 enabled={true}
                 documents={additionalDocuments}
+              />
+            </div>
+          </TabsContent>
+
+          {/* Security Questionnaire Tab */}
+          <TabsContent value="questionnaire">
+            <div className="pt-6">
+              <TrustPortalQuestionnaire
+                initialEnabled={securityQuestionnaireEnabled}
+                orgId={orgId}
               />
             </div>
           </TabsContent>

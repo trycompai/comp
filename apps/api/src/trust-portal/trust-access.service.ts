@@ -305,8 +305,9 @@ export class TrustAccessService {
         accessTokenExpiresAt < new Date()
       ) {
         accessToken = this.generateToken(32);
-        accessTokenExpiresAt = new Date();
-        accessTokenExpiresAt.setHours(accessTokenExpiresAt.getHours() + 24);
+        // Mirror the grant's own expiry rather than a fixed window, so the
+        // emailed link stays valid for the whole approved duration.
+        accessTokenExpiresAt = existingGrant.expiresAt;
 
         await db.trustAccessGrant.update({
           where: { id: existingGrant.id },
@@ -706,8 +707,9 @@ export class TrustAccessService {
     expiresAt.setDate(expiresAt.getDate() + durationDays);
 
     const accessToken = this.generateToken(32);
-    const accessTokenExpiresAt = new Date();
-    accessTokenExpiresAt.setHours(accessTokenExpiresAt.getHours() + 24);
+    // Mirror the grant's own expiry rather than a fixed window, so the
+    // emailed link stays valid for the whole approved duration.
+    const accessTokenExpiresAt = expiresAt;
 
     const result = await db.$transaction(async (tx) => {
       const updatedRequest = await tx.trustAccessRequest.update({
@@ -1011,9 +1013,9 @@ export class TrustAccessService {
       (grant.accessTokenExpiresAt && grant.accessTokenExpiresAt < now)
     ) {
       accessToken = this.generateToken(32);
-      const accessTokenExpiresAt = new Date(
-        now.getTime() + 24 * 60 * 60 * 1000,
-      );
+      // Mirror the grant's own expiry rather than a fixed window, so the
+      // emailed link stays valid for the whole approved duration.
+      const accessTokenExpiresAt = grant.expiresAt;
 
       await db.trustAccessGrant.update({
         where: { id: grantId },
@@ -1156,9 +1158,10 @@ export class TrustAccessService {
         : null;
 
       const accessToken = nda.grant.accessToken || this.generateToken(32);
+      // Mirror the grant's own expiry rather than a fixed window, so the
+      // emailed link stays valid for the whole approved duration.
       const accessTokenExpiresAt =
-        nda.grant.accessTokenExpiresAt ||
-        new Date(Date.now() + 24 * 60 * 60 * 1000);
+        nda.grant.accessTokenExpiresAt || nda.grant.expiresAt;
 
       if (!nda.grant.accessToken) {
         await db.trustAccessGrant.update({
@@ -1204,8 +1207,9 @@ export class TrustAccessService {
     expiresAt.setDate(expiresAt.getDate() + durationDays);
 
     const accessToken = this.generateToken(32);
-    const accessTokenExpiresAt = new Date();
-    accessTokenExpiresAt.setHours(accessTokenExpiresAt.getHours() + 24);
+    // Mirror the grant's own expiry rather than a fixed window, so the
+    // emailed link stays valid for the whole approved duration.
+    const accessTokenExpiresAt = expiresAt;
 
     const result = await db.$transaction(async (tx) => {
       const grant = await tx.trustAccessGrant.create({
@@ -1442,8 +1446,9 @@ export class TrustAccessService {
       accessTokenExpiresAt < new Date()
     ) {
       accessToken = this.generateToken(32);
-      accessTokenExpiresAt = new Date();
-      accessTokenExpiresAt.setHours(accessTokenExpiresAt.getHours() + 24);
+      // Mirror the grant's own expiry rather than a fixed window, so the
+      // emailed link stays valid for the whole approved duration.
+      accessTokenExpiresAt = grant.expiresAt;
 
       await db.trustAccessGrant.update({
         where: { id: grant.id },
@@ -1524,6 +1529,7 @@ export class TrustAccessService {
       organizationName: grant.accessRequest.organization.name,
       friendlyUrl: branding.friendlyUrl,
       faviconUrl: branding.faviconUrl,
+      securityQuestionnaireEnabled: branding.securityQuestionnaireEnabled,
       expiresAt: grant.expiresAt,
       subjectEmail: grant.subjectEmail,
       ndaPdfUrl,
@@ -1532,10 +1538,18 @@ export class TrustAccessService {
 
   private async getTrustBrandingByOrganizationId(
     organizationId: string,
-  ): Promise<{ friendlyUrl: string; faviconUrl: string | null }> {
+  ): Promise<{
+    friendlyUrl: string;
+    faviconUrl: string | null;
+    securityQuestionnaireEnabled: boolean;
+  }> {
     const trust = await db.trust.findUnique({
       where: { organizationId },
-      select: { friendlyUrl: true, favicon: true },
+      select: {
+        friendlyUrl: true,
+        favicon: true,
+        securityQuestionnaireEnabled: true,
+      },
     });
 
     const friendlyUrl = trust?.friendlyUrl ?? organizationId;
@@ -1543,7 +1557,11 @@ export class TrustAccessService {
       ? await this.getFaviconSignedUrl(trust.favicon)
       : null;
 
-    return { friendlyUrl, faviconUrl };
+    return {
+      friendlyUrl,
+      faviconUrl,
+      securityQuestionnaireEnabled: trust?.securityQuestionnaireEnabled ?? true,
+    };
   }
 
   private async getFaviconSignedUrl(
@@ -2713,6 +2731,22 @@ export class TrustAccessService {
     };
   }
 
+  /**
+   * Whether the public trust portal should offer the AI-assisted Security
+   * Questionnaire. The public portal passes either the friendly URL or the
+   * organization ID, so we resolve on both. Defaults to enabled when the portal
+   * can't be resolved so the questionnaire never disappears by accident.
+   */
+  async getPublicSecurityQuestionnaireEnabled(
+    friendlyUrl: string,
+  ): Promise<boolean> {
+    const trust = await this.resolveTrustByFriendlyUrl(friendlyUrl, {
+      securityQuestionnaireEnabled: true,
+    });
+
+    return trust?.securityQuestionnaireEnabled ?? true;
+  }
+
   async getPublicCustomLinks(friendlyUrl: string) {
     const trust = await db.trust.findUnique({
       where: { friendlyUrl },
@@ -2738,18 +2772,29 @@ export class TrustAccessService {
     });
   }
 
-  async getPublicFavicon(friendlyUrl: string): Promise<string | null> {
-    let trust = await db.trust.findUnique({
-      where: { friendlyUrl },
-      select: { favicon: true },
-    });
-
-    if (!trust) {
-      trust = await db.trust.findUnique({
+  /**
+   * Resolve a Trust by friendlyUrl, falling back to organizationId — the public
+   * portal passes either. Two findUnique calls on unique columns give explicit
+   * precedence (friendlyUrl wins), so an org whose friendlyUrl happens to equal
+   * another org's id can't shadow it. Shared by the public read endpoints.
+   */
+  private async resolveTrustByFriendlyUrl<S extends Prisma.TrustSelect>(
+    friendlyUrl: string,
+    select: S,
+  ): Promise<Prisma.TrustGetPayload<{ select: S }> | null> {
+    return (
+      (await db.trust.findUnique({ where: { friendlyUrl }, select })) ??
+      (await db.trust.findUnique({
         where: { organizationId: friendlyUrl },
-        select: { favicon: true },
-      });
-    }
+        select,
+      }))
+    );
+  }
+
+  async getPublicFavicon(friendlyUrl: string): Promise<string | null> {
+    const trust = await this.resolveTrustByFriendlyUrl(friendlyUrl, {
+      favicon: true,
+    });
 
     if (!trust?.favicon) {
       return null;
