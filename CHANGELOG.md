@@ -1,3 +1,16 @@
+# [3.97.0](https://github.com/trycompai/comp/compare/v3.96.1...v3.97.0) (2026-07-06)
+
+
+### Bug Fixes
+
+* **people:** polish the redesigned People tab (requirement columns, filters, per-employee 2FA) ([#3347](https://github.com/trycompai/comp/issues/3347)) ([75758ec](https://github.com/trycompai/comp/commit/75758ecad8ccf748c3820debd54b0c015c4a291b))
+
+
+### Features
+
+* **integrations:** emit per-user rows from the Google Workspace employee-access check ([#3352](https://github.com/trycompai/comp/issues/3352)) ([0b54252](https://github.com/trycompai/comp/commit/0b54252e05d53d7f1118d473de1374f93dd02beb))
+* **people:** access tab on member details, per connected integration ([#3349](https://github.com/trycompai/comp/issues/3349)) ([83f188c](https://github.com/trycompai/comp/commit/83f188c0499ca01726a328baf587e26f8e99ce95)), closes [#2](https://github.com/trycompai/comp/issues/2)
+
 ## [3.96.1](https://github.com/trycompai/comp/compare/v3.96.0...v3.96.1) (2026-07-03)
 
 
