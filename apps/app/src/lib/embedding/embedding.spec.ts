@@ -29,9 +29,11 @@ vi.mock('ai', () => ({
   })),
 }));
 
+import { embedMany } from 'ai';
 import {
   upsertEntityEmbeddings,
   findSimilarTasks,
+  cosineToUnitScore,
   waitForIndexed,
   pruneOrphanTaskVectors,
 } from './index';
@@ -168,11 +170,42 @@ describe('upsertEntityEmbeddings', () => {
   });
 });
 
+describe('cosineToUnitScore', () => {
+  it('maps identical vectors to 1, opposite to 0, orthogonal to 0.5', () => {
+    expect(cosineToUnitScore([1, 0], [1, 0])).toBeCloseTo(1, 10);
+    expect(cosineToUnitScore([1, 0], [-1, 0])).toBeCloseTo(0, 10);
+    expect(cosineToUnitScore([1, 0], [0, 1])).toBeCloseTo(0.5, 10);
+  });
+
+  it('is magnitude-invariant (pure cosine) and matches Upstash (1+cos)/2', () => {
+    // Same direction, different magnitudes → still 1.
+    expect(cosineToUnitScore([2, 0], [5, 0])).toBeCloseTo(1, 10);
+    // cos = 0.6 → (1 + 0.6) / 2 = 0.8
+    expect(cosineToUnitScore([3, 4], [3, 0])).toBeCloseTo(0.8, 10);
+  });
+
+  it('returns 0 for a zero vector instead of NaN', () => {
+    expect(cosineToUnitScore([0, 0], [1, 1])).toBe(0);
+    expect(cosineToUnitScore([1, 1], [0, 0])).toBe(0);
+  });
+});
+
 describe('findSimilarTasks', () => {
-  it('queries with org + sourceType filter and returns id+score+department', async () => {
-    queryMock.mockResolvedValueOnce([
-      { id: 'task_org_1_tsk_a', score: 0.82, metadata: { sourceId: 'tsk_a', department: 'hr' } },
-      { id: 'task_org_1_tsk_b', score: 0.71, metadata: { sourceId: 'tsk_b', department: 'none' } },
+  // Range page helper — `nextCursor: ''` signals the enumeration is drained.
+  function taskPage(
+    vectors: Array<{ id: string; vector: number[]; metadata?: Record<string, unknown> }>,
+  ) {
+    rangeMock.mockResolvedValueOnce({ nextCursor: '', vectors });
+  }
+
+  it('enumerates the org task vectors by prefix and ranks them in-process by cosine', async () => {
+    // Query points along [1,0]; task vectors are chosen so the cosine ordering
+    // is deterministic: tsk_a (identical) > tsk_b (orthogonal) > tsk_c (opposite).
+    vi.mocked(embedMany).mockResolvedValueOnce({ embeddings: [[1, 0]] } as never);
+    taskPage([
+      { id: 'task_org_1_tsk_b', vector: [0, 1], metadata: { sourceId: 'tsk_b', department: 'none' } },
+      { id: 'task_org_1_tsk_a', vector: [1, 0], metadata: { sourceId: 'tsk_a', department: 'hr' } },
+      { id: 'task_org_1_tsk_c', vector: [-1, 0], metadata: { sourceId: 'tsk_c' } },
     ]);
 
     const results = await findSimilarTasks({
@@ -181,42 +214,88 @@ describe('findSimilarTasks', () => {
       topK: 10,
     });
 
-    expect(queryMock).toHaveBeenCalledWith(
+    // Enumerates via prefix range WITH the stored vectors — never an ANN query.
+    expect(rangeMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        topK: 10,
+        cursor: '0',
+        prefix: 'task_org_1_',
+        includeVectors: true,
         includeMetadata: true,
-        filter: 'organizationId = "org_1" AND sourceType = "task"',
       }),
     );
+    expect(queryMock).not.toHaveBeenCalled();
+    // Sorted by score desc, scores on Upstash's (1+cos)/2 scale.
     expect(results).toEqual([
-      { id: 'tsk_a', score: 0.82, department: 'hr' },
-      { id: 'tsk_b', score: 0.71, department: 'none' },
+      { id: 'tsk_a', score: 1, department: 'hr' },
+      { id: 'tsk_b', score: 0.5, department: 'none' },
+      { id: 'tsk_c', score: 0, department: undefined },
     ]);
   });
 
-  it('returns empty when query text is empty', async () => {
+  it('applies the topK cap after ranking', async () => {
+    vi.mocked(embedMany).mockResolvedValueOnce({ embeddings: [[1, 0]] } as never);
+    taskPage([
+      { id: 'task_org_1_tsk_a', vector: [1, 0], metadata: { sourceId: 'tsk_a' } },
+      { id: 'task_org_1_tsk_b', vector: [0.9, 0.1], metadata: { sourceId: 'tsk_b' } },
+      { id: 'task_org_1_tsk_c', vector: [-1, 0], metadata: { sourceId: 'tsk_c' } },
+    ]);
+
     const results = await findSimilarTasks({
       organizationId: 'org_1',
-      queryText: '   ',
+      queryText: 'phishing risk',
+      topK: 2,
     });
+
+    expect(results).toHaveLength(2);
+    expect(results.map((r) => r.id)).toEqual(['tsk_a', 'tsk_b']);
+  });
+
+  it('paginates the enumeration across cursor pages', async () => {
+    vi.mocked(embedMany).mockResolvedValueOnce({ embeddings: [[1, 0]] } as never);
+    rangeMock
+      .mockResolvedValueOnce({
+        nextCursor: 'cursor_2',
+        vectors: [{ id: 'task_org_1_tsk_p1', vector: [1, 0], metadata: { sourceId: 'tsk_p1' } }],
+      })
+      .mockResolvedValueOnce({
+        nextCursor: '',
+        vectors: [{ id: 'task_org_1_tsk_p2', vector: [0, 1], metadata: { sourceId: 'tsk_p2' } }],
+      });
+
+    const results = await findSimilarTasks({ organizationId: 'org_1', queryText: 'x' });
+
+    expect(rangeMock).toHaveBeenCalledTimes(2);
+    expect(rangeMock.mock.calls[1][0]).toEqual(
+      expect.objectContaining({ cursor: 'cursor_2', prefix: 'task_org_1_' }),
+    );
+    // A task from page 2 is included in the ranking.
+    expect(results.map((r) => r.id).sort()).toEqual(['tsk_p1', 'tsk_p2']);
+  });
+
+  it('returns empty when query text is empty (no embed, no range)', async () => {
+    const results = await findSimilarTasks({ organizationId: 'org_1', queryText: '   ' });
     expect(results).toEqual([]);
+    expect(rangeMock).not.toHaveBeenCalled();
     expect(queryMock).not.toHaveBeenCalled();
+  });
+
+  it('returns empty when the org has no task vectors', async () => {
+    vi.mocked(embedMany).mockResolvedValueOnce({ embeddings: [[1, 0]] } as never);
+    taskPage([]);
+    const results = await findSimilarTasks({ organizationId: 'org_1', queryText: 'x' });
+    expect(results).toEqual([]);
   });
 
   it('recovers the raw task id from the prefix when metadata.sourceId is missing', async () => {
     // Legacy vector with no sourceId metadata. Returning the prefixed embedding
     // id would make runLinkage drop it as "not in live scope" (taskById is keyed
     // by raw ids), silently starving suggestions. (cubic P1)
-    queryMock.mockResolvedValueOnce([
-      { id: 'task_org_1_tsk_legacy', score: 0.8, metadata: {} },
-    ]);
+    vi.mocked(embedMany).mockResolvedValueOnce({ embeddings: [[1, 0]] } as never);
+    taskPage([{ id: 'task_org_1_tsk_legacy', vector: [1, 0], metadata: {} }]);
 
-    const results = await findSimilarTasks({
-      organizationId: 'org_1',
-      queryText: 'phishing risk',
-    });
+    const results = await findSimilarTasks({ organizationId: 'org_1', queryText: 'phishing risk' });
 
-    expect(results).toEqual([{ id: 'tsk_legacy', score: 0.8, department: undefined }]);
+    expect(results).toEqual([{ id: 'tsk_legacy', score: 1, department: undefined }]);
   });
 });
 
