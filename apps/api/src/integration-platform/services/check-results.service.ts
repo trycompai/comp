@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import type { Prisma } from '@db';
 import {
   registry,
+  type IntegrationCategory,
   type IntegrationCheck,
   type IntegrationManifest,
   type TaskTemplateId,
@@ -44,6 +45,13 @@ export interface CheckSourceInfo {
   connectionId: string | null;
   lastSyncAt: string | null;
   nextSyncAt: string | null;
+  /**
+   * The integration's catalog category (e.g. 'Identity & Access', 'Development').
+   * Descriptive manifest metadata — features that only make sense for certain
+   * kinds of source (e.g. the People-tab 2FA column, which wants identity
+   * providers) filter on this.
+   */
+  category: IntegrationCategory;
 }
 
 /**
@@ -110,6 +118,7 @@ export class CheckResultsService {
         connectionId: connection?.id ?? null,
         lastSyncAt: connection?.lastSyncAt?.toISOString() ?? null,
         nextSyncAt: connection?.nextSyncAt?.toISOString() ?? null,
+        category: manifest.category,
       };
     });
   }

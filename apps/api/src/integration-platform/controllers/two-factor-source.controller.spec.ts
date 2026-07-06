@@ -33,7 +33,12 @@ function makeController() {
   return new TwoFactorSourceController(mockCheckResults as never);
 }
 
-function source(slug: string, connected: boolean, name = slug) {
+function source(
+  slug: string,
+  connected: boolean,
+  name = slug,
+  category = 'Identity & Access',
+) {
   return {
     slug,
     name,
@@ -43,6 +48,7 @@ function source(slug: string, connected: boolean, name = slug) {
     connectionId: connected ? `conn_${slug}` : null,
     lastSyncAt: null,
     nextSyncAt: null,
+    category,
   };
 }
 
@@ -95,6 +101,19 @@ describe('TwoFactorSourceController.setTwoFactorSource', () => {
     ]);
     await expect(
       makeController().setTwoFactorSource(ORG, { provider: 'google-workspace' }),
+    ).rejects.toBeInstanceOf(HttpException);
+    expect(mockOrgUpdate).not.toHaveBeenCalled();
+  });
+
+  it('rejects a connected, bound provider that is not an identity provider', async () => {
+    // A source can be bound to the 2FA task and connected, yet not be an identity
+    // provider (so it can't align to the People roster) — it must not be settable.
+    mockCheckResults.listSourcesBoundToTask.mockResolvedValue([
+      source('google-workspace', true, 'Google Workspace', 'Identity & Access'),
+      source('github', true, 'GitHub', 'Development'),
+    ]);
+    await expect(
+      makeController().setTwoFactorSource(ORG, { provider: 'github' }),
     ).rejects.toBeInstanceOf(HttpException);
     expect(mockOrgUpdate).not.toHaveBeenCalled();
   });
@@ -163,16 +182,18 @@ describe('TwoFactorSourceController.setTwoFactorSource', () => {
 });
 
 describe('TwoFactorSourceController.getAvailableTwoFactorSources', () => {
-  it('returns bound sources with connection state (without the internal checkId)', async () => {
+  it('offers only identity-provider sources, without internal fields', async () => {
     mockCheckResults.listSourcesBoundToTask.mockResolvedValue([
-      source('google-workspace', true, 'Google Workspace'),
-      source('github', false, 'GitHub'),
+      source('google-workspace', true, 'Google Workspace', 'Identity & Access'),
+      // Bound to the 2FA task but not an identity provider — must be excluded.
+      source('github', false, 'GitHub', 'Development'),
     ]);
 
     const { providers } = await makeController().getAvailableTwoFactorSources(ORG);
 
-    expect(providers.map((p) => p.slug)).toEqual(['google-workspace', 'github']);
+    expect(providers.map((p) => p.slug)).toEqual(['google-workspace']);
     expect(providers[0]).not.toHaveProperty('checkId');
+    expect(providers[0]).not.toHaveProperty('category');
     expect(providers[0].connected).toBe(true);
   });
 });
