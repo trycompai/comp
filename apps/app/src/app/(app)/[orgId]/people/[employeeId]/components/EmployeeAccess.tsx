@@ -19,6 +19,8 @@ import {
 import { ChevronDown, ChevronUp } from '@trycompai/design-system/icons';
 
 interface MemberAccessEntry {
+  /** Stable unique id from the API — safe as a React key. */
+  id: string;
   summary: string;
   fields: Record<string, string>;
   /** The raw result evidence, for auditors. */
@@ -108,11 +110,11 @@ function SourceRow({ source }: { source: MemberAccessSource }) {
       {expanded && (
         <div className="border-t border-border px-4 py-3">
           <Stack gap="3">
-            {/* Content-derived key: each entry contains an uncontrolled
-                <details>, so reconciliation must follow the entry, not its
-                position, when the API returns a reordered list. */}
+            {/* Keyed by the API's stable entry id: each entry contains an
+                uncontrolled <details>, so reconciliation must follow the
+                entry, not its position, when the list reorders. */}
             {source.entries.map((entry) => (
-              <div key={`${entry.summary}::${JSON.stringify(entry.fields)}`}>
+              <div key={entry.id}>
                 <div className="grid grid-cols-1 gap-x-6 gap-y-1 sm:grid-cols-2">
                   {Object.entries(entry.fields).map(([label, value]) => (
                     <div key={label} className="flex items-baseline justify-between gap-4">

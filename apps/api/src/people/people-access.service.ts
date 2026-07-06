@@ -8,6 +8,8 @@ import {
 
 /** One access record for the member from one integration's check results. */
 export interface MemberAccessEntry {
+  /** Stable unique id (run id + row position) — safe as a React key. */
+  id: string;
   summary: string;
   /** Human-readable label -> value pairs pulled from the row's evidence. */
   fields: Record<string, string>;
@@ -48,7 +50,7 @@ function labelize(key: string): string {
  * Flatten a result row into a display entry. Only primitive evidence values
  * become fields — nested objects/arrays stay visible in `raw`.
  */
-function toEntry(row: CheckResultRow): MemberAccessEntry {
+function toEntry(row: CheckResultRow, index: number): MemberAccessEntry {
   const fields: Record<string, string> = {};
   if (row.evidence && typeof row.evidence === 'object' && !Array.isArray(row.evidence)) {
     for (const [key, value] of Object.entries(row.evidence)) {
@@ -60,6 +62,7 @@ function toEntry(row: CheckResultRow): MemberAccessEntry {
     }
   }
   return {
+    id: `${row.runId}:${index}`,
     summary: row.description ?? row.title,
     fields,
     raw: row.evidence,

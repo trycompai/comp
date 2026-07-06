@@ -19,7 +19,7 @@ const source = (overrides: object) => ({
   name: 'Google Workspace',
   logoUrl: null,
   matchType: 'matched',
-  entries: [{ summary: 'Super Admin', fields: { Role: 'Super Admin' }, raw: {} }],
+  entries: [{ id: 'run_1:0', summary: 'Super Admin', fields: { Role: 'Super Admin' }, raw: {} }],
   lastCheckedAt: '2026-07-01T00:00:00Z',
   ...overrides,
 });
@@ -63,7 +63,7 @@ describe('EmployeeAccess', () => {
           sources: [
             source({
               entries: [
-                { summary: 'Editor seat', fields: { Role: 'Editor' }, raw: { role: 'editor' } },
+                { id: 'run_1:0', summary: 'Editor seat', fields: { Role: 'Editor' }, raw: { role: 'editor' } },
               ],
             }),
           ],
