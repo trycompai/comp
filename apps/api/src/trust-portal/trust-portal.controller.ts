@@ -56,6 +56,8 @@ import {
 } from './dto/trust-custom-link.dto';
 import type { UpdateTrustOverviewDto } from './dto/update-trust-overview.dto';
 import { UpdateTrustOverviewSchema } from './dto/update-trust-overview.dto';
+import type { UpdateSecurityQuestionnaireDto } from './dto/update-security-questionnaire.dto';
+import { UpdateSecurityQuestionnaireSchema } from './dto/update-security-questionnaire.dto';
 import { UpdateAllowedEmailsDto } from './dto/update-allowed-emails.dto';
 import type { UpdateVendorTrustSettingsDto } from './dto/trust-vendor.dto';
 import { UpdateVendorTrustSettingsSchema } from './dto/trust-vendor.dto';
@@ -418,6 +420,35 @@ export class TrustPortalController {
     @Body() body: Record<string, boolean | string | undefined>,
   ) {
     return this.trustPortalService.updateFrameworks(organizationId, body);
+  }
+
+  @Put('settings/security-questionnaire')
+  @RequirePermission('trust', 'update')
+  @ApiOperation({
+    summary: 'Show or hide the Security Questionnaire on the public trust portal',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['enabled'],
+      properties: {
+        enabled: {
+          type: 'boolean',
+          description:
+            'When false, the Security Questionnaire is hidden from the public trust portal.',
+        },
+      },
+    },
+  })
+  async updateSecurityQuestionnaire(
+    @OrganizationId() organizationId: string,
+    @Body(new ZodValidationPipe(UpdateSecurityQuestionnaireSchema))
+    body: UpdateSecurityQuestionnaireDto,
+  ) {
+    return this.trustPortalService.updateSecurityQuestionnaireEnabled(
+      organizationId,
+      body.enabled,
+    );
   }
 
   @Get('custom-frameworks')

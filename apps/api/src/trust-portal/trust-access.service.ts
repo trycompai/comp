@@ -1524,18 +1524,25 @@ export class TrustAccessService {
       organizationName: grant.accessRequest.organization.name,
       friendlyUrl: branding.friendlyUrl,
       faviconUrl: branding.faviconUrl,
+      securityQuestionnaireEnabled: branding.securityQuestionnaireEnabled,
       expiresAt: grant.expiresAt,
       subjectEmail: grant.subjectEmail,
       ndaPdfUrl,
     };
   }
 
-  private async getTrustBrandingByOrganizationId(
-    organizationId: string,
-  ): Promise<{ friendlyUrl: string; faviconUrl: string | null }> {
+  private async getTrustBrandingByOrganizationId(organizationId: string): Promise<{
+    friendlyUrl: string;
+    faviconUrl: string | null;
+    securityQuestionnaireEnabled: boolean;
+  }> {
     const trust = await db.trust.findUnique({
       where: { organizationId },
-      select: { friendlyUrl: true, favicon: true },
+      select: {
+        friendlyUrl: true,
+        favicon: true,
+        securityQuestionnaireEnabled: true,
+      },
     });
 
     const friendlyUrl = trust?.friendlyUrl ?? organizationId;
@@ -1543,7 +1550,11 @@ export class TrustAccessService {
       ? await this.getFaviconSignedUrl(trust.favicon)
       : null;
 
-    return { friendlyUrl, faviconUrl };
+    return {
+      friendlyUrl,
+      faviconUrl,
+      securityQuestionnaireEnabled: trust?.securityQuestionnaireEnabled ?? true,
+    };
   }
 
   private async getFaviconSignedUrl(
@@ -2711,6 +2722,25 @@ export class TrustAccessService {
       title: trust.overviewTitle,
       content: trust.overviewContent,
     };
+  }
+
+  /**
+   * Whether the public trust portal should offer the AI-assisted Security
+   * Questionnaire. The public portal passes either the friendly URL or the
+   * organization ID, so we resolve on both. Defaults to enabled when the portal
+   * can't be resolved so the questionnaire never disappears by accident.
+   */
+  async getPublicSecurityQuestionnaireEnabled(
+    friendlyUrl: string,
+  ): Promise<boolean> {
+    const trust = await db.trust.findFirst({
+      where: {
+        OR: [{ friendlyUrl }, { organizationId: friendlyUrl }],
+      },
+      select: { securityQuestionnaireEnabled: true },
+    });
+
+    return trust?.securityQuestionnaireEnabled ?? true;
   }
 
   async getPublicCustomLinks(friendlyUrl: string) {

@@ -680,6 +680,37 @@ export class TrustAccessController {
     return this.trustAccessService.getPublicOverview(friendlyUrl);
   }
 
+  @Get(':friendlyUrl/security-questionnaire')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get Security Questionnaire visibility for a trust portal',
+    description:
+      "Whether the org offers the AI-assisted Security Questionnaire on its public trust portal. Defaults to enabled when the portal can't be resolved.",
+  })
+  @ApiParam({
+    name: 'friendlyUrl',
+    description: 'Trust Portal friendly URL or Organization ID',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Security Questionnaire visibility retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        enabled: { type: 'boolean' },
+      },
+    },
+  })
+  async getPublicSecurityQuestionnaire(
+    @Param('friendlyUrl') friendlyUrl: string,
+  ) {
+    const enabled =
+      await this.trustAccessService.getPublicSecurityQuestionnaireEnabled(
+        friendlyUrl,
+      );
+    return { enabled };
+  }
+
   @Get(':friendlyUrl/custom-links')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
