@@ -21,16 +21,15 @@ import { ChevronDown, ChevronUp } from '@trycompai/design-system/icons';
 interface MemberAccessEntry {
   summary: string;
   fields: Record<string, string>;
-  /** Null for AI-extracted entries (no single source record to show). */
+  /** The raw result evidence, for auditors. */
   raw: unknown;
-  source: 'deterministic' | 'ai';
 }
 
 interface MemberAccessSource {
   slug: string;
   name: string;
   logoUrl: string | null;
-  matchType: 'matched' | 'not-matched' | 'unparsed' | 'no-data';
+  matchType: 'matched' | 'not-matched' | 'no-person-data' | 'no-data';
   entries: MemberAccessEntry[];
   lastCheckedAt: string | null;
 }
@@ -61,7 +60,7 @@ const MATCH_BADGE: Record<
 > = {
   matched: { label: 'Access found', variant: 'accent' },
   'not-matched': { label: 'No match for this member', variant: 'secondary' },
-  unparsed: { label: 'Needs manual review', variant: 'secondary' },
+  'no-person-data': { label: 'No per-person data', variant: 'outline' },
   'no-data': { label: 'Check not run yet', variant: 'outline' },
 };
 
@@ -109,14 +108,6 @@ function SourceRow({ source }: { source: MemberAccessSource }) {
           <Stack gap="3">
             {source.entries.map((entry, i) => (
               <div key={i}>
-                {entry.source === 'ai' && (
-                  <div className="mb-2 flex items-center gap-2">
-                    <Badge variant="outline">AI-extracted</Badge>
-                    <Text size="xs" variant="muted">
-                      Structured by AI from this check&apos;s evidence
-                    </Text>
-                  </div>
-                )}
                 <div className="grid grid-cols-1 gap-x-6 gap-y-1 sm:grid-cols-2">
                   {Object.entries(entry.fields).map(([label, value]) => (
                     <div key={label} className="flex items-baseline justify-between gap-4">

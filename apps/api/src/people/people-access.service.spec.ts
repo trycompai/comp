@@ -6,7 +6,6 @@ import type {
   CheckResultRow,
   CheckResultsService,
 } from '../integration-platform/services/check-results.service';
-import type { EvidenceExtractionService } from '../integration-platform/services/evidence-extraction.service';
 import { PeopleAccessService } from './people-access.service';
 
 const memberFindFirst = db.member.findFirst as jest.Mock;
@@ -40,11 +39,7 @@ describe('PeopleAccessService.getMemberAccess', () => {
     listSourcesBoundToTask: jest.fn(),
     getLatestResultsByCheck: jest.fn(),
   };
-  const evidenceExtraction = { extractPersonEntries: jest.fn() };
-  const service = new PeopleAccessService(
-    checkResults as unknown as CheckResultsService,
-    evidenceExtraction as unknown as EvidenceExtractionService,
-  );
+  const service = new PeopleAccessService(checkResults as unknown as CheckResultsService);
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -59,76 +54,96 @@ describe('PeopleAccessService.getMemberAccess', () => {
     );
   });
 
-  it('maps extraction found -> matched and normalizes the member email', async () => {
-    const results = [row({ collectedAt: new Date('2026-07-02T10:00:00Z') })];
-    checkResults.getLatestResultsByCheck.mockResolvedValue(results);
-    evidenceExtraction.extractPersonEntries.mockResolvedValue({
-      status: 'found',
-      entries: [{ summary: 'Editor', fields: {}, raw: null, source: 'ai' }],
-    });
-
-    const out = await service.getMemberAccess('org_1', 'mem_1');
-
-    expect(evidenceExtraction.extractPersonEntries).toHaveBeenCalledWith(
-      expect.objectContaining({ results, email: 'jane@x.com' }),
-    );
-    expect(out.sources).toEqual([
-      expect.objectContaining({
-        slug: 'google-workspace',
-        matchType: 'matched',
-        entries: [expect.objectContaining({ source: 'ai' })],
-        lastCheckedAt: '2026-07-02T10:00:00.000Z',
+  it('matches per-user rows by lowercased email and builds display entries', async () => {
+    checkResults.getLatestResultsByCheck.mockResolvedValue([
+      row({
+        resourceType: 'user',
+        resourceId: 'jane@x.com',
+        description: 'Jane has access to Google Workspace as Super Admin',
+        evidence: {
+          email: 'jane@x.com',
+          name: 'Jane',
+          role: 'Super Admin',
+          isAdmin: true,
+          orgUnit: null,
+          checkedAt: '2026-07-01T00:00:00Z',
+          roles: ['Super Admin'],
+        },
       }),
+      row({ resourceType: 'user', resourceId: 'other@x.com' }),
     ]);
+
+    const { sources } = await service.getMemberAccess('org_1', 'mem_1');
+
+    expect(sources).toHaveLength(1);
+    expect(sources[0].matchType).toBe('matched');
+    expect(sources[0].entries).toHaveLength(1);
+    const entry = sources[0].entries[0];
+    expect(entry.summary).toBe('Jane has access to Google Workspace as Super Admin');
+    // Primitive evidence values become labeled fields; nulls, arrays, and
+    // timestamp keys are excluded; raw evidence is passed through for auditors.
+    expect(entry.fields).toEqual({
+      Email: 'jane@x.com',
+      Name: 'Jane',
+      Role: 'Super Admin',
+      'Is Admin': 'true',
+    });
+    expect(entry.raw).toMatchObject({ email: 'jane@x.com' });
   });
 
-  it('maps extraction not-found -> not-matched and unparsed -> unparsed', async () => {
-    checkResults.getLatestResultsByCheck.mockResolvedValue([row({})]);
+  it('reports not-matched when per-user rows exist but none for this member', async () => {
+    checkResults.getLatestResultsByCheck.mockResolvedValue([
+      row({ resourceType: 'user', resourceId: 'other@x.com' }),
+    ]);
 
-    evidenceExtraction.extractPersonEntries.mockResolvedValueOnce({
-      status: 'not-found',
-      entries: [],
-    });
-    let out = await service.getMemberAccess('org_1', 'mem_1');
-    expect(out.sources[0].matchType).toBe('not-matched');
+    const { sources } = await service.getMemberAccess('org_1', 'mem_1');
 
-    evidenceExtraction.extractPersonEntries.mockResolvedValueOnce({
-      status: 'unparsed',
-      entries: [],
-    });
-    out = await service.getMemberAccess('org_1', 'mem_1');
-    expect(out.sources[0].matchType).toBe('unparsed');
+    expect(sources[0].matchType).toBe('not-matched');
+    expect(sources[0].entries).toHaveLength(0);
   });
 
-  it('reports no-data when the check has never produced results', async () => {
+  it('reports no-person-data when the check ran but emits no user rows', async () => {
+    checkResults.getLatestResultsByCheck.mockResolvedValue([
+      row({ resourceType: 'organization', resourceId: 'google-workspace' }),
+    ]);
+
+    const { sources } = await service.getMemberAccess('org_1', 'mem_1');
+
+    expect(sources[0].matchType).toBe('no-person-data');
+    expect(sources[0].lastCheckedAt).toBe('2026-07-01T00:00:00.000Z');
+  });
+
+  it('reports no-data when the check has never really run', async () => {
     checkResults.getLatestResultsByCheck.mockResolvedValue([]);
-    evidenceExtraction.extractPersonEntries.mockResolvedValue({
-      status: 'not-found',
-      entries: [],
-    });
 
-    const out = await service.getMemberAccess('org_1', 'mem_1');
-    expect(out.sources[0]).toMatchObject({ matchType: 'no-data', lastCheckedAt: null });
+    const { sources } = await service.getMemberAccess('org_1', 'mem_1');
+
+    expect(sources[0].matchType).toBe('no-data');
+    expect(sources[0].lastCheckedAt).toBeNull();
   });
 
-  it('skips extraction entirely for members without an email', async () => {
-    memberFindFirst.mockResolvedValue({ id: 'mem_1', user: { email: null } });
-    checkResults.getLatestResultsByCheck.mockResolvedValue([row({})]);
-
-    const out = await service.getMemberAccess('org_1', 'mem_1');
-
-    expect(evidenceExtraction.extractPersonEntries).not.toHaveBeenCalled();
-    expect(out.sources[0].matchType).toBe('not-matched');
-  });
-
-  it('ignores sources that are not connected', async () => {
+  it('skips sources that are not connected', async () => {
     checkResults.listSourcesBoundToTask.mockResolvedValue([
-      { ...SOURCE, connected: false, connectionId: null },
+      SOURCE,
+      { ...SOURCE, slug: 'slack', connected: false, connectionId: null },
+    ]);
+    checkResults.getLatestResultsByCheck.mockResolvedValue([]);
+
+    const { sources } = await service.getMemberAccess('org_1', 'mem_1');
+
+    expect(sources.map((s) => s.slug)).toEqual(['google-workspace']);
+    expect(checkResults.getLatestResultsByCheck).toHaveBeenCalledTimes(1);
+  });
+
+  it('never matches when the member has no email', async () => {
+    memberFindFirst.mockResolvedValue({ id: 'mem_1', user: { email: null } });
+    checkResults.getLatestResultsByCheck.mockResolvedValue([
+      row({ resourceType: 'user', resourceId: 'jane@x.com' }),
     ]);
 
-    const out = await service.getMemberAccess('org_1', 'mem_1');
+    const { sources } = await service.getMemberAccess('org_1', 'mem_1');
 
-    expect(out.sources).toEqual([]);
-    expect(checkResults.getLatestResultsByCheck).not.toHaveBeenCalled();
+    expect(sources[0].matchType).toBe('not-matched');
+    expect(sources[0].entries).toHaveLength(0);
   });
 });
