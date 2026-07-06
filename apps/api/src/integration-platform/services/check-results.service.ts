@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import type { Prisma } from '@db';
 import {
   registry,
+  type IntegrationCategory,
   type IntegrationCheck,
   type IntegrationManifest,
   type TaskTemplateId,
@@ -18,6 +19,8 @@ import { ConnectionRepository } from '../repositories/connection.repository';
  * (e.g. with a zod schema) and reads only the fields it understands.
  */
 export interface CheckResultRow {
+  /** Database id of this result row — unique and stable; safe as a UI key. */
+  resultId: string;
   /** Provider-native identifier for the resource (email, bucket ARN, repo, …). */
   resourceId: string;
   /** Kind of resource the check produced (e.g. 'user', 'bucket'). */
@@ -44,6 +47,13 @@ export interface CheckSourceInfo {
   connectionId: string | null;
   lastSyncAt: string | null;
   nextSyncAt: string | null;
+  /**
+   * The integration's catalog category (e.g. 'Identity & Access', 'Development').
+   * Descriptive manifest metadata — features that only make sense for certain
+   * kinds of source (e.g. the People-tab 2FA column, which wants identity
+   * providers) filter on this.
+   */
+  category: IntegrationCategory;
 }
 
 /**
@@ -110,6 +120,7 @@ export class CheckResultsService {
         connectionId: connection?.id ?? null,
         lastSyncAt: connection?.lastSyncAt?.toISOString() ?? null,
         nextSyncAt: connection?.nextSyncAt?.toISOString() ?? null,
+        category: manifest.category,
       };
     });
   }
@@ -136,6 +147,7 @@ export class CheckResultsService {
     if (!latest) return [];
 
     return latest.results.map((r) => ({
+      resultId: r.id,
       resourceId: r.resourceId,
       resourceType: r.resourceType,
       passed: r.passed,
