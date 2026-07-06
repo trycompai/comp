@@ -57,13 +57,14 @@ export interface SimilarTaskResult {
 const EMBEDDING_MODEL = 'text-embedding-3-large';
 const EMBEDDING_DIMENSIONS = 1536;
 const DEFAULT_TOP_K = 25;
-// Page size for the orphan-vector sweep. `pruneOrphanTaskVectors` paginates an
-// org's task vectors via `range` over their shared id prefix, so there is no
-// top-K ceiling — this only controls how many vectors come back per round trip.
-const ORPHAN_SCAN_PAGE_SIZE = 1000;
+// Pagination for enumerating an org's task vectors by their shared id prefix —
+// used by both `findSimilarTasks` (exact in-process ranking) and
+// `pruneOrphanTaskVectors` (orphan sweep). Prefix enumeration has no top-K
+// ceiling; page size only controls how many vectors come back per round trip.
+const TASK_VECTOR_PAGE_SIZE = 1000;
 // Backstop so a misbehaving cursor can't loop forever. 500 pages × 1000 = 500k
 // task vectors, far beyond any real org — hitting it signals a bug, not scale.
-const ORPHAN_SCAN_MAX_PAGES = 500;
+const TASK_VECTOR_MAX_PAGES = 500;
 
 let cachedIndex: Index | null = null;
 
@@ -187,9 +188,90 @@ export async function upsertEntityEmbeddings({
   };
 }
 
+interface OrgTaskVector {
+  /** raw task id (sourceId), not the prefixed embedding id */
+  sourceId: string;
+  vector: number[];
+  department?: string;
+}
+
+/**
+ * Enumerate an org's task vectors (with their embeddings) by their shared id
+ * prefix. Every task vector is keyed `task_${organizationId}_${sourceId}` (see
+ * `embeddingId`), so a cursor-paginated `range` returns exactly this org's task
+ * vectors — no metadata filter, no top-K ceiling.
+ */
+async function fetchOrgTaskVectors(organizationId: string): Promise<OrgTaskVector[]> {
+  const index = getIndex();
+  const prefix = embeddingIdPrefix('task', organizationId);
+
+  const out: OrgTaskVector[] = [];
+  let cursor: string | number = '0';
+  let enumeratedFully = false;
+  for (let page = 0; page < TASK_VECTOR_MAX_PAGES; page++) {
+    const { vectors, nextCursor }: RangeResult = await index.range({
+      cursor,
+      limit: TASK_VECTOR_PAGE_SIZE,
+      prefix,
+      includeVectors: true,
+      includeMetadata: true,
+    });
+    for (const r of vectors) {
+      if (!r.vector) continue; // defensive: skip any vector row missing embeddings
+      const meta = (r.metadata ?? {}) as { sourceId?: string; department?: string };
+      out.push({
+        sourceId: meta.sourceId ?? sourceIdFromEmbeddingId('task', organizationId, String(r.id)),
+        vector: r.vector as number[],
+        department: meta.department ?? undefined,
+      });
+    }
+    if (!nextCursor) {
+      enumeratedFully = true;
+      break;
+    }
+    cursor = nextCursor;
+  }
+  if (!enumeratedFully) {
+    console.warn(
+      `[embedding] task-vector enumeration hit the ${TASK_VECTOR_MAX_PAGES}-page cap for org ${organizationId} after ${out.length} vector(s); ranking may be incomplete`,
+    );
+  }
+  return out;
+}
+
+/**
+ * Cosine similarity mapped to Upstash's COSINE score scale, `(1 + cos) / 2`, so
+ * scores stay in [0, 1] and are drop-in compatible with the department boost /
+ * threshold in `linkSuggestions` and the reranker's `cosineScore` hint.
+ */
+export function cosineToUnitScore(a: number[], b: number[]): number {
+  const len = Math.min(a.length, b.length);
+  let dot = 0;
+  let normA = 0;
+  let normB = 0;
+  for (let i = 0; i < len; i++) {
+    dot += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
+  }
+  if (normA === 0 || normB === 0) return 0;
+  const cos = dot / (Math.sqrt(normA) * Math.sqrt(normB));
+  return (1 + cos) / 2;
+}
+
 /**
  * Find the top-K most similar Tasks in an org for a given query string.
  * Returns raw task ids (not prefixed embedding ids) along with score + department.
+ *
+ * Retrieval enumerates the org's task vectors by id prefix and scores them
+ * exactly in-process, rather than issuing a metadata-filtered ANN query. A
+ * filtered `query` (`organizationId AND sourceType`) collapses to near-zero
+ * recall here: one org is a tiny slice of a 180k+ vector shared-namespace index,
+ * so Upstash's approximate traversal exhausts its candidate budget on nearer,
+ * non-matching vectors before reaching this org's tasks — returning 0 candidates
+ * even when relevant tasks exist, which starved treatment plans of every
+ * suggestion (CS-681). An org holds at most low-hundreds of tasks, so exact
+ * scoring over the full set is both correct (no recall loss) and cheap.
  */
 export async function findSimilarTasks({
   organizationId,
@@ -203,23 +285,19 @@ export async function findSimilarTasks({
     values: [queryText],
     providerOptions: { openai: { dimensions: EMBEDDING_DIMENSIONS } },
   });
+  const queryVector = embeddings[0];
 
-  const index = getIndex();
-  const results = await index.query({
-    vector: embeddings[0],
-    topK,
-    includeMetadata: true,
-    filter: `organizationId = "${organizationId}" AND sourceType = "task"`,
-  });
+  const taskVectors = await fetchOrgTaskVectors(organizationId);
+  if (taskVectors.length === 0) return [];
 
-  return results.map((r) => {
-    const meta = (r.metadata ?? {}) as { sourceId?: string; department?: string };
-    return {
-      id: meta.sourceId ?? sourceIdFromEmbeddingId('task', organizationId, String(r.id)),
-      score: r.score,
-      department: meta.department ?? undefined,
-    };
-  });
+  return taskVectors
+    .map((t) => ({
+      id: t.sourceId,
+      score: cosineToUnitScore(queryVector, t.vector),
+      department: t.department,
+    }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, topK);
 }
 
 export interface PruneOrphanTaskVectorsResult {
@@ -267,12 +345,12 @@ export async function pruneOrphanTaskVectors({
   let scanned = 0;
   let cursor: string | number = '0';
   let enumeratedFully = false;
-  for (let page = 0; page < ORPHAN_SCAN_MAX_PAGES; page++) {
+  for (let page = 0; page < TASK_VECTOR_MAX_PAGES; page++) {
     // Annotate the result explicitly: `cursor = nextCursor` would otherwise make
     // TS infer `nextCursor`'s type from a binding that depends on it (TS7022).
     const { vectors, nextCursor }: RangeResult = await index.range({
       cursor,
-      limit: ORPHAN_SCAN_PAGE_SIZE,
+      limit: TASK_VECTOR_PAGE_SIZE,
       prefix,
       includeMetadata: true,
     });
@@ -292,7 +370,7 @@ export async function pruneOrphanTaskVectors({
   }
   if (!enumeratedFully) {
     console.warn(
-      `[embedding] orphan sweep hit the ${ORPHAN_SCAN_MAX_PAGES}-page cap for org ${organizationId} after scanning ${scanned} vector(s); enumeration may be incomplete`,
+      `[embedding] orphan sweep hit the ${TASK_VECTOR_MAX_PAGES}-page cap for org ${organizationId} after scanning ${scanned} vector(s); enumeration may be incomplete`,
     );
   }
 
