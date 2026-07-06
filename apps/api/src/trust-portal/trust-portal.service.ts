@@ -1475,6 +1475,24 @@ export class TrustPortalService {
     });
   }
 
+  async updateSecurityQuestionnaireEnabled(
+    organizationId: string,
+    enabled: boolean,
+  ) {
+    const trust = await db.trust.findUnique({
+      where: { organizationId },
+    });
+
+    if (!trust) {
+      throw new NotFoundException('Trust portal not found');
+    }
+
+    return db.trust.update({
+      where: { organizationId },
+      data: { securityQuestionnaireEnabled: enabled },
+    });
+  }
+
   async getOverview(organizationId: string) {
     const trust = await db.trust.findUnique({
       where: { organizationId },
@@ -1730,6 +1748,8 @@ export class TrustPortalService {
       overviewTitle: trust.overviewTitle ?? null,
       overviewContent: trust.overviewContent ?? defaultOverviewContent,
       showOverview: trust.showOverview ?? false,
+      // Security questionnaire visibility on the public portal
+      securityQuestionnaireEnabled: trust.securityQuestionnaireEnabled ?? true,
       // Favicon
       faviconUrl,
       // Organization data
