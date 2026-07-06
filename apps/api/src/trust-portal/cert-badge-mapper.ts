@@ -48,6 +48,7 @@ export function mapCertificationToBadgeType(certType: string): string | null {
   const normalized = certType.toLowerCase().replace(/[^a-z0-9]/g, '');
 
   if (normalized.includes('soc2')) return 'soc2';
+  if (normalized.includes('soc3')) return 'soc3';
   if (matchesIsoStandard(normalized, '27001')) return 'iso27001';
   if (matchesIsoStandard(normalized, '42001')) return 'iso42001';
   if (normalized.includes('gdpr')) return 'gdpr';
@@ -59,6 +60,12 @@ export function mapCertificationToBadgeType(certType: string): string | null {
     return 'pci_dss';
   if (normalized.includes('nen7510')) return 'nen7510';
   if (matchesIsoStandard(normalized, '9001')) return 'iso9001';
+  // soc3 / pipeda / ccpa were supported by the public portal's original mapper
+  // before consolidation; keep them so those vendors don't lose their public
+  // Trust Centre badges. The public portal renders them via label text and the
+  // admin UI safely skips badge types it has no icon for.
+  if (normalized.includes('pipeda')) return 'pipeda';
+  if (normalized.includes('ccpa')) return 'ccpa';
 
   return null;
 }

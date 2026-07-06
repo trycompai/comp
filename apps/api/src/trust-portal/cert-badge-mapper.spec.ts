@@ -28,6 +28,15 @@ describe('mapCertificationToBadgeType', () => {
     ).toBe('pci_dss');
   });
 
+  // Regression: soc3 / pipeda / ccpa were supported by the public portal's
+  // original mapper. Consolidation must not drop them or affected vendors lose
+  // their public Trust Centre badges.
+  it('maps soc3 / pipeda / ccpa (restored after consolidation)', () => {
+    expect(mapCertificationToBadgeType('SOC 3')).toBe('soc3');
+    expect(mapCertificationToBadgeType('PIPEDA')).toBe('pipeda');
+    expect(mapCertificationToBadgeType('CCPA')).toBe('ccpa');
+  });
+
   // The digits alone must not classify an unrelated identifier.
   it('does not misclassify ids that merely contain the standard digits', () => {
     expect(mapCertificationToBadgeType('Catalog 19001')).toBeNull();
