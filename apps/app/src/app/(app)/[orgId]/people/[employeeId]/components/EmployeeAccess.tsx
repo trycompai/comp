@@ -66,7 +66,9 @@ const MATCH_BADGE: Record<
 
 function SourceRow({ source }: { source: MemberAccessSource }) {
   const [expanded, setExpanded] = useState(false);
-  const badge = MATCH_BADGE[source.matchType];
+  // TypeScript's union is compile-time only — matchType arrives as deserialized
+  // JSON, so an API value this build doesn't know yet must not crash the row.
+  const badge = MATCH_BADGE[source.matchType] ?? MATCH_BADGE['no-data'];
   const canExpand = source.entries.length > 0;
 
   return (
@@ -106,8 +108,11 @@ function SourceRow({ source }: { source: MemberAccessSource }) {
       {expanded && (
         <div className="border-t border-border px-4 py-3">
           <Stack gap="3">
-            {source.entries.map((entry, i) => (
-              <div key={i}>
+            {/* Content-derived key: each entry contains an uncontrolled
+                <details>, so reconciliation must follow the entry, not its
+                position, when the API returns a reordered list. */}
+            {source.entries.map((entry) => (
+              <div key={`${entry.summary}::${JSON.stringify(entry.fields)}`}>
                 <div className="grid grid-cols-1 gap-x-6 gap-y-1 sm:grid-cols-2">
                   {Object.entries(entry.fields).map(([label, value]) => (
                     <div key={label} className="flex items-baseline justify-between gap-4">

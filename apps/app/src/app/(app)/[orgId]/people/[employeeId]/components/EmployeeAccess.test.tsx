@@ -81,6 +81,23 @@ describe('EmployeeAccess', () => {
     expect(screen.getByText('Raw record')).toBeInTheDocument();
   });
 
+  it('falls back to a neutral badge for an unknown matchType instead of crashing', async () => {
+    mockGet.mockResolvedValue({
+      data: {
+        data: {
+          memberId: 'mem_5',
+          // A matchType this build doesn't know (API contract drift).
+          sources: [source({ matchType: 'something-new', entries: [] })],
+        },
+      },
+    });
+
+    render(<EmployeeAccess memberId="mem_5" organizationId="org_1" />);
+
+    await waitFor(() => expect(screen.getByText('Google Workspace')).toBeInTheDocument());
+    expect(screen.getByText('Check not run yet')).toBeInTheDocument();
+  });
+
   it('shows the connect empty state when no integration reports access', async () => {
     mockGet.mockResolvedValue({ data: { data: { memberId: 'mem_2', sources: [] } } });
 
