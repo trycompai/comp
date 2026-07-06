@@ -2,15 +2,16 @@ import { Departments } from '@db';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { LinkagePhase } from './run-linkage';
 
-const { dbMock, upsertMock, findSimilarTasksMock, waitForIndexedMock, rerankMock } = vi.hoisted(() => ({
+const { dbMock, upsertMock, findSimilarTasksMock, waitForIndexedMock, pruneMock, rerankMock } = vi.hoisted(() => ({
   dbMock: {
     risk: { findMany: vi.fn(), update: vi.fn() },
     vendor: { findMany: vi.fn(), update: vi.fn() },
-    task: { findMany: vi.fn(), update: vi.fn() },
+    task: { findMany: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
   },
   upsertMock: vi.fn(),
   findSimilarTasksMock: vi.fn(),
   waitForIndexedMock: vi.fn(),
+  pruneMock: vi.fn(),
   rerankMock: vi.fn(),
 }));
 
@@ -25,6 +26,7 @@ vi.mock('./index', () => ({
   upsertEntityEmbeddings: upsertMock,
   findSimilarTasks: findSimilarTasksMock,
   waitForIndexed: waitForIndexedMock,
+  pruneOrphanTaskVectors: pruneMock,
 }));
 
 vi.mock('../rerank-suggestions', () => ({
@@ -41,6 +43,10 @@ beforeEach(() => {
   // Tests that exercise the race resolve `findSimilarTasks` differently
   // depending on call order rather than blocking on the wait.
   waitForIndexedMock.mockResolvedValue({ waitedMs: 0, polls: 1 });
+  pruneMock.mockReset();
+  // Default: a clean index — nothing to prune. Tests that exercise the sweep
+  // override this per-test.
+  pruneMock.mockResolvedValue({ deletedSourceIds: [], scanned: 0 });
   // Default: every entity is embedded as if for the first time. Tests that
   // exercise the cache-skip path override this per-test.
   upsertMock.mockImplementation(async ({ entities }: { entities: Array<{ id: string }> }) => ({
@@ -437,6 +443,60 @@ describe('runLinkage onPhase', () => {
     expect(result.suggestions?.tasks.map((t) => t.id)).toEqual(['tsk_b', 'tsk_a']);
   });
 
+  it('suggestionsOnly=true drops stale/orphan task vectors before the rerank-input slice (CS-681)', async () => {
+    // Regression: findSimilarTasks filters only by org + sourceType, so it can
+    // return orphan vectors for tasks no longer in the live scope (deleted, or
+    // all controls archived after a framework change) — lib/embedding never
+    // prunes them. When those orphans are the cosine-nearest they fill the
+    // top-30 rerank-input slots and get dropped in the taskById intersection,
+    // leaving the risk with zero suggestions. The one in-scope task must
+    // survive by being filtered in BEFORE the slice.
+    dbMock.risk.findMany.mockResolvedValueOnce([
+      {
+        id: 'rsk_1',
+        title: 'Data Leakage',
+        description: 'Sensitive data exposure',
+        category: 'technology',
+        department: null,
+      },
+    ]);
+    dbMock.vendor.findMany.mockResolvedValueOnce([]);
+    // Live task scope contains ONLY tsk_live — the orphans below are NOT here.
+    dbMock.task.findMany
+      .mockResolvedValueOnce([
+        { id: 'tsk_live', title: 'Encrypt Data at Rest', description: 'KMS', department: null },
+      ])
+      // Enrichment lookup for buildSuggestions (only reached once tsk_live survives).
+      .mockResolvedValueOnce([
+        { id: 'tsk_live', title: 'Encrypt Data at Rest', status: 'todo', controls: [] },
+      ]);
+
+    // 32 orphan vectors, all cosine-nearer than the one live task, followed by
+    // the live task at the bottom. 32 > SUGGESTIONS_RERANK_INPUT_TOP_K (30), so
+    // pre-fix the top-30 slice is entirely orphans and tsk_live never reaches
+    // the reranker → zero suggestions.
+    const orphans = Array.from({ length: 32 }, (_, i) => ({
+      id: `tsk_orphan_${i}`,
+      score: 0.99 - i * 0.01,
+      department: undefined,
+    }));
+    findSimilarTasksMock.mockResolvedValueOnce([
+      ...orphans,
+      { id: 'tsk_live', score: 0.5, department: undefined },
+    ]);
+
+    const result = await runLinkage({
+      organizationId: 'org_1',
+      riskId: 'rsk_1',
+      suggestionsOnly: true,
+    });
+
+    // The in-scope task survives the slice → non-empty suggestions.
+    expect(result.suggestions?.tasks.map((t) => t.id)).toEqual(['tsk_live']);
+    // No orphan leaked into the suggestions.
+    expect(result.suggestions?.tasks.some((t) => t.id.startsWith('tsk_orphan_'))).toBe(false);
+  });
+
   it('replace=false (default) does not disconnect existing links', async () => {
     dbMock.risk.findMany.mockResolvedValueOnce([
       {
@@ -701,5 +761,100 @@ describe('runLinkage waits for the vector index to drain before matching', () =>
     expect(result.riskLinks).toBeGreaterThan(0);
     expect(warnSpy).toHaveBeenCalled();
     warnSpy.mockRestore();
+  });
+});
+
+describe('runLinkage prunes orphan task vectors before matching (CS-681)', () => {
+  // The real root cause: findSimilarTasks filters only by org + sourceType, so
+  // stale/orphan task vectors (deleted tasks, or tasks whose controls were all
+  // archived) accumulate in Upstash — lib/embedding has no delete path — and
+  // crowd the live tasks out of the top-K cosine recall. When a risk's nearest
+  // vectors are ALL orphans, post-recall filtering can't help (nothing real is
+  // recalled), so the index itself must be cleaned before matching.
+
+  it('calls pruneOrphanTaskVectors with the full live task scope', async () => {
+    dbMock.risk.findMany.mockResolvedValueOnce([
+      { id: 'rsk_1', title: 'a', description: '', category: 'people', department: Departments.hr },
+    ]);
+    dbMock.vendor.findMany.mockResolvedValueOnce([]);
+    dbMock.task.findMany.mockResolvedValueOnce([
+      { id: 'tsk_a', title: 'A', description: '', department: Departments.hr },
+      { id: 'tsk_b', title: 'B', description: '', department: Departments.hr },
+    ]);
+    findSimilarTasksMock.mockResolvedValueOnce([
+      { id: 'tsk_a', score: 0.9, department: Departments.hr },
+    ]);
+
+    await runLinkage({ organizationId: 'org_1', riskId: 'rsk_1' });
+
+    expect(pruneMock).toHaveBeenCalledTimes(1);
+    const arg = pruneMock.mock.calls[0][0];
+    expect(arg.organizationId).toBe('org_1');
+    // liveTaskIds is the whole org task scope (not just this risk's matches).
+    expect([...arg.liveTaskIds].sort()).toEqual(['tsk_a', 'tsk_b']);
+  });
+
+  it('clears the embeddingHash of pruned orphan tasks, scoped by org', async () => {
+    dbMock.risk.findMany.mockResolvedValueOnce([
+      { id: 'rsk_1', title: 'a', description: '', category: 'people', department: Departments.hr },
+    ]);
+    dbMock.vendor.findMany.mockResolvedValueOnce([]);
+    dbMock.task.findMany.mockResolvedValueOnce([
+      { id: 'tsk_a', title: 'A', description: '', department: Departments.hr },
+    ]);
+    findSimilarTasksMock.mockResolvedValueOnce([
+      { id: 'tsk_a', score: 0.9, department: Departments.hr },
+    ]);
+    pruneMock.mockResolvedValueOnce({
+      deletedSourceIds: ['tsk_gone1', 'tsk_gone2'],
+      scanned: 3,
+    });
+
+    await runLinkage({ organizationId: 'org_1', riskId: 'rsk_1' });
+
+    expect(dbMock.task.updateMany).toHaveBeenCalledWith({
+      where: { id: { in: ['tsk_gone1', 'tsk_gone2'] }, organizationId: 'org_1' },
+      data: { embeddingHash: null },
+    });
+  });
+
+  it('does not touch embeddingHash when nothing was pruned', async () => {
+    dbMock.risk.findMany.mockResolvedValueOnce([
+      { id: 'rsk_1', title: 'a', description: '', category: 'people', department: Departments.hr },
+    ]);
+    dbMock.vendor.findMany.mockResolvedValueOnce([]);
+    dbMock.task.findMany.mockResolvedValueOnce([
+      { id: 'tsk_a', title: 'A', description: '', department: Departments.hr },
+    ]);
+    findSimilarTasksMock.mockResolvedValueOnce([
+      { id: 'tsk_a', score: 0.9, department: Departments.hr },
+    ]);
+    // Default pruneMock → deletedSourceIds: [].
+
+    await runLinkage({ organizationId: 'org_1', riskId: 'rsk_1' });
+
+    expect(dbMock.task.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('still completes the run when pruning throws (best-effort cleanup)', async () => {
+    dbMock.risk.findMany.mockResolvedValueOnce([
+      { id: 'rsk_1', title: 'a', description: '', category: 'people', department: Departments.hr },
+    ]);
+    dbMock.vendor.findMany.mockResolvedValueOnce([]);
+    dbMock.task.findMany.mockResolvedValueOnce([
+      { id: 'tsk_a', title: 'A', description: '', department: Departments.hr },
+    ]);
+    findSimilarTasksMock.mockResolvedValueOnce([
+      { id: 'tsk_a', score: 0.9, department: Departments.hr },
+    ]);
+    pruneMock.mockRejectedValueOnce(new Error('upstash down'));
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const result = await runLinkage({ organizationId: 'org_1', riskId: 'rsk_1' });
+
+    // Matching still runs — tsk_a is linked despite the failed prune.
+    expect(result.riskLinks).toBe(1);
+    expect(errSpy).toHaveBeenCalled();
+    errSpy.mockRestore();
   });
 });
