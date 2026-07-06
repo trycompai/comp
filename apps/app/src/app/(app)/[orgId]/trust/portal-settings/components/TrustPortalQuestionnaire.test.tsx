@@ -1,11 +1,11 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  setMockPermissions,
   ADMIN_PERMISSIONS,
   AUDITOR_PERMISSIONS,
   mockHasPermission,
+  setMockPermissions,
 } from '@/test-utils/mocks/permissions';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { mockUpdate } = vi.hoisted(() => ({ mockUpdate: vi.fn() }));
 
@@ -86,5 +86,21 @@ describe('TrustPortalQuestionnaire', () => {
       fireEvent.click(screen.getByText('Visible'));
     });
     expect(mockUpdate).toHaveBeenCalledWith(true);
+  });
+
+  it('exposes the active state to assistive tech via aria-pressed', () => {
+    setMockPermissions(ADMIN_PERMISSIONS);
+    render(<TrustPortalQuestionnaire initialEnabled={true} orgId="org-1" />);
+    expect(screen.getByText('Visible').closest('button')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('Hidden').closest('button')).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('resyncs local state when initialEnabled changes', () => {
+    setMockPermissions(ADMIN_PERMISSIONS);
+    const { rerender } = render(<TrustPortalQuestionnaire initialEnabled={true} orgId="org-1" />);
+    expect(screen.getByText('Visible').closest('button')).toHaveAttribute('aria-pressed', 'true');
+
+    rerender(<TrustPortalQuestionnaire initialEnabled={false} orgId="org-1" />);
+    expect(screen.getByText('Hidden').closest('button')).toHaveAttribute('aria-pressed', 'true');
   });
 });

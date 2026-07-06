@@ -1531,7 +1531,9 @@ export class TrustAccessService {
     };
   }
 
-  private async getTrustBrandingByOrganizationId(organizationId: string): Promise<{
+  private async getTrustBrandingByOrganizationId(
+    organizationId: string,
+  ): Promise<{
     friendlyUrl: string;
     faviconUrl: string | null;
     securityQuestionnaireEnabled: boolean;
@@ -2733,12 +2735,21 @@ export class TrustAccessService {
   async getPublicSecurityQuestionnaireEnabled(
     friendlyUrl: string,
   ): Promise<boolean> {
-    const trust = await db.trust.findFirst({
-      where: {
-        OR: [{ friendlyUrl }, { organizationId: friendlyUrl }],
-      },
+    // Resolve by friendlyUrl first, then fall back to organizationId — mirrors
+    // getPublicFavicon. Two findUnique calls on unique columns give explicit
+    // precedence (friendlyUrl wins), so an org whose friendlyUrl happens to
+    // equal another org's id can't shadow that org's setting.
+    let trust = await db.trust.findUnique({
+      where: { friendlyUrl },
       select: { securityQuestionnaireEnabled: true },
     });
+
+    if (!trust) {
+      trust = await db.trust.findUnique({
+        where: { organizationId: friendlyUrl },
+        select: { securityQuestionnaireEnabled: true },
+      });
+    }
 
     return trust?.securityQuestionnaireEnabled ?? true;
   }

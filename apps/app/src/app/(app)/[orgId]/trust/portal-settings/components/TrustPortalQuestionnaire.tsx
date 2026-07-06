@@ -3,7 +3,7 @@
 import { usePermissions } from '@/hooks/use-permissions';
 import { useTrustPortalSettings } from '@/hooks/use-trust-portal-settings';
 import { View, ViewOff } from '@trycompai/design-system/icons';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 interface TrustPortalQuestionnaireProps {
@@ -11,15 +11,18 @@ interface TrustPortalQuestionnaireProps {
   orgId: string;
 }
 
-export function TrustPortalQuestionnaire({
-  initialEnabled,
-  orgId,
-}: TrustPortalQuestionnaireProps) {
+export function TrustPortalQuestionnaire({ initialEnabled, orgId }: TrustPortalQuestionnaireProps) {
   const { hasPermission } = usePermissions();
   const canUpdate = hasPermission('trust', 'update');
   const { updateSecurityQuestionnaireEnabled } = useTrustPortalSettings();
   const [enabled, setEnabled] = useState(initialEnabled);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Resync when the server-provided value changes (e.g. parent refetch), so the
+  // toggle never reflects stale visibility.
+  useEffect(() => {
+    setEnabled(initialEnabled);
+  }, [initialEnabled]);
 
   const handleToggleChange = async (checked: boolean) => {
     if (!canUpdate || checked === enabled || isSaving) return;
@@ -51,6 +54,7 @@ export function TrustPortalQuestionnaire({
             type="button"
             onClick={() => handleToggleChange(true)}
             disabled={!canUpdate || isSaving}
+            aria-pressed={enabled}
             className={`flex items-center gap-1 px-2 py-1 font-medium transition-colors ${canUpdate ? 'cursor-pointer' : 'cursor-default opacity-70'} ${
               enabled
                 ? 'bg-primary/10 text-primary dark:brightness-175'
@@ -64,6 +68,7 @@ export function TrustPortalQuestionnaire({
             type="button"
             onClick={() => handleToggleChange(false)}
             disabled={!canUpdate || isSaving}
+            aria-pressed={!enabled}
             className={`flex items-center gap-1 px-2 py-1 font-medium transition-colors ${canUpdate ? 'cursor-pointer' : 'cursor-default opacity-70'} ${
               !enabled
                 ? 'bg-orange-100 text-orange-600 dark:bg-orange-950/30 dark:text-orange-400'
@@ -79,13 +84,13 @@ export function TrustPortalQuestionnaire({
       <div className="space-y-2">
         <h3 className="text-lg font-medium">Security Questionnaire</h3>
         <p className="text-sm text-muted-foreground">
-          When visible, visitors to your public trust portal can submit a security
-          questionnaire and receive AI-assisted answers drawn from your policy library.
+          When visible, visitors to your public trust portal can submit a security questionnaire and
+          receive AI-assisted answers drawn from your policy library.
         </p>
         <p className="text-sm text-muted-foreground">
-          Hide it if you'd rather review answers before they reach customers — hiding removes
-          the questionnaire button from your trust portal and the questionnaire tab from the
-          access area, so questionnaires can no longer be started from the portal.
+          Hide it if you'd rather review answers before they reach customers — hiding removes the
+          questionnaire button from your trust portal and the questionnaire tab from the access
+          area, so questionnaires can no longer be started from the portal.
         </p>
       </div>
     </div>
