@@ -302,6 +302,53 @@ export class CheckRunRepository {
   }
 
   /**
+   * Full results of a (connection, check)'s most recent REAL run, scoped to an
+   * org. "Real" = never `inconclusive`/held, never a disconnected connection.
+   *
+   * This is the generic read behind {@link CheckResultsService} — any feature
+   * reusing check results goes through that service, not this method directly.
+   * Unlike the task-run-history read there is NO `take` cap: a consumer that
+   * maps every resource (e.g. one member per user row) needs the full set, so
+   * the 30-row display sample ({@link DISPLAY_RESULTS_PER_RUN}) is deliberately
+   * not reused here. Pass `resourceType` to load only rows of that kind (e.g.
+   * `'user'`); omit it to load all. Returns null when there is no real run.
+   */
+  async findLatestResultsByConnectionAndCheck({
+    connectionId,
+    checkId,
+    organizationId,
+    resourceType,
+  }: {
+    connectionId: string;
+    checkId: string;
+    organizationId: string;
+    resourceType?: string;
+  }) {
+    const run = await db.integrationCheckRun.findFirst({
+      where: {
+        connectionId,
+        checkId,
+        status: { not: 'inconclusive' },
+        connection: { organizationId, status: { not: 'disconnected' } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!run) return null;
+
+    const results = await db.integrationCheckResult.findMany({
+      where: {
+        checkRunId: run.id,
+        ...(resourceType ? { resourceType } : {}),
+      },
+      // Deterministic order — without it Postgres may return the same run's
+      // rows in a different order per query, which breaks consumers that key
+      // UI state off row identity/position.
+      orderBy: { id: 'asc' },
+    });
+    return { run, results };
+  }
+
+  /**
    * Get check runs for a connection
    */
   async findByConnection(connectionId: string, limit = 20) {

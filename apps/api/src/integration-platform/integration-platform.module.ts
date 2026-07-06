@@ -14,6 +14,7 @@ import { VariablesController } from './controllers/variables.controller';
 import { TaskIntegrationsController } from './controllers/task-integrations.controller';
 import { WebhookController } from './controllers/webhook.controller';
 import { SyncController } from './controllers/sync.controller';
+import { TwoFactorSourceController } from './controllers/two-factor-source.controller';
 import { ServicesController } from './controllers/services.controller';
 import { CredentialVaultService } from './services/credential-vault.service';
 import { ConnectionService } from './services/connection.service';
@@ -37,6 +38,7 @@ import { DynamicCheckRepository } from './repositories/dynamic-check.repository'
 import { IntegrationSyncLoggerService } from './services/integration-sync-logger.service';
 import { GenericEmployeeSyncService } from './services/generic-employee-sync.service';
 import { GenericDeviceSyncService } from './services/generic-device-sync.service';
+import { CheckResultsService } from './services/check-results.service';
 
 @Module({
   imports: [AuthModule, forwardRef(() => CloudSecurityModule)],
@@ -54,6 +56,7 @@ import { GenericDeviceSyncService } from './services/generic-device-sync.service
     TaskIntegrationsController,
     WebhookController,
     SyncController,
+    TwoFactorSourceController,
     ServicesController,
   ],
   providers: [
@@ -71,6 +74,7 @@ import { GenericDeviceSyncService } from './services/generic-device-sync.service
     IntegrationSyncLoggerService,
     GenericEmployeeSyncService,
     GenericDeviceSyncService,
+    CheckResultsService,
     // Repositories
     ProviderRepository,
     ConnectionRepository,
@@ -88,6 +92,9 @@ import { GenericDeviceSyncService } from './services/generic-device-sync.service
     OAuthCredentialsService,
     AutoCheckRunnerService,
     DynamicManifestLoaderService,
+    // Universal, feature-agnostic access to integration check results. Any
+    // feature module that needs to reuse check output injects this.
+    CheckResultsService,
   ],
 })
 export class IntegrationPlatformModule {}

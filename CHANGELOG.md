@@ -1,3 +1,84 @@
+# [3.97.0](https://github.com/trycompai/comp/compare/v3.96.1...v3.97.0) (2026-07-06)
+
+
+### Bug Fixes
+
+* **people:** polish the redesigned People tab (requirement columns, filters, per-employee 2FA) ([#3347](https://github.com/trycompai/comp/issues/3347)) ([75758ec](https://github.com/trycompai/comp/commit/75758ecad8ccf748c3820debd54b0c015c4a291b))
+
+
+### Features
+
+* **integrations:** emit per-user rows from the Google Workspace employee-access check ([#3352](https://github.com/trycompai/comp/issues/3352)) ([0b54252](https://github.com/trycompai/comp/commit/0b54252e05d53d7f1118d473de1374f93dd02beb))
+* **people:** access tab on member details, per connected integration ([#3349](https://github.com/trycompai/comp/issues/3349)) ([83f188c](https://github.com/trycompai/comp/commit/83f188c0499ca01726a328baf587e26f8e99ce95)), closes [#2](https://github.com/trycompai/comp/issues/2)
+
+## [3.96.1](https://github.com/trycompai/comp/compare/v3.96.0...v3.96.1) (2026-07-03)
+
+
+### Bug Fixes
+
+* **people:** polish the redesigned People tab (requirement columns, filters, per-employee 2FA) ([#3347](https://github.com/trycompai/comp/issues/3347)) ([#3348](https://github.com/trycompai/comp/issues/3348)) ([f0e837c](https://github.com/trycompai/comp/commit/f0e837c436f0a74c37e10cad6b56860646d5fa86))
+
+# [3.96.0](https://github.com/trycompai/comp/compare/v3.95.2...v3.96.0) (2026-07-03)
+
+
+### Bug Fixes
+
+* **people:** address cubic review on 2FA source ([66edac2](https://github.com/trycompai/comp/commit/66edac25049f96744d65d5f43d26e57485bb7842))
+* **people:** address cubic review on columns + filters ([9e3cab1](https://github.com/trycompai/comp/commit/9e3cab127499fdaa53e8ad49ca80bfdb976e9ddc))
+* **people:** associate toolbar select labels for screen readers ([2f18dae](https://github.com/trycompai/comp/commit/2f18dae7525865251dbbc4f04bc29eaa219bd6fb))
+* **people:** guard org existence before provider validation on POST two-factor-source ([21e2bef](https://github.com/trycompai/comp/commit/21e2befd5d035152a16605729e14e580638aded2))
+* **people:** inline select dropdowns inside toolbar popovers ([aeb707e](https://github.com/trycompai/comp/commit/aeb707edaca859670bac5504597d63c7c2d7478f))
+* **people:** label the toolbar source selects and stop date-chip wrapping ([c9038a3](https://github.com/trycompai/comp/commit/c9038a3f88c71c22deef6e9889ab4fd68c1351d9))
+* **people:** make the 2FA select uncontrolled like the sync select ([4c4492d](https://github.com/trycompai/comp/commit/4c4492d7bf30cf24626a13fd67f7cd6bb44df48d))
+* **people:** map missing-org cases to 404 on 2FA source endpoints ([e2176ad](https://github.com/trycompai/comp/commit/e2176ad9db2090eea75474f7ed2e103a131f7f62))
+* **people:** match filter-change handlers to the DS Select signature ([5ac1099](https://github.com/trycompai/comp/commit/5ac1099cc0835a1038a967f8ded0361a472e36ac))
+
+
+### Features
+
+* **people:** 2FA source backend — schema, read path, endpoints ([d2ad593](https://github.com/trycompai/comp/commit/d2ad593d7a8cee61e82e70ca2df17bbe3a44d5e1))
+* **people:** per-employee 2FA column from the org's selected 2FA source ([7f75e36](https://github.com/trycompai/comp/commit/7f75e36f7eb8069f8247ebb53041dd968c4b354d))
+* **people:** redesign TASKS column with per-requirement status rows ([075cba4](https://github.com/trycompai/comp/commit/075cba46ee101db55a1b3a2e6e978cd14c110cb8))
+* **people:** removable active-filter chips + always-visible table scrollbar ([dc2be7b](https://github.com/trycompai/comp/commit/dc2be7b92cf7498f5bd9760dfe3b9d0246f1ea1d))
+* **people:** split requirements into table columns + collapse filters behind a funnel button ([03c7641](https://github.com/trycompai/comp/commit/03c76417c853106dcf040a579df706cbdba0bc94))
+* **ui:** responsive-by-default mandate + collapse 2FA selector on mobile ([07808ba](https://github.com/trycompai/comp/commit/07808ba574adec243671c335ec586ec0ae00eedb))
+
+
+### Reverts
+
+* **people:** portal={false} on in-popover selects broke positioning ([339f5f4](https://github.com/trycompai/comp/commit/339f5f45ff48bb9e4c82ddef391e532f9e6a8685))
+
+## [3.95.2](https://github.com/trycompai/comp/compare/v3.95.1...v3.95.2) (2026-07-02)
+
+
+### Bug Fixes
+
+* **github-integration:** use concurrent mapping for branch protection checks ([5b68642](https://github.com/trycompai/comp/commit/5b68642f829e2578b586451c77ea6c84601aec02))
+* **todo:** create a ticket in team cs "[feature request/ux] - policy de ([2a6b892](https://github.com/trycompai/comp/commit/2a6b89264cc424b77210ea7cbbc0ede47bb6e64c))
+
+## [3.95.1](https://github.com/trycompai/comp/compare/v3.95.0...v3.95.1) (2026-07-01)
+
+
+### Bug Fixes
+
+* **evidence-export:** raise trigger task duration ceiling to prevent timeout ([5375032](https://github.com/trycompai/comp/commit/53750326fc7b31b0a72ecd7876d6b47fdafb716f)), closes [hi#volume](https://github.com/hi/issues/volume)
+
+# [3.95.0](https://github.com/trycompai/comp/compare/v3.94.2...v3.95.0) (2026-07-01)
+
+
+### Bug Fixes
+
+* **frameworks:** reject null fields and empty payload on custom framework update ([e5f847b](https://github.com/trycompai/comp/commit/e5f847b8d619f0bcfc9afa2d9cec5ba97d207c6d))
+* **frameworks:** reject whitespace-only custom framework name ([8db8ac5](https://github.com/trycompai/comp/commit/8db8ac5dfd84988ab2bd39961b1f1c7190598429))
+* **frameworks:** trim custom framework name/description in update DTO ([dcf3dc1](https://github.com/trycompai/comp/commit/dcf3dc156022026d8e4a64c760d8874342ad0061))
+* **integrations:** use catalog-defined field names for fivetran basic auth ([6050902](https://github.com/trycompai/comp/commit/6050902b12a73a630a1d7d4472d7fbf431dc9559))
+* **tasks:** bound sanitized inputs check to prevent timeout on manual run ([070a964](https://github.com/trycompai/comp/commit/070a964226311e8ab856e667d266af2a8cd34a99))
+
+
+### Features
+
+* **frameworks:** allow editing custom framework name and description ([4e3f9ac](https://github.com/trycompai/comp/commit/4e3f9ac20b3e2ead3f9c5315bd3a0b242ccf0edd))
+
 ## [3.94.2](https://github.com/trycompai/comp/compare/v3.94.1...v3.94.2) (2026-07-01)
 
 

@@ -71,7 +71,9 @@ export function PolicyDeleteDialog({ isOpen, onClose, policy }: PolicyDeleteDial
         <DialogHeader>
           <DialogTitle>Delete Policy</DialogTitle>
           <DialogDescription>
-            Are you sure you want to delete this policy? This action cannot be undone.
+            Are you sure you want to delete this policy? This permanently deletes the
+            entire "{policy.name}" policy and all of its versions, not just the version
+            you are currently viewing. This action cannot be undone.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>

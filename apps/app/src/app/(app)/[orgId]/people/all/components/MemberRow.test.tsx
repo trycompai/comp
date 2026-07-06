@@ -86,29 +86,29 @@ describe('MemberRow device status', () => {
     vi.clearAllMocks();
   });
 
-  it('shows "Device 0/1" when deviceStatus is not-installed', () => {
+  it('shows Device as Missing when deviceStatus is not-installed', () => {
     renderMemberRow('not-installed');
-    expect(screen.getByText('Device 0/1')).toBeInTheDocument();
+    expect(screen.getByTestId('requirement-Device')).toHaveTextContent('Missing');
   });
 
-  it('shows dash when deviceStatus is omitted (no compliance obligation)', () => {
+  it('shows no device row when deviceStatus is omitted (no compliance obligation)', () => {
     renderMemberRow();
-    expect(screen.queryByText(/^Device /)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('requirement-Device')).not.toBeInTheDocument();
   });
 
-  it('shows "Device 1/1" when deviceStatus is compliant', () => {
+  it('shows Device as Done when deviceStatus is compliant', () => {
     renderMemberRow('compliant');
-    expect(screen.getByText('Device 1/1')).toBeInTheDocument();
+    expect(screen.getByTestId('requirement-Device')).toHaveTextContent('Done');
   });
 
-  it('shows "Device 0/1" when deviceStatus is non-compliant', () => {
+  it('shows Device as Missing when deviceStatus is non-compliant', () => {
     renderMemberRow('non-compliant');
-    expect(screen.getByText('Device 0/1')).toBeInTheDocument();
+    expect(screen.getByTestId('requirement-Device')).toHaveTextContent('Missing');
   });
 
-  it('shows "Device 0/1" when deviceStatus is stale', () => {
+  it('shows Device as Missing when deviceStatus is stale', () => {
     renderMemberRow('stale');
-    expect(screen.getByText('Device 0/1')).toBeInTheDocument();
+    expect(screen.getByTestId('requirement-Device')).toHaveTextContent('Missing');
   });
 
   it('does not show device status for platform admin', () => {
@@ -134,7 +134,7 @@ describe('MemberRow device status', () => {
       </table>,
     );
 
-    expect(screen.queryByText(/^Device /)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('requirement-Device')).not.toBeInTheDocument();
   });
 
   it('does not show device status for deactivated member', () => {
@@ -160,7 +160,7 @@ describe('MemberRow device status', () => {
       </table>,
     );
 
-    expect(screen.queryByText(/^Device /)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('requirement-Device')).not.toBeInTheDocument();
   });
 
   it('does not show device status for member without compliance obligation (e.g. auditor)', () => {
@@ -186,7 +186,7 @@ describe('MemberRow device status', () => {
       </table>,
     );
 
-    expect(screen.queryByText(/^Device /)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('requirement-Device')).not.toBeInTheDocument();
   });
 
   it('still shows device status for member with compliance obligation', () => {
@@ -212,7 +212,7 @@ describe('MemberRow device status', () => {
       </table>,
     );
 
-    expect(screen.getByText('Device 1/1')).toBeInTheDocument();
+    expect(screen.getByTestId('requirement-Device')).toHaveTextContent('Done');
   });
 
   it('hides the background-check task counter and verified tick when bypassed', () => {
@@ -240,7 +240,7 @@ describe('MemberRow device status', () => {
       </table>,
     );
 
-    expect(screen.queryByText(/background check/i)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('requirement-Background')).not.toBeInTheDocument();
     expect(
       screen.queryByLabelText('Employee has completed a background check'),
     ).not.toBeInTheDocument();
@@ -273,9 +273,96 @@ describe('MemberRow device status', () => {
       </table>,
     );
 
-    expect(screen.queryByText(/background check/i)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('requirement-Background')).not.toBeInTheDocument();
     expect(
       screen.queryByLabelText('Employee has completed a background check'),
     ).not.toBeInTheDocument();
+  });
+
+  it('hides the Policies row when there are no required policies (0/0 is not-applicable)', () => {
+    render(
+      <table>
+        <tbody>
+          <MemberRow
+            member={baseMember}
+            onRemove={noop}
+            onRemoveDevice={noop}
+            onUpdateRole={noop}
+            onReactivate={noop}
+            canEdit={false}
+            isCurrentUserOwner={false}
+            taskCompletion={{
+              completed: 0,
+              total: 0,
+              policies: { completed: 0, total: 0 },
+              training: { completed: 0, total: 0 },
+            }}
+          />
+        </tbody>
+      </table>,
+    );
+
+    expect(screen.queryByTestId('requirement-Policies')).not.toBeInTheDocument();
+  });
+});
+
+describe('MemberRow 2FA status', () => {
+  function render2fa({
+    member = baseMember,
+    twoFactorStatus,
+  }: {
+    member?: MemberWithUser;
+    twoFactorStatus?: 'enabled' | 'missing' | 'not-provided';
+  }) {
+    return render(
+      <table>
+        <tbody>
+          <MemberRow
+            member={member}
+            onRemove={noop}
+            onRemoveDevice={noop}
+            onUpdateRole={noop}
+            onReactivate={noop}
+            canEdit={false}
+            isCurrentUserOwner={false}
+            twoFactorStatus={twoFactorStatus}
+          />
+        </tbody>
+      </table>,
+    );
+  }
+
+  it('shows no 2FA row when no source is configured (status undefined)', () => {
+    render2fa({});
+    expect(screen.queryByTestId('requirement-2FA')).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ['enabled', 'Done'],
+    ['missing', 'Missing'],
+    ['not-provided', 'Not provided'],
+  ] as const)('renders %s as "%s"', (status, text) => {
+    render2fa({ twoFactorStatus: status });
+    expect(screen.getByTestId('requirement-2FA')).toHaveTextContent(text);
+  });
+
+  it('shows the 2FA row even for platform admins (2FA applies to all members)', () => {
+    const adminMember = {
+      ...baseMember,
+      user: { ...baseMember.user, role: 'admin' as const },
+    } as MemberWithUser;
+
+    render2fa({ member: adminMember, twoFactorStatus: 'enabled' });
+    expect(screen.getByTestId('requirement-2FA')).toHaveTextContent('Done');
+  });
+
+  it('hides the 2FA row for deactivated members', () => {
+    const deactivatedMember = {
+      ...baseMember,
+      deactivated: true,
+    } as MemberWithUser;
+
+    render2fa({ member: deactivatedMember, twoFactorStatus: 'missing' });
+    expect(screen.queryByTestId('requirement-2FA')).not.toBeInTheDocument();
   });
 });
