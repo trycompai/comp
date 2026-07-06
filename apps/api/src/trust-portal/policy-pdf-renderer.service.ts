@@ -25,6 +25,19 @@ interface PolicyForPDF {
   content: any;
 }
 
+// Keep-together: minimum number of body lines that must fit on the same page
+// as a heading. If the heading plus this many lines of the following section
+// don't fit, the heading is pushed to the next page so it isn't orphaned at
+// the bottom of a page (CS-704).
+// NOTE: Keep in sync with apps/app/src/lib/pdf-generator.ts HEADING_KEEP_WITH_LINES
+const HEADING_KEEP_WITH_LINES = 3;
+
+// Default vertical room (mm) checkPageBreak requires below the cursor before
+// committing content to the current page. Body lines are laid out one at a
+// time and each one demands this much space, so the heading keep-together
+// reserve must include one such look-ahead for the following section.
+const DEFAULT_BREAK_SPACE = 20;
+
 @Injectable()
 export class PolicyPdfRendererService {
   /**
@@ -222,7 +235,80 @@ export class PolicyPdfRendererService {
     return text;
   }
 
-  private checkPageBreak(config: PDFConfig, requiredSpace: number = 20): void {
+  // First-row height of a table, mirroring the row-height math in renderTable
+  // so the heading keep-together reserve can size itself against a table that
+  // follows a heading (not just plain paragraphs).
+  // NOTE: keep in sync with renderTable's rowHeight calculation.
+  private measureTableFirstRowHeight(
+    tableNode: JSONContent,
+    config: PDFConfig,
+  ): number {
+    const firstRow = tableNode.content?.[0];
+    if (!firstRow?.content?.length) return 0;
+
+    let columnCount = 0;
+    for (const cell of firstRow.content) {
+      columnCount += cell.attrs?.colspan ?? 1;
+    }
+    if (columnCount === 0) return 0;
+
+    const colWidth = config.contentWidth / columnCount;
+    const cellPadding = 2;
+    let rowHeight = config.lineHeight + cellPadding * 2;
+    for (const cell of firstRow.content) {
+      if (cell.type !== 'tableCell' && cell.type !== 'tableHeader') continue;
+      const width = colWidth * (cell.attrs?.colspan ?? 1);
+      const text = this.cleanTextForPDF(this.extractCellText(cell.content ?? []));
+      const lines = config.doc.splitTextToSize(
+        text || ' ',
+        width - cellPadding * 2,
+      ) as string[];
+      rowHeight = Math.max(
+        rowHeight,
+        lines.length * config.lineHeight + cellPadding * 2,
+      );
+    }
+    return rowHeight;
+  }
+
+  // Extra height (beyond the heading's own height) needed to keep a heading
+  // with the start of the section that follows it. Returns 0 when nothing
+  // visible follows (a trailing heading). Handles tables (first-row height) and
+  // leading hard breaks, so keep-together isn't limited to plain paragraphs.
+  private sectionLeadHeight(
+    content: JSONContent[],
+    index: number,
+    config: PDFConfig,
+  ): number {
+    let lead = 0;
+    for (let i = index + 1; i < content.length; i++) {
+      const node = content[i];
+      if (node.type === 'hardBreak') {
+        lead += config.lineHeight;
+        continue;
+      }
+      if (node.type === 'table' && node.content?.length) {
+        // Heading trailing gap + the table's first row must fit together.
+        return (
+          lead + config.lineHeight + this.measureTableFirstRowHeight(node, config)
+        );
+      }
+      if (this.extractTextFromContent([node]).trim().length === 0) {
+        // Empty paragraph or similar: advances the cursor slightly, keep scanning.
+        if (node.type === 'paragraph') lead += config.lineHeight * 0.5;
+        continue;
+      }
+      // First text-bearing block: reserve the heading's first few section lines
+      // (HEADING_KEEP_WITH_LINES advances, the last still needs the look-ahead).
+      return lead + HEADING_KEEP_WITH_LINES * config.lineHeight + DEFAULT_BREAK_SPACE;
+    }
+    return 0;
+  }
+
+  private checkPageBreak(
+    config: PDFConfig,
+    requiredSpace: number = DEFAULT_BREAK_SPACE,
+  ): void {
     if (config.yPosition + requiredSpace > config.pageHeight - config.margin) {
       config.doc.addPage();
       config.yPosition = config.margin;
@@ -256,10 +342,9 @@ export class PolicyPdfRendererService {
   }
 
   private processContent(config: PDFConfig, content: JSONContent[]): void {
-    for (const node of content) {
+    for (const [nodeIndex, node] of content.entries()) {
       switch (node.type) {
-        case 'heading':
-          this.checkPageBreak(config, 30);
+        case 'heading': {
           const level = node.attrs?.level || 1;
           const headingSizes: { [key: number]: number } = {
             1: 16,
@@ -273,25 +358,52 @@ export class PolicyPdfRendererService {
           config.doc.setFont('helvetica', 'bold');
           config.doc.setTextColor(0, 0, 0);
 
-          if (node.content) {
-            const headingText = this.cleanTextForPDF(
-              this.extractTextFromContent(node.content),
-            );
-            const lines = config.doc.splitTextToSize(
-              headingText,
-              config.contentWidth,
-            );
-            for (const line of lines) {
-              this.checkPageBreak(config);
-              config.doc.text(line, config.margin, config.yPosition);
-              config.yPosition += config.lineHeight * 1.2;
-            }
+          // Measure the heading against the heading font BEFORE deciding
+          // whether it fits, so multi-line headings are counted correctly.
+          const headingText = node.content
+            ? this.cleanTextForPDF(this.extractTextFromContent(node.content))
+            : '';
+          const headingLines = headingText
+            ? (config.doc.splitTextToSize(
+                headingText,
+                config.contentWidth,
+              ) as string[])
+            : [];
+
+          // Keep-together: require room for the heading itself PLUS the first
+          // few lines of the section that follows it; otherwise push the whole
+          // heading to the next page so it isn't stranded at the page bottom.
+          // sectionLeadHeight measures what the following section needs (a few
+          // text lines, or a table's first row, or 0 for a trailing heading),
+          // and is added to the heading's own height. The reserve is capped at
+          // the usable page height so an oversized heading can't force an empty
+          // leading page — the per-line loop below paginates it instead.
+          const leadHeight = this.sectionLeadHeight(content, nodeIndex, config);
+          const headingHeight =
+            Math.max(headingLines.length, 1) * config.lineHeight * 1.2;
+          const usableHeight = config.pageHeight - config.margin * 2;
+          const requiredHeight = Math.min(
+            leadHeight > 0 ? headingHeight + leadHeight : headingHeight,
+            usableHeight,
+          );
+          this.checkPageBreak(config, requiredHeight);
+
+          // For a normal heading the up-front check already reserved room, so
+          // these per-line checks never fire (the heading stays intact). They
+          // only act as a safety net for a pathological heading that wraps to
+          // more lines than fit on a page, paginating it instead of letting it
+          // overflow past the bottom margin.
+          for (const line of headingLines) {
+            this.checkPageBreak(config, config.lineHeight * 1.2);
+            config.doc.text(line, config.margin, config.yPosition);
+            config.yPosition += config.lineHeight * 1.2;
           }
 
           config.doc.setFontSize(config.defaultFontSize);
           config.doc.setFont('helvetica', 'normal');
           config.yPosition += config.lineHeight;
           break;
+        }
 
         case 'paragraph':
           this.checkPageBreak(config);
