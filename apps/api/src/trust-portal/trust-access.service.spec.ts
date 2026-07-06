@@ -24,6 +24,12 @@ jest.mock('@db', () => ({
     member: {
       findFirst: jest.fn(),
     },
+    vendor: {
+      findMany: jest.fn(),
+    },
+    globalVendors: {
+      findMany: jest.fn(),
+    },
     $transaction: jest.fn(),
   },
   Prisma: {
@@ -74,12 +80,89 @@ const mockDb = db as unknown as {
   member: {
     findFirst: jest.Mock;
   };
+  vendor: {
+    findMany: jest.Mock;
+  };
+  globalVendors: {
+    findMany: jest.Mock;
+  };
   $transaction: jest.Mock;
 };
 
 const mockGetSignedUrl = getSignedUrl as jest.MockedFunction<
   typeof getSignedUrl
 >;
+
+describe('TrustAccessService getPublicVendors compliance badges (CS-688)', () => {
+  const service = new TrustAccessService(
+    {
+      getSignedUrl: jest.fn(),
+    } as any,
+    {} as any,
+    {} as any,
+    {} as any,
+    {} as any,
+  );
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockDb.trust.findUnique.mockResolvedValue({ organizationId: 'org_1' });
+  });
+
+  // Regression: the public Trust Centre served a stale stored badge set
+  // (GDPR only) for Scaleway while the vendor's verified certifications include
+  // ISO 27001. The public path must derive badges from the certification data,
+  // not trust the stale stored value.
+  it('derives ISO 27001 from cert data even when stored badges are stale (GDPR only)', async () => {
+    mockDb.vendor.findMany.mockResolvedValue([
+      {
+        id: 'vnd_scaleway',
+        name: 'Scaleway',
+        description: null,
+        website: 'scaleway.com',
+        logoUrl: null,
+        complianceBadges: [{ type: 'gdpr', verified: true }],
+      },
+    ]);
+    mockDb.globalVendors.findMany.mockResolvedValue([
+      {
+        website: 'scaleway.com',
+        riskAssessmentData: {
+          certifications: [
+            { type: 'ISO/IEC 27001:2022', status: 'verified' },
+            { type: 'HDS', status: 'verified' },
+            { type: 'GDPR Compliance', status: 'verified' },
+          ],
+        },
+      },
+    ]);
+
+    const result = await service.getPublicVendors('capawesome');
+    const types = result[0].complianceBadges.map((b) => b.type);
+
+    expect(types).toContain('iso27001');
+    expect(types).toContain('gdpr');
+  });
+
+  it('keeps the stored badges when there is no derivable cert data', async () => {
+    mockDb.vendor.findMany.mockResolvedValue([
+      {
+        id: 'vnd_x',
+        name: 'X',
+        description: null,
+        website: 'x.com',
+        logoUrl: null,
+        complianceBadges: [{ type: 'soc2', verified: true }],
+      },
+    ]);
+    mockDb.globalVendors.findMany.mockResolvedValue([]);
+
+    const result = await service.getPublicVendors('capawesome');
+    const types = result[0].complianceBadges.map((b) => b.type);
+
+    expect(types).toEqual(['soc2']);
+  });
+});
 
 describe('TrustAccessService favicon branding', () => {
   const service = new TrustAccessService(
