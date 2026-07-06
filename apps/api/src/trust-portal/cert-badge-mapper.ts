@@ -41,21 +41,23 @@ function matchesIsoStandard(normalized: string, standardNumber: string): boolean
  * the certification is not one we render a badge for.
  */
 export function mapCertificationToBadgeType(certType: string): string | null {
+  // Strip every non-alphanumeric char (spaces, slashes, colons, underscores)
+  // so separator variants collapse to one form — "PCI DSS", "PCI-DSS" and
+  // "pci_dss" all become "pcidss". Matches below therefore never need to spell
+  // out separator variants.
   const normalized = certType.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-  if (normalized.includes('soc2') || normalized.includes('soc 2')) return 'soc2';
+  if (normalized.includes('soc2')) return 'soc2';
   if (matchesIsoStandard(normalized, '27001')) return 'iso27001';
   if (matchesIsoStandard(normalized, '42001')) return 'iso42001';
   if (normalized.includes('gdpr')) return 'gdpr';
   if (normalized.includes('hipaa')) return 'hipaa';
-  if (
-    normalized.includes('pcidss') ||
-    normalized.includes('pci dss') ||
-    normalized.includes('pci_dss')
-  )
+  // "pcidss" covers "PCI DSS"; "paymentcard" covers the fully spelled-out
+  // "Payment Card Industry Data Security Standard" (kept in sync with the
+  // scan-time mappers in trigger/vendor/vendor-risk-assessment*).
+  if (normalized.includes('pcidss') || normalized.includes('paymentcard'))
     return 'pci_dss';
-  if (normalized.includes('nen7510') || normalized.includes('nen 7510'))
-    return 'nen7510';
+  if (normalized.includes('nen7510')) return 'nen7510';
   if (matchesIsoStandard(normalized, '9001')) return 'iso9001';
 
   return null;

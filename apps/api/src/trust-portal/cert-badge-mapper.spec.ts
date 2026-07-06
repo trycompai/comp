@@ -20,6 +20,14 @@ describe('mapCertificationToBadgeType', () => {
     expect(mapCertificationToBadgeType('NEN 7510')).toBe('nen7510');
   });
 
+  // The fully spelled-out PCI name must map too — the scan-time mappers already
+  // recognize it, so the shared display mapper must not drop it.
+  it('maps the spelled-out "Payment Card Industry Data Security Standard"', () => {
+    expect(
+      mapCertificationToBadgeType('Payment Card Industry Data Security Standard'),
+    ).toBe('pci_dss');
+  });
+
   // The digits alone must not classify an unrelated identifier.
   it('does not misclassify ids that merely contain the standard digits', () => {
     expect(mapCertificationToBadgeType('Catalog 19001')).toBeNull();
