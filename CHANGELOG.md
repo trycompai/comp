@@ -1,3 +1,11 @@
+## [3.98.1](https://github.com/trycompai/comp/compare/v3.98.0...v3.98.1) (2026-07-06)
+
+
+### Bug Fixes
+
+* **policies:** keep PDF headings with their section (CS-704) ([#3358](https://github.com/trycompai/comp/issues/3358)) ([5bac5c9](https://github.com/trycompai/comp/commit/5bac5c9bb23cc15f61d3912a6bb457c57a026083))
+* **risk-treatment:** rank tasks by exact in-process cosine, not filtered ANN ([#3359](https://github.com/trycompai/comp/issues/3359)) ([6293aad](https://github.com/trycompai/comp/commit/6293aaddaa61946faea42be9241ca51d9ff3faef))
+
 # [3.98.0](https://github.com/trycompai/comp/compare/v3.97.0...v3.98.0) (2026-07-06)
 
 
