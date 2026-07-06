@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 
 import { usePermissions } from '@/hooks/use-permissions';
@@ -38,8 +39,25 @@ export function TwoFactorSourceSelector() {
   // Wait for BOTH the available sources and the current selection before
   // rendering, so the trigger never flashes the placeholder while the saved
   // selection is still resolving.
-  if (!canManage || isLoading || !hasAnyConnection) {
+  if (!canManage || isLoading) {
     return null;
+  }
+
+  // Empty slot instead of nothing: the labeled placeholder shows exactly what
+  // this setting is and how to unlock it.
+  if (!hasAnyConnection) {
+    return (
+      <div className="flex w-full flex-col gap-1">
+        <span className="text-xs text-muted-foreground">2FA status</span>
+        <Link
+          href={`/${orgId}/integrations`}
+          className="border-border text-muted-foreground hover:bg-muted flex h-8 items-center justify-between rounded-md border border-dashed px-3 text-sm transition-colors"
+        >
+          Connect an integration
+          <span aria-hidden>→</span>
+        </Link>
+      </div>
+    );
   }
 
   const connectedSources = availableSources.filter((p) => p.connected);
@@ -56,22 +74,23 @@ export function TwoFactorSourceSelector() {
   };
 
   return (
-    // hidden sm:flex matches the other toolbar controls: config actions
-    // collapse on phones, where the toolbar row doesn't wrap. The per-member
-    // 2FA status stays visible at every width via the table's own horizontal
-    // scroll. Label above the input, uniform with the rest of the toolbar;
-    // aria-labelledby names the combobox (the role ignores content for names).
-    <div className="hidden w-[200px] flex-col gap-1 sm:flex">
+    // Renders inside the toolbar's Sources popover, so it fills the popover
+    // width and stays reachable at every breakpoint. aria-labelledby names the
+    // combobox (the role ignores content for accessible names).
+    <div className="flex w-full flex-col gap-1">
       <span id="two-factor-source-label" className="text-xs text-muted-foreground">
-        2FA status from
+        2FA status
       </span>
+      {/* Uncontrolled on purpose — mirrors the (working) people-sync select.
+          A controlled value re-renders mid-dismissal when SWR revalidates,
+          which breaks the parent popover's outside-click tracking. */}
       <Select
-        value={selectedSource ?? NONE_VALUE}
         onValueChange={(value) => {
-          if (value) void handleSourceChange(value);
+          const provider = String(value);
+          if (provider) void handleSourceChange(provider);
         }}
       >
-        <SelectTrigger aria-labelledby="two-factor-source-label">
+        <SelectTrigger aria-label="2FA status from">
           {selected ? (
             <div className="flex items-center gap-2">
               {selected.logoUrl && (
@@ -87,17 +106,34 @@ export function TwoFactorSourceSelector() {
               <span className="truncate">{selected.name}</span>
             </div>
           ) : (
-            <span className="text-muted-foreground">None</span>
+            <span className="text-muted-foreground">Not shown</span>
           )}
         </SelectTrigger>
         <SelectContent>
           <div className="px-2 py-1.5 text-xs text-muted-foreground">
-            Shows each person&apos;s 2FA status from the selected integration&apos;s latest check
+            Where each person&apos;s 2FA status comes from
           </div>
-          <SelectItem value={NONE_VALUE}>Don&apos;t show 2FA status</SelectItem>
+          <SelectItem value={NONE_VALUE}>
+            <span className="text-muted-foreground">Not shown</span>
+          </SelectItem>
           {connectedSources.map((p) => (
             <SelectItem key={p.slug} value={p.slug}>
-              {p.name}
+              <div className="flex items-center gap-2">
+                {p.logoUrl && (
+                  <Image
+                    src={p.logoUrl}
+                    alt=""
+                    width={16}
+                    height={16}
+                    className="rounded-sm"
+                    unoptimized
+                  />
+                )}
+                {p.name}
+                {selectedSource === p.slug && (
+                  <span className="ml-auto text-xs text-muted-foreground">Active</span>
+                )}
+              </div>
             </SelectItem>
           ))}
         </SelectContent>

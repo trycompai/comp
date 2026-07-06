@@ -176,27 +176,42 @@ export const employeeAccessCheck: IntegrationCheck = {
       };
     });
 
-    // Group users by role for summary
+    // Group users by role for the summary log
     const superAdmins = activeUsers.filter((u) => u.isAdmin);
     const delegatedAdmins = activeUsers.filter((u) => u.isDelegatedAdmin && !u.isAdmin);
-    const regularUsers = activeUsers.filter((u) => !u.isAdmin && !u.isDelegatedAdmin);
 
-    // Pass with the full employee list as evidence
-    ctx.pass({
-      title: 'Employee Access List',
-      resourceType: 'organization',
-      resourceId: 'google-workspace',
-      description: `Retrieved ${activeUsers.length} employees from Google Workspace (${superAdmins.length} super admins, ${delegatedAdmins.length} delegated admins, ${regularUsers.length} regular users)`,
-      evidence: {
-        totalUsers: activeUsers.length,
-        superAdminCount: superAdmins.length,
-        delegatedAdminCount: delegatedAdmins.length,
-        regularUserCount: regularUsers.length,
-        reviewedAt: new Date().toISOString(),
-        employees: employeeList,
-      },
-    });
+    const checkedAt = new Date().toISOString();
 
-    ctx.log('Google Workspace Employee Access check complete');
+    // No users after filtering is still a completed review — emit one org-level
+    // row so the run never stores zero results (which would read as "no evidence").
+    if (employeeList.length === 0) {
+      ctx.pass({
+        title: 'Employee Access List',
+        resourceType: 'organization',
+        resourceId: 'google-workspace',
+        description: `No active users matched the configured filters (${allUsers.length} total user records inspected)`,
+        evidence: { totalUsers: 0, inspectedUsers: allUsers.length, checkedAt },
+      });
+      ctx.log('Google Workspace Employee Access check complete: 0 users after filtering');
+      return;
+    }
+
+    // One row per person (resourceType 'user', resourceId = lowercased email) so
+    // person-scoped features can join results to org members by email. Access is
+    // an inventory, not a violation — every person row emits as pass; error paths
+    // keep their org-level rows.
+    for (const employee of employeeList) {
+      ctx.pass({
+        title: 'Employee Access',
+        resourceType: 'user',
+        resourceId: employee.email.toLowerCase().trim(),
+        description: `${employee.name} has access to Google Workspace as ${employee.role}`,
+        evidence: { ...employee, checkedAt },
+      });
+    }
+
+    ctx.log(
+      `Google Workspace Employee Access check complete: ${employeeList.length} users (${superAdmins.length} super admins, ${delegatedAdmins.length} delegated admins)`,
+    );
   },
 };

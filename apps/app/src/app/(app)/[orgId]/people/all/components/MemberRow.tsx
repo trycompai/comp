@@ -42,7 +42,29 @@ import { toast } from 'sonner';
 import { BackgroundCheckVerifiedTick } from '../../components/BackgroundCheckVerifiedTick';
 import { MultiRoleCombobox } from './MultiRoleCombobox';
 import { RemoveDeviceAlert } from './RemoveDeviceAlert';
-import { TaskRequirements, type TaskRequirementItem } from './TaskRequirements';
+import {
+  RequirementBadge,
+  RequirementCount,
+  RequirementDash,
+  RequirementLoading,
+} from './RequirementCell';
+
+export type RequirementColumnKey =
+  | 'policies'
+  | 'training'
+  | 'hipaa'
+  | 'device'
+  | 'background'
+  | 'twoFactor';
+
+export const ALL_REQUIREMENT_COLUMNS: RequirementColumnKey[] = [
+  'policies',
+  'training',
+  'hipaa',
+  'device',
+  'background',
+  'twoFactor',
+];
 import { RemoveMemberAlert } from './RemoveMemberAlert';
 import type { CustomRoleOption } from './MultiRoleCombobox';
 import type {
@@ -69,6 +91,8 @@ interface MemberRowProps {
   backgroundCheckStepEnabled?: boolean;
   /** From the org's configured 2FA source; absent when no source is configured. */
   twoFactorStatus?: TwoFactorStatus;
+  /** Which requirement columns the table is rendering, in order. */
+  requirementColumns?: RequirementColumnKey[];
 }
 
 function getInitials(name?: string | null, email?: string | null): string {
@@ -122,6 +146,7 @@ export function MemberRow({
   backgroundCheckStatus,
   backgroundCheckStepEnabled = true,
   twoFactorStatus,
+  requirementColumns = ALL_REQUIREMENT_COLUMNS,
 }: MemberRowProps) {
   const { orgId } = useParams<{ orgId: string }>();
 
@@ -151,76 +176,85 @@ export function MemberRow({
   const hasCompletedBackgroundCheck = isBackgroundCheckComplete(backgroundCheckStatus);
   const memberExempt = member.backgroundCheckExempt === true;
   const shouldShowTaskRequirements = !isPlatformAdmin && !isDeactivated;
-  const taskItems: TaskRequirementItem[] = [];
-
-  if (taskCompletion) {
-    // total === 0 means "nothing to complete" (e.g. no required policies) —
-    // that's not-applicable, not incomplete, so no row at all.
-    if (taskCompletion.policies.total > 0) {
-      taskItems.push({
-        label: 'Policies',
-        completed: taskCompletion.policies.completed,
-        total: taskCompletion.policies.total,
-        kind: 'count',
-      });
+  // One cell per requirement column. A muted dash = the requirement doesn't
+  // apply to this member (org flag off, exempt, auditor-only, admin, 0 total).
+  const renderRequirementCell = (key: RequirementColumnKey) => {
+    switch (key) {
+      case 'policies':
+        return taskCompletion && taskCompletion.policies.total > 0 ? (
+          <RequirementCount
+            label="Policies"
+            completed={taskCompletion.policies.completed}
+            total={taskCompletion.policies.total}
+          />
+        ) : (
+          <RequirementDash />
+        );
+      case 'training':
+        return taskCompletion && taskCompletion.training.total > 0 ? (
+          <RequirementCount
+            label="Training"
+            completed={taskCompletion.training.completed}
+            total={taskCompletion.training.total}
+          />
+        ) : (
+          <RequirementDash />
+        );
+      case 'hipaa':
+        return taskCompletion?.hipaa ? (
+          <RequirementBadge
+            label="HIPAA"
+            state={
+              taskCompletion.hipaa.completed >= taskCompletion.hipaa.total
+                ? 'done'
+                : 'missing'
+            }
+          />
+        ) : (
+          <RequirementDash />
+        );
+      case 'device':
+        if (!shouldShowTaskRequirements) return <RequirementDash />;
+        if (deviceStatus) {
+          return (
+            <RequirementBadge
+              label="Device"
+              state={deviceStatus === 'compliant' ? 'done' : 'missing'}
+            />
+          );
+        }
+        return isDeviceStatusLoading ? <RequirementLoading /> : <RequirementDash />;
+      case 'background':
+        return shouldShowTaskRequirements &&
+          backgroundCheckStepEnabled &&
+          !memberExempt &&
+          !isAuditorOnly ? (
+          <RequirementBadge
+            label="Background"
+            state={hasCompletedBackgroundCheck ? 'done' : 'missing'}
+          />
+        ) : (
+          <RequirementDash />
+        );
+      case 'twoFactor':
+        // 2FA applies to EVERY non-deactivated member (platform admins
+        // included). Absent status = no 2FA source configured for the org.
+        return !isDeactivated && twoFactorStatus ? (
+          <RequirementBadge
+            label="2FA"
+            state={
+              twoFactorStatus === 'enabled'
+                ? 'done'
+                : twoFactorStatus === 'missing'
+                  ? 'missing'
+                  : 'not-provided'
+            }
+          />
+        ) : (
+          <RequirementDash />
+        );
     }
-
-    if (taskCompletion.training.total > 0) {
-      taskItems.push({
-        label: 'Training',
-        completed: taskCompletion.training.completed,
-        total: taskCompletion.training.total,
-        kind: 'count',
-      });
-    }
-
-    if (taskCompletion.hipaa) {
-      taskItems.push({
-        label: 'HIPAA',
-        completed: taskCompletion.hipaa.completed,
-        total: taskCompletion.hipaa.total,
-        kind: 'binary',
-      });
-    }
-  }
-
-  if (shouldShowTaskRequirements && deviceStatus) {
-    taskItems.push({
-      label: 'Device',
-      completed: deviceStatus === 'compliant' ? 1 : 0,
-      total: 1,
-      kind: 'binary',
-    });
-  }
-
-  if (shouldShowTaskRequirements && backgroundCheckStepEnabled && !memberExempt && !isAuditorOnly) {
-    taskItems.push({
-      label: 'Background',
-      completed: hasCompletedBackgroundCheck ? 1 : 0,
-      total: 1,
-      kind: 'binary',
-    });
-  }
-
-  // 2FA applies to EVERY non-deactivated member (platform admins included),
-  // unlike the compliance-scoped rows above. Absent status = no 2FA source
-  // configured for the org, so no row.
-  if (!isDeactivated && twoFactorStatus) {
-    taskItems.push({
-      label: '2FA',
-      completed: twoFactorStatus === 'enabled' ? 1 : 0,
-      total: 1,
-      kind: 'binary',
-      state:
-        twoFactorStatus === 'enabled'
-          ? 'done'
-          : twoFactorStatus === 'missing'
-            ? 'missing'
-            : 'not-provided',
-    });
-  }
-
-  const isDeviceLoadingRow = shouldShowTaskRequirements && isDeviceStatusLoading && !deviceStatus;
+  };
 
   const handleEditRolesClick = () => {
     setSelectedRoles(parseRoles(member.role));
@@ -369,10 +403,10 @@ export function MemberRow({
           )}
         </TableCell>
 
-        {/* TASKS */}
-        <TableCell>
-          <TaskRequirements items={taskItems} showLoadingRow={isDeviceLoadingRow} />
-        </TableCell>
+        {/* Requirement columns */}
+        {requirementColumns.map((key) => (
+          <TableCell key={key}>{renderRequirementCell(key)}</TableCell>
+        ))}
 
         {/* ACTIONS */}
         <TableCell>

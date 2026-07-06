@@ -54,6 +54,7 @@ export function use2faSource({
       if (res.error) throw new Error(res.error);
       return res.data as { provider: string | null };
     },
+    { revalidateOnFocus: false },
   );
 
   const {
@@ -71,6 +72,7 @@ export function use2faSource({
       if (res.error) throw new Error(res.error);
       return res.data as { providers: TwoFactorSourceProviderInfo[] };
     },
+    { revalidateOnFocus: false },
   );
 
   const selectedSource = sourceData?.provider ?? null;

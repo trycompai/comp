@@ -18,6 +18,7 @@ import { EmployeeBackgroundCheck } from './EmployeeBackgroundCheck';
 import { EmployeeDetails } from './EmployeeDetails';
 import { EmployeeDevice } from './EmployeeDevice';
 import { EmployeePageHeader } from './EmployeePageHeader';
+import { EmployeeAccess } from './EmployeeAccess';
 import { EmployeePolicies } from './EmployeePolicies';
 import { EmployeeHipaaTraining, EmployeeTrainingVideos } from './EmployeeTraining';
 import { isAuditorOnly } from './isAuditorOnly';
@@ -29,6 +30,7 @@ type EmployeeTab =
   | 'training'
   | 'hipaa'
   | 'device'
+  | 'access'
   | 'offboarding'
   | 'background-check';
 
@@ -85,6 +87,7 @@ export function Employee({
     'training',
     ...(hasHipaaFramework ? (['hipaa'] as EmployeeTab[]) : []),
     'device',
+    'access',
     ...(showBackgroundCheck ? (['background-check'] as EmployeeTab[]) : []),
     ...(employee.offboardDate ? (['offboarding'] as EmployeeTab[]) : []),
   ];
@@ -154,6 +157,7 @@ export function Employee({
             <TabsTrigger value="training">Training Videos</TabsTrigger>
             {hasHipaaFramework && <TabsTrigger value="hipaa">HIPAA Training</TabsTrigger>}
             <TabsTrigger value="device">Device</TabsTrigger>
+            <TabsTrigger value="access">Access</TabsTrigger>
             {showBackgroundCheck && (
               <TabsTrigger value="background-check">Background Check</TabsTrigger>
             )}
@@ -181,6 +185,9 @@ export function Employee({
               />
             </TabsContent>
           )}
+          <TabsContent value="access">
+            <EmployeeAccess memberId={employee.id} organizationId={orgId} />
+          </TabsContent>
           <TabsContent value="device">
             <EmployeeDevice
               organization={organization}
