@@ -1,3 +1,24 @@
+# [3.98.0](https://github.com/trycompai/comp/compare/v3.97.0...v3.98.0) (2026-07-06)
+
+
+### Bug Fixes
+
+* address follow-up ([70c393c](https://github.com/trycompai/comp/commit/70c393c89d71ef6ba0e49e3a2a8a9c5e2176cabc))
+* **api:** add isActive filter to member query ([545bc74](https://github.com/trycompai/comp/commit/545bc7466ccab2b37ebbf6b5926fcc69bb7ea158))
+* **api:** tie trust portal access link expiry to the grant duration ([cc493f0](https://github.com/trycompai/comp/commit/cc493f0bd0ec4a5735e67d7b975d4de3dad9e071))
+* **app:** sort assignee list alphabetically in assignee dropdown ([13aa3ef](https://github.com/trycompai/comp/commit/13aa3ef0741b144ef50a98886a4d3c07ac6a07a8))
+* **cloud-security:** exclude per-task runs from latest scan selection ([c51b17c](https://github.com/trycompai/comp/commit/c51b17c799f06d5f99ff2a81c934df9c9ea30b64))
+* **risk-treatment:** ensure live tasks filter before ranking in draft plan ([98401f4](https://github.com/trycompai/comp/commit/98401f4b0b94b09f97c2a27c21ea4b7790a3c989))
+* **risk-treatment:** harden orphan task-vector prune (CS-681 review) ([eb3c097](https://github.com/trycompai/comp/commit/eb3c097a44b5482da569eb8745548b0d233563ac))
+* **trust-portal:** derive public vendor badges from cert data (CS-688) ([#3355](https://github.com/trycompai/comp/issues/3355)) ([dd2ea84](https://github.com/trycompai/comp/commit/dd2ea8401d6d83e0faee2f042bcac109a7023223)), closes [3315/#3318](https://github.com/trycompai/comp/issues/3318)
+* **trust-portal:** restore soc3/pipeda/ccpa badge mappings (CS-688) ([#3357](https://github.com/trycompai/comp/issues/3357)) ([e8cb123](https://github.com/trycompai/comp/commit/e8cb12319ace042594be4495490b6c560ad49aa5))
+* **trust:** address cubic review on the questionnaire toggle ([6e71c3f](https://github.com/trycompai/comp/commit/6e71c3fd0e7d03655568e70c40fbb2b9640e9932))
+
+
+### Features
+
+* **trust:** add setting to show/hide the Security Questionnaire on the public trust portal ([f89c323](https://github.com/trycompai/comp/commit/f89c32395951f1cb6d47b629b32eeee9336f801b))
+
 # [3.97.0](https://github.com/trycompai/comp/compare/v3.96.1...v3.97.0) (2026-07-06)
 
 
