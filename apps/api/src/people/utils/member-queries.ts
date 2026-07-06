@@ -66,7 +66,7 @@ export class MemberQueries {
     return db.member.findMany({
       where: {
         organizationId,
-        ...(includeDeactivated ? {} : { deactivated: false }),
+        ...(includeDeactivated ? {} : { deactivated: false, isActive: true }),
         ...(filters?.onboardAfter || filters?.onboardBefore
           ? {
               onboardDate: {

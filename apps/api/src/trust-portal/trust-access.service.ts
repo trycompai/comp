@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { db } from '@db';
 import { randomBytes } from 'crypto';
+import { extractComplianceBadges } from './cert-badge-mapper';
 import {
   ApproveAccessRequestDto,
   CreateAccessRequestDto,
@@ -305,8 +306,9 @@ export class TrustAccessService {
         accessTokenExpiresAt < new Date()
       ) {
         accessToken = this.generateToken(32);
-        accessTokenExpiresAt = new Date();
-        accessTokenExpiresAt.setHours(accessTokenExpiresAt.getHours() + 24);
+        // Mirror the grant's own expiry rather than a fixed window, so the
+        // emailed link stays valid for the whole approved duration.
+        accessTokenExpiresAt = existingGrant.expiresAt;
 
         await db.trustAccessGrant.update({
           where: { id: existingGrant.id },
@@ -706,8 +708,9 @@ export class TrustAccessService {
     expiresAt.setDate(expiresAt.getDate() + durationDays);
 
     const accessToken = this.generateToken(32);
-    const accessTokenExpiresAt = new Date();
-    accessTokenExpiresAt.setHours(accessTokenExpiresAt.getHours() + 24);
+    // Mirror the grant's own expiry rather than a fixed window, so the
+    // emailed link stays valid for the whole approved duration.
+    const accessTokenExpiresAt = expiresAt;
 
     const result = await db.$transaction(async (tx) => {
       const updatedRequest = await tx.trustAccessRequest.update({
@@ -1011,9 +1014,9 @@ export class TrustAccessService {
       (grant.accessTokenExpiresAt && grant.accessTokenExpiresAt < now)
     ) {
       accessToken = this.generateToken(32);
-      const accessTokenExpiresAt = new Date(
-        now.getTime() + 24 * 60 * 60 * 1000,
-      );
+      // Mirror the grant's own expiry rather than a fixed window, so the
+      // emailed link stays valid for the whole approved duration.
+      const accessTokenExpiresAt = grant.expiresAt;
 
       await db.trustAccessGrant.update({
         where: { id: grantId },
@@ -1156,9 +1159,10 @@ export class TrustAccessService {
         : null;
 
       const accessToken = nda.grant.accessToken || this.generateToken(32);
+      // Mirror the grant's own expiry rather than a fixed window, so the
+      // emailed link stays valid for the whole approved duration.
       const accessTokenExpiresAt =
-        nda.grant.accessTokenExpiresAt ||
-        new Date(Date.now() + 24 * 60 * 60 * 1000);
+        nda.grant.accessTokenExpiresAt || nda.grant.expiresAt;
 
       if (!nda.grant.accessToken) {
         await db.trustAccessGrant.update({
@@ -1204,8 +1208,9 @@ export class TrustAccessService {
     expiresAt.setDate(expiresAt.getDate() + durationDays);
 
     const accessToken = this.generateToken(32);
-    const accessTokenExpiresAt = new Date();
-    accessTokenExpiresAt.setHours(accessTokenExpiresAt.getHours() + 24);
+    // Mirror the grant's own expiry rather than a fixed window, so the
+    // emailed link stays valid for the whole approved duration.
+    const accessTokenExpiresAt = expiresAt;
 
     const result = await db.$transaction(async (tx) => {
       const grant = await tx.trustAccessGrant.create({
@@ -1442,8 +1447,9 @@ export class TrustAccessService {
       accessTokenExpiresAt < new Date()
     ) {
       accessToken = this.generateToken(32);
-      accessTokenExpiresAt = new Date();
-      accessTokenExpiresAt.setHours(accessTokenExpiresAt.getHours() + 24);
+      // Mirror the grant's own expiry rather than a fixed window, so the
+      // emailed link stays valid for the whole approved duration.
+      accessTokenExpiresAt = grant.expiresAt;
 
       await db.trustAccessGrant.update({
         where: { id: grant.id },
@@ -1524,6 +1530,7 @@ export class TrustAccessService {
       organizationName: grant.accessRequest.organization.name,
       friendlyUrl: branding.friendlyUrl,
       faviconUrl: branding.faviconUrl,
+      securityQuestionnaireEnabled: branding.securityQuestionnaireEnabled,
       expiresAt: grant.expiresAt,
       subjectEmail: grant.subjectEmail,
       ndaPdfUrl,
@@ -1532,10 +1539,18 @@ export class TrustAccessService {
 
   private async getTrustBrandingByOrganizationId(
     organizationId: string,
-  ): Promise<{ friendlyUrl: string; faviconUrl: string | null }> {
+  ): Promise<{
+    friendlyUrl: string;
+    faviconUrl: string | null;
+    securityQuestionnaireEnabled: boolean;
+  }> {
     const trust = await db.trust.findUnique({
       where: { organizationId },
-      select: { friendlyUrl: true, favicon: true },
+      select: {
+        friendlyUrl: true,
+        favicon: true,
+        securityQuestionnaireEnabled: true,
+      },
     });
 
     const friendlyUrl = trust?.friendlyUrl ?? organizationId;
@@ -1543,7 +1558,11 @@ export class TrustAccessService {
       ? await this.getFaviconSignedUrl(trust.favicon)
       : null;
 
-    return { friendlyUrl, faviconUrl };
+    return {
+      friendlyUrl,
+      faviconUrl,
+      securityQuestionnaireEnabled: trust?.securityQuestionnaireEnabled ?? true,
+    };
   }
 
   private async getFaviconSignedUrl(
@@ -2713,6 +2732,22 @@ export class TrustAccessService {
     };
   }
 
+  /**
+   * Whether the public trust portal should offer the AI-assisted Security
+   * Questionnaire. The public portal passes either the friendly URL or the
+   * organization ID, so we resolve on both. Defaults to enabled when the portal
+   * can't be resolved so the questionnaire never disappears by accident.
+   */
+  async getPublicSecurityQuestionnaireEnabled(
+    friendlyUrl: string,
+  ): Promise<boolean> {
+    const trust = await this.resolveTrustByFriendlyUrl(friendlyUrl, {
+      securityQuestionnaireEnabled: true,
+    });
+
+    return trust?.securityQuestionnaireEnabled ?? true;
+  }
+
   async getPublicCustomLinks(friendlyUrl: string) {
     const trust = await db.trust.findUnique({
       where: { friendlyUrl },
@@ -2738,18 +2773,29 @@ export class TrustAccessService {
     });
   }
 
-  async getPublicFavicon(friendlyUrl: string): Promise<string | null> {
-    let trust = await db.trust.findUnique({
-      where: { friendlyUrl },
-      select: { favicon: true },
-    });
-
-    if (!trust) {
-      trust = await db.trust.findUnique({
+  /**
+   * Resolve a Trust by friendlyUrl, falling back to organizationId — the public
+   * portal passes either. Two findUnique calls on unique columns give explicit
+   * precedence (friendlyUrl wins), so an org whose friendlyUrl happens to equal
+   * another org's id can't shadow it. Shared by the public read endpoints.
+   */
+  private async resolveTrustByFriendlyUrl<S extends Prisma.TrustSelect>(
+    friendlyUrl: string,
+    select: S,
+  ): Promise<Prisma.TrustGetPayload<{ select: S }> | null> {
+    return (
+      (await db.trust.findUnique({ where: { friendlyUrl }, select })) ??
+      (await db.trust.findUnique({
         where: { organizationId: friendlyUrl },
-        select: { favicon: true },
-      });
-    }
+        select,
+      }))
+    );
+  }
+
+  async getPublicFavicon(friendlyUrl: string): Promise<string | null> {
+    const trust = await this.resolveTrustByFriendlyUrl(friendlyUrl, {
+      favicon: true,
+    });
 
     if (!trust?.favicon) {
       return null;
@@ -2831,9 +2877,14 @@ export class TrustAccessService {
             }
           }
 
-          // Extract compliance badges from riskAssessmentData when vendor record has none
-          if (!badges || !Array.isArray(badges) || badges.length === 0) {
-            badges = this.extractBadgesFromRiskData(parsed);
+          // Prefer badges freshly derived from the vendor's verified
+          // certifications so the public Trust Centre always matches the admin
+          // Vendors tab, rather than trusting a possibly-stale stored
+          // complianceBadges value (CS-688). Fall back to the stored value only
+          // when there is nothing to derive.
+          const derivedBadges = extractComplianceBadges(parsed);
+          if (derivedBadges.length > 0) {
+            badges = derivedBadges;
           }
         }
       }
@@ -2843,63 +2894,6 @@ export class TrustAccessService {
         trustPortalUrl,
       };
     });
-  }
-
-  /**
-   * Extract compliance badges from GlobalVendors riskAssessmentData certifications.
-   * Used as fallback when the vendor record has no complianceBadges synced yet.
-   */
-  private extractBadgesFromRiskData(
-    data: Record<string, unknown>,
-  ): Array<{ type: string; verified: boolean }> | null {
-    const certs = data.certifications;
-    if (!Array.isArray(certs)) return null;
-
-    const CERT_MAP: Record<string, string> = {
-      soc2: 'soc2',
-      'soc 2': 'soc2',
-      soc3: 'soc3',
-      'soc 3': 'soc3',
-      iso27001: 'iso27001',
-      'iso 27001': 'iso27001',
-      iso42001: 'iso42001',
-      'iso 42001': 'iso42001',
-      gdpr: 'gdpr',
-      hipaa: 'hipaa',
-      pcidss: 'pci_dss',
-      'pci dss': 'pci_dss',
-      pci_dss: 'pci_dss',
-      nen7510: 'nen7510',
-      'nen 7510': 'nen7510',
-      iso9001: 'iso9001',
-      'iso 9001': 'iso9001',
-      pipeda: 'pipeda',
-      ccpa: 'ccpa',
-    };
-
-    const badges: Array<{ type: string; verified: boolean }> = [];
-    const seen = new Set<string>();
-
-    for (const cert of certs) {
-      if (
-        !cert ||
-        typeof cert !== 'object' ||
-        cert.status !== 'verified' ||
-        typeof cert.type !== 'string'
-      )
-        continue;
-
-      const normalized = cert.type.toLowerCase().replace(/[^a-z0-9 _]/g, '');
-      // Use canonical slug for known certs, keep original type for unknown ones
-      const badgeType = CERT_MAP[normalized] ?? cert.type.trim();
-      const key = badgeType.toLowerCase();
-      if (badgeType && !seen.has(key)) {
-        seen.add(key);
-        badges.push({ type: badgeType, verified: true });
-      }
-    }
-
-    return badges.length > 0 ? badges : null;
   }
 
   /**

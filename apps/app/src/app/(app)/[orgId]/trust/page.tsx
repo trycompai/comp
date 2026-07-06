@@ -158,6 +158,7 @@ export default async function TrustPage({ params }: { params: Promise<{ orgId: s
         vendors={vendors}
         customFrameworks={customFrameworks}
         faviconUrl={settings?.faviconUrl ?? null}
+        securityQuestionnaireEnabled={settings?.securityQuestionnaireEnabled ?? true}
       />
     </PageLayout>
   );
