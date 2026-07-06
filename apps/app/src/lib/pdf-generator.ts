@@ -155,17 +155,58 @@ const extractTextFromContent = (content: JSONContent[]): string => {
   }).join('');
 };
 
-// Whether any sibling after `index` renders visible text. Used so the heading
-// keep-together reserve treats a heading followed only by empty paragraphs or
-// hard breaks as a trailing heading (all renderable node types here carry
-// text, so an empty result means nothing visible follows).
-const hasRenderableTextAfter = (content: JSONContent[], index: number): boolean => {
-  for (let i = index + 1; i < content.length; i++) {
-    if (extractTextFromContent([content[i]]).trim().length > 0) {
-      return true;
-    }
+// First-row height of a table, mirroring renderTable's row-height math so the
+// heading keep-together reserve can size itself against a table that follows a
+// heading (not just plain paragraphs). Keep in sync with renderTable below.
+const measureTableFirstRowHeight = (
+  tableNode: JSONContent,
+  config: PDFConfig,
+): number => {
+  const firstRow = tableNode.content?.[0];
+  if (!firstRow?.content?.length) return 0;
+
+  let columnCount = 0;
+  for (const cell of firstRow.content) {
+    columnCount += cell.attrs?.colspan ?? 1;
   }
-  return false;
+  if (columnCount === 0) return 0;
+
+  const colWidth = config.contentWidth / columnCount;
+  const cellPadding = 2;
+  let rowHeight = config.lineHeight + cellPadding * 2;
+  for (const cell of firstRow.content) {
+    if (cell.type !== 'tableCell' && cell.type !== 'tableHeader') continue;
+    const width = colWidth * (cell.attrs?.colspan ?? 1);
+    const text = cleanTextForPDF(extractCellText(cell.content ?? []));
+    const lines = config.doc.splitTextToSize(text || ' ', width - cellPadding * 2);
+    rowHeight = Math.max(
+      rowHeight,
+      lines.length * config.lineHeight + cellPadding * 2,
+    );
+  }
+  return rowHeight;
+};
+
+// Content height (beyond the heading's own height plus spacingAfter) needed to
+// keep a heading with the start of the section that follows it. Returns 0 when
+// nothing visible follows (a trailing heading). Handles tables (first-row
+// height) so keep-together isn't limited to plain paragraphs. Empty paragraphs
+// and hard breaks render nothing here, so they're skipped.
+const sectionLeadHeight = (
+  content: JSONContent[],
+  index: number,
+  config: PDFConfig,
+  spacingAfter: number,
+): number => {
+  for (let i = index + 1; i < content.length; i++) {
+    const node = content[i];
+    if (node.type === 'table' && node.content?.length) {
+      return spacingAfter + measureTableFirstRowHeight(node, config);
+    }
+    if (extractTextFromContent([node]).trim().length === 0) continue;
+    return spacingAfter + HEADING_KEEP_WITH_LINES * config.lineHeight;
+  }
+  return 0;
 };
 
 // Enhanced helper function that renders text with proper formatting
@@ -246,14 +287,23 @@ const processContent = (config: PDFConfig, content: JSONContent[], level: number
               config.contentWidth,
             ).length
           : 0;
-        // The heading advances the cursor by its own lines plus spacingAfter,
-        // then each following body line advances (and requires) config.lineHeight
-        // — so reserve headingHeight + spacingAfter + keepWithLines * lineHeight.
+        // sectionLeadHeight measures what the following section needs (a few
+        // text lines, or a table's first row, or 0 for a trailing heading),
+        // added to the heading's own height. The reserve is capped at the
+        // usable page height so an oversized heading can't force an empty
+        // leading page — addTextWithWrapping's per-line checks paginate it.
         const headingHeight = Math.max(headingLineCount, 1) * config.lineHeight;
-        const hasFollowingContent = hasRenderableTextAfter(content, nodeIndex);
-        const requiredHeight = hasFollowingContent
-          ? headingHeight + spacingAfter + HEADING_KEEP_WITH_LINES * config.lineHeight
-          : headingHeight;
+        const leadHeight = sectionLeadHeight(
+          content,
+          nodeIndex,
+          config,
+          spacingAfter,
+        );
+        const usableHeight = config.pageHeight - config.margin * 2;
+        const requiredHeight = Math.min(
+          leadHeight > 0 ? headingHeight + leadHeight : headingHeight,
+          usableHeight,
+        );
         checkPageBreak(config, requiredHeight);
 
         if (headingText) {

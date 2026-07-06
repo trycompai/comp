@@ -235,20 +235,74 @@ export class PolicyPdfRendererService {
     return text;
   }
 
-  // Whether any sibling after `index` renders visible text. Used so the heading
-  // keep-together reserve treats a heading followed only by empty paragraphs or
-  // hard breaks as a trailing heading (all renderable node types here carry
-  // text, so an empty result means nothing visible follows).
-  private hasRenderableTextAfter(
+  // First-row height of a table, mirroring the row-height math in renderTable
+  // so the heading keep-together reserve can size itself against a table that
+  // follows a heading (not just plain paragraphs).
+  // NOTE: keep in sync with renderTable's rowHeight calculation.
+  private measureTableFirstRowHeight(
+    tableNode: JSONContent,
+    config: PDFConfig,
+  ): number {
+    const firstRow = tableNode.content?.[0];
+    if (!firstRow?.content?.length) return 0;
+
+    let columnCount = 0;
+    for (const cell of firstRow.content) {
+      columnCount += cell.attrs?.colspan ?? 1;
+    }
+    if (columnCount === 0) return 0;
+
+    const colWidth = config.contentWidth / columnCount;
+    const cellPadding = 2;
+    let rowHeight = config.lineHeight + cellPadding * 2;
+    for (const cell of firstRow.content) {
+      if (cell.type !== 'tableCell' && cell.type !== 'tableHeader') continue;
+      const width = colWidth * (cell.attrs?.colspan ?? 1);
+      const text = this.cleanTextForPDF(this.extractCellText(cell.content ?? []));
+      const lines = config.doc.splitTextToSize(
+        text || ' ',
+        width - cellPadding * 2,
+      ) as string[];
+      rowHeight = Math.max(
+        rowHeight,
+        lines.length * config.lineHeight + cellPadding * 2,
+      );
+    }
+    return rowHeight;
+  }
+
+  // Extra height (beyond the heading's own height) needed to keep a heading
+  // with the start of the section that follows it. Returns 0 when nothing
+  // visible follows (a trailing heading). Handles tables (first-row height) and
+  // leading hard breaks, so keep-together isn't limited to plain paragraphs.
+  private sectionLeadHeight(
     content: JSONContent[],
     index: number,
-  ): boolean {
+    config: PDFConfig,
+  ): number {
+    let lead = 0;
     for (let i = index + 1; i < content.length; i++) {
-      if (this.extractTextFromContent([content[i]]).trim().length > 0) {
-        return true;
+      const node = content[i];
+      if (node.type === 'hardBreak') {
+        lead += config.lineHeight;
+        continue;
       }
+      if (node.type === 'table' && node.content?.length) {
+        // Heading trailing gap + the table's first row must fit together.
+        return (
+          lead + config.lineHeight + this.measureTableFirstRowHeight(node, config)
+        );
+      }
+      if (this.extractTextFromContent([node]).trim().length === 0) {
+        // Empty paragraph or similar: advances the cursor slightly, keep scanning.
+        if (node.type === 'paragraph') lead += config.lineHeight * 0.5;
+        continue;
+      }
+      // First text-bearing block: reserve the heading's first few section lines
+      // (HEADING_KEEP_WITH_LINES advances, the last still needs the look-ahead).
+      return lead + HEADING_KEEP_WITH_LINES * config.lineHeight + DEFAULT_BREAK_SPACE;
     }
-    return false;
+    return 0;
   }
 
   private checkPageBreak(
@@ -319,26 +373,19 @@ export class PolicyPdfRendererService {
           // Keep-together: require room for the heading itself PLUS the first
           // few lines of the section that follows it; otherwise push the whole
           // heading to the next page so it isn't stranded at the page bottom.
-          // Only reserve the following-section space when content actually
-          // follows this heading (a trailing heading shouldn't be pushed to a
-          // page of its own).
-          //
-          // The heading advances the cursor by its own height plus a trailing
-          // gap (config.lineHeight), then each following body line advances
-          // config.lineHeight and the last one still needs DEFAULT_BREAK_SPACE
-          // of look-ahead — hence: headingHeight + keepWithLines * lineHeight
-          // (trailing gap + first keepWithLines-1 advances) + one look-ahead.
-          const hasFollowingContent = this.hasRenderableTextAfter(
-            content,
-            nodeIndex,
-          );
+          // sectionLeadHeight measures what the following section needs (a few
+          // text lines, or a table's first row, or 0 for a trailing heading),
+          // and is added to the heading's own height. The reserve is capped at
+          // the usable page height so an oversized heading can't force an empty
+          // leading page — the per-line loop below paginates it instead.
+          const leadHeight = this.sectionLeadHeight(content, nodeIndex, config);
           const headingHeight =
             Math.max(headingLines.length, 1) * config.lineHeight * 1.2;
-          const requiredHeight = hasFollowingContent
-            ? headingHeight +
-              HEADING_KEEP_WITH_LINES * config.lineHeight +
-              DEFAULT_BREAK_SPACE
-            : headingHeight;
+          const usableHeight = config.pageHeight - config.margin * 2;
+          const requiredHeight = Math.min(
+            leadHeight > 0 ? headingHeight + leadHeight : headingHeight,
+            usableHeight,
+          );
           this.checkPageBreak(config, requiredHeight);
 
           // For a normal heading the up-front check already reserved room, so

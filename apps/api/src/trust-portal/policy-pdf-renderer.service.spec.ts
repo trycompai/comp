@@ -962,6 +962,23 @@ describe('PolicyPdfRendererService', () => {
     const pageIndexContaining = (pages: string[], needle: string): number =>
       pages.findIndex((t) => t.includes(needle));
 
+    // Like pageTextsFrom but keeps blank pages (in order), so a blank leading
+    // page shifts the index of later content. Drops the trailing xref/trailer
+    // segment that follows the final content stream.
+    const orderedPageTexts = (buf: Buffer): string[] => {
+      const segments = buf.toString('latin1').split('endstream');
+      return segments.slice(0, -1).map((segment) => {
+        const start = segment.lastIndexOf('stream');
+        if (start === -1) return '';
+        const body = segment.slice(start + 'stream'.length);
+        const re = /\((.*?)\)\s*Tj/g;
+        let text = '';
+        let m: RegExpExecArray | null;
+        while ((m = re.exec(body)) !== null) text += m[1];
+        return text;
+      });
+    };
+
     it('does not orphan a heading at the bottom of a page (CS-704)', () => {
       // Sweep headings across many vertical offsets by growing the amount of
       // filler before each one. Without keep-together logic at least one
@@ -1080,6 +1097,100 @@ describe('PolicyPdfRendererService', () => {
       // pushed onto a page of its own.
       expect(pageIndexContaining(pages, 'filler line 22')).toBe(0);
       expect(pageIndexContaining(pages, 'EMPTYTRAILHEADING')).toBe(0);
+    });
+
+    it('keeps a heading with a following table that has a tall first row', () => {
+      // A heading immediately followed by a table with a tall first row must
+      // not be orphaned: the reserve has to account for the table's first-row
+      // height, not just a few plain text lines. Sweep offsets so at least one
+      // heading lands where the fixed text-only reserve would have orphaned it.
+      const tallCell = (label: string) => ({
+        type: 'tableCell',
+        content: [
+          {
+            type: 'paragraph',
+            content: [
+              {
+                type: 'text',
+                text: `${label} line one line two line three line four line five line six`,
+              },
+            ],
+          },
+        ],
+      });
+
+      const SECTIONS = 24;
+      const nodes: Array<Record<string, unknown>> = [];
+      for (let i = 0; i < SECTIONS; i++) {
+        for (let f = 0; f < i; f++) {
+          nodes.push({
+            type: 'paragraph',
+            content: [
+              { type: 'text', text: `filler ${i}-${f} advancing the cursor` },
+            ],
+          });
+        }
+        nodes.push({
+          type: 'heading',
+          attrs: { level: 2 },
+          content: [{ type: 'text', text: `TABLEHEADING${i} Section ${i}` }],
+        });
+        nodes.push({
+          type: 'table',
+          content: [
+            {
+              type: 'tableRow',
+              content: [tallCell(`TABLECELL${i}`), tallCell(`meta${i}`)],
+            },
+          ],
+        });
+      }
+
+      const result = service.renderPoliciesPdfBuffer([
+        { name: 'Heading Table Policy', content: { type: 'doc', content: nodes } },
+      ]);
+
+      const pages = pageTextsFrom(result);
+      const orphaned: number[] = [];
+      for (let i = 0; i < SECTIONS; i++) {
+        const headingPage = pageIndexContaining(pages, `TABLEHEADING${i}`);
+        const tablePage = pageIndexContaining(pages, `TABLECELL${i}`);
+        expect(headingPage).toBeGreaterThanOrEqual(0);
+        expect(tablePage).toBeGreaterThanOrEqual(0);
+        if (headingPage !== tablePage) orphaned.push(i);
+      }
+      expect(orphaned).toEqual([]);
+    });
+
+    it('does not emit a blank leading page for an oversized heading', () => {
+      // A nameless policy whose first (and only) node is a heading taller than
+      // the page must start rendering on page 1, not after an empty page. The
+      // reserve is capped at the usable page height so the up-front check can't
+      // add a page while the current one is still empty.
+      const longHeadingText = Array.from(
+        { length: 200 },
+        () => 'BLANKGUARDWORD',
+      ).join(' ');
+
+      const result = service.renderPoliciesPdfBuffer([
+        {
+          name: '',
+          content: {
+            type: 'doc',
+            content: [
+              {
+                type: 'heading',
+                attrs: { level: 1 },
+                content: [{ type: 'text', text: longHeadingText }],
+              },
+            ],
+          },
+        },
+      ]);
+
+      const orderedPages = orderedPageTexts(result);
+      // The very first page carries heading text — no blank page precedes it.
+      expect(orderedPages[0]).toContain('BLANKGUARDWORD');
     });
 
     it('paginates a heading longer than a page instead of overflowing', () => {
