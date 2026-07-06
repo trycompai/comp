@@ -12,6 +12,7 @@ const memberFindFirst = db.member.findFirst as jest.Mock;
 
 function row(partial: Partial<CheckResultRow>): CheckResultRow {
   return {
+    resultId: 'icr_1',
     resourceId: 'org',
     resourceType: 'organization',
     passed: true,
@@ -79,7 +80,7 @@ describe('PeopleAccessService.getMemberAccess', () => {
     expect(sources[0].matchType).toBe('matched');
     expect(sources[0].entries).toHaveLength(1);
     const entry = sources[0].entries[0];
-    expect(entry.id).toBe('run_1:0');
+    expect(entry.id).toBe('icr_1');
     expect(entry.summary).toBe('Jane has access to Google Workspace as Super Admin');
     // Primitive evidence values become labeled fields; nulls, arrays, and
     // timestamp keys are excluded; raw evidence is passed through for auditors.

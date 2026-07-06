@@ -19,6 +19,8 @@ import { ConnectionRepository } from '../repositories/connection.repository';
  * (e.g. with a zod schema) and reads only the fields it understands.
  */
 export interface CheckResultRow {
+  /** Database id of this result row — unique and stable; safe as a UI key. */
+  resultId: string;
   /** Provider-native identifier for the resource (email, bucket ARN, repo, …). */
   resourceId: string;
   /** Kind of resource the check produced (e.g. 'user', 'bucket'). */
@@ -145,6 +147,7 @@ export class CheckResultsService {
     if (!latest) return [];
 
     return latest.results.map((r) => ({
+      resultId: r.id,
       resourceId: r.resourceId,
       resourceType: r.resourceType,
       passed: r.passed,
