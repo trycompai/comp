@@ -52,6 +52,27 @@ Notes:
 - Empty array = "no data" (source not bound/connected, or never really ran). Never throws
   for "no results".
 
+## Person-scoped results: the shape contract
+
+Checks about PEOPLE (employee access, 2FA/MFA, training) follow a standard emission shape
+(defined in the `dynamic-integrations` skill, "THE STANDARD"): one row per person,
+`resourceType: 'user'`, `resourceId` = lowercased email, details in `evidence`
+(`email`, `name`, `role`, `isAdmin`, `status`, `lastLogin` — whatever the provider knows).
+
+So a feature joining check results to org members does exactly this — no parsing, no AI:
+
+```ts
+const rows = await checkResults.getLatestResultsForTask({
+  organizationId, taskTemplateId, sourceSlug, resourceType: 'user',
+});
+const forMember = rows.filter((r) => r.resourceId === member.email.toLowerCase());
+```
+
+If a source returns zero `'user'` rows, its check hasn't been normalized to the standard
+yet (or genuinely has no per-person data) — render that as "no per-person data from this
+source", and fix the CHECK (per the dynamic-integrations skill), never by parsing
+aggregate evidence in the feature.
+
 ## The envelope you get back
 
 ```ts
