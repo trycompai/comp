@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { db } from '@db';
 import { invalidateApprovalIfNeeded } from './utils/approval';
+import { lockDocument } from './utils/document-lock';
 
 /**
  * Org-level mapping between an ISMS document and the organization's Controls
@@ -41,6 +42,11 @@ export class IsmsDocumentControlService {
     // register/narrative edits). Only a REAL change invalidates — an idempotent
     // re-link that inserts nothing must not downgrade an approved document.
     await db.$transaction(async (tx) => {
+      // Take the per-document lock BEFORE writing links so the mutation is fully
+      // serialized against approve() (which holds the same lock). invalidate is
+      // only called on a real change, and the lock is re-entrant, so re-taking it
+      // there is a no-op.
+      await lockDocument(tx, documentId);
       const { count } = await tx.ismsDocumentControlLink.createMany({
         data: uniqueControlIds.map((controlId) => ({
           ismsDocumentId: documentId,
@@ -68,6 +74,9 @@ export class IsmsDocumentControlService {
     // Only a real unlink (a row actually deleted) invalidates sign-off; removing
     // a control that wasn't linked must not downgrade an approved document.
     await db.$transaction(async (tx) => {
+      // Lock before the delete so the mutation serializes against approve()
+      // (same lock); invalidate only on a real unlink, re-taking the lock no-ops.
+      await lockDocument(tx, documentId);
       const { count } = await tx.ismsDocumentControlLink.deleteMany({
         where: { ismsDocumentId: documentId, controlId },
       });
