@@ -350,11 +350,17 @@ describe('OAuthController', () => {
         providerSlug: 'github-app',
       });
 
-      // Install URL with the slug substituted and only `state` appended.
+      // Install URL with the slug substituted, plus `state` and the
+      // environment-specific `redirect_uri` (so multi-callback Apps route back
+      // to the right environment).
       expect(result.authorizationUrl).toContain(
         'https://github.com/apps/comp-ai/installations/new',
       );
       expect(result.authorizationUrl).toContain('state=state_install');
+      expect(result.authorizationUrl).toContain('redirect_uri=');
+      expect(decodeURIComponent(result.authorizationUrl)).toContain(
+        '/v1/integrations/oauth/callback',
+      );
       // OAuth authorize params must NOT be on an install URL.
       expect(result.authorizationUrl).not.toContain('client_id=');
       expect(result.authorizationUrl).not.toContain('response_type=');

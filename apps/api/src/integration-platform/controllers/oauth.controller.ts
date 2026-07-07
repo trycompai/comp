@@ -185,14 +185,21 @@ export class OAuthController {
     }
     const authUrl = new URL(authorizeUrl);
 
+    // Environment-specific callback (prod / staging / localhost). Passed as
+    // redirect_uri so a GitHub App with multiple registered callback URLs
+    // redirects back to the environment that started the flow, instead of
+    // GitHub falling back to the first-registered callback URL.
+    const callbackUrl = `${process.env.BASE_URL || 'http://localhost:3333'}/v1/integrations/oauth/callback`;
+
     // GitHub App installation flow: the connect step is an App *installation*
     // (github.com/apps/{slug}/installations/new), not a standard OAuth authorize.
-    // Only `state` is appended — client_id/response_type/scope/redirect_uri do
-    // not apply to the install URL. The OAuth `code` still comes back on the
+    // Only `state` and `redirect_uri` apply to the install URL — client_id,
+    // response_type and scope do not. The OAuth `code` still comes back on the
     // callback (with "Request user authorization during installation" enabled),
     // so token exchange proceeds normally afterwards.
     if (oauthConfig.appInstallFlow) {
       authUrl.searchParams.set('state', oauthState.state);
+      authUrl.searchParams.set('redirect_uri', callbackUrl);
       this.logger.log(
         `Starting GitHub App install flow for ${providerSlug}, org: ${organizationId} (credentials from ${credentials.source})`,
       );
@@ -205,7 +212,6 @@ export class OAuthController {
     authUrl.searchParams.set('state', oauthState.state);
 
     // Callback URL
-    const callbackUrl = `${process.env.BASE_URL || 'http://localhost:3333'}/v1/integrations/oauth/callback`;
     authUrl.searchParams.set('redirect_uri', callbackUrl);
 
     // Scopes
