@@ -1,6 +1,7 @@
 import { NotFoundException } from '@nestjs/common';
 import { db } from '@db';
 import { IsmsService } from './isms.service';
+import type { IsmsVersionService } from './isms-version.service';
 
 jest.mock('@db', () => ({
   db: {
@@ -20,11 +21,11 @@ jest.mock('./documents/data-source', () => ({
 jest.mock('./documents/generate', () => ({
   runDerivation: jest.fn(),
 }));
-jest.mock('./utils/version-snapshot', () => ({
-  upsertLatestSnapshotVersion: jest.fn(),
-}));
 
 const mockDb = jest.mocked(db);
+
+// ensureSetup never touches the version service; a bare stub satisfies the ctor.
+const versionService = {} as unknown as IsmsVersionService;
 
 /** Convenience accessor for the first createMany call's `data` array. */
 const createManyData = () =>
@@ -35,7 +36,7 @@ describe('IsmsService ensureSetup', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new IsmsService();
+    service = new IsmsService(versionService);
     (mockDb.control.findMany as jest.Mock).mockResolvedValue([]);
     (mockDb.ismsDocument.createMany as jest.Mock).mockResolvedValue({
       count: 0,

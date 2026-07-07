@@ -32,6 +32,7 @@ import { resolveRolePermissions, permissionsGrant } from '../auth/app-access';
 import { resolveServiceByName } from '../auth/service-token.config';
 import { IsmsService } from './isms.service';
 import { IsmsContextService } from './isms-context.service';
+import { IsmsVersionService } from './isms-version.service';
 import { IsmsDocumentControlService } from './isms-document-control.service';
 import { EnsureIsmsSetupDto } from './dto/ensure-isms-setup.dto';
 import { SubmitIsmsForApprovalDto } from './dto/submit-isms-for-approval.dto';
@@ -46,6 +47,7 @@ export class IsmsController {
   constructor(
     private readonly ismsService: IsmsService,
     private readonly contextService: IsmsContextService,
+    private readonly versionService: IsmsVersionService,
     private readonly documentControlService: IsmsDocumentControlService,
   ) {}
 
@@ -220,6 +222,19 @@ export class IsmsController {
     @OrganizationId() organizationId: string,
   ) {
     return this.contextService.drift({ documentId: id, organizationId });
+  }
+
+  @Get('documents/:id/versions')
+  @RequirePermission('evidence', 'read')
+  @ApiOperation({
+    summary: "List an ISMS document's published version history",
+  })
+  @ApiOkResponse({ description: 'Published versions, newest first' })
+  async getVersions(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+  ) {
+    return this.versionService.getVersions({ documentId: id, organizationId });
   }
 
   @Post('documents/:id/export')

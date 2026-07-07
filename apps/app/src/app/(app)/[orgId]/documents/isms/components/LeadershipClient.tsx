@@ -21,8 +21,7 @@ interface LeadershipClientProps {
 function extractNarrative(
   document: IsmsDocumentData,
 ): Partial<IsmsLeadershipNarrative> | null {
-  const versions = Array.isArray(document.versions) ? document.versions : [];
-  const narrative = versions[0]?.narrative ?? null;
+  const narrative = document.draftNarrative ?? null;
   if (!narrative || typeof narrative !== 'object') return null;
   return narrative as Partial<IsmsLeadershipNarrative>;
 }

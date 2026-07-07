@@ -8,6 +8,7 @@ import type { AuthContext as AuthContextType } from '../auth/types';
 import { IsmsController } from './isms.controller';
 import { IsmsService } from './isms.service';
 import { IsmsContextService } from './isms-context.service';
+import { IsmsVersionService } from './isms-version.service';
 import { IsmsDocumentControlService } from './isms-document-control.service';
 
 const mockResolveRolePermissions = jest.mocked(resolveRolePermissions);
@@ -54,6 +55,9 @@ jest.mock('./isms.service', () => ({
 jest.mock('./isms-context.service', () => ({
   IsmsContextService: class MockIsmsContextService {},
 }));
+jest.mock('./isms-version.service', () => ({
+  IsmsVersionService: class MockIsmsVersionService {},
+}));
 jest.mock('./isms-document-control.service', () => ({
   IsmsDocumentControlService: class MockIsmsDocumentControlService {},
 }));
@@ -73,6 +77,9 @@ describe('IsmsController', () => {
     drift: jest.fn(),
     exportDocument: jest.fn(),
   };
+  const mockVersionService = {
+    getVersions: jest.fn(),
+  };
   const mockDocumentControlService = {
     addControls: jest.fn(),
     removeControl: jest.fn(),
@@ -86,6 +93,7 @@ describe('IsmsController', () => {
       providers: [
         { provide: IsmsService, useValue: mockIsmsService },
         { provide: IsmsContextService, useValue: mockContextService },
+        { provide: IsmsVersionService, useValue: mockVersionService },
         {
           provide: IsmsDocumentControlService,
           useValue: mockDocumentControlService,
@@ -306,6 +314,20 @@ describe('IsmsController', () => {
     await controller.drift('doc_1', 'org_1');
 
     expect(mockContextService.drift).toHaveBeenCalledWith({
+      documentId: 'doc_1',
+      organizationId: 'org_1',
+    });
+  });
+
+  it('getVersions delegates to the version service', async () => {
+    mockVersionService.getVersions.mockResolvedValue({
+      currentVersionId: 'isms_ver_1',
+      versions: [],
+    });
+
+    await controller.getVersions('doc_1', 'org_1');
+
+    expect(mockVersionService.getVersions).toHaveBeenCalledWith({
       documentId: 'doc_1',
       organizationId: 'org_1',
     });

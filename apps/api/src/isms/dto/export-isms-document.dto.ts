@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsIn } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsIn, IsOptional, IsString } from 'class-validator';
 
 export class ExportIsmsDocumentDto {
   @ApiProperty({
@@ -9,4 +9,13 @@ export class ExportIsmsDocumentDto {
   })
   @IsIn(['pdf', 'docx'])
   format!: 'pdf' | 'docx';
+
+  @ApiPropertyOptional({
+    description:
+      'Published version to export. Omit to export the current working draft; ' +
+      'provide a version id to download exactly what was approved at that version.',
+  })
+  @IsOptional()
+  @IsString()
+  versionId?: string;
 }
