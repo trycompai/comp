@@ -90,6 +90,20 @@ describe('IsmsDocumentControlService', () => {
         skipDuplicates: true,
       });
     });
+
+    it('takes the per-document lock BEFORE writing links (serializes vs approve)', async () => {
+      await service.addControls({
+        documentId: 'doc_1',
+        organizationId: 'org_1',
+        controlIds: ['ctl_1', 'ctl_2'],
+      });
+
+      const lockOrder = (mockDb.$executeRaw as jest.Mock).mock
+        .invocationCallOrder[0];
+      const writeOrder = (mockDb.ismsDocumentControlLink.createMany as jest.Mock)
+        .mock.invocationCallOrder[0];
+      expect(lockOrder).toBeLessThan(writeOrder);
+    });
   });
 
   describe('removeControl', () => {
