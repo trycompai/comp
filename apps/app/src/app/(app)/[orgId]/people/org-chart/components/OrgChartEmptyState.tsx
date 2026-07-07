@@ -25,6 +25,7 @@ export function OrgChartEmptyState({
         initialEdges={[]}
         members={members}
         updatedAt={null}
+        onChartChange={onChartChange}
       />
     );
   }

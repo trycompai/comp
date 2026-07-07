@@ -65,6 +65,7 @@ export function OrgChartContent({
       initialEdges={chartData.edges}
       members={members}
       updatedAt={chartData.updatedAt ?? null}
+      onChartChange={onChartChange}
     />
   );
 }
