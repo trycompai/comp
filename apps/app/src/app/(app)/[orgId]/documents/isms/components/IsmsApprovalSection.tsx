@@ -75,6 +75,15 @@ export function IsmsApprovalSection({
   const approvedDate = formatDate(document.approvedAt);
   const declinedDate = formatDate(document.declinedAt);
 
+  // Versioning context (CS-701): a published version can stay live while the
+  // draft is edited. `hasDraftChanges` = a published version exists but the
+  // working draft is no longer approved (edits in progress).
+  const publishedVersion = document.currentVersion?.version ?? null;
+  const hasPublishedVersion = publishedVersion != null;
+  const nextDraftVersion = (publishedVersion ?? 0) + 1;
+  const hasDraftChanges =
+    hasPublishedVersion && (isDeclined || (!isApproved && !isPending));
+
   // The plain submit button is only offered on un-submitted drafts. Pending and
   // resolved (approved / declined) documents render their own state instead.
   const showSubmitButton = canManage && !isPending && !isResolved;
@@ -98,13 +107,29 @@ export function IsmsApprovalSection({
     <div className="flex flex-col gap-3">
       {isApproved && (
         <Alert variant="success">
-          <AlertTitle>Approved</AlertTitle>
+          <AlertTitle>
+            Approved{publishedVersion ? ` · Published as v${publishedVersion}` : ''}
+          </AlertTitle>
           <AlertDescription>
             This document was approved by{' '}
             <Text as="span" size="sm" weight="medium">
               {approverName}
             </Text>
             {approvedDate ? ` on ${approvedDate}` : ''}.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {hasDraftChanges && (
+        <Alert>
+          <AlertTitle>Editing creates a new draft</AlertTitle>
+          <AlertDescription>
+            Published version{' '}
+            <Text as="span" size="sm" weight="medium">
+              v{publishedVersion}
+            </Text>{' '}
+            stays live and exportable. Your changes are an in-progress draft{' '}
+            {`(v${nextDraftVersion})`} — submit it for approval to publish.
           </AlertDescription>
         </Alert>
       )}

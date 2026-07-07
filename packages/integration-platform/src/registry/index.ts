@@ -12,6 +12,7 @@ import { awsManifest } from '../manifests/aws';
 import { azureManifest } from '../manifests/azure';
 import { gcpManifest } from '../manifests/gcp';
 import { manifest as githubManifest } from '../manifests/github';
+import { githubAppManifest } from '../manifests/github-app';
 import { googleWorkspaceManifest } from '../manifests/google-workspace';
 import { ripplingManifest } from '../manifests/rippling';
 import { vercelManifest } from '../manifests/vercel';
@@ -141,6 +142,7 @@ const allManifests: IntegrationManifest[] = [
   azureManifest,
   gcpManifest,
   githubManifest,
+  githubAppManifest,
   googleWorkspaceManifest,
   ripplingManifest,
   vercelManifest,

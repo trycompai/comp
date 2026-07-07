@@ -182,6 +182,44 @@ export class OAuthController {
     }
     const authUrl = new URL(authorizeUrl);
 
+    // GitHub App installation flow: the connect step is an App *installation*
+    // (github.com/apps/{slug}/installations/new), not a standard OAuth authorize.
+    // GitHub redirects to the App's FIRST registered callback URL after install
+    // and IGNORES any redirect_uri passed to the install URL (confirmed GitHub
+    // behavior), so only `state` is set here — client_id, response_type and
+    // scope do not apply either. Per-environment routing is therefore handled by
+    // using a separate GitHub App per environment (each with its own single
+    // callback URL), NOT via redirect_uri. The OAuth `code` still comes back on
+    // that callback (with "Request user authorization during installation"
+    // enabled), so token exchange proceeds normally afterwards.
+    if (oauthConfig.appInstallFlow) {
+      // Every placeholder in the install URL (e.g. {APP_SLUG}) must have been
+      // resolved from credentials above. If a required setting like the GitHub
+      // App slug was never persisted (e.g. org-scoped credentials saved without
+      // customSettings), fail loudly with a clear error instead of redirecting
+      // the user to a broken GitHub URL.
+      const unresolvedTokens = (oauthConfig.additionalOAuthSettings ?? [])
+        .map((setting) => setting.token)
+        .filter(
+          (token): token is string => !!token && authorizeUrl.includes(token),
+        );
+      if (unresolvedTokens.length > 0) {
+        throw new HttpException(
+          {
+            message: `GitHub App is not fully configured for ${providerSlug} (missing: ${unresolvedTokens.join(', ')}). Set the App slug in the integration credentials.`,
+            setupInstructions: oauthConfig.setupInstructions,
+            createAppUrl: oauthConfig.createAppUrl,
+          },
+          HttpStatus.PRECONDITION_FAILED,
+        );
+      }
+      authUrl.searchParams.set('state', oauthState.state);
+      this.logger.log(
+        `Starting GitHub App install flow for ${providerSlug}, org: ${organizationId} (credentials from ${credentials.source})`,
+      );
+      return { authorizationUrl: authUrl.toString() };
+    }
+
     // Standard OAuth2 params
     authUrl.searchParams.set('client_id', credentials.clientId);
     authUrl.searchParams.set('response_type', 'code');
@@ -287,7 +325,10 @@ export class OAuthController {
     // is the one completing it. The `state` token alone provides CSRF
     // protection, but a session match guards against state-token leakage and
     // ensures the completing user still has an active session for the org.
-    const sessionMismatch = await this.checkSessionMatchesState(req, oauthState);
+    const sessionMismatch = await this.checkSessionMatchesState(
+      req,
+      oauthState,
+    );
     if (sessionMismatch) {
       await this.oauthStateRepository.delete(state);
       this.logger.warn(
@@ -355,11 +396,15 @@ export class OAuthController {
       }
 
       // Store tokens and mark connection as active
-      await this.credentialVaultService.storeOAuthTokens(connection.id, tokens, {
-        preserveExistingRefreshToken:
-          oauthState.providerSlug === 'gcp' ||
-          oauthState.providerSlug === 'google-workspace',
-      });
+      await this.credentialVaultService.storeOAuthTokens(
+        connection.id,
+        tokens,
+        {
+          preserveExistingRefreshToken:
+            oauthState.providerSlug === 'gcp' ||
+            oauthState.providerSlug === 'google-workspace',
+        },
+      );
 
       // Mark cloud OAuth reconnect completion so reconnect banners clear after successful OAuth.
       if (manifest.category === 'Cloud') {
@@ -376,6 +421,14 @@ export class OAuthController {
           },
         });
       }
+
+      // NOTE: GitHub's App install flow returns an `installation_id` on this
+      // callback, but that value is attacker-spoofable — GitHub's own docs say
+      // not to rely on it — so we intentionally do NOT persist it here, and
+      // nothing reads it today. If/when GitHub App installation-token auth is
+      // added, resolve the installation via `GET /user/installations` with the
+      // user token (which also proves the user owns it) rather than trusting the
+      // value from this callback.
 
       await this.connectionService.activateConnection(connection.id);
 
@@ -643,5 +696,4 @@ export class OAuthController {
     }
     return url.toString();
   }
-
 }

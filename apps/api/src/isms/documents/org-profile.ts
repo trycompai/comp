@@ -1,4 +1,5 @@
 import { db } from '@db';
+import type { Prisma } from '@db';
 import { DEFAULT_INTENDED_OUTCOMES } from '../wizard/wizard-defaults';
 import { parseStoredAnswers } from '../wizard/wizard-schema';
 import type { IsmsKeyValue } from '../utils/export-shared';
@@ -29,23 +30,30 @@ const QUESTIONS = {
 export async function loadOrgProfile({
   organizationId,
   frameworkId,
+  client = db,
 }: {
   organizationId: string;
   frameworkId: string;
+  /**
+   * DB client to read through. Defaults to the global `db`; the approve flow
+   * passes its transaction client so the snapshot's org profile reads share the
+   * same isolation context as the register rows written in the same transaction.
+   */
+  client?: Prisma.TransactionClient;
 }): Promise<IsmsOrgProfile> {
   const [organization, contextEntries, profile] = await Promise.all([
-    db.organization.findUnique({
+    client.organization.findUnique({
       where: { id: organizationId },
       select: { name: true, website: true },
     }),
-    db.context.findMany({
+    client.context.findMany({
       where: { organizationId },
       // Deterministic ordering so duplicate questions resolve to the same answer
       // every export; the earliest-created entry wins (id breaks createdAt ties).
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
       select: { question: true, answer: true },
     }),
-    db.ismsProfile.findUnique({
+    client.ismsProfile.findUnique({
       where: { organizationId_frameworkId: { organizationId, frameworkId } },
       select: { answers: true },
     }),

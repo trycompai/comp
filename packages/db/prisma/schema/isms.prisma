@@ -50,18 +50,35 @@ model IsmsDocument {
   title  String
   status IsmsDocumentStatus @default(draft)
 
-  // Approval / sign-off (mirrors SOADocument).
+  // Approval / sign-off (mirrors SOADocument). These track the WORKING DRAFT's
+  // approval lifecycle; the published version's own approver/date live on the
+  // IsmsDocumentVersion row (publishedBy/publishedAt).
   preparedBy String    @default("Comp AI")
   approverId String?
   approver   Member?   @relation("IsmsDocumentApprover", fields: [approverId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   approvedAt DateTime?
   declinedAt DateTime?
 
+  // Versioning (CS-701): mirrors the Policies model (Policy.currentVersionId +
+  // draftContent). The live register tables + `draftNarrative` are the editable
+  // DRAFT; `versions` holds immutable PUBLISHED snapshots; `currentVersion` is the
+  // one that is live and exportable. Editing an approved document reverts `status`
+  // to draft but never touches `currentVersion`, so v1 stays live while v2 is drafted.
+  currentVersionId String?              @unique
+  currentVersion   IsmsDocumentVersion? @relation("IsmsCurrentVersion", fields: [currentVersionId], references: [id], onDelete: SetNull)
+  // Working-draft narrative for the singleton documents (Scope 4.3, Leadership 5.1).
+  // Register documents keep their draft in their own child tables. Replaces the old
+  // `versions[0].narrative` draft-holder.
+  draftNarrative Json?
+  // Drift baseline for the current draft: the derived platform inputs captured at
+  // the last generate/approve. Replaces the old `versions[0].sourceSnapshot`.
+  draftSnapshot Json?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relationships
-  versions                    IsmsDocumentVersion[]
+  versions                    IsmsDocumentVersion[] @relation("IsmsDocumentVersions")
   contextIssues               IsmsContextIssue[] // 4.1 register
   interestedParties           IsmsInterestedParty[] // 4.2a register
   interestedPartyRequirements IsmsInterestedPartyRequirement[] // 4.2b/c register
@@ -82,25 +99,38 @@ model IsmsDocument {
 model IsmsDocumentVersion {
   id         String       @id @default(dbgenerated("generate_prefixed_cuid('isms_ver'::text)"))
   documentId String
-  document   IsmsDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  document   IsmsDocument @relation("IsmsDocumentVersions", fields: [documentId], references: [id], onDelete: Cascade)
+  // Back-relation for IsmsDocument.currentVersion: set when this version is the
+  // live/published one for its document.
+  currentForDocument IsmsDocument? @relation("IsmsCurrentVersion")
 
   version  Int     @default(1)
   isLatest Boolean @default(true)
 
-  // Per-section saved narrative + section-level overrides (stored as data, not free
-  // text, so the model is localisation-ready).
+  // Frozen published narrative for the singleton documents (Scope, Leadership).
+  // Empty ({}) for register documents, whose frozen content lives in contentSnapshot.
   narrative Json
-  // Snapshot of derived inputs captured at generate / approve. Drift is detected by
-  // comparing this against the current derived data.
+  // The full, immutable content snapshot of this published version: the rendered
+  // export input (register rows + narrative + org profile) plus the export metadata
+  // captured at publish. Lets a historical version be re-rendered byte-faithfully if
+  // the stored file is ever missing. Null only for legacy/migrated versions.
+  contentSnapshot Json?
+  // Snapshot of derived platform inputs captured at publish, retained for the record
+  // (the live drift baseline lives on IsmsDocument.draftSnapshot).
   sourceSnapshot Json?
 
-  // Rendered, branded exports.
+  // Rendered, branded exports retained per published version (S3 keys). Auditors
+  // sampling an old version download exactly what was approved at the time.
   pdfUrl  String?
   docxUrl String?
 
-  // User/member id who published this version (plain id, like SOAAnswer.createdBy).
+  // The member who published (approved) this version, and when. `publishedAt != null`
+  // is the marker of a published version (drafts are not materialized as rows).
   publishedById String?
+  publishedBy   Member?   @relation("IsmsDocumentVersionPublisher", fields: [publishedById], references: [id], onDelete: SetNull)
   publishedAt   DateTime?
+  // Optional free-text note describing what changed in this version.
+  changelog String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -108,6 +138,7 @@ model IsmsDocumentVersion {
   @@unique([documentId, version])
   @@index([documentId])
   @@index([documentId, isLatest])
+  @@index([documentId, publishedAt])
 }
 
 // --- Register: Context of the Organization (clause 4.1) ---
