@@ -62,8 +62,13 @@ export function UploadOrgChartDialog({
       }
 
       toast.success('Org chart uploaded');
-      await onUploaded();
       onClose();
+
+      try {
+        await onUploaded();
+      } catch {
+        // Upload already succeeded; a refresh failure shouldn't surface as an upload error.
+      }
     } catch {
       toast.error('Failed to upload org chart');
     } finally {

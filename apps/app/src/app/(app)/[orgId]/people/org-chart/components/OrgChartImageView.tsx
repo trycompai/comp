@@ -33,7 +33,12 @@ export function OrgChartImageView({
       }
 
       toast.success('Org chart deleted');
-      await onChartChange();
+
+      try {
+        await onChartChange();
+      } catch {
+        // Delete already succeeded; a refresh failure shouldn't surface as a delete error.
+      }
     } catch {
       toast.error('Failed to delete org chart');
     } finally {

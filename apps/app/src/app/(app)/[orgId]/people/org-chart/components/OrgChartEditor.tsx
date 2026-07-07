@@ -161,7 +161,12 @@ export function OrgChartEditor({
         setLastSavedAt(new Date().toISOString());
       }
       toast.success('Org chart saved');
-      await onChartChange();
+
+      try {
+        await onChartChange();
+      } catch {
+        // Save already succeeded; a refresh failure shouldn't surface as a save error.
+      }
     } catch {
       toast.error('Failed to save org chart');
     } finally {
