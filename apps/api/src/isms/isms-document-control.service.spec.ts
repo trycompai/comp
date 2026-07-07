@@ -14,6 +14,8 @@ jest.mock('@db', () => {
       createMany: jest.fn(),
       deleteMany: jest.fn(),
     },
+    // Advisory lock taken by invalidateApprovalIfNeeded (serializes vs approve).
+    $executeRaw: jest.fn(),
     // Run the callback with the same mock as the transaction client.
     $transaction: jest.fn((cb: (tx: unknown) => unknown) => cb(db)),
   };
