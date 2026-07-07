@@ -39,9 +39,6 @@ interface OAuthCallbackQuery {
   state: string;
   error?: string;
   error_description?: string;
-  // GitHub App installation flow returns these alongside `code`.
-  installation_id?: string;
-  setup_action?: string;
 }
 
 @Controller({ path: 'integrations/oauth', version: '1' })
@@ -425,27 +422,13 @@ export class OAuthController {
         });
       }
 
-      // GitHub App installation flow: persist the installation id (and setup
-      // action) on the connection. The token stored above is a user-to-server
-      // token, but recording the installation id means a future server-to-server
-      // (installation access token) upgrade needs no re-connect.
-      if (query.installation_id) {
-        const metadata =
-          connection.metadata &&
-          typeof connection.metadata === 'object' &&
-          !Array.isArray(connection.metadata)
-            ? (connection.metadata as Record<string, unknown>)
-            : {};
-        connection = await this.connectionRepository.update(connection.id, {
-          metadata: {
-            ...metadata,
-            githubInstallationId: query.installation_id,
-            ...(query.setup_action
-              ? { githubSetupAction: query.setup_action }
-              : {}),
-          },
-        });
-      }
+      // NOTE: GitHub's App install flow returns an `installation_id` on this
+      // callback, but that value is attacker-spoofable — GitHub's own docs say
+      // not to rely on it — so we intentionally do NOT persist it here, and
+      // nothing reads it today. If/when GitHub App installation-token auth is
+      // added, resolve the installation via `GET /user/installations` with the
+      // user token (which also proves the user owns it) rather than trusting the
+      // value from this callback.
 
       await this.connectionService.activateConnection(connection.id);
 
