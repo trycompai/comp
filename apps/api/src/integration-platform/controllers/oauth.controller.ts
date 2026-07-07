@@ -198,6 +198,26 @@ export class OAuthController {
     // callback (with "Request user authorization during installation" enabled),
     // so token exchange proceeds normally afterwards.
     if (oauthConfig.appInstallFlow) {
+      // Every placeholder in the install URL (e.g. {APP_SLUG}) must have been
+      // resolved from credentials above. If a required setting like the GitHub
+      // App slug was never persisted (e.g. org-scoped credentials saved without
+      // customSettings), fail loudly with a clear error instead of redirecting
+      // the user to a broken GitHub URL.
+      const unresolvedTokens = (oauthConfig.additionalOAuthSettings ?? [])
+        .map((setting) => setting.token)
+        .filter(
+          (token): token is string => !!token && authorizeUrl.includes(token),
+        );
+      if (unresolvedTokens.length > 0) {
+        throw new HttpException(
+          {
+            message: `GitHub App is not fully configured for ${providerSlug} (missing: ${unresolvedTokens.join(', ')}). Set the App slug in the integration credentials.`,
+            setupInstructions: oauthConfig.setupInstructions,
+            createAppUrl: oauthConfig.createAppUrl,
+          },
+          HttpStatus.PRECONDITION_FAILED,
+        );
+      }
       authUrl.searchParams.set('state', oauthState.state);
       authUrl.searchParams.set('redirect_uri', callbackUrl);
       this.logger.log(

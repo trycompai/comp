@@ -366,6 +366,43 @@ describe('OAuthController', () => {
       expect(result.authorizationUrl).not.toContain('response_type=');
       expect(result.authorizationUrl).not.toContain('scope=');
     });
+
+    it('should throw PRECONDITION_FAILED for an install-flow provider when the app slug is not configured', async () => {
+      const manifest = {
+        id: 'github-app',
+        name: 'GitHub App',
+        auth: {
+          type: 'oauth2',
+          config: {
+            authorizeUrl:
+              'https://github.com/apps/{APP_SLUG}/installations/new',
+            tokenUrl: 'https://github.com/login/oauth/access_token',
+            pkce: false,
+            appInstallFlow: true,
+            additionalOAuthSettings: [{ id: 'appSlug', token: '{APP_SLUG}' }],
+          },
+        },
+        category: 'Development',
+        capabilities: [],
+        isActive: true,
+      };
+      mockedGetManifest.mockReturnValue(manifest as never);
+      // No customSettings.appSlug → {APP_SLUG} cannot be resolved.
+      mockOAuthCredentialsService.getCredentials.mockResolvedValue({
+        clientId: 'client_123',
+        clientSecret: 'secret_456',
+        scopes: [],
+        source: 'organization',
+      });
+      mockProviderRepository.upsert.mockResolvedValue(undefined);
+      mockOAuthStateRepository.create.mockResolvedValue({ state: 's' });
+
+      await expect(
+        controller.startOAuth('org_1', 'user_1', {
+          providerSlug: 'github-app',
+        }),
+      ).rejects.toThrow(HttpException);
+    });
   });
 
   describe('oauthCallback', () => {
