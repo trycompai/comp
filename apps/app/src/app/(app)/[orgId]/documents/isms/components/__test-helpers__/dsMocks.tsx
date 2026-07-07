@@ -35,6 +35,12 @@ export function ismsDesignSystemMock() {
     ),
     Grid: ({ children }: { children: ReactNode }) => <div>{children}</div>,
     Heading: ({ children }: { children: ReactNode }) => <h4>{children}</h4>,
+    Item: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+    ItemGroup: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+    ItemMedia: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
+    ItemContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+    ItemTitle: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+    ItemActions: ({ children }: { children: ReactNode }) => <div>{children}</div>,
     Dialog: ({ children }: { children: ReactNode }) => <div>{children}</div>,
     DialogContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
     DialogDescription: ({ children }: { children: ReactNode }) => <p>{children}</p>,
@@ -78,6 +84,7 @@ export function ismsIconsMock() {
     Document: Icon,
     Download: Icon,
     Edit: Icon,
+    Time: Icon,
     Flag: Icon,
     ListChecked: Icon,
     MachineLearningModel: Icon,
@@ -90,6 +97,18 @@ export function ismsIconsMock() {
 
 export function ismsSharedMock() {
   return {
+    IsmsEmptyState: ({
+      title,
+      description,
+    }: {
+      title: ReactNode;
+      description?: ReactNode;
+    }) => (
+      <div>
+        <p>{title}</p>
+        {description ? <p>{description}</p> : null}
+      </div>
+    ),
     IsmsPageHeader: ({
       clause,
       title,

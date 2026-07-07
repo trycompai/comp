@@ -3,36 +3,41 @@ import { db } from '@db';
 import { ExportIsmsDocumentDto } from './dto/export-isms-document.dto';
 import { collectPlatformData } from './documents/data-source';
 import { runDerivation } from './documents/generate';
-import { loadOrgProfile } from './documents/org-profile';
-import { buildExportSections } from './documents/registry';
 import {
   diffPlatformSnapshots,
   parsePlatformSnapshot,
 } from './documents/snapshot';
-import type { DocumentExportInput, IsmsPlatformData } from './documents/types';
-import {
-  generateIsmsExportFile,
-  type IsmsExportResult,
-} from './utils/export-generator';
-import { buildExportMetadata } from './utils/export-metadata';
-import { upsertLatestSnapshotVersion } from './utils/version-snapshot';
+import type { IsmsPlatformData } from './documents/types';
+import { updateDraftSnapshot } from './utils/draft-snapshot';
+import { renderLiveExport } from './utils/export-payload';
+import type { IsmsExportResult } from './utils/export-generator';
+import { IsmsVersionService } from './isms-version.service';
 
 const DOCUMENT_INCLUDE = {
-  versions: { where: { isLatest: true }, take: 1 },
+  currentVersion: { select: { id: true, version: true, publishedAt: true } },
   contextIssues: { orderBy: { position: 'asc' } },
   interestedParties: { orderBy: { position: 'asc' } },
   interestedPartyRequirements: { orderBy: { position: 'asc' } },
   objectives: { orderBy: { position: 'asc' } },
+  controlLinks: {
+    select: {
+      id: true,
+      controlId: true,
+      control: { select: { id: true, name: true } },
+    },
+  },
 } as const;
 
 /**
  * ISMS document derivation, drift detection and export. Dispatches by document
  * type to the per-document handlers under ./documents. Document lifecycle
- * (approve/decline/submit) lives in IsmsService; register CRUD in the register
- * services.
+ * (approve/decline/submit) lives in IsmsService, version history + per-version
+ * export in IsmsVersionService, and register CRUD in the register services.
  */
 @Injectable()
 export class IsmsContextService {
+  constructor(private readonly versionService: IsmsVersionService) {}
+
   async generate({
     documentId,
     organizationId,
@@ -70,7 +75,7 @@ export class IsmsContextService {
         frameworkId: document.frameworkId,
         data,
       });
-      await upsertLatestSnapshotVersion({ tx, documentId, snapshot: data });
+      await updateDraftSnapshot({ tx, documentId, snapshot: data });
     });
 
     return this.loadDocument({ documentId, organizationId });
@@ -85,7 +90,7 @@ export class IsmsContextService {
   }): Promise<{ isStale: boolean; changedSources: string[] }> {
     const document = await db.ismsDocument.findFirst({
       where: { id: documentId, organizationId },
-      include: { versions: { where: { isLatest: true }, take: 1 } },
+      select: { type: true, frameworkId: true, draftSnapshot: true },
     });
     if (!document) {
       throw new NotFoundException('ISMS document not found');
@@ -95,13 +100,15 @@ export class IsmsContextService {
       organizationId,
       frameworkId: document.frameworkId,
     });
-    const previous = parsePlatformSnapshot(
-      document.versions[0]?.sourceSnapshot,
-    );
+    const previous = parsePlatformSnapshot(document.draftSnapshot);
 
     return diffPlatformSnapshots({ type: document.type, previous, current });
   }
 
+  /**
+   * Export a document. With `versionId`, serve that published version (stored file
+   * or snapshot re-render); without, render the current working draft on demand.
+   */
   async exportDocument({
     documentId,
     organizationId,
@@ -111,83 +118,15 @@ export class IsmsContextService {
     organizationId: string;
     dto: ExportIsmsDocumentDto;
   }): Promise<IsmsExportResult> {
-    const document = await db.ismsDocument.findFirst({
-      where: { id: documentId, organizationId },
-      include: {
-        framework: { select: { name: true } },
-        organization: {
-          select: { name: true, website: true, primaryColor: true },
-        },
-        approver: { select: { user: { select: { name: true, email: true } } } },
-        ...DOCUMENT_INCLUDE,
-      },
-    });
-    if (!document) {
-      throw new NotFoundException('ISMS document not found');
+    if (dto.versionId) {
+      return this.versionService.getVersionExport({
+        documentId,
+        organizationId,
+        versionId: dto.versionId,
+        format: dto.format,
+      });
     }
-
-    // The Context document (clause 4.1) renders an org overview, mission and
-    // intended outcomes; other document types don't need the profile.
-    const orgProfile =
-      document.type === 'context_of_organization'
-        ? await loadOrgProfile({
-            organizationId,
-            frameworkId: document.frameworkId,
-          })
-        : undefined;
-
-    const input: DocumentExportInput = {
-      contextIssues: document.contextIssues.map((issue) => ({
-        kind: issue.kind,
-        category: issue.category,
-        description: issue.description,
-        effect: issue.effect,
-      })),
-      interestedParties: document.interestedParties.map((party) => ({
-        name: party.name,
-        category: party.category,
-        needsExpectations: party.needsExpectations,
-      })),
-      requirements: document.interestedPartyRequirements.map((row) => ({
-        partyName: row.partyName,
-        requirement: row.requirement,
-        treatment: row.treatment,
-      })),
-      objectives: document.objectives.map((objective) => ({
-        objective: objective.objective,
-        target: objective.target,
-        cadence: objective.cadence,
-        status: objective.status,
-        plan: objective.plan,
-        measurementMethod: objective.measurementMethod,
-      })),
-      narrative: document.versions[0]?.narrative ?? null,
-      orgProfile,
-    };
-
-    const sections = buildExportSections({ type: document.type, input });
-
-    return generateIsmsExportFile({
-      sections,
-      format: dto.format,
-      metadata: buildExportMetadata({
-        type: document.type,
-        title: document.title,
-        frameworkName: document.framework.name || 'ISO 27001',
-        version: document.versions[0]?.version ?? 1,
-        status: document.status,
-        preparedBy: document.preparedBy,
-        owner: null,
-        approverName:
-          document.approver?.user?.name ||
-          document.approver?.user?.email ||
-          null,
-        approvedAt: document.approvedAt,
-        declinedAt: document.declinedAt,
-        organizationName: document.organization.name,
-        primaryColor: document.organization.primaryColor,
-      }),
-    });
+    return renderLiveExport({ documentId, organizationId, format: dto.format });
   }
 
   private async loadDocument({

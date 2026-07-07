@@ -25,7 +25,7 @@ export async function generateIsmsExportFile({
   metadata: IsmsExportMetadata;
   format: IsmsExportFormat;
 }): Promise<IsmsExportResult> {
-  const baseName = `${sanitizeName(metadata.title)}-v${metadata.version}`;
+  const baseName = `${sanitizeExportName(metadata.title)}-v${metadata.version}`;
 
   if (format === 'docx') {
     return {
@@ -42,7 +42,7 @@ export async function generateIsmsExportFile({
   };
 }
 
-function sanitizeName(name: string): string {
+export function sanitizeExportName(name: string): string {
   return (name || 'isms-document')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')

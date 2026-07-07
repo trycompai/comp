@@ -29,6 +29,9 @@ jest.mock('./isms.service', () => ({
 jest.mock('./isms-context.service', () => ({
   IsmsContextService: class MockIsmsContextService {},
 }));
+jest.mock('./isms-version.service', () => ({
+  IsmsVersionService: class MockIsmsVersionService {},
+}));
 jest.mock('./isms-document-control.service', () => ({
   IsmsDocumentControlService: class MockIsmsDocumentControlService {},
 }));
@@ -49,6 +52,9 @@ describe('IsmsController permission metadata', () => {
       { resource: 'evidence', actions: ['read'] },
     ]);
     expect(permissionsFor('drift')).toEqual([
+      { resource: 'evidence', actions: ['read'] },
+    ]);
+    expect(permissionsFor('getVersions')).toEqual([
       { resource: 'evidence', actions: ['read'] },
     ]);
     expect(permissionsFor('exportDocument')).toEqual([

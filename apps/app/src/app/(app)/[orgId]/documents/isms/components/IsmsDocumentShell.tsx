@@ -21,10 +21,12 @@ import { toast } from 'sonner';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useIsmsDocument, type UseIsmsDocumentReturn } from '../hooks/useIsmsDocument';
 import { useIsmsDrift } from '../hooks/useIsmsDrift';
+import { useIsmsDocumentVersions } from '../hooks/useIsmsDocumentVersions';
 import type { IsmsDocument as IsmsDocumentData } from '../isms-types';
 import { DriftBanner } from './DriftBanner';
 import { IsmsControlMappings } from './IsmsControlMappings';
 import { IsmsApprovalSection, type ApproverOption } from './IsmsApprovalSection';
+import { IsmsVersionHistory } from './IsmsVersionHistory';
 import { IsmsPageHeader } from './shared';
 
 /** Arguments passed to the per-document body render-prop. */
@@ -94,6 +96,14 @@ export function IsmsDocumentShell({
     handleExport,
   } = hook;
   const { isStale, drift, mutateDrift } = useIsmsDrift(documentId);
+  const {
+    versions,
+    isLoading: versionsLoading,
+    error: versionsError,
+    downloadingVersionId,
+    downloadVersion,
+    mutateVersions,
+  } = useIsmsDocumentVersions(documentId, organizationId);
 
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -122,6 +132,9 @@ export function IsmsDocumentShell({
   const handleApprove = async () => {
     try {
       await approve();
+      // Approval promotes the draft to a new published version — refresh the
+      // history list and drift baseline alongside the document itself.
+      await Promise.all([mutateVersions(), mutateDrift()]);
       toast.success('Document approved');
     } catch (caught) {
       toast.error(caught instanceof Error ? caught.message : 'Failed to approve');
@@ -243,6 +256,16 @@ export function IsmsDocumentShell({
 
       {document && (
         <IsmsControlMappings document={document} organizationId={organizationId} canManage={canManage} />
+      )}
+
+      {document && (
+        <IsmsVersionHistory
+          versions={versions}
+          isLoading={versionsLoading}
+          error={versionsError}
+          downloadingVersionId={downloadingVersionId}
+          onDownload={downloadVersion}
+        />
       )}
     </Stack>
   );
