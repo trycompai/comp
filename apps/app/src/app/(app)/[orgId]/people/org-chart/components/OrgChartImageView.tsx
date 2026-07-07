@@ -5,20 +5,20 @@ import { Button } from '@trycompai/design-system';
 import { TrashCan, Upload } from '@trycompai/design-system/icons';
 import { useApi } from '@/hooks/use-api';
 import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
 import { UploadOrgChartDialog } from './UploadOrgChartDialog';
 
 interface OrgChartImageViewProps {
   imageUrl: string;
   chartName: string;
+  onChartChange: () => void | Promise<unknown>;
 }
 
 export function OrgChartImageView({
   imageUrl,
   chartName,
+  onChartChange,
 }: OrgChartImageViewProps) {
   const api = useApi();
-  const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
   const [showReplace, setShowReplace] = useState(false);
 
@@ -33,7 +33,7 @@ export function OrgChartImageView({
       }
 
       toast.success('Org chart deleted');
-      router.refresh();
+      await onChartChange();
     } catch {
       toast.error('Failed to delete org chart');
     } finally {
@@ -42,7 +42,12 @@ export function OrgChartImageView({
   };
 
   if (showReplace) {
-    return <UploadOrgChartDialog onClose={() => setShowReplace(false)} />;
+    return (
+      <UploadOrgChartDialog
+        onClose={() => setShowReplace(false)}
+        onUploaded={onChartChange}
+      />
+    );
   }
 
   return (

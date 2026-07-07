@@ -9,9 +9,13 @@ import type { OrgChartMember } from '../types';
 
 interface OrgChartEmptyStateProps {
   members: OrgChartMember[];
+  onChartChange: () => void | Promise<unknown>;
 }
 
-export function OrgChartEmptyState({ members }: OrgChartEmptyStateProps) {
+export function OrgChartEmptyState({
+  members,
+  onChartChange,
+}: OrgChartEmptyStateProps) {
   const [mode, setMode] = useState<'empty' | 'create' | 'upload'>('empty');
 
   if (mode === 'create') {
@@ -26,7 +30,12 @@ export function OrgChartEmptyState({ members }: OrgChartEmptyStateProps) {
   }
 
   if (mode === 'upload') {
-    return <UploadOrgChartDialog onClose={() => setMode('empty')} />;
+    return (
+      <UploadOrgChartDialog
+        onClose={() => setMode('empty')}
+        onUploaded={onChartChange}
+      />
+    );
   }
 
   return (
