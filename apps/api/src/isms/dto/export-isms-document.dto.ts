@@ -12,7 +12,8 @@ export class ExportIsmsDocumentDto {
 
   @ApiPropertyOptional({
     description:
-      'Published version to export. Omit to export the current working draft; ' +
+      "Published version to export. Omit to export the document's current " +
+      'published version (or the working draft if it has never been published); ' +
       'provide a version id to download exactly what was approved at that version.',
   })
   @IsOptional()

@@ -64,10 +64,17 @@ export function ScopeClient(props: ScopeClientProps) {
         };
 
         const narrative = toScopeNarrative(document.draftNarrative);
+        // Re-seed the form (via remount) whenever the persisted draft content
+        // changes — e.g. after "Generate from platform data" or a reload — not
+        // just when the published version changes. ScopeForm reads its defaults
+        // at mount, so the key must reflect the draft, not currentVersionId alone.
+        const formKey = `${document.currentVersionId ?? 'draft'}:${JSON.stringify(
+          document.draftNarrative ?? {},
+        )}`;
 
         return (
           <ScopeForm
-            key={document.currentVersionId ?? 'draft'}
+            key={formKey}
             narrative={narrative}
             canEdit={canManage}
             onSave={handleSaveNarrative}

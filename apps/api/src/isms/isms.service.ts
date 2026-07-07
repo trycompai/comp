@@ -65,9 +65,13 @@ export class IsmsService {
         type: doc.type,
         status: doc.status,
         requirementId: doc.requirementId,
-        // A published version exists (the document has been approved at least
-        // once) — independent of whether the draft has since been edited.
-        hasApprovedVersion: doc.currentVersionId != null,
+        // The document has an approved artifact: either a published version row
+        // (approved under the versioning model) or `status === 'approved'` — the
+        // latter covers documents approved before versioning existed, whose legacy
+        // version rows were dropped by the migration and which capture a real
+        // versioned artifact on their next approval.
+        hasApprovedVersion:
+          doc.currentVersionId != null || doc.status === 'approved',
       })),
     };
   }

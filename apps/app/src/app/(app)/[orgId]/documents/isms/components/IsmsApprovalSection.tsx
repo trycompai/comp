@@ -128,8 +128,8 @@ export function IsmsApprovalSection({
             <Text as="span" size="sm" weight="medium">
               v{publishedVersion}
             </Text>{' '}
-            stays live and exportable. Your changes are an in-progress draft (v
-            {nextDraftVersion}) — submit it for approval to publish.
+            stays live and exportable. Your changes are an in-progress draft{' '}
+            {`(v${nextDraftVersion})`} — submit it for approval to publish.
           </AlertDescription>
         </Alert>
       )}
