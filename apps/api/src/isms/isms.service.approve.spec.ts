@@ -122,7 +122,9 @@ describe('IsmsService.approve (CS-701 versioning)', () => {
       .mockResolvedValueOnce({ id: 'doc_1', status: 'approved' });
     mockCollect.mockResolvedValue(platformData);
     const tx = {
+      $executeRaw: jest.fn().mockResolvedValue(0),
       ismsDocument: {
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
         findUniqueOrThrow: jest.fn().mockResolvedValue(reloaded),
         update: jest.fn().mockResolvedValue({}),
       },
@@ -155,18 +157,26 @@ describe('IsmsService.approve (CS-701 versioning)', () => {
     expect(mockUpdateDraft).toHaveBeenCalledWith(
       expect.objectContaining({ tx, documentId: 'doc_1' }),
     );
+    // The approval is claimed atomically (serializes concurrent approvals): only
+    // matches while still awaiting this member's review.
+    expect(tx.ismsDocument.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'doc_1',
+        organizationId: 'org_1',
+        status: 'needs_review',
+        approverId: 'mem_1',
+      },
+      data: expect.objectContaining({ status: 'approved', declinedAt: null }),
+    });
     // A published version is created from the reloaded (re-derived) document.
     expect(versionService.createPublishedVersion).toHaveBeenCalledWith(
       expect.objectContaining({ tx, document: reloaded, memberId: 'mem_1' }),
     );
-    // The document is promoted to the freshly-created version.
+    // The document is promoted to the freshly-created version (status was already
+    // set by the atomic claim above).
     expect(tx.ismsDocument.update).toHaveBeenCalledWith({
       where: { id: 'doc_1' },
-      data: expect.objectContaining({
-        status: 'approved',
-        declinedAt: null,
-        currentVersionId: 'isms_ver_1',
-      }),
+      data: { currentVersionId: 'isms_ver_1' },
     });
     // Renders + uploads happen AFTER the transaction (Policies pattern).
     expect(versionService.publishRenders).toHaveBeenCalledWith(
@@ -177,5 +187,33 @@ describe('IsmsService.approve (CS-701 versioning)', () => {
         version: 1,
       }),
     );
+  });
+
+  it('aborts without creating a version when a concurrent approval already won the claim', async () => {
+    (mockDb.member.findFirst as jest.Mock).mockResolvedValue({ id: 'mem_1' });
+    (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
+      id: 'doc_1',
+      status: 'needs_review',
+      approverId: 'mem_1',
+      frameworkId: 'fw_1',
+      type: 'context_of_organization',
+    });
+    mockCollect.mockResolvedValue(platformData);
+    const tx = {
+      $executeRaw: jest.fn().mockResolvedValue(0),
+      ismsDocument: {
+        // The racing approval already flipped status, so the claim matches 0 rows.
+        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+        findUniqueOrThrow: jest.fn(),
+        update: jest.fn(),
+      },
+    };
+    (mockDb.$transaction as jest.Mock).mockImplementation((cb) => cb(tx));
+
+    await expect(service.approve(args)).rejects.toThrow(BadRequestException);
+    // No derivation, no version creation once the claim fails.
+    expect(mockRunDerivation).not.toHaveBeenCalled();
+    expect(versionService.createPublishedVersion).not.toHaveBeenCalled();
+    expect(tx.ismsDocument.findUniqueOrThrow).not.toHaveBeenCalled();
   });
 });

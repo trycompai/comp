@@ -11,6 +11,7 @@ import { collectPlatformData } from './documents/data-source';
 import { runDerivation } from './documents/generate';
 import { updateDraftSnapshot } from './utils/draft-snapshot';
 import { EXPORT_DOCUMENT_INCLUDE } from './utils/export-payload';
+import { lockDocument } from './utils/document-lock';
 import { IsmsVersionService } from './isms-version.service';
 
 /**
@@ -224,6 +225,29 @@ export class IsmsService {
     // currentVersion. Editing afterwards reverts status to draft but leaves this
     // published version live and exportable (CS-701).
     const published = await db.$transaction(async (tx) => {
+      // Serialize concurrent approvals (and register-row creates, which take the
+      // same lock) on this document so they can't interleave and double-publish.
+      await lockDocument(tx, documentId);
+
+      // Atomically claim the approval: the check-then-act guard above runs before
+      // the transaction, so under READ COMMITTED a racing approve/decline could
+      // read the same stale `needs_review`. This conditional update only matches
+      // while the document is still awaiting THIS member's review, so exactly one
+      // caller proceeds; a loser matches zero rows and aborts before creating a
+      // version. (A plain in-transaction re-read would not serialize.)
+      const claim = await tx.ismsDocument.updateMany({
+        where: {
+          id: documentId,
+          organizationId,
+          status: 'needs_review',
+          approverId: member.id,
+        },
+        data: { status: 'approved', approvedAt: now, declinedAt: null },
+      });
+      if (claim.count !== 1) {
+        throw new BadRequestException('Document is not pending your approval');
+      }
+
       // Re-derive in the same transaction so the persisted rows and the frozen
       // snapshot come from one pass (otherwise the approved content can drift).
       await runDerivation({
@@ -250,12 +274,7 @@ export class IsmsService {
 
       await tx.ismsDocument.update({
         where: { id: documentId },
-        data: {
-          status: 'approved',
-          approvedAt: now,
-          declinedAt: null,
-          currentVersionId: result.versionId,
-        },
+        data: { currentVersionId: result.versionId },
       });
       return result;
     });
@@ -286,10 +305,23 @@ export class IsmsService {
     const document = await this.requireDocument({ documentId, organizationId });
     this.assertPendingApprovalBy({ document, member });
 
-    return db.ismsDocument.update({
-      where: { id: documentId },
+    // Atomically claim the decline so it can't race an approve (both pass the
+    // pre-transaction guard). Only matches while still awaiting this member's
+    // review, so a concurrent approve that already won leaves zero rows here.
+    const claim = await db.ismsDocument.updateMany({
+      where: {
+        id: documentId,
+        organizationId,
+        status: 'needs_review',
+        approverId: member.id,
+      },
       data: { status: 'declined', declinedAt: new Date() },
     });
+    if (claim.count !== 1) {
+      throw new BadRequestException('Document is not pending your approval');
+    }
+
+    return this.getDocument({ documentId, organizationId });
   }
 
   /**

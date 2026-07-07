@@ -14,6 +14,7 @@ jest.mock('@db', () => ({
     ismsDocument: {
       findFirst: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
     },
     member: { findFirst: jest.fn() },
     $transaction: jest.fn(),
@@ -151,23 +152,39 @@ describe('IsmsService document lifecycle', () => {
       await expect(service.decline(args)).rejects.toThrow(ForbiddenException);
     });
 
-    it('sets declined status and declinedAt', async () => {
+    it('sets declined status and declinedAt via an atomic claim', async () => {
       (mockDb.member.findFirst as jest.Mock).mockResolvedValue({ id: 'mem_1' });
       (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
         id: 'doc_1',
         status: 'needs_review',
         approverId: 'mem_1',
       });
-      (mockDb.ismsDocument.update as jest.Mock).mockResolvedValue({
-        id: 'doc_1',
-        status: 'declined',
-      });
+      (mockDb.ismsDocument.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
 
       await service.decline(args);
 
-      const call = (mockDb.ismsDocument.update as jest.Mock).mock.calls[0][0];
+      const call = (mockDb.ismsDocument.updateMany as jest.Mock).mock.calls[0][0];
+      // Guarded transition: only matches while awaiting this member's review.
+      expect(call.where).toEqual({
+        id: 'doc_1',
+        organizationId: 'org_1',
+        status: 'needs_review',
+        approverId: 'mem_1',
+      });
       expect(call.data.status).toBe('declined');
       expect(call.data.declinedAt).toBeInstanceOf(Date);
+    });
+
+    it('aborts when a concurrent approve already won (claim matches 0 rows)', async () => {
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({ id: 'mem_1' });
+      (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
+        id: 'doc_1',
+        status: 'needs_review',
+        approverId: 'mem_1',
+      });
+      (mockDb.ismsDocument.updateMany as jest.Mock).mockResolvedValue({ count: 0 });
+
+      await expect(service.decline(args)).rejects.toThrow(BadRequestException);
     });
   });
 });
