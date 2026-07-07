@@ -64,7 +64,11 @@ export function useIsmsDocumentVersions(
         caught instanceof Error ? caught.message : 'Failed to download version',
       );
     } finally {
-      setDownloadingVersionId(null);
+      // Only clear if this request still owns the indicator — a later download of
+      // a different version must not have its spinner cleared by an earlier one.
+      setDownloadingVersionId((current) =>
+        current === versionId ? null : current,
+      );
     }
   };
 

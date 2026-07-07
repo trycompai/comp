@@ -37,24 +37,19 @@ SET "draftNarrative" = v."narrative",
 FROM "IsmsDocumentVersion" v
 WHERE v."documentId" = d."id" AND v."isLatest" = true;
 
--- 2. For APPROVED documents, promote the existing latest row to published v1:
---    stamp publish metadata from the document's approval and point currentVersion
---    at it. contentSnapshot stays NULL -> historical export falls back to an
---    on-demand render (draft == published at migration time, so this is faithful).
-UPDATE "IsmsDocumentVersion" v
-SET "publishedAt"   = COALESCE(d."approvedAt", d."updatedAt"),
-    "publishedById" = d."approverId"
-FROM "IsmsDocument" d
-WHERE v."documentId" = d."id" AND v."isLatest" = true AND d."status" = 'approved';
+-- 2. The pre-CS-701 version row was only ever a mutable draft holder — it has no
+--    frozen contentSnapshot, so it cannot serve as an immutable published version
+--    (a snapshot-less "current version" would 404 on export). Revert previously
+--    approved documents to draft so they are re-approved once to establish a real
+--    v1 (with a proper snapshot + retained artifacts), and drop every legacy row.
+--    From here on a published version is ONLY created by the approve flow, which
+--    always writes a contentSnapshot — so currentVersionId never points at a
+--    snapshot-less version.
+UPDATE "IsmsDocument"
+SET "status" = 'draft',
+    "approvedAt" = NULL,
+    "approverId" = NULL,
+    "declinedAt" = NULL
+WHERE "status" = 'approved';
 
-UPDATE "IsmsDocument" d
-SET "currentVersionId" = v."id"
-FROM "IsmsDocumentVersion" v
-WHERE v."documentId" = d."id" AND v."isLatest" = true AND d."status" = 'approved';
-
--- 3. For NON-approved documents the latest row was only ever a draft holder; its
---    content now lives on the parent, so drop it. Version rows are henceforth
---    published-only (materialized at approval).
-DELETE FROM "IsmsDocumentVersion" v
-USING "IsmsDocument" d
-WHERE v."documentId" = d."id" AND v."isLatest" = true AND d."status" <> 'approved';
+DELETE FROM "IsmsDocumentVersion";
