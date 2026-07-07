@@ -89,6 +89,29 @@ describe('IsmsService ensureSetup', () => {
         expect(mockDb.ismsDocument.findMany).toHaveBeenCalledTimes(1);
         expect(result.documents).toHaveLength(1);
       });
+
+      it('reports hasApprovedVersion from a published version OR an approved status', async () => {
+        (mockDb.frameworkEditorFramework.findUnique as jest.Mock).mockResolvedValue({
+          id: 'fw_1',
+          requirements: [],
+        });
+        (mockDb.ismsDocument.findMany as jest.Mock).mockResolvedValueOnce([
+          // Published version exists.
+          { id: 'd1', type: 'isms_scope', status: 'draft', requirementId: null, currentVersionId: 'isms_ver_1' },
+          // Approved before versioning existed: no version row, but still approved.
+          { id: 'd2', type: 'leadership_commitment', status: 'approved', requirementId: null, currentVersionId: null },
+          // Never approved.
+          { id: 'd3', type: 'objectives_plan', status: 'draft', requirementId: null, currentVersionId: null },
+        ]);
+
+        const result = await service.ensureSetup({ ...dto, canWrite: false });
+
+        expect(result.documents.map((d) => d.hasApprovedVersion)).toEqual([
+          true,
+          true,
+          false,
+        ]);
+      });
     });
 
     describe('template-driven (templates seeded)', () => {
