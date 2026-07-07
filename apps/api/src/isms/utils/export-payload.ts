@@ -54,11 +54,13 @@ export async function loadExportDocument(
 /** The Context document (4.1) renders an org overview; other types don't need it. */
 export async function resolveOrgProfile(
   document: LoadedExportDocument,
+  client?: Prisma.TransactionClient,
 ): Promise<IsmsOrgProfile | undefined> {
   if (document.type !== 'context_of_organization') return undefined;
   return loadOrgProfile({
     organizationId: document.organizationId,
     frameworkId: document.frameworkId,
+    client,
   });
 }
 

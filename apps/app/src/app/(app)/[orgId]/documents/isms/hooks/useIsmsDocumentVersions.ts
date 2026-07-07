@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { toast } from 'sonner';
 import useSWR from 'swr';
 import { api } from '@/lib/api-client';
 import type { IsmsExportFormat, IsmsVersionHistory } from '../isms-types';
@@ -57,6 +58,11 @@ export function useIsmsDocumentVersions(
         organizationId,
         versionId,
       });
+    } catch (caught) {
+      // Surface the failure instead of a silent no-op / unhandled rejection.
+      toast.error(
+        caught instanceof Error ? caught.message : 'Failed to download version',
+      );
     } finally {
       setDownloadingVersionId(null);
     }

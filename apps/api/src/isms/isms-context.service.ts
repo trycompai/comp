@@ -113,9 +113,9 @@ export class IsmsContextService {
   /**
    * Export a document.
    * - With `versionId`: serve that published version (stored file or snapshot).
-   * - Without: a clean approved document exports its published artifact (exactly
-   *   what was approved); a document with an in-progress draft exports the working
-   *   draft (what the customer is editing), clearly labelled as a draft.
+   * - Without: serve the current PUBLISHED version whenever one exists — it stays
+   *   live and exportable while a new draft is in progress (CS-701). Only render
+   *   the live draft when the document has never been published yet.
    */
   async exportDocument({
     documentId,
@@ -137,15 +137,15 @@ export class IsmsContextService {
 
     const document = await db.ismsDocument.findFirst({
       where: { id: documentId, organizationId },
-      select: { status: true, currentVersionId: true },
+      select: { currentVersionId: true },
     });
     if (!document) {
       throw new NotFoundException('ISMS document not found');
     }
 
-    // Approved + no pending draft edits: the published version IS the current
-    // content — serve the retained artifact so it is byte-identical to approval.
-    if (document.status === 'approved' && document.currentVersionId) {
+    // A published version is the document's official artifact and remains the
+    // default export even while an approved document is being re-drafted.
+    if (document.currentVersionId) {
       return this.versionService.getVersionExport({
         documentId,
         organizationId,

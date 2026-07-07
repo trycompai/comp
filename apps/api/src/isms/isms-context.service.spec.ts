@@ -217,10 +217,9 @@ describe('IsmsContextService', () => {
       filename: 'doc.pdf',
     };
 
-    it('renders the live draft when no versionId is given and a draft is in progress', async () => {
+    it('renders the live draft only when the document has no published version', async () => {
       (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
-        status: 'draft',
-        currentVersionId: 'isms_ver_1',
+        currentVersionId: null,
       });
       mockRenderLive.mockResolvedValue(result);
 
@@ -239,28 +238,31 @@ describe('IsmsContextService', () => {
       expect(out).toBe(result);
     });
 
-    it('serves the published artifact by default for a clean approved document', async () => {
-      (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
-        status: 'approved',
-        currentVersionId: 'isms_ver_9',
-      });
-      (versionService.getVersionExport as jest.Mock).mockResolvedValue(result);
+    it.each(['approved', 'draft', 'needs_review'])(
+      'serves the published version by default whenever one exists (status %s)',
+      async (status) => {
+        (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
+          status,
+          currentVersionId: 'isms_ver_9',
+        });
+        (versionService.getVersionExport as jest.Mock).mockResolvedValue(result);
 
-      const out = await service.exportDocument({
-        documentId: 'doc_1',
-        organizationId: 'org_1',
-        dto: { format: 'pdf' },
-      });
+        const out = await service.exportDocument({
+          documentId: 'doc_1',
+          organizationId: 'org_1',
+          dto: { format: 'pdf' },
+        });
 
-      expect(versionService.getVersionExport).toHaveBeenCalledWith({
-        documentId: 'doc_1',
-        organizationId: 'org_1',
-        versionId: 'isms_ver_9',
-        format: 'pdf',
-      });
-      expect(mockRenderLive).not.toHaveBeenCalled();
-      expect(out).toBe(result);
-    });
+        expect(versionService.getVersionExport).toHaveBeenCalledWith({
+          documentId: 'doc_1',
+          organizationId: 'org_1',
+          versionId: 'isms_ver_9',
+          format: 'pdf',
+        });
+        expect(mockRenderLive).not.toHaveBeenCalled();
+        expect(out).toBe(result);
+      },
+    );
 
     it('throws NotFoundException when the document is missing', async () => {
       (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue(null);

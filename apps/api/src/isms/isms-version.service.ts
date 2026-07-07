@@ -66,7 +66,9 @@ export class IsmsVersionService {
   }): Promise<{ versionId: string; version: number; snapshot: IsmsExportSnapshot }> {
     const nextVersion = await this.nextVersion(tx, document.id);
 
-    const orgProfile = await resolveOrgProfile(document);
+    // Read the org profile through the same transaction so the snapshot's profile
+    // and the register rows written in this transaction share one point in time.
+    const orgProfile = await resolveOrgProfile(document, tx);
     const input = buildExportInput({ document, orgProfile });
     const metadata = buildExportMetadata({
       type: document.type,

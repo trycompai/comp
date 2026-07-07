@@ -25,11 +25,17 @@ vi.mock('./exportIsmsDocument', () => ({
   exportIsmsDocument: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock('sonner', () => ({
+  toast: { error: vi.fn(), success: vi.fn() },
+}));
+
 import { useIsmsDocumentVersions } from './useIsmsDocumentVersions';
 import { exportIsmsDocument } from './exportIsmsDocument';
+import { toast } from 'sonner';
 
 const getMock = vi.mocked(api.get);
 const exportMock = vi.mocked(exportIsmsDocument);
+const toastErrorMock = vi.mocked(toast.error);
 
 const DOC_ID = 'doc_1';
 const ORG_ID = 'org_1';
@@ -73,5 +79,16 @@ describe('useIsmsDocumentVersions', () => {
       organizationId: ORG_ID,
       versionId: 'isms_ver_1',
     });
+  });
+
+  it('surfaces a toast when a version download fails', async () => {
+    exportMock.mockRejectedValueOnce(new Error('boom'));
+    const { result } = renderHook(() => useIsmsDocumentVersions(DOC_ID, ORG_ID));
+
+    await act(async () => {
+      await result.current.downloadVersion('isms_ver_1', 'pdf');
+    });
+
+    expect(toastErrorMock).toHaveBeenCalledWith('boom');
   });
 });

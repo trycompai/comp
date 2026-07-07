@@ -108,6 +108,7 @@ export function IsmsVersionHistory({
                     disabled={downloadingVersionId === version.id}
                     onClick={() => void onDownload(version.id, 'pdf')}
                     iconLeft={<Download size={16} />}
+                    aria-label={`Download v${version.version} as PDF`}
                   >
                     PDF
                   </Button>
@@ -120,6 +121,7 @@ export function IsmsVersionHistory({
                     disabled={downloadingVersionId === version.id}
                     onClick={() => void onDownload(version.id, 'docx')}
                     iconLeft={<Document size={16} />}
+                    aria-label={`Download v${version.version} as DOCX`}
                   >
                     DOCX
                   </Button>
