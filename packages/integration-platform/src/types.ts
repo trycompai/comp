@@ -33,6 +33,17 @@ export const OAuthConfigSchema = z.object({
    */
   supportsRefreshToken: z.boolean().default(true),
   /**
+   * GitHub App installation flow. When true, the "connect" step sends the user
+   * to a GitHub App *installation* URL (e.g.
+   * `https://github.com/apps/{slug}/installations/new`) instead of a standard
+   * OAuth authorize URL. Only `state` is appended to that URL —
+   * client_id/response_type/scope do not apply to an install URL. The OAuth
+   * `code` still comes back on the callback (with "Request user authorization
+   * during installation" enabled on the App), so token exchange is unchanged.
+   * Default: false (standard OAuth authorize flow).
+   */
+  appInstallFlow: z.boolean().optional(),
+  /**
    * Separate URL for token refresh (if different from tokenUrl).
    * Most providers use the same tokenUrl for both.
    */

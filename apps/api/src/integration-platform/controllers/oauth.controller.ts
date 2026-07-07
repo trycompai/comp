@@ -39,6 +39,9 @@ interface OAuthCallbackQuery {
   state: string;
   error?: string;
   error_description?: string;
+  // GitHub App installation flow returns these alongside `code`.
+  installation_id?: string;
+  setup_action?: string;
 }
 
 @Controller({ path: 'integrations/oauth', version: '1' })
@@ -182,6 +185,20 @@ export class OAuthController {
     }
     const authUrl = new URL(authorizeUrl);
 
+    // GitHub App installation flow: the connect step is an App *installation*
+    // (github.com/apps/{slug}/installations/new), not a standard OAuth authorize.
+    // Only `state` is appended — client_id/response_type/scope/redirect_uri do
+    // not apply to the install URL. The OAuth `code` still comes back on the
+    // callback (with "Request user authorization during installation" enabled),
+    // so token exchange proceeds normally afterwards.
+    if (oauthConfig.appInstallFlow) {
+      authUrl.searchParams.set('state', oauthState.state);
+      this.logger.log(
+        `Starting GitHub App install flow for ${providerSlug}, org: ${organizationId} (credentials from ${credentials.source})`,
+      );
+      return { authorizationUrl: authUrl.toString() };
+    }
+
     // Standard OAuth2 params
     authUrl.searchParams.set('client_id', credentials.clientId);
     authUrl.searchParams.set('response_type', 'code');
@@ -287,7 +304,10 @@ export class OAuthController {
     // is the one completing it. The `state` token alone provides CSRF
     // protection, but a session match guards against state-token leakage and
     // ensures the completing user still has an active session for the org.
-    const sessionMismatch = await this.checkSessionMatchesState(req, oauthState);
+    const sessionMismatch = await this.checkSessionMatchesState(
+      req,
+      oauthState,
+    );
     if (sessionMismatch) {
       await this.oauthStateRepository.delete(state);
       this.logger.warn(
@@ -355,11 +375,15 @@ export class OAuthController {
       }
 
       // Store tokens and mark connection as active
-      await this.credentialVaultService.storeOAuthTokens(connection.id, tokens, {
-        preserveExistingRefreshToken:
-          oauthState.providerSlug === 'gcp' ||
-          oauthState.providerSlug === 'google-workspace',
-      });
+      await this.credentialVaultService.storeOAuthTokens(
+        connection.id,
+        tokens,
+        {
+          preserveExistingRefreshToken:
+            oauthState.providerSlug === 'gcp' ||
+            oauthState.providerSlug === 'google-workspace',
+        },
+      );
 
       // Mark cloud OAuth reconnect completion so reconnect banners clear after successful OAuth.
       if (manifest.category === 'Cloud') {
@@ -373,6 +397,28 @@ export class OAuthController {
           metadata: {
             ...metadata,
             reconnectedAt: new Date().toISOString(),
+          },
+        });
+      }
+
+      // GitHub App installation flow: persist the installation id (and setup
+      // action) on the connection. The token stored above is a user-to-server
+      // token, but recording the installation id means a future server-to-server
+      // (installation access token) upgrade needs no re-connect.
+      if (query.installation_id) {
+        const metadata =
+          connection.metadata &&
+          typeof connection.metadata === 'object' &&
+          !Array.isArray(connection.metadata)
+            ? (connection.metadata as Record<string, unknown>)
+            : {};
+        connection = await this.connectionRepository.update(connection.id, {
+          metadata: {
+            ...metadata,
+            githubInstallationId: query.installation_id,
+            ...(query.setup_action
+              ? { githubSetupAction: query.setup_action }
+              : {}),
           },
         });
       }
@@ -643,5 +689,4 @@ export class OAuthController {
     }
     return url.toString();
   }
-
 }

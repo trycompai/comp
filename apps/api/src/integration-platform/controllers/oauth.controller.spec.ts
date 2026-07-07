@@ -313,6 +313,53 @@ describe('OAuthController', () => {
       expect(result.authorizationUrl).toContain('code_challenge=');
       expect(result.authorizationUrl).toContain('code_challenge_method=S256');
     });
+
+    it('should return a GitHub App install URL (state only) for appInstallFlow providers', async () => {
+      const manifest = {
+        id: 'github-app',
+        name: 'GitHub App',
+        auth: {
+          type: 'oauth2',
+          config: {
+            authorizeUrl:
+              'https://github.com/apps/{APP_SLUG}/installations/new',
+            tokenUrl: 'https://github.com/login/oauth/access_token',
+            pkce: false,
+            appInstallFlow: true,
+            additionalOAuthSettings: [{ id: 'appSlug', token: '{APP_SLUG}' }],
+          },
+        },
+        category: 'Development',
+        capabilities: [],
+        isActive: true,
+      };
+      mockedGetManifest.mockReturnValue(manifest as never);
+      mockOAuthCredentialsService.getCredentials.mockResolvedValue({
+        clientId: 'client_123',
+        clientSecret: 'secret_456',
+        scopes: [],
+        source: 'platform',
+        customSettings: { appSlug: 'comp-ai' },
+      });
+      mockProviderRepository.upsert.mockResolvedValue(undefined);
+      mockOAuthStateRepository.create.mockResolvedValue({
+        state: 'state_install',
+      });
+
+      const result = await controller.startOAuth('org_1', 'user_1', {
+        providerSlug: 'github-app',
+      });
+
+      // Install URL with the slug substituted and only `state` appended.
+      expect(result.authorizationUrl).toContain(
+        'https://github.com/apps/comp-ai/installations/new',
+      );
+      expect(result.authorizationUrl).toContain('state=state_install');
+      // OAuth authorize params must NOT be on an install URL.
+      expect(result.authorizationUrl).not.toContain('client_id=');
+      expect(result.authorizationUrl).not.toContain('response_type=');
+      expect(result.authorizationUrl).not.toContain('scope=');
+    });
   });
 
   describe('oauthCallback', () => {
@@ -601,6 +648,94 @@ describe('OAuthController', () => {
       );
       expect(mockCloudSecurityService.detectServices).not.toHaveBeenCalled();
       expect(mockResponse.redirect).toHaveBeenCalled();
+
+      fetchSpy.mockRestore();
+    });
+
+    it('persists installation_id on the connection for the GitHub App install flow', async () => {
+      const futureDate = new Date(Date.now() + 600000);
+      mockOAuthStateRepository.findByState.mockResolvedValue({
+        state: 'valid_gh_state',
+        providerSlug: 'github-app',
+        organizationId: 'org_1',
+        userId: 'user_1',
+        codeVerifier: null,
+        redirectUrl: null,
+        expiresAt: futureDate,
+      });
+      mockedGetManifest.mockReturnValue({
+        id: 'github-app',
+        name: 'GitHub App',
+        category: 'Development',
+        auth: {
+          type: 'oauth2',
+          config: {
+            authorizeUrl:
+              'https://github.com/apps/{APP_SLUG}/installations/new',
+            tokenUrl: 'https://github.com/login/oauth/access_token',
+            appInstallFlow: true,
+          },
+        },
+        capabilities: [],
+        isActive: true,
+      } as never);
+      mockOAuthCredentialsService.getCredentials.mockResolvedValue({
+        clientId: 'client_123',
+        clientSecret: 'secret_456',
+        scopes: [],
+        source: 'platform',
+      });
+      mockProviderRepository.findBySlug.mockResolvedValue({
+        id: 'provider_gh',
+      });
+      mockConnectionRepository.findByProviderAndOrg.mockResolvedValue({
+        id: 'conn_gh',
+        metadata: {},
+        variables: {},
+        lastSyncAt: null,
+      });
+      mockConnectionRepository.update.mockResolvedValue({
+        id: 'conn_gh',
+        metadata: {},
+        variables: {},
+        lastSyncAt: null,
+      });
+      mockConnectionService.activateConnection.mockResolvedValue({
+        id: 'conn_gh',
+      });
+
+      const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ access_token: 'gh_user_token' }),
+        text: () => Promise.resolve(''),
+      } as unknown as Response);
+
+      await controller.oauthCallback(
+        {
+          code: 'auth_code',
+          state: 'valid_gh_state',
+          installation_id: '987654',
+          setup_action: 'install',
+        },
+        mockRequest,
+        mockResponse,
+      );
+
+      await new Promise<void>((resolve) => setImmediate(resolve));
+
+      expect(mockConnectionRepository.update).toHaveBeenCalledWith(
+        'conn_gh',
+        expect.objectContaining({
+          metadata: expect.objectContaining({
+            githubInstallationId: '987654',
+            githubSetupAction: 'install',
+          }),
+        }),
+      );
+      const redirectUrl = (mockResponse.redirect as jest.Mock).mock.calls[0][0];
+      expect(redirectUrl).toContain('success=true');
+      expect(redirectUrl).toContain('provider=github-app');
 
       fetchSpy.mockRestore();
     });
