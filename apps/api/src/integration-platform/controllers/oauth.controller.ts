@@ -335,6 +335,33 @@ export class OAuthController {
         oauthState.codeVerifier,
       );
 
+      // GitHub App: a user can complete OAuth *without* installing the App,
+      // which yields a token that cannot read any repositories. If GitHub
+      // definitively reports no installation for this user, stop here and tell
+      // them to install the App instead of creating a "connected" but unusable
+      // integration. Fails open on any uncertainty so a valid connection is
+      // never blocked by a transient error.
+      if (
+        oauthState.providerSlug === 'github-app' &&
+        (await this.githubAppInstallationMissing(tokens.access_token))
+      ) {
+        await this.oauthStateRepository.delete(state);
+        this.logger.warn(
+          `GitHub App authorized but not installed for org ${oauthState.organizationId}`,
+        );
+        const errorUrl = this.buildRedirectUrl(
+          oauthState.redirectUrl,
+          {
+            error: 'github_app_not_installed',
+            error_description:
+              'You authorized Comp AI, but the GitHub App is not installed on your organization yet. Install the App on GitHub, then reconnect.',
+          },
+          oauthState.organizationId,
+        );
+        res.redirect(errorUrl);
+        return;
+      }
+
       // Get or create provider
       const provider = await this.providerRepository.findBySlug(
         oauthState.providerSlug,
@@ -599,6 +626,37 @@ export class OAuthController {
     }
 
     return tokens;
+  }
+
+  /**
+   * Returns true ONLY when GitHub definitively reports that the user has no
+   * installation of the GitHub App. A GitHub App user token can be obtained
+   * without the App being installed (install and user-authorization are separate
+   * steps), and such a token cannot read any repositories. Fails open — on any
+   * non-OK response or error we return false so a valid connection is never
+   * blocked by a transient failure.
+   */
+  private async githubAppInstallationMissing(
+    accessToken: string,
+  ): Promise<boolean> {
+    try {
+      const response = await fetch(
+        'https://api.github.com/user/installations',
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            Accept: 'application/vnd.github+json',
+            'User-Agent': 'CompAI-Integration',
+          },
+        },
+      );
+      if (!response.ok) return false;
+      const data = (await response.json()) as { total_count?: number };
+      return data?.total_count === 0;
+    } catch (error) {
+      this.logger.warn(`Failed to verify GitHub App installation: ${error}`);
+      return false;
+    }
   }
 
   /**

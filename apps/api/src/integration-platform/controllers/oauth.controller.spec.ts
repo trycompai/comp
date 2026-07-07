@@ -605,6 +605,132 @@ describe('OAuthController', () => {
       fetchSpy.mockRestore();
     });
 
+    const githubAppManifest = {
+      id: 'github-app',
+      name: 'GitHub App',
+      category: 'Development',
+      auth: {
+        type: 'oauth2',
+        config: {
+          authorizeUrl: 'https://github.com/login/oauth/authorize',
+          tokenUrl: 'https://github.com/login/oauth/access_token',
+        },
+      },
+      capabilities: [],
+      isActive: true,
+    };
+
+    it('blocks the GitHub App connect when the App is not installed', async () => {
+      const futureDate = new Date(Date.now() + 600000);
+      mockOAuthStateRepository.findByState.mockResolvedValue({
+        state: 'gh_state',
+        providerSlug: 'github-app',
+        organizationId: 'org_1',
+        userId: 'user_1',
+        codeVerifier: null,
+        redirectUrl: null,
+        expiresAt: futureDate,
+      });
+      mockedGetManifest.mockReturnValue(githubAppManifest as never);
+      mockOAuthCredentialsService.getCredentials.mockResolvedValue({
+        clientId: 'c',
+        clientSecret: 's',
+        scopes: [],
+        source: 'platform',
+      });
+
+      const fetchSpy = jest
+        .spyOn(global, 'fetch')
+        // 1) token exchange
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ access_token: 'gh_token' }),
+          text: () => Promise.resolve(''),
+        } as unknown as Response)
+        // 2) GET /user/installations -> none
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ total_count: 0, installations: [] }),
+          text: () => Promise.resolve(''),
+        } as unknown as Response);
+
+      await controller.oauthCallback(
+        { code: 'auth_code', state: 'gh_state' },
+        mockRequest,
+        mockResponse,
+      );
+
+      // The connection must NOT be activated when the App isn't installed.
+      expect(mockConnectionService.activateConnection).not.toHaveBeenCalled();
+      const redirectUrl = (mockResponse.redirect as jest.Mock).mock.calls[0][0];
+      expect(redirectUrl).toContain('error=github_app_not_installed');
+
+      fetchSpy.mockRestore();
+    });
+
+    it('completes the GitHub App connect when an installation exists', async () => {
+      const futureDate = new Date(Date.now() + 600000);
+      mockOAuthStateRepository.findByState.mockResolvedValue({
+        state: 'gh_state',
+        providerSlug: 'github-app',
+        organizationId: 'org_1',
+        userId: 'user_1',
+        codeVerifier: null,
+        redirectUrl: null,
+        expiresAt: futureDate,
+      });
+      mockedGetManifest.mockReturnValue(githubAppManifest as never);
+      mockOAuthCredentialsService.getCredentials.mockResolvedValue({
+        clientId: 'c',
+        clientSecret: 's',
+        scopes: [],
+        source: 'platform',
+      });
+      mockProviderRepository.findBySlug.mockResolvedValue({ id: 'p_gh' });
+      mockConnectionRepository.findByProviderAndOrg.mockResolvedValue({
+        id: 'conn_gh',
+        metadata: {},
+        variables: {},
+        lastSyncAt: null,
+      });
+      mockConnectionService.activateConnection.mockResolvedValue({
+        id: 'conn_gh',
+      });
+
+      const fetchSpy = jest
+        .spyOn(global, 'fetch')
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ access_token: 'gh_token' }),
+          text: () => Promise.resolve(''),
+        } as unknown as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({ total_count: 1, installations: [{ id: 1 }] }),
+          text: () => Promise.resolve(''),
+        } as unknown as Response);
+
+      await controller.oauthCallback(
+        { code: 'auth_code', state: 'gh_state' },
+        mockRequest,
+        mockResponse,
+      );
+      await new Promise<void>((resolve) => setImmediate(resolve));
+
+      expect(mockConnectionService.activateConnection).toHaveBeenCalledWith(
+        'conn_gh',
+      );
+      const redirectUrl = (mockResponse.redirect as jest.Mock).mock.calls[0][0];
+      expect(redirectUrl).toContain('success=true');
+
+      fetchSpy.mockRestore();
+    });
+
     describe('session defense-in-depth', () => {
       const futureDate = new Date(Date.now() + 600000);
       const validState = {
