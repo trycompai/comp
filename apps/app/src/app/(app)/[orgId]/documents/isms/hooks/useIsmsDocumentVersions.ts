@@ -19,10 +19,20 @@ export function useIsmsDocumentVersions(
 ) {
   const { data, error, isLoading, mutate } = useSWR<IsmsVersionHistory>(
     documentId
-      ? (['/v1/isms/documents', documentId, 'versions'] as const)
+      ? (['/v1/isms/documents', documentId, 'versions', organizationId] as const)
       : null,
-    async ([base, id]: readonly [string, string, string]) => {
-      const response = await api.get<IsmsVersionHistory>(`${base}/${id}/versions`);
+    async ([base, id, , orgId]: readonly [
+      string,
+      string,
+      string,
+      string | undefined,
+    ]) => {
+      // Pass the route org so history stays in the same org context as the
+      // per-version downloads (X-Organization-Id), not the session's active org.
+      const response = await api.get<IsmsVersionHistory>(
+        `${base}/${id}/versions`,
+        orgId,
+      );
       if (response.error || !response.data) {
         throw new Error(response.error ?? 'Failed to load version history');
       }

@@ -132,13 +132,15 @@ export function IsmsDocumentShell({
   const handleApprove = async () => {
     try {
       await approve();
-      // Approval promotes the draft to a new published version — refresh the
-      // history list and drift baseline alongside the document itself.
-      await Promise.all([mutateVersions(), mutateDrift()]);
-      toast.success('Document approved');
     } catch (caught) {
       toast.error(caught instanceof Error ? caught.message : 'Failed to approve');
+      return;
     }
+    // Approval already persisted. Refreshing the history list + drift baseline is
+    // best-effort — a revalidation hiccup must not look like an approval failure
+    // (which would tempt the user to retry an already-published document).
+    toast.success('Document approved');
+    await Promise.allSettled([mutateVersions(), mutateDrift()]);
   };
 
   const handleDecline = async () => {

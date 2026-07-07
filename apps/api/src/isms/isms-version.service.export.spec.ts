@@ -3,11 +3,7 @@ import { db } from '@db';
 import type { AttachmentsService } from '../attachments/attachments.service';
 import { IsmsVersionService } from './isms-version.service';
 import type { IsmsExportSnapshot } from './utils/export-payload';
-import {
-  parseExportSnapshot,
-  renderLiveExport,
-  renderSnapshot,
-} from './utils/export-payload';
+import { parseExportSnapshot, renderSnapshot } from './utils/export-payload';
 
 jest.mock('@db', () => ({
   db: {
@@ -20,7 +16,6 @@ jest.mock('@db', () => ({
 jest.mock('./utils/export-payload', () => ({
   buildExportInput: jest.fn(() => ({ rows: [] })),
   parseExportSnapshot: jest.fn(),
-  renderLiveExport: jest.fn(),
   renderSnapshot: jest.fn(),
   resolveOrgProfile: jest.fn(),
 }));
@@ -30,7 +25,6 @@ jest.mock('./utils/export-metadata', () => ({
 
 const mockDb = jest.mocked(db);
 const mockRenderSnapshot = jest.mocked(renderSnapshot);
-const mockRenderLive = jest.mocked(renderLiveExport);
 const mockParse = jest.mocked(parseExportSnapshot);
 
 describe('IsmsVersionService export/render', () => {
@@ -43,6 +37,7 @@ describe('IsmsVersionService export/render', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
     service = new IsmsVersionService(attachments);
   });
 
@@ -111,7 +106,36 @@ describe('IsmsVersionService export/render', () => {
       expect(result).toBe(rendered);
     });
 
-    it('falls back to a live render for a legacy version with no snapshot', async () => {
+    it('falls back to the snapshot when the stored S3 object is unavailable', async () => {
+      (mockDb.ismsDocumentVersion.findFirst as jest.Mock).mockResolvedValue({
+        version: 3,
+        pdfUrl: 'org/isms/doc/v3.pdf',
+        docxUrl: null,
+        contentSnapshot: { type: 'x' },
+        document: { title: 'Doc' },
+      });
+      (attachments.getObjectBuffer as jest.Mock).mockRejectedValue(
+        new Error('NoSuchKey'),
+      );
+      const snapshot = { type: 'x' } as unknown as IsmsExportSnapshot;
+      mockParse.mockReturnValue(snapshot);
+      const rendered = {
+        fileBuffer: Buffer.from('re'),
+        mimeType: 'application/pdf',
+        filename: 'doc-v3.pdf',
+      };
+      mockRenderSnapshot.mockResolvedValue(rendered);
+
+      const result = await service.getVersionExport(args);
+
+      expect(attachments.getObjectBuffer).toHaveBeenCalledWith(
+        'org/isms/doc/v3.pdf',
+      );
+      expect(mockRenderSnapshot).toHaveBeenCalledWith(snapshot, 'pdf');
+      expect(result).toBe(rendered);
+    });
+
+    it('throws when a version has neither a stored file nor a snapshot (never serves live data)', async () => {
       (mockDb.ismsDocumentVersion.findFirst as jest.Mock).mockResolvedValue({
         version: 1,
         pdfUrl: null,
@@ -120,22 +144,11 @@ describe('IsmsVersionService export/render', () => {
         document: { title: 'Doc' },
       });
       mockParse.mockReturnValue(null);
-      const live = {
-        fileBuffer: Buffer.from('live'),
-        mimeType: 'application/pdf',
-        filename: 'doc-v1.pdf',
-      };
-      mockRenderLive.mockResolvedValue(live);
 
-      const result = await service.getVersionExport(args);
-
+      await expect(service.getVersionExport(args)).rejects.toThrow(
+        NotFoundException,
+      );
       expect(mockRenderSnapshot).not.toHaveBeenCalled();
-      expect(mockRenderLive).toHaveBeenCalledWith({
-        documentId: 'doc_1',
-        organizationId: 'org_1',
-        format: 'pdf',
-      });
-      expect(result).toBe(live);
     });
   });
 

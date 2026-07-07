@@ -3,7 +3,11 @@ import { db } from '@db';
 import type { Prisma } from '@db';
 import type { AttachmentsService } from '../attachments/attachments.service';
 import { IsmsVersionService } from './isms-version.service';
-import type { LoadedExportDocument } from './utils/export-payload';
+import type {
+  IsmsExportSnapshot,
+  LoadedExportDocument,
+} from './utils/export-payload';
+import { parseExportSnapshot } from './utils/export-payload';
 
 // getVersionExport + publishRenders live in isms-version.service.export.spec.ts.
 jest.mock('@db', () => ({
@@ -20,12 +24,14 @@ jest.mock('@db', () => ({
 jest.mock('./utils/export-payload', () => ({
   buildExportInput: jest.fn(() => ({ rows: [] })),
   resolveOrgProfile: jest.fn(),
+  parseExportSnapshot: jest.fn(() => null),
 }));
 jest.mock('./utils/export-metadata', () => ({
   buildExportMetadata: jest.fn(() => ({ version: 0 })),
 }));
 
 const mockDb = jest.mocked(db);
+const mockParse = jest.mocked(parseExportSnapshot);
 
 function asTx(mock: unknown): Prisma.TransactionClient {
   return mock as Prisma.TransactionClient;
@@ -188,6 +194,37 @@ describe('IsmsVersionService', () => {
         publishedByName: 'bob@acme.io',
         hasPdf: false,
         isCurrent: false,
+      });
+    });
+
+    it('keeps a version downloadable + attributed via the frozen snapshot when files and member are gone', async () => {
+      (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
+        currentVersionId: 'isms_ver_1',
+      });
+      (mockDb.ismsDocumentVersion.findMany as jest.Mock).mockResolvedValue([
+        {
+          id: 'isms_ver_1',
+          version: 1,
+          publishedAt: new Date('2026-07-06T00:00:00.000Z'),
+          changelog: null,
+          pdfUrl: null, // stored files absent (e.g. render/upload failed at publish)
+          docxUrl: null,
+          contentSnapshot: { type: 'x' },
+          publishedBy: null, // approving member later deleted
+        },
+      ]);
+      mockParse.mockReturnValue({
+        metadata: { approverName: 'Frozen Approver' },
+      } as unknown as IsmsExportSnapshot);
+
+      const result = await service.getVersions(args);
+
+      // Downloadable via snapshot re-render even without stored files, and the
+      // approver survives via the frozen snapshot metadata.
+      expect(result.versions[0]).toMatchObject({
+        publishedByName: 'Frozen Approver',
+        hasPdf: true,
+        hasDocx: true,
       });
     });
   });

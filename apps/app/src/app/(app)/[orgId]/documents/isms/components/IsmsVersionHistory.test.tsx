@@ -69,9 +69,39 @@ describe('IsmsVersionHistory', () => {
     expect(baseProps.onDownload).toHaveBeenCalledWith('v2', 'docx');
   });
 
+  it('only offers formats that are actually available for each version', () => {
+    render(<IsmsVersionHistory {...baseProps} />);
+    // v1 has hasDocx=false → only v2 exposes a DOCX button (both have PDF).
+    expect(screen.getAllByRole('button', { name: /PDF/i })).toHaveLength(2);
+    expect(screen.getAllByRole('button', { name: /DOCX/i })).toHaveLength(1);
+  });
+
+  it('shows no download buttons and a note when a version has no retained export', () => {
+    const noExport: IsmsPublishedVersion[] = [
+      { ...VERSIONS[1], id: 'v0', version: 0, hasPdf: false, hasDocx: false },
+    ];
+    render(<IsmsVersionHistory {...baseProps} versions={noExport} />);
+    expect(screen.queryByRole('button', { name: /PDF/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /DOCX/i })).not.toBeInTheDocument();
+    expect(screen.getByText('Export unavailable')).toBeInTheDocument();
+  });
+
   it('renders an empty state when there are no published versions', () => {
     render(<IsmsVersionHistory {...baseProps} versions={[]} />);
     expect(screen.getByText('No published versions yet')).toBeInTheDocument();
+  });
+
+  it('renders an error state when loading history fails', () => {
+    render(
+      <IsmsVersionHistory
+        {...baseProps}
+        versions={[]}
+        error={new Error('boom')}
+      />,
+    );
+    expect(
+      screen.getByText("Couldn't load version history"),
+    ).toBeInTheDocument();
   });
 
   it('shows a loading state before the first load resolves', () => {

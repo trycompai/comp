@@ -100,26 +100,35 @@ export function IsmsVersionHistory({
                 </Text>
               </ItemContent>
               <ItemActions>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  disabled={downloadingVersionId === version.id}
-                  onClick={() => void onDownload(version.id, 'pdf')}
-                  iconLeft={<Download size={16} />}
-                >
-                  PDF
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  disabled={downloadingVersionId === version.id}
-                  onClick={() => void onDownload(version.id, 'docx')}
-                  iconLeft={<Document size={16} />}
-                >
-                  DOCX
-                </Button>
+                {version.hasPdf && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={downloadingVersionId === version.id}
+                    onClick={() => void onDownload(version.id, 'pdf')}
+                    iconLeft={<Download size={16} />}
+                  >
+                    PDF
+                  </Button>
+                )}
+                {version.hasDocx && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={downloadingVersionId === version.id}
+                    onClick={() => void onDownload(version.id, 'docx')}
+                    iconLeft={<Document size={16} />}
+                  >
+                    DOCX
+                  </Button>
+                )}
+                {!version.hasPdf && !version.hasDocx && (
+                  <Text variant="muted" size="sm">
+                    Export unavailable
+                  </Text>
+                )}
               </ItemActions>
             </Item>
           ))}

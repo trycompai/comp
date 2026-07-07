@@ -8,6 +8,7 @@ import {
   parsePlatformSnapshot,
 } from './documents/snapshot';
 import type { IsmsPlatformData } from './documents/types';
+import { invalidateApprovalIfNeeded } from './utils/approval';
 import { updateDraftSnapshot } from './utils/draft-snapshot';
 import { renderLiveExport } from './utils/export-payload';
 import type { IsmsExportResult } from './utils/export-generator';
@@ -67,6 +68,10 @@ export class IsmsContextService {
       }));
 
     await db.$transaction(async (tx) => {
+      // Regenerating changes the working draft, so an approved document must
+      // revert to draft and be re-approved — matching every other edit path
+      // (register CRUD, narrative save). Never silently mutate an approved doc.
+      await invalidateApprovalIfNeeded({ tx, documentId });
       await runDerivation({
         tx,
         type: document.type,
@@ -106,8 +111,11 @@ export class IsmsContextService {
   }
 
   /**
-   * Export a document. With `versionId`, serve that published version (stored file
-   * or snapshot re-render); without, render the current working draft on demand.
+   * Export a document.
+   * - With `versionId`: serve that published version (stored file or snapshot).
+   * - Without: a clean approved document exports its published artifact (exactly
+   *   what was approved); a document with an in-progress draft exports the working
+   *   draft (what the customer is editing), clearly labelled as a draft.
    */
   async exportDocument({
     documentId,
@@ -126,6 +134,26 @@ export class IsmsContextService {
         format: dto.format,
       });
     }
+
+    const document = await db.ismsDocument.findFirst({
+      where: { id: documentId, organizationId },
+      select: { status: true, currentVersionId: true },
+    });
+    if (!document) {
+      throw new NotFoundException('ISMS document not found');
+    }
+
+    // Approved + no pending draft edits: the published version IS the current
+    // content — serve the retained artifact so it is byte-identical to approval.
+    if (document.status === 'approved' && document.currentVersionId) {
+      return this.versionService.getVersionExport({
+        documentId,
+        organizationId,
+        versionId: document.currentVersionId,
+        format: dto.format,
+      });
+    }
+
     return renderLiveExport({ documentId, organizationId, format: dto.format });
   }
 

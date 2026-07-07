@@ -10,6 +10,7 @@ import {
 } from './documents/snapshot';
 import { updateDraftSnapshot } from './utils/draft-snapshot';
 import { renderLiveExport } from './utils/export-payload';
+import { invalidateApprovalIfNeeded } from './utils/approval';
 
 jest.mock('@db', () => ({
   db: {
@@ -33,6 +34,9 @@ jest.mock('./utils/draft-snapshot', () => ({
 jest.mock('./utils/export-payload', () => ({
   renderLiveExport: jest.fn(),
 }));
+jest.mock('./utils/approval', () => ({
+  invalidateApprovalIfNeeded: jest.fn(),
+}));
 
 const mockDb = jest.mocked(db);
 const mockCollect = jest.mocked(collectPlatformData);
@@ -41,6 +45,7 @@ const mockDiff = jest.mocked(diffPlatformSnapshots);
 const mockParse = jest.mocked(parsePlatformSnapshot);
 const mockUpdateDraft = jest.mocked(updateDraftSnapshot);
 const mockRenderLive = jest.mocked(renderLiveExport);
+const mockInvalidate = jest.mocked(invalidateApprovalIfNeeded);
 
 const snapshot = {
   organizationName: 'Acme',
@@ -115,6 +120,8 @@ describe('IsmsContextService', () => {
           documentId: 'doc_1',
           snapshot,
         });
+        // Regenerating an approved document must revert it to draft.
+        expect(mockInvalidate).toHaveBeenCalledWith({ tx, documentId: 'doc_1' });
       },
     );
 
@@ -210,7 +217,11 @@ describe('IsmsContextService', () => {
       filename: 'doc.pdf',
     };
 
-    it('renders the live draft when no versionId is given', async () => {
+    it('renders the live draft when no versionId is given and a draft is in progress', async () => {
+      (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
+        status: 'draft',
+        currentVersionId: 'isms_ver_1',
+      });
       mockRenderLive.mockResolvedValue(result);
 
       const out = await service.exportDocument({
@@ -226,6 +237,40 @@ describe('IsmsContextService', () => {
       });
       expect(versionService.getVersionExport).not.toHaveBeenCalled();
       expect(out).toBe(result);
+    });
+
+    it('serves the published artifact by default for a clean approved document', async () => {
+      (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
+        status: 'approved',
+        currentVersionId: 'isms_ver_9',
+      });
+      (versionService.getVersionExport as jest.Mock).mockResolvedValue(result);
+
+      const out = await service.exportDocument({
+        documentId: 'doc_1',
+        organizationId: 'org_1',
+        dto: { format: 'pdf' },
+      });
+
+      expect(versionService.getVersionExport).toHaveBeenCalledWith({
+        documentId: 'doc_1',
+        organizationId: 'org_1',
+        versionId: 'isms_ver_9',
+        format: 'pdf',
+      });
+      expect(mockRenderLive).not.toHaveBeenCalled();
+      expect(out).toBe(result);
+    });
+
+    it('throws NotFoundException when the document is missing', async () => {
+      (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue(null);
+      await expect(
+        service.exportDocument({
+          documentId: 'doc_1',
+          organizationId: 'org_1',
+          dto: { format: 'pdf' },
+        }),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('routes to the version service when a versionId is given', async () => {

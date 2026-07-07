@@ -14,7 +14,6 @@ import {
 import {
   buildExportInput,
   parseExportSnapshot,
-  renderLiveExport,
   renderSnapshot,
   resolveOrgProfile,
   type IsmsExportSnapshot,
@@ -186,23 +185,36 @@ export class IsmsVersionService {
         changelog: true,
         pdfUrl: true,
         docxUrl: true,
+        // The frozen snapshot backs both the approver-name fallback (survives an
+        // approver being deleted) and download availability (a version is still
+        // downloadable via snapshot re-render even if its stored file is absent).
+        contentSnapshot: true,
         publishedBy: { select: { user: { select: { name: true, email: true } } } },
       },
     });
 
     return {
       currentVersionId: document.currentVersionId,
-      versions: versions.map((v) => ({
-        id: v.id,
-        version: v.version,
-        publishedAt: v.publishedAt,
-        changelog: v.changelog,
-        publishedByName:
-          v.publishedBy?.user?.name || v.publishedBy?.user?.email || null,
-        hasPdf: v.pdfUrl != null,
-        hasDocx: v.docxUrl != null,
-        isCurrent: v.id === document.currentVersionId,
-      })),
+      versions: versions.map((v) => {
+        const snapshot = parseExportSnapshot(v.contentSnapshot);
+        const hasSnapshot = snapshot != null;
+        return {
+          id: v.id,
+          version: v.version,
+          publishedAt: v.publishedAt,
+          changelog: v.changelog,
+          // Live member first; fall back to the approver name frozen at publish so
+          // history keeps an approver even if the member is later removed.
+          publishedByName:
+            v.publishedBy?.user?.name ||
+            v.publishedBy?.user?.email ||
+            snapshot?.metadata?.approverName ||
+            null,
+          hasPdf: v.pdfUrl != null || hasSnapshot,
+          hasDocx: v.docxUrl != null || hasSnapshot,
+          isCurrent: v.id === document.currentVersionId,
+        };
+      }),
     };
   }
 
@@ -236,20 +248,34 @@ export class IsmsVersionService {
       throw new NotFoundException('ISMS document version not found');
     }
 
+    const mimeType = format === 'pdf' ? 'application/pdf' : DOCX_MIME_TYPE;
+    const filename = `${sanitizeExportName(version.document.title)}-v${version.version}.${format}`;
+
+    // Prefer the byte-identical stored artifact. If its S3 object is missing or
+    // temporarily unavailable, fall through to the immutable snapshot rather than
+    // failing the download.
     const key = format === 'pdf' ? version.pdfUrl : version.docxUrl;
     if (key) {
-      const fileBuffer = await this.attachments.getObjectBuffer(key);
-      return {
-        fileBuffer,
-        mimeType: format === 'pdf' ? 'application/pdf' : DOCX_MIME_TYPE,
-        filename: `${sanitizeExportName(version.document.title)}-v${version.version}.${format}`,
-      };
+      try {
+        const fileBuffer = await this.attachments.getObjectBuffer(key);
+        return { fileBuffer, mimeType, filename };
+      } catch (err) {
+        this.logger.warn(
+          `Stored export ${key} unavailable for ISMS version ${versionId}; re-rendering from snapshot`,
+          err instanceof Error ? err.message : String(err),
+        );
+      }
     }
 
     const snapshot = parseExportSnapshot(version.contentSnapshot);
     if (snapshot) return renderSnapshot(snapshot, format);
 
-    return renderLiveExport({ documentId, organizationId, format });
+    // Neither a stored file nor a snapshot exists (only possible for a legacy /
+    // migrated version). Never serve current live data for a specific historical
+    // version — an auditor must get exactly what was approved, or a clear failure.
+    throw new NotFoundException(
+      'No retained export exists for this document version',
+    );
   }
 
   private async nextVersion(

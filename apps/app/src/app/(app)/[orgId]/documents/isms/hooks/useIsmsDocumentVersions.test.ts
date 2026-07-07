@@ -46,9 +46,13 @@ describe('useIsmsDocumentVersions', () => {
 
     renderHook(() => useIsmsDocumentVersions(DOC_ID, ORG_ID));
 
-    expect(swr.key).toEqual(['/v1/isms/documents', DOC_ID, 'versions']);
-    await swr.fetcher?.(['/v1/isms/documents', DOC_ID, 'versions']);
-    expect(getMock).toHaveBeenCalledWith(`/v1/isms/documents/${DOC_ID}/versions`);
+    expect(swr.key).toEqual(['/v1/isms/documents', DOC_ID, 'versions', ORG_ID]);
+    await swr.fetcher?.(['/v1/isms/documents', DOC_ID, 'versions', ORG_ID]);
+    // Passes the route org (X-Organization-Id), matching the download path.
+    expect(getMock).toHaveBeenCalledWith(
+      `/v1/isms/documents/${DOC_ID}/versions`,
+      ORG_ID,
+    );
   });
 
   it('does not fetch when no document id is provided', () => {
