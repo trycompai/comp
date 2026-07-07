@@ -182,44 +182,6 @@ export class OAuthController {
     }
     const authUrl = new URL(authorizeUrl);
 
-    // GitHub App installation flow: the connect step is an App *installation*
-    // (github.com/apps/{slug}/installations/new), not a standard OAuth authorize.
-    // GitHub redirects to the App's FIRST registered callback URL after install
-    // and IGNORES any redirect_uri passed to the install URL (confirmed GitHub
-    // behavior), so only `state` is set here — client_id, response_type and
-    // scope do not apply either. Per-environment routing is therefore handled by
-    // using a separate GitHub App per environment (each with its own single
-    // callback URL), NOT via redirect_uri. The OAuth `code` still comes back on
-    // that callback (with "Request user authorization during installation"
-    // enabled), so token exchange proceeds normally afterwards.
-    if (oauthConfig.appInstallFlow) {
-      // Every placeholder in the install URL (e.g. {APP_SLUG}) must have been
-      // resolved from credentials above. If a required setting like the GitHub
-      // App slug was never persisted (e.g. org-scoped credentials saved without
-      // customSettings), fail loudly with a clear error instead of redirecting
-      // the user to a broken GitHub URL.
-      const unresolvedTokens = (oauthConfig.additionalOAuthSettings ?? [])
-        .map((setting) => setting.token)
-        .filter(
-          (token): token is string => !!token && authorizeUrl.includes(token),
-        );
-      if (unresolvedTokens.length > 0) {
-        throw new HttpException(
-          {
-            message: `GitHub App is not fully configured for ${providerSlug} (missing: ${unresolvedTokens.join(', ')}). Set the App slug in the integration credentials.`,
-            setupInstructions: oauthConfig.setupInstructions,
-            createAppUrl: oauthConfig.createAppUrl,
-          },
-          HttpStatus.PRECONDITION_FAILED,
-        );
-      }
-      authUrl.searchParams.set('state', oauthState.state);
-      this.logger.log(
-        `Starting GitHub App install flow for ${providerSlug}, org: ${organizationId} (credentials from ${credentials.source})`,
-      );
-      return { authorizationUrl: authUrl.toString() };
-    }
-
     // Standard OAuth2 params
     authUrl.searchParams.set('client_id', credentials.clientId);
     authUrl.searchParams.set('response_type', 'code');
@@ -372,6 +334,33 @@ export class OAuthController {
         code,
         oauthState.codeVerifier,
       );
+
+      // GitHub App: a user can complete OAuth *without* installing the App,
+      // which yields a token that cannot read any repositories. If GitHub
+      // definitively reports no installation for this user, stop here and tell
+      // them to install the App instead of creating a "connected" but unusable
+      // integration. Fails open on any uncertainty so a valid connection is
+      // never blocked by a transient error.
+      if (
+        oauthState.providerSlug === 'github-app' &&
+        (await this.githubAppInstallationMissing(tokens.access_token))
+      ) {
+        await this.oauthStateRepository.delete(state);
+        this.logger.warn(
+          `GitHub App authorized but not installed for org ${oauthState.organizationId}`,
+        );
+        const errorUrl = this.buildRedirectUrl(
+          oauthState.redirectUrl,
+          {
+            error: 'github_app_not_installed',
+            error_description:
+              'You authorized Comp AI, but the GitHub App is not installed on your organization yet. Install the App on GitHub, then reconnect.',
+          },
+          oauthState.organizationId,
+        );
+        res.redirect(errorUrl);
+        return;
+      }
 
       // Get or create provider
       const provider = await this.providerRepository.findBySlug(
@@ -637,6 +626,37 @@ export class OAuthController {
     }
 
     return tokens;
+  }
+
+  /**
+   * Returns true ONLY when GitHub definitively reports that the user has no
+   * installation of the GitHub App. A GitHub App user token can be obtained
+   * without the App being installed (install and user-authorization are separate
+   * steps), and such a token cannot read any repositories. Fails open — on any
+   * non-OK response or error we return false so a valid connection is never
+   * blocked by a transient failure.
+   */
+  private async githubAppInstallationMissing(
+    accessToken: string,
+  ): Promise<boolean> {
+    try {
+      const response = await fetch(
+        'https://api.github.com/user/installations',
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            Accept: 'application/vnd.github+json',
+            'User-Agent': 'CompAI-Integration',
+          },
+        },
+      );
+      if (!response.ok) return false;
+      const data = (await response.json()) as { total_count?: number };
+      return data?.total_count === 0;
+    } catch (error) {
+      this.logger.warn(`Failed to verify GitHub App installation: ${error}`);
+      return false;
+    }
   }
 
   /**

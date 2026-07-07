@@ -15,17 +15,19 @@
  * is left completely untouched so current connections keep working. New/concerned
  * customers opt into this one.
  *
- * Connect flow (user-to-server token):
- *   1. The customer is sent to the App's installation page
- *      (`https://github.com/apps/{APP_SLUG}/installations/new`).
- *   2. They install the App on their org/account and pick repositories.
- *   3. With "Request user authorization (OAuth) during installation" enabled on
- *      the App, GitHub redirects back through the OAuth flow and returns a `code`
- *      (plus `installation_id`).
- *   4. The shared OAuth callback exchanges the `code` for a user-to-server access
+ * Connect flow (user-to-server token via the standard OAuth authorize URL):
+ *   1. The customer is sent to `https://github.com/login/oauth/authorize` with
+ *      the App's client id. First-time users get an "Install & Authorize" screen
+ *      (install the App + pick repositories); already-installed users just
+ *      authorize. Either way GitHub returns to our callback with a `code`.
+ *   2. The shared OAuth callback exchanges the `code` for a user-to-server access
  *      token (read-only, capped by the App's permissions) and stores it like any
- *      other OAuth token. The `installation_id` is persisted on the connection so
- *      a future server-to-server (installation token) upgrade needs no re-connect.
+ *      other OAuth token.
+ *
+ * We deliberately use the authorize URL rather than the App's install URL: the
+ * install URL dead-ends on a "manage" page (no `code`) for orgs that already have
+ * the App installed, whereas the authorize URL works in both cases and honors
+ * `redirect_uri` for per-environment callback routing.
  *
  * The five checks are reused verbatim from the `github` manifest — only the way
  * the token is obtained differs (read-only App vs read/write OAuth App), so there
@@ -60,21 +62,21 @@ export const githubAppManifest: IntegrationManifest = {
   auth: {
     type: 'oauth2',
     config: {
-      // "Connect" installs the GitHub App. {APP_SLUG} is replaced at runtime with
-      // customSettings.appSlug from the configured platform/org credentials
-      // (reuses the same token-substitution mechanism as Rippling's {APP_NAME}).
-      authorizeUrl: 'https://github.com/apps/{APP_SLUG}/installations/new',
+      // Standard OAuth user-authorization flow — but the client id/secret belong
+      // to a GitHub *App*, not an OAuth App. GitHub Apps ignore OAuth scopes (the
+      // App's own read-only permissions apply), so no scope is requested.
+      //
+      // We use login/oauth/authorize rather than the App's install URL on
+      // purpose: the authorize URL returns a `code` whether or not the App is
+      // already installed (the install URL dead-ends on the "manage" page for
+      // already-installed orgs), shows an "Install & Authorize" screen for
+      // first-time users, and honors redirect_uri so each environment routes to
+      // its own callback.
+      authorizeUrl: 'https://github.com/login/oauth/authorize',
       tokenUrl: 'https://github.com/login/oauth/access_token',
-      // GitHub Apps ignore OAuth scopes — permissions come from the App's own
-      // configuration (set to read-only when the App is created). Intentionally
-      // empty so no scope is requested at connect time.
       scopes: [],
       pkce: false,
       clientAuthMethod: 'body',
-      // This is a GitHub App *installation* flow, not a standard OAuth authorize.
-      // The connect step redirects to the install URL; the callback still returns
-      // an OAuth `code` (with user-authorization-during-installation enabled).
-      appInstallFlow: true,
       // With "Expire user authorization tokens" DISABLED on the App, the token is
       // long-lived (like the legacy GitHub OAuth token), so no refresh is needed.
       supportsRefreshToken: false,
@@ -88,29 +90,17 @@ export const githubAppManifest: IntegrationManifest = {
       },
       setupInstructions: `Create the GitHub App once (a GitHub organization owner must do this):
 1. GitHub > Settings > Developer settings > GitHub Apps > "New GitHub App".
-2. Set "Callback URL" to the callback URL shown below, and enable
-   "Request user authorization (OAuth) during installation".
+2. Set "Callback URL" to the callback URL shown below (add one per environment),
+   and enable "Request user authorization (OAuth) during installation".
 3. Disable "Expire user authorization tokens" (so tokens stay valid, like the
    old integration).
 4. Under Permissions, grant READ-ONLY access:
    • Repository → Metadata, Contents, Pull requests, Administration, Dependabot alerts
    • Organization → Members
-5. Create the App, then generate a client secret.
-6. Enter the Client ID, Client Secret, and the App slug (the "<slug>" in the
-   App's public URL github.com/apps/<slug>) in the credentials form.`,
+5. Set "Where can this GitHub App be installed?" to "Any account".
+6. Create the App, then generate a client secret.
+7. Enter the Client ID and Client Secret in the credentials form.`,
       createAppUrl: 'https://github.com/settings/apps/new',
-      additionalOAuthSettings: [
-        {
-          id: 'appSlug',
-          label: 'GitHub App Slug',
-          type: 'text',
-          required: true,
-          placeholder: 'comp-ai',
-          helpText:
-            "Your GitHub App's slug from its public page (github.com/apps/<slug>). Used to build the installation URL.",
-          token: '{APP_SLUG}',
-        },
-      ],
     },
   },
 
