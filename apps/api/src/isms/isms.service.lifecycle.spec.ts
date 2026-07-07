@@ -5,10 +5,10 @@ import {
 } from '@nestjs/common';
 import { db } from '@db';
 import { IsmsService } from './isms.service';
-import { collectPlatformData } from './documents/data-source';
-import { runDerivation } from './documents/generate';
-import { upsertLatestSnapshotVersion } from './utils/version-snapshot';
+import type { IsmsVersionService } from './isms-version.service';
 
+// approve() (the CS-701 freeze/version flow) is covered in
+// isms.service.approve.spec.ts.
 jest.mock('@db', () => ({
   db: {
     ismsDocument: {
@@ -19,26 +19,22 @@ jest.mock('@db', () => ({
     $transaction: jest.fn(),
   },
 }));
-jest.mock('./documents/data-source', () => ({
-  collectPlatformData: jest.fn(),
-}));
-jest.mock('./documents/generate', () => ({
-  runDerivation: jest.fn(),
-}));
-jest.mock('./utils/version-snapshot', () => ({
-  upsertLatestSnapshotVersion: jest.fn(),
-}));
 
 const mockDb = jest.mocked(db);
-const mockCollect = jest.mocked(collectPlatformData);
-const mockRunDerivation = jest.mocked(runDerivation);
+
+const versionService = {
+  createPublishedVersion: jest.fn(),
+  publishRenders: jest.fn(),
+  getVersions: jest.fn(),
+  getVersionExport: jest.fn(),
+} as unknown as IsmsVersionService;
 
 describe('IsmsService document lifecycle', () => {
   let service: IsmsService;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new IsmsService();
+    service = new IsmsService(versionService);
   });
 
   describe('getDocument', () => {
@@ -65,7 +61,7 @@ describe('IsmsService document lifecycle', () => {
       );
     });
 
-    it('includes control links with the linked control id and name', async () => {
+    it('includes the current version and control links', async () => {
       (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
         id: 'doc_1',
         controlLinks: [],
@@ -80,6 +76,8 @@ describe('IsmsService document lifecycle', () => {
         controlId: true,
         control: { select: { id: true, name: true } },
       });
+      // CS-701: the document carries its live/published version for display.
+      expect(callArgs.include.currentVersion).toBeDefined();
     });
   });
 
@@ -115,111 +113,6 @@ describe('IsmsService document lifecycle', () => {
           approverId: 'mem_1',
           status: 'needs_review',
           approvedAt: null,
-          declinedAt: null,
-        }),
-      });
-    });
-  });
-
-  describe('approve', () => {
-    const args = {
-      documentId: 'doc_1',
-      organizationId: 'org_1',
-      userId: 'usr_1',
-    };
-
-    it('throws NotFoundException when member not found', async () => {
-      (mockDb.member.findFirst as jest.Mock).mockResolvedValue(null);
-      await expect(service.approve(args)).rejects.toThrow(NotFoundException);
-    });
-
-    it('throws BadRequestException when document is not pending approval', async () => {
-      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({ id: 'mem_1' });
-      (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
-        id: 'doc_1',
-        status: 'draft',
-        approverId: 'mem_1',
-        frameworkId: 'fw_1',
-      });
-      await expect(service.approve(args)).rejects.toThrow(BadRequestException);
-    });
-
-    it('throws ForbiddenException when no approver is assigned', async () => {
-      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({ id: 'mem_1' });
-      (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
-        id: 'doc_1',
-        status: 'needs_review',
-        approverId: null,
-        frameworkId: 'fw_1',
-      });
-      await expect(service.approve(args)).rejects.toThrow(ForbiddenException);
-    });
-
-    it('throws ForbiddenException when not the assigned approver', async () => {
-      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({ id: 'mem_1' });
-      (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
-        id: 'doc_1',
-        status: 'needs_review',
-        approverId: 'mem_other',
-        frameworkId: 'fw_1',
-      });
-      await expect(service.approve(args)).rejects.toThrow(ForbiddenException);
-    });
-
-    it('snapshots data and marks approved', async () => {
-      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({ id: 'mem_1' });
-      (mockDb.ismsDocument.findFirst as jest.Mock)
-        .mockResolvedValueOnce({
-          id: 'doc_1',
-          status: 'needs_review',
-          approverId: 'mem_1',
-          frameworkId: 'fw_1',
-          type: 'context_of_organization',
-        })
-        .mockResolvedValueOnce({ id: 'doc_1', status: 'approved' });
-      mockCollect.mockResolvedValue({
-        organizationName: 'Acme',
-        frameworkNames: ['ISO 27001'],
-        vendorCount: 1,
-        subProcessorCount: 0,
-        vendorsByCategory: {},
-        subProcessorNames: [],
-        infraVendorNames: [],
-        memberCount: 1,
-        membersByDepartment: {},
-        deviceCount: 0,
-        riskCount: 0,
-        highRiskCount: 0,
-        hasTrainingProgram: false,
-        wizardAnswers: {},
-        partiesFingerprint: '',
-      });
-      const tx = {
-        ismsDocument: { update: jest.fn().mockResolvedValue({}) },
-      };
-      (mockDb.$transaction as jest.Mock).mockImplementation((cb) => cb(tx));
-
-      await service.approve(args);
-
-      expect(mockCollect).toHaveBeenCalledWith({
-        organizationId: 'org_1',
-        frameworkId: 'fw_1',
-      });
-      // Re-derives inside the transaction from the same snapshot, so the
-      // persisted rows and the snapshot baseline come from one pass.
-      expect(mockRunDerivation).toHaveBeenCalledWith({
-        tx,
-        type: 'context_of_organization',
-        documentId: 'doc_1',
-        organizationId: 'org_1',
-        frameworkId: 'fw_1',
-        data: expect.objectContaining({ organizationName: 'Acme' }),
-      });
-      expect(upsertLatestSnapshotVersion).toHaveBeenCalled();
-      expect(tx.ismsDocument.update).toHaveBeenCalledWith({
-        where: { id: 'doc_1' },
-        data: expect.objectContaining({
-          status: 'approved',
           declinedAt: null,
         }),
       });

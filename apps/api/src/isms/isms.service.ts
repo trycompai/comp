@@ -9,7 +9,9 @@ import { SubmitIsmsForApprovalDto } from './dto/submit-isms-for-approval.dto';
 import { deriveControlLinks, resolveDocumentPlans } from './utils/ensure-setup-plan';
 import { collectPlatformData } from './documents/data-source';
 import { runDerivation } from './documents/generate';
-import { upsertLatestSnapshotVersion } from './utils/version-snapshot';
+import { updateDraftSnapshot } from './utils/draft-snapshot';
+import { EXPORT_DOCUMENT_INCLUDE } from './utils/export-payload';
+import { IsmsVersionService } from './isms-version.service';
 
 /**
  * ISMS foundational document lifecycle: setup, retrieval and sign-off. Context
@@ -18,6 +20,8 @@ import { upsertLatestSnapshotVersion } from './utils/version-snapshot';
  */
 @Injectable()
 export class IsmsService {
+  constructor(private readonly versionService: IsmsVersionService) {}
+
   /**
    * List the org's ISMS documents, provisioning missing ones first only when the
    * caller can write (`evidence:update`). Read-only callers never trigger writes.
@@ -61,7 +65,9 @@ export class IsmsService {
         type: doc.type,
         status: doc.status,
         requirementId: doc.requirementId,
-        hasApprovedVersion: doc.status === 'approved',
+        // A published version exists (the document has been approved at least
+        // once) — independent of whether the draft has since been edited.
+        hasApprovedVersion: doc.currentVersionId != null,
       })),
     };
   }
@@ -136,7 +142,11 @@ export class IsmsService {
     const document = await db.ismsDocument.findFirst({
       where: { id: documentId, organizationId },
       include: {
-        versions: { where: { isLatest: true }, take: 1 },
+        // The live/published version, for the "Published: vN" display. Full
+        // history is fetched separately via IsmsVersionService.getVersions.
+        currentVersion: {
+          select: { id: true, version: true, publishedAt: true },
+        },
         contextIssues: { orderBy: { position: 'asc' } },
         interestedParties: { orderBy: { position: 'asc' } },
         interestedPartyRequirements: { orderBy: { position: 'asc' } },
@@ -204,10 +214,14 @@ export class IsmsService {
       organizationId,
       frameworkId: document.frameworkId,
     });
+    const now = new Date();
 
-    await db.$transaction(async (tx) => {
-      // Re-derive in the same transaction so the persisted rows and the snapshot
-      // baseline come from one pass (otherwise the approved content can drift).
+    // Freeze the draft into a new immutable published version and promote it to
+    // currentVersion. Editing afterwards reverts status to draft but leaves this
+    // published version live and exportable (CS-701).
+    const published = await db.$transaction(async (tx) => {
+      // Re-derive in the same transaction so the persisted rows and the frozen
+      // snapshot come from one pass (otherwise the approved content can drift).
       await runDerivation({
         tx,
         type: document.type,
@@ -216,11 +230,40 @@ export class IsmsService {
         frameworkId: document.frameworkId,
         data: snapshot,
       });
-      await upsertLatestSnapshotVersion({ tx, documentId, snapshot });
+      await updateDraftSnapshot({ tx, documentId, snapshot });
+
+      const reloaded = await tx.ismsDocument.findUniqueOrThrow({
+        where: { id: documentId },
+        include: EXPORT_DOCUMENT_INCLUDE,
+      });
+      const result = await this.versionService.createPublishedVersion({
+        tx,
+        document: reloaded,
+        memberId: member.id,
+        now,
+        snapshotData: snapshot,
+      });
+
       await tx.ismsDocument.update({
         where: { id: documentId },
-        data: { status: 'approved', approvedAt: new Date(), declinedAt: null },
+        data: {
+          status: 'approved',
+          approvedAt: now,
+          declinedAt: null,
+          currentVersionId: result.versionId,
+        },
       });
+      return result;
+    });
+
+    // Render + upload the frozen exports outside the transaction (Policies
+    // pattern) so an S3 hiccup never orphans the published version.
+    await this.versionService.publishRenders({
+      organizationId,
+      documentId,
+      versionId: published.versionId,
+      version: published.version,
+      snapshot: published.snapshot,
     });
 
     return this.getDocument({ documentId, organizationId });

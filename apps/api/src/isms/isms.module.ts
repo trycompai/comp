@@ -3,6 +3,7 @@ import { IsmsController } from './isms.controller';
 import { IsmsRegistersController } from './isms-registers.controller';
 import { IsmsService } from './isms.service';
 import { IsmsContextService } from './isms-context.service';
+import { IsmsVersionService } from './isms-version.service';
 import { IsmsContextIssueService } from './isms-context-issue.service';
 import { IsmsDocumentControlService } from './isms-document-control.service';
 import { IsmsInterestedPartyService } from './isms-interested-party.service';
@@ -12,9 +13,11 @@ import { IsmsNarrativeService } from './isms-narrative.service';
 import { IsmsProfileController } from './wizard/isms-profile.controller';
 import { IsmsProfileService } from './wizard/isms-profile.service';
 import { AuthModule } from '../auth/auth.module';
+import { AttachmentsModule } from '../attachments/attachments.module';
 
 @Module({
-  imports: [AuthModule],
+  // AttachmentsModule: S3 access for retaining per-version rendered exports.
+  imports: [AuthModule, AttachmentsModule],
   controllers: [
     IsmsController,
     IsmsRegistersController,
@@ -23,6 +26,7 @@ import { AuthModule } from '../auth/auth.module';
   providers: [
     IsmsService,
     IsmsContextService,
+    IsmsVersionService,
     IsmsContextIssueService,
     IsmsDocumentControlService,
     IsmsInterestedPartyService,
@@ -34,6 +38,7 @@ import { AuthModule } from '../auth/auth.module';
   exports: [
     IsmsService,
     IsmsContextService,
+    IsmsVersionService,
     IsmsContextIssueService,
     IsmsDocumentControlService,
     IsmsInterestedPartyService,

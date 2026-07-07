@@ -129,13 +129,29 @@ export interface IsmsControlLink {
   control: { id: string; name: string };
 }
 
-/** Latest version row included on the fetched document. */
-export interface IsmsDocumentVersion {
+/** The live/published version summary included on the fetched document (CS-701). */
+export interface IsmsCurrentVersion {
   id: string;
   version: number;
-  isLatest: boolean;
-  /** Per-type narrative payload (scope / leadership); null for register-only docs. */
-  narrative: IsmsScopeNarrative | IsmsLeadershipNarrative | Record<string, unknown> | null;
+  publishedAt: string | null;
+}
+
+/** A published version in the version-history feed (CS-701). */
+export interface IsmsPublishedVersion {
+  id: string;
+  version: number;
+  publishedAt: string | null;
+  changelog: string | null;
+  publishedByName: string | null;
+  hasPdf: boolean;
+  hasDocx: boolean;
+  isCurrent: boolean;
+}
+
+/** Response of `GET /v1/isms/documents/:id/versions`. */
+export interface IsmsVersionHistory {
+  currentVersionId: string | null;
+  versions: IsmsPublishedVersion[];
 }
 
 /** Summary row returned by `ensure-setup`. */
@@ -154,8 +170,10 @@ export interface IsmsEnsureSetupResponse {
 
 /**
  * Full document returned by `GET /v1/isms/documents/:id`. Every register array is
- * always present (empty when the document type does not use that register), and
- * `versions[0]` (when present) carries the singleton narrative.
+ * always present (empty when the document type does not use that register). The
+ * editable draft lives on the document itself (register rows + `draftNarrative`);
+ * `currentVersion` is the live/published version (CS-701). Version history is
+ * fetched separately via `GET /v1/isms/documents/:id/versions`.
  */
 export interface IsmsDocument {
   id: string;
@@ -170,7 +188,14 @@ export interface IsmsDocument {
   interestedPartyRequirements: IsmsInterestedPartyRequirement[];
   objectives: IsmsObjective[];
   controlLinks: IsmsControlLink[];
-  versions: IsmsDocumentVersion[];
+  /** Working-draft narrative for the singleton documents (Scope, Leadership). */
+  draftNarrative:
+    | IsmsScopeNarrative
+    | IsmsLeadershipNarrative
+    | Record<string, unknown>
+    | null;
+  currentVersionId: string | null;
+  currentVersion: IsmsCurrentVersion | null;
 }
 
 export interface IsmsDriftResult {

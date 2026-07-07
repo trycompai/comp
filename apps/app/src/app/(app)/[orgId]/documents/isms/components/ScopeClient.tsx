@@ -63,12 +63,11 @@ export function ScopeClient(props: ScopeClientProps) {
           }
         };
 
-        const versions = Array.isArray(document.versions) ? document.versions : [];
-        const narrative = toScopeNarrative(versions[0]?.narrative);
+        const narrative = toScopeNarrative(document.draftNarrative);
 
         return (
           <ScopeForm
-            key={versions[0]?.id ?? 'none'}
+            key={document.currentVersionId ?? 'draft'}
             narrative={narrative}
             canEdit={canManage}
             onSave={handleSaveNarrative}
