@@ -1,3 +1,10 @@
+## [3.99.1](https://github.com/trycompai/comp/compare/v3.99.0...v3.99.1) (2026-07-07)
+
+
+### Bug Fixes
+
+* **integrations:** connect GitHub App via OAuth authorize URL, not install URL (CS-710) ([#3371](https://github.com/trycompai/comp/issues/3371)) ([51ab7b1](https://github.com/trycompai/comp/commit/51ab7b11395ce9bf824ab5a67b468e52101e3e00))
+
 # [3.99.0](https://github.com/trycompai/comp/compare/v3.98.1...v3.99.0) (2026-07-07)
 
 
