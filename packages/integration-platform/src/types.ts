@@ -33,6 +33,14 @@ export const OAuthConfigSchema = z.object({
    */
   supportsRefreshToken: z.boolean().default(true),
   /**
+   * App-installation URL for providers (e.g. GitHub Apps) where user
+   * authorization and app installation are separate steps. When set, the OAuth
+   * callback can redirect a user who authorized but has NOT installed the app to
+   * this URL to complete installation (choosing account/repositories) before the
+   * connection is finalized.
+   */
+  installUrl: z.string().url().optional(),
+  /**
    * Separate URL for token refresh (if different from tokenUrl).
    * Most providers use the same tokenUrl for both.
    */

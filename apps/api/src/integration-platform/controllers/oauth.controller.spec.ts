@@ -614,13 +614,74 @@ describe('OAuthController', () => {
         config: {
           authorizeUrl: 'https://github.com/login/oauth/authorize',
           tokenUrl: 'https://github.com/login/oauth/access_token',
+          installUrl:
+            'https://github.com/apps/comp-ai-compliance/installations/new',
         },
       },
       capabilities: [],
       isActive: true,
     };
 
-    it('blocks the GitHub App connect when the App is not installed', async () => {
+    const notInstalledFetch = () =>
+      jest
+        .spyOn(global, 'fetch')
+        // 1) token exchange
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ access_token: 'gh_token' }),
+          text: () => Promise.resolve(''),
+        } as unknown as Response)
+        // 2) GET /user/installations -> none
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ total_count: 0, installations: [] }),
+          text: () => Promise.resolve(''),
+        } as unknown as Response);
+
+    it('redirects to the install URL when the App is not installed (first pass)', async () => {
+      const futureDate = new Date(Date.now() + 600000);
+      mockOAuthStateRepository.findByState.mockResolvedValue({
+        state: 'gh_state',
+        providerSlug: 'github-app',
+        organizationId: 'org_1',
+        userId: 'user_1',
+        codeVerifier: null,
+        redirectUrl: null,
+        expiresAt: futureDate,
+      });
+      mockedGetManifest.mockReturnValue(githubAppManifest as never);
+      mockOAuthCredentialsService.getCredentials.mockResolvedValue({
+        clientId: 'c',
+        clientSecret: 's',
+        scopes: [],
+        source: 'platform',
+      });
+      mockOAuthStateRepository.create.mockResolvedValue({
+        state: 'install_state',
+      });
+
+      const fetchSpy = notInstalledFetch();
+
+      await controller.oauthCallback(
+        { code: 'auth_code', state: 'gh_state' },
+        mockRequest,
+        mockResponse,
+      );
+
+      // No installation yet → send them to install, don't finalize.
+      expect(mockConnectionService.activateConnection).not.toHaveBeenCalled();
+      const redirectUrl = (mockResponse.redirect as jest.Mock).mock.calls[0][0];
+      expect(redirectUrl).toContain(
+        'https://github.com/apps/comp-ai-compliance/installations/new',
+      );
+      expect(redirectUrl).toContain('state=install_state');
+
+      fetchSpy.mockRestore();
+    });
+
+    it('errors (no loop) when still not installed after an install attempt', async () => {
       const futureDate = new Date(Date.now() + 600000);
       mockOAuthStateRepository.findByState.mockResolvedValue({
         state: 'gh_state',
@@ -639,30 +700,15 @@ describe('OAuthController', () => {
         source: 'platform',
       });
 
-      const fetchSpy = jest
-        .spyOn(global, 'fetch')
-        // 1) token exchange
-        .mockResolvedValueOnce({
-          ok: true,
-          status: 200,
-          json: () => Promise.resolve({ access_token: 'gh_token' }),
-          text: () => Promise.resolve(''),
-        } as unknown as Response)
-        // 2) GET /user/installations -> none
-        .mockResolvedValueOnce({
-          ok: true,
-          status: 200,
-          json: () => Promise.resolve({ total_count: 0, installations: [] }),
-          text: () => Promise.resolve(''),
-        } as unknown as Response);
+      const fetchSpy = notInstalledFetch();
 
+      // installation_id present → we already came back from an install attempt.
       await controller.oauthCallback(
-        { code: 'auth_code', state: 'gh_state' },
+        { code: 'auth_code', state: 'gh_state', installation_id: '999' },
         mockRequest,
         mockResponse,
       );
 
-      // The connection must NOT be activated when the App isn't installed.
       expect(mockConnectionService.activateConnection).not.toHaveBeenCalled();
       const redirectUrl = (mockResponse.redirect as jest.Mock).mock.calls[0][0];
       expect(redirectUrl).toContain('error=github_app_not_installed');
