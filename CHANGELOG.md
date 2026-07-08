@@ -1,3 +1,11 @@
+## [3.99.2](https://github.com/trycompai/comp/compare/v3.99.1...v3.99.2) (2026-07-08)
+
+
+### Bug Fixes
+
+* **integrations:** create install-handoff state before deleting original ([04d8206](https://github.com/trycompai/comp/commit/04d82068a70784a6e35cc369d0cc9ca2399bcf82))
+* **integrations:** redirect GitHub App users to install when not installed ([32df09a](https://github.com/trycompai/comp/commit/32df09a4866f3c30d3b9e1f94d3b3ab3464d408c))
+
 ## [3.99.1](https://github.com/trycompai/comp/compare/v3.99.0...v3.99.1) (2026-07-07)
 
 
