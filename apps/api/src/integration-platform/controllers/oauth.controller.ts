@@ -39,6 +39,9 @@ interface OAuthCallbackQuery {
   state: string;
   error?: string;
   error_description?: string;
+  // Present when GitHub returns from an App installation (install-time OAuth).
+  // Used only as a loop guard for the install redirect — never persisted.
+  installation_id?: string;
 }
 
 @Controller({ path: 'integrations/oauth', version: '1' })
@@ -335,26 +338,49 @@ export class OAuthController {
         oauthState.codeVerifier,
       );
 
-      // GitHub App: a user can complete OAuth *without* installing the App,
-      // which yields a token that cannot read any repositories. If GitHub
-      // definitively reports no installation for this user, stop here and tell
-      // them to install the App instead of creating a "connected" but unusable
-      // integration. Fails open on any uncertainty so a valid connection is
-      // never blocked by a transient error.
+      // GitHub App: user *authorization* and app *installation* are separate on
+      // GitHub. A user can complete OAuth without installing the App, producing a
+      // token that can read no repositories. If GitHub definitively reports no
+      // installation, don't finalize a useless connection — send the user to
+      // install the App (choose org + repositories). They return through
+      // install-time OAuth (with an installation_id) and this check then passes.
+      // Fails open on any uncertainty so a valid connection is never blocked by a
+      // transient error.
       if (
         oauthState.providerSlug === 'github-app' &&
         (await this.githubAppInstallationMissing(tokens.access_token))
       ) {
         await this.oauthStateRepository.delete(state);
+
+        // First pass (came from plain authorize, no installation_id): send the
+        // user to install the App, then they return here via install-time OAuth.
+        if (!query.installation_id && oauthConfig.installUrl) {
+          const installState = await this.oauthStateRepository.create({
+            providerSlug: oauthState.providerSlug,
+            organizationId: oauthState.organizationId,
+            userId: oauthState.userId,
+            redirectUrl: oauthState.redirectUrl ?? undefined,
+          });
+          const installRedirect = new URL(oauthConfig.installUrl);
+          installRedirect.searchParams.set('state', installState.state);
+          this.logger.log(
+            `GitHub App authorized but not installed; redirecting org ${oauthState.organizationId} to install`,
+          );
+          res.redirect(installRedirect.toString());
+          return;
+        }
+
+        // We already came back from an install attempt but still see no
+        // installation — stop rather than loop.
         this.logger.warn(
-          `GitHub App authorized but not installed for org ${oauthState.organizationId}`,
+          `GitHub App still not installed after install attempt for org ${oauthState.organizationId}`,
         );
         const errorUrl = this.buildRedirectUrl(
           oauthState.redirectUrl,
           {
             error: 'github_app_not_installed',
             error_description:
-              'You authorized Comp AI, but the GitHub App is not installed on your organization yet. Install the App on GitHub, then reconnect.',
+              'The GitHub App was not installed on your organization. Please install it (selecting at least one repository) and try again.',
           },
           oauthState.organizationId,
         );
