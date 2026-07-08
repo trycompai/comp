@@ -901,6 +901,14 @@ export interface IntegrationRegistry {
   /** Get manifest by ID */
   getManifest(id: string): IntegrationManifest | undefined;
 
+  /**
+   * True when `id` is a code-based (bundled) manifest — one that can never be
+   * overridden by a dynamic (DB-loaded) manifest of the same id. Callers use this
+   * to classify a provider's checks as static even when a dynamic integration of
+   * the same slug also exists (the code manifest always wins).
+   */
+  isCodeManifest(id: string): boolean;
+
   /** Get all manifests */
   getAllManifests(): IntegrationManifest[];
 

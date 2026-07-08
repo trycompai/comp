@@ -1,6 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { db } from '@db';
 import type { Prisma } from '@db';
+import { isCodeManifest } from '@trycompai/integration-platform';
 import {
   ConnectionCheckRunnerService,
   type RunAllChecksResult,
@@ -531,10 +532,19 @@ export class InternalIntegrationDebugService {
       );
     }
 
-    const isDynamic = !!(await db.dynamicIntegration.findFirst({
-      where: { slug: connection.provider?.slug ?? '', isActive: true },
-      select: { id: true },
-    }));
+    // A code-based manifest wins over a dynamic integration of the same slug, so
+    // its checks are static and must NEVER be re-held as 'inconclusive' here —
+    // otherwise the self-heal agent's re-run would re-hide a code check it cannot
+    // patch, looping it as hidden forever (CS-715). Mirrors the run-check paths:
+    // only a provider with NO code manifest is dynamic. Dynamic integrations are
+    // unaffected (isCodeManifest is false for them → same DB check as before).
+    const providerSlug = connection.provider?.slug ?? '';
+    const isDynamic = isCodeManifest(providerSlug)
+      ? false
+      : !!(await db.dynamicIntegration.findFirst({
+          where: { slug: providerSlug, isActive: true },
+          select: { id: true },
+        }));
 
     const status = decideRunStatus({
       resultStatus: checkResult.status,
