@@ -15,19 +15,21 @@
  * is left completely untouched so current connections keep working. New/concerned
  * customers opt into this one.
  *
- * Connect flow (user-to-server token via the standard OAuth authorize URL):
+ * Connect flow (user-to-server token — GitHub separates user *authorization*
+ * from app *installation*, so the callback bridges the two):
  *   1. The customer is sent to `https://github.com/login/oauth/authorize` with
- *      the App's client id. First-time users get an "Install & Authorize" screen
- *      (install the App + pick repositories); already-installed users just
- *      authorize. Either way GitHub returns to our callback with a `code`.
- *   2. The shared OAuth callback exchanges the `code` for a user-to-server access
- *      token (read-only, capped by the App's permissions) and stores it like any
- *      other OAuth token.
- *
- * We deliberately use the authorize URL rather than the App's install URL: the
- * install URL dead-ends on a "manage" page (no `code`) for orgs that already have
- * the App installed, whereas the authorize URL works in both cases and honors
- * `redirect_uri` for per-environment callback routing.
+ *      the App's client id. This returns a `code` to our callback whether or not
+ *      the App is installed (unlike the install URL, which dead-ends on a
+ *      "manage" page for already-installed orgs), and it honors `redirect_uri`
+ *      for per-environment callback routing.
+ *   2. The callback exchanges the `code` for a user-to-server token, then checks
+ *      whether the user actually has an installation (GET /user/installations):
+ *        - Installed  → finalize the connection.
+ *        - NOT installed → redirect to `installUrl` so the user installs the App
+ *          on their org and picks repositories. GitHub then returns through
+ *          install-time OAuth (with an `installation_id`), the check passes, and
+ *          the connection is finalized. The `installation_id` on the return trip
+ *          is used only as a loop guard, never persisted.
  *
  * The five checks are reused verbatim from the `github` manifest — only the way
  * the token is obtained differs (read-only App vs read/write OAuth App), so there
@@ -69,11 +71,14 @@ export const githubAppManifest: IntegrationManifest = {
       // We use login/oauth/authorize rather than the App's install URL on
       // purpose: the authorize URL returns a `code` whether or not the App is
       // already installed (the install URL dead-ends on the "manage" page for
-      // already-installed orgs), shows an "Install & Authorize" screen for
-      // first-time users, and honors redirect_uri so each environment routes to
-      // its own callback.
+      // already-installed orgs) and honors redirect_uri so each environment
+      // routes to its own callback.
       authorizeUrl: 'https://github.com/login/oauth/authorize',
       tokenUrl: 'https://github.com/login/oauth/access_token',
+      // Where to send a user who authorized but has NOT installed the App yet, so
+      // they can install it on their org and choose repositories. The public app
+      // slug is the same across environments (one App, multiple callback URLs).
+      installUrl: 'https://github.com/apps/comp-ai-compliance/installations/new',
       scopes: [],
       pkce: false,
       clientAuthMethod: 'body',
