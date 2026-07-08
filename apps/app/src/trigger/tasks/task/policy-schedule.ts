@@ -1,3 +1,4 @@
+import { isOrgParticipant } from '@/lib/org-participation-rule';
 import { db } from '@db/server';
 import { Novu } from '@novu/api';
 import { logger, schedules } from '@trigger.dev/sdk';
@@ -30,20 +31,19 @@ export const policySchedule = schedules.task({
           select: {
             id: true,
             name: true,
+            isInternal: true,
             members: {
               where: {
                 deactivated: false,
-                OR: [
-                  { user: { role: { not: 'admin' } } },
-                  { role: { contains: 'owner' } },
-                ],
               },
               select: {
+                role: true,
                 user: {
                   select: {
                     id: true,
                     name: true,
                     email: true,
+                    role: true,
                   },
                 },
               },
@@ -127,21 +127,38 @@ export const policySchedule = schedules.task({
         }
       >();
       const addRecipients = (
-        users: Array<{ user: { id: string; email: string; name?: string } }>,
+        members: Array<{
+          role: string;
+          user: {
+            id: string;
+            email: string;
+            name?: string;
+            role?: string | null;
+          };
+        }>,
         policy: (typeof overduePolicies)[number],
       ) => {
-        for (const entry of users) {
+        // Exclude platform admins (Comp AI staff) unless they are an org owner
+        // or the org is internal — same rule as isOrgParticipant elsewhere.
+        const orgIsInternal = policy.organization?.isInternal ?? false;
+        for (const entry of members) {
           const user = entry.user;
-          if (user && user.email && user.id) {
-            const key = `${user.id}-${policy.id}`;
-            if (!recipientsMap.has(key)) {
-              recipientsMap.set(key, {
-                email: user.email,
-                userId: user.id,
-                name: user.name ?? '',
-                policy,
-              });
-            }
+          if (!user?.email || !user.id) continue;
+          const isOwner = entry.role
+            ?.split(',')
+            .map((r) => r.trim())
+            .includes('owner');
+          if (!isOrgParticipant(user.role, { orgIsInternal }) && !isOwner) {
+            continue;
+          }
+          const key = `${user.id}-${policy.id}`;
+          if (!recipientsMap.has(key)) {
+            recipientsMap.set(key, {
+              email: user.email,
+              userId: user.id,
+              name: user.name ?? '',
+              policy,
+            });
           }
         }
       };

@@ -2,8 +2,10 @@ import {
   BUILT_IN_ROLE_OBLIGATIONS,
   type RoleObligations,
   allRoles,
+  isOrgParticipant,
 } from '@trycompai/auth';
 import { db } from '@db';
+import { getOrgIsInternal } from './org-participation';
 
 /**
  * Check if any of the given role names have the compliance obligation,
@@ -42,6 +44,8 @@ export async function filterComplianceMembers<T extends MemberWithRole>(
 ): Promise<T[]> {
   if (members.length === 0) return [];
 
+  const orgIsInternal = await getOrgIsInternal(organizationId);
+
   // Collect all custom role names
   const allCustomRoleNames = new Set<string>();
   const builtInRoleNames = new Set<string>(Object.keys(allRoles));
@@ -75,8 +79,9 @@ export async function filterComplianceMembers<T extends MemberWithRole>(
 
   return memberRoles
     .filter(({ member, roleNames }) => {
-      // Platform admins are excluded — they join customer orgs to debug
-      if (member.user?.role === 'admin') return false;
+      // Platform admins are excluded — they join customer orgs to debug — unless
+      // this is an internal (platform-operated) org where they are real members.
+      if (!isOrgParticipant(member.user?.role, { orgIsInternal })) return false;
       return hasComplianceObligation(roleNames, customObligationMap);
     })
     .map(({ member }) => member);

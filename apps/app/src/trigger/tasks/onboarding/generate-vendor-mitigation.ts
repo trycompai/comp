@@ -1,3 +1,4 @@
+import { isOrgParticipant } from '@/lib/org-participation-rule';
 import { VendorStatus, db } from '@db/server';
 import { logger, metadata, queue, tags, task, tasks } from '@trigger.dev/sdk';
 import axios from 'axios';
@@ -49,12 +50,22 @@ export const generateVendorMitigation = task({
     // platform admins are hidden from the assignee UI, so skip them too.
     let assigneeUpdate: { assigneeId: string | null } | Record<string, never> = {};
     if (authorId) {
-      const author = await db.member.findFirst({
-        where: { id: authorId, organizationId },
-        include: { user: { select: { role: true } } },
-      });
+      const [author, org] = await Promise.all([
+        db.member.findFirst({
+          where: { id: authorId, organizationId },
+          include: { user: { select: { role: true } } },
+        }),
+        db.organization.findUnique({
+          where: { id: organizationId },
+          select: { isInternal: true },
+        }),
+      ]);
       assigneeUpdate = {
-        assigneeId: author?.user.role === 'admin' ? null : authorId,
+        assigneeId: isOrgParticipant(author?.user.role, {
+          orgIsInternal: org?.isInternal ?? false,
+        })
+          ? authorId
+          : null,
       };
     }
 

@@ -12,6 +12,7 @@ import { TaskResponseDto } from './dto/task-responses.dto';
 import { TaskNotifierService } from './task-notifier.service';
 import { checkAutoCompletePhases } from '../frameworks/frameworks-timeline.helper';
 import { TimelinesService } from '../timelines/timelines.service';
+import { isMemberOrgParticipant } from '../utils/org-participation';
 
 function computeNextTaskReviewDate(
   frequency: TaskFrequency | null | undefined,
@@ -472,7 +473,13 @@ export class TasksService {
           where: { id: assigneeId, organizationId },
           include: { user: { select: { role: true } } },
         });
-        if (assigneeMember?.user.role === 'admin') {
+        if (
+          assigneeMember &&
+          !(await isMemberOrgParticipant(
+            assigneeMember.user.role,
+            organizationId,
+          ))
+        ) {
           throw new BadRequestException(
             'Cannot assign a platform admin as assignee',
           );
@@ -675,7 +682,13 @@ export class TasksService {
             where: { id: updateData.assigneeId, organizationId },
             include: { user: { select: { role: true } } },
           });
-          if (assigneeMember?.user.role === 'admin') {
+          if (
+            assigneeMember &&
+            !(await isMemberOrgParticipant(
+              assigneeMember.user.role,
+              organizationId,
+            ))
+          ) {
             throw new BadRequestException(
               'Cannot assign a platform admin as assignee',
             );
@@ -761,8 +774,7 @@ export class TasksService {
               newValue: updateData.status,
               ...(updateData.status === TaskStatus.not_relevant &&
                 updateData.notRelevantJustification && {
-                  notRelevantJustification:
-                    updateData.notRelevantJustification,
+                  notRelevantJustification: updateData.notRelevantJustification,
                 }),
             },
           },
@@ -1056,7 +1068,7 @@ export class TasksService {
       throw new BadRequestException('Approver not found or is deactivated');
     }
 
-    if (approver.user.role === 'admin') {
+    if (!(await isMemberOrgParticipant(approver.user.role, organizationId))) {
       throw new BadRequestException(
         'Cannot assign a platform admin as approver',
       );
@@ -1135,7 +1147,7 @@ export class TasksService {
       throw new BadRequestException('Approver not found or is deactivated');
     }
 
-    if (approver.user.role === 'admin') {
+    if (!(await isMemberOrgParticipant(approver.user.role, organizationId))) {
       throw new BadRequestException(
         'Cannot assign a platform admin as approver',
       );

@@ -5,14 +5,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { db, Frequency, PolicyStatus, Prisma } from '@db';
-import {
-  HeadObjectCommand,
-  PutObjectCommand,
-} from '@aws-sdk/client-s3';
+import { HeadObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { AttachmentsService } from '../attachments/attachments.service';
 import { PolicyPdfRendererService } from '../trust-portal/policy-pdf-renderer.service';
 import { filterComplianceMembers } from '../utils/compliance-filters';
+import { isMemberOrgParticipant } from '../utils/org-participation';
 import { BUCKET_NAME, getSignedUrl, s3Client } from '../app/s3';
 import type { CreatePolicyDto } from './dto/create-policy.dto';
 import type { UpdatePolicyDto } from './dto/update-policy.dto';
@@ -99,9 +97,7 @@ export class PoliciesService {
           name: true,
           description: true,
           status: true,
-          ...(excludeContent
-            ? {}
-            : { content: true, draftContent: true }),
+          ...(excludeContent ? {} : { content: true, draftContent: true }),
           frequency: true,
           department: true,
           isRequiredToSign: true,
@@ -215,7 +211,10 @@ export class PoliciesService {
       organizationId,
       timelinesService: this.timelinesService,
     }).catch((err) => {
-      this.logger.warn('timeline auto-complete check failed after publish-all', err);
+      this.logger.warn(
+        'timeline auto-complete check failed after publish-all',
+        err,
+      );
     });
 
     return {
@@ -301,7 +300,10 @@ export class PoliciesService {
           where: { id: createData.assigneeId, organizationId },
           include: { user: { select: { role: true } } },
         });
-        if (assignee?.user.role === 'admin') {
+        if (
+          assignee &&
+          !(await isMemberOrgParticipant(assignee.user.role, organizationId))
+        ) {
           throw new BadRequestException(
             'Cannot assign a platform admin as assignee',
           );
@@ -757,9 +759,10 @@ export class PoliciesService {
       sourceVersion = requestedVersion;
     }
 
-    const contentForVersion = (sourceVersion
-      ? (sourceVersion.content as Prisma.InputJsonValue[])
-      : (policy.content as Prisma.InputJsonValue[])) ?? [];
+    const contentForVersion =
+      (sourceVersion
+        ? (sourceVersion.content as Prisma.InputJsonValue[])
+        : (policy.content as Prisma.InputJsonValue[])) ?? [];
     const sourcePdfUrl = sourceVersion?.pdfUrl ?? policy.pdfUrl;
 
     // S3 copy is done AFTER the transaction to prevent orphaned files on retry
@@ -1116,8 +1119,8 @@ export class PoliciesService {
           organizationId,
           timelinesService: this.timelinesService,
         }).catch((err) => {
-        this.logger.warn('timeline auto-complete check failed', err);
-      });
+          this.logger.warn('timeline auto-complete check failed', err);
+        });
 
         return result;
       } catch (error) {
@@ -1180,8 +1183,8 @@ export class PoliciesService {
       organizationId,
       timelinesService: this.timelinesService,
     }).catch((err) => {
-        this.logger.warn('timeline auto-complete check failed', err);
-      });
+      this.logger.warn('timeline auto-complete check failed', err);
+    });
 
     return {
       versionId: version.id,
@@ -1236,12 +1239,12 @@ export class PoliciesService {
       );
     }
 
-    // Cannot assign a platform admin as approver
+    // Cannot assign a platform admin as approver (unless this is an internal org)
     const approverUser = await db.user.findUnique({
       where: { id: approver.userId },
       select: { role: true },
     });
-    if (approverUser?.role === 'admin') {
+    if (!(await isMemberOrgParticipant(approverUser?.role, organizationId))) {
       throw new BadRequestException(
         'Cannot assign a platform admin as approver',
       );
@@ -1340,8 +1343,8 @@ export class PoliciesService {
       organizationId,
       timelinesService: this.timelinesService,
     }).catch((err) => {
-        this.logger.warn('timeline auto-complete check failed', err);
-      });
+      this.logger.warn('timeline auto-complete check failed', err);
+    });
 
     // Publishing cleared signedBy[] above, so everyone with the compliance
     // obligation must (re-)acknowledge the new version. Surface that audience so
@@ -1491,10 +1494,7 @@ export class PoliciesService {
   /**
    * Download all published policies as a single PDF bundle (no watermark)
    */
-  async downloadAllPoliciesPdf(
-    organizationId: string,
-    policyIds?: string[],
-  ) {
+  async downloadAllPoliciesPdf(organizationId: string, policyIds?: string[]) {
     // Get organization info
     const organization = await db.organization.findUnique({
       where: { id: organizationId },
@@ -1511,9 +1511,7 @@ export class PoliciesService {
         organizationId,
         isArchived: false,
         archivedAt: null,
-        ...(policyIds && policyIds.length > 0
-          ? { id: { in: policyIds } }
-          : {}),
+        ...(policyIds && policyIds.length > 0 ? { id: { in: policyIds } } : {}),
       },
       select: {
         id: true,
@@ -1831,10 +1829,7 @@ export class PoliciesService {
         select: { id: true, version: true },
       });
       if (!version) throw new NotFoundException('Version not found');
-      if (
-        version.id === policy.currentVersionId &&
-        policy.status !== 'draft'
-      ) {
+      if (version.id === policy.currentVersionId && policy.status !== 'draft') {
         throw new BadRequestException(
           'Cannot upload PDF to the published version',
         );

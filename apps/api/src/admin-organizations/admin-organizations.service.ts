@@ -240,6 +240,7 @@ export class AdminOrganizationsService {
         onboardingCompleted: true,
         website: true,
         backgroundCheckStepEnabled: true,
+        isInternal: true,
         members: {
           where: { isActive: true, deactivated: false },
           select: {

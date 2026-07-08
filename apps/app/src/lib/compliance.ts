@@ -1,7 +1,8 @@
 import 'server-only';
 
-import { BUILT_IN_ROLE_OBLIGATIONS } from '@trycompai/auth';
 import { db } from '@db/server';
+import { BUILT_IN_ROLE_OBLIGATIONS } from '@trycompai/auth';
+import { getOrgIsInternal, isOrgParticipant } from './org-participation';
 import {
   type UserPermissions,
   canAccessApp,
@@ -51,9 +52,7 @@ async function filterMembersByPermission<T extends MemberWithRole>(
         .filter((r) => r.permissions)
         .map((r) => {
           const parsed =
-            typeof r.permissions === 'string'
-              ? JSON.parse(r.permissions)
-              : r.permissions;
+            typeof r.permissions === 'string' ? JSON.parse(r.permissions) : r.permissions;
           return [r.name, parsed as Record<string, string[]>];
         }),
     );
@@ -81,6 +80,8 @@ export async function filterComplianceMembers<T extends MemberWithRole>(
 ): Promise<T[]> {
   if (members.length === 0) return [];
 
+  const orgIsInternal = await getOrgIsInternal(organizationId);
+
   const builtInRoleNames = new Set(Object.keys(BUILT_IN_ROLE_OBLIGATIONS));
   const allRoleNames = new Set<string>();
 
@@ -101,9 +102,8 @@ export async function filterComplianceMembers<T extends MemberWithRole>(
     });
     obligationMap = Object.fromEntries(
       dbRoles.map((r) => {
-        const obligations = typeof r.obligations === 'string'
-          ? JSON.parse(r.obligations)
-          : (r.obligations || {});
+        const obligations =
+          typeof r.obligations === 'string' ? JSON.parse(r.obligations) : r.obligations || {};
         return [r.name, obligations as Record<string, boolean>];
       }),
     );
@@ -111,8 +111,9 @@ export async function filterComplianceMembers<T extends MemberWithRole>(
 
   return memberRoles
     .filter(({ member, roleNames }) => {
-      // Platform admins are excluded — they join customer orgs to debug
-      if (member.user?.role === 'admin') return false;
+      // Platform admins are excluded — they join customer orgs to debug — unless
+      // this is an internal (platform-operated) org where they are real members.
+      if (!isOrgParticipant(member.user?.role, { orgIsInternal })) return false;
       for (const name of roleNames) {
         // DB override wins, but only if `compliance` is explicitly set —
         // otherwise fall back to the hardcoded built-in default.

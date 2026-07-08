@@ -1,4 +1,5 @@
 import { db } from '@db';
+import { orgParticipantMemberWhere } from '../utils/org-participation';
 import { Injectable, Logger } from '@nestjs/common';
 import { TaskStatus } from '@db';
 import { isUserUnsubscribed } from '@trycompai/email';
@@ -1085,6 +1086,7 @@ export class TaskNotifierService {
     } = params;
 
     try {
+      const participantWhere = await orgParticipantMemberWhere(organizationId);
       const [organization, task, allMembers] = await Promise.all([
         db.organization.findUnique({
           where: { id: organizationId },
@@ -1110,10 +1112,7 @@ export class TaskNotifierService {
           where: {
             organizationId,
             deactivated: false,
-            OR: [
-              { user: { role: { not: 'admin' } } },
-              { role: { contains: 'owner' } },
-            ],
+            ...participantWhere,
           },
           select: {
             id: true,
@@ -1289,6 +1288,7 @@ export class TaskNotifierService {
 
     try {
       const taskIds = failedTasks.map((t) => t.taskId);
+      const participantWhere = await orgParticipantMemberWhere(organizationId);
 
       const [organization, tasks, allMembers] = await Promise.all([
         db.organization.findUnique({
@@ -1319,10 +1319,7 @@ export class TaskNotifierService {
           where: {
             organizationId,
             deactivated: false,
-            OR: [
-              { user: { role: { not: 'admin' } } },
-              { role: { contains: 'owner' } },
-            ],
+            ...participantWhere,
           },
           select: {
             id: true,

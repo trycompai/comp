@@ -17,4 +17,12 @@ export class UpdateAdminOrganizationDto {
   @IsOptional()
   @IsBoolean()
   backgroundCheckStepEnabled?: boolean;
+
+  @ApiPropertyOptional({
+    description:
+      "When true, the organization is platform-operated (e.g. Comp AI's own org). Platform admins are then treated as real participants — assignable, counted in compliance, and notified. Leave false for all customer orgs.",
+  })
+  @IsOptional()
+  @IsBoolean()
+  isInternal?: boolean;
 }

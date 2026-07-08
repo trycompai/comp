@@ -1,3 +1,4 @@
+import { isOrgParticipant } from '@/lib/org-participation-rule';
 import { db } from '@db/server';
 import { logger, schedules } from '@trigger.dev/sdk';
 import { sendWeeklyTaskDigestEmailTask } from '../email/weekly-task-digest-email';
@@ -36,21 +37,20 @@ export const weeklyTaskReminder = schedules.task({
       select: {
         id: true,
         name: true,
+        isInternal: true,
         members: {
           where: {
             deactivated: false,
-            OR: [
-              { user: { role: { not: 'admin' } } },
-              { role: { contains: 'owner' } },
-            ],
           },
           select: {
             id: true,
+            role: true,
             user: {
               select: {
                 id: true,
                 name: true,
                 email: true,
+                role: true,
               },
             },
           },
@@ -58,7 +58,9 @@ export const weeklyTaskReminder = schedules.task({
       },
     });
 
-    logger.info(`Found ${organizations.length} active organizations to process (skipped orgs with no sessions in ${ORG_INACTIVITY_DAYS} days)`);
+    logger.info(
+      `Found ${organizations.length} active organizations to process (skipped orgs with no sessions in ${ORG_INACTIVITY_DAYS} days)`,
+    );
 
     // Build email payloads for all members with TODO tasks
     const emailPayloads = [];
@@ -94,6 +96,21 @@ export const weeklyTaskReminder = schedules.task({
       for (const member of org.members) {
         if (!member.user.email || !member.user.name) {
           logger.warn(`Skipping member ${member.id} - missing email or name`);
+          continue;
+        }
+
+        // Exclude platform admins (Comp AI staff) unless they are an org owner
+        // or the org is internal — same rule as isOrgParticipant elsewhere.
+        const isOwner = member.role
+          .split(',')
+          .map((r) => r.trim())
+          .includes('owner');
+        if (
+          !isOrgParticipant(member.user.role, {
+            orgIsInternal: org.isInternal,
+          }) &&
+          !isOwner
+        ) {
           continue;
         }
 

@@ -1,11 +1,9 @@
-import { db } from '@db/server';
-import { NextResponse } from 'next/server';
-import { requireApiPermission } from '@/lib/permissions.server';
-import {
-  daysSinceCheckIn,
-  getDeviceComplianceStatus,
-} from '@trycompai/utils/devices';
 import type { CheckDetails, DeviceWithChecks } from '@/app/(app)/[orgId]/people/devices/types';
+import { getOrgIsInternal } from '@/lib/org-participation';
+import { requireApiPermission } from '@/lib/permissions.server';
+import { db } from '@db/server';
+import { daysSinceCheckIn, getDeviceComplianceStatus } from '@trycompai/utils/devices';
+import { NextResponse } from 'next/server';
 
 /** Maps the DB `DeviceSource` enum to the frontend source discriminant. */
 function mapSource(source: string): DeviceWithChecks['source'] {
@@ -23,12 +21,13 @@ export async function GET(req: Request) {
   if (ctx instanceof NextResponse) return ctx;
   const { organizationId } = ctx;
 
+  const orgIsInternal = await getOrgIsInternal(organizationId);
   const devices = await db.device.findMany({
     where: {
       organizationId,
       member: {
         deactivated: false,
-        NOT: { user: { role: 'admin' } },
+        ...(orgIsInternal ? {} : { NOT: { user: { role: 'admin' } } }),
       },
     },
     include: {

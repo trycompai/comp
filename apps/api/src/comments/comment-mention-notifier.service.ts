@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { db } from '@db';
+import { orgParticipantMemberWhere } from '../utils/org-participation';
 import { isUserUnsubscribed } from '@trycompai/email';
 import { triggerEmail } from '../email/trigger-email';
 import { CommentMentionedEmail } from '../email/templates/comment-mentioned';
@@ -261,16 +262,15 @@ export class CommentMentionNotifierService {
         return;
       }
 
-      // Get mentioned users: exclude platform admins unless they are an owner of this org
+      // Get mentioned users: exclude platform admins unless they are an owner of
+      // this org (or the org is internal, where platform admins are real members)
+      const participantWhere = await orgParticipantMemberWhere(organizationId);
       const mentionedMembers = await db.member.findMany({
         where: {
           organizationId,
           deactivated: false,
           user: { id: { in: mentionedUserIds } },
-          OR: [
-            { user: { role: { not: 'admin' } } },
-            { role: { contains: 'owner' } },
-          ],
+          ...participantWhere,
         },
         include: { user: true },
       });

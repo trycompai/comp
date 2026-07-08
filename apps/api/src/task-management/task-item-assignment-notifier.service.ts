@@ -1,4 +1,5 @@
 import { db } from '@db';
+import { isOrgParticipant } from '@trycompai/auth/participation';
 import { Injectable, Logger } from '@nestjs/common';
 import { isUserUnsubscribed } from '@trycompai/email';
 import { triggerEmail } from '../email/trigger-email';
@@ -55,7 +56,7 @@ export class TaskItemAssignmentNotifierService {
       const [organization, assigneeMember, assignedByUser] = await Promise.all([
         db.organization.findUnique({
           where: { id: organizationId },
-          select: { name: true },
+          select: { name: true, isInternal: true },
         }),
         db.member.findUnique({
           where: { id: assigneeMemberId },
@@ -93,11 +94,17 @@ export class TaskItemAssignmentNotifierService {
       }
 
       // Skip notifications for platform admin members unless they are an owner
+      // (or this is an internal org, where platform admins are real members)
       const isOwner = assigneeMember.role
         ?.split(',')
         .map((r: string) => r.trim())
         .includes('owner');
-      if (assigneeUser.role === 'admin' && !isOwner) {
+      if (
+        !isOrgParticipant(assigneeUser.role, {
+          orgIsInternal: organization?.isInternal ?? false,
+        }) &&
+        !isOwner
+      ) {
         this.logger.log(
           `Skipping assignment notification: assignee ${assigneeUser.email} is a platform admin (non-owner)`,
         );
