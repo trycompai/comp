@@ -350,17 +350,20 @@ export class OAuthController {
         oauthState.providerSlug === 'github-app' &&
         (await this.githubAppInstallationMissing(tokens.access_token))
       ) {
-        await this.oauthStateRepository.delete(state);
-
         // First pass (came from plain authorize, no installation_id): send the
         // user to install the App, then they return here via install-time OAuth.
         if (!query.installation_id && oauthConfig.installUrl) {
+          // Create the install-handoff state BEFORE deleting the original one.
+          // If creation fails, the original state survives so the outer catch can
+          // clean it up and still emit an error redirect — deleting first would
+          // make the catch's delete throw (record gone) and hang the request.
           const installState = await this.oauthStateRepository.create({
             providerSlug: oauthState.providerSlug,
             organizationId: oauthState.organizationId,
             userId: oauthState.userId,
             redirectUrl: oauthState.redirectUrl ?? undefined,
           });
+          await this.oauthStateRepository.delete(state);
           const installRedirect = new URL(oauthConfig.installUrl);
           installRedirect.searchParams.set('state', installState.state);
           this.logger.log(
@@ -372,6 +375,7 @@ export class OAuthController {
 
         // We already came back from an install attempt but still see no
         // installation — stop rather than loop.
+        await this.oauthStateRepository.delete(state);
         this.logger.warn(
           `GitHub App still not installed after install attempt for org ${oauthState.organizationId}`,
         );

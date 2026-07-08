@@ -678,6 +678,54 @@ describe('OAuthController', () => {
       );
       expect(redirectUrl).toContain('state=install_state');
 
+      // The install-handoff state must be created BEFORE the original state is
+      // deleted, so a create failure can't leave the outer catch double-deleting
+      // an already-removed record (which would hang the request).
+      const createOrder =
+        mockOAuthStateRepository.create.mock.invocationCallOrder[0];
+      const deleteOrder =
+        mockOAuthStateRepository.delete.mock.invocationCallOrder[0];
+      expect(createOrder).toBeLessThan(deleteOrder);
+
+      fetchSpy.mockRestore();
+    });
+
+    it('still emits an error redirect if creating the install-handoff state fails', async () => {
+      const futureDate = new Date(Date.now() + 600000);
+      mockOAuthStateRepository.findByState.mockResolvedValue({
+        state: 'gh_state',
+        providerSlug: 'github-app',
+        organizationId: 'org_1',
+        userId: 'user_1',
+        codeVerifier: null,
+        redirectUrl: null,
+        expiresAt: futureDate,
+      });
+      mockedGetManifest.mockReturnValue(githubAppManifest as never);
+      mockOAuthCredentialsService.getCredentials.mockResolvedValue({
+        clientId: 'c',
+        clientSecret: 's',
+        scopes: [],
+        source: 'platform',
+      });
+      // Creating the install-handoff state fails (e.g. DB error).
+      mockOAuthStateRepository.create.mockRejectedValue(new Error('db down'));
+
+      const fetchSpy = notInstalledFetch();
+
+      await controller.oauthCallback(
+        { code: 'auth_code', state: 'gh_state' },
+        mockRequest,
+        mockResponse,
+      );
+
+      // The original state was NOT deleted before the failed create, so the
+      // outer catch can still clean it up and emit an error redirect (no hang).
+      expect(mockOAuthStateRepository.delete).toHaveBeenCalledWith('gh_state');
+      const errRedirect = (mockResponse.redirect as jest.Mock).mock.calls[0][0];
+      expect(errRedirect).toContain('error=');
+      expect(mockConnectionService.activateConnection).not.toHaveBeenCalled();
+
       fetchSpy.mockRestore();
     });
 
