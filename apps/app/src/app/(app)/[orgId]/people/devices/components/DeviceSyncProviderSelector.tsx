@@ -57,6 +57,12 @@ export function DeviceSyncProviderSelector() {
     (p) => !p.connected && p.connectionStatus === 'error',
   );
   const selected = connectedProviders.find((p) => p.slug === selectedProvider);
+  // The saved sync source's own connection is broken — the daily sync is
+  // failing, which the closed trigger must surface even when other providers
+  // are still connected.
+  const selectedIsErrored = erroredProviders.some(
+    (p) => p.slug === selectedProvider,
+  );
 
   // Empty slot instead of nothing: the labeled placeholder shows exactly what
   // this setting is and how to unlock it (mirrors TwoFactorSourceSelector).
@@ -115,9 +121,11 @@ export function DeviceSyncProviderSelector() {
                 )}
                 <span className="truncate">{selected.name}</span>
               </div>
-            ) : connectedProviders.length === 0 && erroredProviders.length > 0 ? (
-              // The only connection(s) are broken — say so on the closed
-              // trigger instead of the misleading "Not syncing".
+            ) : selectedIsErrored ||
+              (connectedProviders.length === 0 && erroredProviders.length > 0) ? (
+              // The saved provider's connection is broken, or the only
+              // connection(s) are — say so on the closed trigger instead of
+              // the misleading "Not syncing".
               <span className="text-amber-600 dark:text-amber-500">
                 Needs reconnection
               </span>

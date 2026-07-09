@@ -197,6 +197,31 @@ describe('DeviceSyncProviderSelector — connection states', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('shows Needs reconnection when the SAVED provider is errored even if another provider is connected', () => {
+    mockHook({
+      selectedProvider: 'intune', // the chosen sync source — its connection broke
+      availableProviders: [
+        { ...provider, slug: 'kandji', name: 'Kandji' }, // still connected
+        {
+          ...provider,
+          slug: 'intune',
+          name: 'Intune',
+          connected: false,
+          connectionStatus: 'error',
+          connectionId: null,
+        },
+      ],
+      hasAnyConnection: true,
+    });
+
+    render(<DeviceSyncProviderSelector />);
+
+    // The daily sync is failing — the closed trigger must say so, not the
+    // bland "Not syncing".
+    expect(screen.getByText('Needs reconnection')).toBeInTheDocument();
+    expect(screen.queryByText('Not syncing')).not.toBeInTheDocument();
+  });
+
   it('falls back to the connect slot when the API omits connectionStatus (older API response)', () => {
     mockHook({
       selectedProvider: null,
