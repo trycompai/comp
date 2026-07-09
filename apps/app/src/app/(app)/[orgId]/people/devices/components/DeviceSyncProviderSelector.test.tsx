@@ -116,6 +116,10 @@ describe('DeviceSyncProviderSelector — RBAC gating', () => {
     expect(
       screen.getByRole('option', { name: /Kandji/i }),
     ).toBeInTheDocument();
+    // The saved provider is still the user's choice — "Don't auto-sync" must
+    // NOT be marked Active just because the choice can't be resolved to a
+    // connected provider.
+    expect(screen.queryByText('Active')).not.toBeInTheDocument();
     // No Sync now button without a connected selected provider.
     expect(
       screen.queryByRole('button', { name: /Sync now/i }),
@@ -180,8 +184,9 @@ describe('DeviceSyncProviderSelector — connection states', () => {
     render(<DeviceSyncProviderSelector />);
 
     // The select renders (not the connect slot): the org HAS a connection,
-    // it just needs a reconnect.
+    // it just needs a reconnect — and the closed trigger says so.
     const trigger = screen.getByRole('combobox', { name: /Sync devices from/i });
+    expect(screen.getByText('Needs reconnection')).toBeInTheDocument();
     await user.click(trigger);
     const intuneOption = await screen.findByRole('option', { name: /Intune/i });
     expect(intuneOption).toHaveAttribute('aria-disabled', 'true');

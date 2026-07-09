@@ -127,10 +127,10 @@ describe('SyncController - getAvailableSyncProviders connection status', () => {
     expect(mockConnectionFindFirst).toHaveBeenCalledTimes(1);
   });
 
-  it('reports connectionStatus error (not connected) when the only connection is broken', async () => {
+  it('reports connectionStatus error (not connected) when the latest connection is broken', async () => {
     mockConnectionFindFirst.mockImplementation(
-      (args: { where: { status: string } }) =>
-        args.where.status === 'error' ? { id: 'icn_broken' } : null,
+      (args: { where: { status?: string } }) =>
+        args.where.status === 'active' ? null : { status: 'error' },
     );
 
     const result = await controller.getAvailableSyncProviders(orgId, 'device');
@@ -143,6 +143,34 @@ describe('SyncController - getAvailableSyncProviders connection status', () => {
         connectionId: null,
       }),
     ]);
+  });
+
+  it('does not resurface a stale error when the latest connection is disconnected', async () => {
+    // Reconnects create new rows, so an old 'error' row can coexist with a
+    // newer 'disconnected' one. The latest row (disconnected) must win.
+    mockConnectionFindFirst.mockImplementation(
+      (args: { where: { status?: string } }) =>
+        args.where.status === 'active' ? null : { status: 'disconnected' },
+    );
+
+    const result = await controller.getAvailableSyncProviders(orgId, 'device');
+
+    expect(result.providers).toEqual([
+      expect.objectContaining({
+        slug: 'intune',
+        connected: false,
+        connectionStatus: null,
+        connectionId: null,
+      }),
+    ]);
+    // The fallback must pick the LATEST row regardless of status (no status
+    // filter), ordered by recency — not hunt for any old 'error' row.
+    const fallbackArgs = mockConnectionFindFirst.mock.calls[1][0] as {
+      where: { status?: string };
+      orderBy: { updatedAt: string };
+    };
+    expect(fallbackArgs.where.status).toBeUndefined();
+    expect(fallbackArgs.orderBy).toEqual({ updatedAt: 'desc' });
   });
 
   it('reports connectionStatus null when the org has no connection for the provider', async () => {

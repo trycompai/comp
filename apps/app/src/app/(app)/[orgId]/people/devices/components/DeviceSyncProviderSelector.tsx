@@ -115,6 +115,12 @@ export function DeviceSyncProviderSelector() {
                 )}
                 <span className="truncate">{selected.name}</span>
               </div>
+            ) : connectedProviders.length === 0 && erroredProviders.length > 0 ? (
+              // The only connection(s) are broken — say so on the closed
+              // trigger instead of the misleading "Not syncing".
+              <span className="text-amber-600 dark:text-amber-500">
+                Needs reconnection
+              </span>
             ) : (
               <span className="text-muted-foreground">Not syncing</span>
             )}
@@ -184,7 +190,10 @@ export function DeviceSyncProviderSelector() {
             <SelectItem value={NO_SYNC_VALUE}>
               <div className="flex items-center gap-2">
                 <span>Don&apos;t auto-sync</span>
-                {!selected && (
+                {/* Keyed on the saved slug, not the resolved connected
+                    provider: a saved provider whose connection broke is still
+                    the user's choice — auto-sync was never disabled. */}
+                {!selectedProvider && (
                   <span className="ml-auto text-xs text-muted-foreground">Active</span>
                 )}
               </div>
