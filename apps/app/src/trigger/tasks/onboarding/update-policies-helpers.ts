@@ -1,14 +1,10 @@
-import { createGatewayProvider } from '@ai-sdk/gateway';
+import { aiLanguageModel } from '@/lib/ai/provider';
 import { db, FrameworkEditorFramework, FrameworkEditorPolicyTemplate, type Policy } from '@db/server';
 import type { JSONContent } from '@tiptap/react';
 import { logger } from '@trigger.dev/sdk';
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { processTemplate } from './process-policy-template';
-
-const gateway = createGatewayProvider({
-  baseURL: process.env.AI_GATEWAY_BASE_URL,
-});
 
 const CUE_LINE_PATTERN =
   /^(State that|Clarify that|Add a |Include a |Specify |List |Note that|Require that|Describe |Define )/;
@@ -61,7 +57,7 @@ async function refineCueLines(
 
   try {
     const { object } = await generateObject({
-      model: gateway('anthropic/claude-sonnet-4.6'),
+      model: aiLanguageModel('anthropic/claude-sonnet-4.6'),
       system: `You rewrite policy template instructions into direct, professional policy language. Each input is an instruction (e.g. "State that...", "Define..."). Return the equivalent text as it should appear in a published security policy — authoritative, concise, no instructional phrasing.`,
       prompt: `Policy: "${policyName}"\n\nRewrite each instruction:\n${cueLines.map((c, i) => `${i + 1}. ${c.text}`).join('\n')}`,
       schema: z.object({

@@ -498,37 +498,37 @@ export async function runLinkage({
     if (v.embeddingHash !== null) vendorHashes.set(v.id, v.embeddingHash);
   }
 
-  const [taskUpsert, riskUpsert, vendorUpsert] = await Promise.all([
-    upsertEntityEmbeddings({
-      organizationId,
-      kind: 'task',
-      entities: tasks.map((t) => ({
-        id: t.id,
-        text: taskQueryText(t),
-        department: t.department ?? undefined,
-      })),
-      existingHashes: taskHashes,
-    }),
-    upsertEntityEmbeddings({
-      organizationId,
-      kind: 'risk',
-      entities: risks.map((r) => ({
-        id: r.id,
-        text: riskQueryText(r),
-        department: r.department ?? undefined,
-      })),
-      existingHashes: riskHashes,
-    }),
-    upsertEntityEmbeddings({
-      organizationId,
-      kind: 'vendor',
-      entities: vendors.map((v) => ({
-        id: v.id,
-        text: vendorQueryText(v),
-      })),
-      existingHashes: vendorHashes,
-    }),
-  ]);
+  const taskUpsert = await upsertEntityEmbeddings({
+    organizationId,
+    kind: 'task',
+    entities: tasks.map((t) => ({
+      id: t.id,
+      text: taskQueryText(t),
+      department: t.department ?? undefined,
+    })),
+    existingHashes: taskHashes,
+  });
+
+  const riskUpsert = await upsertEntityEmbeddings({
+    organizationId,
+    kind: 'risk',
+    entities: risks.map((r) => ({
+      id: r.id,
+      text: riskQueryText(r),
+      department: r.department ?? undefined,
+    })),
+    existingHashes: riskHashes,
+  });
+
+  const vendorUpsert = await upsertEntityEmbeddings({
+    organizationId,
+    kind: 'vendor',
+    entities: vendors.map((v) => ({
+      id: v.id,
+      text: vendorQueryText(v),
+    })),
+    existingHashes: vendorHashes,
+  });
 
   // Persist the freshly-computed hashes so the next linkage run can skip
   // these entities. Rows whose content was unchanged are not in the

@@ -1,4 +1,4 @@
-import { createGatewayProvider } from '@ai-sdk/gateway';
+import { aiLanguageModel } from '@/lib/ai/provider';
 import { generateObject, jsonSchema } from 'ai';
 
 /**
@@ -38,10 +38,6 @@ export interface RerankedCandidate {
   /** 0-10, returned by the LLM. Higher is more relevant. */
   rerankScore: number;
 }
-
-const gateway = createGatewayProvider({
-  baseURL: process.env.AI_GATEWAY_BASE_URL,
-});
 
 const RERANK_MODEL = 'google/gemini-3.1-flash-lite-preview' as const;
 
@@ -109,7 +105,7 @@ export async function rerankSuggestions({
     .join('\n');
 
   const result = await generateObject({
-    model: gateway(RERANK_MODEL),
+    model: aiLanguageModel(RERANK_MODEL),
     system: SYSTEM_PROMPT,
     prompt: userPrompt,
     schema: rerankSchema,

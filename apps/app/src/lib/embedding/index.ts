@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { Index, type RangeResult } from '@upstash/vector';
-import { openai } from '@ai-sdk/openai';
+import { aiEmbeddingModel } from '@/lib/ai/provider';
 import { embedMany } from 'ai';
 import { createHash } from 'node:crypto';
 
@@ -54,8 +54,12 @@ export interface SimilarTaskResult {
 // while keeping the existing Upstash Vector index (which is provisioned at
 // 1536 dims) usable as-is. Bumping to the full 3072 dims would require a
 // new index + a one-time re-embed of every org.
-const EMBEDDING_MODEL = 'text-embedding-3-large';
+const EMBEDDING_MODEL = process.env.AZURE_OPENAI_EMBEDDING_DEPLOYMENT ?? 'text-embedding-3-large';
 const EMBEDDING_DIMENSIONS = 1536;
+const EMBEDDING_RATE_LIMIT_RETRY_MS = Number(process.env.EMBEDDING_RATE_LIMIT_RETRY_MS ?? '65000');
+const EMBEDDING_MAX_ATTEMPTS = Number(process.env.EMBEDDING_MAX_ATTEMPTS ?? '4');
+const EMBEDDING_BATCH_SIZE = Number(process.env.EMBEDDING_BATCH_SIZE ?? '5');
+const EMBEDDING_INTER_BATCH_DELAY_MS = Number(process.env.EMBEDDING_INTER_BATCH_DELAY_MS ?? '5000');
 const DEFAULT_TOP_K = 25;
 // Pagination for enumerating an org's task vectors by their shared id prefix —
 // used by both `findSimilarTasks` (exact in-process ranking) and
@@ -67,6 +71,15 @@ const TASK_VECTOR_PAGE_SIZE = 1000;
 const TASK_VECTOR_MAX_PAGES = 500;
 
 let cachedIndex: Index | null = null;
+
+function isRateLimitError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /rate limit|retry after|429|exceeded the call rate limit/i.test(message);
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 function getIndex(): Index {
   if (cachedIndex) return cachedIndex;
@@ -159,11 +172,34 @@ export async function upsertEntityEmbeddings({
     return { appliedHashes: [], skippedCount };
   }
 
-  const { embeddings } = await embedMany({
-    model: openai.embedding(EMBEDDING_MODEL),
-    values: toEmbed.map(({ entity }) => entity.text),
-    providerOptions: { openai: { dimensions: EMBEDDING_DIMENSIONS } },
-  });
+  const embeddings: number[][] = [];
+  const values = toEmbed.map(({ entity }) => entity.text);
+  const batchSize = Math.max(1, EMBEDDING_BATCH_SIZE);
+
+  for (let start = 0; start < values.length; start += batchSize) {
+    const batch = values.slice(start, start + batchSize);
+
+    for (let attempt = 1; attempt <= EMBEDDING_MAX_ATTEMPTS; attempt += 1) {
+      try {
+        const result = await embedMany({
+          model: aiEmbeddingModel(EMBEDDING_MODEL),
+          values: batch,
+          providerOptions: { openai: { dimensions: EMBEDDING_DIMENSIONS } },
+        });
+        embeddings.push(...result.embeddings);
+        break;
+      } catch (error) {
+        if (!isRateLimitError(error) || attempt === EMBEDDING_MAX_ATTEMPTS) {
+          throw error;
+        }
+        await sleep(EMBEDDING_RATE_LIMIT_RETRY_MS * attempt);
+      }
+    }
+
+    if (start + batchSize < values.length) {
+      await sleep(EMBEDDING_INTER_BATCH_DELAY_MS);
+    }
+  }
 
   const index = getIndex();
   await Promise.all(
@@ -281,7 +317,7 @@ export async function findSimilarTasks({
   if (!queryText.trim()) return [];
 
   const { embeddings } = await embedMany({
-    model: openai.embedding(EMBEDDING_MODEL),
+    model: aiEmbeddingModel(EMBEDDING_MODEL),
     values: [queryText],
     providerOptions: { openai: { dimensions: EMBEDDING_DIMENSIONS } },
   });

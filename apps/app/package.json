@@ -4,6 +4,7 @@
     "type": "module",
     "dependencies": {
         "@ai-sdk/anthropic": "^3.0.75",
+        "@ai-sdk/azure": "^3.0.86",
         "@ai-sdk/gateway": "^3.0.110",
         "@ai-sdk/google": "^3.0.68",
         "@ai-sdk/groq": "^3.0.38",

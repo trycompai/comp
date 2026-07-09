@@ -20,6 +20,7 @@ import {
 export const linkRisksAndVendorsToWork = task({
   id: 'link-risks-and-vendors-to-work',
   retry: { maxAttempts: 2 },
+  maxDuration: 60 * 20,
   run: async (payload: RunLinkageInput) => {
     const { organizationId, riskId, vendorId, replace, suggestionsOnly } = payload;
     const mode = suggestionsOnly

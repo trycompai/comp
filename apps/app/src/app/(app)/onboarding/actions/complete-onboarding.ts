@@ -194,26 +194,38 @@ export const completeOnboarding = authActionClientWithoutOrg
         update: {},
       });
 
-      // Now trigger the jobs that were skipped during minimal creation
-      const handle = await tasks.trigger<typeof onboardOrganizationTask>('onboard-organization', {
-        organizationId: parsedInput.organizationId,
-      });
+      // Trigger background jobs on a best-effort basis. In self-hosted POCs the
+      // Trigger.dev worker may not be deployed/reachable, but onboarding data is
+      // already saved above and should still complete for the user.
+      let handle: { id: string; publicAccessToken: string } | undefined;
 
-      // Update onboarding record with job ID
-      await db.onboarding.update({
-        where: {
+      try {
+        handle = await tasks.trigger<typeof onboardOrganizationTask>('onboard-organization', {
           organizationId: parsedInput.organizationId,
-        },
-        data: { triggerJobId: handle.id },
-      });
+        });
 
-      // Set cookie for job tracking
-      (await cookies()).set('publicAccessToken', handle.publicAccessToken);
+        // Update onboarding record with job ID
+        await db.onboarding.update({
+          where: {
+            organizationId: parsedInput.organizationId,
+          },
+          data: { triggerJobId: handle.id },
+        });
 
-      // Create Fleet Label
-      await tasks.trigger<typeof createFleetLabelForOrg>('create-fleet-label-for-org', {
-        organizationId: parsedInput.organizationId,
-      });
+        // Set cookie for job tracking
+        (await cookies()).set('publicAccessToken', handle.publicAccessToken);
+      } catch (error) {
+        console.warn('[complete-onboarding] Background onboarding trigger failed', error);
+      }
+
+      try {
+        // Create Fleet Label
+        await tasks.trigger<typeof createFleetLabelForOrg>('create-fleet-label-for-org', {
+          organizationId: parsedInput.organizationId,
+        });
+      } catch (error) {
+        console.warn('[complete-onboarding] Fleet label trigger failed', error);
+      }
 
       // Revalidate paths
       const headersList = await headers();
@@ -226,8 +238,8 @@ export const completeOnboarding = authActionClientWithoutOrg
 
       return {
         success: true,
-        handle: handle.id,
-        publicAccessToken: handle.publicAccessToken,
+        handle: handle?.id,
+        publicAccessToken: handle?.publicAccessToken,
         organizationId: parsedInput.organizationId,
         redirectUrl: `/${parsedInput.organizationId}/`,
       };
@@ -247,4 +259,3 @@ export const completeOnboarding = authActionClientWithoutOrg
       };
     }
   });
-
