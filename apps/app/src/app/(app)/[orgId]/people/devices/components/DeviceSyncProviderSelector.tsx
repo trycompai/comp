@@ -1,12 +1,31 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { Button, Skeleton } from '@trycompai/design-system';
-import { Renew } from '@trycompai/design-system/icons';
+import {
+  Button,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  Separator,
+  Skeleton,
+} from '@trycompai/design-system';
+import { InProgress, Renew } from '@trycompai/design-system/icons';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useDeviceSync } from '../hooks/useDeviceSync';
 
+const NO_SYNC_VALUE = '__no_sync__';
+
+/**
+ * Picks which connected integration supplies device inventory for this org —
+ * the device-sync counterpart of the People tab's sync source selects
+ * (TwoFactorSourceSelector / people sync). Always visible for users with
+ * integration:update: shows a "Connect an integration" slot when the org has
+ * no device-sync-capable connection, and lists broken (errored) connections
+ * as disabled options marked "Reconnect".
+ */
 export function DeviceSyncProviderSelector() {
   const { orgId } = useParams<{ orgId: string }>();
   const { hasPermission } = usePermissions();
@@ -21,9 +40,6 @@ export function DeviceSyncProviderSelector() {
     availableProviders,
     syncDevices,
     setSyncProvider,
-    getProviderName,
-    getProviderLogo,
-    hasAnyConnection,
   } = useDeviceSync({ organizationId: orgId, enabled: canManageDeviceSync });
 
   if (!canManageDeviceSync) {
@@ -34,115 +50,161 @@ export function DeviceSyncProviderSelector() {
     return <Skeleton style={{ height: 48, width: '100%' }} />;
   }
 
-  if (!hasAnyConnection) {
-    // No active connection — but if one exists in an error state (e.g. expired
-    // OAuth), say so instead of hiding device sync entirely, so the user knows
-    // a reconnect brings it back.
-    const erroredProviders = availableProviders.filter(
-      (p) => p.connectionStatus === 'error',
-    );
-    if (erroredProviders.length === 0) {
-      return null;
-    }
-    const names = erroredProviders.map((p) => p.name).join(', ');
+  const connectedProviders = availableProviders.filter((p) => p.connected);
+  // Broken connections (e.g. expired OAuth) — shown as disabled options so the
+  // user knows device sync exists and a reconnect brings it back.
+  const erroredProviders = availableProviders.filter(
+    (p) => !p.connected && p.connectionStatus === 'error',
+  );
+  const selected = connectedProviders.find((p) => p.slug === selectedProvider);
+
+  // Empty slot instead of nothing: the labeled placeholder shows exactly what
+  // this setting is and how to unlock it (mirrors TwoFactorSourceSelector).
+  if (connectedProviders.length === 0 && erroredProviders.length === 0) {
     return (
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-card px-4 py-3">
-        <div className="text-sm text-muted-foreground">
-          Device sync is unavailable — the {names} connection
-          {erroredProviders.length > 1 ? 's need' : ' needs'} to be reconnected.
-        </div>
+      <div className="flex w-full max-w-[280px] flex-col gap-1">
+        <span className="text-xs text-muted-foreground">Device sync</span>
         <Link
           href={`/${orgId}/integrations`}
-          className="text-sm font-medium underline underline-offset-4"
+          className="border-border text-muted-foreground hover:bg-muted flex h-8 items-center justify-between rounded-md border border-dashed px-3 text-sm transition-colors"
         >
-          Go to Integrations
+          Connect an integration
+          <span aria-hidden>→</span>
         </Link>
       </div>
     );
   }
 
-  const connectedProviders = availableProviders.filter((p) => p.connected);
-
-  const handleSync = async () => {
-    if (!selectedProvider) return;
-    await syncDevices(selectedProvider);
+  const handleValueChange = (value: string | null) => {
+    if (!value) return;
+    if (value === NO_SYNC_VALUE) {
+      void setSyncProvider(null);
+      return;
+    }
+    void syncDevices(value);
   };
 
-  const handleProviderChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    void setSyncProvider(e.target.value || null);
+  const handleSyncNow = async () => {
+    if (!selected) return;
+    await syncDevices(selected.slug);
   };
 
   return (
-    <div className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3">
-      <div className="flex items-center gap-3">
-        {selectedProvider ? (
-          <>
-            <img
-              src={getProviderLogo(selectedProvider)}
-              alt=""
-              className="h-6 w-6 rounded"
-            />
-            <div>
-              <div className="text-sm font-medium">
-                {getProviderName(selectedProvider)}
+    <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="flex w-full max-w-[280px] flex-col gap-1">
+        <span className="text-xs text-muted-foreground">Device sync</span>
+        {/* Uncontrolled on purpose — mirrors the (working) people-sync select. */}
+        <Select onValueChange={handleValueChange} disabled={isSyncing}>
+          <SelectTrigger aria-label="Sync devices from">
+            {isSyncing ? (
+              <div className="flex items-center gap-2">
+                <InProgress size={16} className="animate-spin" />
+                Syncing...
               </div>
-              {(() => {
-                const info = availableProviders.find(
-                  (p) => p.slug === selectedProvider,
-                );
-                if (!info?.lastSyncAt) return null;
-                const lastSync = new Date(info.lastSyncAt);
-                return (
-                  <div className="text-xs text-muted-foreground">
-                    Last synced{' '}
-                    {lastSync.toLocaleDateString(undefined, {
-                      month: 'short',
-                      day: 'numeric',
-                      hour: 'numeric',
-                      minute: '2-digit',
-                    })}
-                  </div>
-                );
-              })()}
+            ) : selected ? (
+              <div className="flex items-center gap-2">
+                {selected.logoUrl && (
+                  <Image
+                    src={selected.logoUrl}
+                    alt=""
+                    width={16}
+                    height={16}
+                    className="rounded-sm"
+                    unoptimized
+                  />
+                )}
+                <span className="truncate">{selected.name}</span>
+              </div>
+            ) : (
+              <span className="text-muted-foreground">Not syncing</span>
+            )}
+          </SelectTrigger>
+          <SelectContent>
+            <div className="px-2 py-1.5 text-xs text-muted-foreground space-y-1">
+              {selected ? (
+                <>
+                  <div>Auto-syncs daily</div>
+                  {selected.lastSyncAt && (
+                    <div className="text-muted-foreground/80">
+                      Last sync: {new Date(selected.lastSyncAt).toLocaleString()}
+                    </div>
+                  )}
+                  {selected.nextSyncAt && (
+                    <div className="text-muted-foreground/80">
+                      Next sync: {new Date(selected.nextSyncAt).toLocaleString()}
+                    </div>
+                  )}
+                </>
+              ) : (
+                'Select a provider to import devices'
+              )}
             </div>
-          </>
-        ) : (
-          <div className="text-sm text-muted-foreground">
-            Select an integration to sync devices
-          </div>
-        )}
-      </div>
-
-      <div className="flex items-center gap-2">
-        {connectedProviders.length > 1 ||
-        !connectedProviders.some((p) => p.slug === selectedProvider) ? (
-          <select
-            value={selectedProvider ?? ''}
-            onChange={handleProviderChange}
-            className="rounded-md border border-input bg-background px-3 py-1.5 text-sm"
-          >
-            <option value="">Select provider...</option>
+            <Separator />
             {connectedProviders.map((p) => (
-              <option key={p.slug} value={p.slug}>
-                {p.name}
-              </option>
+              <SelectItem key={p.slug} value={p.slug}>
+                <div className="flex items-center gap-2">
+                  {p.logoUrl && (
+                    <Image
+                      src={p.logoUrl}
+                      alt=""
+                      width={16}
+                      height={16}
+                      className="rounded-sm"
+                      unoptimized
+                    />
+                  )}
+                  {p.name}
+                  {selectedProvider === p.slug && (
+                    <span className="ml-auto text-xs text-muted-foreground">Active</span>
+                  )}
+                </div>
+              </SelectItem>
             ))}
-          </select>
-        ) : null}
-
-        {selectedProvider && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSync}
-            disabled={isSyncing}
-            loading={isSyncing}
-            iconLeft={!isSyncing ? <Renew /> : undefined}
-          >
-            {isSyncing ? 'Syncing...' : 'Sync now'}
-          </Button>
-        )}
+            {erroredProviders.map((p) => (
+              <SelectItem key={p.slug} value={p.slug} disabled>
+                <div className="flex items-center gap-2">
+                  {p.logoUrl && (
+                    <Image
+                      src={p.logoUrl}
+                      alt=""
+                      width={16}
+                      height={16}
+                      className="rounded-sm"
+                      unoptimized
+                    />
+                  )}
+                  {p.name}
+                  <span className="ml-auto text-xs text-amber-600 dark:text-amber-500">
+                    Reconnect
+                  </span>
+                </div>
+              </SelectItem>
+            ))}
+            <Separator />
+            <SelectItem value={NO_SYNC_VALUE}>
+              <div className="flex items-center gap-2">
+                <span>Don&apos;t auto-sync</span>
+                {!selected && (
+                  <span className="ml-auto text-xs text-muted-foreground">Active</span>
+                )}
+              </div>
+            </SelectItem>
+          </SelectContent>
+        </Select>
       </div>
+
+      {selected && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleSyncNow}
+          disabled={isSyncing}
+          loading={isSyncing}
+          iconLeft={!isSyncing ? <Renew /> : undefined}
+        >
+          {isSyncing ? 'Syncing...' : 'Sync now'}
+        </Button>
+      )}
     </div>
   );
 }

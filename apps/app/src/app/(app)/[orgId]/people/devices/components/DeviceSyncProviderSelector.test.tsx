@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DeviceSyncProviderSelector } from './DeviceSyncProviderSelector';
 import type { DeviceSyncProviderInfo } from '../hooks/useDeviceSync';
@@ -26,15 +27,21 @@ const provider: DeviceSyncProviderInfo = {
   name: 'Jamf',
   logoUrl: 'https://example.com/jamf.png',
   connected: true,
+  connectionStatus: 'active',
   connectionId: 'icn_1',
   lastSyncAt: null,
   nextSyncAt: null,
 };
 
-beforeEach(() => {
-  vi.clearAllMocks();
-  mockUseDeviceSync.mockReturnValue({
-    selectedProvider: 'jamf',
+function mockHook(
+  overrides: Partial<ReturnType<typeof buildHookReturn>> = {},
+) {
+  mockUseDeviceSync.mockReturnValue({ ...buildHookReturn(), ...overrides });
+}
+
+function buildHookReturn() {
+  return {
+    selectedProvider: 'jamf' as string | null,
     isSyncing: false,
     isLoading: false,
     availableProviders: [provider],
@@ -43,7 +50,12 @@ beforeEach(() => {
     getProviderName: (slug: string) => (slug === 'jamf' ? 'Jamf' : slug),
     getProviderLogo: () => provider.logoUrl,
     hasAnyConnection: true,
-  });
+  };
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  mockHook();
 });
 
 describe('DeviceSyncProviderSelector — RBAC gating', () => {
@@ -56,9 +68,13 @@ describe('DeviceSyncProviderSelector — RBAC gating', () => {
     render(<DeviceSyncProviderSelector />);
 
     expect(
+      screen.getByRole('combobox', { name: /Sync devices from/i }),
+    ).toBeInTheDocument();
+    expect(
       screen.getByRole('button', { name: /Sync now/i }),
     ).toBeInTheDocument();
-    expect(screen.getByText('Jamf')).toBeInTheDocument();
+    // Trigger (and the inline option list) show the selected provider name.
+    expect(screen.getAllByText('Jamf').length).toBeGreaterThan(0);
     // Hook is enabled (and therefore allowed to hit the device-sync APIs).
     expect(mockUseDeviceSync).toHaveBeenCalledWith(
       expect.objectContaining({ enabled: true }),
@@ -80,28 +96,30 @@ describe('DeviceSyncProviderSelector — RBAC gating', () => {
     );
   });
 
-  it('shows the provider picker when the saved provider is no longer connected', () => {
+  it('shows the provider picker when the saved provider is no longer connected', async () => {
+    const user = userEvent.setup();
     mockHasPermission.mockImplementation(
       (resource: string, action: string) =>
         resource === 'integration' && action === 'update',
     );
-    mockUseDeviceSync.mockReturnValue({
+    mockHook({
       selectedProvider: 'jamf', // saved, but no longer in the connected list
-      isSyncing: false,
-      isLoading: false,
       availableProviders: [{ ...provider, slug: 'kandji', name: 'Kandji' }],
-      syncDevices: vi.fn(),
-      setSyncProvider: vi.fn(),
-      getProviderName: (slug: string) => (slug === 'kandji' ? 'Kandji' : slug),
-      getProviderLogo: () => provider.logoUrl,
-      hasAnyConnection: true,
     });
 
     render(<DeviceSyncProviderSelector />);
 
     // The picker must be available so the user can switch to a connected provider.
-    expect(screen.getByRole('combobox')).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'Kandji' })).toBeInTheDocument();
+    const trigger = screen.getByRole('combobox', { name: /Sync devices from/i });
+    expect(screen.getByText('Not syncing')).toBeInTheDocument();
+    await user.click(trigger);
+    expect(
+      screen.getByRole('option', { name: /Kandji/i }),
+    ).toBeInTheDocument();
+    // No Sync now button without a connected selected provider.
+    expect(
+      screen.queryByRole('button', { name: /Sync now/i }),
+    ).not.toBeInTheDocument();
   });
 
   it('does not render for read-only integration access (integration:read only)', () => {
@@ -116,7 +134,7 @@ describe('DeviceSyncProviderSelector — RBAC gating', () => {
   });
 });
 
-describe('DeviceSyncProviderSelector — errored connection hint', () => {
+describe('DeviceSyncProviderSelector — connection states', () => {
   beforeEach(() => {
     mockHasPermission.mockImplementation(
       (resource: string, action: string) =>
@@ -124,11 +142,28 @@ describe('DeviceSyncProviderSelector — errored connection hint', () => {
     );
   });
 
-  it('shows a reconnect hint when the only connection is in error state', () => {
-    mockUseDeviceSync.mockReturnValue({
+  it('shows a labeled connect slot when no device-sync integration has a connection', () => {
+    mockHook({
       selectedProvider: null,
-      isSyncing: false,
-      isLoading: false,
+      availableProviders: [
+        { ...provider, connected: false, connectionStatus: null, connectionId: null },
+      ],
+      hasAnyConnection: false,
+    });
+
+    render(<DeviceSyncProviderSelector />);
+
+    expect(screen.getByText('Device sync')).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: /Connect an integration/i }),
+    ).toHaveAttribute('href', '/org_1/integrations');
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+  });
+
+  it('lists a broken connection as a disabled option marked Reconnect', async () => {
+    const user = userEvent.setup();
+    mockHook({
+      selectedProvider: null,
       availableProviders: [
         {
           ...provider,
@@ -139,69 +174,38 @@ describe('DeviceSyncProviderSelector — errored connection hint', () => {
           connectionId: null,
         },
       ],
-      syncDevices: vi.fn(),
-      setSyncProvider: vi.fn(),
-      getProviderName: (slug: string) => slug,
-      getProviderLogo: () => '',
+      hasAnyConnection: false,
+    });
+
+    render(<DeviceSyncProviderSelector />);
+
+    // The select renders (not the connect slot): the org HAS a connection,
+    // it just needs a reconnect.
+    const trigger = screen.getByRole('combobox', { name: /Sync devices from/i });
+    await user.click(trigger);
+    const intuneOption = await screen.findByRole('option', { name: /Intune/i });
+    expect(intuneOption).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByText('Reconnect')).toBeInTheDocument();
+    // Not selectable as a sync source, so no Sync now button either.
+    expect(
+      screen.queryByRole('button', { name: /Sync now/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('falls back to the connect slot when the API omits connectionStatus (older API response)', () => {
+    mockHook({
+      selectedProvider: null,
+      availableProviders: [
+        { ...provider, connected: false, connectionId: null },
+      ],
       hasAnyConnection: false,
     });
 
     render(<DeviceSyncProviderSelector />);
 
     expect(
-      screen.getByText(/the Intune connection needs to be reconnected/i),
+      screen.getByRole('link', { name: /Connect an integration/i }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole('link', { name: /Go to Integrations/i }),
-    ).toHaveAttribute('href', '/org_1/integrations');
-    // No sync controls without an active connection.
-    expect(
-      screen.queryByRole('button', { name: /Sync now/i }),
-    ).not.toBeInTheDocument();
-  });
-
-  it('renders nothing when there is no connection at all (no errored one either)', () => {
-    mockUseDeviceSync.mockReturnValue({
-      selectedProvider: null,
-      isSyncing: false,
-      isLoading: false,
-      availableProviders: [
-        {
-          ...provider,
-          connected: false,
-          connectionStatus: null,
-          connectionId: null,
-        },
-      ],
-      syncDevices: vi.fn(),
-      setSyncProvider: vi.fn(),
-      getProviderName: (slug: string) => slug,
-      getProviderLogo: () => '',
-      hasAnyConnection: false,
-    });
-
-    const { container } = render(<DeviceSyncProviderSelector />);
-
-    expect(container).toBeEmptyDOMElement();
-  });
-
-  it('renders nothing when the API omits connectionStatus (older API response)', () => {
-    mockUseDeviceSync.mockReturnValue({
-      selectedProvider: null,
-      isSyncing: false,
-      isLoading: false,
-      availableProviders: [
-        { ...provider, connected: false, connectionId: null },
-      ],
-      syncDevices: vi.fn(),
-      setSyncProvider: vi.fn(),
-      getProviderName: (slug: string) => slug,
-      getProviderLogo: () => '',
-      hasAnyConnection: false,
-    });
-
-    const { container } = render(<DeviceSyncProviderSelector />);
-
-    expect(container).toBeEmptyDOMElement();
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
   });
 });
