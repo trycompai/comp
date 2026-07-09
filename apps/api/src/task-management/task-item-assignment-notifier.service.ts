@@ -62,7 +62,6 @@ export class TaskItemAssignmentNotifierService {
           where: { id: assigneeMemberId },
           select: {
             id: true,
-            role: true,
             user: {
               select: {
                 id: true,
@@ -93,20 +92,15 @@ export class TaskItemAssignmentNotifierService {
         return;
       }
 
-      // Skip notifications for platform admin members unless they are an owner
-      // (or this is an internal org, where platform admins are real members)
-      const isOwner = assigneeMember.role
-        ?.split(',')
-        .map((r: string) => r.trim())
-        .includes('owner');
+      // Skip notifications for platform admins unless this is an internal org
+      // (where platform admins are real members) — the single participation rule.
       if (
         !isOrgParticipant(assigneeUser.role, {
           orgIsInternal: organization?.isInternal ?? false,
-        }) &&
-        !isOwner
+        })
       ) {
         this.logger.log(
-          `Skipping assignment notification: assignee ${assigneeUser.email} is a platform admin (non-owner)`,
+          `Skipping assignment notification: assignee ${assigneeUser.email} is a platform admin`,
         );
         return;
       }

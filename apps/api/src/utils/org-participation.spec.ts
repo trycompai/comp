@@ -8,6 +8,7 @@ import {
   getOrgIsInternal,
   isMemberOrgParticipant,
   orgParticipantMemberWhere,
+  orgParticipantMemberWhereForFlag,
 } from './org-participation';
 
 const orgFindUnique = db.organization.findUnique as jest.Mock;
@@ -54,6 +55,33 @@ describe('org-participation', () => {
     });
   });
 
+  describe('orgParticipantMemberWhereForFlag', () => {
+    it('returns an empty fragment for internal orgs (no exclusion)', () => {
+      expect(orgParticipantMemberWhereForFlag(true)).toEqual({});
+    });
+
+    it('excludes only platform admins (incl. null roles) for customer orgs', () => {
+      expect(orgParticipantMemberWhereForFlag(false)).toEqual({
+        AND: [{ user: { OR: [{ role: { not: 'admin' } }, { role: null }] } }],
+      });
+    });
+
+    it('is spread-safe: does not clobber a caller-supplied user filter', () => {
+      // Regression: the fragment used to return a bare `user` key, which
+      // overwrote the mention notifiers' `user: { id: { in } }` filter and
+      // broadcast to the whole org. `AND` must keep both conditions.
+      const where = {
+        organizationId: 'org_1',
+        user: { id: { in: ['u1', 'u2'] } },
+        ...orgParticipantMemberWhereForFlag(false),
+      };
+      expect(where.user).toEqual({ id: { in: ['u1', 'u2'] } });
+      expect(where.AND).toEqual([
+        { user: { OR: [{ role: { not: 'admin' } }, { role: null }] } },
+      ]);
+    });
+  });
+
   describe('orgParticipantMemberWhere', () => {
     it('returns an empty fragment for internal orgs (no exclusion)', async () => {
       orgFindUnique.mockResolvedValue({ isInternal: true });
@@ -63,7 +91,7 @@ describe('org-participation', () => {
     it('excludes only platform admins (incl. null roles) for customer orgs', async () => {
       orgFindUnique.mockResolvedValue({ isInternal: false });
       await expect(orgParticipantMemberWhere('org_1')).resolves.toEqual({
-        user: { OR: [{ role: { not: 'admin' } }, { role: null }] },
+        AND: [{ user: { OR: [{ role: { not: 'admin' } }, { role: null }] } }],
       });
     });
   });

@@ -36,18 +36,39 @@ export async function isMemberOrgParticipant(
 
 /**
  * A Prisma `Member` where-fragment that keeps only org participants — the SQL
- * translation of {@link isOrgParticipant}. Spread it into a member query's
- * `where`. Returns an empty fragment for internal orgs (everyone participates).
- * For other orgs it excludes only platform admins; `role: { not }` skips NULL in
- * SQL, so null roles are included explicitly to match the predicate (a null
- * global role is a normal member, not a platform admin). Use for
- * recipient/participant lists (notifications, mentions, devices).
+ * translation of {@link isOrgParticipant}, built from an already-resolved
+ * internal flag. Returns an empty fragment for internal orgs (everyone
+ * participates). For other orgs it excludes only platform admins; `role: { not }`
+ * skips NULL in SQL, so null roles are included explicitly to match the
+ * predicate (a null global role is a normal member, not a platform admin).
+ *
+ * The exclusion is wrapped in `AND` rather than a bare `user` key so this
+ * fragment is safe to spread into a query that already constrains `user` (e.g.
+ * the mention notifiers filter `user: { id: { in } }`) — a bare `user` key would
+ * silently overwrite the caller's, broadening the recipient set. `AND` makes
+ * Prisma intersect the two conditions instead. Use for recipient/participant
+ * lists (notifications, mentions, devices).
+ */
+export function orgParticipantMemberWhereForFlag(
+  orgIsInternal: boolean,
+): Prisma.MemberWhereInput {
+  if (orgIsInternal) return {};
+  return {
+    AND: [
+      { user: { OR: [{ role: { not: PLATFORM_ADMIN_ROLE } }, { role: null }] } },
+    ],
+  };
+}
+
+/**
+ * Async convenience over {@link orgParticipantMemberWhereForFlag} that resolves
+ * the org's internal flag first. Prefer the `-ForFlag` variant when the caller
+ * has already loaded the organization, to avoid a redundant query.
  */
 export async function orgParticipantMemberWhere(
   organizationId: string,
 ): Promise<Prisma.MemberWhereInput> {
-  if (await getOrgIsInternal(organizationId)) return {};
-  return {
-    user: { OR: [{ role: { not: PLATFORM_ADMIN_ROLE } }, { role: null }] },
-  };
+  return orgParticipantMemberWhereForFlag(
+    await getOrgIsInternal(organizationId),
+  );
 }

@@ -3,7 +3,22 @@
 import { RecentAuditLogs } from '@/components/RecentAuditLogs';
 import type { AuditLogWithRelations } from '@/hooks/use-audit-logs';
 import { apiClient } from '@/lib/api-client';
-import { Badge, Section, Stack, Switch, Text } from '@trycompai/design-system';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  Badge,
+  Section,
+  Stack,
+  Switch,
+  Text,
+} from '@trycompai/design-system';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import useSWR from 'swr';
@@ -21,16 +36,19 @@ interface AdminOrgDetail {
 
 export function OrganizationDetail({
   org,
+  currentOrgId,
   hasAccess,
 }: {
   org: AdminOrgDetail;
   currentOrgId: string;
   hasAccess: boolean;
 }) {
+  const router = useRouter();
   const [bgCheckEnabled, setBgCheckEnabled] = useState(org.backgroundCheckStepEnabled);
   const [savingBgCheck, setSavingBgCheck] = useState(false);
   const [isInternal, setIsInternal] = useState(org.isInternal);
   const [savingInternal, setSavingInternal] = useState(false);
+  const [pendingInternal, setPendingInternal] = useState<boolean | null>(null);
 
   const handleToggleBgCheck = async (next: boolean) => {
     const previous = bgCheckEnabled;
@@ -54,8 +72,17 @@ export function OrganizationDetail({
     );
   };
 
-  const handleToggleInternal = async (next: boolean) => {
+  // Toggling `isInternal` changes org-wide membership semantics, so confirm
+  // first (the switch flips only after the admin confirms).
+  const handleRequestToggleInternal = (next: boolean) => {
+    setPendingInternal(next);
+  };
+
+  const handleConfirmToggleInternal = async () => {
+    if (pendingInternal === null) return;
+    const next = pendingInternal;
     const previous = isInternal;
+    setPendingInternal(null);
     setIsInternal(next);
     setSavingInternal(true);
 
@@ -69,6 +96,13 @@ export function OrganizationDetail({
       setIsInternal(previous);
       toast.error('Failed to update internal-organization setting');
       return;
+    }
+
+    // If this is the org the admin is currently browsing, refresh the server
+    // layout so OrgInternalProvider (and consumers like the assignee picker)
+    // reflect the new flag without a full page reload.
+    if (org.id === currentOrgId) {
+      router.refresh();
     }
 
     toast.success(
@@ -132,7 +166,7 @@ export function OrganizationDetail({
           <Switch
             checked={isInternal}
             disabled={savingInternal}
-            onCheckedChange={handleToggleInternal}
+            onCheckedChange={handleRequestToggleInternal}
             aria-label="Internal organization"
           />
         </div>
@@ -152,6 +186,34 @@ export function OrganizationDetail({
       ) : (
         <RecentAuditLogs logs={logs} title="Recent Activity" />
       )}
+
+      <AlertDialog
+        open={pendingInternal !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingInternal(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pendingInternal
+                ? 'Mark as internal organization?'
+                : 'Remove internal organization?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingInternal
+                ? 'Platform admins will be treated as real members here — assignable, counted in compliance, and notified. Only enable this for Comp AI-operated orgs, never a customer organization.'
+                : 'Platform admins will be excluded from this organization again — removed from assignments, compliance counts, and notifications.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmToggleInternal}>
+              {pendingInternal ? 'Mark as internal' : 'Remove internal'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Stack>
   );
 }

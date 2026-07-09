@@ -44,7 +44,6 @@ export const weeklyTaskReminder = schedules.task({
           },
           select: {
             id: true,
-            role: true,
             user: {
               select: {
                 id: true,
@@ -99,17 +98,12 @@ export const weeklyTaskReminder = schedules.task({
           continue;
         }
 
-        // Exclude platform admins (Comp AI staff) unless they are an org owner
-        // or the org is internal — same rule as isOrgParticipant elsewhere.
-        const isOwner = member.role
-          .split(',')
-          .map((r) => r.trim())
-          .includes('owner');
+        // Exclude platform admins (Comp AI staff) unless the org is internal —
+        // the single participation rule (no per-member owner carve-out).
         if (
           !isOrgParticipant(member.user.role, {
             orgIsInternal: org.isInternal,
-          }) &&
-          !isOwner
+          })
         ) {
           continue;
         }

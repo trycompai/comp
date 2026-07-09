@@ -51,8 +51,10 @@ export class TaskItemMentionNotifierService {
         return;
       }
 
-      // Get mentioned users: exclude platform admins unless they are an owner of
-      // this org (or the org is internal, where platform admins are real members)
+      // Get mentioned users: exclude platform admins unless the org is internal
+      // (where platform admins are real members). `orgParticipantMemberWhere`
+      // returns an AND-wrapped fragment so it intersects with the mentioned-user
+      // filter above rather than overwriting it.
       const participantWhere = await orgParticipantMemberWhere(organizationId);
       const mentionedMembers = await db.member.findMany({
         where: {

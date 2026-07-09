@@ -37,7 +37,6 @@ export const policySchedule = schedules.task({
                 deactivated: false,
               },
               select: {
-                role: true,
                 user: {
                   select: {
                     id: true,
@@ -128,7 +127,6 @@ export const policySchedule = schedules.task({
       >();
       const addRecipients = (
         members: Array<{
-          role: string;
           user: {
             id: string;
             email: string;
@@ -138,17 +136,13 @@ export const policySchedule = schedules.task({
         }>,
         policy: (typeof overduePolicies)[number],
       ) => {
-        // Exclude platform admins (Comp AI staff) unless they are an org owner
-        // or the org is internal — same rule as isOrgParticipant elsewhere.
+        // Exclude platform admins (Comp AI staff) unless the org is internal —
+        // the single participation rule (no per-member owner carve-out).
         const orgIsInternal = policy.organization?.isInternal ?? false;
         for (const entry of members) {
           const user = entry.user;
           if (!user?.email || !user.id) continue;
-          const isOwner = entry.role
-            ?.split(',')
-            .map((r) => r.trim())
-            .includes('owner');
-          if (!isOrgParticipant(user.role, { orgIsInternal }) && !isOwner) {
+          if (!isOrgParticipant(user.role, { orgIsInternal })) {
             continue;
           }
           const key = `${user.id}-${policy.id}`;
