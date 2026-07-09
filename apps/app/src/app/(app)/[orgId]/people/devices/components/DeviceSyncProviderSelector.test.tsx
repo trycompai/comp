@@ -115,3 +115,93 @@ describe('DeviceSyncProviderSelector — RBAC gating', () => {
     expect(container).toBeEmptyDOMElement();
   });
 });
+
+describe('DeviceSyncProviderSelector — errored connection hint', () => {
+  beforeEach(() => {
+    mockHasPermission.mockImplementation(
+      (resource: string, action: string) =>
+        resource === 'integration' && action === 'update',
+    );
+  });
+
+  it('shows a reconnect hint when the only connection is in error state', () => {
+    mockUseDeviceSync.mockReturnValue({
+      selectedProvider: null,
+      isSyncing: false,
+      isLoading: false,
+      availableProviders: [
+        {
+          ...provider,
+          slug: 'intune',
+          name: 'Intune',
+          connected: false,
+          connectionStatus: 'error',
+          connectionId: null,
+        },
+      ],
+      syncDevices: vi.fn(),
+      setSyncProvider: vi.fn(),
+      getProviderName: (slug: string) => slug,
+      getProviderLogo: () => '',
+      hasAnyConnection: false,
+    });
+
+    render(<DeviceSyncProviderSelector />);
+
+    expect(
+      screen.getByText(/the Intune connection needs to be reconnected/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: /Go to Integrations/i }),
+    ).toHaveAttribute('href', '/org_1/integrations');
+    // No sync controls without an active connection.
+    expect(
+      screen.queryByRole('button', { name: /Sync now/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('renders nothing when there is no connection at all (no errored one either)', () => {
+    mockUseDeviceSync.mockReturnValue({
+      selectedProvider: null,
+      isSyncing: false,
+      isLoading: false,
+      availableProviders: [
+        {
+          ...provider,
+          connected: false,
+          connectionStatus: null,
+          connectionId: null,
+        },
+      ],
+      syncDevices: vi.fn(),
+      setSyncProvider: vi.fn(),
+      getProviderName: (slug: string) => slug,
+      getProviderLogo: () => '',
+      hasAnyConnection: false,
+    });
+
+    const { container } = render(<DeviceSyncProviderSelector />);
+
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it('renders nothing when the API omits connectionStatus (older API response)', () => {
+    mockUseDeviceSync.mockReturnValue({
+      selectedProvider: null,
+      isSyncing: false,
+      isLoading: false,
+      availableProviders: [
+        { ...provider, connected: false, connectionId: null },
+      ],
+      syncDevices: vi.fn(),
+      setSyncProvider: vi.fn(),
+      getProviderName: (slug: string) => slug,
+      getProviderLogo: () => '',
+      hasAnyConnection: false,
+    });
+
+    const { container } = render(<DeviceSyncProviderSelector />);
+
+    expect(container).toBeEmptyDOMElement();
+  });
+});

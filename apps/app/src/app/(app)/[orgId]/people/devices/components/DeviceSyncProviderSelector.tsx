@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { Button, Skeleton } from '@trycompai/design-system';
 import { Renew } from '@trycompai/design-system/icons';
@@ -34,7 +35,30 @@ export function DeviceSyncProviderSelector() {
   }
 
   if (!hasAnyConnection) {
-    return null;
+    // No active connection — but if one exists in an error state (e.g. expired
+    // OAuth), say so instead of hiding device sync entirely, so the user knows
+    // a reconnect brings it back.
+    const erroredProviders = availableProviders.filter(
+      (p) => p.connectionStatus === 'error',
+    );
+    if (erroredProviders.length === 0) {
+      return null;
+    }
+    const names = erroredProviders.map((p) => p.name).join(', ');
+    return (
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-card px-4 py-3">
+        <div className="text-sm text-muted-foreground">
+          Device sync is unavailable — the {names} connection
+          {erroredProviders.length > 1 ? 's need' : ' needs'} to be reconnected.
+        </div>
+        <Link
+          href={`/${orgId}/integrations`}
+          className="text-sm font-medium underline underline-offset-4"
+        >
+          Go to Integrations
+        </Link>
+      </div>
+    );
   }
 
   const connectedProviders = availableProviders.filter((p) => p.connected);

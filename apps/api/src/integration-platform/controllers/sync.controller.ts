@@ -1792,11 +1792,30 @@ export class SyncController {
             nextSyncAt: true,
           },
         });
+        // No active connection: surface a broken (errored) one so the UI can
+        // prompt a reconnect instead of silently hiding sync for the provider.
+        // Deliberately ignores 'disconnected' — the user chose to disconnect.
+        const erroredConnection = connection
+          ? null
+          : await db.integrationConnection.findFirst({
+              where: {
+                organizationId,
+                status: 'error',
+                provider: { slug: m.id },
+              },
+              select: { id: true },
+              orderBy: { updatedAt: 'desc' },
+            });
         return {
           slug: m.id,
           name: m.name,
           logoUrl: m.logoUrl,
           connected: !!connection,
+          connectionStatus: connection
+            ? ('active' as const)
+            : erroredConnection
+              ? ('error' as const)
+              : null,
           connectionId: connection?.id ?? null,
           lastSyncAt: connection?.lastSyncAt?.toISOString() ?? null,
           nextSyncAt: connection?.nextSyncAt?.toISOString() ?? null,
