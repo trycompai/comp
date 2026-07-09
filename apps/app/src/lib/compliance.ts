@@ -2,7 +2,8 @@ import 'server-only';
 
 import { db } from '@db/server';
 import { BUILT_IN_ROLE_OBLIGATIONS } from '@trycompai/auth';
-import { getOrgIsInternal, isOrgParticipant } from './org-participation';
+import { getOrgIsInternal } from './org-participation';
+import { isOrgParticipant } from './org-participation-rule';
 import {
   type UserPermissions,
   canAccessApp,

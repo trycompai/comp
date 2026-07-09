@@ -1,4 +1,5 @@
 import { db } from '@db';
+import { orgParticipantMemberWhere } from '../../utils/org-participation';
 import { logger, tags, task } from '@trigger.dev/sdk';
 import { BrowserbaseService } from '../../browserbase/browserbase.service';
 import { triggerEmail } from '../../email/trigger-email';
@@ -40,14 +41,14 @@ async function sendTaskStatusChangeEmails(params: {
 
   try {
     // Get organization, task assignee, and org owners
-    // Internal (platform-operated) orgs treat platform admins as real members,
-    // so they should also receive task notifications. Resolve before building
-    // the member query since the where-clause depends on it.
+    // Use the shared participation rule so this path stays aligned with the
+    // other task notifiers: internal (platform-operated) orgs include platform
+    // admins; other orgs exclude them (except platform admins who are owners).
     const organization = await db.organization.findUnique({
       where: { id: organizationId },
-      select: { name: true, isInternal: true },
+      select: { name: true },
     });
-    const orgIsInternal = organization?.isInternal ?? false;
+    const participantWhere = await orgParticipantMemberWhere(organizationId);
     const [task, allMembers] = await Promise.all([
       db.task.findUnique({
         where: { id: taskId },
@@ -69,7 +70,7 @@ async function sendTaskStatusChangeEmails(params: {
         where: {
           organizationId,
           deactivated: false,
-          ...(orgIsInternal ? {} : { user: { role: { not: 'admin' } } }),
+          ...participantWhere,
         },
         select: {
           role: true,
