@@ -33,13 +33,22 @@ jest.mock('@trycompai/integration-platform', () => ({
   getManifest: jest.fn(),
   getActiveManifests: jest.fn(),
   runAllChecks: jest.fn(),
+  // Default: not a code manifest, so isDynamic falls through to the
+  // dynamicIntegration lookup (the pre-guard behavior these tests rely on).
+  // A code-manifest case is exercised explicitly below.
+  isCodeManifest: jest.fn(() => false),
 }));
 
 import { db } from '@db';
-import { getManifest, runAllChecks } from '@trycompai/integration-platform';
+import {
+  getManifest,
+  isCodeManifest,
+  runAllChecks,
+} from '@trycompai/integration-platform';
 
 const mockedGetManifest = getManifest as jest.Mock;
 const mockedRunAllChecks = runAllChecks as jest.Mock;
+const mockedIsCodeManifest = isCodeManifest as jest.Mock;
 // Grab through the module reference to avoid the `unbound-method` lint rule.
 const mockedTask = db.task as unknown as {
   findUnique: jest.Mock;
@@ -265,6 +274,12 @@ describe('TaskIntegrationsController', () => {
       slug: 'aws',
     });
     mockedGetManifest.mockReturnValue(MANIFEST);
+    // Default: treat the provider as NOT a code manifest, so isDynamic falls
+    // through to the dynamicIntegration lookup (pre-guard behavior). The
+    // code-manifest case is exercised explicitly in its own test. Set here so a
+    // test that opts into `true` never leaks into the next (clearAllMocks keeps
+    // implementations).
+    mockedIsCodeManifest.mockReturnValue(false);
     // Default: no active exceptions (existing tests behave as before).
     mockFindingExceptionFindMany.mockResolvedValue([]);
     mockCheckRunRepository.create.mockImplementation(() =>
@@ -503,6 +518,49 @@ describe('TaskIntegrationsController', () => {
       expect(result.taskStatus).toBe('failed');
       // A genuine compliance finding is a REAL failure — the run row stays
       // 'failed' (visible to the customer), never held.
+      expect(mockCheckRunRepository.complete).toHaveBeenCalledWith(
+        'icr_x',
+        expect.objectContaining({ status: 'failed' }),
+      );
+    });
+
+    it('treats a CODE-BASED provider as static even when a dynamic row shares its slug — shows the real fail, never held (CS-715)', async () => {
+      // A code manifest wins over a dynamic integration of the same slug, so the
+      // check is static. Pre-fix, the mere existence of the dynamic row forced the
+      // run to be HELD as 'inconclusive' (hidden from the customer). It must be
+      // classified static: a real finding shows 'failed' and fails the task.
+      mockedIsCodeManifest.mockReturnValue(true);
+      mockProviderRepository.findById.mockResolvedValue({
+        id: 'prov_gh',
+        slug: 'github',
+      });
+      // An active dynamic 'github' row exists — pre-fix this alone forced the hold.
+      mockDynamicIntegrationFindFirst.mockResolvedValue({ id: 'din_github' });
+      mockConnectionRepository.findById.mockResolvedValue({
+        id: 'conn_1',
+        organizationId: 'org_1',
+        providerId: 'prov_gh',
+        status: 'active',
+      });
+      mockConnectionRepository.findActiveByProviderAndOrg.mockResolvedValue([
+        {
+          id: 'conn_1',
+          organizationId: 'org_1',
+          providerId: 'prov_gh',
+          metadata: {},
+          variables: {},
+        },
+      ]);
+      mockedRunAllChecks.mockResolvedValue(failingResult());
+
+      const result = await controller.runCheckForTask('task_1', 'org_1', {
+        connectionId: 'conn_1',
+        checkId: 'aws-s3-encryption',
+      });
+
+      // Not held: the finding fails the task and the run row is 'failed' (shown),
+      // even though an active dynamic row exists for the same slug.
+      expect(result.taskStatus).toBe('failed');
       expect(mockCheckRunRepository.complete).toHaveBeenCalledWith(
         'icr_x',
         expect.objectContaining({ status: 'failed' }),

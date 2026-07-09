@@ -1,3 +1,42 @@
+## [3.99.3](https://github.com/trycompai/comp/compare/v3.99.2...v3.99.3) (2026-07-08)
+
+
+### Bug Fixes
+
+* **integration-platform:** classify code-based checks statically on manual run (CS-715) ([#3376](https://github.com/trycompai/comp/issues/3376)) ([200b191](https://github.com/trycompai/comp/commit/200b191aed0148e780dd868f144fb30b553014f1))
+
+## [3.99.2](https://github.com/trycompai/comp/compare/v3.99.1...v3.99.2) (2026-07-08)
+
+
+### Bug Fixes
+
+* **integrations:** create install-handoff state before deleting original ([04d8206](https://github.com/trycompai/comp/commit/04d82068a70784a6e35cc369d0cc9ca2399bcf82))
+* **integrations:** redirect GitHub App users to install when not installed ([32df09a](https://github.com/trycompai/comp/commit/32df09a4866f3c30d3b9e1f94d3b3ab3464d408c))
+
+## [3.99.1](https://github.com/trycompai/comp/compare/v3.99.0...v3.99.1) (2026-07-07)
+
+
+### Bug Fixes
+
+* **integrations:** connect GitHub App via OAuth authorize URL, not install URL (CS-710) ([#3371](https://github.com/trycompai/comp/issues/3371)) ([51ab7b1](https://github.com/trycompai/comp/commit/51ab7b11395ce9bf824ab5a67b468e52101e3e00))
+
+# [3.99.0](https://github.com/trycompai/comp/compare/v3.98.1...v3.99.0) (2026-07-07)
+
+
+### Bug Fixes
+
+* **integrations:** don't persist unverified GitHub installation_id ([#3370](https://github.com/trycompai/comp/issues/3370)) ([9c6f6fa](https://github.com/trycompai/comp/commit/9c6f6faf19aa2dcac750e02f48aeefb0c502d471))
+* **isms:** lock before writing control links so edits serialize with approve ([#3369](https://github.com/trycompai/comp/issues/3369)) ([a21f866](https://github.com/trycompai/comp/commit/a21f8667fcbc704c4d3dd2af0380d23dceb9761d))
+* **isms:** production-deploy review follow-ups (CS-701) ([#3365](https://github.com/trycompai/comp/issues/3365)) ([d756d4a](https://github.com/trycompai/comp/commit/d756d4a444d21447ae2bcb60b647cdacfa36a173)), closes [#3364](https://github.com/trycompai/comp/issues/3364)
+* **isms:** serialize approve against ALL register/content edits (central lock) ([#3367](https://github.com/trycompai/comp/issues/3367)) ([5c88a3d](https://github.com/trycompai/comp/commit/5c88a3dc84ec45f2ca1f3970ac3fbde61b775af7))
+* **isms:** serialize approve/decline to prevent concurrent double-publish (CS-701) ([#3366](https://github.com/trycompai/comp/issues/3366)) ([b158bc9](https://github.com/trycompai/comp/commit/b158bc9f8678c9f5fe4d52f5c1c1406ec0de95f6)), closes [#3364](https://github.com/trycompai/comp/issues/3364)
+
+
+### Features
+
+* **integrations:** add read-only GitHub App integration (CS-710) ([#3363](https://github.com/trycompai/comp/issues/3363)) ([a5a9243](https://github.com/trycompai/comp/commit/a5a9243ab01453f45d81480ab52b9a74744b6888))
+* **isms:** document versioning and history (CS-701) ([#3361](https://github.com/trycompai/comp/issues/3361)) ([d95dc2e](https://github.com/trycompai/comp/commit/d95dc2e34a96e577a99886893a4537064b02a445))
+
 ## [3.98.1](https://github.com/trycompai/comp/compare/v3.98.0...v3.98.1) (2026-07-06)
 
 

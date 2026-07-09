@@ -70,6 +70,7 @@ export {
   getIntegrationIds,
   getManifest,
   getOAuthConfig,
+  isCodeManifest,
   registry,
   requiresOAuth,
 } from './registry';

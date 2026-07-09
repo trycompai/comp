@@ -67,6 +67,10 @@ vi.mock('./IsmsControlMappings', () => ({
   IsmsControlMappings: () => <div data-testid="isms-control-mappings" />,
 }));
 
+vi.mock('./IsmsVersionHistory', () => ({
+  IsmsVersionHistory: () => <div data-testid="isms-version-history" />,
+}));
+
 import { ObjectivesClient } from './ObjectivesClient';
 
 const OBJECTIVES: IsmsObjective[] = [
@@ -112,7 +116,9 @@ function makeDocument(overrides: Partial<IsmsDocument> = {}): IsmsDocument {
     interestedPartyRequirements: [],
     objectives: OBJECTIVES,
     controlLinks: [],
-    versions: [],
+    draftNarrative: null,
+    currentVersionId: null,
+    currentVersion: null,
     ...overrides,
   };
 }
