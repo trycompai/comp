@@ -1792,11 +1792,32 @@ export class SyncController {
             nextSyncAt: true,
           },
         });
+        // No active connection: surface a broken (errored) one so the UI can
+        // prompt a reconnect instead of silently hiding sync for the provider.
+        // Multiple rows can exist per (org, provider) — reconnects create new
+        // rows — so the LATEST row decides: a newer 'disconnected' row means
+        // the user chose to disconnect, and a stale older 'error' row must
+        // not resurface a reconnect hint.
+        const latestConnection = connection
+          ? null
+          : await db.integrationConnection.findFirst({
+              where: {
+                organizationId,
+                provider: { slug: m.id },
+              },
+              select: { status: true },
+              orderBy: { updatedAt: 'desc' },
+            });
         return {
           slug: m.id,
           name: m.name,
           logoUrl: m.logoUrl,
           connected: !!connection,
+          connectionStatus: connection
+            ? ('active' as const)
+            : latestConnection?.status === 'error'
+              ? ('error' as const)
+              : null,
           connectionId: connection?.id ?? null,
           lastSyncAt: connection?.lastSyncAt?.toISOString() ?? null,
           nextSyncAt: connection?.nextSyncAt?.toISOString() ?? null,
