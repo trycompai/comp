@@ -1,4 +1,5 @@
 import { useOrgIsInternal } from '@/components/org-internal-context';
+import { isOrgParticipant } from '@/lib/org-participation-rule';
 import { authClient } from '@/utils/auth-client';
 import { Member, User } from '@db';
 import { Avatar, AvatarFallback, AvatarImage } from '@trycompai/ui/avatar';
@@ -24,9 +25,10 @@ export const SelectAssignee = ({
   const { data: activeMember } = authClient.useActiveMember();
   const orgIsInternal = useOrgIsInternal();
   // Exclude platform admins from assignee selection — except in internal
-  // (platform-operated) orgs, where they are real members.
+  // (platform-operated) orgs, where they are real members. Uses the shared
+  // participation rule so the UI stays in sync with the backend.
   const assignees = rawAssignees
-    .filter((a) => orgIsInternal || a.user.role !== 'admin')
+    .filter((a) => isOrgParticipant(a.user.role, { orgIsInternal }))
     .sort((a, b) =>
       (a.user.name || a.user.email || '').localeCompare(b.user.name || b.user.email || ''),
     );

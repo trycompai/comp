@@ -60,12 +60,17 @@ export const generateVendorMitigation = task({
           select: { isInternal: true },
         }),
       ]);
+      // Only assign when the author is a real member of THIS org and is a
+      // participant (fail closed if the lookup missed — never write an unknown
+      // or cross-org member id).
       assigneeUpdate = {
-        assigneeId: isOrgParticipant(author?.user.role, {
-          orgIsInternal: org?.isInternal ?? false,
-        })
-          ? authorId
-          : null,
+        assigneeId:
+          author &&
+          isOrgParticipant(author.user.role, {
+            orgIsInternal: org?.isInternal ?? false,
+          })
+            ? authorId
+            : null,
       };
     }
 

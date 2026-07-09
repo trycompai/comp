@@ -1,3 +1,7 @@
+import {
+  PLATFORM_ADMIN_ROLE as AUTH_PLATFORM_ADMIN_ROLE,
+  isOrgParticipant as authIsOrgParticipant,
+} from '@trycompai/auth/participation';
 import { describe, expect, it } from 'vitest';
 import { isOrgParticipant, PLATFORM_ADMIN_ROLE } from './org-participation-rule';
 
@@ -24,5 +28,31 @@ describe('isOrgParticipant', () => {
     expect(isOrgParticipant('admin', { orgIsInternal: true })).toBe(true);
     expect(isOrgParticipant('user', { orgIsInternal: true })).toBe(true);
     expect(isOrgParticipant(null, { orgIsInternal: true })).toBe(true);
+  });
+});
+
+// Drift guard: this app-local rule is a deliberate dependency-free mirror of
+// `@trycompai/auth/participation` (the app can't import the auth index from
+// Trigger.dev-bundled files). Fail CI if the two ever diverge.
+describe('org-participation rule stays in sync with @trycompai/auth', () => {
+  const roles: Array<string | null | undefined> = [
+    'admin',
+    'owner',
+    'user',
+    'auditor',
+    '',
+    null,
+    undefined,
+  ];
+
+  it('matches the canonical predicate for every role × internal flag', () => {
+    expect(PLATFORM_ADMIN_ROLE).toBe(AUTH_PLATFORM_ADMIN_ROLE);
+    for (const role of roles) {
+      for (const orgIsInternal of [true, false]) {
+        expect(isOrgParticipant(role, { orgIsInternal })).toBe(
+          authIsOrgParticipant(role, { orgIsInternal }),
+        );
+      }
+    }
   });
 });

@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { db } from '@db/server';
 
 /**
