@@ -60,13 +60,10 @@ describe('org-participation', () => {
       await expect(orgParticipantMemberWhere('org_1')).resolves.toEqual({});
     });
 
-    it('excludes platform admins but keeps owner-admins for customer orgs', async () => {
+    it('excludes only platform admins (incl. null roles) for customer orgs', async () => {
       orgFindUnique.mockResolvedValue({ isInternal: false });
       await expect(orgParticipantMemberWhere('org_1')).resolves.toEqual({
-        OR: [
-          { user: { role: { not: 'admin' } } },
-          { role: { contains: 'owner' } },
-        ],
+        user: { OR: [{ role: { not: 'admin' } }, { role: null }] },
       });
     });
   });

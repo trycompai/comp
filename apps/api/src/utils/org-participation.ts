@@ -35,20 +35,19 @@ export async function isMemberOrgParticipant(
 }
 
 /**
- * A Prisma `Member` where-fragment that keeps only org participants — i.e.
- * everyone except platform admins, but still including platform admins who are
- * org owners (they opted into this org). Spread it into a member query's
- * `where`. Returns an empty fragment for internal orgs, so platform admins are
- * included there. Use for recipient/participant lists (notifications, devices).
+ * A Prisma `Member` where-fragment that keeps only org participants — the SQL
+ * translation of {@link isOrgParticipant}. Spread it into a member query's
+ * `where`. Returns an empty fragment for internal orgs (everyone participates).
+ * For other orgs it excludes only platform admins; `role: { not }` skips NULL in
+ * SQL, so null roles are included explicitly to match the predicate (a null
+ * global role is a normal member, not a platform admin). Use for
+ * recipient/participant lists (notifications, mentions, devices).
  */
 export async function orgParticipantMemberWhere(
   organizationId: string,
 ): Promise<Prisma.MemberWhereInput> {
   if (await getOrgIsInternal(organizationId)) return {};
   return {
-    OR: [
-      { user: { role: { not: PLATFORM_ADMIN_ROLE } } },
-      { role: { contains: 'owner' } },
-    ],
+    user: { OR: [{ role: { not: PLATFORM_ADMIN_ROLE } }, { role: null }] },
   };
 }

@@ -52,7 +52,7 @@ export const generateVendorMitigation = task({
     if (authorId) {
       const [author, org] = await Promise.all([
         db.member.findFirst({
-          where: { id: authorId, organizationId },
+          where: { id: authorId, organizationId, deactivated: false },
           include: { user: { select: { role: true } } },
         }),
         db.organization.findUnique({
