@@ -19,38 +19,46 @@ import { ArrowLeft, Information } from '@trycompai/design-system/icons';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
 import type { DeviceWithChecks } from '../types';
 import {
+  CANONICAL_DEVICE_CHECKS,
   CHECK_FIELDS,
   PLATFORM_LABELS,
+  computeSourceComplianceVerdict,
   isDeviceOnline,
   sourceChecks,
-  sourceReportedTooltipCopy,
   sourceVerdict,
   staleLabel,
   staleTooltipCopy,
+  unverifiedTooltipCopy,
 } from '../lib/device-source';
 import { NotTrackedBadge } from './DeviceListCells';
 import { RevokeAgentAccessDialog } from './RevokeAgentAccessDialog';
 
 function DeviceComplianceBadge({ device }: { device: DeviceWithChecks }) {
   if (device.source === 'integration') {
-    // Show the SOURCE's own verdict when it reports one (attributed via the
-    // same tooltip pattern as the stale/not-tracked badges, so the provenance
-    // is reachable by keyboard/touch); otherwise untracked, as before.
-    const verdict = sourceVerdict(device);
-    if (verdict === undefined) {
+    // CompAI's verdict, computed from the source-reported CANONICAL checks —
+    // the same standard as the Comp agent. The vendor's own overall verdict is
+    // informational only (shown in the info grid below).
+    const verdict = computeSourceComplianceVerdict(device);
+    if (verdict === null || (verdict.kind === 'unverified' && verdict.reported === 0)) {
       return <NotTrackedBadge device={device} />;
+    }
+    if (verdict.kind === 'non_compliant') {
+      return <Badge variant="destructive">Non-Compliant</Badge>;
+    }
+    if (verdict.kind === 'compliant') {
+      return <Badge variant="default">Compliant</Badge>;
     }
     return (
       <div className="flex items-center gap-1">
-        <Badge variant={verdict ? 'default' : 'destructive'}>
-          {verdict ? 'Compliant' : 'Non-Compliant'}
+        <Badge variant="secondary">
+          Unverified ({verdict.reported}/{CANONICAL_DEVICE_CHECKS.length})
         </Badge>
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
               <button
                 type="button"
-                aria-label="Where does this compliance status come from?"
+                aria-label="Why is compliance unverified?"
                 className="inline-flex items-center text-muted-foreground hover:text-foreground"
                 onClick={(e) => e.stopPropagation()}
               >
@@ -58,7 +66,7 @@ function DeviceComplianceBadge({ device }: { device: DeviceWithChecks }) {
               </button>
             </TooltipTrigger>
             <TooltipContent className="max-w-xs text-xs">
-              {sourceReportedTooltipCopy(device)}
+              {unverifiedTooltipCopy(device, verdict)}
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -214,6 +222,20 @@ export const DeviceDetails = ({ device, onClose }: DeviceDetailsProps) => {
                 {new Date(device.installedAt).toLocaleDateString()}
               </Text>
             </div>
+            {/* The vendor's own overall verdict — informational only. It
+                reflects the customer's MDM policy configuration; CompAI's
+                Compliant badge above is computed from the canonical checks. */}
+            {device.source === 'integration' && sourceVerdict(device) !== undefined && (
+              <div>
+                <Text size="sm" variant="muted">
+                  {device.integrationProvider?.name ?? 'Provider'} verdict
+                </Text>
+                <Text size="sm" weight="medium">
+                  {sourceVerdict(device) ? 'Compliant' : 'Non-Compliant'} (per
+                  its own policies)
+                </Text>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -228,42 +250,83 @@ export const DeviceDetails = ({ device, onClose }: DeviceDetailsProps) => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {/* Imported device with SOURCE-reported checks: show those (provider
-              vocabulary) instead of CompAI's fixed agent checks. */}
-          {device.source === 'integration' && sourceChecks(device).length > 0 &&
-            sourceChecks(device).map((check) => (
-              <TableRow key={check.id}>
-                <TableCell>
-                  <Text size="sm" weight="medium">
-                    {check.label}
-                  </Text>
-                </TableCell>
-                <TableCell>
-                  <Text size="sm" variant="muted">
-                    Reported by {device.integrationProvider?.name ?? 'the integration'}
-                  </Text>
-                </TableCell>
-                <TableCell>
-                  <Badge variant={check.passed ? 'default' : 'destructive'}>
-                    {check.passed ? 'Pass' : 'Fail'}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <Text size="sm" variant="muted">
-                    —
-                  </Text>
-                </TableCell>
-              </TableRow>
-            ))}
-          {!(device.source === 'integration' && sourceChecks(device).length > 0) &&
+          {/* Imported device: always render CompAI's FOUR canonical checks —
+              filled from source data where reported, honest "Not reported"
+              otherwise — then any extra provider-specific checks below. */}
+          {device.source === 'integration' &&
+            (() => {
+              const provider = device.integrationProvider?.name ?? 'the integration';
+              const bySourceId = new Map(sourceChecks(device).map((c) => [c.id, c]));
+              const canonicalIds = new Set<string>(
+                CANONICAL_DEVICE_CHECKS.map((c) => c.id),
+              );
+              const extras = sourceChecks(device).filter((c) => !canonicalIds.has(c.id));
+              return [
+                ...CANONICAL_DEVICE_CHECKS.map(({ id, label }) => {
+                  const reported = bySourceId.get(id);
+                  return (
+                    <TableRow key={id}>
+                      <TableCell>
+                        <Text size="sm" weight="medium">
+                          {label}
+                        </Text>
+                      </TableCell>
+                      <TableCell>
+                        <Text size="sm" variant="muted">
+                          {reported
+                            ? `Reported by ${provider}`
+                            : `Not reported by ${provider} — install the CompAI agent to verify`}
+                        </Text>
+                      </TableCell>
+                      <TableCell>
+                        {reported ? (
+                          <Badge variant={reported.passed ? 'default' : 'destructive'}>
+                            {reported.passed ? 'Pass' : 'Fail'}
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary">Unverified</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Text size="sm" variant="muted">
+                          —
+                        </Text>
+                      </TableCell>
+                    </TableRow>
+                  );
+                }),
+                ...extras.map((check) => (
+                  <TableRow key={check.id}>
+                    <TableCell>
+                      <Text size="sm" weight="medium">
+                        {check.label}
+                      </Text>
+                    </TableCell>
+                    <TableCell>
+                      <Text size="sm" variant="muted">
+                        Reported by {provider} (informational — not part of the
+                        compliance verdict)
+                      </Text>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={check.passed ? 'default' : 'destructive'}>
+                        {check.passed ? 'Pass' : 'Fail'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Text size="sm" variant="muted">
+                        —
+                      </Text>
+                    </TableCell>
+                  </TableRow>
+                )),
+              ];
+            })()}
+          {device.source !== 'integration' &&
           CHECK_FIELDS.map(({ key, dbKey, label }) => {
-            const isIntegration = device.source === 'integration';
-            const isFleetUnsupported =
+            const isUntracked =
               device.source === 'fleet' && key !== 'diskEncryptionEnabled';
-            const isUntracked = isIntegration || isFleetUnsupported;
-            const untrackedCopy = isIntegration
-              ? 'Not collected for imported devices'
-              : 'Not tracked by Fleet';
+            const untrackedCopy = 'Not tracked by Fleet';
             const isStale = device.complianceStatus === 'stale';
             const passed = device[key];
             const details = device.checkDetails?.[dbKey];

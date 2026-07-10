@@ -24,8 +24,10 @@ import {
 import Link from 'next/link';
 import type { DeviceWithChecks } from '../types';
 import {
+  CANONICAL_DEVICE_CHECKS,
   CHECK_FIELDS,
   PLATFORM_LABELS,
+  computeSourceComplianceVerdict,
   formatTimeAgo,
   isComplianceTracked,
   isDeviceOnline,
@@ -33,9 +35,9 @@ import {
   sourceChecks,
   sourceLabel,
   sourceReportedTooltipCopy,
-  sourceVerdict,
   staleLabel,
   staleTooltipCopy,
+  unverifiedTooltipCopy,
 } from '../lib/device-source';
 
 function InfoTooltip({ label, copy }: { label: string; copy: string }) {
@@ -111,23 +113,30 @@ export function NotTrackedBadge({ device }: { device: DeviceWithChecks }) {
 }
 
 export function CompliantBadge({ device }: { device: DeviceWithChecks }) {
-  // Integration-imported devices: CompAI never ran security checks on them, so
-  // a red "No" from OUR checks would be a false negative. But when the SOURCE
-  // reports its own verdict (e.g. Intune complianceState), show that — clearly
-  // attributed to the provider. No verdict → untracked, as before.
+  // Integration-imported devices are judged by CompAI's OWN standard — the
+  // same four canonical checks the Comp agent measures — computed from the
+  // source-reported check data. The vendor's own verdict (e.g. Intune
+  // complianceState) is informational-only in the details panel: it reflects
+  // the customer's MDM policy configuration, not the framework standard.
   if (!isComplianceTracked(device)) {
-    const verdict = sourceVerdict(device);
-    if (verdict === undefined) {
+    const verdict = computeSourceComplianceVerdict(device);
+    if (verdict === null || (verdict.kind === 'unverified' && verdict.reported === 0)) {
       return <NotTrackedBadge device={device} />;
+    }
+    if (verdict.kind === 'non_compliant') {
+      return <Badge variant="destructive">No</Badge>;
+    }
+    if (verdict.kind === 'compliant') {
+      return <Badge variant="default">Yes</Badge>;
     }
     return (
       <div className="flex items-center gap-1">
-        <Badge variant={verdict ? 'default' : 'destructive'}>
-          {verdict ? 'Yes' : 'No'}
+        <Badge variant="secondary">
+          Unverified ({verdict.reported}/{CANONICAL_DEVICE_CHECKS.length})
         </Badge>
         <InfoTooltip
-          label="Where does this compliance status come from?"
-          copy={sourceReportedTooltipCopy(device)}
+          label="Why is compliance unverified?"
+          copy={unverifiedTooltipCopy(device, verdict)}
         />
       </div>
     );

@@ -10,6 +10,7 @@ import {
 import * as React from 'react';
 import { Cell, Label, Pie, PieChart } from 'recharts';
 import type { DeviceWithChecks, Host } from '../types';
+import { computeSourceComplianceVerdict } from '../lib/device-source';
 
 interface DeviceComplianceChartProps {
   fleetDevices: Host[];
@@ -23,14 +24,15 @@ interface DeviceComplianceChartProps {
 const CHART_COLORS = {
   compliant: 'var(--primary)', // brand green
   nonCompliant: 'var(--destructive)', // red
-  notTracked: 'var(--muted-foreground)', // gray — no compliance data available
+  unverified: 'var(--muted-foreground)', // gray — canonical checks not (fully) reported
 };
 
 export function DeviceComplianceChart({ fleetDevices, agentDevices }: DeviceComplianceChartProps) {
   // ALL devices count — the chart total must match the table so the page never
-  // looks self-contradictory. Imported devices use the SOURCE's verdict when
-  // it reports one; imported devices with no verdict land in a gray
-  // "Not tracked" segment rather than being fabricated into a verdict.
+  // looks self-contradictory. Imported devices are judged by CompAI's OWN
+  // standard (the four canonical checks, computed from source-reported data);
+  // partially/un-reported devices land in a gray "Unverified" segment rather
+  // than being fabricated into a verdict.
   const devices = [...(agentDevices ?? []), ...(fleetDevices ?? [])];
 
   const { pieDisplayData, legendDisplayData } = React.useMemo(() => {
@@ -39,15 +41,16 @@ export function DeviceComplianceChart({ fleetDevices, agentDevices }: DeviceComp
     }
     let compliantCount = 0;
     let nonCompliantCount = 0;
-    let notTrackedCount = 0;
+    let unverifiedCount = 0;
 
     for (const device of agentDevices ?? []) {
       if (device.source === 'integration') {
-        // Source-reported verdict (e.g. Intune complianceState), if any.
-        const verdict = device.sourceCompliance?.isCompliant;
-        if (verdict === true) compliantCount++;
-        else if (verdict === false) nonCompliantCount++;
-        else notTrackedCount++;
+        // CompAI's verdict computed from the canonical source-reported checks
+        // (vendor's own verdict is informational-only and never counted).
+        const verdict = computeSourceComplianceVerdict(device);
+        if (verdict?.kind === 'compliant') compliantCount++;
+        else if (verdict?.kind === 'non_compliant') nonCompliantCount++;
+        else unverifiedCount++;
         continue;
       }
       // Device-agent devices. Stale devices (no check-in for >= 7 days)
@@ -81,17 +84,17 @@ export function DeviceComplianceChart({ fleetDevices, agentDevices }: DeviceComp
         fill: CHART_COLORS.nonCompliant,
       },
       {
-        name: 'Not Tracked',
-        value: notTrackedCount,
-        fill: CHART_COLORS.notTracked,
+        name: 'Unverified',
+        value: unverifiedCount,
+        fill: CHART_COLORS.unverified,
       },
     ];
     return {
       pieDisplayData: allItems.filter((item) => item.value > 0),
-      // "Not Tracked" only appears in the legend when it exists — orgs with no
-      // verdict-less imported devices keep the familiar two-entry legend.
+      // "Unverified" only appears in the legend when it exists — orgs with no
+      // partially-verified imported devices keep the familiar two-entry legend.
       legendDisplayData: allItems.filter(
-        (item) => item.name !== 'Not Tracked' || item.value > 0,
+        (item) => item.name !== 'Unverified' || item.value > 0,
       ),
     };
   }, [agentDevices, fleetDevices]);

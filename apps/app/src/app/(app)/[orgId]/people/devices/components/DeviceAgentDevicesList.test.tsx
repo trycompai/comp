@@ -248,16 +248,19 @@ describe('DeviceAgentDevicesList — integration-imported devices', () => {
     expect(screen.getByTitle('Offline')).toBeInTheDocument();
   });
 
-  it('shows the SOURCE-reported verdict and named checks when the provider reports them', () => {
+  it('shows Yes only when all four canonical checks pass (extras are display-only)', () => {
     render(
       <DeviceAgentDevicesList
         devices={[
           makeIntegrationDevice({
             integrationProvider: { slug: 'intune', name: 'Microsoft Intune' },
             sourceCompliance: {
-              isCompliant: true,
               checks: [
                 { id: 'disk_encryption', label: 'Disk Encryption', passed: true },
+                { id: 'antivirus', label: 'Antivirus', passed: true },
+                { id: 'password_policy', label: 'Password Policy', passed: true },
+                { id: 'screen_lock', label: 'Screen Lock', passed: true },
+                // Non-canonical: shown as a badge but never affects the verdict.
                 { id: 'firewall', label: 'Firewall', passed: false },
               ],
             },
@@ -265,46 +268,75 @@ describe('DeviceAgentDevicesList — integration-imported devices', () => {
         ]}
       />,
     );
-    // Verdict shown instead of "Not tracked", with provider attribution.
     expect(screen.getByText('Yes')).toBeInTheDocument();
-    expect(screen.queryByText('Not tracked')).not.toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: /Where does this compliance status come from\?/i }),
-    ).toBeInTheDocument();
-    // Provider-named check badges, pass and fail.
+    expect(screen.queryByText(/Unverified/)).not.toBeInTheDocument();
+    // Provider-named check badges, incl. the informational extra.
     expect(screen.getByText('Disk Encryption')).toBeInTheDocument();
     expect(screen.getByText('Firewall')).toBeInTheDocument();
   });
 
-  it('shows "No" when the source reports non-compliant', () => {
-    render(
-      <DeviceAgentDevicesList
-        devices={[
-          makeIntegrationDevice({
-            sourceCompliance: { isCompliant: false },
-          }),
-        ]}
-      />,
-    );
-    expect(screen.getByText('No')).toBeInTheDocument();
-    expect(screen.queryByText('Not tracked')).not.toBeInTheDocument();
-  });
-
-  it('keeps "Not tracked" when the source reports checks but no verdict', () => {
+  it('shows "No" when a canonical check fails, even if the vendor claims compliant (showcase bug)', () => {
     render(
       <DeviceAgentDevicesList
         devices={[
           makeIntegrationDevice({
             sourceCompliance: {
+              // Intune with no policies configured calls everything compliant —
+              // CompAI's framework standard (the four checks) must overrule it.
+              isCompliant: true,
+              checks: [
+                { id: 'disk_encryption', label: 'Disk Encryption', passed: false },
+              ],
+            },
+          }),
+        ]}
+      />,
+    );
+    expect(screen.getByText('No')).toBeInTheDocument();
+    expect(screen.queryByText('Yes')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Unverified/)).not.toBeInTheDocument();
+  });
+
+  it('shows "Unverified (n/4)" when only some canonical checks are reported and none fail', () => {
+    render(
+      <DeviceAgentDevicesList
+        devices={[
+          makeIntegrationDevice({
+            sourceCompliance: {
+              checks: [
+                { id: 'disk_encryption', label: 'Disk Encryption', passed: true },
+                { id: 'antivirus', label: 'Antivirus', passed: true },
+              ],
+            },
+          }),
+        ]}
+      />,
+    );
+    expect(screen.getByText('Unverified (2/4)')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Why is compliance unverified\?/i }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Yes')).not.toBeInTheDocument();
+    expect(screen.queryByText('No')).not.toBeInTheDocument();
+  });
+
+  it('keeps "Not tracked" when the source reports no canonical checks at all', () => {
+    render(
+      <DeviceAgentDevicesList
+        devices={[
+          makeIntegrationDevice({
+            sourceCompliance: {
+              // A vendor verdict alone is NOT evidence against our standard.
+              isCompliant: true,
               checks: [{ id: 'os_up_to_date', label: 'OS up to date', passed: true }],
             },
           }),
         ]}
       />,
     );
-    // Checks render, but with no overall verdict the compliance column stays honest.
     expect(screen.getByText('OS up to date')).toBeInTheDocument();
     expect(screen.getByText('Not tracked')).toBeInTheDocument();
+    expect(screen.queryByText('Yes')).not.toBeInTheDocument();
   });
 
   it('renders a source filter only when more than one source is present', () => {
