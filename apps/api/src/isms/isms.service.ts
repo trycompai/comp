@@ -9,6 +9,7 @@ import { SubmitIsmsForApprovalDto } from './dto/submit-isms-for-approval.dto';
 import { deriveControlLinks, resolveDocumentPlans } from './utils/ensure-setup-plan';
 import { collectPlatformData } from './documents/data-source';
 import { runDerivation } from './documents/generate';
+import { seedRolesIfMissing } from './documents/roles';
 import { updateDraftSnapshot } from './utils/draft-snapshot';
 import { EXPORT_DOCUMENT_INCLUDE } from './utils/export-payload';
 import { lockDocument } from './utils/document-lock';
@@ -135,6 +136,21 @@ export class IsmsService {
         controlTemplateIds: controlTemplatesByType.get(doc.type) ?? [],
       });
     }
+
+    // Seed the four governance roles for a newly-created Roles document so they
+    // are visible with default text on first load, without a Generate click.
+    // Idempotent by roleKey, so concurrent provisioning calls can't duplicate.
+    const rolesDoc = created.find(
+      (doc) => doc.type === 'roles_and_responsibilities',
+    );
+    if (rolesDoc) {
+      const memberCount = await db.member.count({
+        where: { organizationId, deactivated: false },
+      });
+      await db.$transaction((tx) =>
+        seedRolesIfMissing({ tx, documentId: rolesDoc.id, memberCount }),
+      );
+    }
   }
 
   async getDocument({
@@ -156,6 +172,10 @@ export class IsmsService {
         interestedParties: { orderBy: { position: 'asc' } },
         interestedPartyRequirements: { orderBy: { position: 'asc' } },
         objectives: { orderBy: { position: 'asc' } },
+        roles: {
+          orderBy: { position: 'asc' },
+          include: { assignments: { orderBy: { position: 'asc' } } },
+        },
         controlLinks: {
           select: {
             id: true,

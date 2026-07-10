@@ -4,6 +4,8 @@ import type { IsmsContextIssueService } from '../isms-context-issue.service';
 import type { IsmsInterestedPartyService } from '../isms-interested-party.service';
 import type { IsmsObjectiveService } from '../isms-objective.service';
 import type { IsmsRequirementService } from '../isms-requirement.service';
+import type { IsmsRoleService } from '../isms-role.service';
+import type { IsmsRoleAssignmentService } from '../isms-role-assignment.service';
 
 /**
  * One generic dispatch for every ISMS register row (context issues, interested
@@ -16,6 +18,13 @@ import type { IsmsRequirementService } from '../isms-requirement.service';
 
 const position = z.number().int().min(0).optional();
 const OBJECTIVE_STATUS = ['not_started', 'on_track', 'at_risk', 'met'] as const;
+const AUDIT_ROUTE = ['in_house', 'external', 'training_planned'] as const;
+const COMPETENCE_BASIS = [
+  'education',
+  'training',
+  'experience',
+  'combination',
+] as const;
 
 const schemas = {
   contextIssueCreate: z.object({
@@ -82,6 +91,49 @@ const schemas = {
     status: z.enum(OBJECTIVE_STATUS).optional(),
     position,
   }),
+  roleCreate: z.object({
+    name: z.string().min(1),
+    description: z.string().optional(),
+    responsibilities: z.string().optional(),
+    authorities: z.string().optional(),
+    authorityGrantedBy: z.string().optional(),
+    requiredCompetence: z.string().optional(),
+    position,
+  }),
+  roleUpdate: z.object({
+    name: z.string().min(1).optional(),
+    description: z.string().optional(),
+    responsibilities: z.string().optional(),
+    authorities: z.string().optional(),
+    authorityGrantedBy: z.string().optional(),
+    requiredCompetence: z.string().optional(),
+    // Internal Auditor route. Nullish: undefined = leave as-is, null = clear.
+    auditRoute: z.enum(AUDIT_ROUTE).nullish(),
+    auditRouteMemberId: z.string().nullish(),
+    auditFirmName: z.string().nullish(),
+    auditEvidenceRef: z.string().nullish(),
+    auditCourse: z.string().nullish(),
+    auditDueDate: z.string().nullish(), // ISO date string
+    position,
+  }),
+  roleAssignmentCreate: z.object({
+    roleId: z.string(),
+    memberId: z.string(),
+    basisOfCompetence: z.enum(COMPETENCE_BASIS).nullish(),
+    evidenceRetained: z.string().nullish(),
+    gap: z.string().nullish(),
+    remediationAction: z.string().nullish(),
+    remediationDueDate: z.string().nullish(),
+    position,
+  }),
+  roleAssignmentUpdate: z.object({
+    basisOfCompetence: z.enum(COMPETENCE_BASIS).nullish(),
+    evidenceRetained: z.string().nullish(),
+    gap: z.string().nullish(),
+    remediationAction: z.string().nullish(),
+    remediationDueDate: z.string().nullish(),
+    position,
+  }),
 } as const;
 
 // Inferred input types — the single source of truth for register row shapes.
@@ -99,12 +151,22 @@ export type CreateRequirementInput = z.infer<typeof schemas.requirementCreate>;
 export type UpdateRequirementInput = z.infer<typeof schemas.requirementUpdate>;
 export type CreateObjectiveInput = z.infer<typeof schemas.objectiveCreate>;
 export type UpdateObjectiveInput = z.infer<typeof schemas.objectiveUpdate>;
+export type CreateRoleInput = z.infer<typeof schemas.roleCreate>;
+export type UpdateRoleInput = z.infer<typeof schemas.roleUpdate>;
+export type CreateRoleAssignmentInput = z.infer<
+  typeof schemas.roleAssignmentCreate
+>;
+export type UpdateRoleAssignmentInput = z.infer<
+  typeof schemas.roleAssignmentUpdate
+>;
 
 export const ISMS_REGISTER_KEYS = [
   'context-issues',
   'interested-parties',
   'requirements',
   'objectives',
+  'roles',
+  'role-assignments',
 ] as const;
 
 export type IsmsRegisterKey = (typeof ISMS_REGISTER_KEYS)[number];
@@ -139,6 +201,8 @@ export interface RegisterServices {
   interestedParties: IsmsInterestedPartyService;
   requirements: IsmsRequirementService;
   objectives: IsmsObjectiveService;
+  roles: IsmsRoleService;
+  roleAssignments: IsmsRoleAssignmentService;
 }
 
 /** Build the register → handler map from the injected per-register services. */
@@ -209,6 +273,41 @@ export function createRegisterRegistry(
         }),
       remove: ({ rowId, organizationId }) =>
         services.objectives.remove({ objectiveId: rowId, organizationId }),
+    },
+    roles: {
+      create: ({ documentId, organizationId, data }) =>
+        services.roles.create({
+          documentId,
+          organizationId,
+          dto: parse(schemas.roleCreate, data),
+        }),
+      update: ({ rowId, organizationId, data }) =>
+        services.roles.update({
+          roleId: rowId,
+          organizationId,
+          dto: parse(schemas.roleUpdate, data),
+        }),
+      remove: ({ rowId, organizationId }) =>
+        services.roles.remove({ roleId: rowId, organizationId }),
+    },
+    'role-assignments': {
+      create: ({ documentId, organizationId, data }) =>
+        services.roleAssignments.create({
+          documentId,
+          organizationId,
+          dto: parse(schemas.roleAssignmentCreate, data),
+        }),
+      update: ({ rowId, organizationId, data }) =>
+        services.roleAssignments.update({
+          assignmentId: rowId,
+          organizationId,
+          dto: parse(schemas.roleAssignmentUpdate, data),
+        }),
+      remove: ({ rowId, organizationId }) =>
+        services.roleAssignments.remove({
+          assignmentId: rowId,
+          organizationId,
+        }),
     },
   };
 }

@@ -55,6 +55,13 @@ export interface IsmsDocumentShellProps {
   sectionDescription: string;
   /** Toast shown after a successful generate, e.g. "Generated issues from platform data". */
   generateSuccessMessage: string;
+  /**
+   * Optional per-document validation gate. When it returns a non-null reason for
+   * the current document, "Submit for approval" is disabled and the reason is
+   * shown (used by the Roles document to enforce clause-5.3 completeness). Other
+   * documents omit it and are never gated.
+   */
+  getSubmitBlockedReason?: (document: IsmsDocumentData) => string | null;
   /** Renders the register-specific body once a document is loaded. */
   children: (args: IsmsDocumentBodyArgs) => ReactNode;
 }
@@ -78,6 +85,7 @@ export function IsmsDocumentShell({
   sectionTitle,
   sectionDescription,
   generateSuccessMessage,
+  getSubmitBlockedReason,
   children,
 }: IsmsDocumentShellProps) {
   const { hasPermission } = usePermissions();
@@ -203,6 +211,7 @@ export function IsmsDocumentShell({
           canManage={canManage}
           currentMemberId={currentMemberId}
           approverOptions={approverOptions}
+          submitBlockedReason={getSubmitBlockedReason?.(document) ?? null}
           onSubmitForApproval={handleSubmit}
           onApprove={handleApprove}
           onDecline={handleDecline}

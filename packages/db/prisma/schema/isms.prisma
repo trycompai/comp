@@ -16,6 +16,7 @@ enum IsmsDocumentType {
   interested_parties_requirements // 4.2b / 4.2c
   isms_scope // 4.3
   leadership_commitment // 5.1
+  roles_and_responsibilities // 5.3
   objectives_plan // 6.2
 }
 
@@ -83,6 +84,7 @@ model IsmsDocument {
   interestedParties           IsmsInterestedParty[] // 4.2a register
   interestedPartyRequirements IsmsInterestedPartyRequirement[] // 4.2b/c register
   objectives                  IsmsObjective[] // 6.2 register
+  roles                       IsmsRole[] // 5.3 register (governance roles, responsibilities & authorities)
   controlLinks                IsmsDocumentControlLink[] // CS-437: org controls this document maps to
 
   @@unique([organizationId, frameworkId, type]) // one document per type per framework per org
@@ -279,6 +281,88 @@ model IsmsObjective {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([documentId])
+}
+
+// --- Register: ISMS Governance Roles, Responsibilities & Authorities (clause 5.3) ---
+
+// Basis on which an assigned member meets a role's required competence (clause 7.2).
+enum IsmsCompetenceBasis {
+  education
+  training
+  experience
+  combination
+}
+
+// How the organization satisfies the internal-audit function (Internal Auditor role).
+enum IsmsAuditRoute {
+  in_house // an in-house person with ISO 27001 audit competence
+  external // an external independent auditor engaged
+  training_planned // internal auditor competence is being trained
+}
+
+model IsmsRole {
+  id         String       @id @default(dbgenerated("generate_prefixed_cuid('isms_role'::text)"))
+  documentId String
+  document   IsmsDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  // Stable key for the four seeded governance roles
+  // ('top_management' | 'spo' | 'deputy_spo' | 'internal_auditor'); null for
+  // customer-added custom roles. Seeding is idempotent on (documentId, roleKey).
+  roleKey String?
+
+  name               String // role title, e.g. "Security & Privacy Owner (SPO)"
+  description        String // what the role is (pre-filled default, editable)
+  responsibilities   String // the role's responsibilities (5.3)
+  authorities        String // the role's authorities (5.3)
+  authorityGrantedBy String // from whom the authority derives, e.g. "Top Management"
+  requiredCompetence String // competence the role requires (7.2, role-level)
+
+  // Internal Auditor route (only meaningful for the internal_auditor role).
+  auditRoute         IsmsAuditRoute?
+  auditRouteMemberId String? // in-house / training-planned member (plain id, like ownerMemberId)
+  auditFirmName      String? // external: firm / person name
+  auditEvidenceRef   String? // external: evidence reference, e.g. LA certificate
+  auditCourse        String? // training planned: course name
+  auditDueDate       DateTime? // training planned: target date
+
+  source      IsmsContextSource @default(derived)
+  derivedFrom String? // provenance for seeded rows, e.g. "seed:spo"
+
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assignments IsmsRoleAssignment[]
+
+  @@index([documentId])
+}
+
+// A person assigned to an ISMS role, with their competence evidence (clause 7.2).
+model IsmsRoleAssignment {
+  id     String   @id @default(dbgenerated("generate_prefixed_cuid('isms_ra'::text)"))
+  roleId String
+  role   IsmsRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  // Denormalized document id so assignments can be listed org-scoped and mutated
+  // through the generic register CRUD (mirrors IsmsInterestedPartyRequirement.documentId).
+  documentId String
+
+  memberId String // assigned member (plain id, like IsmsObjective.ownerMemberId)
+
+  // Competence evidence (clause 7.2). All optional; the customer fills them in.
+  basisOfCompetence  IsmsCompetenceBasis?
+  evidenceRetained   String?
+  gap                String? // optional competence gap
+  remediationAction  String? // shown only when a gap is set
+  remediationDueDate DateTime?
+
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([roleId, memberId]) // one assignment per member per role
+  @@index([roleId])
   @@index([documentId])
 }
 

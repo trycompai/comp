@@ -16,6 +16,7 @@ import {
   parseExportSnapshot,
   renderSnapshot,
   resolveOrgProfile,
+  resolveRolesExtras,
   type IsmsExportSnapshot,
   type LoadedExportDocument,
 } from './utils/export-payload';
@@ -69,7 +70,8 @@ export class IsmsVersionService {
     // Read the org profile through the same transaction so the snapshot's profile
     // and the register rows written in this transaction share one point in time.
     const orgProfile = await resolveOrgProfile(document, tx);
-    const input = buildExportInput({ document, orgProfile });
+    const rolesExtras = await resolveRolesExtras(document, tx);
+    const input = buildExportInput({ document, orgProfile, rolesExtras });
     const metadata = buildExportMetadata({
       type: document.type,
       title: document.title,

@@ -10,6 +10,7 @@ export type IsmsDocumentType =
   | 'interested_parties_requirements'
   | 'isms_scope'
   | 'leadership_commitment'
+  | 'roles_and_responsibilities'
   | 'objectives_plan';
 
 export type IsmsDocumentStatus =
@@ -23,6 +24,12 @@ export type IsmsContextIssueKind = 'internal' | 'external';
 export type IsmsContextSource = 'derived' | 'manual';
 export type IsmsExportFormat = 'pdf' | 'docx';
 export type IsmsObjectiveStatus = 'not_started' | 'on_track' | 'at_risk' | 'met';
+export type IsmsCompetenceBasis =
+  | 'education'
+  | 'training'
+  | 'experience'
+  | 'combination';
+export type IsmsAuditRoute = 'in_house' | 'external' | 'training_planned';
 
 /**
  * The ISO 27001 clause 4.1 category taxonomy auditors expect, scoped by kind.
@@ -98,6 +105,41 @@ export interface IsmsObjective {
   source: IsmsContextSource;
   derivedFrom: string | null;
   position: number;
+}
+
+/** A member assigned to an ISMS role, with competence evidence (clauses 5.3/7.2). */
+export interface IsmsRoleAssignment {
+  id: string;
+  roleId: string;
+  memberId: string;
+  basisOfCompetence: IsmsCompetenceBasis | null;
+  evidenceRetained: string | null;
+  gap: string | null;
+  remediationAction: string | null;
+  remediationDueDate: string | null;
+  position: number;
+}
+
+/** Register: ISMS Governance Roles, Responsibilities & Authorities (clause 5.3). */
+export interface IsmsRole {
+  id: string;
+  roleKey: string | null;
+  name: string;
+  description: string;
+  responsibilities: string;
+  authorities: string;
+  authorityGrantedBy: string;
+  requiredCompetence: string;
+  auditRoute: IsmsAuditRoute | null;
+  auditRouteMemberId: string | null;
+  auditFirmName: string | null;
+  auditEvidenceRef: string | null;
+  auditCourse: string | null;
+  auditDueDate: string | null;
+  source: IsmsContextSource;
+  derivedFrom: string | null;
+  position: number;
+  assignments: IsmsRoleAssignment[];
 }
 
 /** Narrative shape for the ISMS Scope singleton (clause 4.3). */
@@ -187,6 +229,7 @@ export interface IsmsDocument {
   interestedParties: IsmsInterestedParty[];
   interestedPartyRequirements: IsmsInterestedPartyRequirement[];
   objectives: IsmsObjective[];
+  roles: IsmsRole[];
   controlLinks: IsmsControlLink[];
   /** Working-draft narrative for the singleton documents (Scope, Leadership). */
   draftNarrative:
@@ -251,6 +294,14 @@ export const ISMS_TYPE_META: IsmsTypeMeta[] = [
     detailRouteEnabled: true,
   },
   {
+    type: 'roles_and_responsibilities',
+    clause: '5.3',
+    title: 'Roles, Responsibilities and Authorities',
+    description:
+      'ISMS governance roles, their responsibilities and authorities, and the members who hold them.',
+    detailRouteEnabled: true,
+  },
+  {
     type: 'objectives_plan',
     clause: '6.2',
     title: 'Information Security Objectives and Plan',
@@ -266,6 +317,7 @@ export const ISMS_SLUG_TO_TYPE: Record<string, IsmsDocumentType> = {
   requirements: 'interested_parties_requirements',
   scope: 'isms_scope',
   leadership: 'leadership_commitment',
+  roles: 'roles_and_responsibilities',
   objectives: 'objectives_plan',
 };
 
@@ -276,6 +328,7 @@ const ISMS_TYPE_TO_SLUG: Record<IsmsDocumentType, string> = {
   interested_parties_requirements: 'requirements',
   isms_scope: 'scope',
   leadership_commitment: 'leadership',
+  roles_and_responsibilities: 'roles',
   objectives_plan: 'objectives',
 };
 

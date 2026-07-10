@@ -31,7 +31,8 @@ const GENERATION_ORDER: Record<IsmsDocumentType, number> = {
   interested_parties_requirements: 2,
   isms_scope: 3,
   leadership_commitment: 4,
-  objectives_plan: 5,
+  roles_and_responsibilities: 5,
+  objectives_plan: 6,
 };
 const GENERATION_ORDER_DEFAULT = Object.keys(GENERATION_ORDER).length;
 

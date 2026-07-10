@@ -24,7 +24,9 @@ export type IsmsRegister =
   | 'context-issues'
   | 'interested-parties'
   | 'requirements'
-  | 'objectives';
+  | 'objectives'
+  | 'roles'
+  | 'role-assignments';
 
 interface IssueInput {
   kind: IsmsContextIssueKind;

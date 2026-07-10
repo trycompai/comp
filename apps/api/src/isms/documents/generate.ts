@@ -4,6 +4,7 @@ import { deriveContextOfOrganization } from './context';
 import { deriveInterestedParties } from './interested-parties';
 import { deriveRequirements } from './requirements';
 import { deriveObjectives } from './objectives';
+import { seedRolesIfMissing } from './roles';
 import { deriveNarrativeForType, isNarrativeType } from './registry';
 import type { IsmsPlatformData } from './types';
 
@@ -246,6 +247,12 @@ export async function runDerivation({
   }
   if (type === 'objectives_plan') {
     await generateObjectives({ tx, documentId, data });
+    return;
+  }
+  if (type === 'roles_and_responsibilities') {
+    // Idempotent seed only — never a destructive replace, so member assignments
+    // (IsmsRoleAssignment) and customer edits survive every regenerate.
+    await seedRolesIfMissing({ tx, documentId, memberCount: data.memberCount });
     return;
   }
   if (isNarrativeType(type)) {

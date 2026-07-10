@@ -86,6 +86,10 @@ const TYPE_DRIFT_SOURCES: Record<IsmsDocumentType, Array<keyof DiffMap>> = {
     'members',
     'wizardAnswers',
   ],
+  // Roles text is static defaults; the only platform input the 5.3 document
+  // consumes is headcount, which sets the team-size band (small vs standard) and
+  // so changes the team-size note + operational-responsibilities rendering.
+  roles_and_responsibilities: ['members'],
   isms_scope: [
     'frameworks',
     'vendors',
