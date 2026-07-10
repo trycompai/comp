@@ -220,11 +220,11 @@ describe('DeviceComplianceChart', () => {
     expect(screen.getByText('Compliant (1)')).toBeInTheDocument();
   });
 
-  it('does not show a Not Tracked legend entry when every device has a verdict', () => {
+  it('does not show an Unverified legend entry when every device has a verdict', () => {
     render(
       <DeviceComplianceChart fleetDevices={[]} agentDevices={[makeAgentDevice()]} />,
     );
-    expect(screen.queryByText(/Not Tracked/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Unverified/)).not.toBeInTheDocument();
   });
 });
 
@@ -244,32 +244,49 @@ function makeIntegrationDevice(
 }
 
 describe('DeviceComplianceChart — integration-imported devices', () => {
-  it('counts an imported device with a source verdict of compliant as Compliant', () => {
+  it('counts an imported device with all four canonical checks passing as Compliant', () => {
     render(
       <DeviceComplianceChart
         fleetDevices={[]}
         agentDevices={[
           makeAgentDevice({ isCompliant: false, complianceStatus: 'non_compliant' }),
-          makeIntegrationDevice({ sourceCompliance: { isCompliant: true } }),
+          makeIntegrationDevice({
+            sourceCompliance: {
+              checks: [
+                { id: 'disk_encryption', label: 'Disk Encryption', passed: true },
+                { id: 'antivirus', label: 'Antivirus', passed: true },
+                { id: 'password_policy', label: 'Password Policy', passed: true },
+                { id: 'screen_lock', label: 'Screen Lock', passed: true },
+              ],
+            },
+          }),
         ]}
       />,
     );
     expect(screen.getByText('Compliant (1)')).toBeInTheDocument();
     expect(screen.getByText('Non-Compliant (1)')).toBeInTheDocument();
-    expect(screen.queryByText(/Not Tracked/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Unverified/)).not.toBeInTheDocument();
   });
 
-  it('counts an imported device with a source verdict of non-compliant as Non-Compliant', () => {
+  it('counts an imported device with a failed canonical check as Non-Compliant (vendor verdict ignored)', () => {
     render(
       <DeviceComplianceChart
         fleetDevices={[]}
-        agentDevices={[makeIntegrationDevice({ sourceCompliance: { isCompliant: false } })]}
+        agentDevices={[
+          makeIntegrationDevice({
+            sourceCompliance: {
+              // Vendor says compliant — CompAI's canonical standard overrules.
+              isCompliant: true,
+              checks: [{ id: 'disk_encryption', label: 'Disk Encryption', passed: false }],
+            },
+          }),
+        ]}
       />,
     );
     expect(screen.getByText('Non-Compliant (1)')).toBeInTheDocument();
   });
 
-  it('puts an imported device with no source verdict into a Not Tracked segment', () => {
+  it('puts an imported device with partial/no canonical checks into an Unverified segment', () => {
     render(
       <DeviceComplianceChart
         fleetDevices={[]}
@@ -281,14 +298,25 @@ describe('DeviceComplianceChart — integration-imported devices', () => {
     );
     expect(screen.getByText('Compliant (1)')).toBeInTheDocument();
     expect(screen.getByText('Non-Compliant (0)')).toBeInTheDocument();
-    expect(screen.getByText('Not Tracked (1)')).toBeInTheDocument();
+    expect(screen.getByText('Unverified (1)')).toBeInTheDocument();
   });
 
   it('renders the chart (not the empty state) for an org with ONLY imported devices', () => {
     render(
       <DeviceComplianceChart
         fleetDevices={[]}
-        agentDevices={[makeIntegrationDevice({ sourceCompliance: { isCompliant: true } })]}
+        agentDevices={[
+          makeIntegrationDevice({
+            sourceCompliance: {
+              checks: [
+                { id: 'disk_encryption', label: 'Disk Encryption', passed: true },
+                { id: 'antivirus', label: 'Antivirus', passed: true },
+                { id: 'password_policy', label: 'Password Policy', passed: true },
+                { id: 'screen_lock', label: 'Screen Lock', passed: true },
+              ],
+            },
+          }),
+        ]}
       />,
     );
     expect(screen.queryByText(/No device data available/)).not.toBeInTheDocument();
