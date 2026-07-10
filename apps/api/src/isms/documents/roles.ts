@@ -34,46 +34,71 @@ export interface RoleValidationRow {
   auditEvidenceRef?: string | null;
   auditCourse?: string | null;
   auditDueDate?: Date | string | null;
-  assignments: unknown[];
+  assignments: Array<{ memberId: string }>;
 }
 
-/** Route-specific required fields for the Internal Auditor (CS-698). */
-function auditRouteMessages(role: RoleValidationRow): string[] {
+/** True when the audit-route member is set AND is an active organization member. */
+function hasActiveAuditMember(
+  role: RoleValidationRow,
+  activeMemberIds: Set<string>,
+): boolean {
+  return (
+    !!role.auditRouteMemberId && activeMemberIds.has(role.auditRouteMemberId)
+  );
+}
+
+/**
+ * Route-specific required fields for the Internal Auditor (CS-698). The in-house
+ * and training-planned routes need an ACTIVE selected member; external needs a
+ * firm/person and evidence reference. Text is trimmed so whitespace can't satisfy
+ * a required field via the API.
+ */
+function auditRouteMessages(
+  role: RoleValidationRow,
+  activeMemberIds: Set<string>,
+): string[] {
   const route = role.auditRoute;
   if (!route) return ['The Internal Auditor needs an audit route selected.'];
-  if (route === 'in_house' && !role.auditRouteMemberId) {
-    return ['The in-house Internal Auditor needs a member selected.'];
+  if (route === 'in_house') {
+    return hasActiveAuditMember(role, activeMemberIds)
+      ? []
+      : ['The in-house Internal Auditor needs an active member selected.'];
   }
-  if (route === 'external' && (!role.auditFirmName || !role.auditEvidenceRef)) {
-    return [
-      'The external Internal Auditor needs a firm/person name and an evidence reference.',
-    ];
+  if (route === 'external') {
+    return role.auditFirmName?.trim() && role.auditEvidenceRef?.trim()
+      ? []
+      : [
+          'The external Internal Auditor needs a firm/person name and an evidence reference.',
+        ];
   }
-  if (
-    route === 'training_planned' &&
-    (!role.auditRouteMemberId || !role.auditCourse || !role.auditDueDate)
-  ) {
-    return [
-      'The training-planned Internal Auditor needs a member, a course, and a due date.',
-    ];
-  }
-  return [];
+  // training_planned
+  const complete =
+    hasActiveAuditMember(role, activeMemberIds) &&
+    !!role.auditCourse?.trim() &&
+    !!role.auditDueDate;
+  return complete
+    ? []
+    : [
+        'The training-planned Internal Auditor needs an active member, a course, and a due date.',
+      ];
 }
 
 /**
  * Clause-5.3 completeness check, shared by the submit-for-approval server gate.
  * Every seeded role must exist and have at least one assigned member (except the
- * Deputy SPO in the 1-3 band); the Internal Auditor must have a route AND the
- * route-specific fields it requires. Missing rows are reported too, so validation
- * can't pass by a required role simply being absent. Callers pass assignments
- * pre-filtered to ACTIVE members. Returns the unmet requirements; empty = ready.
+ * Deputy SPO in the 1-3 band); the Internal Auditor must have a route AND its
+ * route-specific fields. Only assignments (and audit-route members) that resolve
+ * to an ACTIVE member count. Missing rows are reported too. Returns the unmet
+ * requirements; empty = ready.
  */
 export function roleValidationMessages({
   roles,
   memberCount,
+  activeMemberIds,
 }: {
   roles: RoleValidationRow[];
   memberCount: number;
+  activeMemberIds: Set<string>;
 }): string[] {
   const band = teamSizeBand(memberCount);
   const byKey = new Map(
@@ -93,11 +118,14 @@ export function roleValidationMessages({
       if (!optional) messages.push(`${name} is missing from the document.`);
       continue;
     }
-    if (!optional && role.assignments.length === 0) {
+    const activeAssignments = role.assignments.filter((assignment) =>
+      activeMemberIds.has(assignment.memberId),
+    );
+    if (!optional && activeAssignments.length === 0) {
       messages.push(`${name} needs at least one assigned member.`);
     }
     if (key === 'internal_auditor') {
-      messages.push(...auditRouteMessages(role));
+      messages.push(...auditRouteMessages(role, activeMemberIds));
     }
   }
   return messages;

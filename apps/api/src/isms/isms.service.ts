@@ -414,16 +414,13 @@ export class IsmsService {
     ]);
     // A role "assigned" only to a deactivated/removed member is not really
     // covered — count only assignments that resolve to an active member.
+    // roleValidationMessages counts only assignments (and audit-route members)
+    // that resolve to an active member, so pass the raw rows + the active set.
     const activeMemberIds = new Set(activeMembers.map((member) => member.id));
-    const rolesWithActiveAssignments = roles.map((role) => ({
-      ...role,
-      assignments: role.assignments.filter((assignment) =>
-        activeMemberIds.has(assignment.memberId),
-      ),
-    }));
     const messages = roleValidationMessages({
-      roles: rolesWithActiveAssignments,
+      roles,
       memberCount: activeMemberIds.size,
+      activeMemberIds,
     });
     if (messages.length > 0) {
       throw new BadRequestException(

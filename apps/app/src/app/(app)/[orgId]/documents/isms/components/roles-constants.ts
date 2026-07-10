@@ -49,27 +49,40 @@ const REQUIRED_SEED_ROLES: { key: string; label: string }[] = [
   { key: INTERNAL_AUDITOR_ROLE_KEY, label: 'Internal Auditor' },
 ];
 
-/** Route-specific required fields for the Internal Auditor (mirrors the server). */
-function auditRouteMessages(role: IsmsRole): string[] {
+/** True when the audit-route member is set AND is an active organization member. */
+function hasActiveAuditMember(role: IsmsRole, activeMemberIds: Set<string>): boolean {
+  return !!role.auditRouteMemberId && activeMemberIds.has(role.auditRouteMemberId);
+}
+
+/**
+ * Route-specific required fields for the Internal Auditor (mirrors the server).
+ * In-house / training-planned need an ACTIVE selected member; external needs a
+ * firm/person + evidence reference. Text is trimmed so whitespace can't satisfy it.
+ */
+function auditRouteMessages(role: IsmsRole, activeMemberIds: Set<string>): string[] {
   const route = role.auditRoute;
   if (!route) return ['The Internal Auditor needs an audit route selected.'];
-  if (route === 'in_house' && !role.auditRouteMemberId) {
-    return ['The in-house Internal Auditor needs a member selected.'];
+  if (route === 'in_house') {
+    return hasActiveAuditMember(role, activeMemberIds)
+      ? []
+      : ['The in-house Internal Auditor needs an active member selected.'];
   }
-  if (route === 'external' && (!role.auditFirmName || !role.auditEvidenceRef)) {
-    return [
-      'The external Internal Auditor needs a firm/person name and an evidence reference.',
-    ];
+  if (route === 'external') {
+    return role.auditFirmName?.trim() && role.auditEvidenceRef?.trim()
+      ? []
+      : [
+          'The external Internal Auditor needs a firm/person name and an evidence reference.',
+        ];
   }
-  if (
-    route === 'training_planned' &&
-    (!role.auditRouteMemberId || !role.auditCourse || !role.auditDueDate)
-  ) {
-    return [
-      'The training-planned Internal Auditor needs a member, a course, and a due date.',
-    ];
-  }
-  return [];
+  const complete =
+    hasActiveAuditMember(role, activeMemberIds) &&
+    !!role.auditCourse?.trim() &&
+    !!role.auditDueDate;
+  return complete
+    ? []
+    : [
+        'The training-planned Internal Auditor needs an active member, a course, and a due date.',
+      ];
 }
 
 /**
@@ -110,7 +123,7 @@ export function roleValidationMessages({
       messages.push(`${name} needs at least one assigned member.`);
     }
     if (key === INTERNAL_AUDITOR_ROLE_KEY) {
-      messages.push(...auditRouteMessages(role));
+      messages.push(...auditRouteMessages(role, activeMemberIds));
     }
   }
   return messages;

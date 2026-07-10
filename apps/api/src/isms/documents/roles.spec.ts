@@ -153,7 +153,10 @@ describe('buildRolesSections', () => {
 });
 
 describe('roleValidationMessages (server gate)', () => {
-  const assigned = { id: 'ra' };
+  const ACTIVE = new Set(['m1']);
+  const assigned = { memberId: 'm1' };
+  const check = (roles: RoleValidationRow[], memberCount = 20) =>
+    roleValidationMessages({ roles, memberCount, activeMemberIds: ACTIVE });
   const externalAuditor: RoleValidationRow = {
     roleKey: 'internal_auditor',
     name: 'Internal Auditor',
@@ -170,68 +173,80 @@ describe('roleValidationMessages (server gate)', () => {
   ];
 
   it('passes when every seeded role is present + assigned + routed', () => {
-    expect(roleValidationMessages({ roles: complete(), memberCount: 20 })).toEqual([]);
+    expect(check(complete())).toEqual([]);
   });
 
-  it('requires firm + evidence for the external audit route', () => {
+  it('does not count an assignment to a non-active member', () => {
+    const roles = complete();
+    roles[0] = {
+      roleKey: 'top_management',
+      name: 'Top Management',
+      auditRoute: null,
+      assignments: [{ memberId: 'deactivated' }],
+    };
+    expect(check(roles)).toContain('Top Management needs at least one assigned member.');
+  });
+
+  it('requires firm + evidence for the external audit route (whitespace does not count)', () => {
     const roles = complete();
     roles[3] = {
       roleKey: 'internal_auditor',
       name: 'Internal Auditor',
       auditRoute: 'external',
+      auditFirmName: '   ',
+      auditEvidenceRef: '',
       assignments: [assigned],
     };
-    expect(roleValidationMessages({ roles, memberCount: 20 })).toContain(
+    expect(check(roles)).toContain(
       'The external Internal Auditor needs a firm/person name and an evidence reference.',
     );
   });
 
-  it('requires a member for the in-house audit route', () => {
+  it('requires an ACTIVE member for the in-house audit route', () => {
     const roles = complete();
     roles[3] = {
       roleKey: 'internal_auditor',
       name: 'Internal Auditor',
       auditRoute: 'in_house',
+      auditRouteMemberId: 'deactivated', // set, but not in the active set
       assignments: [assigned],
     };
-    expect(roleValidationMessages({ roles, memberCount: 20 })).toContain(
-      'The in-house Internal Auditor needs a member selected.',
+    expect(check(roles)).toContain(
+      'The in-house Internal Auditor needs an active member selected.',
     );
   });
 
-  it('requires member + course + due date for the training-planned route', () => {
+  it('requires active member + course + due date for the training-planned route', () => {
     const roles = complete();
     roles[3] = {
       roleKey: 'internal_auditor',
       name: 'Internal Auditor',
       auditRoute: 'training_planned',
-      auditRouteMemberId: 'mem_1',
+      auditRouteMemberId: 'm1', // active
+      auditCourse: '   ', // whitespace → missing
+      auditDueDate: '2026-05-26',
       assignments: [assigned],
     };
-    expect(roleValidationMessages({ roles, memberCount: 20 })).toContain(
-      'The training-planned Internal Auditor needs a member, a course, and a due date.',
+    expect(check(roles)).toContain(
+      'The training-planned Internal Auditor needs an active member, a course, and a due date.',
     );
   });
 
   it('flags an entirely-missing required seeded role', () => {
     const roles = complete().filter((r) => r.roleKey !== 'top_management');
-    expect(roleValidationMessages({ roles, memberCount: 20 })).toContain(
-      'Top Management is missing from the document.',
-    );
+    expect(check(roles)).toContain('Top Management is missing from the document.');
   });
 
   it('flags a present-but-unassigned seeded role', () => {
     const roles = complete();
     roles[1] = { roleKey: 'spo', name: 'SPO', auditRoute: null, assignments: [] };
-    expect(roleValidationMessages({ roles, memberCount: 20 })).toContain(
-      'SPO needs at least one assigned member.',
-    );
+    expect(check(roles)).toContain('SPO needs at least one assigned member.');
   });
 
   it('treats Deputy SPO as optional only in the small band', () => {
     const roles = complete().filter((r) => r.roleKey !== 'deputy_spo');
-    expect(roleValidationMessages({ roles, memberCount: 2 })).toEqual([]);
-    expect(roleValidationMessages({ roles, memberCount: 10 })).toContain(
+    expect(check(roles, 2)).toEqual([]);
+    expect(check(roles, 10)).toContain(
       'Deputy Security & Privacy Owner is missing from the document.',
     );
   });
@@ -244,9 +259,7 @@ describe('roleValidationMessages (server gate)', () => {
       auditRoute: null,
       assignments: [assigned],
     };
-    expect(roleValidationMessages({ roles, memberCount: 20 })).toContain(
-      'The Internal Auditor needs an audit route selected.',
-    );
+    expect(check(roles)).toContain('The Internal Auditor needs an audit route selected.');
   });
 });
 

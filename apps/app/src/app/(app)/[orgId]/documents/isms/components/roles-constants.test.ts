@@ -114,6 +114,20 @@ describe('roleValidationMessages', () => {
     );
   });
 
+  it('requires an active member for the in-house audit route', () => {
+    const roles = fullyAssigned();
+    roles[3] = role({
+      roleKey: 'internal_auditor',
+      name: 'Internal Auditor',
+      auditRoute: 'in_house',
+      auditRouteMemberId: 'deactivated', // set, but not in the active set
+      assignments: [withMember],
+    });
+    expect(
+      roleValidationMessages({ roles, band: 'standard', activeMemberIds: ACTIVE }),
+    ).toContain('The in-house Internal Auditor needs an active member selected.');
+  });
+
   it('does not require assigned members on custom roles', () => {
     const roles = [
       ...fullyAssigned(),
