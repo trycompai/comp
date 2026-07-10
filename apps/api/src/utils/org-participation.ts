@@ -1,10 +1,9 @@
 import { db, Prisma } from '@db';
-// Import from the dedicated subpath (not the package index) so this stays free
-// of better-auth — keeps the util light and Jest-loadable without ESM interop.
-import {
-  PLATFORM_ADMIN_ROLE,
-  isOrgParticipant,
-} from '@trycompai/auth/participation';
+// Use the dependency-free local mirror (not @trycompai/auth) so this file is
+// safe in the API's Trigger.dev bundle — the auth package's dist isn't built in
+// that deploy, so esbuild can't resolve `@trycompai/auth/participation`. The
+// mirror is kept in sync with the auth package by org-participation-rule.spec.ts.
+import { PLATFORM_ADMIN_ROLE, isOrgParticipant } from './org-participation-rule';
 
 /**
  * Resolve whether an organization is platform-operated ("internal", e.g. Comp
