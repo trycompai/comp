@@ -1,3 +1,21 @@
+# [3.101.0](https://github.com/trycompai/comp/compare/v3.100.1...v3.101.0) (2026-07-10)
+
+
+### Bug Fixes
+
+* **api:** reject assignees that aren't members of the organization ([dd071b6](https://github.com/trycompai/comp/commit/dd071b65f74ee59edb47a78660200f3771a00c71))
+* **api:** stop Trigger.dev deploy failing on @trycompai/auth/participation ([#3393](https://github.com/trycompai/comp/issues/3393)) ([1ba1d20](https://github.com/trycompai/comp/commit/1ba1d2014b067e27cbc760a96201d92d2b564046))
+* **org:** address 2nd review pass — harden vendor assignee, unify UI rule, guard boundaries ([ef1a53f](https://github.com/trycompai/comp/commit/ef1a53fe51a814d2c7947cc8198b0d5fb2f2f802))
+* **org:** address review — align browser-automation, tighten null validation, keep dep boundary ([415ee40](https://github.com/trycompai/comp/commit/415ee40786aa104638ed34f27d00b94af3485f09))
+* **org:** address review — spread-safe participant filter, confirm internal toggle ([26cecbe](https://github.com/trycompai/comp/commit/26cecbe4c15f0dcf0e5b5e0b24f631408a475980))
+* **org:** unify participation where-fragment, guard deactivated author, skip needless query ([77df89c](https://github.com/trycompai/comp/commit/77df89cdb61b038bcbc0f615f5f8a6df58657134))
+
+
+### Features
+
+* **isms:** add Roles, Responsibilities & Authorities document (CS-698) ([#3391](https://github.com/trycompai/comp/issues/3391)) ([c013515](https://github.com/trycompai/comp/commit/c01351518a61f104f1f39555f872760974dae587))
+* **org:** treat platform admins as members in internal organizations ([e179c58](https://github.com/trycompai/comp/commit/e179c5823328b29c2ee52cd49c53f2ef690469fb))
+
 ## [3.100.1](https://github.com/trycompai/comp/compare/v3.100.0...v3.100.1) (2026-07-10)
 
 
