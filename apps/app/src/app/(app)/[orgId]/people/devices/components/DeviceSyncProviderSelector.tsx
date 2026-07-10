@@ -14,7 +14,6 @@ import {
 } from '@trycompai/design-system';
 import { InProgress, Renew } from '@trycompai/design-system/icons';
 import { usePermissions } from '@/hooks/use-permissions';
-import { formatTimeAgo } from '../lib/device-source';
 import { useDeviceSync } from '../hooks/useDeviceSync';
 
 const NO_SYNC_VALUE = '__no_sync__';
@@ -100,15 +99,10 @@ export function DeviceSyncProviderSelector() {
   };
 
   return (
-    // Right-aligned inline row: "Synced Xh ago · [provider select] · [↻]".
-    // The provider name + refresh affordance say what this is; the last-synced
-    // text gives the freshness at a glance without opening the dropdown.
+    // Right-aligned inline row: [provider select] · [↻]. The provider name +
+    // refresh affordance say what this is; last/next sync times live inside
+    // the dropdown's info block.
     <div className="flex flex-wrap items-center justify-end gap-2">
-      {selected?.lastSyncAt && (
-        <span className="text-xs text-muted-foreground">
-          Synced {formatTimeAgo(selected.lastSyncAt)}
-        </span>
-      )}
       <div className="w-full max-w-[240px]">
         {/* Uncontrolled on purpose — mirrors the (working) people-sync select. */}
         <Select onValueChange={handleValueChange} disabled={isSyncing}>
@@ -222,9 +216,10 @@ export function DeviceSyncProviderSelector() {
       </div>
 
       {selected && (
-        // Icon-only re-sync in the brand primary: the select already says
-        // what's syncing — aria-label + title keep it accessible.
+        // Icon-only re-sync, neutral outline — a lone refresh icon doesn't
+        // warrant primary emphasis. aria-label + title keep it accessible.
         <Button
+          variant="outline"
           size="icon-lg"
           onClick={handleSyncNow}
           disabled={isSyncing}
