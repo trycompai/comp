@@ -30,7 +30,10 @@ import {
   isComplianceTracked,
   isDeviceOnline,
   notTrackedTooltipCopy,
+  sourceChecks,
   sourceLabel,
+  sourceReportedTooltipCopy,
+  sourceVerdict,
   staleLabel,
   staleTooltipCopy,
 } from '../lib/device-source';
@@ -108,11 +111,26 @@ export function NotTrackedBadge({ device }: { device: DeviceWithChecks }) {
 }
 
 export function CompliantBadge({ device }: { device: DeviceWithChecks }) {
-  // Integration-imported devices are inventory records, not compliance records —
-  // CompAI never ran security checks on them, so showing "No" (red) would be a
-  // false negative. Present them as untracked instead.
+  // Integration-imported devices: CompAI never ran security checks on them, so
+  // a red "No" from OUR checks would be a false negative. But when the SOURCE
+  // reports its own verdict (e.g. Intune complianceState), show that — clearly
+  // attributed to the provider. No verdict → untracked, as before.
   if (!isComplianceTracked(device)) {
-    return <NotTrackedBadge device={device} />;
+    const verdict = sourceVerdict(device);
+    if (verdict === undefined) {
+      return <NotTrackedBadge device={device} />;
+    }
+    return (
+      <div className="flex items-center gap-1">
+        <Badge variant={verdict ? 'default' : 'destructive'}>
+          {verdict ? 'Yes' : 'No'}
+        </Badge>
+        <InfoTooltip
+          label="Where does this compliance status come from?"
+          copy={sourceReportedTooltipCopy(device)}
+        />
+      </div>
+    );
   }
 
   if (device.complianceStatus === 'stale') {
@@ -133,6 +151,26 @@ export function CompliantBadge({ device }: { device: DeviceWithChecks }) {
 }
 
 export function CheckBadges({ device }: { device: DeviceWithChecks }) {
+  // Imported devices: render whatever checks the SOURCE reported, in the
+  // provider's own naming. Nothing reported → placeholder dashes, as before.
+  if (!isComplianceTracked(device)) {
+    const checks = sourceChecks(device);
+    if (checks.length > 0) {
+      return (
+        <div className="flex flex-wrap gap-1">
+          {checks.map((check) => (
+            <Badge
+              key={check.id}
+              variant={check.passed ? 'default' : 'destructive'}
+              title={`${check.label} — ${sourceReportedTooltipCopy(device)}`}
+            >
+              {check.label}
+            </Badge>
+          ))}
+        </div>
+      );
+    }
+  }
   if (!isComplianceTracked(device) || device.complianceStatus === 'stale') {
     const reason = !isComplianceTracked(device)
       ? 'not collected for imported devices'
@@ -174,14 +212,16 @@ export function DeviceTableRow({
   onRequestRemove,
 }: DeviceTableRowProps) {
   const isAgent = device.source === 'device_agent';
-  const showOnline = isAgent && isDeviceOnline(device.lastCheckIn);
+  // Imported devices carry the PROVIDER's last-contact timestamp in
+  // lastCheckIn (see device sync lastSeenAt), so the same online rule applies
+  // honestly to them too. Fleet rows keep the spacer.
+  const showsLiveDot = isAgent || device.source === 'integration';
+  const showOnline = showsLiveDot && isDeviceOnline(device.lastCheckIn);
   return (
     <TableRow onClick={() => onSelect(device)} style={{ cursor: 'pointer' }}>
       <TableCell>
         <div className="flex items-center gap-2">
-          {/* Live status only applies to agent devices; imported/fleet rows get a
-              spacer so they aren't visually labeled as an offline agent. */}
-          {isAgent ? (
+          {showsLiveDot ? (
             <span
               className={`inline-block h-2 w-2 shrink-0 rounded-full ${
                 showOnline ? 'bg-green-500' : 'bg-gray-300'

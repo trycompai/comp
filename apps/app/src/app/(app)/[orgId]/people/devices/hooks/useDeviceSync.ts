@@ -10,6 +10,12 @@ export interface DeviceSyncProviderInfo {
   name: string;
   logoUrl: string;
   connected: boolean;
+  /**
+   * 'error' means the org has a connection for this provider but it is broken
+   * (e.g. expired OAuth) and needs a reconnect. Optional so the UI tolerates
+   * API responses from before this field existed.
+   */
+  connectionStatus?: 'active' | 'error' | null;
   connectionId: string | null;
   lastSyncAt: string | null;
   nextSyncAt: string | null;

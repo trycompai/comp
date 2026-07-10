@@ -219,4 +219,79 @@ describe('DeviceComplianceChart', () => {
     // Array.every on empty array returns true
     expect(screen.getByText('Compliant (1)')).toBeInTheDocument();
   });
+
+  it('does not show a Not Tracked legend entry when every device has a verdict', () => {
+    render(
+      <DeviceComplianceChart fleetDevices={[]} agentDevices={[makeAgentDevice()]} />,
+    );
+    expect(screen.queryByText(/Not Tracked/)).not.toBeInTheDocument();
+  });
+});
+
+function makeIntegrationDevice(
+  overrides: Partial<DeviceWithChecks> = {},
+): DeviceWithChecks {
+  return makeAgentDevice({
+    source: 'integration',
+    integrationProvider: { slug: 'intune', name: 'Microsoft Intune' },
+    // Server derives non_compliant for imported rows; the chart must use the
+    // source verdict (or Not Tracked), never this derived status.
+    isCompliant: false,
+    complianceStatus: 'non_compliant',
+    agentVersion: null,
+    ...overrides,
+  });
+}
+
+describe('DeviceComplianceChart — integration-imported devices', () => {
+  it('counts an imported device with a source verdict of compliant as Compliant', () => {
+    render(
+      <DeviceComplianceChart
+        fleetDevices={[]}
+        agentDevices={[
+          makeAgentDevice({ isCompliant: false, complianceStatus: 'non_compliant' }),
+          makeIntegrationDevice({ sourceCompliance: { isCompliant: true } }),
+        ]}
+      />,
+    );
+    expect(screen.getByText('Compliant (1)')).toBeInTheDocument();
+    expect(screen.getByText('Non-Compliant (1)')).toBeInTheDocument();
+    expect(screen.queryByText(/Not Tracked/)).not.toBeInTheDocument();
+  });
+
+  it('counts an imported device with a source verdict of non-compliant as Non-Compliant', () => {
+    render(
+      <DeviceComplianceChart
+        fleetDevices={[]}
+        agentDevices={[makeIntegrationDevice({ sourceCompliance: { isCompliant: false } })]}
+      />,
+    );
+    expect(screen.getByText('Non-Compliant (1)')).toBeInTheDocument();
+  });
+
+  it('puts an imported device with no source verdict into a Not Tracked segment', () => {
+    render(
+      <DeviceComplianceChart
+        fleetDevices={[]}
+        agentDevices={[
+          makeAgentDevice(),
+          makeIntegrationDevice({ sourceCompliance: null }),
+        ]}
+      />,
+    );
+    expect(screen.getByText('Compliant (1)')).toBeInTheDocument();
+    expect(screen.getByText('Non-Compliant (0)')).toBeInTheDocument();
+    expect(screen.getByText('Not Tracked (1)')).toBeInTheDocument();
+  });
+
+  it('renders the chart (not the empty state) for an org with ONLY imported devices', () => {
+    render(
+      <DeviceComplianceChart
+        fleetDevices={[]}
+        agentDevices={[makeIntegrationDevice({ sourceCompliance: { isCompliant: true } })]}
+      />,
+    );
+    expect(screen.queryByText(/No device data available/)).not.toBeInTheDocument();
+    expect(screen.getByText('Compliant (1)')).toBeInTheDocument();
+  });
 });

@@ -33,6 +33,12 @@ model Device {
   integrationConnectionId   String?
   externalDeviceId          String?
 
+  // Compliance as reported by the SOURCE integration (device sync), kept
+  // separate from the agent's measured columns above so provenance never
+  // blurs. Shape: { isCompliant?: boolean, checks?: [{id,label,passed}] }.
+  // NULL = the source reports no compliance (renders "Not tracked").
+  sourceCompliance Json?
+
   @@unique([serialNumber, organizationId])
   // Prevents duplicate integration-sourced devices for the same connection and
   // also serves the device-sync fallback lookup (externalDeviceId + connection).

@@ -22,6 +22,9 @@ import {
   CHECK_FIELDS,
   PLATFORM_LABELS,
   isDeviceOnline,
+  sourceChecks,
+  sourceReportedTooltipCopy,
+  sourceVerdict,
   staleLabel,
   staleTooltipCopy,
 } from '../lib/device-source';
@@ -30,7 +33,37 @@ import { RevokeAgentAccessDialog } from './RevokeAgentAccessDialog';
 
 function DeviceComplianceBadge({ device }: { device: DeviceWithChecks }) {
   if (device.source === 'integration') {
-    return <NotTrackedBadge device={device} />;
+    // Show the SOURCE's own verdict when it reports one (attributed via the
+    // same tooltip pattern as the stale/not-tracked badges, so the provenance
+    // is reachable by keyboard/touch); otherwise untracked, as before.
+    const verdict = sourceVerdict(device);
+    if (verdict === undefined) {
+      return <NotTrackedBadge device={device} />;
+    }
+    return (
+      <div className="flex items-center gap-1">
+        <Badge variant={verdict ? 'default' : 'destructive'}>
+          {verdict ? 'Compliant' : 'Non-Compliant'}
+        </Badge>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label="Where does this compliance status come from?"
+                className="inline-flex items-center text-muted-foreground hover:text-foreground"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Information size={14} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs text-xs">
+              {sourceReportedTooltipCopy(device)}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+    );
   }
   if (device.complianceStatus === 'stale') {
     return (
@@ -82,8 +115,11 @@ export const DeviceDetails = ({ device, onClose }: DeviceDetailsProps) => {
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-2">
-                {/* Live online/offline status only applies to agent devices. */}
-                {device.source === 'device_agent' && (
+                {/* Live status: agent devices report directly; imported devices
+                    carry the provider's last-contact timestamp (lastSeenAt), so
+                    the same rule applies — and stays consistent with the list. */}
+                {(device.source === 'device_agent' ||
+                  device.source === 'integration') && (
                   <span
                     className={`inline-block h-2.5 w-2.5 shrink-0 rounded-full ${
                       isDeviceOnline(device.lastCheckIn)
@@ -95,7 +131,8 @@ export const DeviceDetails = ({ device, onClose }: DeviceDetailsProps) => {
                 <Text size="lg" weight="semibold">
                   {device.name}
                 </Text>
-                {device.source === 'device_agent' && (
+                {(device.source === 'device_agent' ||
+                  device.source === 'integration') && (
                   <Badge variant="outline">
                     {isDeviceOnline(device.lastCheckIn) ? 'Online' : 'Offline'}
                   </Badge>
@@ -191,7 +228,35 @@ export const DeviceDetails = ({ device, onClose }: DeviceDetailsProps) => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {CHECK_FIELDS.map(({ key, dbKey, label }) => {
+          {/* Imported device with SOURCE-reported checks: show those (provider
+              vocabulary) instead of CompAI's fixed agent checks. */}
+          {device.source === 'integration' && sourceChecks(device).length > 0 &&
+            sourceChecks(device).map((check) => (
+              <TableRow key={check.id}>
+                <TableCell>
+                  <Text size="sm" weight="medium">
+                    {check.label}
+                  </Text>
+                </TableCell>
+                <TableCell>
+                  <Text size="sm" variant="muted">
+                    Reported by {device.integrationProvider?.name ?? 'the integration'}
+                  </Text>
+                </TableCell>
+                <TableCell>
+                  <Badge variant={check.passed ? 'default' : 'destructive'}>
+                    {check.passed ? 'Pass' : 'Fail'}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Text size="sm" variant="muted">
+                    —
+                  </Text>
+                </TableCell>
+              </TableRow>
+            ))}
+          {!(device.source === 'integration' && sourceChecks(device).length > 0) &&
+          CHECK_FIELDS.map(({ key, dbKey, label }) => {
             const isIntegration = device.source === 'integration';
             const isFleetUnsupported =
               device.source === 'fleet' && key !== 'diskEncryptionEnabled';
