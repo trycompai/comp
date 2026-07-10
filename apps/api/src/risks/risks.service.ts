@@ -5,6 +5,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { db, Prisma } from '@db';
+import { isMemberOrgParticipant } from '../utils/org-participation';
 import { CreateRiskDto } from './dto/create-risk.dto';
 import { GetRisksQueryDto } from './dto/get-risks-query.dto';
 import { UpdateRiskDto } from './dto/update-risk.dto';
@@ -39,7 +40,12 @@ export class RisksService {
       where: { id: assigneeId, organizationId },
       include: { user: { select: { role: true } } },
     });
-    if (member?.user.role === 'admin') {
+    if (!member) {
+      throw new BadRequestException(
+        'Assignee is not a member of this organization',
+      );
+    }
+    if (!(await isMemberOrgParticipant(member.user.role, organizationId))) {
       throw new BadRequestException(
         'Cannot assign a platform admin as assignee',
       );
