@@ -16,10 +16,14 @@ interface DeviceComplianceChartProps {
   agentDevices: DeviceWithChecks[];
 }
 
+// Design-system tokens (full oklch values — no hsl() wrapper). The previous
+// `hsl(var(--chart-positive))` tokens came from the legacy @trycompai/ui
+// stylesheet the app no longer loads, so every segment silently rendered as
+// SVG-default black.
 const CHART_COLORS = {
-  compliant: 'hsl(var(--chart-positive))',
-  nonCompliant: 'hsl(var(--chart-destructive))',
-  notTracked: 'hsl(var(--chart-warning))', // gray — no compliance data available
+  compliant: 'var(--primary)', // brand green
+  nonCompliant: 'var(--destructive)', // red
+  notTracked: 'var(--muted-foreground)', // gray — no compliance data available
 };
 
 export function DeviceComplianceChart({ fleetDevices, agentDevices }: DeviceComplianceChartProps) {
