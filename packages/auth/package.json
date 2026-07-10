@@ -13,6 +13,10 @@
       "types": "./dist/permissions.d.ts",
       "default": "./dist/permissions.js"
     },
+    "./participation": {
+      "types": "./dist/participation.d.ts",
+      "default": "./dist/participation.js"
+    },
     "./server": {
       "types": "./dist/server.d.ts",
       "default": "./dist/server.js"

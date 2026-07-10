@@ -7,6 +7,7 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { db } from '@db';
+import { isMemberOrgParticipant } from '../utils/org-participation';
 import { SaveSOAAnswerDto } from './dto/save-soa-answer.dto';
 import { CreateSOADocumentDto } from './dto/create-soa-document.dto';
 import { EnsureSOASetupDto } from './dto/ensure-soa-setup.dto';
@@ -447,7 +448,9 @@ export class SOAService {
       where: { id: approverMember.userId },
       select: { role: true },
     });
-    if (approverUser?.role === 'admin') {
+    if (
+      !(await isMemberOrgParticipant(approverUser?.role, dto.organizationId))
+    ) {
       throw new BadRequestException(
         'Cannot assign a platform admin as approver',
       );
@@ -554,9 +557,7 @@ export class SOAService {
       declinedAt: (document as { declinedAt?: Date | null }).declinedAt ?? null,
       status: document.status,
       approverName:
-        document.approver?.user?.name ||
-        document.approver?.user?.email ||
-        null,
+        document.approver?.user?.name || document.approver?.user?.email || null,
     };
 
     return generateSOAExportFile(
