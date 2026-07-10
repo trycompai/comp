@@ -1,5 +1,5 @@
 import { db } from '@db';
-import { isOrgParticipant } from '@trycompai/auth/participation';
+import { isOrgParticipant } from '../utils/org-participation-rule';
 import { Injectable, Logger } from '@nestjs/common';
 import { isUserUnsubscribed } from '@trycompai/email';
 import { triggerEmail } from '../email/trigger-email';
