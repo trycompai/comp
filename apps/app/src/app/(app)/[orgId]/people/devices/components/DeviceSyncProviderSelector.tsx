@@ -66,17 +66,20 @@ export function DeviceSyncProviderSelector() {
 
   // Empty slot instead of nothing: the labeled placeholder shows exactly what
   // this setting is and how to unlock it (mirrors TwoFactorSourceSelector).
+  // Right-aligned like the populated control so the slot doesn't jump sides.
   if (connectedProviders.length === 0 && erroredProviders.length === 0) {
     return (
-      <div className="flex w-full max-w-[280px] flex-col gap-1">
-        <span className="text-xs text-muted-foreground">Device sync</span>
-        <Link
-          href={`/${orgId}/integrations`}
-          className="border-border text-muted-foreground hover:bg-muted flex h-8 items-center justify-between rounded-md border border-dashed px-3 text-sm transition-colors"
-        >
-          Connect an integration
-          <span aria-hidden>→</span>
-        </Link>
+      <div className="flex justify-end">
+        <div className="flex w-full max-w-[280px] flex-col gap-1">
+          <span className="text-xs text-muted-foreground">Device sync</span>
+          <Link
+            href={`/${orgId}/integrations`}
+            className="border-border text-muted-foreground hover:bg-muted flex h-8 items-center justify-between rounded-md border border-dashed px-3 text-sm transition-colors"
+          >
+            Connect an integration
+            <span aria-hidden>→</span>
+          </Link>
+        </div>
       </div>
     );
   }
@@ -96,7 +99,9 @@ export function DeviceSyncProviderSelector() {
   };
 
   return (
-    <div className="flex flex-wrap items-end justify-between gap-3">
+    // Right-aligned: the sync source is a setting, not the page's subject —
+    // it sits at the row's end with its re-sync button snug beside it.
+    <div className="flex flex-wrap items-end justify-end gap-2">
       <div className="flex w-full max-w-[280px] flex-col gap-1">
         <span className="text-xs text-muted-foreground">Device sync</span>
         {/* Uncontrolled on purpose — mirrors the (working) people-sync select. */}
@@ -211,15 +216,18 @@ export function DeviceSyncProviderSelector() {
       </div>
 
       {selected && (
+        // Icon-only re-sync: the select already says what's syncing, so the
+        // button needs no label — aria-label + title keep it accessible.
         <Button
           variant="outline"
-          size="sm"
+          size="icon-lg"
           onClick={handleSyncNow}
           disabled={isSyncing}
           loading={isSyncing}
-          iconLeft={!isSyncing ? <Renew /> : undefined}
+          aria-label="Sync now"
+          title="Sync now"
         >
-          {isSyncing ? 'Syncing...' : 'Sync now'}
+          {!isSyncing && <Renew />}
         </Button>
       )}
     </div>
