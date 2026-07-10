@@ -1,5 +1,5 @@
 import { db } from '@db';
-import { orgParticipantMemberWhere } from '../utils/org-participation';
+import { orgParticipantMemberWhereForFlag } from '../utils/org-participation';
 import { Injectable, Logger } from '@nestjs/common';
 import { TaskStatus } from '@db';
 import { isUserUnsubscribed } from '@trycompai/email';
@@ -1086,12 +1086,14 @@ export class TaskNotifierService {
     } = params;
 
     try {
-      const participantWhere = await orgParticipantMemberWhere(organizationId);
-      const [organization, task, allMembers] = await Promise.all([
-        db.organization.findUnique({
-          where: { id: organizationId },
-          select: { name: true },
-        }),
+      const organization = await db.organization.findUnique({
+        where: { id: organizationId },
+        select: { name: true, isInternal: true },
+      });
+      const participantWhere = orgParticipantMemberWhereForFlag(
+        organization?.isInternal ?? false,
+      );
+      const [task, allMembers] = await Promise.all([
         db.task.findUnique({
           where: { id: taskId },
           select: {
@@ -1288,13 +1290,15 @@ export class TaskNotifierService {
 
     try {
       const taskIds = failedTasks.map((t) => t.taskId);
-      const participantWhere = await orgParticipantMemberWhere(organizationId);
+      const organization = await db.organization.findUnique({
+        where: { id: organizationId },
+        select: { name: true, isInternal: true },
+      });
+      const participantWhere = orgParticipantMemberWhereForFlag(
+        organization?.isInternal ?? false,
+      );
 
-      const [organization, tasks, allMembers] = await Promise.all([
-        db.organization.findUnique({
-          where: { id: organizationId },
-          select: { name: true },
-        }),
+      const [tasks, allMembers] = await Promise.all([
         db.task.findMany({
           where: {
             id: { in: taskIds },

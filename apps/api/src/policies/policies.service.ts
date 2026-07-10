@@ -300,10 +300,12 @@ export class PoliciesService {
           where: { id: createData.assigneeId, organizationId },
           include: { user: { select: { role: true } } },
         });
-        if (
-          assignee &&
-          !(await isMemberOrgParticipant(assignee.user.role, organizationId))
-        ) {
+        if (!assignee) {
+          throw new BadRequestException(
+            'Assignee is not a member of this organization',
+          );
+        }
+        if (!(await isMemberOrgParticipant(assignee.user.role, organizationId))) {
           throw new BadRequestException(
             'Cannot assign a platform admin as assignee',
           );

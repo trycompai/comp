@@ -473,8 +473,12 @@ export class TasksService {
           where: { id: assigneeId, organizationId },
           include: { user: { select: { role: true } } },
         });
+        if (!assigneeMember) {
+          throw new BadRequestException(
+            'Assignee is not a member of this organization',
+          );
+        }
         if (
-          assigneeMember &&
           !(await isMemberOrgParticipant(
             assigneeMember.user.role,
             organizationId,
@@ -682,8 +686,12 @@ export class TasksService {
             where: { id: updateData.assigneeId, organizationId },
             include: { user: { select: { role: true } } },
           });
+          if (!assigneeMember) {
+            throw new BadRequestException(
+              'Assignee is not a member of this organization',
+            );
+          }
           if (
-            assigneeMember &&
             !(await isMemberOrgParticipant(
               assigneeMember.user.role,
               organizationId,

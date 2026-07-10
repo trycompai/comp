@@ -40,10 +40,12 @@ export class RisksService {
       where: { id: assigneeId, organizationId },
       include: { user: { select: { role: true } } },
     });
-    if (
-      member &&
-      !(await isMemberOrgParticipant(member.user.role, organizationId))
-    ) {
+    if (!member) {
+      throw new BadRequestException(
+        'Assignee is not a member of this organization',
+      );
+    }
+    if (!(await isMemberOrgParticipant(member.user.role, organizationId))) {
       throw new BadRequestException(
         'Cannot assign a platform admin as assignee',
       );
