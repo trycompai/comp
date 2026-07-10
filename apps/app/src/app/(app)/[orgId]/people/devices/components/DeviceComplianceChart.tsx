@@ -50,6 +50,8 @@ export function DeviceComplianceChart({ fleetDevices, agentDevices }: DeviceComp
         const verdict = computeSourceComplianceVerdict(device);
         if (verdict?.kind === 'compliant') compliantCount++;
         else if (verdict?.kind === 'non_compliant') nonCompliantCount++;
+        // Both partial ('unverified') and zero-data ('not_tracked') devices
+        // land in the gray segment: neither has a defensible verdict.
         else unverifiedCount++;
         continue;
       }

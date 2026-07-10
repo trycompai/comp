@@ -120,7 +120,7 @@ export function CompliantBadge({ device }: { device: DeviceWithChecks }) {
   // the customer's MDM policy configuration, not the framework standard.
   if (!isComplianceTracked(device)) {
     const verdict = computeSourceComplianceVerdict(device);
-    if (verdict === null || (verdict.kind === 'unverified' && verdict.reported === 0)) {
+    if (verdict === null || verdict.kind === 'not_tracked') {
       return <NotTrackedBadge device={device} />;
     }
     if (verdict.kind === 'non_compliant') {

@@ -60,8 +60,10 @@ export const CANONICAL_DEVICE_CHECKS = [
 export type SourceComplianceVerdict =
   | { kind: 'compliant' }
   | { kind: 'non_compliant' }
-  /** Some (or none) of the canonical checks reported, none failed. */
-  | { kind: 'unverified'; reported: number; missing: string[] };
+  /** SOME canonical checks reported (>= 1), none failed. */
+  | { kind: 'unverified'; reported: number; missing: string[] }
+  /** ZERO canonical checks reported — the source gives us nothing to judge. */
+  | { kind: 'not_tracked' };
 
 /**
  * Computes CompAI's compliance verdict for an imported device from the
@@ -69,7 +71,9 @@ export type SourceComplianceVerdict =
  * display-only and never affect the verdict):
  * - any canonical check failed  -> non_compliant (one failure is enough)
  * - all four reported & passed  -> compliant
- * - otherwise                   -> unverified (n of 4), listing what's missing
+ * - some reported, none failed  -> unverified (n of 4), listing what's missing
+ * - zero reported               -> not_tracked (its own kind, so consumers
+ *                                  can't accidentally lump it into unverified)
  */
 export function computeSourceComplianceVerdict(
   device: DeviceWithChecks,
@@ -83,6 +87,9 @@ export function computeSourceComplianceVerdict(
   const reportedIds = new Set(canonical.map((c) => c.id));
   if (reportedIds.size === CANONICAL_DEVICE_CHECKS.length) {
     return { kind: 'compliant' };
+  }
+  if (reportedIds.size === 0) {
+    return { kind: 'not_tracked' };
   }
   return {
     kind: 'unverified',
@@ -99,11 +106,7 @@ export function unverifiedTooltipCopy(
   verdict: Extract<SourceComplianceVerdict, { kind: 'unverified' }>,
 ): string {
   const provider = device.integrationProvider?.name ?? 'The integration';
-  const reportedPart =
-    verdict.reported === 0
-      ? `${provider} reports none of the ${CANONICAL_DEVICE_CHECKS.length} security checks CompAI requires for compliance`
-      : `${provider} reports ${verdict.reported} of the ${CANONICAL_DEVICE_CHECKS.length} security checks CompAI requires for compliance (missing: ${verdict.missing.join(', ')})`;
-  return `${reportedPart}. Install the CompAI agent on this device for full verification.`;
+  return `${provider} reports ${verdict.reported} of the ${CANONICAL_DEVICE_CHECKS.length} security checks CompAI requires for compliance (missing: ${verdict.missing.join(', ')}). Install the CompAI agent on this device for full verification.`;
 }
 
 /**

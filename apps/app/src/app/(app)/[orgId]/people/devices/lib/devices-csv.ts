@@ -51,8 +51,8 @@ export function buildDevicesCsv(devices: DeviceWithChecks[]): string {
     const verdict = computeSourceComplianceVerdict(d);
     const status = tracked
       ? d.complianceStatus
-      : verdict === null || (verdict.kind === 'unverified' && verdict.reported === 0)
-        ? 'not_tracked' // matches the UI: zero canonical checks = Not tracked
+      : verdict === null || verdict.kind === 'not_tracked'
+        ? 'not_tracked'
         : verdict.kind === 'unverified'
           ? `unverified (${verdict.reported}/${CANONICAL_DEVICE_CHECKS.length} checks reported)`
           : verdict.kind;

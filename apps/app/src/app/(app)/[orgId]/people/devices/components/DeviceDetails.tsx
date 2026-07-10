@@ -39,7 +39,7 @@ function DeviceComplianceBadge({ device }: { device: DeviceWithChecks }) {
     // the same standard as the Comp agent. The vendor's own overall verdict is
     // informational only (shown in the info grid below).
     const verdict = computeSourceComplianceVerdict(device);
-    if (verdict === null || (verdict.kind === 'unverified' && verdict.reported === 0)) {
+    if (verdict === null || verdict.kind === 'not_tracked') {
       return <NotTrackedBadge device={device} />;
     }
     if (verdict.kind === 'non_compliant') {
