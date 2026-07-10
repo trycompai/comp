@@ -81,6 +81,22 @@ describe('DeviceSyncProviderSelector — RBAC gating', () => {
     );
   });
 
+  it('marks the saved provider as selected in the open dropdown (controlled select)', async () => {
+    const user = userEvent.setup();
+    mockHasPermission.mockImplementation(
+      (resource: string, action: string) =>
+        resource === 'integration' && action === 'update',
+    );
+
+    render(<DeviceSyncProviderSelector />);
+
+    await user.click(
+      screen.getByRole('combobox', { name: /Sync devices from/i }),
+    );
+    const jamfOption = await screen.findByRole('option', { name: /Jamf/i });
+    expect(jamfOption).toHaveAttribute('aria-selected', 'true');
+  });
+
   it('renders nothing for a user without integration:update and disables the hook', () => {
     mockHasPermission.mockReturnValue(false);
 
@@ -114,7 +130,7 @@ describe('DeviceSyncProviderSelector — RBAC gating', () => {
     expect(screen.getByText('Not syncing')).toBeInTheDocument();
     await user.click(trigger);
     expect(
-      screen.getByRole('option', { name: /Kandji/i }),
+      await screen.findByRole('option', { name: /Kandji/i }),
     ).toBeInTheDocument();
     // The saved provider is still the user's choice — "Don't auto-sync" must
     // NOT be marked Active just because the choice can't be resolved to a
@@ -246,7 +262,9 @@ describe('DeviceSyncProviderSelector — connection states', () => {
     mockHook({
       selectedProvider: null,
       availableProviders: [
-        { ...provider, connected: false, connectionId: null },
+        // Explicitly undefined — the base fixture carries 'active', which
+        // would not represent an older API response lacking the field.
+        { ...provider, connected: false, connectionStatus: undefined, connectionId: null },
       ],
       hasAnyConnection: false,
     });

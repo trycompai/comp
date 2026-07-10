@@ -104,8 +104,22 @@ export function DeviceSyncProviderSelector() {
     // the dropdown's info block.
     <div className="flex flex-wrap items-center justify-end gap-2">
       <div className="w-full max-w-[240px]">
-        {/* Uncontrolled on purpose — mirrors the (working) people-sync select. */}
-        <Select onValueChange={handleValueChange} disabled={isSyncing}>
+        {/* Controlled: unlike the popover-hosted people-sync selects (which
+            stay uncontrolled to survive popover dismissal), this renders
+            directly on the page — passing value keeps the saved selection
+            checked in the open dropdown for keyboard and screen-reader users.
+            Guarded to values that exist as items: a saved provider that is no
+            longer listed would otherwise break the select. */}
+        <Select
+          value={
+            connectedProviders.some((p) => p.slug === selectedProvider) ||
+            erroredProviders.some((p) => p.slug === selectedProvider)
+              ? selectedProvider
+              : null
+          }
+          onValueChange={handleValueChange}
+          disabled={isSyncing}
+        >
           <SelectTrigger aria-label="Sync devices from">
             {isSyncing ? (
               <div className="flex items-center gap-2">
