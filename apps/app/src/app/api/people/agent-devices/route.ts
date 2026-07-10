@@ -5,7 +5,11 @@ import {
   daysSinceCheckIn,
   getDeviceComplianceStatus,
 } from '@trycompai/utils/devices';
-import type { CheckDetails, DeviceWithChecks } from '@/app/(app)/[orgId]/people/devices/types';
+import type {
+  CheckDetails,
+  DeviceWithChecks,
+  SourceCompliance,
+} from '@/app/(app)/[orgId]/people/devices/types';
 
 /** Maps the DB `DeviceSource` enum to the frontend source discriminant. */
 function mapSource(source: string): DeviceWithChecks['source'] {
@@ -126,6 +130,12 @@ export async function GET(req: Request) {
         },
         source,
         ...(provider ? { integrationProvider: provider } : {}),
+        // Source-reported compliance for imported devices (null when the
+        // provider reports none). The stored JSON was validated against
+        // SyncDeviceSchema at sync time.
+        ...(source === 'integration'
+          ? { sourceCompliance: (device.sourceCompliance as SourceCompliance) ?? null }
+          : {}),
         complianceStatus,
         daysSinceLastCheckIn: daysSinceCheckIn(device.lastCheckIn),
         hasActiveAgentSession:
