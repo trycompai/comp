@@ -160,16 +160,39 @@ export class GenericDeviceSyncService {
           });
         }
 
+        // Compliance as reported by the source, if any. Written on EVERY sync
+        // (JsonNull when absent) so stale values are cleared if the provider
+        // stops reporting — never freeze an outdated verdict on the row.
+        const hasSourceCompliance =
+          device.isCompliant !== undefined ||
+          (device.checks !== undefined && device.checks.length > 0);
+        const sourceCompliance: Prisma.InputJsonValue | typeof Prisma.JsonNull =
+          hasSourceCompliance
+            ? {
+                ...(device.isCompliant !== undefined
+                  ? { isCompliant: device.isCompliant }
+                  : {}),
+                ...(device.checks !== undefined && device.checks.length > 0
+                  ? { checks: device.checks }
+                  : {}),
+              }
+            : Prisma.JsonNull;
+
         const updateData = {
           name: device.name,
           hostname: device.hostname ?? device.name,
           platform: device.platform,
           osVersion: device.osVersion ?? 'Unknown',
           hardwareModel: device.hardwareModel,
-          lastCheckIn: new Date(),
+          // Prefer the provider's own last-contact timestamp (validated ISO
+          // string) so "Last seen" reflects the device, not our sync cadence.
+          lastCheckIn: device.lastSeenAt
+            ? new Date(device.lastSeenAt)
+            : new Date(),
           source: 'integration' as const,
           integrationConnectionId: connectionId,
           externalDeviceId: device.externalId,
+          sourceCompliance,
           // Backfill the serial on updates too, so an externalId-matched row
           // becomes serial-linkable once the provider reports one. When the
           // device has no serial, Prisma omits `undefined` and leaves it as-is.

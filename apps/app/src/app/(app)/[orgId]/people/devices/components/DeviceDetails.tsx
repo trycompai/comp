@@ -22,6 +22,9 @@ import {
   CHECK_FIELDS,
   PLATFORM_LABELS,
   isDeviceOnline,
+  sourceChecks,
+  sourceReportedTooltipCopy,
+  sourceVerdict,
   staleLabel,
   staleTooltipCopy,
 } from '../lib/device-source';
@@ -30,7 +33,20 @@ import { RevokeAgentAccessDialog } from './RevokeAgentAccessDialog';
 
 function DeviceComplianceBadge({ device }: { device: DeviceWithChecks }) {
   if (device.source === 'integration') {
-    return <NotTrackedBadge device={device} />;
+    // Show the SOURCE's own verdict when it reports one (attributed via the
+    // title tooltip); otherwise untracked, as before.
+    const verdict = sourceVerdict(device);
+    if (verdict === undefined) {
+      return <NotTrackedBadge device={device} />;
+    }
+    return (
+      <Badge
+        variant={verdict ? 'default' : 'destructive'}
+        title={sourceReportedTooltipCopy(device)}
+      >
+        {verdict ? 'Compliant' : 'Non-Compliant'}
+      </Badge>
+    );
   }
   if (device.complianceStatus === 'stale') {
     return (
@@ -191,7 +207,35 @@ export const DeviceDetails = ({ device, onClose }: DeviceDetailsProps) => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {CHECK_FIELDS.map(({ key, dbKey, label }) => {
+          {/* Imported device with SOURCE-reported checks: show those (provider
+              vocabulary) instead of CompAI's fixed agent checks. */}
+          {device.source === 'integration' && sourceChecks(device).length > 0 &&
+            sourceChecks(device).map((check) => (
+              <TableRow key={check.id}>
+                <TableCell>
+                  <Text size="sm" weight="medium">
+                    {check.label}
+                  </Text>
+                </TableCell>
+                <TableCell>
+                  <Text size="sm" variant="muted">
+                    Reported by {device.integrationProvider?.name ?? 'the integration'}
+                  </Text>
+                </TableCell>
+                <TableCell>
+                  <Badge variant={check.passed ? 'default' : 'destructive'}>
+                    {check.passed ? 'Pass' : 'Fail'}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Text size="sm" variant="muted">
+                    —
+                  </Text>
+                </TableCell>
+              </TableRow>
+            ))}
+          {!(device.source === 'integration' && sourceChecks(device).length > 0) &&
+          CHECK_FIELDS.map(({ key, dbKey, label }) => {
             const isIntegration = device.source === 'integration';
             const isFleetUnsupported =
               device.source === 'fleet' && key !== 'diskEncryptionEnabled';

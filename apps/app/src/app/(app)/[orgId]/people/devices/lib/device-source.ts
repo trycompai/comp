@@ -1,4 +1,4 @@
-import type { DeviceWithChecks } from '../types';
+import type { DeviceWithChecks, SourceComplianceCheck } from '../types';
 
 /**
  * Human label for where a device came from. Shared by the devices table, the
@@ -31,6 +31,30 @@ export function sourceKey(device: DeviceWithChecks): string {
  */
 export function isComplianceTracked(device: DeviceWithChecks): boolean {
   return device.source !== 'integration';
+}
+
+/**
+ * The SOURCE integration's own compliance verdict for an imported device, or
+ * undefined when the provider doesn't report one (renders "Not tracked").
+ */
+export function sourceVerdict(device: DeviceWithChecks): boolean | undefined {
+  if (device.source !== 'integration') return undefined;
+  return device.sourceCompliance?.isCompliant;
+}
+
+/**
+ * The SOURCE integration's own named checks for an imported device (empty when
+ * the provider reports none). Provider vocabulary — rendered as-is.
+ */
+export function sourceChecks(device: DeviceWithChecks): SourceComplianceCheck[] {
+  if (device.source !== 'integration') return [];
+  return device.sourceCompliance?.checks ?? [];
+}
+
+/** Tooltip copy for compliance values reported by the source integration. */
+export function sourceReportedTooltipCopy(device: DeviceWithChecks): string {
+  const provider = device.integrationProvider?.name ?? 'the integration';
+  return `Reported by ${provider}. CompAI didn't run these checks itself — install the CompAI agent for measured compliance.`;
 }
 
 // ---------------------------------------------------------------------------

@@ -227,11 +227,84 @@ describe('DeviceAgentDevicesList — integration-imported devices', () => {
     ).toBeInTheDocument();
   });
 
-  it('does not present an imported device as Online or Offline', () => {
-    render(<DeviceAgentDevicesList devices={[makeIntegrationDevice()]} />);
-    // Imported devices get no live-status dot at all (a spacer, no title).
-    expect(screen.queryByTitle('Online')).not.toBeInTheDocument();
-    expect(screen.queryByTitle('Offline')).not.toBeInTheDocument();
+  it('presents an imported device as Online when the provider saw it recently', () => {
+    // lastCheckIn carries the PROVIDER's last-contact timestamp for imported
+    // devices (device sync lastSeenAt), so the live dot applies honestly.
+    render(
+      <DeviceAgentDevicesList
+        devices={[makeIntegrationDevice({ lastCheckIn: new Date().toISOString() })]}
+      />,
+    );
+    expect(screen.getByTitle('Online')).toBeInTheDocument();
+  });
+
+  it('presents an imported device as Offline when the provider has not seen it recently', () => {
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+    render(
+      <DeviceAgentDevicesList
+        devices={[makeIntegrationDevice({ lastCheckIn: threeDaysAgo })]}
+      />,
+    );
+    expect(screen.getByTitle('Offline')).toBeInTheDocument();
+  });
+
+  it('shows the SOURCE-reported verdict and named checks when the provider reports them', () => {
+    render(
+      <DeviceAgentDevicesList
+        devices={[
+          makeIntegrationDevice({
+            integrationProvider: { slug: 'intune', name: 'Microsoft Intune' },
+            sourceCompliance: {
+              isCompliant: true,
+              checks: [
+                { id: 'disk_encryption', label: 'Disk Encryption', passed: true },
+                { id: 'firewall', label: 'Firewall', passed: false },
+              ],
+            },
+          }),
+        ]}
+      />,
+    );
+    // Verdict shown instead of "Not tracked", with provider attribution.
+    expect(screen.getByText('Yes')).toBeInTheDocument();
+    expect(screen.queryByText('Not tracked')).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Where does this compliance status come from\?/i }),
+    ).toBeInTheDocument();
+    // Provider-named check badges, pass and fail.
+    expect(screen.getByText('Disk Encryption')).toBeInTheDocument();
+    expect(screen.getByText('Firewall')).toBeInTheDocument();
+  });
+
+  it('shows a red "No" when the source reports non-compliant', () => {
+    render(
+      <DeviceAgentDevicesList
+        devices={[
+          makeIntegrationDevice({
+            sourceCompliance: { isCompliant: false },
+          }),
+        ]}
+      />,
+    );
+    expect(screen.getByText('No')).toBeInTheDocument();
+    expect(screen.queryByText('Not tracked')).not.toBeInTheDocument();
+  });
+
+  it('keeps "Not tracked" when the source reports checks but no verdict', () => {
+    render(
+      <DeviceAgentDevicesList
+        devices={[
+          makeIntegrationDevice({
+            sourceCompliance: {
+              checks: [{ id: 'os_up_to_date', label: 'OS up to date', passed: true }],
+            },
+          }),
+        ]}
+      />,
+    );
+    // Checks render, but with no overall verdict the compliance column stays honest.
+    expect(screen.getByText('OS up to date')).toBeInTheDocument();
+    expect(screen.getByText('Not tracked')).toBeInTheDocument();
   });
 
   it('renders a source filter only when more than one source is present', () => {

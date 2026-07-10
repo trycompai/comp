@@ -466,4 +466,105 @@ describe('GenericDeviceSyncService', () => {
       expect(result.removed).toBe(0);
     });
   });
+  // ========================================================================
+  // Source-reported compliance (sourceCompliance) + provider last-seen
+  // ========================================================================
+
+  describe('Source-reported compliance', () => {
+    it('persists the provider verdict, checks, and lastSeenAt on create', async () => {
+      const lastSeenAt = '2026-07-09T18:00:00.000Z';
+      await service.processDevices({
+        organizationId: ORG_ID,
+        connectionId: CONN_ID,
+        devices: [
+          baseDevice({
+            isCompliant: true,
+            checks: [
+              { id: 'disk_encryption', label: 'Disk Encryption', passed: true },
+              { id: 'firewall', label: 'Firewall', passed: false },
+            ],
+            lastSeenAt,
+          }),
+        ],
+      });
+
+      expect(mockDeviceCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            sourceCompliance: {
+              isCompliant: true,
+              checks: [
+                { id: 'disk_encryption', label: 'Disk Encryption', passed: true },
+                { id: 'firewall', label: 'Firewall', passed: false },
+              ],
+            },
+            lastCheckIn: new Date(lastSeenAt),
+          }),
+        }),
+      );
+    });
+
+    it('persists checks without a verdict (provider reports checks only)', async () => {
+      await service.processDevices({
+        organizationId: ORG_ID,
+        connectionId: CONN_ID,
+        devices: [
+          baseDevice({
+            checks: [{ id: 'os_up_to_date', label: 'OS up to date', passed: true }],
+          }),
+        ],
+      });
+
+      const data = mockDeviceCreate.mock.calls[0][0].data;
+      expect(data.sourceCompliance).toEqual({
+        checks: [{ id: 'os_up_to_date', label: 'OS up to date', passed: true }],
+      });
+      expect(data.sourceCompliance.isCompliant).toBeUndefined();
+    });
+
+    it('writes JsonNull when the provider reports no compliance (clears stale values on update)', async () => {
+      // Existing integration device — update path.
+      mockDeviceFindFirst.mockResolvedValue({ id: 'dev_1', source: 'integration' });
+
+      await service.processDevices({
+        organizationId: ORG_ID,
+        connectionId: CONN_ID,
+        devices: [baseDevice()],
+      });
+
+      expect(mockDeviceUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            sourceCompliance: Prisma.JsonNull,
+          }),
+        }),
+      );
+    });
+
+    it('treats an explicit false verdict as reported (not as absent)', async () => {
+      await service.processDevices({
+        organizationId: ORG_ID,
+        connectionId: CONN_ID,
+        devices: [baseDevice({ isCompliant: false })],
+      });
+
+      const data = mockDeviceCreate.mock.calls[0][0].data;
+      expect(data.sourceCompliance).toEqual({ isCompliant: false });
+    });
+
+    it('falls back to sync time for lastCheckIn when lastSeenAt is absent', async () => {
+      const before = Date.now();
+      await service.processDevices({
+        organizationId: ORG_ID,
+        connectionId: CONN_ID,
+        devices: [baseDevice()],
+      });
+      const after = Date.now();
+
+      const data = mockDeviceCreate.mock.calls[0][0].data;
+      const ts = (data.lastCheckIn as Date).getTime();
+      expect(ts).toBeGreaterThanOrEqual(before);
+      expect(ts).toBeLessThanOrEqual(after);
+    });
+  });
 });
