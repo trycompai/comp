@@ -14,6 +14,7 @@ import {
 } from '@trycompai/design-system';
 import { InProgress, Renew } from '@trycompai/design-system/icons';
 import { usePermissions } from '@/hooks/use-permissions';
+import { formatTimeAgo } from '../lib/device-source';
 import { useDeviceSync } from '../hooks/useDeviceSync';
 
 const NO_SYNC_VALUE = '__no_sync__';
@@ -66,17 +67,20 @@ export function DeviceSyncProviderSelector() {
 
   // Empty slot instead of nothing: the labeled placeholder shows exactly what
   // this setting is and how to unlock it (mirrors TwoFactorSourceSelector).
+  // Right-aligned like the populated control so the slot doesn't jump sides.
   if (connectedProviders.length === 0 && erroredProviders.length === 0) {
     return (
-      <div className="flex w-full max-w-[280px] flex-col gap-1">
-        <span className="text-xs text-muted-foreground">Device sync</span>
-        <Link
-          href={`/${orgId}/integrations`}
-          className="border-border text-muted-foreground hover:bg-muted flex h-8 items-center justify-between rounded-md border border-dashed px-3 text-sm transition-colors"
-        >
-          Connect an integration
-          <span aria-hidden>→</span>
-        </Link>
+      <div className="flex justify-end">
+        <div className="flex w-full max-w-[280px] flex-col gap-1">
+          <span className="text-xs text-muted-foreground">Device sync</span>
+          <Link
+            href={`/${orgId}/integrations`}
+            className="border-border text-muted-foreground hover:bg-muted flex h-8 items-center justify-between rounded-md border border-dashed px-3 text-sm transition-colors"
+          >
+            Connect an integration
+            <span aria-hidden>→</span>
+          </Link>
+        </div>
       </div>
     );
   }
@@ -96,9 +100,16 @@ export function DeviceSyncProviderSelector() {
   };
 
   return (
-    <div className="flex flex-wrap items-end justify-between gap-3">
-      <div className="flex w-full max-w-[280px] flex-col gap-1">
-        <span className="text-xs text-muted-foreground">Device sync</span>
+    // Right-aligned inline row: "Synced Xh ago · [provider select] · [↻]".
+    // The provider name + refresh affordance say what this is; the last-synced
+    // text gives the freshness at a glance without opening the dropdown.
+    <div className="flex flex-wrap items-center justify-end gap-2">
+      {selected?.lastSyncAt && (
+        <span className="text-xs text-muted-foreground">
+          Synced {formatTimeAgo(selected.lastSyncAt)}
+        </span>
+      )}
+      <div className="w-full max-w-[240px]">
         {/* Uncontrolled on purpose — mirrors the (working) people-sync select. */}
         <Select onValueChange={handleValueChange} disabled={isSyncing}>
           <SelectTrigger aria-label="Sync devices from">
@@ -211,15 +222,17 @@ export function DeviceSyncProviderSelector() {
       </div>
 
       {selected && (
+        // Icon-only re-sync in the brand primary: the select already says
+        // what's syncing — aria-label + title keep it accessible.
         <Button
-          variant="outline"
-          size="sm"
+          size="icon-lg"
           onClick={handleSyncNow}
           disabled={isSyncing}
           loading={isSyncing}
-          iconLeft={!isSyncing ? <Renew /> : undefined}
+          aria-label="Sync now"
+          title="Sync now"
         >
-          {isSyncing ? 'Syncing...' : 'Sync now'}
+          {!isSyncing && <Renew />}
         </Button>
       )}
     </div>

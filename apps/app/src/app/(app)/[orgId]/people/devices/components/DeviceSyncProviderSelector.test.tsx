@@ -138,6 +138,32 @@ describe('DeviceSyncProviderSelector — RBAC gating', () => {
   });
 });
 
+describe('DeviceSyncProviderSelector — last synced text', () => {
+  beforeEach(() => {
+    mockHasPermission.mockImplementation(
+      (resource: string, action: string) =>
+        resource === 'integration' && action === 'update',
+    );
+  });
+
+  it('shows "Synced Xh ago" next to the control when the selected provider has synced', () => {
+    const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
+    mockHook({
+      availableProviders: [{ ...provider, lastSyncAt: threeHoursAgo }],
+    });
+
+    render(<DeviceSyncProviderSelector />);
+
+    expect(screen.getByText('Synced 3h ago')).toBeInTheDocument();
+  });
+
+  it('shows no synced text when the provider has never synced', () => {
+    render(<DeviceSyncProviderSelector />);
+
+    expect(screen.queryByText(/^Synced /)).not.toBeInTheDocument();
+  });
+});
+
 describe('DeviceSyncProviderSelector — connection states', () => {
   beforeEach(() => {
     mockHasPermission.mockImplementation(
