@@ -3,6 +3,7 @@ import {
   roleValidationMessages,
   seedRolesIfMissing,
   teamSizeBand,
+  type RoleValidationRow,
 } from './roles';
 import type {
   DocumentExportInput,
@@ -153,20 +154,63 @@ describe('buildRolesSections', () => {
 
 describe('roleValidationMessages (server gate)', () => {
   const assigned = { id: 'ra' };
-  const complete = () => [
+  const externalAuditor: RoleValidationRow = {
+    roleKey: 'internal_auditor',
+    name: 'Internal Auditor',
+    auditRoute: 'external',
+    auditFirmName: 'Acme Audit LLP',
+    auditEvidenceRef: 'LA cert on file',
+    assignments: [assigned],
+  };
+  const complete = (): RoleValidationRow[] => [
     { roleKey: 'top_management', name: 'Top Management', auditRoute: null, assignments: [assigned] },
     { roleKey: 'spo', name: 'SPO', auditRoute: null, assignments: [assigned] },
     { roleKey: 'deputy_spo', name: 'Deputy SPO', auditRoute: null, assignments: [assigned] },
-    {
-      roleKey: 'internal_auditor',
-      name: 'Internal Auditor',
-      auditRoute: 'external',
-      assignments: [assigned],
-    },
+    { ...externalAuditor },
   ];
 
   it('passes when every seeded role is present + assigned + routed', () => {
     expect(roleValidationMessages({ roles: complete(), memberCount: 20 })).toEqual([]);
+  });
+
+  it('requires firm + evidence for the external audit route', () => {
+    const roles = complete();
+    roles[3] = {
+      roleKey: 'internal_auditor',
+      name: 'Internal Auditor',
+      auditRoute: 'external',
+      assignments: [assigned],
+    };
+    expect(roleValidationMessages({ roles, memberCount: 20 })).toContain(
+      'The external Internal Auditor needs a firm/person name and an evidence reference.',
+    );
+  });
+
+  it('requires a member for the in-house audit route', () => {
+    const roles = complete();
+    roles[3] = {
+      roleKey: 'internal_auditor',
+      name: 'Internal Auditor',
+      auditRoute: 'in_house',
+      assignments: [assigned],
+    };
+    expect(roleValidationMessages({ roles, memberCount: 20 })).toContain(
+      'The in-house Internal Auditor needs a member selected.',
+    );
+  });
+
+  it('requires member + course + due date for the training-planned route', () => {
+    const roles = complete();
+    roles[3] = {
+      roleKey: 'internal_auditor',
+      name: 'Internal Auditor',
+      auditRoute: 'training_planned',
+      auditRouteMemberId: 'mem_1',
+      assignments: [assigned],
+    };
+    expect(roleValidationMessages({ roles, memberCount: 20 })).toContain(
+      'The training-planned Internal Auditor needs a member, a course, and a due date.',
+    );
   });
 
   it('flags an entirely-missing required seeded role', () => {

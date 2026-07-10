@@ -37,6 +37,7 @@ describe('teamSizeBand', () => {
 });
 
 describe('roleValidationMessages', () => {
+  const ACTIVE = new Set(['mem_1']);
   const fullyAssigned = (): IsmsRole[] => [
     role({ roleKey: 'top_management', name: 'Top Management', assignments: [withMember] }),
     role({ roleKey: 'spo', name: 'SPO', assignments: [withMember] }),
@@ -45,18 +46,33 @@ describe('roleValidationMessages', () => {
       roleKey: 'internal_auditor',
       name: 'Internal Auditor',
       auditRoute: 'external',
+      auditFirmName: 'Acme Audit LLP',
+      auditEvidenceRef: 'LA cert on file',
       assignments: [withMember],
     }),
   ];
 
   it('returns no messages when every seeded role is satisfied', () => {
-    expect(roleValidationMessages({ roles: fullyAssigned(), band: 'standard' })).toEqual([]);
+    expect(
+      roleValidationMessages({ roles: fullyAssigned(), band: 'standard', activeMemberIds: ACTIVE }),
+    ).toEqual([]);
   });
 
   it('flags a seeded role with no assigned member', () => {
     const roles = fullyAssigned();
     roles[0] = role({ roleKey: 'top_management', name: 'Top Management', assignments: [] });
-    const messages = roleValidationMessages({ roles, band: 'standard' });
+    const messages = roleValidationMessages({ roles, band: 'standard', activeMemberIds: ACTIVE });
+    expect(messages).toContain('Top Management needs at least one assigned member.');
+  });
+
+  it('does not count an assignment to a deactivated (non-active) member', () => {
+    const roles = fullyAssigned();
+    // top_management assigned only to mem_1, but mem_1 is NOT in the active set.
+    const messages = roleValidationMessages({
+      roles,
+      band: 'standard',
+      activeMemberIds: new Set(['someone_else']),
+    });
     expect(messages).toContain('Top Management needs at least one assigned member.');
   });
 
@@ -64,10 +80,10 @@ describe('roleValidationMessages', () => {
     const roles = fullyAssigned();
     roles[2] = role({ roleKey: 'deputy_spo', name: 'Deputy SPO', assignments: [] });
 
-    expect(roleValidationMessages({ roles, band: 'small' })).toEqual([]);
-    expect(roleValidationMessages({ roles, band: 'standard' })).toContain(
-      'Deputy SPO needs at least one assigned member.',
-    );
+    expect(roleValidationMessages({ roles, band: 'small', activeMemberIds: ACTIVE })).toEqual([]);
+    expect(
+      roleValidationMessages({ roles, band: 'standard', activeMemberIds: ACTIVE }),
+    ).toContain('Deputy SPO needs at least one assigned member.');
   });
 
   it('requires the Internal Auditor to have a route', () => {
@@ -78,8 +94,23 @@ describe('roleValidationMessages', () => {
       auditRoute: null,
       assignments: [withMember],
     });
-    expect(roleValidationMessages({ roles, band: 'standard' })).toContain(
-      'The Internal Auditor needs an audit route selected.',
+    expect(
+      roleValidationMessages({ roles, band: 'standard', activeMemberIds: ACTIVE }),
+    ).toContain('The Internal Auditor needs an audit route selected.');
+  });
+
+  it('requires firm + evidence for the external audit route', () => {
+    const roles = fullyAssigned();
+    roles[3] = role({
+      roleKey: 'internal_auditor',
+      name: 'Internal Auditor',
+      auditRoute: 'external',
+      assignments: [withMember],
+    });
+    expect(
+      roleValidationMessages({ roles, band: 'standard', activeMemberIds: ACTIVE }),
+    ).toContain(
+      'The external Internal Auditor needs a firm/person name and an evidence reference.',
     );
   });
 
@@ -88,13 +119,15 @@ describe('roleValidationMessages', () => {
       ...fullyAssigned(),
       role({ roleKey: null, name: 'Custom role', assignments: [] }),
     ];
-    expect(roleValidationMessages({ roles, band: 'standard' })).toEqual([]);
+    expect(
+      roleValidationMessages({ roles, band: 'standard', activeMemberIds: ACTIVE }),
+    ).toEqual([]);
   });
 
   it('flags an entirely-missing required seeded role (not just present ones)', () => {
     const roles = fullyAssigned().filter((r) => r.roleKey !== 'top_management');
-    expect(roleValidationMessages({ roles, band: 'standard' })).toContain(
-      'Top Management is missing from the document.',
-    );
+    expect(
+      roleValidationMessages({ roles, band: 'standard', activeMemberIds: ACTIVE }),
+    ).toContain('Top Management is missing from the document.');
   });
 });

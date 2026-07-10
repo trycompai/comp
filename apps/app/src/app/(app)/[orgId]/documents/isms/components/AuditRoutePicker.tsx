@@ -98,26 +98,31 @@ export function AuditRoutePicker({
   const handleSave = handleSubmit(async (values) => {
     const inHouseOrTraining =
       values.auditRoute === 'in_house' || values.auditRoute === 'training_planned';
-    await onSave({
-      auditRoute: values.auditRoute || null,
-      auditRouteMemberId: inHouseOrTraining
-        ? emptyToNull(values.auditRouteMemberId)
-        : null,
-      auditFirmName:
-        values.auditRoute === 'external' ? emptyToNull(values.auditFirmName) : null,
-      auditEvidenceRef:
-        values.auditRoute === 'external'
-          ? emptyToNull(values.auditEvidenceRef)
+    try {
+      await onSave({
+        auditRoute: values.auditRoute || null,
+        auditRouteMemberId: inHouseOrTraining
+          ? emptyToNull(values.auditRouteMemberId)
           : null,
-      auditCourse:
-        values.auditRoute === 'training_planned'
-          ? emptyToNull(values.auditCourse)
-          : null,
-      auditDueDate:
-        values.auditRoute === 'training_planned'
-          ? emptyToNull(values.auditDueDate)
-          : null,
-    });
+        auditFirmName:
+          values.auditRoute === 'external' ? emptyToNull(values.auditFirmName) : null,
+        auditEvidenceRef:
+          values.auditRoute === 'external'
+            ? emptyToNull(values.auditEvidenceRef)
+            : null,
+        auditCourse:
+          values.auditRoute === 'training_planned'
+            ? emptyToNull(values.auditCourse)
+            : null,
+        auditDueDate:
+          values.auditRoute === 'training_planned'
+            ? emptyToNull(values.auditDueDate)
+            : null,
+      });
+    } catch {
+      // The caller surfaces the failure via toast and re-throws; swallow here so a
+      // failed save keeps the form dirty for retry without an unhandled rejection.
+    }
   });
 
   const hasMemberOptions = memberOptions.length > 0;

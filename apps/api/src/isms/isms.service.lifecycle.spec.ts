@@ -9,8 +9,8 @@ import type { IsmsVersionService } from './isms-version.service';
 
 // approve() (the CS-701 freeze/version flow) is covered in
 // isms.service.approve.spec.ts.
-jest.mock('@db', () => ({
-  db: {
+jest.mock('@db', () => {
+  const db = {
     ismsDocument: {
       findFirst: jest.fn(),
       update: jest.fn(),
@@ -18,9 +18,12 @@ jest.mock('@db', () => ({
     },
     member: { findFirst: jest.fn(), findMany: jest.fn() },
     ismsRole: { findMany: jest.fn() },
-    $transaction: jest.fn(),
-  },
-}));
+    // lockDocument runs $executeRaw; submitForApproval wraps validate+update in a tx.
+    $executeRaw: jest.fn(),
+    $transaction: jest.fn((cb: (tx: unknown) => unknown) => cb(db)),
+  };
+  return { db };
+});
 
 const mockDb = jest.mocked(db);
 
@@ -146,6 +149,8 @@ describe('IsmsService document lifecycle', () => {
           roleKey: 'internal_auditor',
           name: 'Internal Auditor',
           auditRoute: 'external',
+          auditFirmName: 'Acme',
+          auditEvidenceRef: 'cert',
           assignments: [{ memberId: 'd' }],
         },
       ]);
@@ -175,6 +180,8 @@ describe('IsmsService document lifecycle', () => {
           roleKey: 'internal_auditor',
           name: 'Internal Auditor',
           auditRoute: 'external',
+          auditFirmName: 'Acme Audit LLP',
+          auditEvidenceRef: 'LA cert on file',
           assignments: [{ memberId: 'd' }],
         },
       ]);

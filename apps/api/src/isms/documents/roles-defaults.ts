@@ -63,7 +63,9 @@ export const SEED_ROLE_DEFINITIONS: SeedRoleDefinition[] = [
 ];
 
 /** roleKey values of the seeded roles, for validation and lookups. */
-export const SEED_ROLE_KEYS = SEED_ROLE_DEFINITIONS.map((role) => role.roleKey);
+export const SEED_ROLE_KEYS: string[] = SEED_ROLE_DEFINITIONS.map(
+  (role) => role.roleKey,
+);
 
 /**
  * The two governance rows that appear only in the generated document (never as

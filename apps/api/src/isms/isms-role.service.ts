@@ -71,6 +71,9 @@ export class IsmsRoleService {
     });
 
     return db.$transaction(async (tx) => {
+      // Same per-document lock submit/approve take, so an edit can't race the
+      // submission's completeness check.
+      await lockDocument(tx, role.documentId);
       await invalidateApprovalIfNeeded({ tx, documentId: role.documentId });
       return tx.ismsRole.update({
         where: { id: roleId },
@@ -114,6 +117,7 @@ export class IsmsRoleService {
       );
     }
     await db.$transaction(async (tx) => {
+      await lockDocument(tx, role.documentId);
       await invalidateApprovalIfNeeded({ tx, documentId: role.documentId });
       await tx.ismsRole.delete({ where: { id: roleId } });
     });
@@ -130,11 +134,12 @@ export class IsmsRoleService {
     if (memberId === undefined) return undefined;
     const trimmed = memberId?.trim();
     if (!trimmed) return null;
+    // Role holders (incl. the audit-route member) must be active People members.
     const member = await db.member.findFirst({
-      where: { id: trimmed, organizationId },
+      where: { id: trimmed, organizationId, deactivated: false },
     });
     if (!member) {
-      throw new NotFoundException('Member not found in organization');
+      throw new NotFoundException('Active member not found in organization');
     }
     return trimmed;
   }
@@ -161,11 +166,17 @@ export class IsmsRoleService {
     documentId: string;
     organizationId: string;
   }) {
+    // Scope to the Roles document type: role rows must never attach to another
+    // ISMS document (they'd be invisible to the Clause 5.3 export).
     const document = await db.ismsDocument.findFirst({
-      where: { id: documentId, organizationId },
+      where: {
+        id: documentId,
+        organizationId,
+        type: 'roles_and_responsibilities',
+      },
     });
     if (!document) {
-      throw new NotFoundException('ISMS document not found');
+      throw new NotFoundException('ISMS roles document not found');
     }
     return document;
   }

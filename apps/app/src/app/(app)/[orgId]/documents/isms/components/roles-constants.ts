@@ -49,20 +49,47 @@ const REQUIRED_SEED_ROLES: { key: string; label: string }[] = [
   { key: INTERNAL_AUDITOR_ROLE_KEY, label: 'Internal Auditor' },
 ];
 
+/** Route-specific required fields for the Internal Auditor (mirrors the server). */
+function auditRouteMessages(role: IsmsRole): string[] {
+  const route = role.auditRoute;
+  if (!route) return ['The Internal Auditor needs an audit route selected.'];
+  if (route === 'in_house' && !role.auditRouteMemberId) {
+    return ['The in-house Internal Auditor needs a member selected.'];
+  }
+  if (route === 'external' && (!role.auditFirmName || !role.auditEvidenceRef)) {
+    return [
+      'The external Internal Auditor needs a firm/person name and an evidence reference.',
+    ];
+  }
+  if (
+    route === 'training_planned' &&
+    (!role.auditRouteMemberId || !role.auditCourse || !role.auditDueDate)
+  ) {
+    return [
+      'The training-planned Internal Auditor needs a member, a course, and a due date.',
+    ];
+  }
+  return [];
+}
+
 /**
  * The document-generation validation (5.3): every seeded role must be present and
- * have at least one assigned member (except Deputy SPO in the 1-3 band), and the
- * Internal Auditor must have a route selected. Iterates the REQUIRED keys (not
- * just the roles present) so an entirely-missing seeded row is caught too. Returns
- * the unmet requirements, empty when valid. Mirrors the server gate in the API's
- * documents/roles.ts roleValidationMessages.
+ * have at least one assigned member (except Deputy SPO in the 1-3 band); the
+ * Internal Auditor must have a route AND its route-specific fields. Iterates the
+ * REQUIRED keys (not just the roles present) so an entirely-missing seeded row is
+ * caught too. Only assignments to ACTIVE members count — so the gate matches the
+ * server, which filters out deactivated members. Mirrors the server gate in the
+ * API's documents/roles.ts roleValidationMessages.
  */
 export function roleValidationMessages({
   roles,
   band,
+  activeMemberIds,
 }: {
   roles: IsmsRole[];
   band: IsmsTeamSizeBand;
+  /** ids of active People members; assignments to anyone else don't count. */
+  activeMemberIds: Set<string>;
 }): string[] {
   const byKey = new Map(
     roles.filter((role) => role.roleKey).map((role) => [role.roleKey, role]),
@@ -76,11 +103,14 @@ export function roleValidationMessages({
       if (!optional) messages.push(`${name} is missing from the document.`);
       continue;
     }
-    if (!optional && role.assignments.length === 0) {
+    const activeAssignments = role.assignments.filter((assignment) =>
+      activeMemberIds.has(assignment.memberId),
+    );
+    if (!optional && activeAssignments.length === 0) {
       messages.push(`${name} needs at least one assigned member.`);
     }
-    if (key === INTERNAL_AUDITOR_ROLE_KEY && !role.auditRoute) {
-      messages.push('The Internal Auditor needs an audit route selected.');
+    if (key === INTERNAL_AUDITOR_ROLE_KEY) {
+      messages.push(...auditRouteMessages(role));
     }
   }
   return messages;

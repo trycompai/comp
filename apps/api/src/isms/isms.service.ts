@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { db } from '@db';
+import type { Prisma } from '@db';
 import { SubmitIsmsForApprovalDto } from './dto/submit-isms-for-approval.dto';
 import { deriveControlLinks, resolveDocumentPlans } from './utils/ensure-setup-plan';
 import { collectPlatformData } from './documents/data-source';
@@ -211,20 +212,28 @@ export class IsmsService {
 
     const document = await this.requireDocument({ documentId, organizationId });
 
-    // Clause 5.3 generate-time validation, enforced server-side so it can't be
-    // bypassed by calling the API directly (the client disables Submit too).
-    if (document.type === 'roles_and_responsibilities') {
-      await this.assertRolesComplete({ documentId, organizationId });
-    }
+    return db.$transaction(async (tx) => {
+      // Serialize with concurrent register edits (which take the same per-document
+      // lock) so the completeness check and the status flip are atomic — an edit
+      // can't invalidate the document between validation and the transition to
+      // needs_review (TOCTOU). Validate inside the lock, then transition.
+      await lockDocument(tx, documentId);
 
-    return db.ismsDocument.update({
-      where: { id: documentId },
-      data: {
-        approverId: dto.approverId,
-        status: 'needs_review',
-        approvedAt: null,
-        declinedAt: null,
-      },
+      // Clause 5.3 generate-time validation, enforced server-side so it can't be
+      // bypassed by calling the API directly (the client disables Submit too).
+      if (document.type === 'roles_and_responsibilities') {
+        await this.assertRolesComplete({ tx, documentId, organizationId });
+      }
+
+      return tx.ismsDocument.update({
+        where: { id: documentId },
+        data: {
+          approverId: dto.approverId,
+          status: 'needs_review',
+          approvedAt: null,
+          declinedAt: null,
+        },
+      });
     });
   }
 
@@ -375,23 +384,30 @@ export class IsmsService {
    * the Internal Auditor route chosen). Mirrors the client-side gate.
    */
   private async assertRolesComplete({
+    tx,
     documentId,
     organizationId,
   }: {
+    tx: Prisma.TransactionClient;
     documentId: string;
     organizationId: string;
   }) {
     const [roles, activeMembers] = await Promise.all([
-      db.ismsRole.findMany({
+      tx.ismsRole.findMany({
         where: { documentId },
         select: {
           roleKey: true,
           name: true,
           auditRoute: true,
+          auditRouteMemberId: true,
+          auditFirmName: true,
+          auditEvidenceRef: true,
+          auditCourse: true,
+          auditDueDate: true,
           assignments: { select: { memberId: true } },
         },
       }),
-      db.member.findMany({
+      tx.member.findMany({
         where: { organizationId, deactivated: false },
         select: { id: true },
       }),

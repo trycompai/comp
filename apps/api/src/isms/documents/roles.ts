@@ -11,6 +11,7 @@ import {
   APPLICATION_ACCESS_NOTE,
   AUTO_DOC_ROLE_ROWS,
   SEED_ROLE_DEFINITIONS,
+  SEED_ROLE_KEYS,
 } from './roles-defaults';
 
 type Tx = Prisma.TransactionClient;
@@ -23,23 +24,55 @@ export function teamSizeBand(memberCount: number): IsmsTeamSizeBand {
 /** Seeded roles that must be present + assigned before the 5.3 doc can be published. */
 const REQUIRED_SEED_ROLE_KEYS = SEED_ROLE_DEFINITIONS.map((role) => role.roleKey);
 
+/** The subset of role fields the completeness check needs (server + client share it). */
+export interface RoleValidationRow {
+  roleKey: string | null;
+  name: string;
+  auditRoute: string | null;
+  auditRouteMemberId?: string | null;
+  auditFirmName?: string | null;
+  auditEvidenceRef?: string | null;
+  auditCourse?: string | null;
+  auditDueDate?: Date | string | null;
+  assignments: unknown[];
+}
+
+/** Route-specific required fields for the Internal Auditor (CS-698). */
+function auditRouteMessages(role: RoleValidationRow): string[] {
+  const route = role.auditRoute;
+  if (!route) return ['The Internal Auditor needs an audit route selected.'];
+  if (route === 'in_house' && !role.auditRouteMemberId) {
+    return ['The in-house Internal Auditor needs a member selected.'];
+  }
+  if (route === 'external' && (!role.auditFirmName || !role.auditEvidenceRef)) {
+    return [
+      'The external Internal Auditor needs a firm/person name and an evidence reference.',
+    ];
+  }
+  if (
+    route === 'training_planned' &&
+    (!role.auditRouteMemberId || !role.auditCourse || !role.auditDueDate)
+  ) {
+    return [
+      'The training-planned Internal Auditor needs a member, a course, and a due date.',
+    ];
+  }
+  return [];
+}
+
 /**
  * Clause-5.3 completeness check, shared by the submit-for-approval server gate.
  * Every seeded role must exist and have at least one assigned member (except the
- * Deputy SPO in the 1-3 band), and the Internal Auditor must have a route. Missing
- * rows are reported too, so validation can't pass by a required role simply being
- * absent. Returns the unmet requirements; empty means ready.
+ * Deputy SPO in the 1-3 band); the Internal Auditor must have a route AND the
+ * route-specific fields it requires. Missing rows are reported too, so validation
+ * can't pass by a required role simply being absent. Callers pass assignments
+ * pre-filtered to ACTIVE members. Returns the unmet requirements; empty = ready.
  */
 export function roleValidationMessages({
   roles,
   memberCount,
 }: {
-  roles: Array<{
-    roleKey: string | null;
-    name: string;
-    auditRoute: string | null;
-    assignments: unknown[];
-  }>;
+  roles: RoleValidationRow[];
   memberCount: number;
 }): string[] {
   const band = teamSizeBand(memberCount);
@@ -63,8 +96,8 @@ export function roleValidationMessages({
     if (!optional && role.assignments.length === 0) {
       messages.push(`${name} needs at least one assigned member.`);
     }
-    if (key === 'internal_auditor' && !role.auditRoute) {
-      messages.push('The Internal Auditor needs an audit route selected.');
+    if (key === 'internal_auditor') {
+      messages.push(...auditRouteMessages(role));
     }
   }
   return messages;
@@ -170,10 +203,16 @@ function internalAuditParagraph(role: RoleExportRow | undefined): string {
 }
 
 function buildRoleTable(roles: RoleExportRow[]): IsmsExportSection['table'] {
+  // Per CS-698 the governance table is exactly the four seeded roles + the two
+  // auto-generated rows. Custom roles are managed on the page but are not part of
+  // this standardized Clause 5.3 table, so they're excluded here.
+  const seededRoles = roles.filter(
+    (role) => role.roleKey !== null && SEED_ROLE_KEYS.includes(role.roleKey),
+  );
   return {
     headers: ['Role', 'Holder', 'Responsibility', 'Authority — and granted by'],
     rows: [
-      ...roles.map((role) => [
+      ...seededRoles.map((role) => [
         role.name,
         holderText(role.holders),
         role.responsibilities,

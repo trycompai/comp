@@ -33,6 +33,9 @@ async function run(action: Promise<void>, successMessage: string, failMessage: s
 
 export function RolesClient({ memberOptions, ...props }: RolesClientProps) {
   const band = teamSizeBand(memberOptions.length);
+  // memberOptions is the active People list, so this is the set of active member
+  // ids — used to match the server's active-only completeness gate.
+  const activeMemberIds = new Set(memberOptions.map((member) => member.id));
 
   return (
     <IsmsDocumentShell
@@ -47,6 +50,7 @@ export function RolesClient({ memberOptions, ...props }: RolesClientProps) {
         const messages = roleValidationMessages({
           roles: Array.isArray(document.roles) ? document.roles : [],
           band,
+          activeMemberIds,
         });
         return messages.length > 0
           ? `Complete the required assignments before submitting: ${messages.join(' ')}`
@@ -55,7 +59,11 @@ export function RolesClient({ memberOptions, ...props }: RolesClientProps) {
     >
       {({ document, canManage, hook }) => {
         const roles = Array.isArray(document.roles) ? document.roles : [];
-        const validationMessages = roleValidationMessages({ roles, band });
+        const validationMessages = roleValidationMessages({
+          roles,
+          band,
+          activeMemberIds,
+        });
 
         return (
           <RolesTable

@@ -74,6 +74,7 @@ export class IsmsRoleAssignmentService {
     });
 
     return db.$transaction(async (tx) => {
+      await lockDocument(tx, assignment.documentId);
       await invalidateApprovalIfNeeded({
         tx,
         documentId: assignment.documentId,
@@ -113,6 +114,7 @@ export class IsmsRoleAssignmentService {
       organizationId,
     });
     await db.$transaction(async (tx) => {
+      await lockDocument(tx, assignment.documentId);
       await invalidateApprovalIfNeeded({
         tx,
         documentId: assignment.documentId,
@@ -145,10 +147,14 @@ export class IsmsRoleAssignmentService {
     organizationId: string;
   }) {
     const document = await db.ismsDocument.findFirst({
-      where: { id: documentId, organizationId },
+      where: {
+        id: documentId,
+        organizationId,
+        type: 'roles_and_responsibilities',
+      },
     });
     if (!document) {
-      throw new NotFoundException('ISMS document not found');
+      throw new NotFoundException('ISMS roles document not found');
     }
     return document;
   }
@@ -176,11 +182,12 @@ export class IsmsRoleAssignmentService {
     memberId: string;
     organizationId: string;
   }) {
+    // Assignments must reference active People members (CS-698).
     const member = await db.member.findFirst({
-      where: { id: memberId, organizationId },
+      where: { id: memberId, organizationId, deactivated: false },
     });
     if (!member) {
-      throw new NotFoundException('Member not found in organization');
+      throw new NotFoundException('Active member not found in organization');
     }
     return member;
   }
