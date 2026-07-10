@@ -24,6 +24,7 @@ jest.mock('@db', () => ({
 jest.mock('./utils/export-payload', () => ({
   buildExportInput: jest.fn(() => ({ rows: [] })),
   resolveOrgProfile: jest.fn(),
+  resolveRolesExtras: jest.fn(),
   parseExportSnapshot: jest.fn(() => null),
 }));
 jest.mock('./utils/export-metadata', () => ({

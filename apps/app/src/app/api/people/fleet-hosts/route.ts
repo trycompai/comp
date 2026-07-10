@@ -1,8 +1,9 @@
+import type { Host } from '@/app/(app)/[orgId]/people/devices/types';
 import { getFleetInstance } from '@/lib/fleet';
+import { getOrgIsInternal } from '@/lib/org-participation';
+import { requireApiPermission } from '@/lib/permissions.server';
 import { db } from '@db/server';
 import { NextResponse } from 'next/server';
-import { requireApiPermission } from '@/lib/permissions.server';
-import type { Host } from '@/app/(app)/[orgId]/people/devices/types';
 
 const MDM_POLICY_ID = -9999;
 
@@ -15,11 +16,12 @@ export async function GET(req: Request) {
 
   const fleet = await getFleetInstance();
 
+  const orgIsInternal = await getOrgIsInternal(organizationId);
   const employees = await db.member.findMany({
     where: {
       organizationId,
       deactivated: false,
-      NOT: { user: { role: 'admin' } },
+      ...(orgIsInternal ? {} : { NOT: { user: { role: 'admin' } } }),
     },
     include: { user: true },
   });
@@ -70,48 +72,43 @@ export async function GET(req: Request) {
     }
   }
 
-  const data: Host[] = devices.map(
-    (device: { data: { host: Host } }, index: number) => {
-      const host = device.data.host;
-      const platform = host.platform?.toLowerCase();
-      const osVersion = host.os_version?.toLowerCase();
-      const isMacOS =
-        platform === 'darwin' ||
-        platform === 'macos' ||
-        platform === 'osx' ||
-        osVersion?.includes('mac');
-      return {
-        ...host,
-        user_name: userNames[index],
-        member_id: memberIds[index],
-        policies: [
-          ...(host.policies || []),
-          ...(isMacOS
-            ? [
-                {
-                  id: MDM_POLICY_ID,
-                  name: 'MDM Enabled',
-                  response: host.mdm?.connected_to_fleet ? 'pass' : 'fail',
-                },
-              ]
-            : []),
-        ].map((policy) => {
-          const policyResult = resultIndex.get(
-            `${userIds[index]}:${policy.id}`,
-          );
-          return {
-            ...policy,
-            response:
-              policy.response === 'pass' ||
-              policyResult?.fleetPolicyResponse === 'pass'
-                ? 'pass'
-                : 'fail',
-            attachments: policyResult?.attachments || [],
-          };
-        }),
-      };
-    },
-  );
+  const data: Host[] = devices.map((device: { data: { host: Host } }, index: number) => {
+    const host = device.data.host;
+    const platform = host.platform?.toLowerCase();
+    const osVersion = host.os_version?.toLowerCase();
+    const isMacOS =
+      platform === 'darwin' ||
+      platform === 'macos' ||
+      platform === 'osx' ||
+      osVersion?.includes('mac');
+    return {
+      ...host,
+      user_name: userNames[index],
+      member_id: memberIds[index],
+      policies: [
+        ...(host.policies || []),
+        ...(isMacOS
+          ? [
+              {
+                id: MDM_POLICY_ID,
+                name: 'MDM Enabled',
+                response: host.mdm?.connected_to_fleet ? 'pass' : 'fail',
+              },
+            ]
+          : []),
+      ].map((policy) => {
+        const policyResult = resultIndex.get(`${userIds[index]}:${policy.id}`);
+        return {
+          ...policy,
+          response:
+            policy.response === 'pass' || policyResult?.fleetPolicyResponse === 'pass'
+              ? 'pass'
+              : 'fail',
+          attachments: policyResult?.attachments || [],
+        };
+      }),
+    };
+  });
 
   return NextResponse.json({ data });
 }

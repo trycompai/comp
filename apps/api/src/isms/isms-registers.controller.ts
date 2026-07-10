@@ -27,6 +27,8 @@ import { IsmsContextIssueService } from './isms-context-issue.service';
 import { IsmsInterestedPartyService } from './isms-interested-party.service';
 import { IsmsRequirementService } from './isms-requirement.service';
 import { IsmsObjectiveService } from './isms-objective.service';
+import { IsmsRoleService } from './isms-role.service';
+import { IsmsRoleAssignmentService } from './isms-role-assignment.service';
 import { IsmsNarrativeService } from './isms-narrative.service';
 import {
   createRegisterRegistry,
@@ -67,6 +69,32 @@ const REGISTER_ROW_BODY = {
         type: 'string',
         enum: ['not_started', 'on_track', 'at_risk', 'met'],
       },
+      // Roles register (5.3) + role assignments (7.2 competence)
+      responsibilities: { type: 'string' },
+      authorities: { type: 'string' },
+      authorityGrantedBy: { type: 'string' },
+      requiredCompetence: { type: 'string' },
+      auditRoute: {
+        type: 'string',
+        enum: ['in_house', 'external', 'training_planned'],
+        nullable: true,
+      },
+      auditRouteMemberId: { type: 'string', nullable: true },
+      auditFirmName: { type: 'string', nullable: true },
+      auditEvidenceRef: { type: 'string', nullable: true },
+      auditCourse: { type: 'string', nullable: true },
+      auditDueDate: { type: 'string', nullable: true },
+      roleId: { type: 'string' },
+      memberId: { type: 'string' },
+      basisOfCompetence: {
+        type: 'string',
+        enum: ['education', 'training', 'experience', 'combination'],
+        nullable: true,
+      },
+      evidenceRetained: { type: 'string', nullable: true },
+      gap: { type: 'string', nullable: true },
+      remediationAction: { type: 'string', nullable: true },
+      remediationDueDate: { type: 'string', nullable: true },
       position: { type: 'integer', minimum: 0 },
     },
   },
@@ -106,6 +134,8 @@ export class IsmsRegistersController {
     interestedPartyService: IsmsInterestedPartyService,
     requirementService: IsmsRequirementService,
     objectiveService: IsmsObjectiveService,
+    roleService: IsmsRoleService,
+    roleAssignmentService: IsmsRoleAssignmentService,
     private readonly narrativeService: IsmsNarrativeService,
   ) {
     this.registry = createRegisterRegistry({
@@ -113,6 +143,8 @@ export class IsmsRegistersController {
       interestedParties: interestedPartyService,
       requirements: requirementService,
       objectives: objectiveService,
+      roles: roleService,
+      roleAssignments: roleAssignmentService,
     });
   }
 

@@ -12,6 +12,7 @@ import type { ApproverOption } from '../components/IsmsApprovalSection';
 import { LeadershipClient } from '../components/LeadershipClient';
 import { ObjectivesClient } from '../components/ObjectivesClient';
 import { RequirementsClient } from '../components/RequirementsClient';
+import { RolesClient } from '../components/RolesClient';
 import { ScopeClient } from '../components/ScopeClient';
 import {
   ISMS_SLUG_TO_TYPE,
@@ -29,6 +30,8 @@ interface IsmsDetailClientProps {
   fallbackData: IsmsDocumentData | null;
   currentMemberId: string | null;
   approverOptions: ApproverOption[];
+  /** All active members (for the Roles member pickers); superset of approvers. */
+  memberOptions: ApproverOption[];
 }
 
 const ISMS_DETAIL_CLIENTS: Record<
@@ -39,6 +42,7 @@ const ISMS_DETAIL_CLIENTS: Record<
   interested_parties_register: InterestedPartiesClient,
   interested_parties_requirements: RequirementsClient,
   objectives_plan: ObjectivesClient,
+  roles_and_responsibilities: RolesClient,
   isms_scope: ScopeClient,
   leadership_commitment: LeadershipClient,
 };
@@ -151,6 +155,12 @@ export default async function IsmsDocumentPage({
     .map((p) => ({ id: p.id, name: p.user?.name ?? p.user?.email ?? 'Unknown' }))
     .sort((a, b) => a.name.localeCompare(b.name));
 
+  // All active members — the Roles document assigns to the whole workforce, not
+  // just approvers, so it needs the full list plus the headcount for the band.
+  const memberOptions: ApproverOption[] = activeMembers
+    .map((p) => ({ id: p.id, name: p.user?.name ?? p.user?.email ?? 'Unknown' }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
   const DetailClient = ISMS_DETAIL_CLIENTS[documentType];
 
   return (
@@ -162,6 +172,7 @@ export default async function IsmsDocumentPage({
         fallbackData={fallbackData}
         currentMemberId={currentMember?.id ?? null}
         approverOptions={approverOptions}
+        memberOptions={memberOptions}
       />
     </PageLayout>
   );

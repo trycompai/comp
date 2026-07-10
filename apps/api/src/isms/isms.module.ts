@@ -9,6 +9,8 @@ import { IsmsDocumentControlService } from './isms-document-control.service';
 import { IsmsInterestedPartyService } from './isms-interested-party.service';
 import { IsmsRequirementService } from './isms-requirement.service';
 import { IsmsObjectiveService } from './isms-objective.service';
+import { IsmsRoleService } from './isms-role.service';
+import { IsmsRoleAssignmentService } from './isms-role-assignment.service';
 import { IsmsNarrativeService } from './isms-narrative.service';
 import { IsmsProfileController } from './wizard/isms-profile.controller';
 import { IsmsProfileService } from './wizard/isms-profile.service';
@@ -32,6 +34,8 @@ import { AttachmentsModule } from '../attachments/attachments.module';
     IsmsInterestedPartyService,
     IsmsRequirementService,
     IsmsObjectiveService,
+    IsmsRoleService,
+    IsmsRoleAssignmentService,
     IsmsNarrativeService,
     IsmsProfileService,
   ],
@@ -44,6 +48,8 @@ import { AttachmentsModule } from '../attachments/attachments.module';
     IsmsInterestedPartyService,
     IsmsRequirementService,
     IsmsObjectiveService,
+    IsmsRoleService,
+    IsmsRoleAssignmentService,
     IsmsNarrativeService,
     IsmsProfileService,
   ],

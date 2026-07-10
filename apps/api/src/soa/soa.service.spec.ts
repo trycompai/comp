@@ -26,6 +26,7 @@ jest.mock('@db', () => ({
     },
     member: { findFirst: jest.fn() },
     user: { findUnique: jest.fn() },
+    organization: { findUnique: jest.fn() },
     sOAAnswer: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
   },
 }));
@@ -366,9 +367,10 @@ describe('SOAService', () => {
           status: 'completed',
         }),
       });
-      expect((mockDb.sOADocument.update as jest.Mock).mock.calls[0][0].data.declinedAt).toBeInstanceOf(
-        Date,
-      );
+      expect(
+        (mockDb.sOADocument.update as jest.Mock).mock.calls[0][0].data
+          .declinedAt,
+      ).toBeInstanceOf(Date);
     });
   });
 
@@ -480,7 +482,9 @@ describe('SOAService', () => {
     it('throws NotFoundException when document not found', async () => {
       (mockDb.sOADocument.findFirst as jest.Mock).mockResolvedValue(null);
 
-      await expect(service.exportDocument(dto)).rejects.toThrow(NotFoundException);
+      await expect(service.exportDocument(dto)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('maps document data and delegates to generateSOAExportFile', async () => {

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { db } from '@db';
+import { orgParticipantMemberWhere } from '../utils/org-participation';
 import { isUserUnsubscribed } from '@trycompai/email';
 import { triggerEmail } from '../email/trigger-email';
 import { TaskItemMentionedEmail } from '../email/templates/task-item-mentioned';
@@ -50,16 +51,17 @@ export class TaskItemMentionNotifierService {
         return;
       }
 
-      // Get mentioned users: exclude platform admins unless they are an owner of this org
+      // Get mentioned users: exclude platform admins unless the org is internal
+      // (where platform admins are real members). `orgParticipantMemberWhere`
+      // returns an AND-wrapped fragment so it intersects with the mentioned-user
+      // filter above rather than overwriting it.
+      const participantWhere = await orgParticipantMemberWhere(organizationId);
       const mentionedMembers = await db.member.findMany({
         where: {
           organizationId,
           deactivated: false,
           user: { id: { in: mentionedUserIds } },
-          OR: [
-            { user: { role: { not: 'admin' } } },
-            { role: { contains: 'owner' } },
-          ],
+          ...participantWhere,
         },
         include: { user: true },
       });
