@@ -16,20 +16,22 @@ interface DeviceComplianceChartProps {
   agentDevices: DeviceWithChecks[];
 }
 
+// Design-system tokens (full oklch values — no hsl() wrapper). The previous
+// `hsl(var(--chart-positive))` tokens came from the legacy @trycompai/ui
+// stylesheet the app no longer loads, so every segment silently rendered as
+// SVG-default black.
 const CHART_COLORS = {
-  compliant: 'hsl(var(--chart-positive))',
-  nonCompliant: 'hsl(var(--chart-destructive))',
+  compliant: 'var(--primary)', // brand green
+  nonCompliant: 'var(--destructive)', // red
+  notTracked: 'var(--muted-foreground)', // gray — no compliance data available
 };
 
 export function DeviceComplianceChart({ fleetDevices, agentDevices }: DeviceComplianceChartProps) {
-  // Integration-imported devices carry no compliance data, so they must not be
-  // counted as non-compliant here — this chart reflects compliance-tracked
-  // devices only (agent + Fleet).
-  const trackedAgentDevices = React.useMemo(
-    () => (agentDevices ?? []).filter((d) => d.source === 'device_agent'),
-    [agentDevices],
-  );
-  const devices = [...trackedAgentDevices, ...(fleetDevices ?? [])];
+  // ALL devices count — the chart total must match the table so the page never
+  // looks self-contradictory. Imported devices use the SOURCE's verdict when
+  // it reports one; imported devices with no verdict land in a gray
+  // "Not tracked" segment rather than being fabricated into a verdict.
+  const devices = [...(agentDevices ?? []), ...(fleetDevices ?? [])];
 
   const { pieDisplayData, legendDisplayData } = React.useMemo(() => {
     if (devices.length === 0) {
@@ -37,10 +39,19 @@ export function DeviceComplianceChart({ fleetDevices, agentDevices }: DeviceComp
     }
     let compliantCount = 0;
     let nonCompliantCount = 0;
+    let notTrackedCount = 0;
 
-    // Count device-agent devices. Stale devices (no check-in for >= 7 days)
-    // count as non-compliant to match the table's three-state rendering.
-    for (const device of trackedAgentDevices) {
+    for (const device of agentDevices ?? []) {
+      if (device.source === 'integration') {
+        // Source-reported verdict (e.g. Intune complianceState), if any.
+        const verdict = device.sourceCompliance?.isCompliant;
+        if (verdict === true) compliantCount++;
+        else if (verdict === false) nonCompliantCount++;
+        else notTrackedCount++;
+        continue;
+      }
+      // Device-agent devices. Stale devices (no check-in for >= 7 days)
+      // count as non-compliant to match the table's three-state rendering.
       if (device.complianceStatus === 'compliant') {
         compliantCount++;
       } else {
@@ -69,12 +80,21 @@ export function DeviceComplianceChart({ fleetDevices, agentDevices }: DeviceComp
         value: nonCompliantCount,
         fill: CHART_COLORS.nonCompliant,
       },
+      {
+        name: 'Not Tracked',
+        value: notTrackedCount,
+        fill: CHART_COLORS.notTracked,
+      },
     ];
     return {
       pieDisplayData: allItems.filter((item) => item.value > 0),
-      legendDisplayData: allItems,
+      // "Not Tracked" only appears in the legend when it exists — orgs with no
+      // verdict-less imported devices keep the familiar two-entry legend.
+      legendDisplayData: allItems.filter(
+        (item) => item.name !== 'Not Tracked' || item.value > 0,
+      ),
     };
-  }, [trackedAgentDevices, fleetDevices]);
+  }, [agentDevices, fleetDevices]);
 
   const totalDevices = devices.length;
 
