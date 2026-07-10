@@ -16,7 +16,8 @@ jest.mock('@db', () => ({
       update: jest.fn(),
       updateMany: jest.fn(),
     },
-    member: { findFirst: jest.fn() },
+    member: { findFirst: jest.fn(), findMany: jest.fn() },
+    ismsRole: { findMany: jest.fn() },
     $transaction: jest.fn(),
   },
 }));
@@ -117,6 +118,73 @@ describe('IsmsService document lifecycle', () => {
           declinedAt: null,
         }),
       });
+    });
+
+    it('blocks a Roles doc when a required role is only assigned to a deactivated member', async () => {
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({ id: 'mem_1' });
+      (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
+        id: 'doc_1',
+        type: 'roles_and_responsibilities',
+      });
+      // Active members exclude 'mem_dead'.
+      (mockDb.member.findMany as jest.Mock).mockResolvedValue([
+        { id: 'mem_active' },
+        { id: 'b' },
+        { id: 'c' },
+        { id: 'd' },
+      ]);
+      (mockDb.ismsRole.findMany as jest.Mock).mockResolvedValue([
+        {
+          roleKey: 'top_management',
+          name: 'Top Management',
+          auditRoute: null,
+          assignments: [{ memberId: 'mem_dead' }], // only a deactivated member
+        },
+        { roleKey: 'spo', name: 'SPO', auditRoute: null, assignments: [{ memberId: 'b' }] },
+        { roleKey: 'deputy_spo', name: 'Deputy SPO', auditRoute: null, assignments: [{ memberId: 'c' }] },
+        {
+          roleKey: 'internal_auditor',
+          name: 'Internal Auditor',
+          auditRoute: 'external',
+          assignments: [{ memberId: 'd' }],
+        },
+      ]);
+
+      await expect(service.submitForApproval(args)).rejects.toThrow(BadRequestException);
+      expect(mockDb.ismsDocument.update).not.toHaveBeenCalled();
+    });
+
+    it('allows a Roles doc when every seeded role has an active assignment + route', async () => {
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({ id: 'mem_1' });
+      (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
+        id: 'doc_1',
+        type: 'roles_and_responsibilities',
+      });
+      (mockDb.member.findMany as jest.Mock).mockResolvedValue([
+        { id: 'a' },
+        { id: 'b' },
+        { id: 'c' },
+        { id: 'd' },
+        { id: 'e' },
+      ]);
+      (mockDb.ismsRole.findMany as jest.Mock).mockResolvedValue([
+        { roleKey: 'top_management', name: 'Top Management', auditRoute: null, assignments: [{ memberId: 'a' }] },
+        { roleKey: 'spo', name: 'SPO', auditRoute: null, assignments: [{ memberId: 'b' }] },
+        { roleKey: 'deputy_spo', name: 'Deputy SPO', auditRoute: null, assignments: [{ memberId: 'c' }] },
+        {
+          roleKey: 'internal_auditor',
+          name: 'Internal Auditor',
+          auditRoute: 'external',
+          assignments: [{ memberId: 'd' }],
+        },
+      ]);
+      (mockDb.ismsDocument.update as jest.Mock).mockResolvedValue({
+        id: 'doc_1',
+        status: 'needs_review',
+      });
+
+      await service.submitForApproval(args);
+      expect(mockDb.ismsDocument.update).toHaveBeenCalled();
     });
   });
 

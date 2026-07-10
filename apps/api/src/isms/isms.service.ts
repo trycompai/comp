@@ -381,19 +381,34 @@ export class IsmsService {
     documentId: string;
     organizationId: string;
   }) {
-    const [roles, memberCount] = await Promise.all([
+    const [roles, activeMembers] = await Promise.all([
       db.ismsRole.findMany({
         where: { documentId },
         select: {
           roleKey: true,
           name: true,
           auditRoute: true,
-          assignments: { select: { id: true } },
+          assignments: { select: { memberId: true } },
         },
       }),
-      db.member.count({ where: { organizationId, deactivated: false } }),
+      db.member.findMany({
+        where: { organizationId, deactivated: false },
+        select: { id: true },
+      }),
     ]);
-    const messages = roleValidationMessages({ roles, memberCount });
+    // A role "assigned" only to a deactivated/removed member is not really
+    // covered — count only assignments that resolve to an active member.
+    const activeMemberIds = new Set(activeMembers.map((member) => member.id));
+    const rolesWithActiveAssignments = roles.map((role) => ({
+      ...role,
+      assignments: role.assignments.filter((assignment) =>
+        activeMemberIds.has(assignment.memberId),
+      ),
+    }));
+    const messages = roleValidationMessages({
+      roles: rolesWithActiveAssignments,
+      memberCount: activeMemberIds.size,
+    });
     if (messages.length > 0) {
       throw new BadRequestException(
         `This Clause 5.3 document is not ready to submit. ${messages.join(' ')}`,
