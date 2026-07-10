@@ -552,6 +552,22 @@ describe('GenericDeviceSyncService', () => {
       expect(data.sourceCompliance).toEqual({ isCompliant: false });
     });
 
+    it('clamps a future lastSeenAt to now (provider clock skew must not pin the device Online)', async () => {
+      const future = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+      const before = Date.now();
+      await service.processDevices({
+        organizationId: ORG_ID,
+        connectionId: CONN_ID,
+        devices: [baseDevice({ lastSeenAt: future })],
+      });
+      const after = Date.now();
+
+      const data = mockDeviceCreate.mock.calls[0][0].data;
+      const ts = (data.lastCheckIn as Date).getTime();
+      expect(ts).toBeGreaterThanOrEqual(before);
+      expect(ts).toBeLessThanOrEqual(after);
+    });
+
     it('falls back to sync time for lastCheckIn when lastSeenAt is absent', async () => {
       const before = Date.now();
       await service.processDevices({

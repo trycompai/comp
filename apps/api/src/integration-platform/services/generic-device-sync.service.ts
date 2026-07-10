@@ -186,8 +186,12 @@ export class GenericDeviceSyncService {
           hardwareModel: device.hardwareModel,
           // Prefer the provider's own last-contact timestamp (validated ISO
           // string) so "Last seen" reflects the device, not our sync cadence.
+          // Clamped to now: a future timestamp (provider clock skew / bad
+          // mapping) would otherwise pin the device "Online" for days.
           lastCheckIn: device.lastSeenAt
-            ? new Date(device.lastSeenAt)
+            ? new Date(
+                Math.min(new Date(device.lastSeenAt).getTime(), Date.now()),
+              )
             : new Date(),
           source: 'integration' as const,
           integrationConnectionId: connectionId,

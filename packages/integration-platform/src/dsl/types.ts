@@ -354,8 +354,10 @@ export const SyncDeviceSchema = z.object({
   /**
    * When the device last contacted the PROVIDER (e.g. Intune lastSyncDateTime),
    * ISO 8601. Feeds the device list's "Last seen" column and online indicator.
+   * offset:true — providers commonly return timezone offsets (+02:00), and a
+   * rejected timestamp would drop the whole device from the sync.
    */
-  lastSeenAt: z.string().datetime().optional(),
+  lastSeenAt: z.string().datetime({ offset: true }).optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
 });
 

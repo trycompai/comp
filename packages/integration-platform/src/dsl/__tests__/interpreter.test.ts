@@ -1158,6 +1158,19 @@ describe('interpretDeclarativeDeviceSync', () => {
     });
   });
 
+  it('accepts a lastSeenAt with a timezone offset (providers do not always report UTC)', async () => {
+    const runner = interpretDeclarativeDeviceSync({
+      definition: deviceDef(`scope.devices = [
+        { name: 'PC', platform: 'windows', userEmail: 'a@x.com', status: 'active', externalId: 'e1', lastSeenAt: '2026-07-09T18:00:00+02:00' },
+      ];`),
+    });
+
+    const devices = await runner.run(createMockContext());
+
+    expect(devices).toHaveLength(1);
+    expect(devices[0]!.lastSeenAt).toBe('2026-07-09T18:00:00+02:00');
+  });
+
   it('drops a device with an invalid lastSeenAt or an oversized checks list, keeps valid ones', async () => {
     const runner = interpretDeclarativeDeviceSync({
       definition: deviceDef(`

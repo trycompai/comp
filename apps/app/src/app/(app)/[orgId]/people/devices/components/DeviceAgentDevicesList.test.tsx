@@ -276,7 +276,7 @@ describe('DeviceAgentDevicesList — integration-imported devices', () => {
     expect(screen.getByText('Firewall')).toBeInTheDocument();
   });
 
-  it('shows a red "No" when the source reports non-compliant', () => {
+  it('shows "No" when the source reports non-compliant', () => {
     render(
       <DeviceAgentDevicesList
         devices={[
