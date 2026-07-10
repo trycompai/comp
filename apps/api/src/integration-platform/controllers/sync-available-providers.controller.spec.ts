@@ -11,13 +11,13 @@ import { GenericDeviceSyncService } from '../services/generic-device-sync.servic
 import { DynamicIntegrationRepository } from '../repositories/dynamic-integration.repository';
 import { CheckRunRepository } from '../repositories/check-run.repository';
 
-const mockConnectionFindFirst = jest.fn();
+const mockConnectionFindMany = jest.fn();
 const mockGetActiveManifests = jest.fn();
 
 jest.mock('@db', () => ({
   db: {
     integrationConnection: {
-      findFirst: (...args: unknown[]) => mockConnectionFindFirst(...args),
+      findMany: (...args: unknown[]) => mockConnectionFindMany(...args),
     },
   },
 }));
@@ -101,17 +101,15 @@ describe('SyncController - getAvailableSyncProviders connection status', () => {
   });
 
   it('reports connected + connectionStatus active for an active connection', async () => {
-    mockConnectionFindFirst.mockImplementation(
-      (args: { where: { status: string } }) =>
-        args.where.status === 'active'
-          ? {
-              id: 'icn_active',
-              status: 'active',
-              lastSyncAt: null,
-              nextSyncAt: null,
-            }
-          : null,
-    );
+    mockConnectionFindMany.mockResolvedValue([
+      {
+        id: 'icn_active',
+        status: 'active',
+        lastSyncAt: null,
+        nextSyncAt: null,
+        provider: { slug: 'intune' },
+      },
+    ]);
 
     const result = await controller.getAvailableSyncProviders(orgId, 'device');
 
@@ -123,15 +121,20 @@ describe('SyncController - getAvailableSyncProviders connection status', () => {
         connectionId: 'icn_active',
       }),
     ]);
-    // With an active connection there is no need to look up an errored one.
-    expect(mockConnectionFindFirst).toHaveBeenCalledTimes(1);
+    // ONE batched query for all providers — no per-provider point lookups.
+    expect(mockConnectionFindMany).toHaveBeenCalledTimes(1);
+    const args = mockConnectionFindMany.mock.calls[0][0] as {
+      where: { provider: { slug: { in: string[] } } };
+      orderBy: { updatedAt: string };
+    };
+    expect(args.where.provider.slug.in).toEqual(['intune']);
+    expect(args.orderBy).toEqual({ updatedAt: 'desc' });
   });
 
   it('reports connectionStatus error (not connected) when the latest connection is broken', async () => {
-    mockConnectionFindFirst.mockImplementation(
-      (args: { where: { status?: string } }) =>
-        args.where.status === 'active' ? null : { status: 'error' },
-    );
+    mockConnectionFindMany.mockResolvedValue([
+      { id: 'icn_broken', status: 'error', lastSyncAt: null, nextSyncAt: null, provider: { slug: 'intune' } },
+    ]);
 
     const result = await controller.getAvailableSyncProviders(orgId, 'device');
 
@@ -146,12 +149,12 @@ describe('SyncController - getAvailableSyncProviders connection status', () => {
   });
 
   it('does not resurface a stale error when the latest connection is disconnected', async () => {
-    // Reconnects create new rows, so an old 'error' row can coexist with a
-    // newer 'disconnected' one. The latest row (disconnected) must win.
-    mockConnectionFindFirst.mockImplementation(
-      (args: { where: { status?: string } }) =>
-        args.where.status === 'active' ? null : { status: 'disconnected' },
-    );
+    // Rows arrive newest-first (orderBy updatedAt desc): the user reconnected
+    // and later disconnected, leaving an older row stuck in 'error'.
+    mockConnectionFindMany.mockResolvedValue([
+      { id: 'icn_new', status: 'disconnected', lastSyncAt: null, nextSyncAt: null, provider: { slug: 'intune' } },
+      { id: 'icn_old', status: 'error', lastSyncAt: null, nextSyncAt: null, provider: { slug: 'intune' } },
+    ]);
 
     const result = await controller.getAvailableSyncProviders(orgId, 'device');
 
@@ -163,18 +166,28 @@ describe('SyncController - getAvailableSyncProviders connection status', () => {
         connectionId: null,
       }),
     ]);
-    // The fallback must pick the LATEST row regardless of status (no status
-    // filter), ordered by recency — not hunt for any old 'error' row.
-    const fallbackArgs = mockConnectionFindFirst.mock.calls[1][0] as {
-      where: { status?: string };
-      orderBy: { updatedAt: string };
-    };
-    expect(fallbackArgs.where.status).toBeUndefined();
-    expect(fallbackArgs.orderBy).toEqual({ updatedAt: 'desc' });
+  });
+
+  it('prefers an active connection even when a newer non-active row exists', async () => {
+    mockConnectionFindMany.mockResolvedValue([
+      { id: 'icn_new_err', status: 'error', lastSyncAt: null, nextSyncAt: null, provider: { slug: 'intune' } },
+      { id: 'icn_active', status: 'active', lastSyncAt: null, nextSyncAt: null, provider: { slug: 'intune' } },
+    ]);
+
+    const result = await controller.getAvailableSyncProviders(orgId, 'device');
+
+    expect(result.providers).toEqual([
+      expect.objectContaining({
+        slug: 'intune',
+        connected: true,
+        connectionStatus: 'active',
+        connectionId: 'icn_active',
+      }),
+    ]);
   });
 
   it('reports connectionStatus null when the org has no connection for the provider', async () => {
-    mockConnectionFindFirst.mockResolvedValue(null);
+    mockConnectionFindMany.mockResolvedValue([]);
 
     const result = await controller.getAvailableSyncProviders(orgId, 'device');
 
