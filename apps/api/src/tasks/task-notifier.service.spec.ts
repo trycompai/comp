@@ -312,4 +312,105 @@ describe('TaskNotifierService', () => {
       expect(triggerEmailMock).not.toHaveBeenCalled();
     });
   });
+
+  // Regression: the automation-failure recipient query must apply the
+  // internal-org participant filter (orgParticipantMemberWhereForFlag) so
+  // platform admins are excluded from customer orgs but included in internal
+  // ones. A change to that helper must not silently reroute these notifications.
+  const CUSTOMER_PARTICIPANT_WHERE = {
+    AND: [{ user: { OR: [{ role: { not: 'admin' } }, { role: null }] } }],
+  };
+
+  const memberWhere = () => mockDb.member.findMany.mock.calls[0][0].where;
+
+  describe('notifyAutomationFailures — participant filter', () => {
+    it('excludes platform admins for a customer org (isInternal false)', async () => {
+      mockDb.organization.findUnique.mockResolvedValue({
+        name: 'Acme',
+        isInternal: false,
+      });
+      mockDb.task.findUnique.mockResolvedValue({ assignee: null });
+      mockDb.member.findMany.mockResolvedValue([]);
+
+      await service.notifyAutomationFailures({
+        organizationId: 'org_1',
+        taskId: 'tsk_1',
+        taskTitle: '2FA',
+        failedCount: 1,
+        totalCount: 2,
+        taskStatusChanged: false,
+      });
+
+      expect(memberWhere()).toEqual({
+        organizationId: 'org_1',
+        deactivated: false,
+        ...CUSTOMER_PARTICIPANT_WHERE,
+      });
+    });
+
+    it('includes platform admins for an internal org (isInternal true)', async () => {
+      mockDb.organization.findUnique.mockResolvedValue({
+        name: 'Comp AI',
+        isInternal: true,
+      });
+      mockDb.task.findUnique.mockResolvedValue({ assignee: null });
+      mockDb.member.findMany.mockResolvedValue([]);
+
+      await service.notifyAutomationFailures({
+        organizationId: 'org_1',
+        taskId: 'tsk_1',
+        taskTitle: '2FA',
+        failedCount: 1,
+        totalCount: 2,
+        taskStatusChanged: false,
+      });
+
+      expect(memberWhere()).toEqual({
+        organizationId: 'org_1',
+        deactivated: false,
+      });
+    });
+  });
+
+  describe('notifyBulkAutomationFailures — participant filter', () => {
+    const bulkParams = {
+      organizationId: 'org_1',
+      tasks: [
+        { taskId: 'tsk_1', taskTitle: 't1', failedCount: 1, totalCount: 2 },
+      ],
+    };
+
+    it('excludes platform admins for a customer org (isInternal false)', async () => {
+      mockDb.organization.findUnique.mockResolvedValue({
+        name: 'Acme',
+        isInternal: false,
+      });
+      mockDb.task.findMany.mockResolvedValue([{ id: 'tsk_1', assignee: null }]);
+      mockDb.member.findMany.mockResolvedValue([]);
+
+      await service.notifyBulkAutomationFailures(bulkParams);
+
+      expect(memberWhere()).toEqual({
+        organizationId: 'org_1',
+        deactivated: false,
+        ...CUSTOMER_PARTICIPANT_WHERE,
+      });
+    });
+
+    it('includes platform admins for an internal org (isInternal true)', async () => {
+      mockDb.organization.findUnique.mockResolvedValue({
+        name: 'Comp AI',
+        isInternal: true,
+      });
+      mockDb.task.findMany.mockResolvedValue([{ id: 'tsk_1', assignee: null }]);
+      mockDb.member.findMany.mockResolvedValue([]);
+
+      await service.notifyBulkAutomationFailures(bulkParams);
+
+      expect(memberWhere()).toEqual({
+        organizationId: 'org_1',
+        deactivated: false,
+      });
+    });
+  });
 });
