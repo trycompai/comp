@@ -33,6 +33,11 @@ interface IsmsApprovalSectionProps {
   canManage: boolean;
   currentMemberId: string | null;
   approverOptions: ApproverOption[];
+  /**
+   * When set, "Submit for approval" is disabled and this reason is shown — used
+   * by documents with generate-time validation (e.g. Roles, clause 5.3).
+   */
+  submitBlockedReason?: string | null;
   onSubmitForApproval: (approverId: string) => Promise<void>;
   onApprove: () => Promise<void>;
   onDecline: () => Promise<void>;
@@ -55,6 +60,7 @@ export function IsmsApprovalSection({
   canManage,
   currentMemberId,
   approverOptions,
+  submitBlockedReason,
   onSubmitForApproval,
   onApprove,
   onDecline,
@@ -174,10 +180,20 @@ export function IsmsApprovalSection({
       )}
 
       {(showSubmitButton || showResubmitButton) && (
-        <div className="flex justify-start">
-          <Button type="button" variant="secondary" onClick={() => setIsDialogOpen(true)}>
+        <div className="flex flex-col items-start gap-1">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => setIsDialogOpen(true)}
+            disabled={!!submitBlockedReason}
+          >
             {showResubmitButton ? 'Resubmit for approval' : 'Submit for approval'}
           </Button>
+          {submitBlockedReason ? (
+            <Text size="sm" variant="muted">
+              {submitBlockedReason}
+            </Text>
+          ) : null}
         </div>
       )}
 

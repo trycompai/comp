@@ -5,10 +5,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { db } from '@db';
+import type { Prisma } from '@db';
 import { SubmitIsmsForApprovalDto } from './dto/submit-isms-for-approval.dto';
 import { deriveControlLinks, resolveDocumentPlans } from './utils/ensure-setup-plan';
 import { collectPlatformData } from './documents/data-source';
 import { runDerivation } from './documents/generate';
+import { roleValidationMessages, seedRolesIfMissing } from './documents/roles';
 import { updateDraftSnapshot } from './utils/draft-snapshot';
 import { EXPORT_DOCUMENT_INCLUDE } from './utils/export-payload';
 import { lockDocument } from './utils/document-lock';
@@ -135,6 +137,21 @@ export class IsmsService {
         controlTemplateIds: controlTemplatesByType.get(doc.type) ?? [],
       });
     }
+
+    // Seed the four governance roles for a newly-created Roles document so they
+    // are visible with default text on first load, without a Generate click.
+    // Idempotent by roleKey, so concurrent provisioning calls can't duplicate.
+    const rolesDoc = created.find(
+      (doc) => doc.type === 'roles_and_responsibilities',
+    );
+    if (rolesDoc) {
+      const memberCount = await db.member.count({
+        where: { organizationId, deactivated: false },
+      });
+      await db.$transaction((tx) =>
+        seedRolesIfMissing({ tx, documentId: rolesDoc.id, memberCount }),
+      );
+    }
   }
 
   async getDocument({
@@ -156,6 +173,10 @@ export class IsmsService {
         interestedParties: { orderBy: { position: 'asc' } },
         interestedPartyRequirements: { orderBy: { position: 'asc' } },
         objectives: { orderBy: { position: 'asc' } },
+        roles: {
+          orderBy: { position: 'asc' },
+          include: { assignments: { orderBy: { position: 'asc' } } },
+        },
         controlLinks: {
           select: {
             id: true,
@@ -189,16 +210,30 @@ export class IsmsService {
       throw new NotFoundException('Approver not found in organization');
     }
 
-    await this.requireDocument({ documentId, organizationId });
+    const document = await this.requireDocument({ documentId, organizationId });
 
-    return db.ismsDocument.update({
-      where: { id: documentId },
-      data: {
-        approverId: dto.approverId,
-        status: 'needs_review',
-        approvedAt: null,
-        declinedAt: null,
-      },
+    return db.$transaction(async (tx) => {
+      // Serialize with concurrent register edits (which take the same per-document
+      // lock) so the completeness check and the status flip are atomic — an edit
+      // can't invalidate the document between validation and the transition to
+      // needs_review (TOCTOU). Validate inside the lock, then transition.
+      await lockDocument(tx, documentId);
+
+      // Clause 5.3 generate-time validation, enforced server-side so it can't be
+      // bypassed by calling the API directly (the client disables Submit too).
+      if (document.type === 'roles_and_responsibilities') {
+        await this.assertRolesComplete({ tx, documentId, organizationId });
+      }
+
+      return tx.ismsDocument.update({
+        where: { id: documentId },
+        data: {
+          approverId: dto.approverId,
+          status: 'needs_review',
+          approvedAt: null,
+          declinedAt: null,
+        },
+      });
     });
   }
 
@@ -340,6 +375,57 @@ export class IsmsService {
     }
     if (!document.approverId || document.approverId !== member.id) {
       throw new ForbiddenException('Document is not pending your approval');
+    }
+  }
+
+  /**
+   * Enforce clause-5.3 completeness before the Roles document can be submitted for
+   * approval (each seeded role assigned — except Deputy SPO in the 1-3 band — and
+   * the Internal Auditor route chosen). Mirrors the client-side gate.
+   */
+  private async assertRolesComplete({
+    tx,
+    documentId,
+    organizationId,
+  }: {
+    tx: Prisma.TransactionClient;
+    documentId: string;
+    organizationId: string;
+  }) {
+    const [roles, activeMembers] = await Promise.all([
+      tx.ismsRole.findMany({
+        where: { documentId },
+        select: {
+          roleKey: true,
+          name: true,
+          auditRoute: true,
+          auditRouteMemberId: true,
+          auditFirmName: true,
+          auditEvidenceRef: true,
+          auditCourse: true,
+          auditDueDate: true,
+          assignments: { select: { memberId: true } },
+        },
+      }),
+      tx.member.findMany({
+        where: { organizationId, deactivated: false },
+        select: { id: true },
+      }),
+    ]);
+    // A role "assigned" only to a deactivated/removed member is not really
+    // covered — count only assignments that resolve to an active member.
+    // roleValidationMessages counts only assignments (and audit-route members)
+    // that resolve to an active member, so pass the raw rows + the active set.
+    const activeMemberIds = new Set(activeMembers.map((member) => member.id));
+    const messages = roleValidationMessages({
+      roles,
+      memberCount: activeMemberIds.size,
+      activeMemberIds,
+    });
+    if (messages.length > 0) {
+      throw new BadRequestException(
+        `This Clause 5.3 document is not ready to submit. ${messages.join(' ')}`,
+      );
     }
   }
 

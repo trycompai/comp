@@ -53,6 +53,13 @@ export const ISMS_TYPE_DEFINITIONS: IsmsTypeDefinition[] = [
       'Evidence of top management leadership and commitment to the ISMS (ISO 27001 clause 5.1).',
   },
   {
+    type: 'roles_and_responsibilities',
+    clause: '5.3',
+    title: 'Roles, Responsibilities and Authorities',
+    description:
+      'The ISMS governance roles, their responsibilities and authorities, and the members who hold them (ISO 27001 clause 5.3).',
+  },
+  {
     type: 'objectives_plan',
     clause: '6.2',
     title: 'Information Security Objectives and Plan',
