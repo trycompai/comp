@@ -14,6 +14,7 @@ import {
 } from '@trycompai/design-system';
 import { InProgress, Renew } from '@trycompai/design-system/icons';
 import { usePermissions } from '@/hooks/use-permissions';
+import { formatTimeAgo } from '../lib/device-source';
 import { useDeviceSync } from '../hooks/useDeviceSync';
 
 const NO_SYNC_VALUE = '__no_sync__';
@@ -99,11 +100,16 @@ export function DeviceSyncProviderSelector() {
   };
 
   return (
-    // Right-aligned: the sync source is a setting, not the page's subject —
-    // it sits at the row's end with its re-sync button snug beside it.
-    <div className="flex flex-wrap items-end justify-end gap-2">
-      <div className="flex w-full max-w-[280px] flex-col gap-1">
-        <span className="text-xs text-muted-foreground">Device sync</span>
+    // Right-aligned inline row: "Synced Xh ago · [provider select] · [↻]".
+    // The provider name + refresh affordance say what this is; the last-synced
+    // text gives the freshness at a glance without opening the dropdown.
+    <div className="flex flex-wrap items-center justify-end gap-2">
+      {selected?.lastSyncAt && (
+        <span className="text-xs text-muted-foreground">
+          Synced {formatTimeAgo(selected.lastSyncAt)}
+        </span>
+      )}
+      <div className="w-full max-w-[240px]">
         {/* Uncontrolled on purpose — mirrors the (working) people-sync select. */}
         <Select onValueChange={handleValueChange} disabled={isSyncing}>
           <SelectTrigger aria-label="Sync devices from">
@@ -216,10 +222,9 @@ export function DeviceSyncProviderSelector() {
       </div>
 
       {selected && (
-        // Icon-only re-sync: the select already says what's syncing, so the
-        // button needs no label — aria-label + title keep it accessible.
+        // Icon-only re-sync in the brand primary: the select already says
+        // what's syncing — aria-label + title keep it accessible.
         <Button
-          variant="outline"
           size="icon-lg"
           onClick={handleSyncNow}
           disabled={isSyncing}
