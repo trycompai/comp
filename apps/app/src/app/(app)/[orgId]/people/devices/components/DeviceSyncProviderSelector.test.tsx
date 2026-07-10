@@ -146,18 +146,12 @@ describe('DeviceSyncProviderSelector — last synced text', () => {
     );
   });
 
-  it('shows "Synced Xh ago" next to the control when the selected provider has synced', () => {
+  it('shows no inline synced text — sync times live inside the dropdown info block', () => {
     const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
     mockHook({
       availableProviders: [{ ...provider, lastSyncAt: threeHoursAgo }],
     });
 
-    render(<DeviceSyncProviderSelector />);
-
-    expect(screen.getByText('Synced 3h ago')).toBeInTheDocument();
-  });
-
-  it('shows no synced text when the provider has never synced', () => {
     render(<DeviceSyncProviderSelector />);
 
     expect(screen.queryByText(/^Synced /)).not.toBeInTheDocument();
