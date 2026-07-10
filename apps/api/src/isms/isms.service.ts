@@ -9,7 +9,7 @@ import { SubmitIsmsForApprovalDto } from './dto/submit-isms-for-approval.dto';
 import { deriveControlLinks, resolveDocumentPlans } from './utils/ensure-setup-plan';
 import { collectPlatformData } from './documents/data-source';
 import { runDerivation } from './documents/generate';
-import { seedRolesIfMissing } from './documents/roles';
+import { roleValidationMessages, seedRolesIfMissing } from './documents/roles';
 import { updateDraftSnapshot } from './utils/draft-snapshot';
 import { EXPORT_DOCUMENT_INCLUDE } from './utils/export-payload';
 import { lockDocument } from './utils/document-lock';
@@ -209,7 +209,13 @@ export class IsmsService {
       throw new NotFoundException('Approver not found in organization');
     }
 
-    await this.requireDocument({ documentId, organizationId });
+    const document = await this.requireDocument({ documentId, organizationId });
+
+    // Clause 5.3 generate-time validation, enforced server-side so it can't be
+    // bypassed by calling the API directly (the client disables Submit too).
+    if (document.type === 'roles_and_responsibilities') {
+      await this.assertRolesComplete({ documentId, organizationId });
+    }
 
     return db.ismsDocument.update({
       where: { id: documentId },
@@ -360,6 +366,38 @@ export class IsmsService {
     }
     if (!document.approverId || document.approverId !== member.id) {
       throw new ForbiddenException('Document is not pending your approval');
+    }
+  }
+
+  /**
+   * Enforce clause-5.3 completeness before the Roles document can be submitted for
+   * approval (each seeded role assigned — except Deputy SPO in the 1-3 band — and
+   * the Internal Auditor route chosen). Mirrors the client-side gate.
+   */
+  private async assertRolesComplete({
+    documentId,
+    organizationId,
+  }: {
+    documentId: string;
+    organizationId: string;
+  }) {
+    const [roles, memberCount] = await Promise.all([
+      db.ismsRole.findMany({
+        where: { documentId },
+        select: {
+          roleKey: true,
+          name: true,
+          auditRoute: true,
+          assignments: { select: { id: true } },
+        },
+      }),
+      db.member.count({ where: { organizationId, deactivated: false } }),
+    ]);
+    const messages = roleValidationMessages({ roles, memberCount });
+    if (messages.length > 0) {
+      throw new BadRequestException(
+        `This Clause 5.3 document is not ready to submit. ${messages.join(' ')}`,
+      );
     }
   }
 

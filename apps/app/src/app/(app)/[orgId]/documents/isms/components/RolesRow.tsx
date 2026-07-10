@@ -106,6 +106,9 @@ export function RolesRow({
     setIsDeleting(true);
     try {
       await onDeleteRole(role.id);
+    } catch {
+      // Error already surfaced via toast by the caller; swallow to avoid an
+      // unhandled promise rejection (matches the save path).
     } finally {
       setIsDeleting(false);
     }

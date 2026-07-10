@@ -1,4 +1,9 @@
-import { buildRolesSections, seedRolesIfMissing, teamSizeBand } from './roles';
+import {
+  buildRolesSections,
+  roleValidationMessages,
+  seedRolesIfMissing,
+  teamSizeBand,
+} from './roles';
 import type {
   DocumentExportInput,
   RoleExportRow,
@@ -143,6 +148,61 @@ describe('buildRolesSections', () => {
     const stdOps = findSection(standard, 'Operational responsibilities');
     expect(stdOps?.table?.headers).toHaveLength(4);
     expect(stdOps?.table?.rows[0]).toContain('Alice');
+  });
+});
+
+describe('roleValidationMessages (server gate)', () => {
+  const assigned = { id: 'ra' };
+  const complete = () => [
+    { roleKey: 'top_management', name: 'Top Management', auditRoute: null, assignments: [assigned] },
+    { roleKey: 'spo', name: 'SPO', auditRoute: null, assignments: [assigned] },
+    { roleKey: 'deputy_spo', name: 'Deputy SPO', auditRoute: null, assignments: [assigned] },
+    {
+      roleKey: 'internal_auditor',
+      name: 'Internal Auditor',
+      auditRoute: 'external',
+      assignments: [assigned],
+    },
+  ];
+
+  it('passes when every seeded role is present + assigned + routed', () => {
+    expect(roleValidationMessages({ roles: complete(), memberCount: 20 })).toEqual([]);
+  });
+
+  it('flags an entirely-missing required seeded role', () => {
+    const roles = complete().filter((r) => r.roleKey !== 'top_management');
+    expect(roleValidationMessages({ roles, memberCount: 20 })).toContain(
+      'Top Management is missing from the document.',
+    );
+  });
+
+  it('flags a present-but-unassigned seeded role', () => {
+    const roles = complete();
+    roles[1] = { roleKey: 'spo', name: 'SPO', auditRoute: null, assignments: [] };
+    expect(roleValidationMessages({ roles, memberCount: 20 })).toContain(
+      'SPO needs at least one assigned member.',
+    );
+  });
+
+  it('treats Deputy SPO as optional only in the small band', () => {
+    const roles = complete().filter((r) => r.roleKey !== 'deputy_spo');
+    expect(roleValidationMessages({ roles, memberCount: 2 })).toEqual([]);
+    expect(roleValidationMessages({ roles, memberCount: 10 })).toContain(
+      'Deputy Security & Privacy Owner is missing from the document.',
+    );
+  });
+
+  it('requires the Internal Auditor route', () => {
+    const roles = complete();
+    roles[3] = {
+      roleKey: 'internal_auditor',
+      name: 'Internal Auditor',
+      auditRoute: null,
+      assignments: [assigned],
+    };
+    expect(roleValidationMessages({ roles, memberCount: 20 })).toContain(
+      'The Internal Auditor needs an audit route selected.',
+    );
   });
 });
 

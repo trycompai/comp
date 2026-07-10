@@ -7,6 +7,7 @@ import { db } from '@db';
 import type { Prisma } from '@db';
 import { invalidateApprovalIfNeeded } from './utils/approval';
 import { lockDocument } from './utils/document-lock';
+import { parseOptionalDate } from './utils/parse-optional-date';
 import type {
   CreateRoleInput,
   UpdateRoleInput,
@@ -91,7 +92,7 @@ export class IsmsRoleService {
               : dto.auditEvidenceRef,
           auditCourse:
             dto.auditCourse === undefined ? undefined : dto.auditCourse,
-          auditDueDate: this.toDate(dto.auditDueDate),
+          auditDueDate: parseOptionalDate(dto.auditDueDate),
           position: dto.position ?? undefined,
           source: 'manual',
         },
@@ -117,17 +118,6 @@ export class IsmsRoleService {
       await tx.ismsRole.delete({ where: { id: roleId } });
     });
     return { success: true };
-  }
-
-  /** undefined → leave as-is; null/empty → clear; string → parsed Date. */
-  private toDate(value: string | null | undefined): Date | null | undefined {
-    if (value === undefined) return undefined;
-    if (!value) return null;
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-      throw new BadRequestException('Invalid date');
-    }
-    return date;
   }
 
   private async resolveMember({

@@ -154,30 +154,31 @@ export function AuditRoutePicker({
           <Controller
             control={control}
             name="auditRouteMemberId"
-            render={({ field }) =>
-              hasMemberOptions ? (
-                <Select
-                  value={field.value || undefined}
-                  onValueChange={field.onChange}
-                  disabled={!canEdit}
-                >
-                  <SelectTrigger aria-label="In-house auditor">
-                    <SelectValue placeholder="Select a member" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {memberOptions.map((option) => (
-                      <SelectItem key={option.id} value={option.id}>
-                        {option.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Field>
-                  <Input {...field} disabled={!canEdit} aria-label="In-house auditor" />
-                </Field>
-              )
-            }
+            render={({ field }) => (
+              // A member id is required (it must resolve to a real person), so we
+              // never offer editable free text — the select disables when there
+              // are no members to pick.
+              <Select
+                value={field.value || undefined}
+                onValueChange={field.onChange}
+                disabled={!canEdit || !hasMemberOptions}
+              >
+                <SelectTrigger aria-label="In-house auditor">
+                  <SelectValue
+                    placeholder={
+                      hasMemberOptions ? 'Select a member' : 'No members available'
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {memberOptions.map((option) => (
+                    <SelectItem key={option.id} value={option.id}>
+                      {option.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           />
         </IsmsFieldLabel>
       ) : null}
@@ -225,30 +226,28 @@ export function AuditRoutePicker({
             <Controller
               control={control}
               name="auditRouteMemberId"
-              render={({ field }) =>
-                hasMemberOptions ? (
-                  <Select
-                    value={field.value || undefined}
-                    onValueChange={field.onChange}
-                    disabled={!canEdit}
-                  >
-                    <SelectTrigger aria-label="Member in training">
-                      <SelectValue placeholder="Select a member" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {memberOptions.map((option) => (
-                        <SelectItem key={option.id} value={option.id}>
-                          {option.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <Field>
-                    <Input {...field} disabled={!canEdit} aria-label="Member in training" />
-                  </Field>
-                )
-              }
+              render={({ field }) => (
+                <Select
+                  value={field.value || undefined}
+                  onValueChange={field.onChange}
+                  disabled={!canEdit || !hasMemberOptions}
+                >
+                  <SelectTrigger aria-label="Member in training">
+                    <SelectValue
+                      placeholder={
+                        hasMemberOptions ? 'Select a member' : 'No members available'
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {memberOptions.map((option) => (
+                      <SelectItem key={option.id} value={option.id}>
+                        {option.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             />
           </IsmsFieldLabel>
           <IsmsFieldLabel label="Course">

@@ -126,7 +126,7 @@ export class IsmsProfileService {
   }
 
   /**
-   * Ensure all six ISMS documents exist, then regenerate each from the latest
+   * Ensure every ISMS document exists, then regenerate each from the latest
    * profile + platform data. Called by the wizard on completion so every document
    * reflects the answers just saved. Returns the regenerated documents.
    */

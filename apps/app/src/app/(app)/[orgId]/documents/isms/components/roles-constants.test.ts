@@ -90,4 +90,11 @@ describe('roleValidationMessages', () => {
     ];
     expect(roleValidationMessages({ roles, band: 'standard' })).toEqual([]);
   });
+
+  it('flags an entirely-missing required seeded role (not just present ones)', () => {
+    const roles = fullyAssigned().filter((r) => r.roleKey !== 'top_management');
+    expect(roleValidationMessages({ roles, band: 'standard' })).toContain(
+      'Top Management is missing from the document.',
+    );
+  });
 });

@@ -41,18 +41,21 @@ export const INTERNAL_AUDITOR_ROLE_KEY = 'internal_auditor';
 export const SPO_ROLE_KEY = 'spo';
 export const DEPUTY_SPO_ROLE_KEY = 'deputy_spo';
 
-/** Seeded roles that must have at least one assigned member to generate the doc. */
-const REQUIRED_SEED_ROLE_KEYS = [
-  'top_management',
-  SPO_ROLE_KEY,
-  DEPUTY_SPO_ROLE_KEY,
-  INTERNAL_AUDITOR_ROLE_KEY,
+/** Seeded roles that must be present + assigned to generate the doc (key + fallback label). */
+const REQUIRED_SEED_ROLES: { key: string; label: string }[] = [
+  { key: 'top_management', label: 'Top Management' },
+  { key: SPO_ROLE_KEY, label: 'Security & Privacy Owner (SPO)' },
+  { key: DEPUTY_SPO_ROLE_KEY, label: 'Deputy Security & Privacy Owner' },
+  { key: INTERNAL_AUDITOR_ROLE_KEY, label: 'Internal Auditor' },
 ];
 
 /**
- * The document-generation validation (5.3): every seeded role has at least one
- * assigned member (except Deputy SPO in the 1-3 band), and the Internal Auditor
- * has a route selected. Returns the unmet requirements, empty when valid.
+ * The document-generation validation (5.3): every seeded role must be present and
+ * have at least one assigned member (except Deputy SPO in the 1-3 band), and the
+ * Internal Auditor must have a route selected. Iterates the REQUIRED keys (not
+ * just the roles present) so an entirely-missing seeded row is caught too. Returns
+ * the unmet requirements, empty when valid. Mirrors the server gate in the API's
+ * documents/roles.ts roleValidationMessages.
  */
 export function roleValidationMessages({
   roles,
@@ -61,16 +64,22 @@ export function roleValidationMessages({
   roles: IsmsRole[];
   band: IsmsTeamSizeBand;
 }): string[] {
+  const byKey = new Map(
+    roles.filter((role) => role.roleKey).map((role) => [role.roleKey, role]),
+  );
   const messages: string[] = [];
-  for (const role of roles) {
-    if (!role.roleKey || !REQUIRED_SEED_ROLE_KEYS.includes(role.roleKey)) {
+  for (const { key, label } of REQUIRED_SEED_ROLES) {
+    const role = byKey.get(key);
+    const name = role?.name ?? label;
+    const optional = key === DEPUTY_SPO_ROLE_KEY && band === 'small';
+    if (!role) {
+      if (!optional) messages.push(`${name} is missing from the document.`);
       continue;
     }
-    const optional = role.roleKey === DEPUTY_SPO_ROLE_KEY && band === 'small';
     if (!optional && role.assignments.length === 0) {
-      messages.push(`${role.name} needs at least one assigned member.`);
+      messages.push(`${name} needs at least one assigned member.`);
     }
-    if (role.roleKey === INTERNAL_AUDITOR_ROLE_KEY && !role.auditRoute) {
+    if (key === INTERNAL_AUDITOR_ROLE_KEY && !role.auditRoute) {
       messages.push('The Internal Auditor needs an audit route selected.');
     }
   }

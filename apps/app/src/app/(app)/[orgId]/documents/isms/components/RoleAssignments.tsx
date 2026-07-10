@@ -55,7 +55,9 @@ export function RoleAssignments({
     if (!memberId) return;
     // Reset the picker back to its placeholder after selecting.
     setPendingMember('');
-    void onAddAssignment(memberId);
+    // The caller surfaces failures via toast and re-throws; swallow here so a
+    // failed add can't leak an unhandled promise rejection.
+    void onAddAssignment(memberId).catch(() => {});
   };
 
   return (

@@ -1,12 +1,9 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { db } from '@db';
 import type { Prisma } from '@db';
 import { invalidateApprovalIfNeeded } from './utils/approval';
 import { lockDocument } from './utils/document-lock';
+import { parseOptionalDate } from './utils/parse-optional-date';
 import type {
   CreateRoleAssignmentInput,
   UpdateRoleAssignmentInput,
@@ -33,15 +30,16 @@ export class IsmsRoleAssignmentService {
     await this.requireRoleInDocument({ roleId: dto.roleId, documentId });
     await this.requireMember({ memberId: dto.memberId, organizationId });
 
-    // Idempotent add: the (roleId, memberId) unique constraint means a repeat add
-    // from the picker returns the existing assignment rather than 500-ing.
-    const existing = await db.ismsRoleAssignment.findFirst({
-      where: { roleId: dto.roleId, memberId: dto.memberId },
-    });
-    if (existing) return existing;
-
     return db.$transaction(async (tx) => {
       await lockDocument(tx, documentId);
+      // Idempotency inside the per-document lock: concurrent duplicate adds for
+      // the same (role, member) serialize here, so the second caller returns the
+      // first's row instead of hitting the (roleId, memberId) unique index.
+      const existing = await tx.ismsRoleAssignment.findFirst({
+        where: { roleId: dto.roleId, memberId: dto.memberId },
+      });
+      if (existing) return existing;
+
       const position =
         dto.position ?? (await this.nextPosition({ tx, roleId: dto.roleId }));
       await invalidateApprovalIfNeeded({ tx, documentId });
@@ -54,7 +52,7 @@ export class IsmsRoleAssignmentService {
           evidenceRetained: dto.evidenceRetained ?? null,
           gap: dto.gap ?? null,
           remediationAction: dto.remediationAction ?? null,
-          remediationDueDate: this.toDate(dto.remediationDueDate) ?? null,
+          remediationDueDate: parseOptionalDate(dto.remediationDueDate) ?? null,
           position,
         },
       });
@@ -96,7 +94,7 @@ export class IsmsRoleAssignmentService {
             dto.remediationAction === undefined
               ? undefined
               : dto.remediationAction,
-          remediationDueDate: this.toDate(dto.remediationDueDate),
+          remediationDueDate: parseOptionalDate(dto.remediationDueDate),
           position: dto.position ?? undefined,
         },
       });
@@ -122,17 +120,6 @@ export class IsmsRoleAssignmentService {
       await tx.ismsRoleAssignment.delete({ where: { id: assignmentId } });
     });
     return { success: true };
-  }
-
-  /** undefined → leave as-is; null/empty → clear; string → parsed Date. */
-  private toDate(value: string | null | undefined): Date | null | undefined {
-    if (value === undefined) return undefined;
-    if (!value) return null;
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-      throw new BadRequestException('Invalid date');
-    }
-    return date;
   }
 
   private async nextPosition({

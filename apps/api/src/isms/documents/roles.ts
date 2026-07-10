@@ -20,6 +20,56 @@ export function teamSizeBand(memberCount: number): IsmsTeamSizeBand {
   return memberCount <= 3 ? 'small' : 'standard';
 }
 
+/** Seeded roles that must be present + assigned before the 5.3 doc can be published. */
+const REQUIRED_SEED_ROLE_KEYS = SEED_ROLE_DEFINITIONS.map((role) => role.roleKey);
+
+/**
+ * Clause-5.3 completeness check, shared by the submit-for-approval server gate.
+ * Every seeded role must exist and have at least one assigned member (except the
+ * Deputy SPO in the 1-3 band), and the Internal Auditor must have a route. Missing
+ * rows are reported too, so validation can't pass by a required role simply being
+ * absent. Returns the unmet requirements; empty means ready.
+ */
+export function roleValidationMessages({
+  roles,
+  memberCount,
+}: {
+  roles: Array<{
+    roleKey: string | null;
+    name: string;
+    auditRoute: string | null;
+    assignments: unknown[];
+  }>;
+  memberCount: number;
+}): string[] {
+  const band = teamSizeBand(memberCount);
+  const byKey = new Map(
+    roles
+      .filter((role) => role.roleKey)
+      .map((role) => [role.roleKey as string, role]),
+  );
+  const messages: string[] = [];
+  for (const key of REQUIRED_SEED_ROLE_KEYS) {
+    const role = byKey.get(key);
+    const name =
+      role?.name ??
+      SEED_ROLE_DEFINITIONS.find((seed) => seed.roleKey === key)?.name ??
+      key;
+    const optional = key === 'deputy_spo' && band === 'small';
+    if (!role) {
+      if (!optional) messages.push(`${name} is missing from the document.`);
+      continue;
+    }
+    if (!optional && role.assignments.length === 0) {
+      messages.push(`${name} needs at least one assigned member.`);
+    }
+    if (key === 'internal_auditor' && !role.auditRoute) {
+      messages.push('The Internal Auditor needs an audit route selected.');
+    }
+  }
+  return messages;
+}
+
 /**
  * Seed the four governance roles for a Roles document, idempotently by `roleKey`.
  * Only creates seed roles that are missing — it NEVER deletes or overwrites, so a
@@ -75,6 +125,10 @@ export async function seedRolesIfMissing({
       derivedFrom: `seed:${role.roleKey}`,
       position: maxPosition + 1 + index,
     })),
+    // Belt-and-braces with the @@unique([documentId, roleKey]) constraint: a
+    // concurrent provision/generate that races this seed is absorbed silently
+    // instead of throwing, so parallel first-loads can't double-seed.
+    skipDuplicates: true,
   });
 }
 
@@ -240,7 +294,7 @@ export function buildRolesSections(
       heading: 'Note on team size',
       paragraphs: [
         {
-          text: 'The organisation currently operates with a small team (three or fewer people). Some ISMS roles are necessarily held by the same individuals, and the Deputy Security & Privacy Owner may be unfilled. This is a pragmatic and accepted arrangement at this size; the internal audit is routed to an external independent auditor to preserve objectivity. Be prepared to explain this structure at audit.',
+          text: 'The organisation currently operates with a small team (three or fewer people). Some ISMS roles are necessarily held by the same individuals, and the Deputy Security & Privacy Owner may be unfilled. This is a pragmatic and accepted arrangement at this size; the internal audit route selected for this ISMS is stated in the "Internal audit route" section above. Be prepared to explain this structure at audit.',
         },
       ],
     });

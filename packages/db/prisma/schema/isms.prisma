@@ -335,6 +335,10 @@ model IsmsRole {
 
   assignments IsmsRoleAssignment[]
 
+  // Idempotency anchor for seedRolesIfMissing: at most one seeded role per key per
+  // document. Custom roles have roleKey = null; Postgres treats NULLs as distinct,
+  // so multiple custom roles per document remain allowed.
+  @@unique([documentId, roleKey])
   @@index([documentId])
 }
 
