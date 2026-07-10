@@ -1,4 +1,8 @@
-import type { CheckDetails, DeviceWithChecks } from '@/app/(app)/[orgId]/people/devices/types';
+import type {
+  CheckDetails,
+  DeviceWithChecks,
+  SourceCompliance,
+} from '@/app/(app)/[orgId]/people/devices/types';
 import { getOrgIsInternal } from '@/lib/org-participation';
 import { requireApiPermission } from '@/lib/permissions.server';
 import { db } from '@db/server';
@@ -125,6 +129,12 @@ export async function GET(req: Request) {
         },
         source,
         ...(provider ? { integrationProvider: provider } : {}),
+        // Source-reported compliance for imported devices (null when the
+        // provider reports none). The stored JSON was validated against
+        // SyncDeviceSchema at sync time.
+        ...(source === 'integration'
+          ? { sourceCompliance: (device.sourceCompliance as SourceCompliance) ?? null }
+          : {}),
         complianceStatus,
         daysSinceLastCheckIn: daysSinceCheckIn(device.lastCheckIn),
         hasActiveAgentSession:

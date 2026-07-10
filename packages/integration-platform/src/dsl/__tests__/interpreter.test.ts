@@ -1129,6 +1129,65 @@ describe('interpretDeclarativeDeviceSync', () => {
     expect(devices[0]!.name).toBe('Good');
   });
 
+  it('keeps source-reported compliance fields (verdict, named checks, lastSeenAt)', async () => {
+    const runner = interpretDeclarativeDeviceSync({
+      definition: deviceDef(`scope.devices = [
+        {
+          name: 'PC', platform: 'windows', userEmail: 'a@x.com', status: 'active',
+          externalId: 'ext-1',
+          isCompliant: true,
+          checks: [
+            { id: 'disk_encryption', label: 'Disk Encryption', passed: true },
+            { id: 'firewall', label: 'Firewall', passed: false },
+          ],
+          lastSeenAt: '2026-07-09T18:00:00.000Z',
+        },
+      ];`),
+    });
+
+    const devices = await runner.run(createMockContext());
+
+    expect(devices).toHaveLength(1);
+    expect(devices[0]).toMatchObject({
+      isCompliant: true,
+      checks: [
+        { id: 'disk_encryption', label: 'Disk Encryption', passed: true },
+        { id: 'firewall', label: 'Firewall', passed: false },
+      ],
+      lastSeenAt: '2026-07-09T18:00:00.000Z',
+    });
+  });
+
+  it('accepts a lastSeenAt with a timezone offset (providers do not always report UTC)', async () => {
+    const runner = interpretDeclarativeDeviceSync({
+      definition: deviceDef(`scope.devices = [
+        { name: 'PC', platform: 'windows', userEmail: 'a@x.com', status: 'active', externalId: 'e1', lastSeenAt: '2026-07-09T18:00:00+02:00' },
+      ];`),
+    });
+
+    const devices = await runner.run(createMockContext());
+
+    expect(devices).toHaveLength(1);
+    expect(devices[0]!.lastSeenAt).toBe('2026-07-09T18:00:00+02:00');
+  });
+
+  it('drops a device with an invalid lastSeenAt or an oversized checks list, keeps valid ones', async () => {
+    const runner = interpretDeclarativeDeviceSync({
+      definition: deviceDef(`
+        const tooMany = Array.from({ length: 51 }, (_, i) => ({ id: 'c' + i, label: 'C' + i, passed: true }));
+        scope.devices = [
+          { name: 'Good', platform: 'macos', userEmail: 'a@x.com', status: 'active', externalId: 'e1' },
+          { name: 'Bad date', platform: 'macos', userEmail: 'b@x.com', status: 'active', externalId: 'e2', lastSeenAt: 'yesterday' },
+          { name: 'Too many checks', platform: 'macos', userEmail: 'c@x.com', status: 'active', externalId: 'e3', checks: tooMany },
+        ];`),
+    });
+
+    const devices = await runner.run(createMockContext());
+
+    expect(devices).toHaveLength(1);
+    expect(devices[0]!.name).toBe('Good');
+  });
+
   it('reads from a custom devicesPath', async () => {
     const runner = interpretDeclarativeDeviceSync({
       definition: deviceDef(

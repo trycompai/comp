@@ -1,5 +1,11 @@
 import type { DeviceWithChecks } from '../types';
-import { isComplianceTracked, sourceLabel } from './device-source';
+import {
+  CANONICAL_DEVICE_CHECKS,
+  computeSourceComplianceVerdict,
+  isComplianceTracked,
+  sourceChecks,
+  sourceLabel,
+} from './device-source';
 
 export const DEVICES_CSV_HEADER = [
   'Device Name',
@@ -38,11 +44,24 @@ function yesNo(value: boolean): 'yes' | 'no' {
 
 export function buildDevicesCsv(devices: DeviceWithChecks[]): string {
   const rows = devices.map((d) => {
-    // Integration-imported devices are inventory-only; agent + Fleet carry real
-    // compliance. Use the shared helper so the CSV matches the rest of the UI.
+    // Imported devices are judged by CompAI's OWN standard — the same four
+    // canonical checks the agent measures — computed from the data the source
+    // integration reports. Unreported canonical checks export as 'unverified'.
     const tracked = isComplianceTracked(d);
-    const status = tracked ? d.complianceStatus : 'not_tracked';
-    const check = (value: boolean) => (tracked ? yesNo(value) : 'n/a');
+    const verdict = computeSourceComplianceVerdict(d);
+    const status = tracked
+      ? d.complianceStatus
+      : verdict === null || verdict.kind === 'not_tracked'
+        ? 'not_tracked'
+        : verdict.kind === 'unverified'
+          ? `unverified (${verdict.reported}/${CANONICAL_DEVICE_CHECKS.length} checks reported)`
+          : verdict.kind;
+    const bySourceId = new Map(sourceChecks(d).map((c) => [c.id, c.passed]));
+    const check = (agentValue: boolean, canonicalId: string) => {
+      if (tracked) return yesNo(agentValue);
+      const reported = bySourceId.get(canonicalId);
+      return reported === undefined ? 'unverified' : yesNo(reported);
+    };
     return [
       escapeCell(d.name),
       escapeCell(d.user.name),
@@ -53,10 +72,10 @@ export function buildDevicesCsv(devices: DeviceWithChecks[]): string {
       escapeCell(d.lastCheckIn ?? ''),
       escapeCell(d.daysSinceLastCheckIn ?? ''),
       escapeCell(status),
-      escapeCell(check(d.diskEncryptionEnabled)),
-      escapeCell(check(d.antivirusEnabled)),
-      escapeCell(check(d.passwordPolicySet)),
-      escapeCell(check(d.screenLockEnabled)),
+      escapeCell(check(d.diskEncryptionEnabled, 'disk_encryption')),
+      escapeCell(check(d.antivirusEnabled, 'antivirus')),
+      escapeCell(check(d.passwordPolicySet, 'password_policy')),
+      escapeCell(check(d.screenLockEnabled, 'screen_lock')),
       escapeCell(sourceLabel(d)),
     ].join(',');
   });

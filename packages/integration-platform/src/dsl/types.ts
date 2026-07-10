@@ -318,6 +318,21 @@ export type SyncDefinition = z.infer<typeof SyncDefinitionSchema>;
 // Sync Device Schema (for dynamic device sync)
 // ============================================================================
 
+/**
+ * A single security/compliance check as reported by the SOURCE (the MDM /
+ * provider), in the provider's own vocabulary. Universal on purpose: every
+ * provider reports a different subset (or none), so nothing here is assumed.
+ */
+export const SyncDeviceCheckSchema = z.object({
+  /** Stable slug from the provider, e.g. 'disk_encryption', 'firewall'. */
+  id: z.string().min(1).max(64),
+  /** Display name in the provider's own wording, e.g. 'BitLocker'. */
+  label: z.string().min(1).max(120),
+  passed: z.boolean(),
+});
+
+export type SyncDeviceCheck = z.infer<typeof SyncDeviceCheckSchema>;
+
 export const SyncDeviceSchema = z.object({
   name: z.string(),
   platform: z.enum(['macos', 'windows', 'linux']),
@@ -328,6 +343,21 @@ export const SyncDeviceSchema = z.object({
   userEmail: z.string(),
   status: z.enum(['active', 'inactive']),
   externalId: z.string().optional(),
+  /**
+   * Provider-reported compliance — all optional because providers differ in
+   * what (if anything) they report. Omitted fields render as "Not tracked" in
+   * the UI; only what the source actually knows is shown.
+   */
+  isCompliant: z.boolean().optional(),
+  /** Capped so a buggy definition can't stuff megabytes into device rows. */
+  checks: z.array(SyncDeviceCheckSchema).max(50).optional(),
+  /**
+   * When the device last contacted the PROVIDER (e.g. Intune lastSyncDateTime),
+   * ISO 8601. Feeds the device list's "Last seen" column and online indicator.
+   * offset:true — providers commonly return timezone offsets (+02:00), and a
+   * rejected timestamp would drop the whole device from the sync.
+   */
+  lastSeenAt: z.string().datetime({ offset: true }).optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
