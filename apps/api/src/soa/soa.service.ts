@@ -17,7 +17,10 @@ import { SubmitSOAForApprovalDto } from './dto/submit-soa-for-approval.dto';
 import { ExportSOADocumentDto } from './dto/export-soa-document.dto';
 import type { SimilarContentResult } from '@/vector-store/lib';
 import { loadISOConfig } from './utils/transform-iso-config';
-import { ISO27001_FRAMEWORK_NAMES } from './utils/constants';
+import {
+  FULLY_REMOTE_JUSTIFICATION,
+  ISO27001_FRAMEWORK_NAMES,
+} from './utils/constants';
 import {
   generateSOAExportFile,
   type SOAExportMetadata,
@@ -39,9 +42,8 @@ import {
 } from './utils/soa-answer-parser';
 import {
   saveAnswersToDatabase,
-  updateConfigurationWithResults,
   updateDocumentAfterAutoFill,
-  getAnsweredCountFromConfiguration,
+  countAnsweredAnswers,
   updateDocumentAnsweredCount,
   checkIfFullyRemote,
   type SOAStorageLogger,
@@ -74,7 +76,19 @@ export class SOAService {
       throw new NotFoundException('SOA document not found');
     }
 
-    // Get existing answer to determine version
+    // The question must belong to this document's configuration, so answers
+    // (and the answered-count) can't be created for arbitrary question IDs.
+    const configQuestions =
+      (document.configuration.questions as unknown as Array<{ id: string }>) ??
+      [];
+    if (!configQuestions.some((q) => q.id === dto.questionId)) {
+      throw new BadRequestException(
+        'Question does not belong to this SOA document',
+      );
+    }
+
+    // Get existing answer to determine the next version and to preserve prior
+    // values on partial edits.
     const existingAnswer = await db.sOAAnswer.findFirst({
       where: {
         documentId: dto.documentId,
@@ -86,55 +100,69 @@ export class SOAService {
       },
     });
 
-    const nextVersion = existingAnswer ? existingAnswer.answerVersion + 1 : 1;
+    // Applicability + justification are stored per organization on the answer.
+    // Omitted fields preserve the previous value, so a partial edit (e.g. one
+    // that sends only a justification) cannot wipe a prior applicability
+    // decision or justification.
+    const isApplicable =
+      dto.isApplicable === undefined
+        ? (existingAnswer?.isApplicable ?? null)
+        : dto.isApplicable;
+    const justification =
+      dto.justification !== undefined
+        ? dto.justification
+        : dto.answer !== undefined
+          ? dto.answer
+          : (existingAnswer?.answer ?? null);
 
-    // Mark existing answer as not latest if it exists
-    if (existingAnswer) {
-      await db.sOAAnswer.update({
-        where: { id: existingAnswer.id },
-        data: { isLatestAnswer: false },
-      });
-    }
-
-    // Determine answer value
-    let finalAnswer: string | null = null;
-    if (dto.isApplicable !== undefined) {
-      finalAnswer =
-        dto.isApplicable === false
-          ? dto.justification || dto.answer || null
-          : null;
-    } else {
-      finalAnswer = dto.answer || null;
-    }
-
-    // Create or update answer
-    await db.sOAAnswer.create({
-      data: {
-        documentId: dto.documentId,
-        questionId: dto.questionId,
-        answer: finalAnswer,
-        status:
-          finalAnswer && finalAnswer.trim().length > 0 ? 'manual' : 'untouched',
-        answerVersion: nextVersion,
-        isLatestAnswer: true,
-        createdBy: existingAnswer ? undefined : userId,
-        updatedBy: userId,
-      },
-    });
-
-    // Update configuration's question mapping if isApplicable or justification provided
-    if (dto.isApplicable !== undefined || dto.justification !== undefined) {
-      await this.updateQuestionMapping(
-        document.configuration.id,
-        dto.questionId,
-        dto.isApplicable ?? undefined,
-        dto.justification ?? undefined,
+    // Validate BEFORE any write, so a rejected save leaves the prior answer
+    // intact. ISO 27001: a not-applicable control must carry a justification.
+    if (
+      isApplicable === false &&
+      (!justification || justification.trim().length === 0)
+    ) {
+      throw new BadRequestException(
+        'A justification is required when a control is not applicable',
       );
     }
 
-    // Update document answered questions count
-    const answeredCount = await getAnsweredCountFromConfiguration(
-      document.configurationId,
+    const nextVersion = existingAnswer ? existingAnswer.answerVersion + 1 : 1;
+    const isAnswered = isApplicable !== null;
+
+    // Retire the prior answer and create the new version atomically, so a
+    // failure can never leave the control without a latest answer.
+    await db.$transaction([
+      ...(existingAnswer
+        ? [
+            db.sOAAnswer.update({
+              where: { id: existingAnswer.id },
+              data: { isLatestAnswer: false },
+            }),
+          ]
+        : []),
+      db.sOAAnswer.create({
+        data: {
+          documentId: dto.documentId,
+          questionId: dto.questionId,
+          answer: justification,
+          isApplicable,
+          status:
+            isAnswered || (justification && justification.trim().length > 0)
+              ? 'manual'
+              : 'untouched',
+          answerVersion: nextVersion,
+          isLatestAnswer: true,
+          createdBy: existingAnswer ? undefined : userId,
+          updatedBy: userId,
+        },
+      }),
+    ]);
+
+    // Update document answered questions count from the per-org answers,
+    // scoped to the document's configured questions.
+    const answeredCount = await countAnsweredAnswers(
+      dto.documentId,
+      configQuestions.map((q) => q.id),
     );
 
     await updateDocumentAnsweredCount(
@@ -144,45 +172,6 @@ export class SOAService {
     );
 
     return { success: true };
-  }
-
-  private async updateQuestionMapping(
-    configurationId: string,
-    questionId: string,
-    isApplicable: boolean | undefined,
-    justification: string | undefined,
-  ) {
-    const configuration = await db.sOAFrameworkConfiguration.findUnique({
-      where: { id: configurationId },
-    });
-
-    if (!configuration) return;
-
-    const questions = configuration.questions as unknown as SOAQuestion[];
-    const updatedQuestions = questions.map((q) => {
-      if (q.id === questionId) {
-        return {
-          ...q,
-          columnMapping: {
-            ...q.columnMapping,
-            isApplicable:
-              isApplicable !== undefined
-                ? isApplicable
-                : q.columnMapping.isApplicable,
-            justification:
-              justification !== undefined
-                ? justification
-                : q.columnMapping.justification,
-          },
-        };
-      }
-      return q;
-    });
-
-    await db.sOAFrameworkConfiguration.update({
-      where: { id: configurationId },
-      data: { questions: JSON.parse(JSON.stringify(updatedQuestions)) },
-    });
   }
 
   async createDocument(dto: CreateSOADocumentDto) {
@@ -521,6 +510,7 @@ export class SOAService {
           select: {
             questionId: true,
             answer: true,
+            isApplicable: true,
           },
         },
       },
@@ -532,22 +522,43 @@ export class SOAService {
 
     const questions =
       (document.configuration.questions as unknown as SOAQuestion[]) ?? [];
+    // Applicability + justification come from this organization's own answers,
+    // never from the shared framework configuration (which only supplies the
+    // control template: title, closure, objective).
     const answersByQuestionId = new Map(
-      document.answers.map((answer) => [answer.questionId, answer.answer]),
+      document.answers.map((answer) => [answer.questionId, answer]),
     );
 
-    const exportQuestions: SOAExportQuestion[] = questions.map((question) => ({
-      id: question.id,
-      text: question.text,
-      columnMapping: {
-        closure: question.columnMapping?.closure ?? null,
-        title: question.columnMapping?.title ?? null,
-        control_objective: question.columnMapping?.control_objective ?? null,
-        isApplicable: question.columnMapping?.isApplicable ?? null,
-        justification: question.columnMapping?.justification ?? null,
-      },
-      answer: answersByQuestionId.get(question.id) ?? null,
-    }));
+    // Enforced rule, applied identically on screen and in this export: a fully
+    // remote org's physical-security (7.x) controls are Not Applicable.
+    const isFullyRemote = await checkIfFullyRemote(
+      dto.organizationId,
+      this.storageLogger,
+    );
+
+    const exportQuestions: SOAExportQuestion[] = questions.map((question) => {
+      const answer = answersByQuestionId.get(question.id);
+      const closure = question.columnMapping?.closure ?? null;
+      const forceNotApplicable =
+        isFullyRemote && isPhysicalSecurityControl(closure ?? '');
+      // Forced-remote controls always use the remote rationale, never a stale
+      // persisted justification that could contradict the Not Applicable status.
+      const justification = forceNotApplicable
+        ? FULLY_REMOTE_JUSTIFICATION
+        : (answer?.answer ?? null);
+      return {
+        id: question.id,
+        text: question.text,
+        columnMapping: {
+          closure,
+          title: question.columnMapping?.title ?? null,
+          control_objective: question.columnMapping?.control_objective ?? null,
+          isApplicable: forceNotApplicable ? false : (answer?.isApplicable ?? null),
+          justification,
+        },
+        answer: justification,
+      };
+    });
 
     const exportMetadata: SOAExportMetadata = {
       preparedBy: (document.preparedBy as string | null) ?? null,
@@ -628,12 +639,11 @@ export class SOAService {
     );
   }
 
-  async updateConfigurationWithResults(
-    configurationId: string,
-    questions: SOAQuestion[],
-    results: SOAQuestionResult[],
-  ): Promise<void> {
-    return updateConfigurationWithResults(configurationId, questions, results);
+  async countAnsweredAnswers(
+    documentId: string,
+    validQuestionIds: string[],
+  ): Promise<number> {
+    return countAnsweredAnswers(documentId, validQuestionIds);
   }
 
   async updateDocumentAfterAutoFill(
