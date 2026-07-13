@@ -151,8 +151,12 @@ export class SOAService {
       },
     });
 
-    // Update document answered questions count from the per-org answers.
-    const answeredCount = await countAnsweredAnswers(dto.documentId);
+    // Update document answered questions count from the per-org answers,
+    // scoped to the document's configured questions.
+    const answeredCount = await countAnsweredAnswers(
+      dto.documentId,
+      configQuestions.map((q) => q.id),
+    );
 
     await updateDocumentAnsweredCount(
       dto.documentId,
@@ -613,8 +617,11 @@ export class SOAService {
     );
   }
 
-  async countAnsweredAnswers(documentId: string): Promise<number> {
-    return countAnsweredAnswers(documentId);
+  async countAnsweredAnswers(
+    documentId: string,
+    validQuestionIds: string[],
+  ): Promise<number> {
+    return countAnsweredAnswers(documentId, validQuestionIds);
   }
 
   async updateDocumentAfterAutoFill(

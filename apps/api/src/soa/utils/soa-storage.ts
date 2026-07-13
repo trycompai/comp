@@ -103,16 +103,24 @@ export async function updateDocumentAfterAutoFill(
 
 /**
  * Counts answered questions for a document from its per-organization answers.
- * A control is "answered" once it has an applicability decision.
+ * A control is "answered" once it has an applicability decision. Scoped to the
+ * question IDs in the document's active configuration so stale/mismatched
+ * answer rows can't skew the completion count.
  */
 export async function countAnsweredAnswers(
   documentId: string,
+  validQuestionIds: string[],
 ): Promise<number> {
+  if (validQuestionIds.length === 0) {
+    return 0;
+  }
+
   return db.sOAAnswer.count({
     where: {
       documentId,
       isLatestAnswer: true,
       isApplicable: { not: null },
+      questionId: { in: validQuestionIds },
     },
   });
 }

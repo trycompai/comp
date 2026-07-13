@@ -261,9 +261,11 @@ export class SOAController {
         userId,
       );
 
-      // Update document answered count from this org's persisted answers.
+      // Update document answered count from this org's persisted answers,
+      // scoped to the document's configured questions.
       const answeredCount = await this.soaService.countAnsweredAnswers(
         dto.documentId,
+        questions.map((q) => q.id),
       );
       await this.soaService.updateDocumentAfterAutoFill(
         dto.documentId,
