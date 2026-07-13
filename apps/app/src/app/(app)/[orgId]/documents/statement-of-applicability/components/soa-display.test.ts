@@ -22,12 +22,31 @@ describe('resolveSoaDisplay', () => {
     });
   });
 
-  it('defaults to applicable with no justification when the control is unanswered', () => {
+  it('defaults to applicable with no justification when there is no answer at all', () => {
     const result = resolveSoaDisplay({ ...base, answerData: undefined });
 
     expect(result).toEqual({
       displayIsApplicable: true,
       justificationValue: null,
+    });
+  });
+
+  it('shows unanswered (N/A) for an answer whose applicability is unknown, without assuming applicable', () => {
+    // Pre-migration answers have a justification but no applicability value.
+    // These must not silently render as "applicable"; they read as N/A,
+    // consistent with the export, until the org re-runs auto-fill.
+    const result = resolveSoaDisplay({
+      ...base,
+      answerData: {
+        answer: 'Existing justification',
+        answerVersion: 1,
+        isApplicable: null,
+      },
+    });
+
+    expect(result).toEqual({
+      displayIsApplicable: null,
+      justificationValue: 'Existing justification',
     });
   });
 

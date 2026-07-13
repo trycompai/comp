@@ -1,11 +1,4 @@
-import type { SOATableAnswerData } from './soa-field-types';
-
-export type SOAProcessedResult = {
-  success: boolean;
-  isApplicable: boolean | null;
-  justification?: string | null;
-  insufficientData?: boolean;
-};
+import type { SOAProcessedResult, SOATableAnswerData } from './soa-field-types';
 
 export const FULLY_REMOTE_JUSTIFICATION =
   'This control is not applicable as our organization operates fully remotely.';
@@ -60,20 +53,20 @@ export function resolveSoaDisplay({
     };
   }
 
-  // Persisted per-organization answer.
-  if (
-    answerData?.isApplicable !== null &&
-    answerData?.isApplicable !== undefined
-  ) {
+  // Persisted per-organization answer. A pre-migration answer may not carry an
+  // applicability value yet; show it as unanswered (N/A) — matching the export
+  // — rather than assuming the control is applicable.
+  if (answerData !== undefined) {
     return {
-      displayIsApplicable: answerData.isApplicable,
+      displayIsApplicable: answerData.isApplicable ?? null,
       justificationValue: answerData.answer || null,
     };
   }
 
-  // Not yet answered — default to applicable (matches the server default).
+  // No answer for this control yet — default to applicable, matching the
+  // server default and the pre-existing UX for an ungenerated SoA.
   return {
     displayIsApplicable: true,
-    justificationValue: answerData?.answer || null,
+    justificationValue: null,
   };
 }

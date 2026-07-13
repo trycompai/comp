@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import { toast } from 'sonner';
 import { env } from '@/env.mjs';
+import type { SOAProcessedResult } from '../components/soa-field-types';
 
 interface UseSOAAutoFillProps {
   questions: Array<{
@@ -23,7 +24,9 @@ interface UseSOAAutoFillProps {
 export function useSOAAutoFill({ questions, documentId, organizationId, onUpdate }: UseSOAAutoFillProps) {
   const [isAutoFilling, setIsAutoFilling] = useState(false);
   const [questionStatuses, setQuestionStatuses] = useState<Map<string, 'pending' | 'processing' | 'completed' | 'failed' | 'insufficient_data'>>(new Map());
-  const [processedResults, setProcessedResults] = useState<Map<string, { isApplicable: boolean | null; justification: string | null; success: boolean; insufficientData?: boolean }>>(new Map());
+  const [processedResults, setProcessedResults] = useState<
+    Map<string, SOAProcessedResult>
+  >(new Map());
   const isAutoFillProcessStartedRef = useRef(false);
 
   const triggerAutoFill = async () => {

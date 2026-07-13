@@ -1,7 +1,11 @@
 'use client';
 
 import { Loader2 } from 'lucide-react';
-import type { SOAFieldSavePayload, SOATableAnswerData } from './EditableSOAFields';
+import type {
+  SOAFieldSavePayload,
+  SOAProcessedResult,
+  SOATableAnswerData,
+} from './EditableSOAFields';
 import { EditableSOAFields } from './EditableSOAFields';
 import { resolveSoaDisplay } from './soa-display';
 
@@ -22,19 +26,12 @@ type SOAQuestion = {
   };
 };
 
-type ProcessedResult = {
-  success: boolean;
-  isApplicable: boolean | null;
-  justification?: string | null;
-  insufficientData?: boolean;
-};
-
 interface SOAMobileRowProps {
   question: SOAQuestion;
   columns: SOAColumn[];
   answerData?: SOATableAnswerData;
   questionStatus?: string;
-  processedResult?: ProcessedResult;
+  processedResult?: SOAProcessedResult;
   isFullyRemote: boolean;
   documentId: string;
   isPendingApproval: boolean;
