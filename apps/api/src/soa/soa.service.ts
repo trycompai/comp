@@ -541,8 +541,10 @@ export class SOAService {
       const closure = question.columnMapping?.closure ?? null;
       const forceNotApplicable =
         isFullyRemote && isPhysicalSecurityControl(closure ?? '');
+      // Forced-remote controls always use the remote rationale, never a stale
+      // persisted justification that could contradict the Not Applicable status.
       const justification = forceNotApplicable
-        ? (answer?.answer ?? FULLY_REMOTE_JUSTIFICATION)
+        ? FULLY_REMOTE_JUSTIFICATION
         : (answer?.answer ?? null);
       return {
         id: question.id,

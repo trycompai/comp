@@ -92,11 +92,23 @@ describe('resolveSoaDisplay', () => {
     });
   });
 
-  it('forces Not Applicable for a fully remote org on physical-security (7.x) controls, even before an answer is persisted', () => {
+  it('forces Not Applicable + the remote rationale for a fully remote org on physical-security (7.x) controls, ignoring any stale persisted justification', () => {
+    // Even if a stale justification is persisted (e.g. written before the org
+    // went remote), the locked forced-remote control must show the remote
+    // rationale, not the contradictory old text.
     const result = resolveSoaDisplay({
       isFullyRemote: true,
       isControl7: true,
-      answerData: undefined,
+      answerData: {
+        answer: 'We maintain physical access controls at our office',
+        answerVersion: 1,
+        isApplicable: true,
+      },
+      processedResult: {
+        success: true,
+        isApplicable: true,
+        justification: 'stale autofill text',
+      },
     });
 
     expect(result).toEqual({

@@ -28,14 +28,13 @@ export function resolveSoaDisplay({
   isControl7: boolean;
 }): { displayIsApplicable: boolean | null; justificationValue: string | null } {
   // Enforced rule: fully remote org + physical-security control (7.x) is Not
-  // Applicable. The export applies the same rule, so screen and PDF agree.
+  // Applicable. The field is edit-locked to this, so use the remote rationale
+  // unconditionally — never a stale persisted justification that could contradict
+  // the Not Applicable status. The export applies the identical rule.
   if (isFullyRemote && isControl7) {
     return {
       displayIsApplicable: false,
-      justificationValue:
-        processedResult?.justification ||
-        answerData?.answer ||
-        FULLY_REMOTE_JUSTIFICATION,
+      justificationValue: FULLY_REMOTE_JUSTIFICATION,
     };
   }
 

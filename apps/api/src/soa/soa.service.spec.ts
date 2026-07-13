@@ -643,6 +643,13 @@ describe('SOAService', () => {
         },
         approver: null,
         answers: [
+          // A stale justification persisted before the org went remote — must
+          // NOT leak into the forced Not Applicable output.
+          {
+            questionId: 'q-phys',
+            answer: 'We maintain physical access controls at our office',
+            isApplicable: true,
+          },
           { questionId: 'q-other', answer: 'Our own 5.1 justification', isApplicable: true },
         ],
       });
@@ -654,9 +661,12 @@ describe('SOAService', () => {
       const other = passedQuestions.find((q) => q.id === 'q-other');
 
       // Fully remote + 7.x → forced Not Applicable with the remote justification,
-      // even though this org has no persisted answer for it.
+      // overriding the stale persisted answer.
       expect(phys?.columnMapping.isApplicable).toBe(false);
       expect(phys?.columnMapping.justification).toBe(
+        'This control is not applicable as our organization operates fully remotely.',
+      );
+      expect(phys?.answer).toBe(
         'This control is not applicable as our organization operates fully remotely.',
       );
       // Non-physical controls are unaffected and use the org's own answer.
