@@ -56,12 +56,14 @@ export async function saveAnswersToDatabase(
       // SoA always carries a justification for every control (per ISO 27001).
       const answerValue = result.justification ?? null;
 
-      // Create new answer
+      // Create new answer. Applicability + justification are stored per
+      // organization on the answer — never on the shared configuration.
       await db.sOAAnswer.create({
         data: {
           documentId,
           questionId: question.id,
           answer: answerValue,
+          isApplicable: result.isApplicable,
           status: 'generated',
           generatedAt: new Date(),
           answerVersion: nextVersion,
@@ -76,43 +78,6 @@ export async function saveAnswersToDatabase(
       });
     }
   }
-}
-
-/**
- * Updates SOA configuration with auto-fill results
- */
-export async function updateConfigurationWithResults(
-  configurationId: string,
-  configurationQuestions: SOAQuestion[],
-  results: SOAQuestionResult[],
-): Promise<void> {
-  const resultsMap = new Map(
-    results
-      .filter((r) => r.success && r.isApplicable !== null)
-      .map((r) => [r.questionId, r]),
-  );
-
-  const updatedQuestions = configurationQuestions.map((q) => {
-    const result = resultsMap.get(q.id);
-    if (result) {
-      return {
-        ...q,
-        columnMapping: {
-          ...q.columnMapping,
-          isApplicable: result.isApplicable,
-          justification: result.justification,
-        },
-      };
-    }
-    return q;
-  });
-
-  await db.sOAFrameworkConfiguration.update({
-    where: { id: configurationId },
-    data: {
-      questions: JSON.parse(JSON.stringify(updatedQuestions)),
-    },
-  });
 }
 
 /**
@@ -137,25 +102,19 @@ export async function updateDocumentAfterAutoFill(
 }
 
 /**
- * Gets the answered questions count from configuration
+ * Counts answered questions for a document from its per-organization answers.
+ * A control is "answered" once it has an applicability decision.
  */
-export async function getAnsweredCountFromConfiguration(
-  configurationId: string,
+export async function countAnsweredAnswers(
+  documentId: string,
 ): Promise<number> {
-  const configuration = await db.sOAFrameworkConfiguration.findUnique({
-    where: { id: configurationId },
+  return db.sOAAnswer.count({
+    where: {
+      documentId,
+      isLatestAnswer: true,
+      isApplicable: { not: null },
+    },
   });
-
-  if (!configuration) return 0;
-
-  const questions = configuration.questions as Array<{
-    id: string;
-    columnMapping: {
-      isApplicable: boolean | null;
-    };
-  }>;
-
-  return questions.filter((q) => q.columnMapping.isApplicable !== null).length;
 }
 
 /**

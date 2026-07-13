@@ -18,6 +18,7 @@ jest.mock('@db', () => ({
       findFirst: jest.fn(),
       findUnique: jest.fn(),
       create: jest.fn(),
+      update: jest.fn(),
     },
     sOADocument: {
       findFirst: jest.fn(),
@@ -47,9 +48,8 @@ jest.mock('./utils/soa-answer-parser', () => ({
 }));
 jest.mock('./utils/soa-storage', () => ({
   saveAnswersToDatabase: jest.fn(),
-  updateConfigurationWithResults: jest.fn(),
   updateDocumentAfterAutoFill: jest.fn(),
-  getAnsweredCountFromConfiguration: jest.fn(),
+  countAnsweredAnswers: jest.fn(),
   updateDocumentAnsweredCount: jest.fn(),
   checkIfFullyRemote: jest.fn(),
 }));
@@ -487,7 +487,7 @@ describe('SOAService', () => {
       );
     });
 
-    it('maps document data and delegates to generateSOAExportFile', async () => {
+    it('sources applicability + justification from this org\'s answers, not the shared configuration', async () => {
       const generated = {
         fileBuffer: Buffer.from('pdf'),
         mimeType: 'application/pdf',
@@ -506,6 +506,8 @@ describe('SOAService', () => {
         version: 2,
         framework: { name: 'ISO 27001' },
         configuration: {
+          // The shared configuration must NOT drive applicability/justification.
+          // These stale values would previously bleed into every org's export.
           questions: [
             {
               id: 'q-1',
@@ -515,7 +517,7 @@ describe('SOAService', () => {
                 title: 'Control title',
                 control_objective: 'Objective',
                 isApplicable: true,
-                justification: 'Mapped justification',
+                justification: 'Another org shared-config justification',
               },
             },
             {
@@ -531,7 +533,14 @@ describe('SOAService', () => {
             email: 'approver@example.com',
           },
         },
-        answers: [{ questionId: 'q-2', answer: 'Fallback answer' }],
+        // This org's own answers.
+        answers: [
+          {
+            questionId: 'q-1',
+            answer: 'Our own justification',
+            isApplicable: false,
+          },
+        ],
       });
 
       const result = await service.exportDocument(dto);
@@ -545,10 +554,11 @@ describe('SOAService', () => {
               closure: 'A.5',
               title: 'Control title',
               control_objective: 'Objective',
-              isApplicable: true,
-              justification: 'Mapped justification',
+              // From the org's own answer — NOT the shared config's `true`.
+              isApplicable: false,
+              justification: 'Our own justification',
             },
-            answer: null,
+            answer: 'Our own justification',
           },
           {
             id: 'q-2',
@@ -557,10 +567,11 @@ describe('SOAService', () => {
               closure: null,
               title: null,
               control_objective: null,
+              // No answer for this org → blank, not another org's data.
               isApplicable: null,
               justification: null,
             },
-            answer: 'Fallback answer',
+            answer: null,
           },
         ],
         'ISO 27001',
@@ -577,6 +588,79 @@ describe('SOAService', () => {
         'pdf',
       );
       expect(result).toEqual(generated);
+    });
+  });
+
+  describe('saveAnswer', () => {
+    const baseDto = {
+      organizationId: 'org-1',
+      documentId: 'doc-1',
+      questionId: 'q-1',
+    };
+    const userId = 'user-1';
+
+    beforeEach(() => {
+      (mockDb.sOADocument.findFirst as jest.Mock).mockResolvedValue({
+        id: 'doc-1',
+        totalQuestions: 5,
+      });
+      (mockDb.sOAAnswer.findFirst as jest.Mock).mockResolvedValue(null);
+      (mockDb.sOAAnswer.create as jest.Mock).mockResolvedValue({ id: 'ans-1' });
+    });
+
+    it('throws NotFoundException when document not found', async () => {
+      (mockDb.sOADocument.findFirst as jest.Mock).mockResolvedValue(null);
+      await expect(
+        service.saveAnswer(
+          { ...baseDto, isApplicable: true, justification: 'x' },
+          userId,
+        ),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('persists applicability + justification on the answer', async () => {
+      await service.saveAnswer(
+        {
+          ...baseDto,
+          isApplicable: false,
+          justification: 'Not applicable because reasons',
+        },
+        userId,
+      );
+
+      expect(mockDb.sOAAnswer.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          documentId: 'doc-1',
+          questionId: 'q-1',
+          answer: 'Not applicable because reasons',
+          isApplicable: false,
+          status: 'manual',
+          isLatestAnswer: true,
+        }),
+      });
+    });
+
+    it('keeps the justification for applicable (YES) answers', async () => {
+      await service.saveAnswer(
+        { ...baseDto, isApplicable: true, justification: 'We do this' },
+        userId,
+      );
+
+      expect(mockDb.sOAAnswer.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          answer: 'We do this',
+          isApplicable: true,
+        }),
+      });
+    });
+
+    it('never writes per-organization data to the shared configuration', async () => {
+      await service.saveAnswer(
+        { ...baseDto, isApplicable: true, justification: 'We do this' },
+        userId,
+      );
+
+      expect(mockDb.sOAFrameworkConfiguration.update).not.toHaveBeenCalled();
     });
   });
 });

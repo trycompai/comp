@@ -261,17 +261,10 @@ export class SOAController {
         userId,
       );
 
-      // Update configuration with results
-      await this.soaService.updateConfigurationWithResults(
-        configuration.id,
-        questions,
-        successfulResults,
+      // Update document answered count from this org's persisted answers.
+      const answeredCount = await this.soaService.countAnsweredAnswers(
+        dto.documentId,
       );
-
-      // Update document
-      const answeredCount = successfulResults.filter(
-        (r) => r.isApplicable !== null,
-      ).length;
       await this.soaService.updateDocumentAfterAutoFill(
         dto.documentId,
         questions.length,

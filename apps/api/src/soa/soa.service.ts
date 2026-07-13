@@ -39,9 +39,8 @@ import {
 } from './utils/soa-answer-parser';
 import {
   saveAnswersToDatabase,
-  updateConfigurationWithResults,
   updateDocumentAfterAutoFill,
-  getAnsweredCountFromConfiguration,
+  countAnsweredAnswers,
   updateDocumentAnsweredCount,
   checkIfFullyRemote,
   type SOAStorageLogger,
@@ -64,9 +63,6 @@ export class SOAService {
       where: {
         id: dto.documentId,
         organizationId: dto.organizationId,
-      },
-      include: {
-        configuration: true,
       },
     });
 
@@ -96,25 +92,24 @@ export class SOAService {
       });
     }
 
-    // Determine answer value
-    let finalAnswer: string | null = null;
-    if (dto.isApplicable !== undefined) {
-      finalAnswer =
-        dto.isApplicable === false
-          ? dto.justification || dto.answer || null
-          : null;
-    } else {
-      finalAnswer = dto.answer || null;
-    }
+    // Applicability + justification are stored per organization on the answer.
+    // Keep the justification for both YES and NO so the SoA always carries a
+    // justification for every control (per ISO 27001).
+    const isApplicable = dto.isApplicable ?? null;
+    const justification = dto.justification ?? dto.answer ?? null;
+    const isAnswered = isApplicable !== null;
 
     // Create or update answer
     await db.sOAAnswer.create({
       data: {
         documentId: dto.documentId,
         questionId: dto.questionId,
-        answer: finalAnswer,
+        answer: justification,
+        isApplicable,
         status:
-          finalAnswer && finalAnswer.trim().length > 0 ? 'manual' : 'untouched',
+          isAnswered || (justification && justification.trim().length > 0)
+            ? 'manual'
+            : 'untouched',
         answerVersion: nextVersion,
         isLatestAnswer: true,
         createdBy: existingAnswer ? undefined : userId,
@@ -122,20 +117,8 @@ export class SOAService {
       },
     });
 
-    // Update configuration's question mapping if isApplicable or justification provided
-    if (dto.isApplicable !== undefined || dto.justification !== undefined) {
-      await this.updateQuestionMapping(
-        document.configuration.id,
-        dto.questionId,
-        dto.isApplicable ?? undefined,
-        dto.justification ?? undefined,
-      );
-    }
-
-    // Update document answered questions count
-    const answeredCount = await getAnsweredCountFromConfiguration(
-      document.configurationId,
-    );
+    // Update document answered questions count from the per-org answers.
+    const answeredCount = await countAnsweredAnswers(dto.documentId);
 
     await updateDocumentAnsweredCount(
       dto.documentId,
@@ -144,45 +127,6 @@ export class SOAService {
     );
 
     return { success: true };
-  }
-
-  private async updateQuestionMapping(
-    configurationId: string,
-    questionId: string,
-    isApplicable: boolean | undefined,
-    justification: string | undefined,
-  ) {
-    const configuration = await db.sOAFrameworkConfiguration.findUnique({
-      where: { id: configurationId },
-    });
-
-    if (!configuration) return;
-
-    const questions = configuration.questions as unknown as SOAQuestion[];
-    const updatedQuestions = questions.map((q) => {
-      if (q.id === questionId) {
-        return {
-          ...q,
-          columnMapping: {
-            ...q.columnMapping,
-            isApplicable:
-              isApplicable !== undefined
-                ? isApplicable
-                : q.columnMapping.isApplicable,
-            justification:
-              justification !== undefined
-                ? justification
-                : q.columnMapping.justification,
-          },
-        };
-      }
-      return q;
-    });
-
-    await db.sOAFrameworkConfiguration.update({
-      where: { id: configurationId },
-      data: { questions: JSON.parse(JSON.stringify(updatedQuestions)) },
-    });
   }
 
   async createDocument(dto: CreateSOADocumentDto) {
@@ -521,6 +465,7 @@ export class SOAService {
           select: {
             questionId: true,
             answer: true,
+            isApplicable: true,
           },
         },
       },
@@ -532,22 +477,28 @@ export class SOAService {
 
     const questions =
       (document.configuration.questions as unknown as SOAQuestion[]) ?? [];
+    // Applicability + justification come from this organization's own answers,
+    // never from the shared framework configuration (which only supplies the
+    // control template: title, closure, objective).
     const answersByQuestionId = new Map(
-      document.answers.map((answer) => [answer.questionId, answer.answer]),
+      document.answers.map((answer) => [answer.questionId, answer]),
     );
 
-    const exportQuestions: SOAExportQuestion[] = questions.map((question) => ({
-      id: question.id,
-      text: question.text,
-      columnMapping: {
-        closure: question.columnMapping?.closure ?? null,
-        title: question.columnMapping?.title ?? null,
-        control_objective: question.columnMapping?.control_objective ?? null,
-        isApplicable: question.columnMapping?.isApplicable ?? null,
-        justification: question.columnMapping?.justification ?? null,
-      },
-      answer: answersByQuestionId.get(question.id) ?? null,
-    }));
+    const exportQuestions: SOAExportQuestion[] = questions.map((question) => {
+      const answer = answersByQuestionId.get(question.id);
+      return {
+        id: question.id,
+        text: question.text,
+        columnMapping: {
+          closure: question.columnMapping?.closure ?? null,
+          title: question.columnMapping?.title ?? null,
+          control_objective: question.columnMapping?.control_objective ?? null,
+          isApplicable: answer?.isApplicable ?? null,
+          justification: answer?.answer ?? null,
+        },
+        answer: answer?.answer ?? null,
+      };
+    });
 
     const exportMetadata: SOAExportMetadata = {
       preparedBy: (document.preparedBy as string | null) ?? null,
@@ -628,12 +579,8 @@ export class SOAService {
     );
   }
 
-  async updateConfigurationWithResults(
-    configurationId: string,
-    questions: SOAQuestion[],
-    results: SOAQuestionResult[],
-  ): Promise<void> {
-    return updateConfigurationWithResults(configurationId, questions, results);
+  async countAnsweredAnswers(documentId: string): Promise<number> {
+    return countAnsweredAnswers(documentId);
   }
 
   async updateDocumentAfterAutoFill(

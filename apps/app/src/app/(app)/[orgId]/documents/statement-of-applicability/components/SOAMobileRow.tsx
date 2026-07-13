@@ -3,6 +3,7 @@
 import { Loader2 } from 'lucide-react';
 import type { SOAFieldSavePayload, SOATableAnswerData } from './EditableSOAFields';
 import { EditableSOAFields } from './EditableSOAFields';
+import { resolveSoaDisplay } from './soa-display';
 
 type SOAColumn = {
   name: string;
@@ -56,32 +57,15 @@ export function SOAMobileRow({
   const controlClosure = question.columnMapping.closure || '';
   const isControl7 = controlClosure.startsWith('7.');
 
-  let displayIsApplicable: boolean | null;
-  let justificationValue: string | null;
-
-  if (isFullyRemote && isControl7) {
-    displayIsApplicable = false;
-    justificationValue =
-      processedResult?.justification ||
-      answerData?.answer ||
-      question.columnMapping.justification ||
-      'This control is not applicable as our organization operates fully remotely.';
-  } else if (answerData?.savedIsApplicable !== undefined) {
-    displayIsApplicable = answerData.savedIsApplicable;
-    justificationValue =
-      answerData.answer ?? question.columnMapping.justification ?? null;
-  } else {
-    displayIsApplicable =
-      processedResult?.isApplicable !== null && processedResult?.isApplicable !== undefined
-        ? processedResult.isApplicable
-        : (question.columnMapping.isApplicable ?? true);
-
-    justificationValue =
-      processedResult?.justification ||
-      answerData?.answer ||
-      question.columnMapping.justification ||
-      null;
-  }
+  // Applicability + justification are per-organization values from this
+  // document's own answers or an in-session autofill result — never from the
+  // shared framework configuration.
+  const { displayIsApplicable, justificationValue } = resolveSoaDisplay({
+    answerData,
+    processedResult,
+    isFullyRemote,
+    isControl7,
+  });
 
   return (
     <div className="p-4 space-y-3">
