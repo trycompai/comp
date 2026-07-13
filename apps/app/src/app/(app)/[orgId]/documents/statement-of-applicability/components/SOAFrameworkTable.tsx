@@ -60,6 +60,18 @@ type SOAAnswerRecord = {
   answerVersion: number;
 };
 
+// Map a persisted answer to row state. `isApplicable` carries the persisted
+// value; `savedIsApplicable` is deliberately left unset here — it is reserved
+// for a manual save this session (set in handleAnswerUpdate) so it doesn't
+// shadow in-session autofill results in resolveSoaDisplay.
+function toAnswerData(answer: SOAAnswerRecord): SOATableAnswerData {
+  return {
+    answer: answer.answer,
+    answerVersion: answer.answerVersion,
+    isApplicable: answer.isApplicable,
+  };
+}
+
 type SOADocumentInfoDocument = Parameters<typeof SOADocumentInfo>[0]['document'];
 
 export function SOAFrameworkTable({
@@ -111,11 +123,7 @@ export function SOAFrameworkTable({
     return new Map(
       (document?.answers || []).map((answer: SOAAnswerRecord) => [
         answer.questionId,
-        {
-          answer: answer.answer,
-          answerVersion: answer.answerVersion,
-          isApplicable: answer.isApplicable,
-        },
+        toAnswerData(answer),
       ])
     );
   });
@@ -129,11 +137,7 @@ export function SOAFrameworkTable({
       new Map(
         resolvedDocument.answers.map((answer: SOAAnswerRecord) => [
           answer.questionId,
-          {
-            answer: answer.answer,
-            answerVersion: answer.answerVersion,
-            savedIsApplicable: answer.isApplicable,
-          },
+          toAnswerData(answer),
         ])
       )
     );

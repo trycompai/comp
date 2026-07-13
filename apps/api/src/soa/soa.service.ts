@@ -64,10 +64,24 @@ export class SOAService {
         id: dto.documentId,
         organizationId: dto.organizationId,
       },
+      include: {
+        configuration: true,
+      },
     });
 
     if (!document) {
       throw new NotFoundException('SOA document not found');
+    }
+
+    // The question must belong to this document's configuration, so answers
+    // (and the answered-count) can't be created for arbitrary question IDs.
+    const configQuestions =
+      (document.configuration.questions as unknown as Array<{ id: string }>) ??
+      [];
+    if (!configQuestions.some((q) => q.id === dto.questionId)) {
+      throw new BadRequestException(
+        'Question does not belong to this SOA document',
+      );
     }
 
     // Get existing answer to determine version
@@ -93,10 +107,30 @@ export class SOAService {
     }
 
     // Applicability + justification are stored per organization on the answer.
-    // Keep the justification for both YES and NO so the SoA always carries a
-    // justification for every control (per ISO 27001).
-    const isApplicable = dto.isApplicable ?? null;
-    const justification = dto.justification ?? dto.answer ?? null;
+    // Omitted fields preserve the previous value, so a partial edit (e.g. one
+    // that sends only a justification) cannot wipe a prior applicability
+    // decision or justification.
+    const isApplicable =
+      dto.isApplicable === undefined
+        ? (existingAnswer?.isApplicable ?? null)
+        : dto.isApplicable;
+    const justification =
+      dto.justification !== undefined
+        ? dto.justification
+        : dto.answer !== undefined
+          ? dto.answer
+          : (existingAnswer?.answer ?? null);
+
+    // ISO 27001: a not-applicable control must carry a justification.
+    if (
+      isApplicable === false &&
+      (!justification || justification.trim().length === 0)
+    ) {
+      throw new BadRequestException(
+        'A justification is required when a control is not applicable',
+      );
+    }
+
     const isAnswered = isApplicable !== null;
 
     // Create or update answer

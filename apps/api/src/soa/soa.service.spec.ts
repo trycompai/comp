@@ -603,6 +603,7 @@ describe('SOAService', () => {
       (mockDb.sOADocument.findFirst as jest.Mock).mockResolvedValue({
         id: 'doc-1',
         totalQuestions: 5,
+        configuration: { questions: [{ id: 'q-1' }] },
       });
       (mockDb.sOAAnswer.findFirst as jest.Mock).mockResolvedValue(null);
       (mockDb.sOAAnswer.create as jest.Mock).mockResolvedValue({ id: 'ans-1' });
@@ -616,6 +617,53 @@ describe('SOAService', () => {
           userId,
         ),
       ).rejects.toThrow(NotFoundException);
+    });
+
+    it('rejects a question that is not in the document configuration', async () => {
+      await expect(
+        service.saveAnswer(
+          {
+            ...baseDto,
+            questionId: 'q-not-in-config',
+            isApplicable: true,
+            justification: 'x',
+          },
+          userId,
+        ),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockDb.sOAAnswer.create).not.toHaveBeenCalled();
+    });
+
+    it('requires a justification when a control is not applicable', async () => {
+      await expect(
+        service.saveAnswer(
+          { ...baseDto, isApplicable: false, justification: '   ' },
+          userId,
+        ),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockDb.sOAAnswer.create).not.toHaveBeenCalled();
+    });
+
+    it('preserves the existing applicability when isApplicable is omitted', async () => {
+      (mockDb.sOAAnswer.findFirst as jest.Mock).mockResolvedValue({
+        id: 'ans-prev',
+        answerVersion: 1,
+        isApplicable: false,
+        answer: 'Prior justification',
+      });
+
+      // A partial edit that only sends a justification must not wipe the Yes/No.
+      await service.saveAnswer(
+        { ...baseDto, justification: 'Updated justification' },
+        userId,
+      );
+
+      expect(mockDb.sOAAnswer.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          isApplicable: false,
+          answer: 'Updated justification',
+        }),
+      });
     });
 
     it('persists applicability + justification on the answer', async () => {
