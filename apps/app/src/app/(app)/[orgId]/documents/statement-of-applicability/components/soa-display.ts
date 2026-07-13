@@ -1,26 +1,43 @@
 import type { SOAProcessedResult, SOATableAnswerData } from './soa-field-types';
 
+export const FULLY_REMOTE_JUSTIFICATION =
+  'This control is not applicable as our organization operates fully remotely.';
+
 /**
  * Resolves the applicability + justification to display for a SoA control.
  *
- * Applicability and justification are per-organization values, sourced only
- * from this document's own answers (`answerData`) or an in-session autofill
- * result (`processedResult`) — never from the shared framework configuration,
- * and never from a display-only rule. This keeps the on-screen SoA and the
- * exported PDF in agreement (both read the same persisted answer).
+ * Applicability and justification are per-organization values, sourced from
+ * this document's own answers (`answerData`) or an in-session autofill result
+ * (`processedResult`) — never from the shared framework configuration.
  *
- * Note: the "fully remote → physical-security (7.x) controls are not
- * applicable" rule is applied at generation time (auto-fill persists
- * `isApplicable = false` with a justification) and the field is edit-locked, so
- * it is already reflected in the persisted answer read here.
+ * The one enforced rule applied here is "fully remote → physical-security (7.x)
+ * controls are Not Applicable". It is applied consistently on both the screen
+ * (here) and the export, and the field is edit-locked to it, so a fully remote
+ * org sees the same Not Applicable result everywhere even before auto-fill has
+ * persisted it.
  */
 export function resolveSoaDisplay({
   answerData,
   processedResult,
+  isFullyRemote,
+  isControl7,
 }: {
   answerData?: SOATableAnswerData;
   processedResult?: SOAProcessedResult;
+  isFullyRemote: boolean;
+  isControl7: boolean;
 }): { displayIsApplicable: boolean | null; justificationValue: string | null } {
+  // Enforced rule: fully remote org + physical-security control (7.x) is Not
+  // Applicable. The field is edit-locked to this, so use the remote rationale
+  // unconditionally — never a stale persisted justification that could contradict
+  // the Not Applicable status. The export applies the identical rule.
+  if (isFullyRemote && isControl7) {
+    return {
+      displayIsApplicable: false,
+      justificationValue: FULLY_REMOTE_JUSTIFICATION,
+    };
+  }
+
   // A manual save this session overrides an in-flight autofill result.
   if (answerData?.savedIsApplicable !== undefined) {
     return {

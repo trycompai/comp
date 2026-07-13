@@ -65,6 +65,8 @@ export function SOATableRow({
   const { displayIsApplicable, justificationValue } = resolveSoaDisplay({
     answerData,
     processedResult,
+    isFullyRemote,
+    isControl7,
   });
 
   return (

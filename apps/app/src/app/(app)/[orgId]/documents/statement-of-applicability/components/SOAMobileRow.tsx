@@ -60,6 +60,8 @@ export function SOAMobileRow({
   const { displayIsApplicable, justificationValue } = resolveSoaDisplay({
     answerData,
     processedResult,
+    isFullyRemote,
+    isControl7,
   });
 
   return (

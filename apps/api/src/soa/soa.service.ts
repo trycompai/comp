@@ -17,7 +17,10 @@ import { SubmitSOAForApprovalDto } from './dto/submit-soa-for-approval.dto';
 import { ExportSOADocumentDto } from './dto/export-soa-document.dto';
 import type { SimilarContentResult } from '@/vector-store/lib';
 import { loadISOConfig } from './utils/transform-iso-config';
-import { ISO27001_FRAMEWORK_NAMES } from './utils/constants';
+import {
+  FULLY_REMOTE_JUSTIFICATION,
+  ISO27001_FRAMEWORK_NAMES,
+} from './utils/constants';
 import {
   generateSOAExportFile,
   type SOAExportMetadata,
@@ -526,19 +529,34 @@ export class SOAService {
       document.answers.map((answer) => [answer.questionId, answer]),
     );
 
+    // Enforced rule, applied identically on screen and in this export: a fully
+    // remote org's physical-security (7.x) controls are Not Applicable.
+    const isFullyRemote = await checkIfFullyRemote(
+      dto.organizationId,
+      this.storageLogger,
+    );
+
     const exportQuestions: SOAExportQuestion[] = questions.map((question) => {
       const answer = answersByQuestionId.get(question.id);
+      const closure = question.columnMapping?.closure ?? null;
+      const forceNotApplicable =
+        isFullyRemote && isPhysicalSecurityControl(closure ?? '');
+      // Forced-remote controls always use the remote rationale, never a stale
+      // persisted justification that could contradict the Not Applicable status.
+      const justification = forceNotApplicable
+        ? FULLY_REMOTE_JUSTIFICATION
+        : (answer?.answer ?? null);
       return {
         id: question.id,
         text: question.text,
         columnMapping: {
-          closure: question.columnMapping?.closure ?? null,
+          closure,
           title: question.columnMapping?.title ?? null,
           control_objective: question.columnMapping?.control_objective ?? null,
-          isApplicable: answer?.isApplicable ?? null,
-          justification: answer?.answer ?? null,
+          isApplicable: forceNotApplicable ? false : (answer?.isApplicable ?? null),
+          justification,
         },
-        answer: answer?.answer ?? null,
+        answer: justification,
       };
     });
 
