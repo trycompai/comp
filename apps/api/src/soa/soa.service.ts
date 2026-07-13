@@ -84,7 +84,8 @@ export class SOAService {
       );
     }
 
-    // Get existing answer to determine version
+    // Get existing answer to determine the next version and to preserve prior
+    // values on partial edits.
     const existingAnswer = await db.sOAAnswer.findFirst({
       where: {
         documentId: dto.documentId,
@@ -95,16 +96,6 @@ export class SOAService {
         answerVersion: 'desc',
       },
     });
-
-    const nextVersion = existingAnswer ? existingAnswer.answerVersion + 1 : 1;
-
-    // Mark existing answer as not latest if it exists
-    if (existingAnswer) {
-      await db.sOAAnswer.update({
-        where: { id: existingAnswer.id },
-        data: { isLatestAnswer: false },
-      });
-    }
 
     // Applicability + justification are stored per organization on the answer.
     // Omitted fields preserve the previous value, so a partial edit (e.g. one
@@ -121,7 +112,8 @@ export class SOAService {
           ? dto.answer
           : (existingAnswer?.answer ?? null);
 
-    // ISO 27001: a not-applicable control must carry a justification.
+    // Validate BEFORE any write, so a rejected save leaves the prior answer
+    // intact. ISO 27001: a not-applicable control must carry a justification.
     if (
       isApplicable === false &&
       (!justification || justification.trim().length === 0)
@@ -131,25 +123,37 @@ export class SOAService {
       );
     }
 
+    const nextVersion = existingAnswer ? existingAnswer.answerVersion + 1 : 1;
     const isAnswered = isApplicable !== null;
 
-    // Create or update answer
-    await db.sOAAnswer.create({
-      data: {
-        documentId: dto.documentId,
-        questionId: dto.questionId,
-        answer: justification,
-        isApplicable,
-        status:
-          isAnswered || (justification && justification.trim().length > 0)
-            ? 'manual'
-            : 'untouched',
-        answerVersion: nextVersion,
-        isLatestAnswer: true,
-        createdBy: existingAnswer ? undefined : userId,
-        updatedBy: userId,
-      },
-    });
+    // Retire the prior answer and create the new version atomically, so a
+    // failure can never leave the control without a latest answer.
+    await db.$transaction([
+      ...(existingAnswer
+        ? [
+            db.sOAAnswer.update({
+              where: { id: existingAnswer.id },
+              data: { isLatestAnswer: false },
+            }),
+          ]
+        : []),
+      db.sOAAnswer.create({
+        data: {
+          documentId: dto.documentId,
+          questionId: dto.questionId,
+          answer: justification,
+          isApplicable,
+          status:
+            isAnswered || (justification && justification.trim().length > 0)
+              ? 'manual'
+              : 'untouched',
+          answerVersion: nextVersion,
+          isLatestAnswer: true,
+          createdBy: existingAnswer ? undefined : userId,
+          updatedBy: userId,
+        },
+      }),
+    ]);
 
     // Update document answered questions count from the per-org answers,
     // scoped to the document's configured questions.

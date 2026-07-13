@@ -29,6 +29,7 @@ jest.mock('@db', () => ({
     user: { findUnique: jest.fn() },
     organization: { findUnique: jest.fn() },
     sOAAnswer: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
+    $transaction: jest.fn((ops: unknown[]) => Promise.all(ops)),
   },
 }));
 
@@ -641,6 +642,28 @@ describe('SOAService', () => {
           userId,
         ),
       ).rejects.toThrow(BadRequestException);
+      expect(mockDb.sOAAnswer.create).not.toHaveBeenCalled();
+    });
+
+    it('does not retire the previous answer when validation fails', async () => {
+      // A rejected save must leave the prior answer intact — validation runs
+      // before any write, and the retire + create happen in one transaction.
+      (mockDb.sOAAnswer.findFirst as jest.Mock).mockResolvedValue({
+        id: 'ans-prev',
+        answerVersion: 1,
+        isApplicable: true,
+        answer: 'Previously applicable',
+      });
+
+      await expect(
+        service.saveAnswer(
+          { ...baseDto, isApplicable: false, justification: '' },
+          userId,
+        ),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(mockDb.sOAAnswer.update).not.toHaveBeenCalled();
+      expect(mockDb.$transaction).not.toHaveBeenCalled();
       expect(mockDb.sOAAnswer.create).not.toHaveBeenCalled();
     });
 

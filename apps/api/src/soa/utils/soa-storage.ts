@@ -44,33 +44,37 @@ export async function saveAnswersToDatabase(
 
       const nextVersion = existingAnswer ? existingAnswer.answerVersion + 1 : 1;
 
-      // Mark existing answer as not latest if it exists
-      if (existingAnswer) {
-        await db.sOAAnswer.update({
-          where: { id: existingAnswer.id },
-          data: { isLatestAnswer: false },
-        });
-      }
-
       // Store justification in the answer field for both YES and NO so the
       // SoA always carries a justification for every control (per ISO 27001).
       const answerValue = result.justification ?? null;
 
-      // Create new answer. Applicability + justification are stored per
-      // organization on the answer — never on the shared configuration.
-      await db.sOAAnswer.create({
-        data: {
-          documentId,
-          questionId: question.id,
-          answer: answerValue,
-          isApplicable: result.isApplicable,
-          status: 'generated',
-          generatedAt: new Date(),
-          answerVersion: nextVersion,
-          isLatestAnswer: true,
-          createdBy: userId,
-        },
-      });
+      // Retire the prior answer and create the new version atomically, so a
+      // failure can never leave the control without a latest answer.
+      // Applicability + justification are stored per organization on the
+      // answer — never on the shared configuration.
+      await db.$transaction([
+        ...(existingAnswer
+          ? [
+              db.sOAAnswer.update({
+                where: { id: existingAnswer.id },
+                data: { isLatestAnswer: false },
+              }),
+            ]
+          : []),
+        db.sOAAnswer.create({
+          data: {
+            documentId,
+            questionId: question.id,
+            answer: answerValue,
+            isApplicable: result.isApplicable,
+            status: 'generated',
+            generatedAt: new Date(),
+            answerVersion: nextVersion,
+            isLatestAnswer: true,
+            createdBy: userId,
+          },
+        }),
+      ]);
     } catch (error) {
       logger.error('Failed to save SOA answer', {
         questionId: question.id,
