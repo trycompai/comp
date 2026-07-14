@@ -841,9 +841,11 @@ export class SecurityPenetrationTestsService {
       await this.maybeAutoRetry(event.data.pentestId);
     }
 
-    // A cancellation is terminal. Pre-claim the retry slot so a late or
+    // A cancellation is terminal. Record a lineage-wide block so a late or
     // duplicate `pentest.failed` for the same run (arriving after the cancel)
-    // can never spawn a retry of a scan that was deliberately stopped.
+    // can never spawn a retry of a scan that was deliberately stopped. If the
+    // block can't be stored, this throws so Maced redelivers the cancellation
+    // until it sticks (the refund above already ran and is idempotent).
     if (event.type === 'pentest.cancelled') {
       await this.blockAutoRetry(event.data.pentestId);
     }
@@ -1110,25 +1112,23 @@ export class SecurityPenetrationTestsService {
    * Stops NEW retries; a retry already in flight when the cancel arrives is not
    * force-cancelled at the provider (bounded — it is refunded and only wastes
    * compute).
+   *
+   * Errors are NOT swallowed: if recording the block fails, it propagates so the
+   * handler returns non-2xx and Maced redelivers the cancellation until the
+   * block is durably stored (mirrors the refund/retry durability pattern). The
+   * refund runs first and is idempotent, so redelivery is safe. Without this, a
+   * lost block could let a later `pentest.failed` retry a cancelled scan.
    */
   private async blockAutoRetry(providerRunId: string): Promise<void> {
-    try {
-      const row = await db.securityPenetrationTestRun.findUnique({
-        where: { providerRunId },
-        select: { rootRunId: true },
-      });
-      const rootRunId = row?.rootRunId ?? providerRunId;
-      await db.securityPenetrationTestRun.updateMany({
-        where: { rootRunId, retryBlockedAt: null },
-        data: { retryBlockedAt: new Date() },
-      });
-    } catch (error) {
-      this.logger.error(
-        `[Retry] failed to block retry for cancelled run=${providerRunId}: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-      );
-    }
+    const row = await db.securityPenetrationTestRun.findUnique({
+      where: { providerRunId },
+      select: { rootRunId: true },
+    });
+    const rootRunId = row?.rootRunId ?? providerRunId;
+    await db.securityPenetrationTestRun.updateMany({
+      where: { rootRunId, retryBlockedAt: null },
+      data: { retryBlockedAt: new Date() },
+    });
   }
 
   private formatDurationMs(ms: number): string {

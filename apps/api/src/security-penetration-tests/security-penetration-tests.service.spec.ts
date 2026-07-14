@@ -1194,6 +1194,18 @@ describe('SecurityPenetrationTestsService', () => {
       );
     });
 
+    it('propagates a DB failure while blocking so the cancellation redelivers', async () => {
+      mockedDb.securityPenetrationTestRun.updateMany.mockRejectedValueOnce(
+        new Error('db unavailable'),
+      );
+
+      // Rethrows (not swallowed) so the webhook 5xx's and Maced redelivers the
+      // cancellation until the block is durably stored.
+      await expect(
+        service['blockAutoRetry']('run_cancelled'),
+      ).rejects.toThrow();
+    });
+
     it('does not retry a cancelled lineage even if a late failed arrives', async () => {
       mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValueOnce({
         organizationId: 'org_123',
