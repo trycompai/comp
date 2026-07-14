@@ -1,6 +1,16 @@
 const fs = require('fs');
 const path = require('path');
-const { glob } = require('glob');
+
+// Recursively list *.js files relative to `dir`, using forward slashes.
+// Avoids the `glob` package (glob→minimatch→brace-expansion pulls in a
+// balanced-match resolution that is fragile under bun's hoisting on CI).
+function listJsFiles(dir) {
+  return fs
+    .readdirSync(dir, { recursive: true })
+    .filter((f) => typeof f === 'string' && f.endsWith('.js'))
+    .map((f) => f.split(path.sep).join('/'))
+    .sort();
+}
 
 const pkgPath = path.join(__dirname, '../package.json');
 const componentsDir = path.join(__dirname, '../dist/components');
@@ -25,8 +35,7 @@ exportsField['./postcss.config'] = './postcss.config.js';
 
 // Add all component subpath exports (ESM only) including nested directories
 if (fs.existsSync(componentsDir)) {
-  // Use glob to find all .js files recursively in components directory
-  const componentFiles = glob.sync('**/*.js', { cwd: componentsDir });
+  const componentFiles = listJsFiles(componentsDir);
 
   componentFiles.forEach((file) => {
     const name = file.replace(/\.js$/, '');
@@ -41,7 +50,7 @@ if (fs.existsSync(componentsDir)) {
 
 // Add all utils exports
 if (fs.existsSync(utilsDir)) {
-  const utilFiles = glob.sync('**/*.js', { cwd: utilsDir });
+  const utilFiles = listJsFiles(utilsDir);
 
   utilFiles.forEach((file) => {
     const name = file.replace(/\.js$/, '');
@@ -56,7 +65,7 @@ if (fs.existsSync(utilsDir)) {
 
 // Add all hooks exports
 if (fs.existsSync(hooksDir)) {
-  const hookFiles = glob.sync('**/*.js', { cwd: hooksDir });
+  const hookFiles = listJsFiles(hooksDir);
 
   hookFiles.forEach((file) => {
     const name = file.replace(/\.js$/, '');
