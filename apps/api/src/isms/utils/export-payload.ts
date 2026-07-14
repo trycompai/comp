@@ -3,7 +3,15 @@ import { db } from '@db';
 import type { IsmsDocumentType, Prisma } from '@db';
 import { buildExportSections } from '../documents/registry';
 import { loadOrgProfile } from '../documents/org-profile';
-import type { DocumentExportInput, IsmsOrgProfile } from '../documents/types';
+import {
+  loadRolesExtras,
+  type RolesExtras,
+} from '../documents/roles-export-data';
+import type {
+  DocumentExportInput,
+  IsmsOrgProfile,
+  RoleExportRow,
+} from '../documents/types';
 import { buildExportMetadata } from './export-metadata';
 import {
   generateIsmsExportFile,
@@ -34,6 +42,10 @@ export const EXPORT_DOCUMENT_INCLUDE = {
   interestedParties: { orderBy: { position: 'asc' } },
   interestedPartyRequirements: { orderBy: { position: 'asc' } },
   objectives: { orderBy: { position: 'asc' } },
+  roles: {
+    orderBy: { position: 'asc' },
+    include: { assignments: { orderBy: { position: 'asc' } } },
+  },
 } satisfies Prisma.IsmsDocumentInclude;
 
 export type LoadedExportDocument = Prisma.IsmsDocumentGetPayload<{
@@ -64,13 +76,55 @@ export async function resolveOrgProfile(
   });
 }
 
+/** The Roles document (5.3) resolves member names + ownership; other types don't. */
+export async function resolveRolesExtras(
+  document: LoadedExportDocument,
+  client?: Prisma.TransactionClient,
+): Promise<RolesExtras | undefined> {
+  if (document.type !== 'roles_and_responsibilities') return undefined;
+  return loadRolesExtras({ organizationId: document.organizationId, client });
+}
+
+function formatDateYmd(date: Date | null): string | null {
+  return date ? date.toISOString().slice(0, 10) : null;
+}
+
+/** Map role rows + assignments into export rows, resolving holder names. */
+function mapRoles(
+  document: LoadedExportDocument,
+  extras: RolesExtras,
+): RoleExportRow[] {
+  return document.roles.map((role) => ({
+    roleKey: role.roleKey,
+    name: role.name,
+    description: role.description,
+    responsibilities: role.responsibilities,
+    authorities: role.authorities,
+    authorityGrantedBy: role.authorityGrantedBy,
+    requiredCompetence: role.requiredCompetence,
+    holders: role.assignments
+      .map((assignment) => extras.memberNames[assignment.memberId])
+      .filter((name): name is string => !!name),
+    auditRoute: role.auditRoute,
+    auditRouteHolderName: role.auditRouteMemberId
+      ? (extras.memberNames[role.auditRouteMemberId] ?? null)
+      : null,
+    auditFirmName: role.auditFirmName,
+    auditEvidenceRef: role.auditEvidenceRef,
+    auditCourse: role.auditCourse,
+    auditDueDate: formatDateYmd(role.auditDueDate),
+  }));
+}
+
 /** Map the loaded document's live rows + draft narrative into export input. */
 export function buildExportInput({
   document,
   orgProfile,
+  rolesExtras,
 }: {
   document: LoadedExportDocument;
   orgProfile?: IsmsOrgProfile;
+  rolesExtras?: RolesExtras;
 }): DocumentExportInput {
   return {
     contextIssues: document.contextIssues.map((issue) => ({
@@ -99,6 +153,9 @@ export function buildExportInput({
     })),
     narrative: document.draftNarrative ?? null,
     orgProfile,
+    roles: rolesExtras ? mapRoles(document, rolesExtras) : undefined,
+    operationalOwnership: rolesExtras?.operationalOwnership,
+    band: rolesExtras?.band,
   };
 }
 
@@ -118,7 +175,8 @@ export async function buildDraftSnapshot(
   document: LoadedExportDocument,
 ): Promise<IsmsExportSnapshot> {
   const orgProfile = await resolveOrgProfile(document);
-  const input = buildExportInput({ document, orgProfile });
+  const rolesExtras = await resolveRolesExtras(document);
+  const input = buildExportInput({ document, orgProfile, rolesExtras });
   const metadata = buildExportMetadata({
     type: document.type,
     title: document.title,

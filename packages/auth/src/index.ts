@@ -1,23 +1,30 @@
 export {
-  ac,
-  statement,
-  owner,
-  admin,
-  auditor,
-  employee,
-  contractor,
-  allRoles,
-  ROLE_HIERARCHY,
-  RESTRICTED_ROLES,
-  isRestrictedRole,
-  PRIVILEGED_ROLES,
-  BUILT_IN_ROLE_PERMISSIONS,
   BUILT_IN_ROLE_OBLIGATIONS,
+  BUILT_IN_ROLE_PERMISSIONS,
+  PRIVILEGED_ROLES,
+  RESTRICTED_ROLES,
+  ROLE_HIERARCHY,
+  ac,
+  admin,
+  allRoles,
+  auditor,
+  contractor,
+  employee,
+  isRestrictedRole,
+  owner,
+  parseRoleObligations,
+  parseRolePermissions,
+  statement,
   type RoleName,
   type RoleObligations,
   type RolePermissions,
-  parseRolePermissions,
-  parseRoleObligations,
 } from './permissions';
 
-export { createAuthServer, type CreateAuthServerOptions, type AuthServer } from './server';
+export { createAuthServer, type AuthServer, type CreateAuthServerOptions } from './server';
+
+export {
+  PLATFORM_ADMIN_ROLE,
+  isExcludedFromOrgParticipation,
+  isOrgParticipant,
+  type OrgParticipationContext,
+} from './participation';

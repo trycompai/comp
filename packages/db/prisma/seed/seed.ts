@@ -232,6 +232,13 @@ const ISMS_DOCUMENT_TEMPLATES = [
       'Evidence of top management leadership and commitment to the ISMS (ISO 27001 clause 5.1).',
   },
   {
+    documentType: 'roles_and_responsibilities',
+    name: 'Roles, Responsibilities and Authorities',
+    clause: '5.3',
+    description:
+      'The ISMS governance roles, their responsibilities and authorities, and the members who hold them (ISO 27001 clause 5.3).',
+  },
+  {
     documentType: 'objectives_plan',
     name: 'Information Security Objectives and Plan',
     clause: '6.2',

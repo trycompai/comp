@@ -18,10 +18,7 @@ import {
 } from './policy-acknowledgment-digest-helpers';
 
 const getPortalBase = () =>
-  (process.env.NEXT_PUBLIC_PORTAL_URL ?? 'https://portal.trycomp.ai').replace(
-    /\/+$/,
-    '',
-  );
+  (process.env.NEXT_PUBLIC_PORTAL_URL ?? 'https://portal.trycomp.ai').replace(/\/+$/, '');
 
 // Skip orgs that look abandoned — same threshold weekly-task-reminder uses so
 // we don't keep hitting dead addresses and burning domain reputation.
@@ -43,9 +40,7 @@ export const policyAcknowledgmentDigest = schedules.task({
   maxDuration: 1000 * 60 * 15, // 15 minutes
   run: async () => {
     const inactivityCutoff = new Date();
-    inactivityCutoff.setDate(
-      inactivityCutoff.getDate() - ORG_INACTIVITY_DAYS,
-    );
+    inactivityCutoff.setDate(inactivityCutoff.getDate() - ORG_INACTIVITY_DAYS);
 
     const organizations = await db.organization.findMany({
       where: {
@@ -72,6 +67,7 @@ export const policyAcknowledgmentDigest = schedules.task({
       select: {
         id: true,
         name: true,
+        isInternal: true,
         policy: {
           where: {
             status: 'published',
@@ -124,6 +120,7 @@ export const policyAcknowledgmentDigest = schedules.task({
         db as unknown as ComplianceFilterDb,
         org.members,
         org.id,
+        org.isInternal,
       );
 
       if (complianceMembers.length === 0) continue;
@@ -150,9 +147,7 @@ export const policyAcknowledgmentDigest = schedules.task({
       if (pendingByMember.length === 0) continue;
 
       // One unsubscribe query per org, batched across members.
-      const emailsWithPending = pendingByMember.map(
-        (p) => p.member.user.email,
-      );
+      const emailsWithPending = pendingByMember.map((p) => p.member.user.email);
       const unsubscribedEmails = await getUnsubscribedEmails(
         db,
         emailsWithPending,
@@ -188,10 +183,7 @@ export const policyAcknowledgmentDigest = schedules.task({
     // Render all emails and group by primaryOrgId for batch sending.
     let emailsSent = 0;
     let emailsFailed = 0;
-    const emailsByOrg = new Map<
-      string,
-      Array<{ to: string; subject: string; html: string }>
-    >();
+    const emailsByOrg = new Map<string, Array<{ to: string; subject: string; html: string }>>();
 
     for (const entry of rollup.values()) {
       const subject = computePolicyAcknowledgmentDigestSubject(entry.orgs);

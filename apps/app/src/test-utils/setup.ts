@@ -2,6 +2,24 @@
 import '@testing-library/jest-dom/vitest';
 import { afterAll, afterEach, beforeAll, vi } from 'vitest';
 
+// jsdom does not implement PointerEvent, which base-ui components (e.g. Switch)
+// dispatch on interaction. Provide a minimal shim so pointer-driven tests work
+// instead of throwing "PointerEvent is not defined".
+if (typeof globalThis.PointerEvent === 'undefined') {
+  class PointerEventShim extends MouseEvent {
+    readonly pointerId: number;
+    readonly pointerType: string;
+
+    constructor(type: string, params: PointerEventInit = {}) {
+      super(type, params);
+      this.pointerId = params.pointerId ?? 0;
+      this.pointerType = params.pointerType ?? '';
+    }
+  }
+
+  globalThis.PointerEvent = PointerEventShim as unknown as typeof PointerEvent;
+}
+
 // Stub `server-only` so modules that use the marker can still be imported
 // in jsdom test runs (the package throws on client environments by design).
 vi.mock('server-only', () => ({}));

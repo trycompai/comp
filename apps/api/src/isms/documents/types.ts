@@ -77,6 +77,48 @@ export interface DerivedObjective extends DerivedRegisterRow {
   measurementMethod: string | null;
 }
 
+/** Team-size band that drives the Roles document's copy and defaults (5.3). */
+export type IsmsTeamSizeBand = 'small' | 'standard'; // small = 1-3 people, standard = 4+
+
+/** The four seeded ISMS governance roles and their pre-filled default text. */
+export interface SeedRoleDefinition {
+  roleKey: 'top_management' | 'spo' | 'deputy_spo' | 'internal_auditor';
+  name: string;
+  description: string;
+  responsibilities: string;
+  authorities: string;
+  authorityGrantedBy: string;
+  requiredCompetence: string;
+}
+
+/** A role, resolved for export: fields + named holders + internal-audit route. */
+export interface RoleExportRow {
+  roleKey: string | null;
+  name: string;
+  description: string;
+  responsibilities: string;
+  authorities: string;
+  authorityGrantedBy: string;
+  requiredCompetence: string;
+  /** Display names of the assigned members (resolved + frozen at build time). */
+  holders: string[];
+  auditRoute: string | null;
+  auditRouteHolderName: string | null;
+  auditFirmName: string | null;
+  auditEvidenceRef: string | null;
+  auditCourse: string | null;
+  auditDueDate: string | null;
+}
+
+/** One row of the operational-responsibilities summary (5.3 §5). */
+export interface OperationalOwnershipRow {
+  artifact: string;
+  assignedWhere: string;
+  ownerResponsibility: string;
+  /** Distinct owner display names read from the platform (may be empty). */
+  owners: string[];
+}
+
 /**
  * The organization profile that fills the narrative parts of the Context of the
  * Organization document (clause 4.1) — overview table, mission, intended
@@ -120,4 +162,10 @@ export interface DocumentExportInput {
   narrative: unknown;
   /** Org overview/mission/outcomes — only populated for the Context document. */
   orgProfile?: IsmsOrgProfile;
+  /** Governance roles with resolved holders — only populated for the Roles document (5.3). */
+  roles?: RoleExportRow[];
+  /** Operational per-artifact ownership — only populated for the Roles document (5.3). */
+  operationalOwnership?: OperationalOwnershipRow[];
+  /** Team-size band — only populated for the Roles document (5.3). */
+  band?: IsmsTeamSizeBand;
 }
