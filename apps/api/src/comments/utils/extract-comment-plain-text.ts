@@ -54,6 +54,12 @@ function nodeToText(node: unknown): string {
   return '';
 }
 
+function isTiptapDoc(value: unknown): value is TiptapNode {
+  if (!value || typeof value !== 'object') return false;
+  const n = value as TiptapNode;
+  return n.type === 'doc' && Array.isArray(n.content);
+}
+
 /**
  * Extracts the visible text a user typed from a comment's stored `content`.
  * Comments accept either raw Tiptap/ProseMirror JSON (from the web editor)
@@ -61,6 +67,12 @@ function nodeToText(node: unknown): string {
  * attrs are structural overhead that inflates the raw string but adds no
  * visible characters, so length checks must run against this instead of
  * `content.length`.
+ *
+ * Only parses `content` as Tiptap when it has the expected `{ type: 'doc',
+ * content: [...] }` shape. A plain-text comment that happens to be valid
+ * JSON (e.g. `{"foo": "..."}`) would otherwise be walked as a node tree,
+ * match no known type, and silently extract to `''` — bypassing the length
+ * check entirely instead of falling back to the raw string.
  */
 export function extractCommentPlainText(content: string): string {
   if (typeof content !== 'string') return '';
@@ -72,7 +84,7 @@ export function extractCommentPlainText(content: string): string {
     return content;
   }
 
-  if (!parsed || typeof parsed !== 'object') {
+  if (!isTiptapDoc(parsed)) {
     return content;
   }
 

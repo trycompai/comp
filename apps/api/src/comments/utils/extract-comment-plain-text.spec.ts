@@ -11,6 +11,17 @@ describe('extractCommentPlainText', () => {
     );
   });
 
+  it('returns plain text as-is when it happens to be valid JSON but not a Tiptap doc (bypass regression)', () => {
+    const longPlainText = 'x'.repeat(3000);
+    const jsonLookingText = `{"foo": "${longPlainText}"}`;
+    expect(extractCommentPlainText(jsonLookingText)).toBe(jsonLookingText);
+
+    const jsonArrayLookingText = `["${longPlainText}"]`;
+    expect(extractCommentPlainText(jsonArrayLookingText)).toBe(
+      jsonArrayLookingText,
+    );
+  });
+
   it('extracts text from a simple paragraph', () => {
     const content = tiptapDoc([
       {

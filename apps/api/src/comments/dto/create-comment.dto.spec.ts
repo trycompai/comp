@@ -82,4 +82,11 @@ describe('CreateCommentDto', () => {
     const errors = await validate(dto);
     expect(errors.some((e) => e.property === 'content')).toBe(true);
   });
+
+  it('rejects a non-doc JSON payload over the limit instead of treating it as empty (bypass regression)', async () => {
+    const content = `{"foo": "${'x'.repeat(2001)}"}`;
+    const dto = toDto({ ...VALID_BASE, content });
+    const errors = await validate(dto);
+    expect(errors.some((e) => e.property === 'content')).toBe(true);
+  });
 });
