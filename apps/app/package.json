@@ -5,6 +5,7 @@
     "dependencies": {
         "@ai-sdk/anthropic": "^3.0.75",
         "@ai-sdk/gateway": "^3.0.110",
+        "@ai-sdk/google": "^3.0.68",
         "@ai-sdk/groq": "^3.0.38",
         "@ai-sdk/openai": "^3.0.62",
         "@ai-sdk/provider": "^3.0.10",
