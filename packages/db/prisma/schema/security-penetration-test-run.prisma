@@ -27,13 +27,17 @@ model SecurityPenetrationTestRun {
   /// (null for original runs). Kept for tracing / debugging the chain.
   retryOfProviderRunId String? @map("retry_of_provider_run_id")
 
-  /// Set the first time we spawn an auto-retry FROM this run, OR when the
-  /// run is cancelled (to block a late `pentest.failed` from retrying a
-  /// deliberately stopped scan). Makes retry spawning idempotent — a
-  /// redelivered `pentest.failed` webhook sees a non-null value and
-  /// short-circuits, so a failure can never fan out into multiple retries.
-  /// Same claim pattern as `creditRefundedAt`.
+  /// Informational timestamp of when we last initiated an auto-retry FROM
+  /// this run. Idempotency/durability is governed by whether a retry child
+  /// actually exists (see retryOfProviderRunId), not by this marker, so a
+  /// transient spawn failure can't strand the retry.
   retryTriggeredAt DateTime? @map("retry_triggered_at")
+
+  /// Set when this run's lineage is cancelled. A distinct marker (separate
+  /// from retryTriggeredAt) so a late `pentest.failed` can never spawn a
+  /// retry of a deliberately stopped scan, regardless of webhook arrival
+  /// order. Checked by the auto-retry path before spawning.
+  retryBlockedAt DateTime? @map("retry_blocked_at")
 
   /// The scan parameters needed to faithfully re-run this scan
   /// (targetUrl, repoUrl, pipelineTesting, testMode, scanDepth,

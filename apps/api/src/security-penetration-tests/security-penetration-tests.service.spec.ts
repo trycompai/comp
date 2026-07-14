@@ -147,14 +147,26 @@ describe('SecurityPenetrationTestsService', () => {
     mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValue({
       organizationId: 'org_123',
     });
-    // Lineage: by default a run is its own root, attempt 1, no retries — the
-    // active attempt resolves to the run itself (reflect the requested root).
+    // findFirst is used three ways. Defaults: not cancelled, no retry child,
+    // and the active attempt resolves to the run itself (reflect the root).
     mockedDb.securityPenetrationTestRun.findFirst.mockImplementation(
-      (args?: { where?: { rootRunId?: string } }) => {
-        const rootRunId = args?.where?.rootRunId;
-        return Promise.resolve(
-          rootRunId ? { providerRunId: rootRunId, attemptNumber: 1 } : null,
-        );
+      (args?: {
+        where?: {
+          rootRunId?: string;
+          retryBlockedAt?: unknown;
+          retryOfProviderRunId?: string;
+        };
+      }) => {
+        const where = args?.where ?? {};
+        if ('retryBlockedAt' in where) return Promise.resolve(null); // not cancelled
+        if ('retryOfProviderRunId' in where) return Promise.resolve(null); // no child
+        if (where.rootRunId) {
+          return Promise.resolve({
+            providerRunId: where.rootRunId,
+            attemptNumber: 1,
+          });
+        }
+        return Promise.resolve(null);
       },
     );
     mockedDb.securityPenetrationTestRun.findMany.mockResolvedValue([
@@ -1170,16 +1182,50 @@ describe('SecurityPenetrationTestsService', () => {
 
       await service['blockAutoRetry']('run_cancelled');
 
-      // Claims the retry slot on every attempt sharing the lineage root, so a
-      // late `failed` for any member can't restart a cancelled scan.
+      // Sets the distinct cancellation marker on every attempt sharing the
+      // lineage root, so a late `failed` for any member can't restart it.
       expect(
         mockedDb.securityPenetrationTestRun.updateMany,
       ).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { rootRunId: 'run_orig', retryTriggeredAt: null },
-          data: expect.objectContaining({ retryTriggeredAt: expect.any(Date) }),
+          where: { rootRunId: 'run_orig', retryBlockedAt: null },
+          data: expect.objectContaining({ retryBlockedAt: expect.any(Date) }),
         }),
       );
+    });
+
+    it('does not retry a cancelled lineage even if a late failed arrives', async () => {
+      mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValueOnce({
+        organizationId: 'org_123',
+        attemptNumber: 1,
+        rootRunId: 'run_orig',
+        scanParams: { targetUrl: 'https://app.example.com' },
+      });
+      // Block check (first findFirst) reports the lineage is cancelled.
+      mockedDb.securityPenetrationTestRun.findFirst.mockResolvedValueOnce({
+        providerRunId: 'run_orig',
+      });
+
+      await service['maybeAutoRetry']('run_orig');
+
+      expect(mockedDb.securityPenetrationTestRun.upsert).not.toHaveBeenCalled();
+    });
+
+    it('does not retry when a retry child already exists (idempotent)', async () => {
+      mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValueOnce({
+        organizationId: 'org_123',
+        attemptNumber: 1,
+        rootRunId: 'run_orig',
+        scanParams: { targetUrl: 'https://app.example.com' },
+      });
+      // Block check → not cancelled; child check → a child already exists.
+      mockedDb.securityPenetrationTestRun.findFirst
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ providerRunId: 'run_retry' });
+
+      await service['maybeAutoRetry']('run_orig');
+
+      expect(mockedDb.securityPenetrationTestRun.upsert).not.toHaveBeenCalled();
     });
 
     it('does not retry once the lineage is exhausted', async () => {
@@ -1198,22 +1244,6 @@ describe('SecurityPenetrationTestsService', () => {
       expect(mockedDb.securityPenetrationTestRun.upsert).not.toHaveBeenCalled();
     });
 
-    it('does not retry when the idempotency claim was already taken', async () => {
-      mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValueOnce({
-        organizationId: 'org_123',
-        attemptNumber: 1,
-        rootRunId: 'run_orig',
-        scanParams: { targetUrl: 'https://app.example.com' },
-      });
-      mockedDb.securityPenetrationTestRun.updateMany.mockResolvedValueOnce({
-        count: 0,
-      });
-
-      await service['maybeAutoRetry']('run_orig');
-
-      expect(mockedDb.securityPenetrationTestRun.upsert).not.toHaveBeenCalled();
-    });
-
     it('does not retry an orphan run with no ownership row', async () => {
       mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValueOnce(
         null,
@@ -1227,7 +1257,7 @@ describe('SecurityPenetrationTestsService', () => {
       expect(mockedDb.securityPenetrationTestRun.upsert).not.toHaveBeenCalled();
     });
 
-    it('releases the claim and rethrows when the retry spawn fails (durable redelivery)', async () => {
+    it('rethrows when the retry spawn fails so the webhook redelivers (durable via child-existence)', async () => {
       mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValueOnce({
         organizationId: 'org_123',
         attemptNumber: 1,
@@ -1238,17 +1268,9 @@ describe('SecurityPenetrationTestsService', () => {
         new Response('{"error":"boom"}', { status: 500 }),
       );
 
-      // Rethrows so the webhook 5xx's and Maced redelivers the event.
+      // No child is created, so it rethrows → webhook 5xx → Maced redelivers →
+      // next delivery sees no child and re-attempts. Nothing to release.
       await expect(service['maybeAutoRetry']('run_orig')).rejects.toThrow();
-      // Claim released so the redelivery can re-attempt the retry.
-      expect(
-        mockedDb.securityPenetrationTestRun.updateMany,
-      ).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { providerRunId: 'run_orig' },
-          data: expect.objectContaining({ retryTriggeredAt: null }),
-        }),
-      );
     });
 
     it('collapses a retry lineage to a single active-attempt entry', async () => {
@@ -1357,21 +1379,32 @@ describe('SecurityPenetrationTestsService', () => {
         organizationId: 'org_123',
         rootRunId: 'run_orig',
       });
-      mockedDb.securityPenetrationTestRun.findFirst.mockResolvedValueOnce({
-        providerRunId: 'run_orig',
-        attemptNumber: 1,
-      });
-      fetchMock.mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({
-            status: 'failed',
-            completedAgents: 2,
-            totalAgents: 5,
-            elapsedMs: 1000,
-          }),
-          { status: 200 },
-        ),
-      );
+      const recent = new Date().toISOString();
+      // getReportResolved.get() then progress() — two provider calls.
+      fetchMock
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              id: 'run_orig',
+              status: 'failed',
+              targetUrl: 'https://a.com',
+              createdAt: recent,
+              updatedAt: recent,
+            }),
+            { status: 200 },
+          ),
+        )
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              status: 'failed',
+              completedAgents: 2,
+              totalAgents: 5,
+              elapsedMs: 1000,
+            }),
+            { status: 200 },
+          ),
+        );
 
       const progress = await service.getReportProgress('org_123', 'run_orig');
 
@@ -1387,17 +1420,31 @@ describe('SecurityPenetrationTestsService', () => {
         providerRunId: 'run_retry2',
         attemptNumber: 3,
       });
-      fetchMock.mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({
-            status: 'failed',
-            completedAgents: 2,
-            totalAgents: 5,
-            elapsedMs: 1000,
-          }),
-          { status: 200 },
-        ),
-      );
+      const recent = new Date().toISOString();
+      fetchMock
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              id: 'run_retry2',
+              status: 'failed',
+              targetUrl: 'https://a.com',
+              createdAt: recent,
+              updatedAt: recent,
+            }),
+            { status: 200 },
+          ),
+        )
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              status: 'failed',
+              completedAgents: 2,
+              totalAgents: 5,
+              elapsedMs: 1000,
+            }),
+            { status: 200 },
+          ),
+        );
 
       const progress = await service.getReportProgress('org_123', 'run_orig');
 
