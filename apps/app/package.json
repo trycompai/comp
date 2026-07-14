@@ -18,7 +18,7 @@
         "@aws-sdk/s3-request-presigner": "3.1013.0",
         "@azure/core-rest-pipeline": "^1.21.0",
         "@browserbasehq/sdk": "2.6.0",
-        "@browserbasehq/stagehand": "^3.0.5",
+        "@browserbasehq/stagehand": "^3.7.0",
         "@date-fns/tz": "^1.2.0",
         "@dnd-kit/core": "^6.3.1",
         "@dnd-kit/modifiers": "^9.0.0",
