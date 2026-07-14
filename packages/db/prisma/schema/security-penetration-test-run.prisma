@@ -36,11 +36,13 @@ model SecurityPenetrationTestRun {
   retryTriggeredAt DateTime? @map("retry_triggered_at")
 
   /// The scan parameters needed to faithfully re-run this scan
-  /// (targetUrl, repoUrl, scanDepth, evidenceLevel, checks, testMode).
-  /// Persisted here so an auto-retry reconstructs the request from our
-  /// own DB rather than depending on the provider's get() field
-  /// completeness. `additionalContext` is intentionally NOT stored — it
-  /// is regenerated from the org's finding-context notes at create time.
+  /// (targetUrl, repoUrl, pipelineTesting, testMode, scanDepth,
+  /// evidenceLevel, checks, and the caller's original additionalContext).
+  /// Persisted here so an auto-retry reconstructs the request from our own
+  /// DB rather than depending on the provider's get() field completeness.
+  /// The stored additionalContext is the user's original briefing only —
+  /// on retry it is re-combined with the target's current finding-context
+  /// notes via resolveAdditionalContext.
   scanParams Json? @map("scan_params")
 
   /// Set the first time we refund this run's credit (e.g. on

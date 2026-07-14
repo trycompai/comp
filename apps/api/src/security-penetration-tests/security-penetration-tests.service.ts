@@ -575,10 +575,16 @@ export class SecurityPenetrationTestsService {
     });
   }
 
-  async getReport(
+  /**
+   * Resolves ownership + the active attempt, fetches the run, and returns both
+   * the collapsed customer-facing run and the active provider run id. Callers
+   * that also need the active id (report/PDF downloads) use this to avoid
+   * re-resolving the lineage a second time.
+   */
+  private async getReportResolved(
     organizationId: string,
     id: string,
-  ): Promise<SecurityPenetrationTest> {
+  ): Promise<{ run: SecurityPenetrationTest; activeProviderRunId: string }> {
     await this.assertRunOwnership(organizationId, id);
     const { rootRunId, activeProviderRunId, attemptNumber } =
       await this.resolveActiveAttempt(organizationId, id);
@@ -586,7 +592,18 @@ export class SecurityPenetrationTestsService {
       () => this.macedClient.pentests.get(activeProviderRunId),
       `fetching penetration test ${activeProviderRunId}`,
     );
-    return this.collapseRun(report, { rootRunId, attemptNumber });
+    return {
+      run: this.collapseRun(report, { rootRunId, attemptNumber }),
+      activeProviderRunId,
+    };
+  }
+
+  async getReport(
+    organizationId: string,
+    id: string,
+  ): Promise<SecurityPenetrationTest> {
+    const { run } = await this.getReportResolved(organizationId, id);
+    return run;
   }
 
   async getReportProgress(
@@ -594,14 +611,20 @@ export class SecurityPenetrationTestsService {
     id: string,
   ): Promise<PentestProgress> {
     await this.assertRunOwnership(organizationId, id);
-    const { activeProviderRunId } = await this.resolveActiveAttempt(
-      organizationId,
-      id,
-    );
-    return this.callMaced(
+    const { activeProviderRunId, attemptNumber } =
+      await this.resolveActiveAttempt(organizationId, id);
+    const progress = await this.callMaced(
       () => this.macedClient.pentests.progress(activeProviderRunId),
       `fetching penetration test progress ${activeProviderRunId}`,
     );
+    // Mask a failed non-final attempt as in-progress, consistent with
+    // getReport, so progress polled during the retry window doesn't expose an
+    // intermediate failure. getReport owns the grace-based reveal; once it
+    // reveals the failure the client stops polling progress.
+    if (progress.status === 'failed' && attemptNumber < MAX_ATTEMPTS) {
+      return { ...progress, status: 'provisioning' };
+    }
+    return progress;
   }
 
   async getReportIssues(organizationId: string, id: string): Promise<Issue[]> {
@@ -642,8 +665,7 @@ export class SecurityPenetrationTestsService {
     organizationId: string,
     id: string,
   ): Promise<BinaryArtifact> {
-    const run = await this.getReport(organizationId, id);
-    const { activeProviderRunId } = await this.resolveActiveAttempt(
+    const { run, activeProviderRunId } = await this.getReportResolved(
       organizationId,
       id,
     );
@@ -673,8 +695,7 @@ export class SecurityPenetrationTestsService {
     organizationId: string,
     id: string,
   ): Promise<BinaryArtifact> {
-    const run = await this.getReport(organizationId, id);
-    const { activeProviderRunId } = await this.resolveActiveAttempt(
+    const { run, activeProviderRunId } = await this.getReportResolved(
       organizationId,
       id,
     );
@@ -808,9 +829,10 @@ export class SecurityPenetrationTestsService {
     // Auto-retry transient failures so customers never see intermediate
     // failures. Only `pentest.failed` — a `pentest.cancelled` is a deliberate
     // stop (staff cancels a run and it's refunded) and must never be re-run.
-    // Best-effort: `maybeAutoRetry` never throws, so a retry hiccup can't stop
-    // this handler from returning 200 (which would make Maced redeliver and
-    // re-refund).
+    // If spawning the retry fails, `maybeAutoRetry` releases its claim and
+    // rethrows so this handler returns non-2xx and Maced redelivers — the
+    // refund above is idempotent (`creditRefundedAt`), so redelivery safely
+    // re-attempts only the retry rather than dropping it.
     if (event.type === 'pentest.failed') {
       await this.maybeAutoRetry(event.data.pentestId);
     }
@@ -968,62 +990,69 @@ export class SecurityPenetrationTestsService {
    * `MAX_ATTEMPTS - 1` times, so transient provider/infra failures are invisible
    * to the customer. Runs after the failure has already been refunded.
    *
-   * Best-effort by design — every exit path swallows errors and returns, so a
-   * retry problem (billing exhausted, provider error, DB blip) can never break
-   * the webhook. The failed run stays refunded and, if no retry materializes,
-   * surfaces to the customer after the lineage's grace window.
+   * The retry slot (`retryTriggeredAt`) is claimed before spawning so the retry
+   * stays idempotent under webhook redelivery. If the spawn itself fails, the
+   * claim is RELEASED and the error rethrown, so the handler returns non-2xx and
+   * Maced redelivers `pentest.failed` — the refund is idempotent (guarded by
+   * `creditRefundedAt`), so redelivery re-attempts only the retry. This makes a
+   * transient spawn failure recoverable instead of permanently consuming the
+   * slot and dropping the retry.
    *
-   * Idempotent: an atomic claim on `retryTriggeredAt` guarantees exactly one
-   * retry per failed attempt even if Maced redelivers the `pentest.failed`
-   * webhook.
+   * Returns without retrying (and without rethrowing) for cases where a retry
+   * legitimately shouldn't happen: orphan run, exhausted lineage, an
+   * already-claimed slot (redelivery or a cancellation block), or unusable
+   * stored params.
    */
   private async maybeAutoRetry(failedProviderRunId: string): Promise<void> {
+    const row = await db.securityPenetrationTestRun.findUnique({
+      where: { providerRunId: failedProviderRunId },
+      select: {
+        organizationId: true,
+        attemptNumber: true,
+        rootRunId: true,
+        scanParams: true,
+      },
+    });
+    if (!row) {
+      this.logger.log(
+        `[Retry] skip run=${failedProviderRunId} (no ownership row — orphan)`,
+      );
+      return;
+    }
+    if (row.attemptNumber >= MAX_ATTEMPTS) {
+      this.logger.log(
+        `[Retry] skip run=${failedProviderRunId} (lineage exhausted, attempt ${row.attemptNumber}/${MAX_ATTEMPTS})`,
+      );
+      return;
+    }
+
+    // Atomic idempotency claim: only the first delivery flips the null marker,
+    // so a redelivered webhook (or a cancellation block) can't spawn a second
+    // retry.
+    const claimed = await db.securityPenetrationTestRun.updateMany({
+      where: { providerRunId: failedProviderRunId, retryTriggeredAt: null },
+      data: { retryTriggeredAt: new Date() },
+    });
+    if (claimed.count === 0) {
+      this.logger.log(
+        `[Retry] skip run=${failedProviderRunId} (retry already triggered or blocked)`,
+      );
+      return;
+    }
+
+    const payload = this.fromScanParams(row.scanParams);
+    if (!payload) {
+      // Params are unusable — a retry can never succeed, so keep the slot
+      // consumed and stop (releasing would just loop forever on redelivery).
+      this.logger.warn(
+        `[Retry] skip run=${failedProviderRunId} (missing/invalid scanParams)`,
+      );
+      return;
+    }
+
+    const rootRunId = row.rootRunId ?? failedProviderRunId;
+    const nextAttempt = row.attemptNumber + 1;
     try {
-      const row = await db.securityPenetrationTestRun.findUnique({
-        where: { providerRunId: failedProviderRunId },
-        select: {
-          organizationId: true,
-          attemptNumber: true,
-          rootRunId: true,
-          scanParams: true,
-        },
-      });
-      if (!row) {
-        this.logger.log(
-          `[Retry] skip run=${failedProviderRunId} (no ownership row — orphan)`,
-        );
-        return;
-      }
-      if (row.attemptNumber >= MAX_ATTEMPTS) {
-        this.logger.log(
-          `[Retry] skip run=${failedProviderRunId} (lineage exhausted, attempt ${row.attemptNumber}/${MAX_ATTEMPTS})`,
-        );
-        return;
-      }
-
-      // Atomic idempotency claim: only the first delivery flips the null
-      // marker, so a redelivered webhook can't spawn a second retry.
-      const claimed = await db.securityPenetrationTestRun.updateMany({
-        where: { providerRunId: failedProviderRunId, retryTriggeredAt: null },
-        data: { retryTriggeredAt: new Date() },
-      });
-      if (claimed.count === 0) {
-        this.logger.log(
-          `[Retry] skip run=${failedProviderRunId} (retry already triggered)`,
-        );
-        return;
-      }
-
-      const payload = this.fromScanParams(row.scanParams);
-      if (!payload) {
-        this.logger.warn(
-          `[Retry] skip run=${failedProviderRunId} (missing/invalid scanParams)`,
-        );
-        return;
-      }
-
-      const rootRunId = row.rootRunId ?? failedProviderRunId;
-      const nextAttempt = row.attemptNumber + 1;
       const retried = await this.createReport(row.organizationId, payload, {
         attemptNumber: nextAttempt,
         rootRunId,
@@ -1033,8 +1062,28 @@ export class SecurityPenetrationTestsService {
         `[Retry] spawned run=${retried.id} attempt=${nextAttempt}/${MAX_ATTEMPTS} root=${rootRunId} from=${failedProviderRunId}`,
       );
     } catch (error) {
+      // Spawn failed — release the claim so a redelivered webhook can retry,
+      // then rethrow so the handler returns non-2xx and Maced redelivers.
+      await this.releaseRetryClaim(failedProviderRunId);
       this.logger.error(
-        `[Retry] auto-retry failed for run=${failedProviderRunId}: ${
+        `[Retry] spawn failed for run=${failedProviderRunId}; released claim for redelivery: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      throw error;
+    }
+  }
+
+  /** Releases a claimed retry slot so a redelivered webhook can retry. */
+  private async releaseRetryClaim(providerRunId: string): Promise<void> {
+    try {
+      await db.securityPenetrationTestRun.updateMany({
+        where: { providerRunId },
+        data: { retryTriggeredAt: null },
+      });
+    } catch (error) {
+      this.logger.error(
+        `[Retry] failed to release retry claim for run=${providerRunId}: ${
           error instanceof Error ? error.message : String(error)
         }`,
       );
@@ -1042,14 +1091,25 @@ export class SecurityPenetrationTestsService {
   }
 
   /**
-   * Marks a run as ineligible for auto-retry by claiming its retry slot. Used
-   * when a run is cancelled so a subsequent late/duplicate `pentest.failed`
-   * cannot restart it. Best-effort and idempotent (only claims a null slot).
+   * Marks a whole lineage as ineligible for auto-retry by claiming the retry
+   * slot on every attempt sharing the cancelled run's root. Used on
+   * cancellation so no `pentest.failed` (for the cancelled run or a sibling)
+   * can spawn a new retry of a deliberately stopped scan, regardless of webhook
+   * arrival order. Best-effort and idempotent (only claims null slots).
+   *
+   * Stops NEW retries; a retry already in flight when the cancel arrives is not
+   * force-cancelled at the provider (bounded — it is refunded and only wastes
+   * compute).
    */
   private async blockAutoRetry(providerRunId: string): Promise<void> {
     try {
+      const row = await db.securityPenetrationTestRun.findUnique({
+        where: { providerRunId },
+        select: { rootRunId: true },
+      });
+      const rootRunId = row?.rootRunId ?? providerRunId;
       await db.securityPenetrationTestRun.updateMany({
-        where: { providerRunId, retryTriggeredAt: null },
+        where: { rootRunId, retryTriggeredAt: null },
         data: { retryTriggeredAt: new Date() },
       });
     } catch (error) {

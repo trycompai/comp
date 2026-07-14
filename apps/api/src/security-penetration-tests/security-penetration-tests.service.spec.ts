@@ -1163,14 +1163,20 @@ describe('SecurityPenetrationTestsService', () => {
       );
     });
 
-    it('blocks auto-retry when a run is cancelled (late failed cannot restart it)', async () => {
+    it('blocks auto-retry across the whole lineage when a run is cancelled', async () => {
+      mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValueOnce({
+        rootRunId: 'run_orig',
+      });
+
       await service['blockAutoRetry']('run_cancelled');
 
+      // Claims the retry slot on every attempt sharing the lineage root, so a
+      // late `failed` for any member can't restart a cancelled scan.
       expect(
         mockedDb.securityPenetrationTestRun.updateMany,
       ).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { providerRunId: 'run_cancelled', retryTriggeredAt: null },
+          where: { rootRunId: 'run_orig', retryTriggeredAt: null },
           data: expect.objectContaining({ retryTriggeredAt: expect.any(Date) }),
         }),
       );
@@ -1221,7 +1227,7 @@ describe('SecurityPenetrationTestsService', () => {
       expect(mockedDb.securityPenetrationTestRun.upsert).not.toHaveBeenCalled();
     });
 
-    it('never throws when the retry create fails (best-effort)', async () => {
+    it('releases the claim and rethrows when the retry spawn fails (durable redelivery)', async () => {
       mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValueOnce({
         organizationId: 'org_123',
         attemptNumber: 1,
@@ -1232,9 +1238,17 @@ describe('SecurityPenetrationTestsService', () => {
         new Response('{"error":"boom"}', { status: 500 }),
       );
 
-      await expect(
-        service['maybeAutoRetry']('run_orig'),
-      ).resolves.toBeUndefined();
+      // Rethrows so the webhook 5xx's and Maced redelivers the event.
+      await expect(service['maybeAutoRetry']('run_orig')).rejects.toThrow();
+      // Claim released so the redelivery can re-attempt the retry.
+      expect(
+        mockedDb.securityPenetrationTestRun.updateMany,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { providerRunId: 'run_orig' },
+          data: expect.objectContaining({ retryTriggeredAt: null }),
+        }),
+      );
     });
 
     it('collapses a retry lineage to a single active-attempt entry', async () => {
@@ -1336,6 +1350,58 @@ describe('SecurityPenetrationTestsService', () => {
       expect(report.failedReason).toContain('temporary infrastructure issue');
       expect(report.failedReason?.toLowerCase()).not.toContain('daytona');
       expect(report.error?.toLowerCase()).not.toContain('daytona');
+    });
+
+    it('masks progress status as in-progress for a failed non-final attempt', async () => {
+      mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValue({
+        organizationId: 'org_123',
+        rootRunId: 'run_orig',
+      });
+      mockedDb.securityPenetrationTestRun.findFirst.mockResolvedValueOnce({
+        providerRunId: 'run_orig',
+        attemptNumber: 1,
+      });
+      fetchMock.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            status: 'failed',
+            completedAgents: 2,
+            totalAgents: 5,
+            elapsedMs: 1000,
+          }),
+          { status: 200 },
+        ),
+      );
+
+      const progress = await service.getReportProgress('org_123', 'run_orig');
+
+      expect(progress.status).toBe('provisioning');
+    });
+
+    it('exposes failed progress once the lineage is exhausted', async () => {
+      mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValue({
+        organizationId: 'org_123',
+        rootRunId: 'run_orig',
+      });
+      mockedDb.securityPenetrationTestRun.findFirst.mockResolvedValueOnce({
+        providerRunId: 'run_retry2',
+        attemptNumber: 3,
+      });
+      fetchMock.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            status: 'failed',
+            completedAgents: 2,
+            totalAgents: 5,
+            elapsedMs: 1000,
+          }),
+          { status: 200 },
+        ),
+      );
+
+      const progress = await service.getReportProgress('org_123', 'run_orig');
+
+      expect(progress.status).toBe('failed');
     });
   });
 });
