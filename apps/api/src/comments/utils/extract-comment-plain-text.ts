@@ -2,16 +2,12 @@
  * Node types whose content represents a separate visual line. A trailing
  * newline is appended after their text so line/paragraph breaks the user
  * typed count toward the visible length, matching what they see on screen.
- * Wrapper types (listItem, tableCell, ...) are deliberately excluded — their
- * children are typically paragraphs that already contribute a newline, and
- * including the wrapper too would double-count each line break.
+ * Wrapper types (listItem, tableCell, blockquote, ...) are deliberately
+ * excluded — their children are typically paragraphs that already
+ * contribute a newline, and including the wrapper too would double-count
+ * each line break.
  */
-const BLOCK_NODE_TYPES = new Set([
-  'paragraph',
-  'heading',
-  'blockquote',
-  'codeBlock',
-]);
+const BLOCK_NODE_TYPES = new Set(['paragraph', 'heading', 'codeBlock']);
 
 interface TiptapNode {
   type?: unknown;
@@ -88,5 +84,5 @@ export function extractCommentPlainText(content: string): string {
     return content;
   }
 
-  return nodeToText(parsed).replace(/\n+$/, '');
+  return nodeToText(parsed).replace(/\n$/, '');
 }

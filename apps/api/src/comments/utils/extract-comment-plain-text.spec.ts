@@ -112,6 +112,27 @@ describe('extractCommentPlainText', () => {
     expect(extractCommentPlainText(content)).toBe('Item one\nItem two');
   });
 
+  it('does not double-count the line break for a blockquoted paragraph', () => {
+    const content = tiptapDoc([
+      {
+        type: 'blockquote',
+        content: [
+          {
+            type: 'paragraph',
+            content: [{ type: 'text', text: 'Quoted line' }],
+          },
+        ],
+      },
+      {
+        type: 'paragraph',
+        content: [{ type: 'text', text: 'Next line' }],
+      },
+    ]);
+    // If blockquote also appended its own newline on top of the paragraph's,
+    // this would be 'Quoted line\n\nNext line' instead.
+    expect(extractCommentPlainText(content)).toBe('Quoted line\nNext line');
+  });
+
   it('matches the reported bug: a ~1,200-char formatted comment exceeds 2000 raw chars but stays under the visible limit', () => {
     // Alternating bold/plain 5-char words, like a comment with scattered
     // emphasis — each bold run's marks array is pure JSON overhead.
