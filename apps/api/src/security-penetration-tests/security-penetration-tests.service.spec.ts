@@ -217,6 +217,13 @@ describe('SecurityPenetrationTestsService', () => {
     return input instanceof Request ? input.url : String(input);
   }
 
+  function getRequestHeader(name: string, callIndex = 0): string | null {
+    const [input, init] = fetchMock.mock.calls[callIndex];
+    const headers =
+      input instanceof Request ? input.headers : new Headers(init?.headers);
+    return headers.get(name);
+  }
+
   it('lists reports with organization context', async () => {
     const expectedPayload = [
       {
@@ -1159,6 +1166,9 @@ describe('SecurityPenetrationTestsService', () => {
           pipelineTesting: true,
         }),
       );
+      // Deterministic idempotency key tied to the parent → Maced dedupes
+      // concurrent duplicate failure webhooks into one provider scan.
+      expect(getRequestHeader('Idempotency-Key')).toBe('retry:run_orig');
       // The user's briefing survives the round-trip (re-persisted for any
       // further retry).
       expect(mockedDb.securityPenetrationTestRun.upsert).toHaveBeenCalledWith(
@@ -1197,6 +1207,21 @@ describe('SecurityPenetrationTestsService', () => {
       // provider fall back to its default check set).
       const createBody = await getRequestBody();
       expect(createBody.checks).toEqual([]);
+    });
+
+    it('does not send an idempotency key for user-initiated creates', async () => {
+      fetchMock.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ id: 'run_new', status: 'provisioning' }),
+          { status: 200 },
+        ),
+      );
+
+      await service.createReport('org_123', {
+        targetUrl: 'https://app.example.com',
+      });
+
+      expect(getRequestHeader('Idempotency-Key')).toBeNull();
     });
 
     it('blocks auto-retry across the whole lineage when a run is cancelled', async () => {
@@ -1404,6 +1429,38 @@ describe('SecurityPenetrationTestsService', () => {
       );
 
       const report = await service.getReport('org_123', 'run_legacy');
+
+      expect(report.status).toBe('failed');
+    });
+
+    it('reveals a failed run with malformed (non-null) scan params instead of masking', async () => {
+      mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValue({
+        organizationId: 'org_123',
+        rootRunId: 'run_bad',
+      });
+      // Non-null but invalid params (no targetUrl) → fromScanParams rejects →
+      // not retry-eligible.
+      mockedDb.securityPenetrationTestRun.findFirst.mockResolvedValueOnce({
+        providerRunId: 'run_bad',
+        attemptNumber: 1,
+        scanParams: { nonsense: true },
+      });
+      const recent = new Date().toISOString();
+      fetchMock.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            id: 'run_bad',
+            status: 'failed',
+            targetUrl: 'https://a.com',
+            createdAt: recent,
+            updatedAt: recent,
+            error: 'some failure',
+          }),
+          { status: 200 },
+        ),
+      );
+
+      const report = await service.getReport('org_123', 'run_bad');
 
       expect(report.status).toBe('failed');
     });

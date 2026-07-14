@@ -65,11 +65,6 @@ model SecurityPenetrationTestRun {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@unique([providerRunId])
-  /// At most one auto-retry child per parent attempt. Postgres treats NULLs as
-  /// distinct, so originals (null parent) don't conflict; this makes concurrent
-  /// duplicate `pentest.failed` webhooks safe — only one retry child can be
-  /// persisted, keeping active-attempt selection deterministic.
-  @@unique([retryOfProviderRunId])
   @@index([organizationId])
   @@index([rootRunId])
   @@map("security_penetration_test_runs")

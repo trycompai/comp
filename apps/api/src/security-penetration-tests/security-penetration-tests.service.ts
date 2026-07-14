@@ -300,7 +300,7 @@ export class SecurityPenetrationTestsService {
     // customer sees one entry per scan — retries never appear as separate rows.
     const activeByRoot = new Map<
       string,
-      { providerRunId: string; attemptNumber: number; hasScanParams: boolean }
+      { providerRunId: string; attemptNumber: number; retryable: boolean }
     >();
     for (const row of rows) {
       const root = row.rootRunId ?? row.providerRunId;
@@ -309,7 +309,9 @@ export class SecurityPenetrationTestsService {
         activeByRoot.set(root, {
           providerRunId: row.providerRunId,
           attemptNumber: row.attemptNumber,
-          hasScanParams: row.scanParams != null,
+          // Re-runnable only if the stored params actually validate (same check
+          // as the retry path), not merely non-null.
+          retryable: this.fromScanParams(row.scanParams) != null,
         });
       }
     }
@@ -331,7 +333,7 @@ export class SecurityPenetrationTestsService {
           rootRunId,
           attemptNumber: active.attemptNumber,
           retryEligible:
-            active.attemptNumber < MAX_ATTEMPTS && active.hasScanParams,
+            active.attemptNumber < MAX_ATTEMPTS && active.retryable,
         }),
       );
     }
@@ -444,10 +446,22 @@ export class SecurityPenetrationTestsService {
       },
     };
 
+    // For an auto-retry, use a deterministic idempotency key tied to the parent
+    // run so concurrent duplicate `pentest.failed` webhooks dedupe AT THE
+    // PROVIDER — both create calls return the same run instead of launching two
+    // scans (one of which would be orphaned). User-initiated creates pass none.
+    const idempotencyKey = lineage.retryOfProviderRunId
+      ? `retry:${lineage.retryOfProviderRunId}`
+      : undefined;
+
     let createdReport: PentestCreated;
     try {
       createdReport = await this.callMaced(
-        () => this.macedClient.pentests.create(body),
+        () =>
+          this.macedClient.pentests.create(
+            body,
+            idempotencyKey ? { idempotencyKey } : undefined,
+          ),
         'creating penetration test',
       );
     } catch (error) {
@@ -1632,9 +1646,12 @@ export class SecurityPenetrationTestsService {
       activeProviderRunId: active?.providerRunId ?? requestedId,
       attemptNumber,
       // A failure can only be masked as in-progress if a retry could actually
-      // happen: under the attempt cap AND re-runnable (has stored scan params;
-      // pre-feature rows have none).
-      retryEligible: attemptNumber < MAX_ATTEMPTS && active?.scanParams != null,
+      // happen: under the attempt cap AND re-runnable. Reuse the same params
+      // validation `maybeAutoRetry` uses, so malformed (not just null) scan
+      // params are treated as ineligible and revealed immediately.
+      retryEligible:
+        attemptNumber < MAX_ATTEMPTS &&
+        this.fromScanParams(active?.scanParams) != null,
     };
   }
 
