@@ -298,7 +298,7 @@ export class SecurityPenetrationTestsService {
       { providerRunId: string; attemptNumber: number }
     >();
     for (const row of rows) {
-      const root = row.rootRunId;
+      const root = row.rootRunId ?? row.providerRunId;
       const current = activeByRoot.get(root);
       if (!current || row.attemptNumber > current.attemptNumber) {
         activeByRoot.set(root, {
@@ -1022,7 +1022,7 @@ export class SecurityPenetrationTestsService {
         return;
       }
 
-      const rootRunId = row.rootRunId;
+      const rootRunId = row.rootRunId ?? failedProviderRunId;
       const nextAttempt = row.attemptNumber + 1;
       const retried = await this.createReport(row.organizationId, payload, {
         attemptNumber: nextAttempt,

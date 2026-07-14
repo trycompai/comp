@@ -12,9 +12,11 @@ model SecurityPenetrationTestRun {
   /// attempt in a chain shares the same rootRunId, so the whole lineage
   /// can be fetched with a single `where: { rootRunId }` query and the
   /// customer-facing surface only ever exposes this stable id. Always set
-  /// on write (originals default to their own providerRunId); pre-feature
-  /// rows are backfilled, so this is enforced NOT NULL.
-  rootRunId String @map("root_run_id")
+  /// on write (originals default to their own providerRunId) and pre-feature
+  /// rows are backfilled; kept nullable (not a DB NOT NULL constraint) so a
+  /// deploy can't be blocked by a stray legacy write — reads coalesce
+  /// `rootRunId ?? providerRunId` to stay correct regardless.
+  rootRunId String? @map("root_run_id")
 
   /// Which attempt this run is within its lineage. 1 = original,
   /// 2 = first auto-retry, 3 = second auto-retry. Enforces the retry cap
