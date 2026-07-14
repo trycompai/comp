@@ -22,8 +22,9 @@ const RAW_CONTENT_MAX_LENGTH = 50_000;
 export class CreateCommentDto {
   @ApiProperty({
     description:
-      'Content of the comment (plain text or serialized Tiptap JSON). Limited to 2000 characters of visible text.',
+      'Content of the comment (plain text or serialized Tiptap JSON). Limited to 2000 characters of visible text; maxLength bounds the serialized payload size, not the visible text.',
     example: 'This task needs to be completed by end of week',
+    maxLength: RAW_CONTENT_MAX_LENGTH,
   })
   @IsString()
   @IsNotEmpty()
