@@ -354,7 +354,15 @@ export class SecurityPenetrationTestsService {
       organizationId,
       payload,
     );
-    const billingUsageSourceId = `pending:${randomUUID()}`;
+    // For a retry, derive a DETERMINISTIC reservation id from the parent run so
+    // concurrent duplicate failure webhooks reserve the same allowance. Billing
+    // consumption is idempotent on this id (billingUsageEvent.idempotencyKey),
+    // so duplicates debit exactly once — otherwise two random ids would debit
+    // twice and only one would land on the shared ownership row, orphaning the
+    // other. User-initiated creates keep a unique random id.
+    const billingUsageSourceId = lineage.retryOfProviderRunId
+      ? `pending:retry:${lineage.retryOfProviderRunId}`
+      : `pending:${randomUUID()}`;
     let consumedSubscriptionAllowance = false;
 
     // Reserve subscription allowance before calling Maced so fast double-clicks
