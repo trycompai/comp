@@ -1114,7 +1114,7 @@ describe('SecurityPenetrationTestsService', () => {
       );
     });
 
-    it('spawns a retry with the same params and incremented attempt', async () => {
+    it('spawns a retry with the same params (incl. pipeline + context) and incremented attempt', async () => {
       mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValueOnce({
         organizationId: 'org_123',
         attemptNumber: 1,
@@ -1123,6 +1123,8 @@ describe('SecurityPenetrationTestsService', () => {
           targetUrl: 'https://app.example.com',
           scanDepth: 'deep',
           checks: ['xss'],
+          pipelineTesting: true,
+          additionalContext: 'prior briefing',
         },
       });
       fetchMock.mockResolvedValueOnce(
@@ -1140,8 +1142,11 @@ describe('SecurityPenetrationTestsService', () => {
           targetUrl: 'https://app.example.com',
           scanDepth: 'deep',
           checks: ['xss'],
+          pipelineTesting: true,
         }),
       );
+      // The user's briefing survives the round-trip (re-persisted for any
+      // further retry).
       expect(mockedDb.securityPenetrationTestRun.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
           create: expect.objectContaining({
@@ -1149,7 +1154,24 @@ describe('SecurityPenetrationTestsService', () => {
             rootRunId: 'run_orig',
             attemptNumber: 2,
             retryOfProviderRunId: 'run_orig',
+            scanParams: expect.objectContaining({
+              pipelineTesting: true,
+              additionalContext: 'prior briefing',
+            }),
           }),
+        }),
+      );
+    });
+
+    it('blocks auto-retry when a run is cancelled (late failed cannot restart it)', async () => {
+      await service['blockAutoRetry']('run_cancelled');
+
+      expect(
+        mockedDb.securityPenetrationTestRun.updateMany,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { providerRunId: 'run_cancelled', retryTriggeredAt: null },
+          data: expect.objectContaining({ retryTriggeredAt: expect.any(Date) }),
         }),
       );
     });

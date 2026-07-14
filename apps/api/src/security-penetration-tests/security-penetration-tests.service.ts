@@ -164,16 +164,20 @@ interface OwnershipLineage {
 /**
  * The subset of a create request needed to faithfully re-run a scan. Stored on
  * the ownership row so an auto-retry reconstructs the request from our own DB.
- * Excludes `additionalContext` (regenerated from finding-context notes) and
- * `webhookUrl` (re-resolved to our endpoint).
+ * `additionalContext` here is the caller's original free-text briefing only —
+ * on retry it is passed back through `resolveAdditionalContext`, which re-adds
+ * the target's finding-context notes. `webhookUrl` is excluded (re-resolved to
+ * our endpoint).
  */
 interface RetryScanParams {
   targetUrl: string;
   repoUrl?: string;
+  pipelineTesting?: boolean;
   testMode?: boolean;
   scanDepth?: ScanDepth;
   evidenceLevel?: EvidenceLevel;
   checks?: PentestCheck[];
+  additionalContext?: string;
 }
 
 const ORIGINAL_RUN_LINEAGE: RunLineage = {
@@ -294,7 +298,7 @@ export class SecurityPenetrationTestsService {
       { providerRunId: string; attemptNumber: number }
     >();
     for (const row of rows) {
-      const root = row.rootRunId ?? row.providerRunId;
+      const root = row.rootRunId;
       const current = activeByRoot.get(root);
       if (!current || row.attemptNumber > current.attemptNumber) {
         activeByRoot.set(root, {
@@ -811,6 +815,13 @@ export class SecurityPenetrationTestsService {
       await this.maybeAutoRetry(event.data.pentestId);
     }
 
+    // A cancellation is terminal. Pre-claim the retry slot so a late or
+    // duplicate `pentest.failed` for the same run (arriving after the cancel)
+    // can never spawn a retry of a scan that was deliberately stopped.
+    if (event.type === 'pentest.cancelled') {
+      await this.blockAutoRetry(event.data.pentestId);
+    }
+
     // Successful completion deserves its own audit-log row so the
     // run's lifecycle is durably recorded ("scan completed for X with N
     // findings"). Without this the audit log shows the create but not
@@ -1011,7 +1022,7 @@ export class SecurityPenetrationTestsService {
         return;
       }
 
-      const rootRunId = row.rootRunId ?? failedProviderRunId;
+      const rootRunId = row.rootRunId;
       const nextAttempt = row.attemptNumber + 1;
       const retried = await this.createReport(row.organizationId, payload, {
         attemptNumber: nextAttempt,
@@ -1024,6 +1035,26 @@ export class SecurityPenetrationTestsService {
     } catch (error) {
       this.logger.error(
         `[Retry] auto-retry failed for run=${failedProviderRunId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+  }
+
+  /**
+   * Marks a run as ineligible for auto-retry by claiming its retry slot. Used
+   * when a run is cancelled so a subsequent late/duplicate `pentest.failed`
+   * cannot restart it. Best-effort and idempotent (only claims a null slot).
+   */
+  private async blockAutoRetry(providerRunId: string): Promise<void> {
+    try {
+      await db.securityPenetrationTestRun.updateMany({
+        where: { providerRunId, retryTriggeredAt: null },
+        data: { retryTriggeredAt: new Date() },
+      });
+    } catch (error) {
+      this.logger.error(
+        `[Retry] failed to block retry for cancelled run=${providerRunId}: ${
           error instanceof Error ? error.message : String(error)
         }`,
       );
@@ -1162,12 +1193,18 @@ export class SecurityPenetrationTestsService {
   private toScanParams(payload: CreatePenetrationTestDto): RetryScanParams {
     const params: RetryScanParams = { targetUrl: payload.targetUrl };
     if (payload.repoUrl !== undefined) params.repoUrl = payload.repoUrl;
+    if (payload.pipelineTesting !== undefined) {
+      params.pipelineTesting = payload.pipelineTesting;
+    }
     if (payload.testMode !== undefined) params.testMode = payload.testMode;
     if (payload.scanDepth !== undefined) params.scanDepth = payload.scanDepth;
     if (payload.evidenceLevel !== undefined) {
       params.evidenceLevel = payload.evidenceLevel;
     }
     if (payload.checks !== undefined) params.checks = payload.checks;
+    if (payload.additionalContext !== undefined) {
+      params.additionalContext = payload.additionalContext;
+    }
     return params;
   }
 
@@ -1185,6 +1222,9 @@ export class SecurityPenetrationTestsService {
 
     const dto: CreatePenetrationTestDto = { targetUrl };
     if (typeof raw.repoUrl === 'string') dto.repoUrl = raw.repoUrl;
+    if (typeof raw.pipelineTesting === 'boolean') {
+      dto.pipelineTesting = raw.pipelineTesting;
+    }
     if (typeof raw.testMode === 'boolean') dto.testMode = raw.testMode;
     if (this.isScanDepth(raw.scanDepth)) dto.scanDepth = raw.scanDepth;
     if (this.isEvidenceLevel(raw.evidenceLevel)) {
@@ -1195,6 +1235,9 @@ export class SecurityPenetrationTestsService {
         this.isPentestCheck(check),
       );
       if (checks.length === raw.checks.length) dto.checks = checks;
+    }
+    if (typeof raw.additionalContext === 'string') {
+      dto.additionalContext = raw.additionalContext;
     }
     return dto;
   }

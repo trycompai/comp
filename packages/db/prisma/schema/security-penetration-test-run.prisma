@@ -11,8 +11,10 @@ model SecurityPenetrationTestRun {
   /// own providerRunId; for an auto-retry it equals the original's. Every
   /// attempt in a chain shares the same rootRunId, so the whole lineage
   /// can be fetched with a single `where: { rootRunId }` query and the
-  /// customer-facing surface only ever exposes this stable id.
-  rootRunId String? @map("root_run_id")
+  /// customer-facing surface only ever exposes this stable id. Always set
+  /// on write (originals default to their own providerRunId); pre-feature
+  /// rows are backfilled, so this is enforced NOT NULL.
+  rootRunId String @map("root_run_id")
 
   /// Which attempt this run is within its lineage. 1 = original,
   /// 2 = first auto-retry, 3 = second auto-retry. Enforces the retry cap
@@ -23,10 +25,12 @@ model SecurityPenetrationTestRun {
   /// (null for original runs). Kept for tracing / debugging the chain.
   retryOfProviderRunId String? @map("retry_of_provider_run_id")
 
-  /// Set the first time we spawn an auto-retry FROM this run. Makes retry
-  /// spawning idempotent — a redelivered `pentest.failed` webhook sees a
-  /// non-null value and short-circuits, so a failure can never fan out
-  /// into multiple retries. Same claim pattern as `creditRefundedAt`.
+  /// Set the first time we spawn an auto-retry FROM this run, OR when the
+  /// run is cancelled (to block a late `pentest.failed` from retrying a
+  /// deliberately stopped scan). Makes retry spawning idempotent — a
+  /// redelivered `pentest.failed` webhook sees a non-null value and
+  /// short-circuits, so a failure can never fan out into multiple retries.
+  /// Same claim pattern as `creditRefundedAt`.
   retryTriggeredAt DateTime? @map("retry_triggered_at")
 
   /// The scan parameters needed to faithfully re-run this scan
