@@ -11,16 +11,24 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { UploadAttachmentDto } from '../../attachments/upload-attachment.dto';
+import { MaxCommentTextLength } from '../validators/max-comment-text-length.validator';
+
+// `content` is serialized Tiptap JSON (or plain text for API callers). The
+// 2000-char limit applies to the visible text a user typed, not the raw
+// JSON — see MaxCommentTextLength. This raw-string cap only bounds payload
+// size against pathologically formatted input.
+const RAW_CONTENT_MAX_LENGTH = 50_000;
 
 export class CreateCommentDto {
   @ApiProperty({
-    description: 'Content of the comment',
+    description:
+      'Content of the comment (plain text or serialized Tiptap JSON). Limited to 2000 characters of visible text.',
     example: 'This task needs to be completed by end of week',
-    maxLength: 2000,
   })
   @IsString()
   @IsNotEmpty()
-  @MaxLength(2000)
+  @MaxLength(RAW_CONTENT_MAX_LENGTH)
+  @MaxCommentTextLength(2000)
   content: string;
 
   @ApiProperty({
