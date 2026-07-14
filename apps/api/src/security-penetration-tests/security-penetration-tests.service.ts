@@ -285,7 +285,12 @@ export class SecurityPenetrationTestsService {
   ): Promise<SecurityPenetrationTest[]> {
     const rows = await db.securityPenetrationTestRun.findMany({
       where: { organizationId },
-      select: { providerRunId: true, rootRunId: true, attemptNumber: true },
+      select: {
+        providerRunId: true,
+        rootRunId: true,
+        attemptNumber: true,
+        scanParams: true,
+      },
     });
     if (rows.length === 0) {
       return [];
@@ -295,7 +300,7 @@ export class SecurityPenetrationTestsService {
     // customer sees one entry per scan — retries never appear as separate rows.
     const activeByRoot = new Map<
       string,
-      { providerRunId: string; attemptNumber: number }
+      { providerRunId: string; attemptNumber: number; hasScanParams: boolean }
     >();
     for (const row of rows) {
       const root = row.rootRunId ?? row.providerRunId;
@@ -304,6 +309,7 @@ export class SecurityPenetrationTestsService {
         activeByRoot.set(root, {
           providerRunId: row.providerRunId,
           attemptNumber: row.attemptNumber,
+          hasScanParams: row.scanParams != null,
         });
       }
     }
@@ -324,6 +330,8 @@ export class SecurityPenetrationTestsService {
         this.collapseRun(report, {
           rootRunId,
           attemptNumber: active.attemptNumber,
+          retryEligible:
+            active.attemptNumber < MAX_ATTEMPTS && active.hasScanParams,
         }),
       );
     }
@@ -586,14 +594,18 @@ export class SecurityPenetrationTestsService {
     id: string,
   ): Promise<{ run: SecurityPenetrationTest; activeProviderRunId: string }> {
     await this.assertRunOwnership(organizationId, id);
-    const { rootRunId, activeProviderRunId, attemptNumber } =
+    const { rootRunId, activeProviderRunId, attemptNumber, retryEligible } =
       await this.resolveActiveAttempt(organizationId, id);
     const report = await this.callMaced(
       () => this.macedClient.pentests.get(activeProviderRunId),
       `fetching penetration test ${activeProviderRunId}`,
     );
     return {
-      run: this.collapseRun(report, { rootRunId, attemptNumber }),
+      run: this.collapseRun(report, {
+        rootRunId,
+        attemptNumber,
+        retryEligible,
+      }),
       activeProviderRunId,
     };
   }
@@ -1199,7 +1211,7 @@ export class SecurityPenetrationTestsService {
    */
   private collapseRun(
     report: Pentest | PentestWithProgress,
-    ctx: { rootRunId: string; attemptNumber: number },
+    ctx: { rootRunId: string; attemptNumber: number; retryEligible: boolean },
   ): SecurityPenetrationTest {
     const mapped = this.mapMacedRunToSecurityPenetrationTest(report);
     const activeStatus: PentestRunStatus = mapped.status;
@@ -1210,6 +1222,7 @@ export class SecurityPenetrationTestsService {
     const status = collapsedStatus({
       activeStatus,
       attemptNumber: ctx.attemptNumber,
+      retryEligible: ctx.retryEligible,
       failedAtMs: Number.isNaN(parsedFailedAt) ? null : parsedFailedAt,
       nowMs: Date.now(),
     });
@@ -1301,14 +1314,14 @@ export class SecurityPenetrationTestsService {
       dto.evidenceLevel = raw.evidenceLevel;
     }
     if (Array.isArray(raw.checks)) {
-      const checks = raw.checks.filter((check): check is PentestCheck =>
+      // Preserve the original selection faithfully: assign the validated array
+      // whenever checks were stored, including an explicit empty selection
+      // (`[]`) — omitting it would let the provider fall back to its default
+      // check set. Stale entries (e.g. a check enum value removed between
+      // deploys) are filtered out rather than dropping the whole selection.
+      dto.checks = raw.checks.filter((check): check is PentestCheck =>
         this.isPentestCheck(check),
       );
-      // Keep whatever survived validation rather than dropping the whole
-      // selection if a single entry is stale (e.g. a check enum value removed
-      // between deploys) — a retry with the valid subset beats silently
-      // running the full default check set.
-      if (checks.length > 0) dto.checks = checks;
     }
     if (typeof raw.additionalContext === 'string') {
       dto.additionalContext = raw.additionalContext;
@@ -1601,6 +1614,7 @@ export class SecurityPenetrationTestsService {
     rootRunId: string;
     activeProviderRunId: string;
     attemptNumber: number;
+    retryEligible: boolean;
   }> {
     const row = await db.securityPenetrationTestRun.findUnique({
       where: { providerRunId: requestedId },
@@ -1610,12 +1624,17 @@ export class SecurityPenetrationTestsService {
     const active = await db.securityPenetrationTestRun.findFirst({
       where: { organizationId, rootRunId },
       orderBy: { attemptNumber: 'desc' },
-      select: { providerRunId: true, attemptNumber: true },
+      select: { providerRunId: true, attemptNumber: true, scanParams: true },
     });
+    const attemptNumber = active?.attemptNumber ?? 1;
     return {
       rootRunId,
       activeProviderRunId: active?.providerRunId ?? requestedId,
-      attemptNumber: active?.attemptNumber ?? 1,
+      attemptNumber,
+      // A failure can only be masked as in-progress if a retry could actually
+      // happen: under the attempt cap AND re-runnable (has stored scan params;
+      // pre-feature rows have none).
+      retryEligible: attemptNumber < MAX_ATTEMPTS && active?.scanParams != null,
     };
   }
 

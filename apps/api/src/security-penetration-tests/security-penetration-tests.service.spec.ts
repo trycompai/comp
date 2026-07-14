@@ -164,6 +164,8 @@ describe('SecurityPenetrationTestsService', () => {
           return Promise.resolve({
             providerRunId: where.rootRunId,
             attemptNumber: 1,
+            // Retry-eligible by default (has stored scan params).
+            scanParams: { targetUrl: 'https://app.example.com' },
           });
         }
         return Promise.resolve(null);
@@ -1175,6 +1177,28 @@ describe('SecurityPenetrationTestsService', () => {
       );
     });
 
+    it('preserves an explicit empty check selection on retry', async () => {
+      mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValueOnce({
+        organizationId: 'org_123',
+        attemptNumber: 1,
+        rootRunId: 'run_orig',
+        scanParams: { targetUrl: 'https://app.example.com', checks: [] },
+      });
+      fetchMock.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ id: 'run_retry', status: 'provisioning' }),
+          { status: 200 },
+        ),
+      );
+
+      await service['maybeAutoRetry']('run_orig');
+
+      // Empty selection is sent through, not dropped (which would let the
+      // provider fall back to its default check set).
+      const createBody = await getRequestBody();
+      expect(createBody.checks).toEqual([]);
+    });
+
     it('blocks auto-retry across the whole lineage when a run is cancelled', async () => {
       mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValueOnce({
         rootRunId: 'run_orig',
@@ -1329,6 +1353,7 @@ describe('SecurityPenetrationTestsService', () => {
       mockedDb.securityPenetrationTestRun.findFirst.mockResolvedValueOnce({
         providerRunId: 'run_orig',
         attemptNumber: 1,
+        scanParams: { targetUrl: 'https://a.com' }, // retry-eligible
       });
       const recent = new Date().toISOString();
       fetchMock.mockResolvedValueOnce(
@@ -1350,6 +1375,37 @@ describe('SecurityPenetrationTestsService', () => {
       expect(report.status).toBe('provisioning');
       expect(report.error).toBeNull();
       expect(report.failedReason).toBeNull();
+    });
+
+    it('reveals a legacy failed run (no scan params) immediately instead of masking', async () => {
+      mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValue({
+        organizationId: 'org_123',
+        rootRunId: 'run_legacy',
+      });
+      // Pre-feature row: attempt 1 but no scanParams → not retry-eligible.
+      mockedDb.securityPenetrationTestRun.findFirst.mockResolvedValueOnce({
+        providerRunId: 'run_legacy',
+        attemptNumber: 1,
+        scanParams: null,
+      });
+      const recent = new Date().toISOString();
+      fetchMock.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            id: 'run_legacy',
+            status: 'failed',
+            targetUrl: 'https://a.com',
+            createdAt: recent,
+            updatedAt: recent,
+            error: 'some failure',
+          }),
+          { status: 200 },
+        ),
+      );
+
+      const report = await service.getReport('org_123', 'run_legacy');
+
+      expect(report.status).toBe('failed');
     });
 
     it('reveals a clean, white-labeled failure once the lineage is exhausted', async () => {
