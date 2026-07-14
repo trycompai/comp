@@ -8,6 +8,7 @@
         "@ai-sdk/groq": "^3.0.38",
         "@ai-sdk/openai": "^3.0.62",
         "@aws-sdk/client-acm": "^3.948.0",
+        "@aws-sdk/client-api-gateway": "^3.948.0",
         "@aws-sdk/client-apigatewayv2": "^3.948.0",
         "@aws-sdk/client-appflow": "^3.948.0",
         "@aws-sdk/client-athena": "^3.948.0",
