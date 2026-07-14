@@ -354,15 +354,14 @@ export class SecurityPenetrationTestsService {
       organizationId,
       payload,
     );
-    // For a retry, derive a DETERMINISTIC reservation id from the parent run so
-    // concurrent duplicate failure webhooks reserve the same allowance. Billing
-    // consumption is idempotent on this id (billingUsageEvent.idempotencyKey),
-    // so duplicates debit exactly once — otherwise two random ids would debit
-    // twice and only one would land on the shared ownership row, orphaning the
-    // other. User-initiated creates keep a unique random id.
-    const billingUsageSourceId = lineage.retryOfProviderRunId
-      ? `pending:retry:${lineage.retryOfProviderRunId}`
-      : `pending:${randomUUID()}`;
+    // Always a unique reservation id per create call. A deterministic
+    // per-parent id (to dedupe concurrent duplicate retries) is NOT safe here:
+    // the billing consume is idempotent on this id AND a refund leaves the
+    // consume event in place, so after a failed-create-then-refund the next
+    // (redelivered) attempt would reuse the key, skip the debit, and run the
+    // scan for free. Provider-scan de-duplication for concurrent duplicates is
+    // handled by the Maced idempotency key below instead.
+    const billingUsageSourceId = `pending:${randomUUID()}`;
     let consumedSubscriptionAllowance = false;
 
     // Reserve subscription allowance before calling Maced so fast double-clicks
