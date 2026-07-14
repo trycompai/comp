@@ -6,6 +6,37 @@ model SecurityPenetrationTestRun {
   createdAt            DateTime @default(now()) @map("created_at")
   updatedAt            DateTime @updatedAt @map("updated_at")
 
+  /// Lineage root of this run's retry chain: the providerRunId of the
+  /// original (user-initiated) run. For an original run this equals its
+  /// own providerRunId; for an auto-retry it equals the original's. Every
+  /// attempt in a chain shares the same rootRunId, so the whole lineage
+  /// can be fetched with a single `where: { rootRunId }` query and the
+  /// customer-facing surface only ever exposes this stable id.
+  rootRunId String? @map("root_run_id")
+
+  /// Which attempt this run is within its lineage. 1 = original,
+  /// 2 = first auto-retry, 3 = second auto-retry. Enforces the retry cap
+  /// (MAX_ATTEMPTS) and lets reads pick the active (highest) attempt.
+  attemptNumber Int @default(1) @map("attempt_number")
+
+  /// The providerRunId of the immediate parent this run is a retry of
+  /// (null for original runs). Kept for tracing / debugging the chain.
+  retryOfProviderRunId String? @map("retry_of_provider_run_id")
+
+  /// Set the first time we spawn an auto-retry FROM this run. Makes retry
+  /// spawning idempotent — a redelivered `pentest.failed` webhook sees a
+  /// non-null value and short-circuits, so a failure can never fan out
+  /// into multiple retries. Same claim pattern as `creditRefundedAt`.
+  retryTriggeredAt DateTime? @map("retry_triggered_at")
+
+  /// The scan parameters needed to faithfully re-run this scan
+  /// (targetUrl, repoUrl, scanDepth, evidenceLevel, checks, testMode).
+  /// Persisted here so an auto-retry reconstructs the request from our
+  /// own DB rather than depending on the provider's get() field
+  /// completeness. `additionalContext` is intentionally NOT stored — it
+  /// is regenerated from the org's finding-context notes at create time.
+  scanParams Json? @map("scan_params")
+
   /// Set the first time we refund this run's credit (e.g. on
   /// `pentest.failed` / `pentest.cancelled` webhooks). Used to make the
   /// refund idempotent — webhook redelivery cannot double-credit because
@@ -23,5 +54,6 @@ model SecurityPenetrationTestRun {
 
   @@unique([providerRunId])
   @@index([organizationId])
+  @@index([rootRunId])
   @@map("security_penetration_test_runs")
 }

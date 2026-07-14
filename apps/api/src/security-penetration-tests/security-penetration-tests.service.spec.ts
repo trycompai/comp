@@ -44,7 +44,9 @@ jest.mock('@db', () => ({
     securityPenetrationTestRun: {
       upsert: jest.fn(),
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
       findMany: jest.fn(),
+      updateMany: jest.fn(),
     },
     securityPenetrationTestFindingContext: {
       findMany: jest.fn(),
@@ -67,7 +69,9 @@ type MockDb = {
   securityPenetrationTestRun: {
     upsert: jest.Mock;
     findUnique: jest.Mock;
+    findFirst: jest.Mock;
     findMany: jest.Mock;
+    updateMany: jest.Mock;
   };
   securityPenetrationTestFindingContext: {
     findMany: jest.Mock;
@@ -143,9 +147,23 @@ describe('SecurityPenetrationTestsService', () => {
     mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValue({
       organizationId: 'org_123',
     });
+    // Lineage: by default a run is its own root, attempt 1, no retries — the
+    // active attempt resolves to the run itself (reflect the requested root).
+    mockedDb.securityPenetrationTestRun.findFirst.mockImplementation(
+      (args?: { where?: { rootRunId?: string } }) => {
+        const rootRunId = args?.where?.rootRunId;
+        return Promise.resolve(
+          rootRunId ? { providerRunId: rootRunId, attemptNumber: 1 } : null,
+        );
+      },
+    );
     mockedDb.securityPenetrationTestRun.findMany.mockResolvedValue([
-      { providerRunId: 'run_123' },
+      { providerRunId: 'run_123', rootRunId: 'run_123', attemptNumber: 1 },
     ]);
+    // Retry idempotency claim succeeds by default.
+    mockedDb.securityPenetrationTestRun.updateMany.mockResolvedValue({
+      count: 1,
+    });
     // Default: no stored finding-context notes for the target.
     mockedDb.securityPenetrationTestFindingContext.findMany.mockResolvedValue(
       [],
@@ -1032,5 +1050,270 @@ describe('SecurityPenetrationTestsService', () => {
     await expect(service.getReport('org_123', 'missing')).rejects.toThrow(
       HttpException,
     );
+  });
+
+  describe('auto-retry lineage', () => {
+    it('persists self-root lineage for an original run', async () => {
+      fetchMock.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ id: 'run_orig', status: 'provisioning' }),
+          { status: 200 },
+        ),
+      );
+
+      await service.createReport('org_123', {
+        targetUrl: 'https://app.example.com',
+        scanDepth: 'deep',
+        checks: ['xss'],
+      });
+
+      expect(mockedDb.securityPenetrationTestRun.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          create: expect.objectContaining({
+            providerRunId: 'run_orig',
+            rootRunId: 'run_orig',
+            attemptNumber: 1,
+            retryOfProviderRunId: null,
+            scanParams: expect.objectContaining({
+              targetUrl: 'https://app.example.com',
+              scanDepth: 'deep',
+              checks: ['xss'],
+            }),
+          }),
+        }),
+      );
+    });
+
+    it('persists inherited lineage for a retry run', async () => {
+      fetchMock.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ id: 'run_retry', status: 'provisioning' }),
+          { status: 200 },
+        ),
+      );
+
+      await service.createReport(
+        'org_123',
+        { targetUrl: 'https://app.example.com' },
+        {
+          attemptNumber: 2,
+          rootRunId: 'run_orig',
+          retryOfProviderRunId: 'run_orig',
+        },
+      );
+
+      expect(mockedDb.securityPenetrationTestRun.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          create: expect.objectContaining({
+            providerRunId: 'run_retry',
+            rootRunId: 'run_orig',
+            attemptNumber: 2,
+            retryOfProviderRunId: 'run_orig',
+          }),
+        }),
+      );
+    });
+
+    it('spawns a retry with the same params and incremented attempt', async () => {
+      mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValueOnce({
+        organizationId: 'org_123',
+        attemptNumber: 1,
+        rootRunId: 'run_orig',
+        scanParams: {
+          targetUrl: 'https://app.example.com',
+          scanDepth: 'deep',
+          checks: ['xss'],
+        },
+      });
+      fetchMock.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ id: 'run_retry', status: 'provisioning' }),
+          { status: 200 },
+        ),
+      );
+
+      await service['maybeAutoRetry']('run_orig');
+
+      const createBody = await getRequestBody();
+      expect(createBody).toEqual(
+        expect.objectContaining({
+          targetUrl: 'https://app.example.com',
+          scanDepth: 'deep',
+          checks: ['xss'],
+        }),
+      );
+      expect(mockedDb.securityPenetrationTestRun.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          create: expect.objectContaining({
+            providerRunId: 'run_retry',
+            rootRunId: 'run_orig',
+            attemptNumber: 2,
+            retryOfProviderRunId: 'run_orig',
+          }),
+        }),
+      );
+    });
+
+    it('does not retry once the lineage is exhausted', async () => {
+      mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValueOnce({
+        organizationId: 'org_123',
+        attemptNumber: 3,
+        rootRunId: 'run_orig',
+        scanParams: { targetUrl: 'https://app.example.com' },
+      });
+
+      await service['maybeAutoRetry']('run_orig');
+
+      expect(
+        mockedDb.securityPenetrationTestRun.updateMany,
+      ).not.toHaveBeenCalled();
+      expect(mockedDb.securityPenetrationTestRun.upsert).not.toHaveBeenCalled();
+    });
+
+    it('does not retry when the idempotency claim was already taken', async () => {
+      mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValueOnce({
+        organizationId: 'org_123',
+        attemptNumber: 1,
+        rootRunId: 'run_orig',
+        scanParams: { targetUrl: 'https://app.example.com' },
+      });
+      mockedDb.securityPenetrationTestRun.updateMany.mockResolvedValueOnce({
+        count: 0,
+      });
+
+      await service['maybeAutoRetry']('run_orig');
+
+      expect(mockedDb.securityPenetrationTestRun.upsert).not.toHaveBeenCalled();
+    });
+
+    it('does not retry an orphan run with no ownership row', async () => {
+      mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValueOnce(
+        null,
+      );
+
+      await service['maybeAutoRetry']('run_ghost');
+
+      expect(
+        mockedDb.securityPenetrationTestRun.updateMany,
+      ).not.toHaveBeenCalled();
+      expect(mockedDb.securityPenetrationTestRun.upsert).not.toHaveBeenCalled();
+    });
+
+    it('never throws when the retry create fails (best-effort)', async () => {
+      mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValueOnce({
+        organizationId: 'org_123',
+        attemptNumber: 1,
+        rootRunId: 'run_orig',
+        scanParams: { targetUrl: 'https://app.example.com' },
+      });
+      fetchMock.mockResolvedValueOnce(
+        new Response('{"error":"boom"}', { status: 500 }),
+      );
+
+      await expect(
+        service['maybeAutoRetry']('run_orig'),
+      ).resolves.toBeUndefined();
+    });
+
+    it('collapses a retry lineage to a single active-attempt entry', async () => {
+      mockedDb.securityPenetrationTestRun.findMany.mockResolvedValueOnce([
+        { providerRunId: 'run_orig', rootRunId: 'run_orig', attemptNumber: 1 },
+        { providerRunId: 'run_retry', rootRunId: 'run_orig', attemptNumber: 2 },
+      ]);
+      fetchMock.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify([
+            {
+              id: 'run_orig',
+              status: 'failed',
+              targetUrl: 'https://a.com',
+              createdAt: '2026-01-01T00:00:00.000Z',
+              updatedAt: '2026-01-01T00:00:00.000Z',
+              error: 'Sandbox container deleted by Daytona',
+            },
+            {
+              id: 'run_retry',
+              status: 'running',
+              targetUrl: 'https://a.com',
+              createdAt: '2026-01-01T00:00:00.000Z',
+              updatedAt: '2026-01-01T00:05:00.000Z',
+            },
+          ]),
+          { status: 200 },
+        ),
+      );
+
+      const result = await service.listReports('org_123');
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual(
+        expect.objectContaining({ id: 'run_orig', status: 'running' }),
+      );
+    });
+
+    it('masks a fresh failed non-final attempt as in-progress', async () => {
+      mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValue({
+        organizationId: 'org_123',
+        rootRunId: 'run_orig',
+      });
+      mockedDb.securityPenetrationTestRun.findFirst.mockResolvedValueOnce({
+        providerRunId: 'run_orig',
+        attemptNumber: 1,
+      });
+      const recent = new Date().toISOString();
+      fetchMock.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            id: 'run_orig',
+            status: 'failed',
+            targetUrl: 'https://a.com',
+            createdAt: recent,
+            updatedAt: recent,
+            error: 'Sandbox container deleted by Daytona',
+          }),
+          { status: 200 },
+        ),
+      );
+
+      const report = await service.getReport('org_123', 'run_orig');
+
+      expect(report.status).toBe('provisioning');
+      expect(report.error).toBeNull();
+      expect(report.failedReason).toBeNull();
+    });
+
+    it('reveals a clean, white-labeled failure once the lineage is exhausted', async () => {
+      mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValue({
+        organizationId: 'org_123',
+        rootRunId: 'run_orig',
+      });
+      mockedDb.securityPenetrationTestRun.findFirst.mockResolvedValueOnce({
+        providerRunId: 'run_retry2',
+        attemptNumber: 3,
+      });
+      const recent = new Date().toISOString();
+      fetchMock.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            id: 'run_retry2',
+            status: 'failed',
+            targetUrl: 'https://a.com',
+            createdAt: recent,
+            updatedAt: recent,
+            error:
+              'Sandbox container deleted by Daytona infrastructure — backup/restore race condition',
+          }),
+          { status: 200 },
+        ),
+      );
+
+      const report = await service.getReport('org_123', 'run_orig');
+
+      expect(report.status).toBe('failed');
+      expect(report.id).toBe('run_orig');
+      expect(report.failedReason).toContain('temporary infrastructure issue');
+      expect(report.failedReason?.toLowerCase()).not.toContain('daytona');
+      expect(report.error?.toLowerCase()).not.toContain('daytona');
+    });
   });
 });
