@@ -164,6 +164,8 @@ describe('SecurityPenetrationTestsService', () => {
           return Promise.resolve({
             providerRunId: where.rootRunId,
             attemptNumber: 1,
+            // Retry-eligible by default (has stored scan params).
+            scanParams: { targetUrl: 'https://app.example.com' },
           });
         }
         return Promise.resolve(null);
@@ -213,6 +215,13 @@ describe('SecurityPenetrationTestsService', () => {
   function getRequestUrl(callIndex = 0): string {
     const [input] = fetchMock.mock.calls[callIndex];
     return input instanceof Request ? input.url : String(input);
+  }
+
+  function getRequestHeader(name: string, callIndex = 0): string | null {
+    const [input, init] = fetchMock.mock.calls[callIndex];
+    const headers =
+      input instanceof Request ? input.headers : new Headers(init?.headers);
+    return headers.get(name);
   }
 
   it('lists reports with organization context', async () => {
@@ -1157,6 +1166,20 @@ describe('SecurityPenetrationTestsService', () => {
           pipelineTesting: true,
         }),
       );
+      // Deterministic idempotency key tied to the parent → Maced dedupes
+      // concurrent duplicate failure webhooks into one provider scan.
+      expect(getRequestHeader('Idempotency-Key')).toBe('retry:run_orig');
+      // Deterministic billing reservation id (idempotent on sourceResourceId)
+      // so concurrent duplicates debit the allowance exactly once.
+      expect(
+        mockBillingEntitlementsService.tryConsumeIncludedUsageForProduct,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          organizationId: 'org_123',
+          productKey: 'pentest',
+          sourceResourceId: 'pending:retry:run_orig',
+        }),
+      );
       // The user's briefing survives the round-trip (re-persisted for any
       // further retry).
       expect(mockedDb.securityPenetrationTestRun.upsert).toHaveBeenCalledWith(
@@ -1173,6 +1196,43 @@ describe('SecurityPenetrationTestsService', () => {
           }),
         }),
       );
+    });
+
+    it('preserves an explicit empty check selection on retry', async () => {
+      mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValueOnce({
+        organizationId: 'org_123',
+        attemptNumber: 1,
+        rootRunId: 'run_orig',
+        scanParams: { targetUrl: 'https://app.example.com', checks: [] },
+      });
+      fetchMock.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ id: 'run_retry', status: 'provisioning' }),
+          { status: 200 },
+        ),
+      );
+
+      await service['maybeAutoRetry']('run_orig');
+
+      // Empty selection is sent through, not dropped (which would let the
+      // provider fall back to its default check set).
+      const createBody = await getRequestBody();
+      expect(createBody.checks).toEqual([]);
+    });
+
+    it('does not send an idempotency key for user-initiated creates', async () => {
+      fetchMock.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ id: 'run_new', status: 'provisioning' }),
+          { status: 200 },
+        ),
+      );
+
+      await service.createReport('org_123', {
+        targetUrl: 'https://app.example.com',
+      });
+
+      expect(getRequestHeader('Idempotency-Key')).toBeNull();
     });
 
     it('blocks auto-retry across the whole lineage when a run is cancelled', async () => {
@@ -1329,6 +1389,7 @@ describe('SecurityPenetrationTestsService', () => {
       mockedDb.securityPenetrationTestRun.findFirst.mockResolvedValueOnce({
         providerRunId: 'run_orig',
         attemptNumber: 1,
+        scanParams: { targetUrl: 'https://a.com' }, // retry-eligible
       });
       const recent = new Date().toISOString();
       fetchMock.mockResolvedValueOnce(
@@ -1350,6 +1411,69 @@ describe('SecurityPenetrationTestsService', () => {
       expect(report.status).toBe('provisioning');
       expect(report.error).toBeNull();
       expect(report.failedReason).toBeNull();
+    });
+
+    it('reveals a legacy failed run (no scan params) immediately instead of masking', async () => {
+      mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValue({
+        organizationId: 'org_123',
+        rootRunId: 'run_legacy',
+      });
+      // Pre-feature row: attempt 1 but no scanParams → not retry-eligible.
+      mockedDb.securityPenetrationTestRun.findFirst.mockResolvedValueOnce({
+        providerRunId: 'run_legacy',
+        attemptNumber: 1,
+        scanParams: null,
+      });
+      const recent = new Date().toISOString();
+      fetchMock.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            id: 'run_legacy',
+            status: 'failed',
+            targetUrl: 'https://a.com',
+            createdAt: recent,
+            updatedAt: recent,
+            error: 'some failure',
+          }),
+          { status: 200 },
+        ),
+      );
+
+      const report = await service.getReport('org_123', 'run_legacy');
+
+      expect(report.status).toBe('failed');
+    });
+
+    it('reveals a failed run with malformed (non-null) scan params instead of masking', async () => {
+      mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValue({
+        organizationId: 'org_123',
+        rootRunId: 'run_bad',
+      });
+      // Non-null but invalid params (no targetUrl) → fromScanParams rejects →
+      // not retry-eligible.
+      mockedDb.securityPenetrationTestRun.findFirst.mockResolvedValueOnce({
+        providerRunId: 'run_bad',
+        attemptNumber: 1,
+        scanParams: { nonsense: true },
+      });
+      const recent = new Date().toISOString();
+      fetchMock.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            id: 'run_bad',
+            status: 'failed',
+            targetUrl: 'https://a.com',
+            createdAt: recent,
+            updatedAt: recent,
+            error: 'some failure',
+          }),
+          { status: 200 },
+        ),
+      );
+
+      const report = await service.getReport('org_123', 'run_bad');
+
+      expect(report.status).toBe('failed');
     });
 
     it('reveals a clean, white-labeled failure once the lineage is exhausted', async () => {
