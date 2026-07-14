@@ -85,8 +85,8 @@
         "@xyflow/react": "^12.10.0",
         "ai": "^6.0.175",
         "ai-elements": "^1.6.1",
-        "axios": "^1.9.0",
-        "better-auth": "^1.4.22",
+        "axios": "^1.16.0",
+        "better-auth": "^1.6.13",
         "botid": "^1.5.5",
         "canvas-confetti": "^1.9.3",
         "class-variance-authority": "^0.7.1",
@@ -102,7 +102,7 @@
         "mammoth": "^1.11.0",
         "motion": "^12.35.0",
         "nanoid": "^5.1.6",
-        "next": "^16.2.0",
+        "next": "^16.2.6",
         "next-safe-action": "^8.0.3",
         "next-themes": "^0.4.4",
         "nuqs": "^2.4.3",
@@ -171,7 +171,7 @@
         "trigger.dev": "4.4.3",
         "typescript": "^5.8.3",
         "vite-tsconfig-paths": "^5.1.4",
-        "vitest": "^3.2.4"
+        "vitest": "^3.2.6"
     },
     "exports": {
         "./src/lib/encryption": "./src/lib/encryption.ts"
