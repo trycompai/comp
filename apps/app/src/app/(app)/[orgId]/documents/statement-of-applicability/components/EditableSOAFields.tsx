@@ -22,7 +22,11 @@ import { useSOADocument } from '../hooks/useSOADocument';
 import { ApplicableReadOnlyDisplay, ApplicableSwatchRow } from './ApplicableSwatch';
 import type { SOAFieldSavePayload } from './soa-field-types';
 
-export type { SOAFieldSavePayload, SOATableAnswerData } from './soa-field-types';
+export type {
+  SOAFieldSavePayload,
+  SOATableAnswerData,
+  SOAProcessedResult,
+} from './soa-field-types';
 
 interface EditableSOAFieldsProps {
   documentId: string;

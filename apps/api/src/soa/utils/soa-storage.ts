@@ -44,31 +44,37 @@ export async function saveAnswersToDatabase(
 
       const nextVersion = existingAnswer ? existingAnswer.answerVersion + 1 : 1;
 
-      // Mark existing answer as not latest if it exists
-      if (existingAnswer) {
-        await db.sOAAnswer.update({
-          where: { id: existingAnswer.id },
-          data: { isLatestAnswer: false },
-        });
-      }
-
       // Store justification in the answer field for both YES and NO so the
       // SoA always carries a justification for every control (per ISO 27001).
       const answerValue = result.justification ?? null;
 
-      // Create new answer
-      await db.sOAAnswer.create({
-        data: {
-          documentId,
-          questionId: question.id,
-          answer: answerValue,
-          status: 'generated',
-          generatedAt: new Date(),
-          answerVersion: nextVersion,
-          isLatestAnswer: true,
-          createdBy: userId,
-        },
-      });
+      // Retire the prior answer and create the new version atomically, so a
+      // failure can never leave the control without a latest answer.
+      // Applicability + justification are stored per organization on the
+      // answer — never on the shared configuration.
+      await db.$transaction([
+        ...(existingAnswer
+          ? [
+              db.sOAAnswer.update({
+                where: { id: existingAnswer.id },
+                data: { isLatestAnswer: false },
+              }),
+            ]
+          : []),
+        db.sOAAnswer.create({
+          data: {
+            documentId,
+            questionId: question.id,
+            answer: answerValue,
+            isApplicable: result.isApplicable,
+            status: 'generated',
+            generatedAt: new Date(),
+            answerVersion: nextVersion,
+            isLatestAnswer: true,
+            createdBy: userId,
+          },
+        }),
+      ]);
     } catch (error) {
       logger.error('Failed to save SOA answer', {
         questionId: question.id,
@@ -76,43 +82,6 @@ export async function saveAnswersToDatabase(
       });
     }
   }
-}
-
-/**
- * Updates SOA configuration with auto-fill results
- */
-export async function updateConfigurationWithResults(
-  configurationId: string,
-  configurationQuestions: SOAQuestion[],
-  results: SOAQuestionResult[],
-): Promise<void> {
-  const resultsMap = new Map(
-    results
-      .filter((r) => r.success && r.isApplicable !== null)
-      .map((r) => [r.questionId, r]),
-  );
-
-  const updatedQuestions = configurationQuestions.map((q) => {
-    const result = resultsMap.get(q.id);
-    if (result) {
-      return {
-        ...q,
-        columnMapping: {
-          ...q.columnMapping,
-          isApplicable: result.isApplicable,
-          justification: result.justification,
-        },
-      };
-    }
-    return q;
-  });
-
-  await db.sOAFrameworkConfiguration.update({
-    where: { id: configurationId },
-    data: {
-      questions: JSON.parse(JSON.stringify(updatedQuestions)),
-    },
-  });
 }
 
 /**
@@ -137,25 +106,27 @@ export async function updateDocumentAfterAutoFill(
 }
 
 /**
- * Gets the answered questions count from configuration
+ * Counts answered questions for a document from its per-organization answers.
+ * A control is "answered" once it has an applicability decision. Scoped to the
+ * question IDs in the document's active configuration so stale/mismatched
+ * answer rows can't skew the completion count.
  */
-export async function getAnsweredCountFromConfiguration(
-  configurationId: string,
+export async function countAnsweredAnswers(
+  documentId: string,
+  validQuestionIds: string[],
 ): Promise<number> {
-  const configuration = await db.sOAFrameworkConfiguration.findUnique({
-    where: { id: configurationId },
+  if (validQuestionIds.length === 0) {
+    return 0;
+  }
+
+  return db.sOAAnswer.count({
+    where: {
+      documentId,
+      isLatestAnswer: true,
+      isApplicable: { not: null },
+      questionId: { in: validQuestionIds },
+    },
   });
-
-  if (!configuration) return 0;
-
-  const questions = configuration.questions as Array<{
-    id: string;
-    columnMapping: {
-      isApplicable: boolean | null;
-    };
-  }>;
-
-  return questions.filter((q) => q.columnMapping.isApplicable !== null).length;
 }
 
 /**

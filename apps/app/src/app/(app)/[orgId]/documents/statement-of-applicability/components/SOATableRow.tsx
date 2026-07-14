@@ -1,8 +1,13 @@
 'use client';
 
 import { Loader2 } from 'lucide-react';
-import type { SOAFieldSavePayload, SOATableAnswerData } from './EditableSOAFields';
+import type {
+  SOAFieldSavePayload,
+  SOAProcessedResult,
+  SOATableAnswerData,
+} from './EditableSOAFields';
 import { EditableSOAFields } from './EditableSOAFields';
+import { resolveSoaDisplay } from './soa-display';
 
 type SOAColumn = {
   name: string;
@@ -21,19 +26,12 @@ type SOAQuestion = {
   };
 };
 
-type ProcessedResult = {
-  success: boolean;
-  isApplicable: boolean | null;
-  justification?: string | null;
-  insufficientData?: boolean;
-};
-
 interface SOATableRowProps {
   question: SOAQuestion;
   columns: SOAColumn[];
   answerData?: SOATableAnswerData;
   questionStatus?: string;
-  processedResult?: ProcessedResult;
+  processedResult?: SOAProcessedResult;
   isFullyRemote: boolean;
   documentId: string;
   isPendingApproval: boolean;
@@ -61,38 +59,15 @@ export function SOATableRow({
   const controlClosure = question.columnMapping.closure || '';
   const isControl7 = controlClosure.startsWith('7.');
   
-  // Determine displayIsApplicable and justificationValue based on fully remote logic
-  let displayIsApplicable: boolean | null;
-  let justificationValue: string | null;
-
-  // If fully remote and control starts with "7.", always show NO (override any other value)
-  if (isFullyRemote && isControl7) {
-    displayIsApplicable = false;
-    justificationValue =
-      processedResult?.justification ||
-      answerData?.answer ||
-      question.columnMapping.justification ||
-      'This control is not applicable as our organization operates fully remotely.';
-  } else if (answerData?.savedIsApplicable !== undefined) {
-    // Manual save overrides autofill processedResult so the table updates without a full reload
-    displayIsApplicable = answerData.savedIsApplicable;
-    justificationValue =
-      answerData.answer || question.columnMapping.justification || null;
-  } else {
-    // Normal logic: processedResult / column mapping until user saves (then branch above)
-    const isApplicableValue =
-      processedResult?.isApplicable !== null && processedResult?.isApplicable !== undefined
-        ? processedResult.isApplicable
-        : (question.columnMapping.isApplicable ?? true);
-
-    justificationValue =
-      processedResult?.justification ||
-      answerData?.answer ||
-      question.columnMapping.justification ||
-      null;
-
-    displayIsApplicable = isApplicableValue;
-  }
+  // Applicability + justification are per-organization values (from this
+  // document's own answers or an in-session autofill result), never from the
+  // shared framework configuration.
+  const { displayIsApplicable, justificationValue } = resolveSoaDisplay({
+    answerData,
+    processedResult,
+    isFullyRemote,
+    isControl7,
+  });
 
   return (
     <tr className="border-b transition-colors hover:bg-muted/30 last:border-b-0">
