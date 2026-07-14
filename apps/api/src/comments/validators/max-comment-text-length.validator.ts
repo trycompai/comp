@@ -14,18 +14,23 @@ const DEFAULT_MAX_LENGTH = 2000;
  * the raw stored string — `content` is serialized Tiptap JSON, so formatting
  * (marks, node types, attrs) would otherwise count toward the limit and
  * reject short, plainly-visible comments once they include any formatting.
+ *
+ * Also rejects zero visible text: `@IsNotEmpty()` only sees the raw string,
+ * so an empty document (e.g. `{"type":"doc","content":[]}`) is a non-empty
+ * JSON string that would otherwise sail through as a "valid" empty comment.
  */
 @ValidatorConstraint({ name: 'maxCommentTextLength', async: false })
 export class MaxCommentTextLengthConstraint implements ValidatorConstraintInterface {
   validate(value: unknown, args: ValidationArguments): boolean {
     if (typeof value !== 'string') return false;
     const maxLength = (args.constraints[0] as number) ?? DEFAULT_MAX_LENGTH;
-    return extractCommentPlainText(value).length <= maxLength;
+    const length = extractCommentPlainText(value).length;
+    return length > 0 && length <= maxLength;
   }
 
   defaultMessage(args: ValidationArguments): string {
     const maxLength = (args.constraints[0] as number) ?? DEFAULT_MAX_LENGTH;
-    return `content must not exceed ${maxLength} characters`;
+    return `content must not be empty and must not exceed ${maxLength} characters`;
   }
 }
 

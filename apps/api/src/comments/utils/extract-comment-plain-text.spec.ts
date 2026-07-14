@@ -11,6 +11,10 @@ describe('extractCommentPlainText', () => {
     );
   });
 
+  it('extracts an empty string from an empty Tiptap document', () => {
+    expect(extractCommentPlainText(tiptapDoc([]))).toBe('');
+  });
+
   it('returns plain text as-is when it happens to be valid JSON but not a Tiptap doc (bypass regression)', () => {
     const longPlainText = 'x'.repeat(3000);
     const jsonLookingText = `{"foo": "${longPlainText}"}`;

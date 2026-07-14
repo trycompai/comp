@@ -89,4 +89,11 @@ describe('CreateCommentDto', () => {
     const errors = await validate(dto);
     expect(errors.some((e) => e.property === 'content')).toBe(true);
   });
+
+  it('rejects an empty Tiptap document — non-empty JSON string but zero visible text (regression)', async () => {
+    const content = tiptapDoc([]);
+    const dto = toDto({ ...VALID_BASE, content });
+    const errors = await validate(dto);
+    expect(errors.some((e) => e.property === 'content')).toBe(true);
+  });
 });
