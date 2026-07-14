@@ -1,8 +1,8 @@
 import { ISMS_TYPE_DEFINITIONS, matchRequirementId } from './document-types';
 
 describe('ISMS_TYPE_DEFINITIONS', () => {
-  it('defines all six foundational document types with clauses', () => {
-    expect(ISMS_TYPE_DEFINITIONS).toHaveLength(6);
+  it('defines all seven foundational document types with clauses', () => {
+    expect(ISMS_TYPE_DEFINITIONS).toHaveLength(7);
     const types = ISMS_TYPE_DEFINITIONS.map((d) => d.type);
     expect(types).toEqual(
       expect.arrayContaining([
@@ -11,6 +11,7 @@ describe('ISMS_TYPE_DEFINITIONS', () => {
         'interested_parties_requirements',
         'isms_scope',
         'leadership_commitment',
+        'roles_and_responsibilities',
         'objectives_plan',
       ]),
     );

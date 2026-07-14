@@ -5,6 +5,7 @@ import { buildContextSections } from './context';
 import { buildInterestedPartiesSections } from './interested-parties';
 import { buildRequirementsSections } from './requirements';
 import { buildObjectivesSections } from './objectives';
+import { buildRolesSections } from './roles';
 import {
   buildScopeSections,
   deriveScopeNarrative,
@@ -31,6 +32,7 @@ const EXPORT_SECTION_BUILDERS: Record<
   interested_parties_register: buildInterestedPartiesSections,
   interested_parties_requirements: buildRequirementsSections,
   objectives_plan: buildObjectivesSections,
+  roles_and_responsibilities: buildRolesSections,
   isms_scope: buildScopeSections,
   leadership_commitment: buildLeadershipSections,
 };

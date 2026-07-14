@@ -95,7 +95,12 @@ model SOAAnswer {
   questionId String // Must match a question.id from SOADocument.configuration.questions
 
   // Answer data - simple text answer
-  answer String? // Text answer (nullable if not generated yet)
+  answer String? // Text answer / justification (nullable if not generated yet)
+
+  // Applicability decision for this control, scoped per organization + document.
+  // Stored here — NOT on the shared SOAFrameworkConfiguration — so each org's
+  // Statement of Applicability reflects only its own answers.
+  isApplicable Boolean? // true = applicable, false = not applicable, null = not yet answered
 
   // Answer metadata
   status      SOAAnswerStatus @default(untouched) // untouched, generated, manual

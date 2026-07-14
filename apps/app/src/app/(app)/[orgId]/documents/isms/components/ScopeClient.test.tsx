@@ -118,6 +118,10 @@ vi.mock('./IsmsControlMappings', () => ({
   IsmsControlMappings: () => <div data-testid="isms-control-mappings" />,
 }));
 
+vi.mock('./IsmsVersionHistory', () => ({
+  IsmsVersionHistory: () => <div data-testid="isms-version-history" />,
+}));
+
 vi.mock('./shared', () => ({
   IsmsPageHeader: ({
     clause,
@@ -159,8 +163,11 @@ function makeDocument(overrides: Partial<IsmsDocument> = {}): IsmsDocument {
     interestedParties: [],
     interestedPartyRequirements: [],
     objectives: [],
+    roles: [],
     controlLinks: [],
-    versions: [{ id: 'v1', version: 1, isLatest: true, narrative: NARRATIVE }],
+    draftNarrative: NARRATIVE,
+    currentVersionId: null,
+    currentVersion: null,
     ...overrides,
   };
 }

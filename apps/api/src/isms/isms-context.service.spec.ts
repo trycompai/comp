@@ -1,22 +1,20 @@
 import { NotFoundException } from '@nestjs/common';
 import { db } from '@db';
 import { IsmsContextService } from './isms-context.service';
+import type { IsmsVersionService } from './isms-version.service';
 import { collectPlatformData } from './documents/data-source';
 import { runDerivation } from './documents/generate';
 import {
   diffPlatformSnapshots,
   parsePlatformSnapshot,
 } from './documents/snapshot';
-import { buildExportSections } from './documents/registry';
-import { generateIsmsExportFile } from './utils/export-generator';
-import { upsertLatestSnapshotVersion } from './utils/version-snapshot';
+import { updateDraftSnapshot } from './utils/draft-snapshot';
+import { renderLiveExport } from './utils/export-payload';
+import { invalidateApprovalIfNeeded } from './utils/approval';
 
 jest.mock('@db', () => ({
   db: {
     ismsDocument: { findFirst: jest.fn() },
-    organization: { findUnique: jest.fn() },
-    context: { findMany: jest.fn() },
-    ismsProfile: { findUnique: jest.fn() },
     $transaction: jest.fn(),
   },
 }));
@@ -30,14 +28,14 @@ jest.mock('./documents/snapshot', () => ({
   diffPlatformSnapshots: jest.fn(),
   parsePlatformSnapshot: jest.fn(),
 }));
-jest.mock('./documents/registry', () => ({
-  buildExportSections: jest.fn(),
+jest.mock('./utils/draft-snapshot', () => ({
+  updateDraftSnapshot: jest.fn(),
 }));
-jest.mock('./utils/export-generator', () => ({
-  generateIsmsExportFile: jest.fn(),
+jest.mock('./utils/export-payload', () => ({
+  renderLiveExport: jest.fn(),
 }));
-jest.mock('./utils/version-snapshot', () => ({
-  upsertLatestSnapshotVersion: jest.fn(),
+jest.mock('./utils/approval', () => ({
+  invalidateApprovalIfNeeded: jest.fn(),
 }));
 
 const mockDb = jest.mocked(db);
@@ -45,8 +43,9 @@ const mockCollect = jest.mocked(collectPlatformData);
 const mockRun = jest.mocked(runDerivation);
 const mockDiff = jest.mocked(diffPlatformSnapshots);
 const mockParse = jest.mocked(parsePlatformSnapshot);
-const mockBuild = jest.mocked(buildExportSections);
-const mockExport = jest.mocked(generateIsmsExportFile);
+const mockUpdateDraft = jest.mocked(updateDraftSnapshot);
+const mockRenderLive = jest.mocked(renderLiveExport);
+const mockInvalidate = jest.mocked(invalidateApprovalIfNeeded);
 
 const snapshot = {
   organizationName: 'Acme',
@@ -66,12 +65,17 @@ const snapshot = {
   partiesFingerprint: '',
 };
 
+const versionService = {
+  getVersionExport: jest.fn(),
+  getVersions: jest.fn(),
+} as unknown as IsmsVersionService;
+
 describe('IsmsContextService', () => {
   let service: IsmsContextService;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new IsmsContextService();
+    service = new IsmsContextService(versionService);
   });
 
   describe('generate', () => {
@@ -89,30 +93,37 @@ describe('IsmsContextService', () => {
       'objectives_plan',
       'isms_scope',
       'leadership_commitment',
-    ])('dispatches derivation + snapshot for type %s', async (type) => {
-      (mockDb.ismsDocument.findFirst as jest.Mock)
-        .mockResolvedValueOnce({ id: 'doc_1', type, frameworkId: 'fw_1' })
-        .mockResolvedValueOnce({ id: 'doc_1' });
-      mockCollect.mockResolvedValue(snapshot);
-      const tx = {};
-      (mockDb.$transaction as jest.Mock).mockImplementation((cb) => cb(tx));
+    ])(
+      'derives + updates the draft snapshot for type %s',
+      async (type) => {
+        (mockDb.ismsDocument.findFirst as jest.Mock)
+          .mockResolvedValueOnce({ id: 'doc_1', type, frameworkId: 'fw_1' })
+          .mockResolvedValueOnce({ id: 'doc_1' });
+        mockCollect.mockResolvedValue(snapshot);
+        const tx = {};
+        (mockDb.$transaction as jest.Mock).mockImplementation((cb) => cb(tx));
 
-      await service.generate(args);
+        await service.generate(args);
 
-      expect(mockRun).toHaveBeenCalledWith({
-        tx,
-        type,
-        documentId: 'doc_1',
-        organizationId: 'org_1',
-        frameworkId: 'fw_1',
-        data: snapshot,
-      });
-      expect(upsertLatestSnapshotVersion).toHaveBeenCalledWith({
-        tx,
-        documentId: 'doc_1',
-        snapshot,
-      });
-    });
+        expect(mockRun).toHaveBeenCalledWith({
+          tx,
+          type,
+          documentId: 'doc_1',
+          organizationId: 'org_1',
+          frameworkId: 'fw_1',
+          data: snapshot,
+        });
+        // CS-701: the drift baseline is the document's draftSnapshot, not a
+        // version row.
+        expect(mockUpdateDraft).toHaveBeenCalledWith({
+          tx,
+          documentId: 'doc_1',
+          snapshot,
+        });
+        // Regenerating an approved document must revert it to draft.
+        expect(mockInvalidate).toHaveBeenCalledWith({ tx, documentId: 'doc_1' });
+      },
+    );
 
     it('reuses pre-collected data and skips collectPlatformData', async () => {
       (mockDb.ismsDocument.findFirst as jest.Mock)
@@ -137,7 +148,7 @@ describe('IsmsContextService', () => {
         frameworkId: 'fw_1',
         data: precollected,
       });
-      expect(upsertLatestSnapshotVersion).toHaveBeenCalledWith({
+      expect(mockUpdateDraft).toHaveBeenCalledWith({
         tx,
         documentId: 'doc_1',
         snapshot: precollected,
@@ -153,12 +164,12 @@ describe('IsmsContextService', () => {
       await expect(service.drift(args)).rejects.toThrow(NotFoundException);
     });
 
-    it('compares current data against the parsed snapshot by type', async () => {
+    it('compares current data against the parsed draftSnapshot by type', async () => {
       (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
         id: 'doc_1',
         type: 'objectives_plan',
         frameworkId: 'fw_1',
-        versions: [{ sourceSnapshot: snapshot }],
+        draftSnapshot: snapshot,
       });
       mockCollect.mockResolvedValue({ ...snapshot, riskCount: 9 });
       mockParse.mockReturnValue(snapshot);
@@ -175,12 +186,12 @@ describe('IsmsContextService', () => {
       expect(result).toEqual({ isStale: true, changedSources: ['risks'] });
     });
 
-    it('treats a missing snapshot as no baseline', async () => {
+    it('treats a missing draftSnapshot as no baseline', async () => {
       (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
         id: 'doc_1',
         type: 'context_of_organization',
         frameworkId: 'fw_1',
-        versions: [],
+        draftSnapshot: null,
       });
       mockCollect.mockResolvedValue(snapshot);
       mockParse.mockReturnValue(null);
@@ -200,7 +211,60 @@ describe('IsmsContextService', () => {
   });
 
   describe('exportDocument', () => {
-    it('throws NotFoundException when document missing', async () => {
+    const result = {
+      fileBuffer: Buffer.from('bytes'),
+      mimeType: 'application/pdf',
+      filename: 'doc.pdf',
+    };
+
+    it('renders the live draft only when the document has no published version', async () => {
+      (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
+        currentVersionId: null,
+      });
+      mockRenderLive.mockResolvedValue(result);
+
+      const out = await service.exportDocument({
+        documentId: 'doc_1',
+        organizationId: 'org_1',
+        dto: { format: 'pdf' },
+      });
+
+      expect(mockRenderLive).toHaveBeenCalledWith({
+        documentId: 'doc_1',
+        organizationId: 'org_1',
+        format: 'pdf',
+      });
+      expect(versionService.getVersionExport).not.toHaveBeenCalled();
+      expect(out).toBe(result);
+    });
+
+    it.each(['approved', 'draft', 'needs_review'])(
+      'serves the published version by default whenever one exists (status %s)',
+      async (status) => {
+        (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
+          status,
+          currentVersionId: 'isms_ver_9',
+        });
+        (versionService.getVersionExport as jest.Mock).mockResolvedValue(result);
+
+        const out = await service.exportDocument({
+          documentId: 'doc_1',
+          organizationId: 'org_1',
+          dto: { format: 'pdf' },
+        });
+
+        expect(versionService.getVersionExport).toHaveBeenCalledWith({
+          documentId: 'doc_1',
+          organizationId: 'org_1',
+          versionId: 'isms_ver_9',
+          format: 'pdf',
+        });
+        expect(mockRenderLive).not.toHaveBeenCalled();
+        expect(out).toBe(result);
+      },
+    );
+
+    it('throws NotFoundException when the document is missing', async () => {
       (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue(null);
       await expect(
         service.exportDocument({
@@ -211,98 +275,23 @@ describe('IsmsContextService', () => {
       ).rejects.toThrow(NotFoundException);
     });
 
-    const buildDocument = (type: string) => ({
-      id: 'doc_1',
-      type,
-      title: 'Doc',
-      status: 'approved',
-      preparedBy: 'Comp AI',
-      approvedAt: null,
-      declinedAt: null,
-      framework: { name: 'ISO 27001' },
-      organization: { name: 'Acme', primaryColor: '#004D3D' },
-      approver: { user: { name: 'Jane', email: 'jane@acme.io' } },
-      contextIssues: [
-        {
-          kind: 'external',
-          category: 'Regulatory & Legal',
-          description: 'd',
-          effect: 'e',
-        },
-      ],
-      interestedParties: [
-        { name: 'Customers', category: 'Customer', needsExpectations: 'n' },
-      ],
-      interestedPartyRequirements: [
-        { partyName: 'Customers', requirement: 'r', treatment: 't' },
-      ],
-      objectives: [
-        {
-          objective: 'o',
-          target: 't',
-          cadence: 'Annual',
-          status: 'on_track',
-          plan: 'p',
-          measurementMethod: 'm',
-        },
-      ],
-      versions: [
-        { version: 2, narrative: { statement: 's', commitments: [] } },
-      ],
+    it('routes to the version service when a versionId is given', async () => {
+      (versionService.getVersionExport as jest.Mock).mockResolvedValue(result);
+
+      const out = await service.exportDocument({
+        documentId: 'doc_1',
+        organizationId: 'org_1',
+        dto: { format: 'docx', versionId: 'isms_ver_1' },
+      });
+
+      expect(versionService.getVersionExport).toHaveBeenCalledWith({
+        documentId: 'doc_1',
+        organizationId: 'org_1',
+        versionId: 'isms_ver_1',
+        format: 'docx',
+      });
+      expect(mockRenderLive).not.toHaveBeenCalled();
+      expect(out).toBe(result);
     });
-
-    it.each([
-      ['context_of_organization', 'pdf'],
-      ['interested_parties_register', 'pdf'],
-      ['interested_parties_requirements', 'pdf'],
-      ['objectives_plan', 'pdf'],
-      ['isms_scope', 'docx'],
-      ['leadership_commitment', 'docx'],
-    ] as const)(
-      'dispatches export sections for %s (%s)',
-      async (type, format) => {
-        (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue(
-          buildDocument(type),
-        );
-        // The Context document loads the org profile (org + Context Q&A +
-        // ISMS wizard answers); other types skip it. Stub all three reads.
-        (mockDb.organization.findUnique as jest.Mock).mockResolvedValue({
-          name: 'Acme',
-          website: 'https://acme.io',
-        });
-        (mockDb.context.findMany as jest.Mock).mockResolvedValue([]);
-        (mockDb.ismsProfile.findUnique as jest.Mock).mockResolvedValue({
-          answers: {},
-        });
-        mockBuild.mockReturnValue([{ heading: 'H' }]);
-        mockExport.mockResolvedValue({
-          fileBuffer: Buffer.from('bytes'),
-          mimeType: format === 'pdf' ? 'application/pdf' : 'docx-mime',
-          filename: `doc.${format}`,
-        });
-
-        const result = await service.exportDocument({
-          documentId: 'doc_1',
-          organizationId: 'org_1',
-          dto: { format },
-        });
-
-        expect(mockBuild).toHaveBeenCalledWith(
-          expect.objectContaining({ type }),
-        );
-        expect(mockExport).toHaveBeenCalledWith(
-          expect.objectContaining({
-            format,
-            sections: [{ heading: 'H' }],
-            metadata: expect.objectContaining({
-              title: 'Doc',
-              organizationName: 'Acme',
-              primaryColor: '#004D3D',
-            }),
-          }),
-        );
-        expect(result.fileBuffer).toBeInstanceOf(Buffer);
-      },
-    );
   });
 });

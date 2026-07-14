@@ -10,6 +10,7 @@ export type IsmsDocumentType =
   | 'interested_parties_requirements'
   | 'isms_scope'
   | 'leadership_commitment'
+  | 'roles_and_responsibilities'
   | 'objectives_plan';
 
 export type IsmsDocumentStatus =
@@ -23,6 +24,12 @@ export type IsmsContextIssueKind = 'internal' | 'external';
 export type IsmsContextSource = 'derived' | 'manual';
 export type IsmsExportFormat = 'pdf' | 'docx';
 export type IsmsObjectiveStatus = 'not_started' | 'on_track' | 'at_risk' | 'met';
+export type IsmsCompetenceBasis =
+  | 'education'
+  | 'training'
+  | 'experience'
+  | 'combination';
+export type IsmsAuditRoute = 'in_house' | 'external' | 'training_planned';
 
 /**
  * The ISO 27001 clause 4.1 category taxonomy auditors expect, scoped by kind.
@@ -100,6 +107,41 @@ export interface IsmsObjective {
   position: number;
 }
 
+/** A member assigned to an ISMS role, with competence evidence (clauses 5.3/7.2). */
+export interface IsmsRoleAssignment {
+  id: string;
+  roleId: string;
+  memberId: string;
+  basisOfCompetence: IsmsCompetenceBasis | null;
+  evidenceRetained: string | null;
+  gap: string | null;
+  remediationAction: string | null;
+  remediationDueDate: string | null;
+  position: number;
+}
+
+/** Register: ISMS Governance Roles, Responsibilities & Authorities (clause 5.3). */
+export interface IsmsRole {
+  id: string;
+  roleKey: string | null;
+  name: string;
+  description: string;
+  responsibilities: string;
+  authorities: string;
+  authorityGrantedBy: string;
+  requiredCompetence: string;
+  auditRoute: IsmsAuditRoute | null;
+  auditRouteMemberId: string | null;
+  auditFirmName: string | null;
+  auditEvidenceRef: string | null;
+  auditCourse: string | null;
+  auditDueDate: string | null;
+  source: IsmsContextSource;
+  derivedFrom: string | null;
+  position: number;
+  assignments: IsmsRoleAssignment[];
+}
+
 /** Narrative shape for the ISMS Scope singleton (clause 4.3). */
 export interface IsmsScopeNarrative {
   certificateScopeSentence: string;
@@ -129,13 +171,29 @@ export interface IsmsControlLink {
   control: { id: string; name: string };
 }
 
-/** Latest version row included on the fetched document. */
-export interface IsmsDocumentVersion {
+/** The live/published version summary included on the fetched document (CS-701). */
+export interface IsmsCurrentVersion {
   id: string;
   version: number;
-  isLatest: boolean;
-  /** Per-type narrative payload (scope / leadership); null for register-only docs. */
-  narrative: IsmsScopeNarrative | IsmsLeadershipNarrative | Record<string, unknown> | null;
+  publishedAt: string | null;
+}
+
+/** A published version in the version-history feed (CS-701). */
+export interface IsmsPublishedVersion {
+  id: string;
+  version: number;
+  publishedAt: string | null;
+  changelog: string | null;
+  publishedByName: string | null;
+  hasPdf: boolean;
+  hasDocx: boolean;
+  isCurrent: boolean;
+}
+
+/** Response of `GET /v1/isms/documents/:id/versions`. */
+export interface IsmsVersionHistory {
+  currentVersionId: string | null;
+  versions: IsmsPublishedVersion[];
 }
 
 /** Summary row returned by `ensure-setup`. */
@@ -154,8 +212,10 @@ export interface IsmsEnsureSetupResponse {
 
 /**
  * Full document returned by `GET /v1/isms/documents/:id`. Every register array is
- * always present (empty when the document type does not use that register), and
- * `versions[0]` (when present) carries the singleton narrative.
+ * always present (empty when the document type does not use that register). The
+ * editable draft lives on the document itself (register rows + `draftNarrative`);
+ * `currentVersion` is the live/published version (CS-701). Version history is
+ * fetched separately via `GET /v1/isms/documents/:id/versions`.
  */
 export interface IsmsDocument {
   id: string;
@@ -169,8 +229,16 @@ export interface IsmsDocument {
   interestedParties: IsmsInterestedParty[];
   interestedPartyRequirements: IsmsInterestedPartyRequirement[];
   objectives: IsmsObjective[];
+  roles: IsmsRole[];
   controlLinks: IsmsControlLink[];
-  versions: IsmsDocumentVersion[];
+  /** Working-draft narrative for the singleton documents (Scope, Leadership). */
+  draftNarrative:
+    | IsmsScopeNarrative
+    | IsmsLeadershipNarrative
+    | Record<string, unknown>
+    | null;
+  currentVersionId: string | null;
+  currentVersion: IsmsCurrentVersion | null;
 }
 
 export interface IsmsDriftResult {
@@ -226,6 +294,14 @@ export const ISMS_TYPE_META: IsmsTypeMeta[] = [
     detailRouteEnabled: true,
   },
   {
+    type: 'roles_and_responsibilities',
+    clause: '5.3',
+    title: 'Roles, Responsibilities and Authorities',
+    description:
+      'ISMS governance roles, their responsibilities and authorities, and the members who hold them.',
+    detailRouteEnabled: true,
+  },
+  {
     type: 'objectives_plan',
     clause: '6.2',
     title: 'Information Security Objectives and Plan',
@@ -241,6 +317,7 @@ export const ISMS_SLUG_TO_TYPE: Record<string, IsmsDocumentType> = {
   requirements: 'interested_parties_requirements',
   scope: 'isms_scope',
   leadership: 'leadership_commitment',
+  roles: 'roles_and_responsibilities',
   objectives: 'objectives_plan',
 };
 
@@ -251,6 +328,7 @@ const ISMS_TYPE_TO_SLUG: Record<IsmsDocumentType, string> = {
   interested_parties_requirements: 'requirements',
   isms_scope: 'scope',
   leadership_commitment: 'leadership',
+  roles_and_responsibilities: 'roles',
   objectives_plan: 'objectives',
 };
 

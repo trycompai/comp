@@ -6,6 +6,11 @@ interface ExportIsmsDocumentParams {
   documentId: string;
   format: IsmsExportFormat;
   organizationId?: string;
+  /**
+   * Published version to export. Omit to export the current working draft; provide
+   * a version id to download exactly what was approved at that version (CS-701).
+   */
+  versionId?: string;
 }
 
 function parseFilename(contentDisposition: string | null, fallback: string): string {
@@ -14,11 +19,12 @@ function parseFilename(contentDisposition: string | null, fallback: string): str
   return match ? match[1] : fallback;
 }
 
-/** Downloads an ISMS document export (pdf/docx/md) via the API and triggers a browser save. */
+/** Downloads an ISMS document export (pdf/docx) via the API and triggers a browser save. */
 export async function exportIsmsDocument({
   documentId,
   format,
   organizationId,
+  versionId,
 }: ExportIsmsDocumentParams): Promise<void> {
   // Route through the shared apiClient so the request carries the same
   // credentials + organization header context as every other API call.
@@ -26,7 +32,7 @@ export async function exportIsmsDocument({
     method: 'POST',
     organizationId,
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ format }),
+    body: JSON.stringify(versionId ? { format, versionId } : { format }),
   });
 
   if (!response.ok) {

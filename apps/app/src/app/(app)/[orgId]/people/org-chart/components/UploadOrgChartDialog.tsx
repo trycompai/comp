@@ -6,15 +6,17 @@ import { Button } from '@trycompai/design-system';
 import { Upload, Close } from '@trycompai/design-system/icons';
 import { useApi } from '@/hooks/use-api';
 import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
 
 interface UploadOrgChartDialogProps {
   onClose: () => void;
+  onUploaded: () => void | Promise<unknown>;
 }
 
-export function UploadOrgChartDialog({ onClose }: UploadOrgChartDialogProps) {
+export function UploadOrgChartDialog({
+  onClose,
+  onUploaded,
+}: UploadOrgChartDialogProps) {
   const api = useApi();
-  const router = useRouter();
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
@@ -60,8 +62,13 @@ export function UploadOrgChartDialog({ onClose }: UploadOrgChartDialogProps) {
       }
 
       toast.success('Org chart uploaded');
-      router.refresh();
       onClose();
+
+      try {
+        await onUploaded();
+      } catch {
+        // Upload already succeeded; a refresh failure shouldn't surface as an upload error.
+      }
     } catch {
       toast.error('Failed to upload org chart');
     } finally {

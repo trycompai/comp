@@ -53,6 +53,11 @@ model Trust {
   // Favicon for trust portal (stored in S3)
   favicon String?
 
+  // Whether the AI-assisted Security Questionnaire is offered on the public
+  // trust portal. Defaults to true so existing portals keep their current
+  // behavior; org owners can hide it when they'd rather review answers first.
+  securityQuestionnaireEnabled Boolean @default(true)
+
   @@id([status, organizationId])
   @@unique([organizationId])
   @@index([organizationId])

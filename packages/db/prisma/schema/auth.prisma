@@ -218,6 +218,7 @@ model Member {
   approvedPolicies                 Policy[]                 @relation("PolicyApprover") // Policies where this member is an approver
   approvedSOADocuments             SOADocument[]            @relation("SOADocumentApprover") // SOA documents where this member is an approver
   approvedIsmsDocuments            IsmsDocument[]           @relation("IsmsDocumentApprover") // ISMS documents where this member is an approver
+  publishedIsmsVersions            IsmsDocumentVersion[]    @relation("IsmsDocumentVersionPublisher") // ISMS document versions this member published
   risks                            Risk[]
   tasks                            Task[]
   vendors                          Vendor[]
