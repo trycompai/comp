@@ -1,4 +1,5 @@
 import { db } from '@db';
+import { orgParticipantMemberWhereForFlag } from '../../utils/org-participation';
 import { logger, tags, task } from '@trigger.dev/sdk';
 import { BrowserbaseService } from '../../browserbase/browserbase.service';
 import { triggerEmail } from '../../email/trigger-email';
@@ -39,12 +40,17 @@ async function sendTaskStatusChangeEmails(params: {
   const { organizationId, taskId, taskTitle, oldStatus, newStatus } = params;
 
   try {
-    // Get organization, task assignee, and org owners
-    const [organization, task, allMembers] = await Promise.all([
-      db.organization.findUnique({
-        where: { id: organizationId },
-        select: { name: true },
-      }),
+    // Use the shared participation rule so this path stays aligned with the
+    // other task notifiers: internal (platform-operated) orgs include platform
+    // admins; other orgs exclude them.
+    const organization = await db.organization.findUnique({
+      where: { id: organizationId },
+      select: { name: true, isInternal: true },
+    });
+    const participantWhere = orgParticipantMemberWhereForFlag(
+      organization?.isInternal ?? false,
+    );
+    const [task, allMembers] = await Promise.all([
       db.task.findUnique({
         where: { id: taskId },
         select: {
@@ -65,7 +71,7 @@ async function sendTaskStatusChangeEmails(params: {
         where: {
           organizationId,
           deactivated: false,
-          user: { role: { not: 'admin' } },
+          ...participantWhere,
         },
         select: {
           role: true,

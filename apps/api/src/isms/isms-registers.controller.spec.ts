@@ -10,6 +10,8 @@ import { IsmsContextIssueService } from './isms-context-issue.service';
 import { IsmsInterestedPartyService } from './isms-interested-party.service';
 import { IsmsRequirementService } from './isms-requirement.service';
 import { IsmsObjectiveService } from './isms-objective.service';
+import { IsmsRoleService } from './isms-role.service';
+import { IsmsRoleAssignmentService } from './isms-role-assignment.service';
 import { IsmsNarrativeService } from './isms-narrative.service';
 
 jest.mock('../auth/auth.server', () => ({
@@ -37,6 +39,12 @@ jest.mock('./isms-requirement.service', () => ({
 }));
 jest.mock('./isms-objective.service', () => ({
   IsmsObjectiveService: class {},
+}));
+jest.mock('./isms-role.service', () => ({
+  IsmsRoleService: class {},
+}));
+jest.mock('./isms-role-assignment.service', () => ({
+  IsmsRoleAssignmentService: class {},
 }));
 jest.mock('./isms-narrative.service', () => ({
   IsmsNarrativeService: class {},
@@ -68,6 +76,16 @@ describe('IsmsRegistersController', () => {
     update: jest.fn(),
     remove: jest.fn(),
   };
+  const roleService = {
+    create: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
+  };
+  const roleAssignmentService = {
+    create: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
+  };
   const narrativeService = { save: jest.fn() };
 
   const mockGuard = { canActivate: jest.fn().mockReturnValue(true) };
@@ -83,6 +101,8 @@ describe('IsmsRegistersController', () => {
         },
         { provide: IsmsRequirementService, useValue: requirementService },
         { provide: IsmsObjectiveService, useValue: objectiveService },
+        { provide: IsmsRoleService, useValue: roleService },
+        { provide: IsmsRoleAssignmentService, useValue: roleAssignmentService },
         { provide: IsmsNarrativeService, useValue: narrativeService },
       ],
     })

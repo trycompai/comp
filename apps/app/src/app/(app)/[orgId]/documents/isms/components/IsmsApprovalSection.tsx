@@ -33,6 +33,11 @@ interface IsmsApprovalSectionProps {
   canManage: boolean;
   currentMemberId: string | null;
   approverOptions: ApproverOption[];
+  /**
+   * When set, "Submit for approval" is disabled and this reason is shown — used
+   * by documents with generate-time validation (e.g. Roles, clause 5.3).
+   */
+  submitBlockedReason?: string | null;
   onSubmitForApproval: (approverId: string) => Promise<void>;
   onApprove: () => Promise<void>;
   onDecline: () => Promise<void>;
@@ -55,6 +60,7 @@ export function IsmsApprovalSection({
   canManage,
   currentMemberId,
   approverOptions,
+  submitBlockedReason,
   onSubmitForApproval,
   onApprove,
   onDecline,
@@ -74,6 +80,15 @@ export function IsmsApprovalSection({
     approverOptions.find((option) => option.id === document.approverId)?.name ?? 'an approver';
   const approvedDate = formatDate(document.approvedAt);
   const declinedDate = formatDate(document.declinedAt);
+
+  // Versioning context (CS-701): a published version can stay live while the
+  // draft is edited. `hasDraftChanges` = a published version exists but the
+  // working draft is no longer approved (edits in progress).
+  const publishedVersion = document.currentVersion?.version ?? null;
+  const hasPublishedVersion = publishedVersion != null;
+  const nextDraftVersion = (publishedVersion ?? 0) + 1;
+  const hasDraftChanges =
+    hasPublishedVersion && (isDeclined || (!isApproved && !isPending));
 
   // The plain submit button is only offered on un-submitted drafts. Pending and
   // resolved (approved / declined) documents render their own state instead.
@@ -98,13 +113,29 @@ export function IsmsApprovalSection({
     <div className="flex flex-col gap-3">
       {isApproved && (
         <Alert variant="success">
-          <AlertTitle>Approved</AlertTitle>
+          <AlertTitle>
+            Approved{publishedVersion ? ` · Published as v${publishedVersion}` : ''}
+          </AlertTitle>
           <AlertDescription>
             This document was approved by{' '}
             <Text as="span" size="sm" weight="medium">
               {approverName}
             </Text>
             {approvedDate ? ` on ${approvedDate}` : ''}.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {hasDraftChanges && (
+        <Alert>
+          <AlertTitle>Editing creates a new draft</AlertTitle>
+          <AlertDescription>
+            Published version{' '}
+            <Text as="span" size="sm" weight="medium">
+              v{publishedVersion}
+            </Text>{' '}
+            stays live and exportable. Your changes are an in-progress draft{' '}
+            {`(v${nextDraftVersion})`} — submit it for approval to publish.
           </AlertDescription>
         </Alert>
       )}
@@ -149,10 +180,20 @@ export function IsmsApprovalSection({
       )}
 
       {(showSubmitButton || showResubmitButton) && (
-        <div className="flex justify-start">
-          <Button type="button" variant="secondary" onClick={() => setIsDialogOpen(true)}>
+        <div className="flex flex-col items-start gap-1">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => setIsDialogOpen(true)}
+            disabled={!!submitBlockedReason}
+          >
             {showResubmitButton ? 'Resubmit for approval' : 'Submit for approval'}
           </Button>
+          {submitBlockedReason ? (
+            <Text size="sm" variant="muted">
+              {submitBlockedReason}
+            </Text>
+          ) : null}
         </div>
       )}
 

@@ -1,6 +1,7 @@
 import { NotFoundException } from '@nestjs/common';
 import { db } from '@db';
 import { IsmsService } from './isms.service';
+import type { IsmsVersionService } from './isms-version.service';
 
 jest.mock('@db', () => ({
   db: {
@@ -20,11 +21,11 @@ jest.mock('./documents/data-source', () => ({
 jest.mock('./documents/generate', () => ({
   runDerivation: jest.fn(),
 }));
-jest.mock('./utils/version-snapshot', () => ({
-  upsertLatestSnapshotVersion: jest.fn(),
-}));
 
 const mockDb = jest.mocked(db);
+
+// ensureSetup never touches the version service; a bare stub satisfies the ctor.
+const versionService = {} as unknown as IsmsVersionService;
 
 /** Convenience accessor for the first createMany call's `data` array. */
 const createManyData = () =>
@@ -35,7 +36,7 @@ describe('IsmsService ensureSetup', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new IsmsService();
+    service = new IsmsService(versionService);
     (mockDb.control.findMany as jest.Mock).mockResolvedValue([]);
     (mockDb.ismsDocument.createMany as jest.Mock).mockResolvedValue({
       count: 0,
@@ -87,6 +88,29 @@ describe('IsmsService ensureSetup', () => {
         // The findMany that ran was the list query, not a provisioning probe.
         expect(mockDb.ismsDocument.findMany).toHaveBeenCalledTimes(1);
         expect(result.documents).toHaveLength(1);
+      });
+
+      it('reports hasApprovedVersion from a published version OR an approved status', async () => {
+        (mockDb.frameworkEditorFramework.findUnique as jest.Mock).mockResolvedValue({
+          id: 'fw_1',
+          requirements: [],
+        });
+        (mockDb.ismsDocument.findMany as jest.Mock).mockResolvedValueOnce([
+          // Published version exists.
+          { id: 'd1', type: 'isms_scope', status: 'draft', requirementId: null, currentVersionId: 'isms_ver_1' },
+          // Approved before versioning existed: no version row, but still approved.
+          { id: 'd2', type: 'leadership_commitment', status: 'approved', requirementId: null, currentVersionId: null },
+          // Never approved.
+          { id: 'd3', type: 'objectives_plan', status: 'draft', requirementId: null, currentVersionId: null },
+        ]);
+
+        const result = await service.ensureSetup({ ...dto, canWrite: false });
+
+        expect(result.documents.map((d) => d.hasApprovedVersion)).toEqual([
+          true,
+          true,
+          false,
+        ]);
       });
     });
 

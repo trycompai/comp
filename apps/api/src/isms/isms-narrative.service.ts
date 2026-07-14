@@ -10,8 +10,10 @@ import { invalidateApprovalIfNeeded } from './utils/approval';
 
 /**
  * Saves the singleton-document narrative (clauses 4.3 ISMS Scope and 5.1
- * Leadership Commitment) into the document's latest version. The payload is
- * validated against the per-type Zod schema before persisting.
+ * Leadership Commitment) onto the document's working DRAFT (`draftNarrative`).
+ * The payload is validated against the per-type Zod schema before persisting.
+ * CS-701: the draft narrative lives on IsmsDocument, not the version row, so an
+ * edit never touches a published version.
  */
 @Injectable()
 export class IsmsNarrativeService {
@@ -51,27 +53,16 @@ export class IsmsNarrativeService {
       JSON.stringify(parsed.data),
     );
 
-    // The latest-version read, approval invalidation, and the narrative write
-    // must all be atomic: reading the latest version outside the transaction
-    // lets a concurrent save update a stale version or hit the unique
-    // constraint, and a failed write must not leave the document reverted to
-    // draft without the new content.
+    // Approval invalidation and the narrative write must be atomic: a failed
+    // write must not leave the document reverted to draft without the new
+    // content. Reverting to draft leaves the published `currentVersion` intact —
+    // v1 stays live while the draft is edited.
     return db.$transaction(async (tx) => {
-      const latest = await tx.ismsDocumentVersion.findFirst({
-        where: { documentId, isLatest: true },
-      });
-
       await invalidateApprovalIfNeeded({ tx, documentId });
-
-      if (latest) {
-        return tx.ismsDocumentVersion.update({
-          where: { id: latest.id },
-          data: { narrative: value },
-        });
-      }
-
-      return tx.ismsDocumentVersion.create({
-        data: { documentId, version: 1, isLatest: true, narrative: value },
+      return tx.ismsDocument.update({
+        where: { id: documentId },
+        data: { draftNarrative: value },
+        select: { id: true, draftNarrative: true },
       });
     });
   }
