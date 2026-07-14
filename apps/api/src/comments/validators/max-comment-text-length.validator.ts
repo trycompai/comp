@@ -24,7 +24,7 @@ export class MaxCommentTextLengthConstraint implements ValidatorConstraintInterf
   validate(value: unknown, args: ValidationArguments): boolean {
     if (typeof value !== 'string') return false;
     const maxLength = (args.constraints[0] as number) ?? DEFAULT_MAX_LENGTH;
-    const length = extractCommentPlainText(value).length;
+    const length = [...extractCommentPlainText(value)].length;
     return length > 0 && length <= maxLength;
   }
 
