@@ -1,3 +1,11 @@
+## [3.101.2](https://github.com/trycompai/comp/compare/v3.101.1...v3.101.2) (2026-07-14)
+
+
+### Bug Fixes
+
+* **api:** pentest retry follow-ups from production review ([#3400](https://github.com/trycompai/comp/issues/3400)) ([e6e9239](https://github.com/trycompai/comp/commit/e6e9239dd4b4cecaea642f828cdd29f14993359e))
+* **api:** revert deterministic retry billing id (caused free-scan on redelivery) ([#3401](https://github.com/trycompai/comp/issues/3401)) ([6033674](https://github.com/trycompai/comp/commit/6033674a51c75bb1c2f390008dabcf920855495e))
+
 ## [3.101.1](https://github.com/trycompai/comp/compare/v3.101.0...v3.101.1) (2026-07-13)
 
 
