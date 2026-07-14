@@ -44,7 +44,9 @@ jest.mock('@db', () => ({
     securityPenetrationTestRun: {
       upsert: jest.fn(),
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
       findMany: jest.fn(),
+      updateMany: jest.fn(),
     },
     securityPenetrationTestFindingContext: {
       findMany: jest.fn(),
@@ -67,7 +69,9 @@ type MockDb = {
   securityPenetrationTestRun: {
     upsert: jest.Mock;
     findUnique: jest.Mock;
+    findFirst: jest.Mock;
     findMany: jest.Mock;
+    updateMany: jest.Mock;
   };
   securityPenetrationTestFindingContext: {
     findMany: jest.Mock;
@@ -143,9 +147,35 @@ describe('SecurityPenetrationTestsService', () => {
     mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValue({
       organizationId: 'org_123',
     });
+    // findFirst is used three ways. Defaults: not cancelled, no retry child,
+    // and the active attempt resolves to the run itself (reflect the root).
+    mockedDb.securityPenetrationTestRun.findFirst.mockImplementation(
+      (args?: {
+        where?: {
+          rootRunId?: string;
+          retryBlockedAt?: unknown;
+          retryOfProviderRunId?: string;
+        };
+      }) => {
+        const where = args?.where ?? {};
+        if ('retryBlockedAt' in where) return Promise.resolve(null); // not cancelled
+        if ('retryOfProviderRunId' in where) return Promise.resolve(null); // no child
+        if (where.rootRunId) {
+          return Promise.resolve({
+            providerRunId: where.rootRunId,
+            attemptNumber: 1,
+          });
+        }
+        return Promise.resolve(null);
+      },
+    );
     mockedDb.securityPenetrationTestRun.findMany.mockResolvedValue([
-      { providerRunId: 'run_123' },
+      { providerRunId: 'run_123', rootRunId: 'run_123', attemptNumber: 1 },
     ]);
+    // Retry idempotency claim succeeds by default.
+    mockedDb.securityPenetrationTestRun.updateMany.mockResolvedValue({
+      count: 1,
+    });
     // Default: no stored finding-context notes for the target.
     mockedDb.securityPenetrationTestFindingContext.findMany.mockResolvedValue(
       [],
@@ -1032,5 +1062,405 @@ describe('SecurityPenetrationTestsService', () => {
     await expect(service.getReport('org_123', 'missing')).rejects.toThrow(
       HttpException,
     );
+  });
+
+  describe('auto-retry lineage', () => {
+    it('persists self-root lineage for an original run', async () => {
+      fetchMock.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ id: 'run_orig', status: 'provisioning' }),
+          { status: 200 },
+        ),
+      );
+
+      await service.createReport('org_123', {
+        targetUrl: 'https://app.example.com',
+        scanDepth: 'deep',
+        checks: ['xss'],
+      });
+
+      expect(mockedDb.securityPenetrationTestRun.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          create: expect.objectContaining({
+            providerRunId: 'run_orig',
+            rootRunId: 'run_orig',
+            attemptNumber: 1,
+            retryOfProviderRunId: null,
+            scanParams: expect.objectContaining({
+              targetUrl: 'https://app.example.com',
+              scanDepth: 'deep',
+              checks: ['xss'],
+            }),
+          }),
+        }),
+      );
+    });
+
+    it('persists inherited lineage for a retry run', async () => {
+      fetchMock.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ id: 'run_retry', status: 'provisioning' }),
+          { status: 200 },
+        ),
+      );
+
+      await service.createReport(
+        'org_123',
+        { targetUrl: 'https://app.example.com' },
+        {
+          attemptNumber: 2,
+          rootRunId: 'run_orig',
+          retryOfProviderRunId: 'run_orig',
+        },
+      );
+
+      expect(mockedDb.securityPenetrationTestRun.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          create: expect.objectContaining({
+            providerRunId: 'run_retry',
+            rootRunId: 'run_orig',
+            attemptNumber: 2,
+            retryOfProviderRunId: 'run_orig',
+          }),
+        }),
+      );
+    });
+
+    it('spawns a retry with the same params (incl. pipeline + context) and incremented attempt', async () => {
+      mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValueOnce({
+        organizationId: 'org_123',
+        attemptNumber: 1,
+        rootRunId: 'run_orig',
+        scanParams: {
+          targetUrl: 'https://app.example.com',
+          scanDepth: 'deep',
+          checks: ['xss'],
+          pipelineTesting: true,
+          additionalContext: 'prior briefing',
+        },
+      });
+      fetchMock.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ id: 'run_retry', status: 'provisioning' }),
+          { status: 200 },
+        ),
+      );
+
+      await service['maybeAutoRetry']('run_orig');
+
+      const createBody = await getRequestBody();
+      expect(createBody).toEqual(
+        expect.objectContaining({
+          targetUrl: 'https://app.example.com',
+          scanDepth: 'deep',
+          checks: ['xss'],
+          pipelineTesting: true,
+        }),
+      );
+      // The user's briefing survives the round-trip (re-persisted for any
+      // further retry).
+      expect(mockedDb.securityPenetrationTestRun.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          create: expect.objectContaining({
+            providerRunId: 'run_retry',
+            rootRunId: 'run_orig',
+            attemptNumber: 2,
+            retryOfProviderRunId: 'run_orig',
+            scanParams: expect.objectContaining({
+              pipelineTesting: true,
+              additionalContext: 'prior briefing',
+            }),
+          }),
+        }),
+      );
+    });
+
+    it('blocks auto-retry across the whole lineage when a run is cancelled', async () => {
+      mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValueOnce({
+        rootRunId: 'run_orig',
+      });
+
+      await service['blockAutoRetry']('run_cancelled');
+
+      // Sets the distinct cancellation marker on every attempt sharing the
+      // lineage root, so a late `failed` for any member can't restart it.
+      expect(
+        mockedDb.securityPenetrationTestRun.updateMany,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { rootRunId: 'run_orig', retryBlockedAt: null },
+          data: expect.objectContaining({ retryBlockedAt: expect.any(Date) }),
+        }),
+      );
+    });
+
+    it('propagates a DB failure while blocking so the cancellation redelivers', async () => {
+      mockedDb.securityPenetrationTestRun.updateMany.mockRejectedValueOnce(
+        new Error('db unavailable'),
+      );
+
+      // Rethrows (not swallowed) so the webhook 5xx's and Maced redelivers the
+      // cancellation until the block is durably stored.
+      await expect(
+        service['blockAutoRetry']('run_cancelled'),
+      ).rejects.toThrow();
+    });
+
+    it('does not retry a cancelled lineage even if a late failed arrives', async () => {
+      mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValueOnce({
+        organizationId: 'org_123',
+        attemptNumber: 1,
+        rootRunId: 'run_orig',
+        scanParams: { targetUrl: 'https://app.example.com' },
+      });
+      // Block check (first findFirst) reports the lineage is cancelled.
+      mockedDb.securityPenetrationTestRun.findFirst.mockResolvedValueOnce({
+        providerRunId: 'run_orig',
+      });
+
+      await service['maybeAutoRetry']('run_orig');
+
+      expect(mockedDb.securityPenetrationTestRun.upsert).not.toHaveBeenCalled();
+    });
+
+    it('does not retry when a retry child already exists (idempotent)', async () => {
+      mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValueOnce({
+        organizationId: 'org_123',
+        attemptNumber: 1,
+        rootRunId: 'run_orig',
+        scanParams: { targetUrl: 'https://app.example.com' },
+      });
+      // Block check → not cancelled; child check → a child already exists.
+      mockedDb.securityPenetrationTestRun.findFirst
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ providerRunId: 'run_retry' });
+
+      await service['maybeAutoRetry']('run_orig');
+
+      expect(mockedDb.securityPenetrationTestRun.upsert).not.toHaveBeenCalled();
+    });
+
+    it('does not retry once the lineage is exhausted', async () => {
+      mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValueOnce({
+        organizationId: 'org_123',
+        attemptNumber: 3,
+        rootRunId: 'run_orig',
+        scanParams: { targetUrl: 'https://app.example.com' },
+      });
+
+      await service['maybeAutoRetry']('run_orig');
+
+      expect(
+        mockedDb.securityPenetrationTestRun.updateMany,
+      ).not.toHaveBeenCalled();
+      expect(mockedDb.securityPenetrationTestRun.upsert).not.toHaveBeenCalled();
+    });
+
+    it('does not retry an orphan run with no ownership row', async () => {
+      mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValueOnce(
+        null,
+      );
+
+      await service['maybeAutoRetry']('run_ghost');
+
+      expect(
+        mockedDb.securityPenetrationTestRun.updateMany,
+      ).not.toHaveBeenCalled();
+      expect(mockedDb.securityPenetrationTestRun.upsert).not.toHaveBeenCalled();
+    });
+
+    it('rethrows when the retry spawn fails so the webhook redelivers (durable via child-existence)', async () => {
+      mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValueOnce({
+        organizationId: 'org_123',
+        attemptNumber: 1,
+        rootRunId: 'run_orig',
+        scanParams: { targetUrl: 'https://app.example.com' },
+      });
+      fetchMock.mockResolvedValueOnce(
+        new Response('{"error":"boom"}', { status: 500 }),
+      );
+
+      // No child is created, so it rethrows → webhook 5xx → Maced redelivers →
+      // next delivery sees no child and re-attempts. Nothing to release.
+      await expect(service['maybeAutoRetry']('run_orig')).rejects.toThrow();
+    });
+
+    it('collapses a retry lineage to a single active-attempt entry', async () => {
+      mockedDb.securityPenetrationTestRun.findMany.mockResolvedValueOnce([
+        { providerRunId: 'run_orig', rootRunId: 'run_orig', attemptNumber: 1 },
+        { providerRunId: 'run_retry', rootRunId: 'run_orig', attemptNumber: 2 },
+      ]);
+      fetchMock.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify([
+            {
+              id: 'run_orig',
+              status: 'failed',
+              targetUrl: 'https://a.com',
+              createdAt: '2026-01-01T00:00:00.000Z',
+              updatedAt: '2026-01-01T00:00:00.000Z',
+              error: 'Sandbox container deleted by Daytona',
+            },
+            {
+              id: 'run_retry',
+              status: 'running',
+              targetUrl: 'https://a.com',
+              createdAt: '2026-01-01T00:00:00.000Z',
+              updatedAt: '2026-01-01T00:05:00.000Z',
+            },
+          ]),
+          { status: 200 },
+        ),
+      );
+
+      const result = await service.listReports('org_123');
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual(
+        expect.objectContaining({ id: 'run_orig', status: 'running' }),
+      );
+    });
+
+    it('masks a fresh failed non-final attempt as in-progress', async () => {
+      mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValue({
+        organizationId: 'org_123',
+        rootRunId: 'run_orig',
+      });
+      mockedDb.securityPenetrationTestRun.findFirst.mockResolvedValueOnce({
+        providerRunId: 'run_orig',
+        attemptNumber: 1,
+      });
+      const recent = new Date().toISOString();
+      fetchMock.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            id: 'run_orig',
+            status: 'failed',
+            targetUrl: 'https://a.com',
+            createdAt: recent,
+            updatedAt: recent,
+            error: 'Sandbox container deleted by Daytona',
+          }),
+          { status: 200 },
+        ),
+      );
+
+      const report = await service.getReport('org_123', 'run_orig');
+
+      expect(report.status).toBe('provisioning');
+      expect(report.error).toBeNull();
+      expect(report.failedReason).toBeNull();
+    });
+
+    it('reveals a clean, white-labeled failure once the lineage is exhausted', async () => {
+      mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValue({
+        organizationId: 'org_123',
+        rootRunId: 'run_orig',
+      });
+      mockedDb.securityPenetrationTestRun.findFirst.mockResolvedValueOnce({
+        providerRunId: 'run_retry2',
+        attemptNumber: 3,
+      });
+      const recent = new Date().toISOString();
+      fetchMock.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            id: 'run_retry2',
+            status: 'failed',
+            targetUrl: 'https://a.com',
+            createdAt: recent,
+            updatedAt: recent,
+            error:
+              'Sandbox container deleted by Daytona infrastructure — backup/restore race condition',
+          }),
+          { status: 200 },
+        ),
+      );
+
+      const report = await service.getReport('org_123', 'run_orig');
+
+      expect(report.status).toBe('failed');
+      expect(report.id).toBe('run_orig');
+      expect(report.failedReason).toContain('temporary infrastructure issue');
+      expect(report.failedReason?.toLowerCase()).not.toContain('daytona');
+      expect(report.error?.toLowerCase()).not.toContain('daytona');
+    });
+
+    it('masks progress status as in-progress for a failed non-final attempt', async () => {
+      mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValue({
+        organizationId: 'org_123',
+        rootRunId: 'run_orig',
+      });
+      const recent = new Date().toISOString();
+      // getReportResolved.get() then progress() — two provider calls.
+      fetchMock
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              id: 'run_orig',
+              status: 'failed',
+              targetUrl: 'https://a.com',
+              createdAt: recent,
+              updatedAt: recent,
+            }),
+            { status: 200 },
+          ),
+        )
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              status: 'failed',
+              completedAgents: 2,
+              totalAgents: 5,
+              elapsedMs: 1000,
+            }),
+            { status: 200 },
+          ),
+        );
+
+      const progress = await service.getReportProgress('org_123', 'run_orig');
+
+      expect(progress.status).toBe('provisioning');
+    });
+
+    it('exposes failed progress once the lineage is exhausted', async () => {
+      mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValue({
+        organizationId: 'org_123',
+        rootRunId: 'run_orig',
+      });
+      mockedDb.securityPenetrationTestRun.findFirst.mockResolvedValueOnce({
+        providerRunId: 'run_retry2',
+        attemptNumber: 3,
+      });
+      const recent = new Date().toISOString();
+      fetchMock
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              id: 'run_retry2',
+              status: 'failed',
+              targetUrl: 'https://a.com',
+              createdAt: recent,
+              updatedAt: recent,
+            }),
+            { status: 200 },
+          ),
+        )
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              status: 'failed',
+              completedAgents: 2,
+              totalAgents: 5,
+              elapsedMs: 1000,
+            }),
+            { status: 200 },
+          ),
+        );
+
+      const progress = await service.getReportProgress('org_123', 'run_orig');
+
+      expect(progress.status).toBe('failed');
+    });
   });
 });
