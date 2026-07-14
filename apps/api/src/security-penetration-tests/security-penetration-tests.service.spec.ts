@@ -1169,15 +1169,16 @@ describe('SecurityPenetrationTestsService', () => {
       // Deterministic idempotency key tied to the parent → Maced dedupes
       // concurrent duplicate failure webhooks into one provider scan.
       expect(getRequestHeader('Idempotency-Key')).toBe('retry:run_orig');
-      // Deterministic billing reservation id (idempotent on sourceResourceId)
-      // so concurrent duplicates debit the allowance exactly once.
+      // Billing reservation uses a unique (non-deterministic) id so a
+      // failed-then-redelivered retry re-debits correctly instead of reusing a
+      // refunded-but-still-recorded consume key (which would run the scan free).
       expect(
         mockBillingEntitlementsService.tryConsumeIncludedUsageForProduct,
       ).toHaveBeenCalledWith(
         expect.objectContaining({
           organizationId: 'org_123',
           productKey: 'pentest',
-          sourceResourceId: 'pending:retry:run_orig',
+          sourceResourceId: expect.not.stringContaining('retry:run_orig'),
         }),
       );
       // The user's briefing survives the round-trip (re-persisted for any
