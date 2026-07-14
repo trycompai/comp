@@ -1,15 +1,26 @@
 const fs = require('fs');
 const path = require('path');
 
-// Recursively list *.js files relative to `dir`, using forward slashes.
-// Avoids the `glob` package (glob→minimatch→brace-expansion pulls in a
+// Recursively list *.js files under `dir`, relative to it, using forward
+// slashes. Manual recursion (via withFileTypes, available since Node 10)
+// rather than readdirSync's `recursive` option, which is Node >=18.17 only —
+// this keeps the script valid for the repo's `engines.node: >=18`. Also
+// avoids the `glob` package (glob→minimatch→brace-expansion pulls in a
 // balanced-match resolution that is fragile under bun's hoisting on CI).
 function listJsFiles(dir) {
-  return fs
-    .readdirSync(dir, { recursive: true })
-    .filter((f) => typeof f === 'string' && f.endsWith('.js'))
-    .map((f) => f.split(path.sep).join('/'))
-    .sort();
+  const out = [];
+  const walk = (current) => {
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      const full = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+      } else if (entry.isFile() && entry.name.endsWith('.js')) {
+        out.push(path.relative(dir, full).split(path.sep).join('/'));
+      }
+    }
+  };
+  walk(dir);
+  return out.sort();
 }
 
 const pkgPath = path.join(__dirname, '../package.json');
