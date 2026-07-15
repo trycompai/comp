@@ -7,6 +7,7 @@ import type {
   AuthStatusResponse,
   BrowserAuthProfile,
   BrowserContextStatus,
+  BrowserLoginCredentials,
   NavigateResponse,
   ResolveAuthProfileResponse,
   SessionResponse,
@@ -45,7 +46,7 @@ export function useBrowserContext() {
     }
   }, []);
 
-  const startAuth = useCallback(async (url: string) => {
+  const startAuth = useCallback(async (url: string, credentials?: BrowserLoginCredentials) => {
     let startedSessionId: string | null = null;
     try {
       setIsStartingAuth(true);
@@ -58,6 +59,24 @@ export function useBrowserContext() {
         throw new Error(profileRes.error || 'Failed to create auth profile');
       }
       setProfileId(profileRes.data.profile.id);
+
+      // Store the login so scheduled and manual runs can sign in on their own.
+      // Failure here is non-fatal — the user can still connect manually below.
+      if (credentials?.username && credentials?.password) {
+        const credRes = await apiClient.post(
+          `/v1/browserbase/profiles/${profileRes.data.profile.id}/credentials`,
+          {
+            username: credentials.username,
+            password: credentials.password,
+            totpSeed: credentials.totpSeed?.trim() || undefined,
+          },
+        );
+        if (credRes.error) {
+          toast.warning(
+            "Saved the site, but couldn't store the login for automatic sign-in. You can still connect manually.",
+          );
+        }
+      }
 
       const sessionRes = await apiClient.post<SessionResponse>(
         `/v1/browserbase/profiles/${profileRes.data.profile.id}/session`,

@@ -54,6 +54,12 @@ export interface BrowserAuthProfile {
   vaultConnectionId?: string | null;
 }
 
+export interface BrowserLoginCredentials {
+  username: string;
+  password: string;
+  totpSeed?: string;
+}
+
 export interface ResolveAuthProfileResponse {
   profile: BrowserAuthProfile;
   isNew: boolean;

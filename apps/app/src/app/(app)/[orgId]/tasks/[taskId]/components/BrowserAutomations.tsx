@@ -9,6 +9,8 @@ import {
   BrowserAutomationConfigDialog,
   BrowserAutomationsList,
   BrowserLiveView,
+  ConnectCredentialsForm,
+  type ConnectCredentialsFormData,
   EmptyWithContextState,
   NoContextState,
 } from './browser-automations';
@@ -26,6 +28,7 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
     automation?: BrowserAutomation;
   }>({ open: false, mode: 'create' });
   const [authUrl, setAuthUrl] = useState('https://github.com');
+  const [connectOpen, setConnectOpen] = useState(false);
   const authHostname = (() => {
     try {
       return new URL(authUrl).hostname;
@@ -52,6 +55,28 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
     onNeedsReauth: handleNeedsReauth,
     onComplete: automations.fetchAutomations,
   });
+
+  const handleStartConnect = useCallback((url: string) => {
+    setAuthUrl(url);
+    setConnectOpen(true);
+  }, []);
+
+  const handleSubmitCredentials = useCallback(
+    (data: ConnectCredentialsFormData) => {
+      setAuthUrl(data.url);
+      context.startAuth(data.url, {
+        username: data.username,
+        password: data.password,
+        totpSeed: data.totpSeed,
+      });
+    },
+    [context],
+  );
+
+  // Close the credentials step once the connection is established.
+  useEffect(() => {
+    if (context.status === 'has-context') setConnectOpen(false);
+  }, [context.status]);
 
   // Initialize
   useEffect(() => {
@@ -90,7 +115,22 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
         variant="auth"
         isChecking={context.status === 'checking'}
         onSave={() => context.checkAuth(authUrl)}
-        onCancel={context.cancelAuth}
+        onCancel={() => {
+          context.cancelAuth();
+          setConnectOpen(false);
+        }}
+      />
+    );
+  }
+
+  // Connect flow — step 1: credentials (before the live sign-in above)
+  if (connectOpen) {
+    return (
+      <ConnectCredentialsForm
+        initialUrl={authUrl}
+        isSubmitting={context.isStartingAuth}
+        onSubmit={handleSubmitCredentials}
+        onCancel={() => setConnectOpen(false)}
       />
     );
   }
@@ -103,13 +143,7 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
   // No context - show setup prompt (only for non-manual tasks)
   if (!isManualTask && context.status === 'no-context' && automations.automations.length === 0) {
     return (
-      <NoContextState
-        isStartingAuth={context.isStartingAuth}
-        onStartAuth={(url) => {
-          setAuthUrl(url);
-          context.startAuth(url);
-        }}
-      />
+      <NoContextState isStartingAuth={context.isStartingAuth} onStartAuth={handleStartConnect} />
     );
   }
 
