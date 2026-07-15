@@ -1,23 +1,8 @@
 'use client';
 
-import { Checkmark, Locked } from '@trycompai/design-system/icons';
-import type { LoginAnalysis } from '../../hooks/types';
+import { Checkmark } from '@trycompai/design-system/icons';
 
 const RAIL_STEPS = ['Vendor site', 'Check', 'Sign in', 'Details', 'Done'];
-
-// Human labels for detected login methods — CSS `capitalize` would render
-// acronyms wrong ("Sso"). Fall back to first-letter capitalization otherwise.
-const METHOD_LABELS: Record<string, string> = {
-  password: 'Password',
-  sso: 'SSO',
-  passkey: 'Passkey',
-};
-
-function methodLabel(method: string): string {
-  return (
-    METHOD_LABELS[method] ?? method.charAt(0).toUpperCase() + method.slice(1)
-  );
-}
 
 interface ConnectFlowRailProps {
   title: string;
@@ -26,7 +11,12 @@ interface ConnectFlowRailProps {
   currentIndex: number;
   allDone?: boolean;
   detecting?: boolean;
-  analysis?: LoginAnalysis | null;
+  /**
+   * Show the "what we detect" panel. Only relevant before the user picks a
+   * method — once the chooser lists the methods, repeating them here is
+   * redundant, so the flow turns this off.
+   */
+  showDetectPanel?: boolean;
 }
 
 export function ConnectFlowRail({
@@ -35,7 +25,7 @@ export function ConnectFlowRail({
   currentIndex,
   allDone = false,
   detecting = false,
-  analysis,
+  showDetectPanel = false,
 }: ConnectFlowRailProps) {
   return (
     <div className="flex flex-col gap-5 border-b border-border bg-muted p-5 sm:border-b-0 sm:border-r">
@@ -73,33 +63,19 @@ export function ConnectFlowRail({
         })}
       </div>
 
-      <div className="mt-auto flex flex-col gap-2 rounded-md border border-border bg-background p-2.5">
-        <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-          {analysis ? 'Detected' : 'What we detect appears here'}
-        </span>
-        {detecting && (
-          <>
-            <div className="h-2 w-4/5 animate-pulse rounded bg-accent" />
-            <div className="h-2 w-3/5 animate-pulse rounded bg-accent" />
-          </>
-        )}
-        {analysis?.detectedMethods.map((method) => (
-          <div key={method} className="flex items-center gap-1.5">
-            <Checkmark size={11} className="text-primary" />
-            <span className="text-xs text-foreground">{methodLabel(method)}</span>
-          </div>
-        ))}
-        {analysis && (
-          <div className="flex items-center gap-1.5 border-t border-border pt-2 text-xs text-muted-foreground">
-            <Locked size={11} className="shrink-0" />
-            {analysis.recommendation.category === 'ready'
-              ? 'Fully unattended — no check-ins expected'
-              : analysis.recommendation.category === 'works_with_checkins'
-                ? 'Occasional re-sign-in · we’ll email you'
-                : 'Manual setup'}
-          </div>
-        )}
-      </div>
+      {showDetectPanel && (
+        <div className="mt-auto flex flex-col gap-2 rounded-md border border-border bg-background p-2.5">
+          <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+            What we detect appears here
+          </span>
+          {detecting && (
+            <>
+              <div className="h-2 w-4/5 animate-pulse rounded bg-accent" />
+              <div className="h-2 w-3/5 animate-pulse rounded bg-accent" />
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }

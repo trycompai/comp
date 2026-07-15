@@ -222,9 +222,6 @@ export function ConnectVendorLoginFlow({
                 ? 'Your turn — sign in once'
                 : 'So Comp AI can capture evidence on a schedule';
 
-  const showAnalysisInRail =
-    step === 'choose' || step === 'capture' || step === 'signing-in';
-
   return (
     <div className="overflow-hidden rounded-lg border border-border bg-card">
       <div className="grid grid-cols-1 sm:grid-cols-[250px_1fr]">
@@ -234,7 +231,7 @@ export function ConnectVendorLoginFlow({
           currentIndex={RAIL_INDEX[step]}
           allDone={step === 'connected'}
           detecting={step === 'checking'}
-          analysis={showAnalysisInRail ? analysis : null}
+          showDetectPanel={step === 'enter-url' || step === 'checking'}
         />
 
         <ConnectFlowStage
