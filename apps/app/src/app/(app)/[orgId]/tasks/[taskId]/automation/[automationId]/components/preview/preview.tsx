@@ -62,20 +62,23 @@ export function Preview({ className, disabled, url }: Props) {
   };
 
   const loadNewUrl = () => {
-    if (!iframeRef.current || !inputValue) return;
+    if (!inputValue) return;
     const safeInput = toSafeUrl(inputValue);
     if (!safeInput) {
       setError('Enter a valid http(s) URL');
       return;
     }
-    if (safeInput !== currentUrl) {
-      setIsLoading(true);
-      setError(null);
-      loadStartTime.current = Date.now();
-      iframeRef.current.src = safeInput;
-    } else {
+    if (safeInput === safeUrl) {
       refreshIframe();
+      return;
     }
+    // Drive the iframe through state (not iframeRef.current.src) so the src
+    // prop, the external-link href, and refresh/try-again all stay in sync
+    // with the URL actually shown.
+    setIsLoading(true);
+    setError(null);
+    loadStartTime.current = Date.now();
+    setCurrentUrl(safeInput);
   };
 
   const handleIframeLoad = () => {
