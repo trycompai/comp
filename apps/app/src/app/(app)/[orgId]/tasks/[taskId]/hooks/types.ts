@@ -60,6 +60,20 @@ export interface BrowserLoginCredentials {
   totpSeed?: string;
 }
 
+export type LoginRecommendationCategory = 'ready' | 'works_with_checkins' | 'manual';
+
+export interface LoginAnalysis {
+  reachable: boolean;
+  detectedMethods: string[];
+  identifierType: string;
+  extraFields: { label: string }[];
+  recommendation: {
+    category: LoginRecommendationCategory;
+    headline: string;
+    detail: string;
+  };
+}
+
 export interface ResolveAuthProfileResponse {
   profile: BrowserAuthProfile;
   isNew: boolean;

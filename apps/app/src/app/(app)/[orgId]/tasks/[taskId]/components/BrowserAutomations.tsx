@@ -9,8 +9,7 @@ import {
   BrowserAutomationConfigDialog,
   BrowserAutomationsList,
   BrowserLiveView,
-  ConnectCredentialsForm,
-  type ConnectCredentialsFormData,
+  ConnectVendorLoginFlow,
   EmptyWithContextState,
   NoContextState,
 } from './browser-automations';
@@ -56,27 +55,11 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
     onComplete: automations.fetchAutomations,
   });
 
-  const handleStartConnect = useCallback((url: string) => {
-    setAuthUrl(url);
-    setConnectOpen(true);
-  }, []);
-
-  const handleSubmitCredentials = useCallback(
-    (data: ConnectCredentialsFormData) => {
-      setAuthUrl(data.url);
-      context.startAuth(data.url, {
-        username: data.username,
-        password: data.password,
-        totpSeed: data.totpSeed,
-      });
-    },
-    [context],
-  );
-
-  // Close the credentials step once the connection is established.
-  useEffect(() => {
-    if (context.status === 'has-context') setConnectOpen(false);
-  }, [context.status]);
+  const handleConnected = useCallback(() => {
+    setConnectOpen(false);
+    context.checkContextStatus();
+    automations.fetchAutomations();
+  }, [context, automations]);
 
   // Initialize
   useEffect(() => {
@@ -105,7 +88,17 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
     );
   }
 
-  // Auth flow live view
+  // Connect flow — smart, self-contained: analyze → sign in → capture → connected
+  if (connectOpen) {
+    return (
+      <ConnectVendorLoginFlow
+        onConnected={handleConnected}
+        onCancel={() => setConnectOpen(false)}
+      />
+    );
+  }
+
+  // Auth flow live view (reconnect of an existing profile)
   if (context.showAuthFlow && context.liveViewUrl) {
     return (
       <BrowserLiveView
@@ -123,18 +116,6 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
     );
   }
 
-  // Connect flow — step 1: credentials (before the live sign-in above)
-  if (connectOpen) {
-    return (
-      <ConnectCredentialsForm
-        initialUrl={authUrl}
-        isSubmitting={context.isStartingAuth}
-        onSubmit={handleSubmitCredentials}
-        onCancel={() => setConnectOpen(false)}
-      />
-    );
-  }
-
   // For manual tasks with no existing automations, don't show empty states
   if (isManualTask && automations.automations.length === 0) {
     return null;
@@ -145,7 +126,7 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
     return (
       <NoContextState
         isStartingAuth={context.isStartingAuth}
-        onConnect={() => handleStartConnect('')}
+        onConnect={() => setConnectOpen(true)}
       />
     );
   }
