@@ -3,6 +3,7 @@ import { TaskFrequency } from '@db';
 import { BrowserAutomationCrudService } from './browser-automation-crud.service';
 import { BrowserAutomationExecutionService } from './browser-automation-execution.service';
 import { BrowserAuthProfileService } from './browser-auth-profile.service';
+import { BrowserCredentialStorageService } from './browser-credential-storage.service';
 import { BrowserEvidenceRunnerService } from './browser-evidence-runner.service';
 import { BrowserbaseScreenshotService } from './browserbase-screenshot.service';
 import { BrowserbaseSessionService } from './browserbase-session.service';
@@ -25,6 +26,7 @@ export class BrowserbaseService {
     ),
     private readonly automationExecution: BrowserAutomationExecutionService =
       new BrowserAutomationExecutionService(sessions, profiles, runner),
+    private readonly credentialStorage: BrowserCredentialStorageService = new BrowserCredentialStorageService(),
   ) {}
 
   async listAuthProfiles(organizationId: string) {
@@ -65,6 +67,16 @@ export class BrowserbaseService {
     reason?: string;
   }) {
     return this.profiles.markNeedsReauth(input);
+  }
+
+  async storeAuthProfileCredentials(input: {
+    organizationId: string;
+    profileId: string;
+    username: string;
+    password: string;
+    totpSeed?: string;
+  }) {
+    return this.credentialStorage.storeProfileCredentials(input);
   }
 
   async getOrCreateOrgContext(organizationId: string) {

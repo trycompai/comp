@@ -137,7 +137,12 @@ export class BrowserAutomationExecutionService {
       profileId: profile.id,
     });
 
-    if (profile.status !== 'verified') {
+    // A profile with stored credentials can recover an expired session on its
+    // own, so let a needs_reauth profile attempt the run instead of blocking it.
+    // Profiles that are blocked or never verified still require a human.
+    const canAutoRelogin =
+      profile.status === 'needs_reauth' && Boolean(profile.vaultProvider);
+    if (profile.status !== 'verified' && !canAutoRelogin) {
       const result = this.profileBlockedResult(profile.status);
       await this.runs.finishRun({
         runId: run.id,
@@ -188,6 +193,16 @@ export class BrowserAutomationExecutionService {
     profileId: string;
     result: BrowserEvidenceRunResult;
   }) {
+    // A successful run proves the session is valid again — clear any prior
+    // needs_reauth/blocked state (e.g. after a credential-backed auto sign-in).
+    if (input.result.success) {
+      await this.profiles.markVerified({
+        organizationId: input.organizationId,
+        profileId: input.profileId,
+      });
+      return;
+    }
+
     if (input.result.failureCode === 'needs_reauth') {
       await this.profiles.markNeedsReauth({
         organizationId: input.organizationId,

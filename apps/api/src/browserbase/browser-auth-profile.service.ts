@@ -206,6 +206,24 @@ export class BrowserAuthProfileService {
     return { profile: updated, auth };
   }
 
+  async markVerified(input: { organizationId: string; profileId: string }) {
+    const profile = await this.getProfile(input);
+    if (!profile) {
+      throw new NotFoundException('Browser auth profile not found');
+    }
+    // Avoid a needless write when the profile is already verified.
+    if (profile.status === 'verified') return profile;
+
+    return db.browserAuthProfile.update({
+      where: { id: profile.id },
+      data: {
+        status: 'verified',
+        lastVerifiedAt: new Date(),
+        blockedReason: null,
+      },
+    });
+  }
+
   async markNeedsReauth(input: {
     organizationId: string;
     profileId: string;
