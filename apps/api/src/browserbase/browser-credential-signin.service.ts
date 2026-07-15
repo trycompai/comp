@@ -5,6 +5,7 @@ import {
   classifyLoginOutcome,
   signInAndClassify,
 } from './browser-credential-login';
+import { navigateToSignIn } from './browser-login-navigation';
 import { resolveBrowserCredentialVaultAdapter } from './browser-credential-vault.factory';
 
 type Stagehand = import('@browserbasehq/stagehand').Stagehand;
@@ -31,13 +32,12 @@ const FAILURE_REASON: Record<AutoSignInFailure, string> = {
 };
 
 /**
- * Performs the connect flow's first sign-in for a profile using the credentials
- * the user just stored — the same auto-fill the scheduler uses, run once up
- * front so the person never has to type into the raw browser. Runs on the
- * profile's own Browserbase context so the resulting cookies persist for later
- * scheduled runs. It classifies the outcome (wrong password, 2FA needed, a
- * human challenge, …) so the connect flow can explain what happened and route
- * the user to the right next step.
+ * Performs the connect flow's first sign-in on a session the caller already
+ * created and is showing to the user as a live view. The user watches the
+ * auto-fill happen; if it can't finish (wrong password, 2FA, a human
+ * challenge), we leave the session open on the exact page it stopped on so the
+ * user can take over. We only close our own Stagehand handle — never the
+ * session, which the caller owns.
  */
 @Injectable()
 export class BrowserCredentialSigninService {
@@ -54,6 +54,7 @@ export class BrowserCredentialSigninService {
     organizationId: string;
     profileId: string;
     url: string;
+    sessionId: string;
   }): Promise<AutoSignInResult> {
     const profile = await this.profiles.getProfile({
       profileId: input.profileId,
@@ -63,12 +64,9 @@ export class BrowserCredentialSigninService {
       throw new NotFoundException('Browser auth profile not found');
     }
 
-    const { sessionId } = await this.sessions.createSessionWithContext(
-      profile.contextId,
-    );
     let stagehand: Stagehand | null = null;
     try {
-      stagehand = await this.sessions.createStagehand(sessionId);
+      stagehand = await this.sessions.createStagehand(input.sessionId);
       const activeStagehand = stagehand;
       const page = await this.sessions.ensureActivePage(activeStagehand);
       await page.goto(input.url, {
@@ -83,6 +81,10 @@ export class BrowserCredentialSigninService {
         await this.profiles.markVerified(input);
         return { isLoggedIn: true };
       }
+
+      // Get onto the actual sign-in form first — the entered URL may be a
+      // homepage or dashboard rather than the login page.
+      await navigateToSignIn(activeStagehand);
 
       const vault = resolveBrowserCredentialVaultAdapter();
       const { outcome } = await signInAndClassify({
@@ -99,15 +101,15 @@ export class BrowserCredentialSigninService {
 
       // Narrowed to the failure states now that logged_in is handled.
       await this.profiles.markNeedsReauth({
-        ...input,
+        organizationId: input.organizationId,
+        profileId: input.profileId,
         reason: FAILURE_REASON[outcome],
       });
       return { isLoggedIn: false, failure: outcome };
     } finally {
+      // Release our automation handle but leave the session open — the caller
+      // shows it to the user (to watch, or to take over) and closes it later.
       if (stagehand) await this.sessions.safeCloseStagehand(stagehand);
-      await this.sessions
-        .closeSession(sessionId)
-        .catch(() => undefined /* best-effort cleanup */);
     }
   }
 }

@@ -23,6 +23,9 @@ export interface AutoSigninHandle {
   runId: string;
   publicAccessToken: string;
   profileId: string;
+  /** Session the sign-in runs on — shown as a live view to watch / take over. */
+  sessionId: string;
+  liveViewUrl: string;
 }
 
 /**
@@ -82,6 +85,8 @@ export function useAutoSignin() {
         const signinRes = await apiClient.post<{
           runId: string;
           publicAccessToken: string;
+          sessionId: string;
+          liveViewUrl: string;
         }>(`/v1/browserbase/profiles/${profileId}/sign-in`, { url });
         if (signinRes.error || !signinRes.data?.runId) {
           toast.error(signinRes.error || 'Could not start the sign-in.');
@@ -92,6 +97,8 @@ export function useAutoSignin() {
           runId: signinRes.data.runId,
           publicAccessToken: signinRes.data.publicAccessToken,
           profileId,
+          sessionId: signinRes.data.sessionId,
+          liveViewUrl: signinRes.data.liveViewUrl,
         };
       } catch {
         return null;

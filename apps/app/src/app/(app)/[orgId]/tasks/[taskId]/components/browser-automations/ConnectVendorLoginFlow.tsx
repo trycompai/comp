@@ -1,16 +1,18 @@
 'use client';
 
+import { apiClient } from '@/lib/api-client';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import type { LoginAnalysis } from '../../hooks/types';
-import { useAutoSignin, type AutoSignInFailure } from '../../hooks/useAutoSignin';
+import { useAutoSignin } from '../../hooks/useAutoSignin';
 import { useBrowserContext } from '../../hooks/useBrowserContext';
 import { useLoginAnalysis } from '../../hooks/useLoginAnalysis';
 import {
   FAILED_RUN_STATUSES,
   hostnameOf,
   RAIL_INDEX,
+  railSubtitleFor,
   type Step,
 } from './connect-flow-constants';
 import {
@@ -24,6 +26,12 @@ import { ConnectFlowRail } from './ConnectFlowRail';
 import { ConnectFlowStage } from './ConnectFlowStage';
 import type { ConnectMethodKind } from './ConnectMethodChooser';
 
+interface SigninLiveView {
+  sessionId: string;
+  liveViewUrl: string;
+  profileId: string;
+}
+
 interface ConnectVendorLoginFlowProps {
   taskId: string;
   onConnected: () => void;
@@ -36,9 +44,7 @@ export function ConnectVendorLoginFlow({
   onCancel,
 }: ConnectVendorLoginFlowProps) {
   // Rehydrate an in-flight analysis if the user navigated away and came back.
-  // The Trigger.dev task keeps running server-side; this restores the UI's view
-  // of it (see connect-flow-storage). Only the analysis phase is resumable —
-  // credentials are never persisted.
+  // Only the analysis phase is resumable — credentials are never persisted.
   const persisted = useMemo(() => loadConnectState(taskId), [taskId]);
 
   const [step, setStep] = useState<Step>(persisted?.step ?? 'enter-url');
@@ -57,15 +63,19 @@ export function ConnectVendorLoginFlow({
     runId: string;
     accessToken: string;
   } | null>(null);
+  const [signinLiveView, setSigninLiveView] = useState<SigninLiveView | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
 
   const context = useBrowserContext();
   const { startAnalysis, isStarting } = useLoginAnalysis();
   const { startSignin, isStarting: isStartingSignin } = useAutoSignin();
 
-  // The analysis (browser + AI) runs as a background Trigger.dev task so it can
-  // outlast HTTP/browser timeouts. Watching `run`/`error` (rather than only
-  // onComplete) also handles the resume case, where the run may already be
-  // complete on subscribe.
+  const closeSignInSession = useCallback((sessionId: string) => {
+    void apiClient.post('/v1/browserbase/session/close', { sessionId });
+  }, []);
+
+  // Analysis (browser + AI) runs as a background task. Watching run/error also
+  // handles resume, where the run may already be complete on subscribe.
   const { run: analyzeRunState, error: analyzeError } = useRealtimeRun(
     analyzeRun?.runId ?? '',
     { accessToken: analyzeRun?.accessToken, enabled: !!analyzeRun },
@@ -94,63 +104,58 @@ export function ConnectVendorLoginFlow({
     }
   }, [analyzeRun, analyzeRunState, analyzeError]);
 
-  // The automated first sign-in also runs as a background task. On success we're
-  // connected; if it can't finish unattended (CAPTCHA, email/SMS code, SSO) we
-  // hand the live browser to the user — the credentials are already stored.
+  // The automated sign-in also runs as a background task, but on a session we
+  // show the user (they watch it). On success we're connected; on any failure we
+  // keep that same browser open so the user finishes where the bot stopped.
   const { run: signinRunState, error: signinError } = useRealtimeRun(
     signinRun?.runId ?? '',
     { accessToken: signinRun?.accessToken, enabled: !!signinRun },
   );
 
-  const { startAuth } = context;
   useEffect(() => {
     if (!signinRun) return;
 
-    const fallbackToLive = () => {
-      setSigninRun(null);
-      toast.info("We couldn't finish sign-in automatically — please finish it here.");
-      setStep('signin');
-      void startAuth(url);
-    };
-
     if (signinError) {
-      fallbackToLive();
+      setSigninRun(null);
+      toast.info('Finish the sign-in in the browser.');
+      setStep('takeover');
       return;
     }
     if (!signinRunState) return;
 
     if (signinRunState.status === 'COMPLETED') {
       const output = signinRunState.output as
-        | { isLoggedIn?: boolean; failure?: AutoSignInFailure }
+        | { isLoggedIn?: boolean; failure?: string }
         | undefined;
       setSigninRun(null);
 
       if (output?.isLoggedIn) {
+        if (signinLiveView) closeSignInSession(signinLiveView.sessionId);
+        setSigninLiveView(null);
         setStep('connected');
       } else if (output?.failure === 'invalid_credentials') {
-        // Actionable + our fault to surface: back to the form, not the browser.
+        // Fix the stored password at the source so unattended runs work later.
+        if (signinLiveView) closeSignInSession(signinLiveView.sessionId);
+        setSigninLiveView(null);
         toast.error("That username or password wasn't accepted — check and try again.");
         setStep('capture');
-      } else if (output?.failure === 'needs_2fa') {
-        toast.info(
-          'This account uses two-factor. Finish this sign-in in the browser — or add your authenticator setup key for unattended runs.',
-        );
-        setStep('signin');
-        void startAuth(url);
       } else {
-        // challenge / unknown — a human step we can't automate.
-        toast.info("We couldn't finish sign-in automatically — please finish it here.");
-        setStep('signin');
-        void startAuth(url);
+        // needs_2fa / challenge / unknown — the user finishes in the same browser.
+        toast.info(
+          output?.failure === 'needs_2fa'
+            ? 'Enter your two-factor code to finish. Add your authenticator setup key next time for unattended runs.'
+            : 'Almost there — finish the sign-in in the browser.',
+        );
+        setStep('takeover');
       }
     } else if (FAILED_RUN_STATUSES.has(signinRunState.status)) {
-      fallbackToLive();
+      setSigninRun(null);
+      toast.info('Finish the sign-in in the browser.');
+      setStep('takeover');
     }
-  }, [signinRun, signinRunState, signinError, startAuth, url]);
+  }, [signinRun, signinRunState, signinError, signinLiveView, closeSignInSession]);
 
-  // Persist the analysis phase so a page unmount (navigation, tab switch) can
-  // resume instead of forcing a restart. Only persist when there's something to
-  // resume from; never persist credential steps.
+  // Persist the analysis phase so a page unmount can resume; never persist creds.
   useEffect(() => {
     if (step === 'checking' && analyzeRun) {
       saveConnectState(taskId, { step, url, analyzeRun, analysis });
@@ -161,7 +166,7 @@ export function ConnectVendorLoginFlow({
     }
   }, [taskId, step, url, analyzeRun, analysis]);
 
-  // Live sign-in verified → connected (SSO/passkey and the fallback path).
+  // Manual/SSO live sign-in verified → connected.
   useEffect(() => {
     if (step === 'signin' && context.status === 'has-context') setStep('connected');
   }, [step, context.status]);
@@ -178,6 +183,7 @@ export function ConnectVendorLoginFlow({
     setAnalyzeRun({ runId: handle.runId, accessToken: handle.publicAccessToken });
   }, [startAnalysis, urlInput]);
 
+  const { startAuth } = context;
   const handleStartLiveSignin = useCallback(() => {
     setStep('signin');
     void startAuth(url);
@@ -206,37 +212,53 @@ export function ConnectVendorLoginFlow({
         },
       });
       if (!handle) {
-        // Storing or triggering failed (already surfaced) — let the user finish
-        // in the browser instead of dead-ending.
         handleStartLiveSignin();
         return;
       }
+      setSigninLiveView({
+        sessionId: handle.sessionId,
+        liveViewUrl: handle.liveViewUrl,
+        profileId: handle.profileId,
+      });
       setSigninRun({ runId: handle.runId, accessToken: handle.publicAccessToken });
       setStep('signing-in');
     },
     [startSignin, url, handleStartLiveSignin],
   );
 
+  const handleTakeoverVerify = useCallback(async () => {
+    if (!signinLiveView) return;
+    setIsVerifying(true);
+    try {
+      const res = await apiClient.post<{ auth: { isLoggedIn: boolean } }>(
+        `/v1/browserbase/profiles/${signinLiveView.profileId}/verify`,
+        { sessionId: signinLiveView.sessionId, url },
+      );
+      if (res.error || !res.data) {
+        toast.error(res.error || 'Could not verify the sign-in.');
+        return;
+      }
+      if (res.data.auth.isLoggedIn) {
+        closeSignInSession(signinLiveView.sessionId);
+        setSigninLiveView(null);
+        setStep('connected');
+      } else {
+        toast.error('Still not signed in — finish in the browser, then try again.');
+      }
+    } finally {
+      setIsVerifying(false);
+    }
+  }, [signinLiveView, url, closeSignInSession]);
+
   const handleCancel = useCallback(() => {
+    if (signinLiveView) closeSignInSession(signinLiveView.sessionId);
+    setSigninLiveView(null);
     void context.cancelAuth();
     onCancel();
-  }, [context, onCancel]);
+  }, [signinLiveView, closeSignInSession, context, onCancel]);
 
   const host = hostnameOf(url || urlInput);
-  const railSubtitle =
-    step === 'connected'
-      ? 'Connected'
-      : step === 'checking'
-        ? 'Checking the sign-in page'
-        : step === 'choose'
-          ? 'Pick how to sign in'
-          : step === 'capture'
-            ? 'Enter your sign-in details'
-            : step === 'signing-in'
-              ? 'Signing in for you'
-              : step === 'signin'
-                ? 'Your turn — sign in once'
-                : 'So Comp AI can capture evidence on a schedule';
+  const railSubtitle = railSubtitleFor(step);
 
   return (
     <div className="overflow-hidden rounded-lg border border-border bg-card">
@@ -264,6 +286,9 @@ export function ConnectVendorLoginFlow({
           liveViewUrl={context.liveViewUrl}
           isCheckingLive={context.status === 'checking'}
           onCheckLive={() => context.checkAuth(url)}
+          autoLiveViewUrl={signinLiveView?.liveViewUrl ?? null}
+          onTakeoverVerify={handleTakeoverVerify}
+          isVerifying={isVerifying}
           onCancel={handleCancel}
           onConnected={onConnected}
           onRetry={() => setStep('enter-url')}

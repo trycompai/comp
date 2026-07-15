@@ -20,6 +20,7 @@ export const signInVendorProfile = task({
     organizationId: string;
     profileId: string;
     url: string;
+    sessionId: string;
   }): Promise<AutoSignInResult> => {
     return signin.signInWithStoredCredentials(payload);
   },

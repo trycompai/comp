@@ -5,22 +5,32 @@ import { Button } from '@trycompai/design-system';
 interface ConnectLiveSigninProps {
   host: string;
   liveViewUrl: string | null;
-  isChecking: boolean;
-  onCheck: () => void;
+  /** Helper line under the browser. */
+  caption: string;
   onCancel: () => void;
+  /** When set, show a confirm button (e.g. "I've signed in") that runs this. */
+  onConfirm?: () => void;
+  confirmLabel?: string;
+  isConfirming?: boolean;
+  /** The automation is currently driving the browser — show a working badge. */
+  working?: boolean;
 }
 
 /**
- * The live-browser sign-in view: the user completes the vendor login themselves
- * in an embedded Browserbase session. Used for SSO / passkey and as the fallback
- * when the automated password sign-in can't finish on its own.
+ * The live-browser view. Used three ways:
+ * - watching the automated sign-in drive the browser (`working`),
+ * - taking over when it couldn't finish (`onConfirm` + `confirmLabel`),
+ * - a fully manual sign-in for SSO / passkey.
  */
 export function ConnectLiveSignin({
   host,
   liveViewUrl,
-  isChecking,
-  onCheck,
+  caption,
   onCancel,
+  onConfirm,
+  confirmLabel = "I've signed in",
+  isConfirming = false,
+  working = false,
 }: ConnectLiveSigninProps) {
   return (
     <div className="flex w-full flex-col gap-3">
@@ -40,21 +50,26 @@ export function ConnectLiveSignin({
           Opening {host}…
         </div>
       )}
-      <div className="flex items-center justify-between">
-        <div className="text-xs text-muted-foreground">
-          Sign in above, then confirm — encrypted, we record only what the automation needs.
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          {working && (
+            <span className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-border border-t-primary" />
+          )}
+          {caption}
         </div>
         <div className="flex gap-2">
           <Button variant="ghost" onClick={onCancel}>
             Cancel
           </Button>
-          <Button
-            onClick={onCheck}
-            loading={isChecking}
-            disabled={!liveViewUrl || isChecking}
-          >
-            I&apos;ve signed in
-          </Button>
+          {onConfirm && (
+            <Button
+              onClick={onConfirm}
+              loading={isConfirming}
+              disabled={!liveViewUrl || isConfirming}
+            >
+              {confirmLabel}
+            </Button>
+          )}
         </div>
       </div>
     </div>

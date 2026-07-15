@@ -28,9 +28,6 @@ const profile = {
 function makeSessions(extract: jest.Mock, act: jest.Mock) {
   const page = { goto: jest.fn().mockResolvedValue(undefined) };
   return {
-    createSessionWithContext: jest
-      .fn()
-      .mockResolvedValue({ sessionId: 'sess_1', liveViewUrl: '' }),
     createStagehand: jest.fn().mockResolvedValue({ extract, act }),
     ensureActivePage: jest.fn().mockResolvedValue(page),
     safeCloseStagehand: jest.fn().mockResolvedValue(undefined),
@@ -46,7 +43,12 @@ function makeProfiles(found: typeof profile | null) {
   };
 }
 
-const input = { organizationId: 'org_1', profileId: 'prof_1', url: 'https://app.example.com' };
+const input = {
+  organizationId: 'org_1',
+  profileId: 'prof_1',
+  url: 'https://app.example.com',
+  sessionId: 'sess_1',
+};
 
 const withCredentials = (creds: Record<string, unknown> | null) =>
   mockedResolveVault.mockReturnValue({
@@ -73,6 +75,20 @@ describe('BrowserCredentialSigninService', () => {
     return promise;
   };
 
+  it('connects to the given session and never closes it', async () => {
+    const extract = jest.fn().mockResolvedValue({ state: 'logged_in' });
+    const sessions = makeSessions(extract, jest.fn().mockResolvedValue(undefined));
+    const profiles = makeProfiles(profile);
+    withCredentials({ username: 'u', password: 'p' });
+
+    await run(sessions, profiles);
+
+    expect(sessions.createStagehand).toHaveBeenCalledWith('sess_1');
+    // Release our automation handle, but leave the session open for the user.
+    expect(sessions.safeCloseStagehand).toHaveBeenCalledTimes(1);
+    expect(sessions.closeSession).not.toHaveBeenCalled();
+  });
+
   it('marks verified without re-entering credentials when already signed in', async () => {
     const extract = jest.fn().mockResolvedValue({ state: 'logged_in' });
     const act = jest.fn().mockResolvedValue(undefined);
@@ -84,12 +100,10 @@ describe('BrowserCredentialSigninService', () => {
 
     expect(result.isLoggedIn).toBe(true);
     expect(profiles.markVerified).toHaveBeenCalledTimes(1);
-    expect(act).not.toHaveBeenCalled(); // already in — no credential fill
-    expect(sessions.closeSession).toHaveBeenCalledWith('sess_1');
+    expect(act).not.toHaveBeenCalled(); // already in — no navigation or fill
   });
 
   it('signs in with stored credentials and marks verified', async () => {
-    // Not logged in on arrival, logged in after the credential fill.
     const extract = jest
       .fn()
       .mockResolvedValueOnce({ state: 'unknown' })
@@ -102,7 +116,7 @@ describe('BrowserCredentialSigninService', () => {
     const result = await run(sessions, profiles);
 
     expect(result.isLoggedIn).toBe(true);
-    expect(act).toHaveBeenCalled();
+    expect(act).toHaveBeenCalled(); // navigate to sign-in + fill
     expect(profiles.markVerified).toHaveBeenCalledTimes(1);
     expect(profiles.markNeedsReauth).not.toHaveBeenCalled();
   });
@@ -112,8 +126,7 @@ describe('BrowserCredentialSigninService', () => {
       .fn()
       .mockResolvedValueOnce({ state: 'unknown' })
       .mockResolvedValue({ state: 'invalid_credentials' });
-    const act = jest.fn().mockResolvedValue(undefined);
-    const sessions = makeSessions(extract, act);
+    const sessions = makeSessions(extract, jest.fn().mockResolvedValue(undefined));
     const profiles = makeProfiles(profile);
     withCredentials({ username: 'user@x.com', password: 'wrong' });
 
@@ -123,6 +136,8 @@ describe('BrowserCredentialSigninService', () => {
     expect(result.failure).toBe('invalid_credentials');
     expect(profiles.markNeedsReauth).toHaveBeenCalledTimes(1);
     expect(profiles.markVerified).not.toHaveBeenCalled();
+    // Session stays open so the user can take over.
+    expect(sessions.closeSession).not.toHaveBeenCalled();
   });
 
   it('reports needs_2fa when a two-factor prompt blocks an account with no seed', async () => {
@@ -130,8 +145,7 @@ describe('BrowserCredentialSigninService', () => {
       .fn()
       .mockResolvedValueOnce({ state: 'unknown' })
       .mockResolvedValue({ state: 'needs_2fa' });
-    const act = jest.fn().mockResolvedValue(undefined);
-    const sessions = makeSessions(extract, act);
+    const sessions = makeSessions(extract, jest.fn().mockResolvedValue(undefined));
     const profiles = makeProfiles(profile);
     withCredentials({ username: 'user@x.com', password: 'secret' }); // no totpCode
 
@@ -153,6 +167,6 @@ describe('BrowserCredentialSigninService', () => {
     await expect(
       service.signInWithStoredCredentials(input),
     ).rejects.toBeInstanceOf(NotFoundException);
-    expect(sessions.createSessionWithContext).not.toHaveBeenCalled();
+    expect(sessions.createStagehand).not.toHaveBeenCalled();
   });
 });

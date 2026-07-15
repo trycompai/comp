@@ -196,6 +196,16 @@ export class SignInAuthProfileResponseDto {
 
   @ApiProperty({ description: 'Public access token to subscribe to the run' })
   publicAccessToken: string;
+
+  @ApiProperty({
+    description: 'Browserbase session id the sign-in runs on (for take-over)',
+  })
+  sessionId: string;
+
+  @ApiProperty({
+    description: 'Live view URL so the user can watch and take over the sign-in',
+  })
+  liveViewUrl: string;
 }
 
 export class CredentialExtraFieldDto {

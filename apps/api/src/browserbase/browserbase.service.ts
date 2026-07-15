@@ -98,17 +98,36 @@ export class BrowserbaseService {
   }
 
   /**
-   * Kicks off the connect flow's first automated sign-in as a background
-   * Trigger.dev run (browser + AI, which can outlast an HTTP/browser timeout)
-   * and returns a handle the client subscribes to for the result.
+   * Kicks off the connect flow's first automated sign-in. Creates the browser
+   * session up front (so the client can show it as a live view — the user
+   * watches the auto-fill and takes over in place if it can't finish), then runs
+   * the sign-in as a background Trigger.dev task on that session (browser + AI,
+   * which can outlast an HTTP/browser timeout).
    */
   async signInAuthProfile(input: {
     organizationId: string;
     profileId: string;
     url: string;
-  }): Promise<{ runId: string; publicAccessToken: string }> {
-    const handle = await tasks.trigger('sign-in-vendor-profile', input);
-    return { runId: handle.id, publicAccessToken: handle.publicAccessToken };
+  }): Promise<{
+    runId: string;
+    publicAccessToken: string;
+    sessionId: string;
+    liveViewUrl: string;
+  }> {
+    const { sessionId, liveViewUrl } = await this.profiles.startProfileSession({
+      organizationId: input.organizationId,
+      profileId: input.profileId,
+    });
+    const handle = await tasks.trigger('sign-in-vendor-profile', {
+      ...input,
+      sessionId,
+    });
+    return {
+      runId: handle.id,
+      publicAccessToken: handle.publicAccessToken,
+      sessionId,
+      liveViewUrl,
+    };
   }
 
   async getOrCreateOrgContext(organizationId: string) {

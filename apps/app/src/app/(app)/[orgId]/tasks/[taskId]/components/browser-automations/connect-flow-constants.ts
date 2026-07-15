@@ -4,6 +4,7 @@ export type Step =
   | 'choose'
   | 'capture'
   | 'signing-in'
+  | 'takeover'
   | 'signin'
   | 'connected'
   | 'error';
@@ -17,6 +18,7 @@ export const RAIL_INDEX: Record<Step, number> = {
   signin: 2,
   capture: 3,
   'signing-in': 3,
+  takeover: 3,
   connected: 4,
   error: 0,
 };
@@ -37,5 +39,25 @@ export function hostnameOf(url: string): string {
     return new URL(url).hostname;
   } catch {
     return 'this site';
+  }
+}
+
+export function railSubtitleFor(step: Step): string {
+  switch (step) {
+    case 'connected':
+      return 'Connected';
+    case 'checking':
+      return 'Checking the sign-in page';
+    case 'choose':
+      return 'Pick how to sign in';
+    case 'capture':
+      return 'Enter your sign-in details';
+    case 'signing-in':
+      return 'Signing in for you';
+    case 'takeover':
+    case 'signin':
+      return 'Your turn — finish signing in';
+    default:
+      return 'So Comp AI can capture evidence on a schedule';
   }
 }

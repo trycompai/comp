@@ -24,9 +24,14 @@ interface ConnectFlowStageProps {
   onChoose: (kind: ConnectMethodKind) => void;
   onCapture: (data: ConnectCaptureFormData) => void;
   isStartingSignin: boolean;
+  /** Manual / SSO live sign-in (from useBrowserContext). */
   liveViewUrl: string | null;
   isCheckingLive: boolean;
   onCheckLive: () => void;
+  /** Automated sign-in session — watched during signing-in, taken over on failure. */
+  autoLiveViewUrl: string | null;
+  onTakeoverVerify: () => void;
+  isVerifying: boolean;
   onCancel: () => void;
   onConnected: () => void;
   onRetry: () => void;
@@ -47,13 +52,17 @@ export function ConnectFlowStage({
   liveViewUrl,
   isCheckingLive,
   onCheckLive,
+  autoLiveViewUrl,
+  onTakeoverVerify,
+  isVerifying,
   onCancel,
   onConnected,
   onRetry,
 }: ConnectFlowStageProps) {
-  // The live sign-in embeds a full browser, so give it the room by trimming the
-  // generous padding the other (form-sized) steps use.
-  const isLiveSignin = step === 'signin';
+  // The live sign-in steps embed a full browser, so give them the room by
+  // trimming the generous padding the other (form-sized) steps use.
+  const isLiveSignin =
+    step === 'signin' || step === 'signing-in' || step === 'takeover';
 
   return (
     <div
@@ -122,29 +131,33 @@ export function ConnectFlowStage({
       )}
 
       {step === 'signing-in' && (
-        <div className="flex flex-col items-center gap-2 text-center">
-          <div className="flex items-center gap-3 text-sm text-foreground">
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-border border-t-primary" />
-            Signing in to {host} for you
-          </div>
-          <div className="text-xs text-muted-foreground">
-            Entering your details and handling two-factor. If anything needs you,
-            we&apos;ll hand you the browser to finish.
-          </div>
-          <div className="mt-1">
-            <Button variant="ghost" onClick={onCancel}>
-              Cancel
-            </Button>
-          </div>
-        </div>
+        <ConnectLiveSignin
+          host={host}
+          liveViewUrl={autoLiveViewUrl}
+          caption={`Signing in to ${host} for you — you can watch. If anything needs you, we'll hand it over.`}
+          working
+          onCancel={onCancel}
+        />
+      )}
+
+      {step === 'takeover' && (
+        <ConnectLiveSignin
+          host={host}
+          liveViewUrl={autoLiveViewUrl}
+          caption="Finish the sign-in above, then confirm."
+          onConfirm={onTakeoverVerify}
+          isConfirming={isVerifying}
+          onCancel={onCancel}
+        />
       )}
 
       {step === 'signin' && (
         <ConnectLiveSignin
           host={host}
           liveViewUrl={liveViewUrl}
-          isChecking={isCheckingLive}
-          onCheck={onCheckLive}
+          caption="Sign in above, then confirm — encrypted, we record only what the automation needs."
+          onConfirm={onCheckLive}
+          isConfirming={isCheckingLive}
           onCancel={onCancel}
         />
       )}
