@@ -14,6 +14,10 @@ import {
   EmptyWithContextState,
   NoContextState,
 } from './browser-automations';
+import {
+  clearConnectState,
+  loadConnectState,
+} from './browser-automations/connect-flow-storage';
 
 interface BrowserAutomationsProps {
   taskId: string;
@@ -66,11 +70,23 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
   });
 
   const handleConnected = useCallback(() => {
+    clearConnectState(taskId);
     setConnectOpen(false);
     context.checkContextStatus();
     automations.fetchAutomations();
     fetchProfiles();
-  }, [context, automations, fetchProfiles]);
+  }, [taskId, context, automations, fetchProfiles]);
+
+  const handleCancelConnect = useCallback(() => {
+    clearConnectState(taskId);
+    setConnectOpen(false);
+  }, [taskId]);
+
+  // If a background analysis was in flight when the user navigated away, reopen
+  // the connect flow on return so it can resume instead of forcing a restart.
+  useEffect(() => {
+    if (loadConnectState(taskId)) setConnectOpen(true);
+  }, [taskId]);
 
   // Refresh the connection list whenever a connect/reconnect verifies.
   useEffect(() => {
@@ -108,8 +124,9 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
   if (connectOpen) {
     return (
       <ConnectVendorLoginFlow
+        taskId={taskId}
         onConnected={handleConnected}
-        onCancel={() => setConnectOpen(false)}
+        onCancel={handleCancelConnect}
       />
     );
   }

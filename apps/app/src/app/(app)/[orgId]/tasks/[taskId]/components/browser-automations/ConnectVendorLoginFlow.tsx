@@ -2,12 +2,23 @@
 
 import { apiClient } from '@/lib/api-client';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
-import { Button, Input } from '@trycompai/design-system';
-import { useCallback, useEffect, useState } from 'react';
+import {
+  Button,
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from '@trycompai/design-system';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import type { LoginAnalysis } from '../../hooks/types';
 import { useBrowserContext } from '../../hooks/useBrowserContext';
 import { useLoginAnalysis } from '../../hooks/useLoginAnalysis';
+import {
+  clearConnectState,
+  loadConnectState,
+  saveConnectState,
+} from './connect-flow-storage';
+import { normalizeUrl, stripScheme } from './connect-url';
 import { ConnectCaptureForm, type ConnectCaptureFormData } from './ConnectCaptureForm';
 import { ConnectFlowRail } from './ConnectFlowRail';
 
@@ -32,30 +43,45 @@ function hostnameOf(url: string): string {
   }
 }
 
-// Accept whatever the user pastes — a bare domain (notion.so), a homepage, or a
-// deep link. We add a scheme if it's missing so they never have to think about
-// "http://" or hunt down the exact /login page; the analyzer finds the sign-in
-// form from there.
-function normalizeUrl(input: string): string {
-  const trimmed = input.trim();
-  if (!trimmed) return trimmed;
-  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
-}
+// Terminal run states that aren't a clean success.
+const FAILED_RUN_STATUSES = new Set([
+  'CANCELED',
+  'FAILED',
+  'CRASHED',
+  'INTERRUPTED',
+  'SYSTEM_FAILURE',
+  'EXPIRED',
+  'TIMED_OUT',
+]);
 
 interface ConnectVendorLoginFlowProps {
+  taskId: string;
   onConnected: () => void;
   onCancel: () => void;
 }
 
-export function ConnectVendorLoginFlow({ onConnected, onCancel }: ConnectVendorLoginFlowProps) {
-  const [step, setStep] = useState<Step>('enter-url');
-  const [urlInput, setUrlInput] = useState('');
-  const [url, setUrl] = useState('');
-  const [analysis, setAnalysis] = useState<LoginAnalysis | null>(null);
+export function ConnectVendorLoginFlow({
+  taskId,
+  onConnected,
+  onCancel,
+}: ConnectVendorLoginFlowProps) {
+  // Rehydrate an in-flight analysis if the user navigated away and came back.
+  // The Trigger.dev task keeps running server-side; this restores the UI's view
+  // of it (see connect-flow-storage). Only the analysis phase is resumable.
+  const persisted = useMemo(() => loadConnectState(taskId), [taskId]);
+
+  const [step, setStep] = useState<Step>(persisted?.step ?? 'enter-url');
+  const [urlInput, setUrlInput] = useState(
+    persisted ? stripScheme(persisted.url) : '',
+  );
+  const [url, setUrl] = useState(persisted?.url ?? '');
+  const [analysis, setAnalysis] = useState<LoginAnalysis | null>(
+    persisted?.analysis ?? null,
+  );
   const [analyzeRun, setAnalyzeRun] = useState<{
     runId: string;
     accessToken: string;
-  } | null>(null);
+  } | null>(persisted?.analyzeRun ?? null);
   const [isStoring, setIsStoring] = useState(false);
 
   const context = useBrowserContext();
@@ -63,21 +89,53 @@ export function ConnectVendorLoginFlow({ onConnected, onCancel }: ConnectVendorL
 
   // The analysis (browser + AI) runs as a background Trigger.dev task so it can
   // outlast HTTP/browser timeouts. Subscribe to its run and pick up the result
-  // when it finishes. `onComplete` fires on any terminal state, so anything that
-  // isn't a clean COMPLETED with output is treated as a failure.
-  useRealtimeRun(analyzeRun?.runId ?? '', {
-    accessToken: analyzeRun?.accessToken,
-    enabled: !!analyzeRun,
-    onComplete: (run, err) => {
-      setAnalyzeRun(null);
-      if (err || run.status !== 'COMPLETED' || !run.output) {
-        setStep('error');
-        return;
-      }
-      setAnalysis(run.output as LoginAnalysis);
-      setStep('recommendation');
+  // when it finishes. Watching `run`/`error` (rather than only onComplete) also
+  // handles the resume case, where the run may already be complete on subscribe.
+  const { run: analyzeRunState, error: analyzeError } = useRealtimeRun(
+    analyzeRun?.runId ?? '',
+    {
+      accessToken: analyzeRun?.accessToken,
+      enabled: !!analyzeRun,
     },
-  });
+  );
+
+  useEffect(() => {
+    if (!analyzeRun) return;
+
+    if (analyzeError) {
+      setAnalyzeRun(null);
+      setStep('error');
+      return;
+    }
+    if (!analyzeRunState) return;
+
+    if (analyzeRunState.status === 'COMPLETED') {
+      setAnalyzeRun(null);
+      if (analyzeRunState.output) {
+        setAnalysis(analyzeRunState.output as LoginAnalysis);
+        setStep('recommendation');
+      } else {
+        setStep('error');
+      }
+    } else if (FAILED_RUN_STATUSES.has(analyzeRunState.status)) {
+      setAnalyzeRun(null);
+      setStep('error');
+    }
+  }, [analyzeRun, analyzeRunState, analyzeError]);
+
+  // Persist the analysis phase so a page unmount (navigation, tab switch) can
+  // resume instead of forcing a restart. Only persist when there's actually
+  // something to resume from — a run handle to re-subscribe to, or a result to
+  // show — so we never restore into a dead-end. Other steps aren't resumable.
+  useEffect(() => {
+    if (step === 'checking' && analyzeRun) {
+      saveConnectState(taskId, { step, url, analyzeRun, analysis });
+    } else if (step === 'recommendation' && analysis) {
+      saveConnectState(taskId, { step, url, analyzeRun, analysis });
+    } else {
+      clearConnectState(taskId);
+    }
+  }, [taskId, step, url, analyzeRun, analysis]);
 
   // Verify succeeded → move on to capturing the reusable credentials.
   useEffect(() => {
@@ -164,11 +222,14 @@ export function ConnectVendorLoginFlow({ onConnected, onCancel }: ConnectVendorL
           {step === 'enter-url' && (
             <div className="flex w-full max-w-sm flex-col gap-2.5">
               <div className="text-sm text-foreground">Vendor website</div>
-              <Input
-                value={urlInput}
-                onChange={(e) => setUrlInput(e.target.value)}
-                placeholder="notion.so"
-              />
+              <InputGroup>
+                <InputGroupAddon>https://</InputGroupAddon>
+                <InputGroupInput
+                  value={urlInput}
+                  onChange={(e) => setUrlInput(stripScheme(e.target.value))}
+                  placeholder="notion.so"
+                />
+              </InputGroup>
               <div className="text-xs text-muted-foreground">
                 Just the website is enough — we&apos;ll find the sign-in page for you.
               </div>
@@ -194,7 +255,8 @@ export function ConnectVendorLoginFlow({ onConnected, onCancel }: ConnectVendorL
                 Finding the sign-in page and checking how it works
               </div>
               <div className="text-xs text-muted-foreground">
-                This runs in the background — usually under a minute. You can keep working.
+                This runs in the background — usually under a minute. You can switch pages
+                and come back; we&apos;ll pick up where you left off.
               </div>
             </div>
           )}
