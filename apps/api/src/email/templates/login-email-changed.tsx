@@ -1,6 +1,7 @@
 import {
   Body,
   Container,
+  Font,
   Heading,
   Html,
   Preview,
@@ -21,7 +22,20 @@ export const LoginEmailChangedEmail = ({ organizationName, oldEmail, newEmail }:
   return (
     <Html>
       <Tailwind>
-        <head />
+        <head>
+          <Font
+            fontFamily="Geist"
+            fallbackFontFamily="Helvetica"
+            fontWeight={400}
+            fontStyle="normal"
+          />
+          <Font
+            fontFamily="Geist"
+            fallbackFontFamily="Helvetica"
+            fontWeight={500}
+            fontStyle="normal"
+          />
+        </head>
         <Preview>Your Comp AI login email was changed</Preview>
 
         <Body className="mx-auto my-auto bg-[#fff] font-sans">

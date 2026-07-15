@@ -47,19 +47,25 @@ export function LoginEmailSettings({ currentEmail }: Props) {
   });
 
   const handleChangeEmail = handleSubmit(async ({ newEmail }) => {
-    const { error } = await authClient.changeEmail({
-      newEmail,
-      callbackURL: `${window.location.origin}/`,
-    });
+    try {
+      const { error } = await authClient.changeEmail({
+        newEmail,
+        callbackURL: `${window.location.origin}/`,
+      });
 
-    if (error) {
-      toast.error(error.message ?? 'Failed to request the email change');
-      return;
+      if (error) {
+        setPendingEmail(null);
+        toast.error(error.message ?? 'Failed to request the email change');
+        return;
+      }
+
+      setPendingEmail(newEmail);
+      reset();
+      toast.success(`Confirmation link sent to ${currentEmail}`);
+    } catch {
+      setPendingEmail(null);
+      toast.error('Failed to request the email change');
     }
-
-    setPendingEmail(newEmail);
-    reset();
-    toast.success(`Confirmation link sent to ${currentEmail}`);
   });
 
   return (
@@ -76,13 +82,19 @@ export function LoginEmailSettings({ currentEmail }: Props) {
                 id="newEmail"
                 type="email"
                 placeholder="you@company.com"
+                aria-invalid={errors.newEmail ? true : undefined}
+                aria-describedby={
+                  errors.newEmail ? 'newEmail-error' : undefined
+                }
                 {...register('newEmail')}
               />
             </div>
             {errors.newEmail ? (
-              <Text size="sm" variant="destructive">
-                {errors.newEmail.message}
-              </Text>
+              <div id="newEmail-error" role="alert">
+                <Text size="sm" variant="destructive">
+                  {errors.newEmail.message}
+                </Text>
+              </div>
             ) : (
               <Text size="sm" variant="muted">
                 We'll send a confirmation link to your current email first,
@@ -99,7 +111,7 @@ export function LoginEmailSettings({ currentEmail }: Props) {
           </div>
 
           {pendingEmail && (
-            <div className="bg-muted rounded-md p-3">
+            <div className="bg-muted rounded-md p-3" role="status">
               <Text size="sm" variant="muted">
                 We sent a confirmation link to {currentEmail}. Once you confirm
                 it, a verification link goes to {pendingEmail} to finish the

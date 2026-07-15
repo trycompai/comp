@@ -11,8 +11,19 @@ import { TimelinesService } from '../timelines/timelines.service';
 import { MemberValidator } from './utils/member-validator';
 import { MemberQueries } from './utils/member-queries';
 
-// Mock the database
+// Mock the database. Includes a stand-in Prisma.PrismaClientKnownRequestError
+// so the service's `instanceof` error-code branches can be exercised.
 jest.mock('@db', () => ({
+  Prisma: {
+    PrismaClientKnownRequestError: class PrismaClientKnownRequestError extends Error {
+      code: string;
+      constructor(message: string, { code }: { code: string }) {
+        super(message);
+        this.code = code;
+        this.name = 'PrismaClientKnownRequestError';
+      }
+    },
+  },
   db: {
     member: {
       findFirst: jest.fn(),
@@ -89,7 +100,7 @@ jest.mock('./utils/member-validator');
 jest.mock('./utils/member-queries');
 jest.mock('./utils/login-email-change');
 
-import { db } from '@db';
+import { db, Prisma } from '@db';
 import {
   notifyLoginEmailChanged,
   validateLoginEmailChange,
@@ -373,6 +384,49 @@ describe('PeopleService', () => {
           { department: 'it' },
         );
         expect(notifyLoginEmailChanged).not.toHaveBeenCalled();
+      });
+
+      it('rejects combining a userId reassignment with an email change', async () => {
+        await expect(
+          service.updateById('mem_1', 'org_123', {
+            userId: 'usr_other',
+            email: 'new@company.io',
+          }),
+        ).rejects.toThrow(BadRequestException);
+
+        expect(validateLoginEmailChange).not.toHaveBeenCalled();
+        expect(MemberQueries.updateMember).not.toHaveBeenCalled();
+      });
+
+      it('returns the member without writing when the no-op email is the only field', async () => {
+        (validateLoginEmailChange as jest.Mock).mockResolvedValue(null);
+        (MemberQueries.findByIdInOrganization as jest.Mock).mockResolvedValue(
+          updatedMember,
+        );
+
+        const result = await service.updateById('mem_1', 'org_123', {
+          email: 'old@company.dev',
+        });
+
+        expect(result).toEqual(updatedMember);
+        expect(MemberQueries.updateMember).not.toHaveBeenCalled();
+      });
+
+      it('translates a unique-constraint race on the write into a 409', async () => {
+        (validateLoginEmailChange as jest.Mock).mockResolvedValue({
+          oldEmail: 'old@company.dev',
+          newEmail: 'new@company.io',
+        });
+        (MemberQueries.updateMember as jest.Mock).mockRejectedValue(
+          new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+            code: 'P2002',
+            clientVersion: 'test',
+          }),
+        );
+
+        await expect(
+          service.updateById('mem_1', 'org_123', { email: 'new@company.io' }),
+        ).rejects.toThrow(ConflictException);
       });
 
       it('propagates ConflictException from validation without wrapping', async () => {

@@ -6,7 +6,7 @@ import {
   ConflictException,
   ForbiddenException,
 } from '@nestjs/common';
-import { db } from '@db';
+import { db, Prisma } from '@db';
 import { FleetService } from '../lib/fleet.service';
 import { BUILT_IN_ROLE_PERMISSIONS } from '@trycompai/auth';
 import type { PeopleResponseDto } from './dto/people-responses.dto';
@@ -343,6 +343,13 @@ export class PeopleService {
       // so it needs uniqueness + cross-org guards before the raw write.
       let emailChange: LoginEmailChange | null = null;
       if (updateData.email !== undefined) {
+        if (updateData.userId && updateData.userId !== existingMember.userId) {
+          // The email write targets the member's CURRENT user, so combining it
+          // with a userId reassignment would rename the wrong account.
+          throw new BadRequestException(
+            'Cannot change userId and email in the same request',
+          );
+        }
         emailChange = await validateLoginEmailChange({
           userId: existingMember.userId,
           organizationId,
@@ -352,6 +359,9 @@ export class PeopleService {
           updateData.email = emailChange.newEmail;
         } else {
           delete updateData.email;
+          if (Object.keys(updateData).length === 0) {
+            return this.findById(memberId, organizationId);
+          }
         }
       }
 
@@ -362,7 +372,9 @@ export class PeopleService {
       );
 
       if (emailChange) {
-        await notifyLoginEmailChanged({
+        // Fire-and-forget: notification latency/failure must not block the
+        // update response. notifyLoginEmailChanged handles its own errors.
+        void notifyLoginEmailChanged({
           organizationId,
           change: emailChange,
           logger: this.logger,
@@ -381,6 +393,16 @@ export class PeopleService {
         error instanceof ConflictException
       ) {
         throw error;
+      }
+      // A concurrent email change can slip past the preflight uniqueness
+      // check; translate the unique-constraint violation to the same 409.
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(
+          'That email is already used by another account',
+        );
       }
       this.logger.error(
         `Failed to update member ${memberId} in organization ${organizationId}:`,
