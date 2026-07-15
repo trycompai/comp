@@ -87,6 +87,16 @@ export class LoginRecommendationDto {
   detail: string;
 }
 
+export class AnalyzeLoginResponseDto {
+  @ApiProperty({
+    description: 'Trigger.dev run id for the background analysis',
+  })
+  runId: string;
+
+  @ApiProperty({ description: 'Public access token to subscribe to the run' })
+  publicAccessToken: string;
+}
+
 export class LoginAnalysisResponseDto {
   @ApiProperty()
   reachable: boolean;

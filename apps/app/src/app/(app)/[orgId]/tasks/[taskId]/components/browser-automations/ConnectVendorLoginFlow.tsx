@@ -1,6 +1,7 @@
 'use client';
 
 import { apiClient } from '@/lib/api-client';
+import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import { Button, Input } from '@trycompai/design-system';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -41,10 +42,32 @@ export function ConnectVendorLoginFlow({ onConnected, onCancel }: ConnectVendorL
   const [urlInput, setUrlInput] = useState('');
   const [url, setUrl] = useState('');
   const [analysis, setAnalysis] = useState<LoginAnalysis | null>(null);
+  const [analyzeRun, setAnalyzeRun] = useState<{
+    runId: string;
+    accessToken: string;
+  } | null>(null);
   const [isStoring, setIsStoring] = useState(false);
 
   const context = useBrowserContext();
-  const { analyze, isAnalyzing } = useLoginAnalysis();
+  const { startAnalysis, isStarting } = useLoginAnalysis();
+
+  // The analysis (browser + AI) runs as a background Trigger.dev task so it can
+  // outlast HTTP/browser timeouts. Subscribe to its run and pick up the result
+  // when it finishes. `onComplete` fires on any terminal state, so anything that
+  // isn't a clean COMPLETED with output is treated as a failure.
+  useRealtimeRun(analyzeRun?.runId ?? '', {
+    accessToken: analyzeRun?.accessToken,
+    enabled: !!analyzeRun,
+    onComplete: (run, err) => {
+      setAnalyzeRun(null);
+      if (err || run.status !== 'COMPLETED' || !run.output) {
+        setStep('error');
+        return;
+      }
+      setAnalysis(run.output as LoginAnalysis);
+      setStep('recommendation');
+    },
+  });
 
   // Verify succeeded → move on to capturing the reusable credentials.
   useEffect(() => {
@@ -54,14 +77,13 @@ export function ConnectVendorLoginFlow({ onConnected, onCancel }: ConnectVendorL
   const handleAnalyze = useCallback(async () => {
     setUrl(urlInput);
     setStep('checking');
-    const result = await analyze(urlInput);
-    if (!result) {
+    const handle = await startAnalysis(urlInput);
+    if (!handle) {
       setStep('error');
       return;
     }
-    setAnalysis(result);
-    setStep('recommendation');
-  }, [analyze, urlInput]);
+    setAnalyzeRun({ runId: handle.runId, accessToken: handle.publicAccessToken });
+  }, [startAnalysis, urlInput]);
 
   const handleStartSignin = useCallback(() => {
     setStep('signin');
@@ -142,8 +164,8 @@ export function ConnectVendorLoginFlow({ onConnected, onCancel }: ConnectVendorL
               <div className="mt-1 flex items-center gap-2">
                 <Button
                   onClick={handleAnalyze}
-                  loading={isAnalyzing}
-                  disabled={isAnalyzing || !urlInput}
+                  loading={isStarting}
+                  disabled={isStarting || !urlInput}
                 >
                   Open Site
                 </Button>
@@ -155,9 +177,14 @@ export function ConnectVendorLoginFlow({ onConnected, onCancel }: ConnectVendorL
           )}
 
           {step === 'checking' && (
-            <div className="flex items-center gap-3 text-sm text-foreground">
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-border border-t-primary" />
-              Reading the sign-in page — under 30 seconds
+            <div className="flex flex-col items-center gap-2 text-center">
+              <div className="flex items-center gap-3 text-sm text-foreground">
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-border border-t-primary" />
+                Finding the sign-in page and checking how it works
+              </div>
+              <div className="text-xs text-muted-foreground">
+                This runs in the background — usually under a minute. You can keep working.
+              </div>
             </div>
           )}
 

@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { TaskFrequency } from '@db';
+import { tasks } from '@trigger.dev/sdk';
 import { BrowserAutomationCrudService } from './browser-automation-crud.service';
 import { BrowserAutomationExecutionService } from './browser-automation-execution.service';
 import { BrowserAuthProfileService } from './browser-auth-profile.service';
 import { BrowserCredentialStorageService } from './browser-credential-storage.service';
-import { BrowserLoginAnalyzerService } from './browser-login-analyzer.service';
 import { BrowserEvidenceRunnerService } from './browser-evidence-runner.service';
 import { BrowserbaseScreenshotService } from './browserbase-screenshot.service';
 import { BrowserbaseSessionService } from './browserbase-session.service';
@@ -31,13 +31,19 @@ export class BrowserbaseService {
       runner,
     ),
     private readonly credentialStorage: BrowserCredentialStorageService = new BrowserCredentialStorageService(),
-    private readonly loginAnalyzer: BrowserLoginAnalyzerService = new BrowserLoginAnalyzerService(
-      sessions,
-    ),
   ) {}
 
-  async analyzeLogin(url: string) {
-    return this.loginAnalyzer.analyzeLogin(url);
+  /**
+   * Kicks off login analysis as a background Trigger.dev run (browser + AI, which
+   * can outlast an HTTP/browser timeout) and returns a handle the client
+   * subscribes to for the result.
+   */
+  async analyzeLogin(url: string): Promise<{
+    runId: string;
+    publicAccessToken: string;
+  }> {
+    const handle = await tasks.trigger('analyze-vendor-login', { url });
+    return { runId: handle.id, publicAccessToken: handle.publicAccessToken };
   }
 
   async listAuthProfiles(organizationId: string) {

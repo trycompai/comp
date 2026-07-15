@@ -3,31 +3,41 @@
 import { apiClient } from '@/lib/api-client';
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
-import type { LoginAnalysis } from './types';
+
+export interface AnalysisRunHandle {
+  runId: string;
+  publicAccessToken: string;
+}
 
 /**
- * Asks the API to open a vendor sign-in page and detect which login methods it
- * supports, so the connect flow can recommend the most reliable setup. Returns
- * null on failure (the caller falls back to manual entry).
+ * Kicks off vendor login analysis as a background Trigger.dev run and returns a
+ * handle to subscribe to. The browser + AI work runs off the request path, so it
+ * can't be cut short by an HTTP or browser timeout. Returns null on failure.
  */
 export function useLoginAnalysis() {
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
 
-  const analyze = useCallback(async (url: string): Promise<LoginAnalysis | null> => {
-    setIsAnalyzing(true);
-    try {
-      const res = await apiClient.post<LoginAnalysis>('/v1/browserbase/analyze-login', { url });
-      if (res.error || !res.data) {
-        toast.error(res.error || 'Could not read the sign-in page.');
+  const startAnalysis = useCallback(
+    async (url: string): Promise<AnalysisRunHandle | null> => {
+      setIsStarting(true);
+      try {
+        const res = await apiClient.post<AnalysisRunHandle>(
+          '/v1/browserbase/analyze-login',
+          { url },
+        );
+        if (res.error || !res.data?.runId) {
+          toast.error(res.error || 'Could not start the sign-in check.');
+          return null;
+        }
+        return res.data;
+      } catch {
         return null;
+      } finally {
+        setIsStarting(false);
       }
-      return res.data;
-    } catch {
-      return null;
-    } finally {
-      setIsAnalyzing(false);
-    }
-  }, []);
+    },
+    [],
+  );
 
-  return { analyze, isAnalyzing };
+  return { startAnalysis, isStarting };
 }

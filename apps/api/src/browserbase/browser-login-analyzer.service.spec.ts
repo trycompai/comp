@@ -9,7 +9,12 @@ function makeSessions(extract: jest.Mock) {
     createSessionWithContext: jest
       .fn()
       .mockResolvedValue({ sessionId: 'sess_1', liveViewUrl: '' }),
-    createStagehand: jest.fn().mockResolvedValue({ extract }),
+    createStagehand: jest
+      .fn()
+      .mockResolvedValue({
+        extract,
+        act: jest.fn().mockResolvedValue(undefined),
+      }),
     ensureActivePage: jest.fn().mockResolvedValue(page),
     safeCloseStagehand: jest.fn().mockResolvedValue(undefined),
     closeSession: jest.fn().mockResolvedValue(undefined),

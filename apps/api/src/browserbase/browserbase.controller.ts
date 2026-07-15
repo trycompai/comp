@@ -26,11 +26,11 @@ import { RequirePermission } from '../auth/require-permission.decorator';
 import { BrowserbaseService } from './browserbase.service';
 import {
   AnalyzeLoginDto,
+  AnalyzeLoginResponseDto,
   AuthStatusResponseDto,
   BrowserAutomationResponseDto,
   BrowserAutomationRunResponseDto,
   CheckAuthDto,
-  LoginAnalysisResponseDto,
   CloseSessionDto,
   ContextResponseDto,
   CreateBrowserAutomationDto,
@@ -59,10 +59,10 @@ export class BrowserbaseController {
       'Opens the vendor sign-in page in a throwaway cloud browser and detects which login methods it supports, so the connect flow can recommend the most reliable setup. Reads a public page only — no credentials. Always degrades to a manual fallback.',
   })
   @ApiBody({ type: AnalyzeLoginDto })
-  @ApiResponse({ status: 201, type: LoginAnalysisResponseDto })
+  @ApiResponse({ status: 201, type: AnalyzeLoginResponseDto })
   async analyzeLogin(
     @Body() dto: AnalyzeLoginDto,
-  ): Promise<LoginAnalysisResponseDto> {
+  ): Promise<AnalyzeLoginResponseDto> {
     return this.browserbaseService.analyzeLogin(dto.url);
   }
 

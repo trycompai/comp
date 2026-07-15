@@ -48,6 +48,10 @@ export class BrowserLoginAnalyzerService {
       await page.goto(url, { waitUntil: 'domcontentloaded', timeoutMs: 30000 });
       await delay(1500);
 
+      // Navigate to the actual sign-in page so the customer can paste any URL
+      // (a homepage, a dashboard) rather than the exact login page.
+      await this.navigateToSignIn(stagehand);
+
       const detection = await stagehand.extract(
         EXTRACT_PROMPT,
         loginDetectionSchema,
@@ -71,6 +75,24 @@ export class BrowserLoginAnalyzerService {
           .closeSession(sessionId)
           .catch(() => undefined /* best-effort cleanup */);
       }
+    }
+  }
+
+  // Best-effort navigation to the sign-in page. If the given URL is a homepage
+  // or dashboard, the agent opens the "Sign in" link so the form is on screen
+  // for detection. Never throws — extract runs on whatever page we end up on.
+  private async navigateToSignIn(
+    stagehand: Awaited<
+      ReturnType<BrowserbaseSessionService['createStagehand']>
+    >,
+  ): Promise<void> {
+    try {
+      await stagehand.act(
+        'If this page is not already a login or sign-in page, find and open the "Sign in" or "Log in" link so the sign-in form is visible. If a sign-in form is already shown, do nothing.',
+      );
+      await delay(1500);
+    } catch {
+      // Ignore — detection proceeds on the current page.
     }
   }
 }
