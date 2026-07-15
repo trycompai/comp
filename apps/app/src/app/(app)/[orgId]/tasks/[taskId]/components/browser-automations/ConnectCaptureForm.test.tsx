@@ -28,15 +28,21 @@ vi.mock('@trycompai/design-system/icons', () => ({
   Add: () => <span data-testid="icon-add" />,
   Close: () => <span data-testid="icon-close" />,
   Locked: () => <span data-testid="icon-lock" />,
+  ChevronDown: () => <span data-testid="icon-chevron-down" />,
+  ChevronRight: () => <span data-testid="icon-chevron-right" />,
 }));
 
 import { ConnectCaptureForm } from './ConnectCaptureForm';
 
 describe('ConnectCaptureForm', () => {
-  it('renders the credential fields', () => {
+  it('renders username and password, and keeps 2FA hidden until opted in', () => {
     render(<ConnectCaptureForm isSubmitting={false} onSubmit={vi.fn()} />);
     expect(screen.getByLabelText('Username or email')).toBeInTheDocument();
     expect(screen.getByLabelText('Password')).toBeInTheDocument();
+
+    // The authenticator key is progressive — hidden until the checkbox is ticked.
+    expect(screen.queryByLabelText('Authenticator setup key')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('checkbox'));
     expect(screen.getByLabelText('Authenticator setup key')).toBeInTheDocument();
   });
 
