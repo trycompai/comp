@@ -25,10 +25,12 @@ import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
 import { BrowserbaseService } from './browserbase.service';
 import {
+  AnalyzeLoginDto,
   AuthStatusResponseDto,
   BrowserAutomationResponseDto,
   BrowserAutomationRunResponseDto,
   CheckAuthDto,
+  LoginAnalysisResponseDto,
   CloseSessionDto,
   ContextResponseDto,
   CreateBrowserAutomationDto,
@@ -46,6 +48,23 @@ import {
 @ApiSecurity('apikey')
 export class BrowserbaseController {
   constructor(private readonly browserbaseService: BrowserbaseService) {}
+
+  // ===== Login Analysis =====
+
+  @Post('analyze-login')
+  @RequirePermission('integration', 'create')
+  @ApiOperation({
+    summary: 'Analyze a vendor sign-in page',
+    description:
+      'Opens the vendor sign-in page in a throwaway cloud browser and detects which login methods it supports, so the connect flow can recommend the most reliable setup. Reads a public page only — no credentials. Always degrades to a manual fallback.',
+  })
+  @ApiBody({ type: AnalyzeLoginDto })
+  @ApiResponse({ status: 201, type: LoginAnalysisResponseDto })
+  async analyzeLogin(
+    @Body() dto: AnalyzeLoginDto,
+  ): Promise<LoginAnalysisResponseDto> {
+    return this.browserbaseService.analyzeLogin(dto.url);
+  }
 
   // ===== Organization Context =====
 

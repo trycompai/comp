@@ -12,6 +12,7 @@ import { BrowserbaseScreenshotService } from './browserbase-screenshot.service';
 import { BrowserbaseSessionService } from './browserbase-session.service';
 import { BrowserbaseService } from './browserbase.service';
 import { BrowserCredentialStorageService } from './browser-credential-storage.service';
+import { BrowserLoginAnalyzerService } from './browser-login-analyzer.service';
 import { BROWSER_CREDENTIAL_VAULT_ADAPTER } from './credential-vault';
 import { resolveBrowserCredentialVaultAdapter } from './browser-credential-vault.factory';
 import { AuthModule } from '../auth/auth.module';
@@ -31,6 +32,7 @@ import { AuthModule } from '../auth/auth.module';
     BrowserbaseScreenshotService,
     BrowserEvidenceRunnerService,
     BrowserCredentialStorageService,
+    BrowserLoginAnalyzerService,
     {
       provide: BROWSER_CREDENTIAL_VAULT_ADAPTER,
       useFactory: resolveBrowserCredentialVaultAdapter,

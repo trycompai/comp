@@ -4,6 +4,7 @@ import { BrowserAutomationCrudService } from './browser-automation-crud.service'
 import { BrowserAutomationExecutionService } from './browser-automation-execution.service';
 import { BrowserAuthProfileService } from './browser-auth-profile.service';
 import { BrowserCredentialStorageService } from './browser-credential-storage.service';
+import { BrowserLoginAnalyzerService } from './browser-login-analyzer.service';
 import { BrowserEvidenceRunnerService } from './browser-evidence-runner.service';
 import { BrowserbaseScreenshotService } from './browserbase-screenshot.service';
 import { BrowserbaseSessionService } from './browserbase-session.service';
@@ -24,10 +25,20 @@ export class BrowserbaseService {
     private readonly automationCrud: BrowserAutomationCrudService = new BrowserAutomationCrudService(
       screenshots,
     ),
-    private readonly automationExecution: BrowserAutomationExecutionService =
-      new BrowserAutomationExecutionService(sessions, profiles, runner),
+    private readonly automationExecution: BrowserAutomationExecutionService = new BrowserAutomationExecutionService(
+      sessions,
+      profiles,
+      runner,
+    ),
     private readonly credentialStorage: BrowserCredentialStorageService = new BrowserCredentialStorageService(),
+    private readonly loginAnalyzer: BrowserLoginAnalyzerService = new BrowserLoginAnalyzerService(
+      sessions,
+    ),
   ) {}
+
+  async analyzeLogin(url: string) {
+    return this.loginAnalyzer.analyzeLogin(url);
+  }
 
   async listAuthProfiles(organizationId: string) {
     return this.profiles.listProfiles(organizationId);
@@ -119,11 +130,17 @@ export class BrowserbaseService {
   }
 
   async getBrowserAutomation(automationId: string, organizationId?: string) {
-    return this.automationCrud.getBrowserAutomation(automationId, organizationId);
+    return this.automationCrud.getBrowserAutomation(
+      automationId,
+      organizationId,
+    );
   }
 
   async getBrowserAutomationsForTask(taskId: string, organizationId?: string) {
-    return this.automationCrud.getBrowserAutomationsForTask(taskId, organizationId);
+    return this.automationCrud.getBrowserAutomationsForTask(
+      taskId,
+      organizationId,
+    );
   }
 
   async updateBrowserAutomation(
@@ -147,10 +164,16 @@ export class BrowserbaseService {
   }
 
   async deleteBrowserAutomation(automationId: string, organizationId?: string) {
-    return this.automationCrud.deleteBrowserAutomation(automationId, organizationId);
+    return this.automationCrud.deleteBrowserAutomation(
+      automationId,
+      organizationId,
+    );
   }
 
-  async startAutomationWithLiveView(automationId: string, organizationId: string) {
+  async startAutomationWithLiveView(
+    automationId: string,
+    organizationId: string,
+  ) {
     return this.automationExecution.startAutomationWithLiveView(
       automationId,
       organizationId,
@@ -190,7 +213,10 @@ export class BrowserbaseService {
     return this.automationCrud.getRunWithPresignedUrl(runId, organizationId);
   }
 
-  async getAutomationsWithPresignedUrls(taskId: string, organizationId?: string) {
+  async getAutomationsWithPresignedUrls(
+    taskId: string,
+    organizationId?: string,
+  ) {
     return this.automationCrud.getAutomationsWithPresignedUrls(
       taskId,
       organizationId,

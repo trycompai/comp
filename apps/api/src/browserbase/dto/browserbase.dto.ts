@@ -62,10 +62,51 @@ export class AuthStatusResponseDto {
   username?: string;
 }
 
+// ===== Login analysis DTOs =====
+
+export class AnalyzeLoginDto {
+  @ApiProperty({ description: 'Vendor sign-in URL to analyze' })
+  @IsUrl({}, { message: 'url must be a valid URL' })
+  @IsSafeUrl({ message: 'The provided URL is not allowed.' })
+  @IsString()
+  @IsNotEmpty()
+  url: string;
+}
+
+export class LoginRecommendationDto {
+  @ApiProperty({ enum: ['ready', 'works_with_checkins', 'manual'] })
+  category: string;
+
+  @ApiProperty()
+  headline: string;
+
+  @ApiProperty()
+  detail: string;
+}
+
+export class LoginAnalysisResponseDto {
+  @ApiProperty()
+  reachable: boolean;
+
+  @ApiProperty({ type: [String] })
+  detectedMethods: string[];
+
+  @ApiProperty({ enum: ['email', 'username', 'either', 'unknown'] })
+  identifierType: string;
+
+  @ApiProperty({ type: [Object] })
+  extraFields: { label: string }[];
+
+  @ApiProperty({ type: () => LoginRecommendationDto })
+  recommendation: LoginRecommendationDto;
+}
+
 // ===== Auth Profile DTOs =====
 
 export class ResolveAuthProfileDto {
-  @ApiProperty({ description: 'Website URL to normalize into an auth profile hostname' })
+  @ApiProperty({
+    description: 'Website URL to normalize into an auth profile hostname',
+  })
   @IsUrl({}, { message: 'url must be a valid URL' })
   @IsSafeUrl({ message: 'The provided URL is not allowed.' })
   @IsString()
@@ -115,7 +156,9 @@ export class VerifyAuthProfileSessionDto {
 }
 
 export class MarkAuthProfileNeedsReauthDto {
-  @ApiPropertyOptional({ description: 'Reason the profile needs re-authentication' })
+  @ApiPropertyOptional({
+    description: 'Reason the profile needs re-authentication',
+  })
   @IsString()
   @IsOptional()
   reason?: string;

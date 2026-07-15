@@ -7,6 +7,7 @@ import { BrowserAutomationRunStoreService } from './browser-automation-run-store
 import { BrowserAuthProfileContextService } from './browser-auth-profile-context.service';
 import { BrowserAuthProfileService } from './browser-auth-profile.service';
 import { BrowserCredentialStorageService } from './browser-credential-storage.service';
+import { BrowserLoginAnalyzerService } from './browser-login-analyzer.service';
 import { BrowserEvidenceRunnerService } from './browser-evidence-runner.service';
 import { BrowserbaseOrgContextService } from './browserbase-org-context.service';
 import { BrowserbaseScreenshotService } from './browserbase-screenshot.service';
@@ -61,6 +62,7 @@ describe('BrowserbaseService.getScreenshotRedirectUrl', () => {
         BrowserbaseScreenshotService,
         BrowserEvidenceRunnerService,
         BrowserCredentialStorageService,
+        BrowserLoginAnalyzerService,
         {
           provide: BROWSER_CREDENTIAL_VAULT_ADAPTER,
           useFactory: resolveBrowserCredentialVaultAdapter,
@@ -184,6 +186,7 @@ describe('BrowserbaseService schedule frequency passthrough', () => {
         BrowserbaseScreenshotService,
         BrowserEvidenceRunnerService,
         BrowserCredentialStorageService,
+        BrowserLoginAnalyzerService,
         {
           provide: BROWSER_CREDENTIAL_VAULT_ADAPTER,
           useFactory: resolveBrowserCredentialVaultAdapter,
