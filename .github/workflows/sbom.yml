@@ -55,3 +55,7 @@ jobs:
           format: spdx-json
           artifact-name: sbom.spdx.json
           dependency-snapshot: true
+          # sbom-action v0.24.0 bundles Syft 1.42.3, which CANNOT parse bun.lock
+          # (it yields 1 package — an empty snapshot). Pin a Syft that can:
+          # verified 1.46.0 → 2496 resolved deps. Bump alongside the action SHA.
+          syft-version: v1.46.0
