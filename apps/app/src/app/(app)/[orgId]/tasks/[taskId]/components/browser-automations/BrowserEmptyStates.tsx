@@ -4,21 +4,9 @@ import { Badge, Button } from '@trycompai/design-system';
 import { Add, ArrowRight, Globe, Locked } from '@trycompai/design-system/icons';
 
 const SETUP_STEPS = [
-  {
-    n: '01',
-    title: 'Connect a login',
-    desc: 'Sign in to the vendor once. We keep it connected.',
-  },
-  {
-    n: '02',
-    title: 'Describe what to capture',
-    desc: 'In plain English — like instructions to a colleague.',
-  },
-  {
-    n: '03',
-    title: 'Evidence, on schedule',
-    desc: 'Screenshots land in this task automatically.',
-  },
+  { n: '01', title: 'Connect a login', desc: 'Sign in to the vendor once.' },
+  { n: '02', title: 'Describe what to capture', desc: 'In plain English.' },
+  { n: '03', title: 'Evidence, on schedule', desc: 'Screenshots land in this task.' },
 ];
 
 interface NoContextStateProps {
@@ -28,31 +16,44 @@ interface NoContextStateProps {
 
 export function NoContextState({ isStartingAuth, onConnect }: NoContextStateProps) {
   return (
-    <div className="rounded-lg border border-border bg-card p-6 sm:p-8">
-      <h2 className="text-xl font-medium tracking-tight text-foreground">Browser automations</h2>
-      <p className="mt-1.5 max-w-xl text-sm text-muted-foreground leading-relaxed">
-        Prove controls on vendor sites that have no API — Comp AI signs in, navigates to the right
-        page, and files a screenshot as evidence.
-      </p>
+    <div className="overflow-hidden rounded-lg border border-border bg-card">
+      <div className="grid grid-cols-1 sm:grid-cols-[1fr_280px]">
+        {/* Left — the pitch + primary action */}
+        <div className="flex flex-col p-6 sm:p-7">
+          <h2 className="text-lg font-medium tracking-tight text-foreground">
+            Browser Automations
+          </h2>
+          <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">
+            When a vendor has no integration, Comp AI signs in to its website on a schedule and
+            captures a screenshot as audit evidence.
+          </p>
 
-      <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        {SETUP_STEPS.map((step) => (
-          <div key={step.n} className="rounded-md border border-border p-4">
-            <div className="font-mono text-xs text-muted-foreground">{step.n}</div>
-            <div className="mt-2 text-sm text-foreground">{step.title}</div>
-            <div className="mt-1 text-xs text-muted-foreground leading-relaxed">{step.desc}</div>
+          <div className="mt-auto pt-5">
+            <Button onClick={onConnect} loading={isStartingAuth} disabled={isStartingAuth}>
+              Connect a Vendor Login
+            </Button>
+            <div className="mt-2.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Locked size={12} className="shrink-0" />
+              Encrypted · stored in 1Password · evidence only
+            </div>
           </div>
-        ))}
-      </div>
+        </div>
 
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <Button onClick={onConnect} loading={isStartingAuth} disabled={isStartingAuth}>
-          Connect a vendor login
-          <ArrowRight size={14} />
-        </Button>
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Locked size={12} className="shrink-0" />
-          Encrypted, stored in 1Password, used only to collect evidence
+        {/* Right — quiet "how it works" rail */}
+        <div className="flex flex-col gap-3.5 border-t border-border bg-muted p-6 sm:border-l sm:border-t-0">
+          <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+            How it works
+          </div>
+          {SETUP_STEPS.map((step) => (
+            <div key={step.n} className="flex gap-2.5">
+              <span className="mt-0.5 font-mono text-[10px] text-muted-foreground">{step.n}</span>
+              <div className="text-xs leading-normal">
+                <span className="text-foreground">{step.title}</span>
+                <br />
+                <span className="text-[11px] text-muted-foreground">{step.desc}</span>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>
