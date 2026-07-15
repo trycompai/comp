@@ -65,4 +65,21 @@ describe('BrowserLoginAnalyzerService', () => {
     expect(result.recommendation.category).toBe('manual');
     expect(sessions.closeSession).toHaveBeenCalledWith('sess_1');
   });
+
+  it('falls back to manual (no crash) when Browserbase is unavailable', async () => {
+    const sessions = makeSessions(jest.fn());
+    sessions.createBrowserbaseContext.mockRejectedValue(
+      new Error('BROWSERBASE_API_KEY is missing'),
+    );
+
+    const result = await run(
+      sessions,
+      'https://app.datadoghq.com/account/login',
+    );
+
+    expect(result.reachable).toBe(false);
+    expect(result.recommendation.category).toBe('manual');
+    // No session was created, so nothing to close.
+    expect(sessions.closeSession).not.toHaveBeenCalled();
+  });
 });

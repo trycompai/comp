@@ -31,14 +31,18 @@ export class BrowserLoginAnalyzerService {
   ) {}
 
   async analyzeLogin(url: string): Promise<LoginAnalysis> {
-    const contextId = await this.sessions.createBrowserbaseContext();
-    const { sessionId } =
-      await this.sessions.createSessionWithContext(contextId);
-
+    let sessionId: string | null = null;
     let stagehand: Awaited<
       ReturnType<BrowserbaseSessionService['createStagehand']>
     > | null = null;
     try {
+      // Session/context creation is inside the try so that an unavailable or
+      // unconfigured Browserbase (e.g. missing BROWSERBASE_API_KEY) degrades to
+      // the manual fallback instead of surfacing a 500 to the user.
+      const contextId = await this.sessions.createBrowserbaseContext();
+      const session = await this.sessions.createSessionWithContext(contextId);
+      sessionId = session.sessionId;
+
       stagehand = await this.sessions.createStagehand(sessionId);
       const page = await this.sessions.ensureActivePage(stagehand);
       await page.goto(url, { waitUntil: 'domcontentloaded', timeoutMs: 30000 });
@@ -50,17 +54,19 @@ export class BrowserLoginAnalyzerService {
       );
       return analyzeDetectedLogin(detection);
     } catch (err) {
-      // A page we can't read isn't an error the user needs to see — we just fall
-      // back to manual entry, so the connect flow always moves forward.
+      // A page we can't read (or a Browserbase hiccup) isn't an error the user
+      // needs to see — fall back to manual entry so the connect flow continues.
       this.logger.warn('Login analysis failed; falling back to manual entry', {
         error: err instanceof Error ? err.message : String(err),
       });
       return manualLoginAnalysis();
     } finally {
       if (stagehand) await this.sessions.safeCloseStagehand(stagehand);
-      await this.sessions
-        .closeSession(sessionId)
-        .catch(() => undefined /* best-effort cleanup */);
+      if (sessionId) {
+        await this.sessions
+          .closeSession(sessionId)
+          .catch(() => undefined /* best-effort cleanup */);
+      }
     }
   }
 }
