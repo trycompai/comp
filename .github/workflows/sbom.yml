@@ -6,17 +6,22 @@ name: SBOM
 # graph, exported SBOM, and Dependabot are blind to the bun dependency tree
 # (they only see declared package.json ranges + the npm package-lock.json in
 # apps/mcp-server). Syft DOES parse bun.lock with fully resolved versions
-# (overrides applied), so this workflow scans the repo with Syft and submits
-# the resolved tree via GitHub's Dependency Submission API. After this runs on
-# `main`, GitHub's own "Export SBOM" and Dependabot reflect the real bun tree.
+# (overrides applied), so this workflow scans bun.lock with Syft and submits
+# the resolved tree via GitHub's Dependency Submission API. (apps/mcp-server's
+# package-lock.json is already covered by GitHub's native npm parsing, so we
+# only need to submit the bun tree.) After this runs on `main`, GitHub's own
+# "Export SBOM" and Dependabot reflect the real bun tree.
+#
+# NOTE: we scan bun.lock via the `file:` input, not `path: .`. Syft's default
+# DIRECTORY catalogers do not include the bun cataloger, so a directory scan
+# silently skips bun.lock (it only picks up package-lock.json + actions). A
+# file scan forces the bun cataloger and yields the full resolved tree.
 
 on:
   push:
     branches: [main]
     paths:
       - 'bun.lock'
-      - 'apps/mcp-server/package-lock.json'
-      - '**/package.json'
       - '.github/workflows/sbom.yml'
   schedule:
     - cron: '0 6 * * 1' # weekly, Monday 06:00 UTC — refresh against new advisories
@@ -37,17 +42,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Scans the whole repo: Syft reads bun.lock (resolved) and
-      # apps/mcp-server/package-lock.json. `dependency-snapshot: true` submits
-      # the result to the dependency graph; the SBOM is also uploaded as a
-      # workflow artifact for anyone who wants the file directly.
+      # Scans bun.lock directly (see NOTE above). `dependency-snapshot: true`
+      # submits the resolved tree to the dependency graph; the SBOM is also
+      # uploaded as a workflow artifact for anyone who wants the file directly.
       - name: Generate SBOM & submit to dependency graph
         # Pinned to a full commit SHA (not the mutable @v0 tag): this action
         # runs with contents:write, so a retag/compromise must not be able to
         # swap in altered code. Bump the SHA + comment together to upgrade.
         uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
         with:
-          path: .
+          file: bun.lock
           format: spdx-json
           artifact-name: sbom.spdx.json
           dependency-snapshot: true
