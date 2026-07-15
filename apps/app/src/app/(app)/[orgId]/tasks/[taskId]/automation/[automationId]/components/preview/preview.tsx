@@ -13,6 +13,24 @@ interface Props {
   url?: string;
 }
 
+/**
+ * Only allow http(s) URLs to reach an iframe `src` or anchor `href`. User-typed
+ * input flows into the preview iframe, so an unvalidated value like
+ * `javascript:...` or `data:text/html,...` would execute in the preview context
+ * (XSS). Returns the normalized href, or undefined if the value isn't http(s).
+ */
+function toSafeUrl(value: string | undefined | null): string | undefined {
+  if (!value) return undefined;
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+      ? parsed.href
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export function Preview({ className, disabled, url }: Props) {
   const [currentUrl, setCurrentUrl] = useState(url);
   const [error, setError] = useState<string | null>(null);
@@ -21,36 +39,46 @@ export function Preview({ className, disabled, url }: Props) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const loadStartTime = useRef<number | null>(null);
 
+  // Sanitized view of currentUrl used for every DOM sink (iframe src, anchor href).
+  const safeUrl = toSafeUrl(currentUrl);
+
   useEffect(() => {
     setCurrentUrl(url);
     setInputValue(url || '');
   }, [url]);
 
   const refreshIframe = () => {
-    if (iframeRef.current && currentUrl) {
+    if (iframeRef.current && safeUrl) {
       setIsLoading(true);
       setError(null);
       loadStartTime.current = Date.now();
       iframeRef.current.src = '';
       setTimeout(() => {
         if (iframeRef.current) {
-          iframeRef.current.src = currentUrl;
+          iframeRef.current.src = safeUrl;
         }
       }, 10);
     }
   };
 
   const loadNewUrl = () => {
-    if (iframeRef.current && inputValue) {
-      if (inputValue !== currentUrl) {
-        setIsLoading(true);
-        setError(null);
-        loadStartTime.current = Date.now();
-        iframeRef.current.src = inputValue;
-      } else {
-        refreshIframe();
-      }
+    if (!inputValue) return;
+    const safeInput = toSafeUrl(inputValue);
+    if (!safeInput) {
+      setError('Enter a valid http(s) URL');
+      return;
     }
+    if (safeInput === safeUrl) {
+      refreshIframe();
+      return;
+    }
+    // Drive the iframe through state (not iframeRef.current.src) so the src
+    // prop, the external-link href, and refresh/try-again all stay in sync
+    // with the URL actually shown.
+    setIsLoading(true);
+    setError(null);
+    loadStartTime.current = Date.now();
+    setCurrentUrl(safeInput);
   };
 
   const handleIframeLoad = () => {
@@ -67,7 +95,12 @@ export function Preview({ className, disabled, url }: Props) {
     <Panel className={className}>
       <PanelHeader>
         <div className="absolute flex items-center space-x-1">
-          <a href={currentUrl} target="_blank" className="cursor-pointer px-1">
+          <a
+            href={safeUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="cursor-pointer px-1"
+          >
             <CompassIcon className="w-4" />
           </a>
           <button
@@ -101,12 +134,12 @@ export function Preview({ className, disabled, url }: Props) {
       </PanelHeader>
 
       <div className="flex h-[calc(100%-2rem-1px)] relative">
-        {currentUrl && !disabled && (
+        {safeUrl && !disabled && (
           <>
             <ScrollArea className="w-full">
               <iframe
                 ref={iframeRef}
-                src={currentUrl}
+                src={safeUrl}
                 className="w-full h-full"
                 onLoad={handleIframeLoad}
                 onError={handleIframeError}
@@ -128,10 +161,10 @@ export function Preview({ className, disabled, url }: Props) {
                   className="text-primary hover:underline text-sm"
                   type="button"
                   onClick={() => {
-                    if (currentUrl) {
+                    if (safeUrl) {
                       setIsLoading(true);
                       setError(null);
-                      const newUrl = new URL(currentUrl);
+                      const newUrl = new URL(safeUrl);
                       newUrl.searchParams.set('t', Date.now().toString());
                       setCurrentUrl(newUrl.toString());
                     }
