@@ -1,0 +1,50 @@
+name: SBOM
+
+# Publishes an accurate SBOM to GitHub's dependency graph.
+#
+# GitHub does NOT natively parse `bun.lock`, so out of the box its dependency
+# graph, exported SBOM, and Dependabot are blind to the bun dependency tree
+# (they only see declared package.json ranges + the npm package-lock.json in
+# apps/mcp-server). Syft DOES parse bun.lock with fully resolved versions
+# (overrides applied), so this workflow scans the repo with Syft and submits
+# the resolved tree via GitHub's Dependency Submission API. After this runs on
+# `main`, GitHub's own "Export SBOM" and Dependabot reflect the real bun tree.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'bun.lock'
+      - 'apps/mcp-server/package-lock.json'
+      - '**/package.json'
+      - '.github/workflows/sbom.yml'
+  schedule:
+    - cron: '0 6 * * 1' # weekly, Monday 06:00 UTC — refresh against new advisories
+  workflow_dispatch:
+
+permissions:
+  contents: write # required by the Dependency Submission API
+
+concurrency:
+  group: sbom-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sbom:
+    name: Generate & submit SBOM
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Scans the whole repo: Syft reads bun.lock (resolved) and
+      # apps/mcp-server/package-lock.json. `dependency-snapshot: true` submits
+      # the result to the dependency graph; the SBOM is also uploaded as a
+      # workflow artifact for anyone who wants the file directly.
+      - name: Generate SBOM & submit to dependency graph
+        uses: anchore/sbom-action@v0
+        with:
+          path: .
+          format: spdx-json
+          artifact-name: sbom.spdx.json
+          dependency-snapshot: true
