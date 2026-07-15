@@ -32,6 +32,16 @@ function hostnameOf(url: string): string {
   }
 }
 
+// Accept whatever the user pastes — a bare domain (notion.so), a homepage, or a
+// deep link. We add a scheme if it's missing so they never have to think about
+// "http://" or hunt down the exact /login page; the analyzer finds the sign-in
+// form from there.
+function normalizeUrl(input: string): string {
+  const trimmed = input.trim();
+  if (!trimmed) return trimmed;
+  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+}
+
 interface ConnectVendorLoginFlowProps {
   onConnected: () => void;
   onCancel: () => void;
@@ -75,9 +85,10 @@ export function ConnectVendorLoginFlow({ onConnected, onCancel }: ConnectVendorL
   }, [step, context.status]);
 
   const handleAnalyze = useCallback(async () => {
-    setUrl(urlInput);
+    const target = normalizeUrl(urlInput);
+    setUrl(target);
     setStep('checking');
-    const handle = await startAnalysis(urlInput);
+    const handle = await startAnalysis(target);
     if (!handle) {
       setStep('error');
       return;
@@ -152,22 +163,22 @@ export function ConnectVendorLoginFlow({ onConnected, onCancel }: ConnectVendorL
         <div className="flex min-h-[320px] flex-col items-center justify-center p-8">
           {step === 'enter-url' && (
             <div className="flex w-full max-w-sm flex-col gap-2.5">
-              <div className="text-sm text-foreground">Vendor sign-in URL</div>
+              <div className="text-sm text-foreground">Vendor website</div>
               <Input
                 value={urlInput}
                 onChange={(e) => setUrlInput(e.target.value)}
-                placeholder="https://app.vendor.com/login"
+                placeholder="notion.so"
               />
               <div className="text-xs text-muted-foreground">
-                The page where you normally sign in.
+                Just the website is enough — we&apos;ll find the sign-in page for you.
               </div>
               <div className="mt-1 flex items-center gap-2">
                 <Button
                   onClick={handleAnalyze}
                   loading={isStarting}
-                  disabled={isStarting || !urlInput}
+                  disabled={isStarting || !urlInput.trim()}
                 >
-                  Open Site
+                  Continue
                 </Button>
                 <Button variant="ghost" onClick={handleCancel}>
                   Cancel
@@ -262,9 +273,9 @@ export function ConnectVendorLoginFlow({ onConnected, onCancel }: ConnectVendorL
 
           {step === 'error' && (
             <div className="flex w-full max-w-md flex-col gap-3">
-              <div className="text-base text-foreground">We couldn&apos;t reach that address</div>
+              <div className="text-base text-foreground">We couldn&apos;t reach that website</div>
               <div className="text-sm text-muted-foreground leading-relaxed">
-                Check for typos, or paste the exact page where you sign in.
+                Double-check the address and try again.
               </div>
               <div className="mt-1 flex items-center gap-2">
                 <Button onClick={() => setStep('enter-url')}>Try Again</Button>
