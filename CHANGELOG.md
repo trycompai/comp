@@ -1,3 +1,23 @@
+# [3.102.0](https://github.com/trycompai/comp/compare/v3.101.2...v3.102.0) (2026-07-15)
+
+
+### Bug Fixes
+
+* **ci:** pin Syft 1.46.0 in SBOM action (1.42.3 can't parse bun.lock) ([#3415](https://github.com/trycompai/comp/issues/3415)) ([5f47024](https://github.com/trycompai/comp/commit/5f470240e56ae47a8489cfeb731e44e5950cd35b))
+* **ci:** scan bun.lock via file: input so the SBOM isn't empty ([#3414](https://github.com/trycompai/comp/issues/3414)) ([e47e6fd](https://github.com/trycompai/comp/commit/e47e6fd43a07b031fbaaa4bd77a7963625639dc3))
+* **deps:** override uuid to ^11.1.1 (Dependabot [#85](https://github.com/trycompai/comp/issues/85)) ([#3418](https://github.com/trycompai/comp/issues/3418)) ([598ff8c](https://github.com/trycompai/comp/commit/598ff8c5ca4105b7c8d1503f02b7f8286a8d4da7))
+* **deps:** patch tmp and js-yaml in mcp-server (Dependabot [#58](https://github.com/trycompai/comp/issues/58)/[#59](https://github.com/trycompai/comp/issues/59)/[#71](https://github.com/trycompai/comp/issues/71)) ([#3412](https://github.com/trycompai/comp/issues/3412)) ([59a6b0f](https://github.com/trycompai/comp/commit/59a6b0faaf8700b80b25b3897d572cf78198c900))
+* **deps:** remediate dependency security vulnerabilities ([#3403](https://github.com/trycompai/comp/issues/3403)) ([7577a37](https://github.com/trycompai/comp/commit/7577a3783defd68059583ed1ec4012cec7cbb6e5))
+* **deps:** remediate dependency security vulnerabilities (165→16, 4 critical→0) ([#3406](https://github.com/trycompai/comp/issues/3406)) ([d403e9c](https://github.com/trycompai/comp/commit/d403e9c9805cf1fd4731caef9968745fbf4fe055))
+* **device-agent:** implement the installer-cleanup fix ([#3381](https://github.com/trycompai/comp/issues/3381)) ([0f7581b](https://github.com/trycompai/comp/commit/0f7581b36bafa7157adb6e355b424a8b9459afe5))
+* **security:** prevent SSRF in task-automation enterprise API calls ([#3411](https://github.com/trycompai/comp/issues/3411)) ([dcec288](https://github.com/trycompai/comp/commit/dcec288f4f9667e08602beecc00ce04594326b66)), closes [#116](https://github.com/trycompai/comp/issues/116)
+* **security:** resolve open CodeQL alerts (XSS, sanitization, workflow perms) ([#3419](https://github.com/trycompai/comp/issues/3419)) ([32329be](https://github.com/trycompai/comp/commit/32329be11fcf6ca9cc7255921bfcec03f0a507d8)), closes [#108](https://github.com/trycompai/comp/issues/108) [js/xss-throu#dom](https://github.com/js/xss-throu/issues/dom) [#95](https://github.com/trycompai/comp/issues/95) [84/#85](https://github.com/trycompai/comp/issues/85)
+
+
+### Features
+
+* **framework-editor:** raise requirement description limit to 100,000 chars (FRAME-2) ([67c9f4a](https://github.com/trycompai/comp/commit/67c9f4a01b0cf7b33d6ecaaf341385ca520556a4))
+
 ## [3.101.2](https://github.com/trycompai/comp/compare/v3.101.1...v3.101.2) (2026-07-14)
 
 
