@@ -5,6 +5,20 @@ import type { LoginAnalysis } from '../../hooks/types';
 
 const RAIL_STEPS = ['Vendor site', 'Check', 'Sign in', 'Details', 'Done'];
 
+// Human labels for detected login methods — CSS `capitalize` would render
+// acronyms wrong ("Sso"). Fall back to first-letter capitalization otherwise.
+const METHOD_LABELS: Record<string, string> = {
+  password: 'Password',
+  sso: 'SSO',
+  passkey: 'Passkey',
+};
+
+function methodLabel(method: string): string {
+  return (
+    METHOD_LABELS[method] ?? method.charAt(0).toUpperCase() + method.slice(1)
+  );
+}
+
 interface ConnectFlowRailProps {
   title: string;
   subtitle: string;
@@ -72,7 +86,7 @@ export function ConnectFlowRail({
         {analysis?.detectedMethods.map((method) => (
           <div key={method} className="flex items-center gap-1.5">
             <Checkmark size={11} className="text-primary" />
-            <span className="text-xs capitalize text-foreground">{method}</span>
+            <span className="text-xs text-foreground">{methodLabel(method)}</span>
           </div>
         ))}
         {analysis && (
