@@ -42,7 +42,10 @@ jobs:
       # the result to the dependency graph; the SBOM is also uploaded as a
       # workflow artifact for anyone who wants the file directly.
       - name: Generate SBOM & submit to dependency graph
-        uses: anchore/sbom-action@v0
+        # Pinned to a full commit SHA (not the mutable @v0 tag): this action
+        # runs with contents:write, so a retag/compromise must not be able to
+        # swap in altered code. Bump the SHA + comment together to upgrade.
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
         with:
           path: .
           format: spdx-json
