@@ -2066,6 +2066,22 @@
               }
             }
           },
+          "409": {
+            "description": "Conflict - Login email already used by another account, or the member belongs to other organizations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "That email is already used by another account"
+                    }
+                  }
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal server error",
             "content": {

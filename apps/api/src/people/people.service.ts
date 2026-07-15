@@ -3,6 +3,7 @@ import {
   NotFoundException,
   Logger,
   BadRequestException,
+  ConflictException,
   ForbiddenException,
 } from '@nestjs/common';
 import { db } from '@db';
@@ -15,6 +16,11 @@ import type { BulkCreatePeopleDto } from './dto/bulk-create-people.dto';
 import { MemberValidator } from './utils/member-validator';
 import { MemberQueries } from './utils/member-queries';
 import { authorizeRoleChange } from './utils/role-authorization';
+import {
+  notifyLoginEmailChanged,
+  validateLoginEmailChange,
+  type LoginEmailChange,
+} from './utils/login-email-change';
 import {
   collectAssignedItems,
   clearAssignments,
@@ -333,11 +339,35 @@ export class PeopleService {
         );
       }
 
+      // Changing the email here changes the LOGIN email (User.email, global),
+      // so it needs uniqueness + cross-org guards before the raw write.
+      let emailChange: LoginEmailChange | null = null;
+      if (updateData.email !== undefined) {
+        emailChange = await validateLoginEmailChange({
+          userId: existingMember.userId,
+          organizationId,
+          requestedEmail: updateData.email,
+        });
+        if (emailChange) {
+          updateData.email = emailChange.newEmail;
+        } else {
+          delete updateData.email;
+        }
+      }
+
       const updatedMember = await MemberQueries.updateMember(
         memberId,
         organizationId,
         updateData,
       );
+
+      if (emailChange) {
+        await notifyLoginEmailChanged({
+          organizationId,
+          change: emailChange,
+          logger: this.logger,
+        });
+      }
 
       this.logger.log(
         `Updated member: ${updatedMember.user.name} (${memberId})`,
@@ -347,7 +377,8 @@ export class PeopleService {
       if (
         error instanceof NotFoundException ||
         error instanceof BadRequestException ||
-        error instanceof ForbiddenException
+        error instanceof ForbiddenException ||
+        error instanceof ConflictException
       ) {
         throw error;
       }

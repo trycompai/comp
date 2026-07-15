@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { PeopleService } from './people.service';
 import { FleetService } from '../lib/fleet.service';
@@ -86,8 +87,13 @@ jest.mock('@trycompai/email', () => ({
 
 jest.mock('./utils/member-validator');
 jest.mock('./utils/member-queries');
+jest.mock('./utils/login-email-change');
 
 import { db } from '@db';
+import {
+  notifyLoginEmailChanged,
+  validateLoginEmailChange,
+} from './utils/login-email-change';
 
 describe('PeopleService', () => {
   let service: PeopleService;
@@ -296,6 +302,93 @@ describe('PeopleService', () => {
         'org_123',
         updateData,
       );
+    });
+
+    describe('login email change', () => {
+      const existingMember = {
+        id: 'mem_1',
+        userId: 'usr_target',
+        role: 'employee',
+      };
+      const updatedMember = {
+        id: 'mem_1',
+        user: { name: 'Alice' },
+        role: 'employee',
+      };
+
+      beforeEach(() => {
+        (MemberValidator.validateOrganization as jest.Mock).mockResolvedValue(
+          undefined,
+        );
+        (MemberValidator.validateMemberExists as jest.Mock).mockResolvedValue(
+          existingMember,
+        );
+        (MemberQueries.updateMember as jest.Mock).mockResolvedValue(
+          updatedMember,
+        );
+      });
+
+      it('applies the normalized email and notifies both addresses', async () => {
+        (validateLoginEmailChange as jest.Mock).mockResolvedValue({
+          oldEmail: 'old@company.dev',
+          newEmail: 'new@company.io',
+        });
+
+        await service.updateById('mem_1', 'org_123', {
+          email: ' New@Company.IO ',
+        });
+
+        expect(validateLoginEmailChange).toHaveBeenCalledWith({
+          userId: 'usr_target',
+          organizationId: 'org_123',
+          requestedEmail: ' New@Company.IO ',
+        });
+        expect(MemberQueries.updateMember).toHaveBeenCalledWith(
+          'mem_1',
+          'org_123',
+          { email: 'new@company.io' },
+        );
+        expect(notifyLoginEmailChanged).toHaveBeenCalledWith(
+          expect.objectContaining({
+            organizationId: 'org_123',
+            change: {
+              oldEmail: 'old@company.dev',
+              newEmail: 'new@company.io',
+            },
+          }),
+        );
+      });
+
+      it('drops a no-op email change and does not notify', async () => {
+        (validateLoginEmailChange as jest.Mock).mockResolvedValue(null);
+
+        await service.updateById('mem_1', 'org_123', {
+          email: 'old@company.dev',
+          department: 'it',
+        });
+
+        expect(MemberQueries.updateMember).toHaveBeenCalledWith(
+          'mem_1',
+          'org_123',
+          { department: 'it' },
+        );
+        expect(notifyLoginEmailChanged).not.toHaveBeenCalled();
+      });
+
+      it('propagates ConflictException from validation without wrapping', async () => {
+        (validateLoginEmailChange as jest.Mock).mockRejectedValue(
+          new ConflictException('That email is already used by another account'),
+        );
+
+        await expect(
+          service.updateById('mem_1', 'org_123', {
+            email: 'taken@company.io',
+          }),
+        ).rejects.toThrow(ConflictException);
+
+        expect(MemberQueries.updateMember).not.toHaveBeenCalled();
+        expect(notifyLoginEmailChanged).not.toHaveBeenCalled();
+      });
     });
 
     it('should validate new userId when changing user', async () => {
