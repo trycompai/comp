@@ -21,6 +21,7 @@ import {
 } from '@db';
 import { MaxJsonSize } from '../../validators/max-json-size.validator';
 import { IsObjectOrArray } from '../../validators/is-object-or-array.validator';
+import { REQUIREMENT_DESCRIPTION_MAX_LENGTH } from '../../constants';
 
 class ImportFrameworkMetaDto {
   @ApiProperty()
@@ -60,12 +61,13 @@ class ImportRequirementDto {
   @MaxLength(255)
   identifier?: string;
 
-  // Matches the standalone requirement DTOs (FRAME-2). NIST SP800-53 control
-  // text routinely exceeds 5000 chars (e.g. PL-2 > 6000).
+  // Matches the standalone requirement DTOs (FRAME-2). Regulatory control text
+  // can be very long: NIST SP800-53r5 PL-2 > 6000 chars, and many HITRUST CSF
+  // requirements exceed 70,000 — hence the shared 100,000 ceiling.
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  @MaxLength(10000)
+  @MaxLength(REQUIREMENT_DESCRIPTION_MAX_LENGTH)
   description: string;
 
   @ApiPropertyOptional()

@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsInt, IsNotEmpty, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+import { REQUIREMENT_DESCRIPTION_MAX_LENGTH } from '../../constants';
 
 export class CreateRequirementDto {
   @ApiProperty({ example: 'frk_abc123' })
@@ -22,7 +23,7 @@ export class CreateRequirementDto {
 
   @ApiProperty({ example: 'Control environment requirements' })
   @IsString()
-  @MaxLength(10000)
+  @MaxLength(REQUIREMENT_DESCRIPTION_MAX_LENGTH)
   description: string;
 
   @ApiPropertyOptional({ example: 'Access Control' })
