@@ -143,7 +143,10 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
   // No context - show setup prompt (only for non-manual tasks)
   if (!isManualTask && context.status === 'no-context' && automations.automations.length === 0) {
     return (
-      <NoContextState isStartingAuth={context.isStartingAuth} onStartAuth={handleStartConnect} />
+      <NoContextState
+        isStartingAuth={context.isStartingAuth}
+        onConnect={() => handleStartConnect('')}
+      />
     );
   }
 

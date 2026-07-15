@@ -1,63 +1,58 @@
 'use client';
 
-import { Badge, Button, Input } from '@trycompai/design-system';
-import { Add, ArrowRight, Globe, Screen } from '@trycompai/design-system/icons';
-import { useState } from 'react';
+import { Badge, Button } from '@trycompai/design-system';
+import { Add, ArrowRight, Globe, Locked } from '@trycompai/design-system/icons';
+
+const SETUP_STEPS = [
+  {
+    n: '01',
+    title: 'Connect a login',
+    desc: 'Sign in to the vendor once. We keep it connected.',
+  },
+  {
+    n: '02',
+    title: 'Describe what to capture',
+    desc: 'In plain English — like instructions to a colleague.',
+  },
+  {
+    n: '03',
+    title: 'Evidence, on schedule',
+    desc: 'Screenshots land in this task automatically.',
+  },
+];
 
 interface NoContextStateProps {
   isStartingAuth: boolean;
-  onStartAuth: (url: string) => void;
+  onConnect: () => void;
 }
 
-export function NoContextState({ isStartingAuth, onStartAuth }: NoContextStateProps) {
-  const [authUrl, setAuthUrl] = useState('https://github.com');
-
+export function NoContextState({ isStartingAuth, onConnect }: NoContextStateProps) {
   return (
-    <div className="rounded-lg border border-border bg-card overflow-hidden">
-      <div className="px-5 py-4 border-b border-border">
-        <div className="flex items-center gap-2.5">
-          <div className="p-1.5 rounded-md bg-muted">
-            <Globe className="h-4 w-4 text-primary" />
+    <div className="rounded-lg border border-border bg-card p-6 sm:p-8">
+      <h2 className="text-xl font-medium tracking-tight text-foreground">Browser automations</h2>
+      <p className="mt-1.5 max-w-xl text-sm text-muted-foreground leading-relaxed">
+        Prove controls on vendor sites that have no API — Comp AI signs in, navigates to the right
+        page, and files a screenshot as evidence.
+      </p>
+
+      <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {SETUP_STEPS.map((step) => (
+          <div key={step.n} className="rounded-md border border-border p-4">
+            <div className="font-mono text-xs text-muted-foreground">{step.n}</div>
+            <div className="mt-2 text-sm text-foreground">{step.title}</div>
+            <div className="mt-1 text-xs text-muted-foreground leading-relaxed">{step.desc}</div>
           </div>
-          <div>
-            <h3 className="text-sm font-semibold text-foreground">Browser Automations</h3>
-            <p className="text-xs text-muted-foreground">
-              Capture screenshots from authenticated web pages
-            </p>
-          </div>
-        </div>
+        ))}
       </div>
-      <div className="p-5">
-        <div className="rounded-lg border border-dashed border-border p-6 text-center">
-          <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
-            <Screen className="h-6 w-6 text-muted-foreground" />
-          </div>
-          <h4 className="text-sm font-medium mb-2">Log in to the website first</h4>
-          <p className="text-xs text-muted-foreground mb-4 max-w-sm mx-auto">
-            Enter the site you want to automate. We will save a browser profile for that hostname
-            and reuse it for future evidence runs.
-          </p>
-          <div className="flex flex-col gap-3 max-w-xs mx-auto">
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <Input
-                  placeholder="https://github.com"
-                  value={authUrl}
-                  onChange={(e) => setAuthUrl(e.target.value)}
-                />
-              </div>
-              <Button
-                onClick={() => onStartAuth(authUrl)}
-                disabled={isStartingAuth || !authUrl}
-                loading={isStartingAuth}
-              >
-                {isStartingAuth ? 'Connecting...' : 'Connect'}
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Use a dedicated service account for automations when possible.
-            </p>
-          </div>
+
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <Button onClick={onConnect} loading={isStartingAuth} disabled={isStartingAuth}>
+          Connect a vendor login
+          <ArrowRight size={14} />
+        </Button>
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Locked size={12} className="shrink-0" />
+          Encrypted, stored in 1Password, used only to collect evidence
         </div>
       </div>
     </div>
