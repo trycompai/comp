@@ -410,6 +410,13 @@ describe('PeopleService', () => {
 
         expect(result).toEqual(updatedMember);
         expect(MemberQueries.updateMember).not.toHaveBeenCalled();
+        // Must include deactivated members — the update path accepts them,
+        // so the no-op return can't silently 404 on a deactivated member.
+        expect(MemberQueries.findByIdInOrganization).toHaveBeenCalledWith(
+          'mem_1',
+          'org_123',
+          { includeDeactivated: true },
+        );
       });
 
       it('translates a unique-constraint race on the write into a 409', async () => {

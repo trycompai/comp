@@ -34,7 +34,16 @@ const buildChangeEmailSchema = (currentEmail: string) =>
 type ChangeEmailFormValues = z.infer<ReturnType<typeof buildChangeEmailSchema>>;
 
 export function LoginEmailSettings({ currentEmail }: Props) {
-  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+  // Tracks which login email the pending request was made against, so the
+  // notice disappears once the change completes and currentEmail moves on.
+  const [pendingRequest, setPendingRequest] = useState<{
+    from: string;
+    to: string;
+  } | null>(null);
+  const pendingEmail =
+    pendingRequest && pendingRequest.from === currentEmail
+      ? pendingRequest.to
+      : null;
 
   const {
     register,
@@ -54,16 +63,16 @@ export function LoginEmailSettings({ currentEmail }: Props) {
       });
 
       if (error) {
-        setPendingEmail(null);
+        setPendingRequest(null);
         toast.error(error.message ?? 'Failed to request the email change');
         return;
       }
 
-      setPendingEmail(newEmail);
+      setPendingRequest({ from: currentEmail, to: newEmail });
       reset();
       toast.success(`Confirmation link sent to ${currentEmail}`);
     } catch {
-      setPendingEmail(null);
+      setPendingRequest(null);
       toast.error('Failed to request the email change');
     }
   });

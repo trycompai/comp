@@ -360,7 +360,19 @@ export class PeopleService {
         } else {
           delete updateData.email;
           if (Object.keys(updateData).length === 0) {
-            return this.findById(memberId, organizationId);
+            // No-op: return the member without writing. Unlike findById, this
+            // must include deactivated members — the update path accepts them.
+            const member = await MemberQueries.findByIdInOrganization(
+              memberId,
+              organizationId,
+              { includeDeactivated: true },
+            );
+            if (!member) {
+              throw new NotFoundException(
+                `Member with ID ${memberId} not found in organization ${organizationId}`,
+              );
+            }
+            return member;
           }
         }
       }

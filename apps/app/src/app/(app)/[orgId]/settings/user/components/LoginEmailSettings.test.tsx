@@ -107,6 +107,25 @@ describe('LoginEmailSettings', () => {
     expect(mockChangeEmail).not.toHaveBeenCalled();
   });
 
+  it('hides the pending notice once the login email actually changes', async () => {
+    mockChangeEmail.mockResolvedValue({ data: { status: true }, error: null });
+    const { rerender } = render(
+      <LoginEmailSettings currentEmail={CURRENT_EMAIL} />,
+    );
+
+    await submitWithEmail('admin@new-domain.com');
+    expect(
+      await screen.findByText(/We sent a confirmation link/),
+    ).toBeInTheDocument();
+
+    // Verification completed elsewhere; the server re-renders with the new email.
+    rerender(<LoginEmailSettings currentEmail="admin@new-domain.com" />);
+
+    expect(
+      screen.queryByText(/We sent a confirmation link/),
+    ).not.toBeInTheDocument();
+  });
+
   it('surfaces API errors as a toast', async () => {
     mockChangeEmail.mockResolvedValue({
       data: null,
