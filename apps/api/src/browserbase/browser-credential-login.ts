@@ -42,32 +42,50 @@ export async function performCredentialLogin({
   credentials: RuntimeCredentialMaterial;
   log: (message: string) => void;
 }): Promise<void> {
-  const variables: Record<string, string> = {};
-  if (credentials.username) variables.username = credentials.username;
-  if (credentials.password) variables.password = credentials.password;
+  // Stagehand's act() performs ONE action per call, so each field and the submit
+  // are separate steps — a single "enter username and password and submit"
+  // instruction would only fill the first field. Secrets go through `variables`
+  // substitution, so only placeholders (not the values) ever reach the model.
 
-  // Site-specific fields (workspace, subdomain, …) often precede the password.
-  // Values go through variable substitution; only the field labels reach the model.
+  // Site-specific fields (workspace, subdomain, …) usually precede the password.
   const extraFields = credentials.extraFields ?? [];
-  if (extraFields.length > 0) {
-    const extraVariables: Record<string, string> = {};
-    const clauses = extraFields.map((field, index) => {
-      extraVariables[`field${index}`] = field.value;
-      return `enter %field${index}% into the "${field.label}" field`;
-    });
-    log('Entering additional login details.');
+  for (const field of extraFields) {
+    log(`Entering ${field.label}.`);
     await stagehand.act(
-      `On the sign-in form, ${clauses.join(', ')}. Then continue if there is a next button.`,
-      { variables: extraVariables },
+      `Enter %value% into the "${field.label}" field on the sign-in form.`,
+      { variables: { value: field.value } },
     );
-    await delay(1500);
+    await delay(1000);
+  }
+
+  if (credentials.username) {
+    log('Entering username.');
+    await stagehand.act(
+      'Enter %username% into the email or username field on the sign-in form.',
+      { variables: { username: credentials.username } },
+    );
+    await delay(1000);
+    // Two-step logins (Microsoft, Google, Okta) reveal the password only after a
+    // Next/Continue; single-page forms (e.g. GitHub) already show it.
+    await stagehand.act(
+      'If no password field is visible yet, click the "Next" or "Continue" button to proceed. If a password field is already visible, do nothing.',
+    );
+    await delay(1000);
+  }
+
+  if (credentials.password) {
+    log('Entering password.');
+    await stagehand.act(
+      'Enter %password% into the password field on the sign-in form.',
+      { variables: { password: credentials.password } },
+    );
+    await delay(1000);
   }
 
   if (credentials.username || credentials.password) {
-    log('Entering stored credentials.');
+    log('Submitting the sign-in form.');
     await stagehand.act(
-      'Enter the username %username% and the password %password% into the sign-in form and submit it. If only one field is visible at a time, fill it and continue to the next step.',
-      { variables },
+      'Click the "Sign in" or "Log in" button to submit the sign-in form.',
     );
     await delay(2000);
   }
@@ -75,8 +93,12 @@ export async function performCredentialLogin({
   if (credentials.totpCode) {
     log('Entering one-time passcode.');
     await stagehand.act(
-      'If a one-time passcode, two-factor authentication, or verification code field is shown, enter %code% and submit. If no such field is present, do nothing.',
+      'If a one-time passcode, two-factor, or verification code field is shown, enter %code% into it. If no such field is present, do nothing.',
       { variables: { code: credentials.totpCode } },
+    );
+    await delay(1500);
+    await stagehand.act(
+      'If there is a button to submit or verify the code, click it. Otherwise do nothing.',
     );
     await delay(2000);
   }
