@@ -17,8 +17,25 @@ interface NoContextStateProps {
 export function NoContextState({ isStartingAuth, onConnect }: NoContextStateProps) {
   return (
     <div className="overflow-hidden rounded-lg border border-border bg-card">
-      <div className="grid grid-cols-1 sm:grid-cols-[1fr_280px]">
-        {/* Left — the pitch + primary action */}
+      <div className="grid grid-cols-1 sm:grid-cols-[280px_1fr]">
+        {/* Left — quiet "how it works" rail */}
+        <div className="flex flex-col gap-3.5 border-b border-border bg-muted p-6 sm:border-b-0 sm:border-r">
+          <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+            How it works
+          </div>
+          {SETUP_STEPS.map((step) => (
+            <div key={step.n} className="flex gap-2.5">
+              <span className="mt-0.5 font-mono text-[10px] text-muted-foreground">{step.n}</span>
+              <div className="text-xs leading-normal">
+                <span className="text-foreground">{step.title}</span>
+                <br />
+                <span className="text-[11px] text-muted-foreground">{step.desc}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Right — the pitch + primary action */}
         <div className="flex flex-col p-6 sm:p-7">
           <h2 className="text-lg font-medium tracking-tight text-foreground">
             Browser Automations
@@ -37,23 +54,6 @@ export function NoContextState({ isStartingAuth, onConnect }: NoContextStateProp
               Encrypted · stored in 1Password · evidence only
             </div>
           </div>
-        </div>
-
-        {/* Right — quiet "how it works" rail */}
-        <div className="flex flex-col gap-3.5 border-t border-border bg-muted p-6 sm:border-l sm:border-t-0">
-          <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-            How it works
-          </div>
-          {SETUP_STEPS.map((step) => (
-            <div key={step.n} className="flex gap-2.5">
-              <span className="mt-0.5 font-mono text-[10px] text-muted-foreground">{step.n}</span>
-              <div className="text-xs leading-normal">
-                <span className="text-foreground">{step.title}</span>
-                <br />
-                <span className="text-[11px] text-muted-foreground">{step.desc}</span>
-              </div>
-            </div>
-          ))}
         </div>
       </div>
     </div>
