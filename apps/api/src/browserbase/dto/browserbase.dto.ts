@@ -1,11 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
+  IsArray,
   IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
   IsBoolean,
   IsUrl,
+  ValidateNested,
 } from 'class-validator';
 import { TaskFrequency } from '@db';
 import { IsSafeUrl } from '../validators/url-safety.validator';
@@ -164,6 +167,18 @@ export class MarkAuthProfileNeedsReauthDto {
   reason?: string;
 }
 
+export class CredentialExtraFieldDto {
+  @ApiProperty({ description: 'Field label as shown on the vendor login' })
+  @IsString()
+  @IsNotEmpty()
+  label: string;
+
+  @ApiProperty({ description: 'Field value' })
+  @IsString()
+  @IsNotEmpty()
+  value: string;
+}
+
 export class StoreAuthProfileCredentialsDto {
   @ApiProperty({ description: 'Username or email for the vendor login' })
   @IsString()
@@ -182,6 +197,16 @@ export class StoreAuthProfileCredentialsDto {
   @IsString()
   @IsOptional()
   totpSeed?: string;
+
+  @ApiPropertyOptional({
+    type: [CredentialExtraFieldDto],
+    description: 'Extra site-specific fields (e.g. workspace, subdomain).',
+  })
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => CredentialExtraFieldDto)
+  extraFields?: CredentialExtraFieldDto[];
 }
 
 export class BrowserAuthProfileResponseDto {

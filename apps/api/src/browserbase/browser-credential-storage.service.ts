@@ -27,6 +27,8 @@ export interface StoreProfileCredentialsInput {
   username: string;
   password: string;
   totpSeed?: string;
+  /** Extra site-specific fields (e.g. workspace, subdomain). */
+  extraFields?: { label: string; value: string }[];
 }
 
 /**
@@ -62,6 +64,7 @@ export class BrowserCredentialStorageService {
       username: input.username,
       password: input.password,
       totpSeed: input.totpSeed,
+      extraFields: input.extraFields,
     });
 
     const { ItemCategory } = await loadOnePasswordModule();
@@ -113,10 +116,12 @@ export class BrowserCredentialStorageService {
     username,
     password,
     totpSeed,
+    extraFields,
   }: {
     username: string;
     password: string;
     totpSeed?: string;
+    extraFields?: { label: string; value: string }[];
   }): Promise<ItemField[]> {
     const { ItemFieldType } = await loadOnePasswordModule();
     const fields: ItemField[] = [
@@ -140,6 +145,17 @@ export class BrowserCredentialStorageService {
         title: TOTP_FIELD_TITLE,
         fieldType: ItemFieldType.Totp,
         value: totpSeed.trim(),
+      });
+    }
+
+    for (const field of extraFields ?? []) {
+      const label = field.label.trim();
+      if (!label || !field.value.trim()) continue;
+      fields.push({
+        id: label,
+        title: label,
+        fieldType: ItemFieldType.Text,
+        value: field.value,
       });
     }
 

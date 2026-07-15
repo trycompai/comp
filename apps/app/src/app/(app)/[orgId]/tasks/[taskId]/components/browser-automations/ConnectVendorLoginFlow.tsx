@@ -83,6 +83,7 @@ export function ConnectVendorLoginFlow({ onConnected, onCancel }: ConnectVendorL
             username: data.username,
             password: data.password,
             totpSeed: data.totpSeed?.trim() || undefined,
+            extraFields: data.extraFields?.length ? data.extraFields : undefined,
           },
         );
         if (res.error) {

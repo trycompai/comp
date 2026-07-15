@@ -134,6 +134,7 @@ export class BrowserAuthProfilesController {
       username: dto.username,
       password: dto.password,
       totpSeed: dto.totpSeed,
+      extraFields: dto.extraFields,
     })) as BrowserAuthProfileResponseDto;
   }
 

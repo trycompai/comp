@@ -25,6 +25,8 @@ vi.mock('@trycompai/design-system', () => ({
 }));
 
 vi.mock('@trycompai/design-system/icons', () => ({
+  Add: () => <span data-testid="icon-add" />,
+  Close: () => <span data-testid="icon-close" />,
   Locked: () => <span data-testid="icon-lock" />,
 }));
 

@@ -86,6 +86,7 @@ export class BrowserbaseService {
     username: string;
     password: string;
     totpSeed?: string;
+    extraFields?: { label: string; value: string }[];
   }) {
     return this.credentialStorage.storeProfileCredentials(input);
   }

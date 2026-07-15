@@ -10,8 +10,16 @@ jest.mock('./onepassword-client', () => ({
 
 const mockedGetClient = jest.mocked(getOnePasswordClient);
 
-function clientWith(resolve: jest.Mock): OnePasswordClient {
-  return { secrets: { resolve } } as unknown as OnePasswordClient;
+function clientWith(
+  resolve: jest.Mock,
+  itemsGet?: jest.Mock,
+): OnePasswordClient {
+  return {
+    secrets: { resolve },
+    items: {
+      get: itemsGet ?? jest.fn().mockRejectedValue(new Error('no items')),
+    },
+  } as unknown as OnePasswordClient;
 }
 
 describe('OnePasswordCredentialVaultAdapter', () => {
@@ -100,5 +108,34 @@ describe('OnePasswordCredentialVaultAdapter', () => {
     });
 
     expect(result).toBeNull();
+  });
+
+  it('resolves extra custom fields, ignoring the reserved login fields', async () => {
+    const resolve = jest.fn((reference: string) => {
+      if (reference.endsWith('/username')) return 'alice';
+      if (reference.endsWith('/password')) return 'pw';
+      throw new Error('no totp');
+    });
+    const itemsGet = jest.fn().mockResolvedValue({
+      fields: [
+        { title: 'username', value: 'alice' },
+        { title: 'password', value: 'pw' },
+        { title: 'one-time password', value: 'seed' },
+        { title: 'Workspace URL', value: 'acme.example.com' },
+        { title: 'Empty', value: '   ' },
+      ],
+    });
+    mockedGetClient.mockResolvedValue(clientWith(resolve, itemsGet));
+
+    const result = await adapter.resolveCredentialReference({
+      profileId: 'bap_1',
+      provider: '1password',
+      externalItemRef: 'op://vault123/item456',
+    });
+
+    expect(itemsGet).toHaveBeenCalledWith('vault123', 'item456');
+    expect(result?.extraFields).toEqual([
+      { label: 'Workspace URL', value: 'acme.example.com' },
+    ]);
   });
 });

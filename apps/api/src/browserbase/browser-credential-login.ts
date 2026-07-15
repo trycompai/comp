@@ -30,6 +30,23 @@ export async function performCredentialLogin({
   if (credentials.username) variables.username = credentials.username;
   if (credentials.password) variables.password = credentials.password;
 
+  // Site-specific fields (workspace, subdomain, …) often precede the password.
+  // Values go through variable substitution; only the field labels reach the model.
+  const extraFields = credentials.extraFields ?? [];
+  if (extraFields.length > 0) {
+    const extraVariables: Record<string, string> = {};
+    const clauses = extraFields.map((field, index) => {
+      extraVariables[`field${index}`] = field.value;
+      return `enter %field${index}% into the "${field.label}" field`;
+    });
+    log('Entering additional login details.');
+    await stagehand.act(
+      `On the sign-in form, ${clauses.join(', ')}. Then continue if there is a next button.`,
+      { variables: extraVariables },
+    );
+    await delay(1500);
+  }
+
   if (credentials.username || credentials.password) {
     log('Entering stored credentials.');
     await stagehand.act(

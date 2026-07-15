@@ -2,14 +2,22 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button, Input, Label } from '@trycompai/design-system';
-import { Locked } from '@trycompai/design-system/icons';
-import { useForm } from 'react-hook-form';
+import { Add, Close, Locked } from '@trycompai/design-system/icons';
+import { useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 const captureSchema = z.object({
   username: z.string().trim().min(1, { message: 'Username is required' }),
   password: z.string().min(1, { message: 'Password is required' }),
   totpSeed: z.string().trim().optional(),
+  extraFields: z
+    .array(
+      z.object({
+        label: z.string().trim().min(1, { message: 'Field name is required' }),
+        value: z.string().trim().min(1, { message: 'Value is required' }),
+      }),
+    )
+    .optional(),
 });
 
 export type ConnectCaptureFormData = z.infer<typeof captureSchema>;
@@ -21,13 +29,15 @@ interface ConnectCaptureFormProps {
 
 export function ConnectCaptureForm({ isSubmitting, onSubmit }: ConnectCaptureFormProps) {
   const {
+    control,
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<ConnectCaptureFormData>({
     resolver: zodResolver(captureSchema),
-    defaultValues: { username: '', password: '', totpSeed: '' },
+    defaultValues: { username: '', password: '', totpSeed: '', extraFields: [] },
   });
+  const { fields, append, remove } = useFieldArray({ control, name: 'extraFields' });
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex w-full max-w-md flex-col gap-4">
@@ -65,6 +75,42 @@ export function ConnectCaptureForm({ isSubmitting, onSubmit }: ConnectCaptureFor
           key&rdquo;). Lets scheduled runs generate the codes themselves.
         </p>
       </div>
+
+      {fields.length > 0 && (
+        <div className="flex flex-col gap-2">
+          {fields.map((field, index) => (
+            <div key={field.id} className="flex items-start gap-2">
+              <Input
+                aria-label={`Field ${index + 1} name`}
+                placeholder="Field name (e.g. Workspace)"
+                {...register(`extraFields.${index}.label` as const)}
+              />
+              <Input
+                aria-label={`Field ${index + 1} value`}
+                placeholder="Value"
+                {...register(`extraFields.${index}.value` as const)}
+              />
+              <button
+                type="button"
+                aria-label="Remove field"
+                onClick={() => remove(index)}
+                className="mt-1.5 shrink-0 text-muted-foreground hover:text-foreground"
+              >
+                <Close size={16} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={() => append({ label: '', value: '' })}
+        className="flex w-fit items-center gap-1.5 text-xs text-primary"
+      >
+        <Add size={12} />
+        Add a field this site needs
+      </button>
 
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <Locked size={12} className="shrink-0" />
