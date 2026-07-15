@@ -59,7 +59,16 @@ export function useAutoSignin() {
           },
         );
         if (credRes.error) {
-          toast.error(credRes.error || 'Could not store the login.');
+          // 503 = automatic sign-in isn't provisioned on this environment (no
+          // credential vault). That's not an error the user caused — let the
+          // caller fall back to a manual sign-in with a calmer message.
+          if (credRes.status === 503) {
+            toast.info(
+              "Automatic sign-in isn't set up on this environment — you can sign in manually instead.",
+            );
+          } else {
+            toast.error(credRes.error || 'Could not store the login.');
+          }
           return null;
         }
 

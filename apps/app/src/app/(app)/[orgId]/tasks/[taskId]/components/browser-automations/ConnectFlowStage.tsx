@@ -51,8 +51,17 @@ export function ConnectFlowStage({
   onConnected,
   onRetry,
 }: ConnectFlowStageProps) {
+  // The live sign-in embeds a full browser, so give it the room by trimming the
+  // generous padding the other (form-sized) steps use.
+  const isLiveSignin = step === 'signin';
+
   return (
-    <div className="flex min-h-[320px] flex-col items-center justify-center p-8">
+    <div
+      className={`flex min-h-[320px] flex-col items-center justify-center ${
+        isLiveSignin ? 'p-3 sm:p-4' : 'p-8'
+      }`}
+    >
+
       {step === 'enter-url' && (
         <div className="flex w-full max-w-sm flex-col gap-2.5">
           <div className="text-sm text-foreground">Vendor website</div>

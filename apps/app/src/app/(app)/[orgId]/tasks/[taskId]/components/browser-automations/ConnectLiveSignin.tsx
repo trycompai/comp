@@ -29,13 +29,13 @@ export function ConnectLiveSignin({
           <iframe
             src={liveViewUrl}
             title="Live sign-in"
-            className="h-[420px] w-full"
+            className="h-[600px] max-h-[75vh] w-full"
             sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
             allow="clipboard-read; clipboard-write"
           />
         </div>
       ) : (
-        <div className="flex h-[420px] items-center justify-center text-sm text-muted-foreground">
+        <div className="flex h-[600px] max-h-[75vh] items-center justify-center text-sm text-muted-foreground">
           <span className="mr-3 h-4 w-4 animate-spin rounded-full border-2 border-border border-t-primary" />
           Opening {host}…
         </div>
