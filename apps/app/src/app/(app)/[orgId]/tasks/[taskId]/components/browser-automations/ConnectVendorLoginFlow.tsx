@@ -38,7 +38,7 @@ interface ConnectVendorLoginFlowProps {
 
 export function ConnectVendorLoginFlow({ onConnected, onCancel }: ConnectVendorLoginFlowProps) {
   const [step, setStep] = useState<Step>('enter-url');
-  const [urlInput, setUrlInput] = useState('https://github.com');
+  const [urlInput, setUrlInput] = useState('');
   const [url, setUrl] = useState('');
   const [analysis, setAnalysis] = useState<LoginAnalysis | null>(null);
   const [isStoring, setIsStoring] = useState(false);

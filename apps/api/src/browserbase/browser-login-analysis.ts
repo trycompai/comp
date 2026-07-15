@@ -66,8 +66,9 @@ const CHECKINS = {
 
 const MANUAL = {
   category: 'manual' as const,
-  headline: "We couldn't read this site automatically.",
-  detail: "Enter the sign-in details and we'll take it from there.",
+  headline: "We couldn't detect a sign-in form here.",
+  detail:
+    "Make sure the URL is your login page (not the homepage) — or just sign in below and we'll take it from there.",
 };
 
 /**
