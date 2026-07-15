@@ -1,27 +1,43 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { z } from 'zod';
 import { BrowserbaseSessionService } from './browserbase-session.service';
 import { BrowserAuthProfileService } from './browser-auth-profile.service';
-import { reloginWithStoredCredentials } from './browser-credential-login';
+import {
+  classifyLoginOutcome,
+  signInAndClassify,
+} from './browser-credential-login';
 import { resolveBrowserCredentialVaultAdapter } from './browser-credential-vault.factory';
 
 type Stagehand = import('@browserbasehq/stagehand').Stagehand;
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+export type AutoSignInFailure =
+  | 'invalid_credentials'
+  | 'needs_2fa'
+  | 'challenge'
+  | 'unknown';
+
 export interface AutoSignInResult {
   isLoggedIn: boolean;
-  reason?: string;
+  /** Why the automated sign-in couldn't complete (set only when not signed in). */
+  failure?: AutoSignInFailure;
 }
+
+const FAILURE_REASON: Record<AutoSignInFailure, string> = {
+  invalid_credentials: 'The stored username or password was not accepted.',
+  needs_2fa: 'The account requires a two-factor code to sign in.',
+  challenge: 'The site asked for a human verification step.',
+  unknown: 'Automated sign-in could not complete.',
+};
 
 /**
  * Performs the connect flow's first sign-in for a profile using the credentials
  * the user just stored — the same auto-fill the scheduler uses, run once up
  * front so the person never has to type into the raw browser. Runs on the
  * profile's own Browserbase context so the resulting cookies persist for later
- * scheduled runs. If an automated step can't complete (CAPTCHA, email/SMS code,
- * SSO), it returns `isLoggedIn: false` and the connect flow hands the live
- * browser to the user to finish.
+ * scheduled runs. It classifies the outcome (wrong password, 2FA needed, a
+ * human challenge, …) so the connect flow can explain what happened and route
+ * the user to the right next step.
  */
 @Injectable()
 export class BrowserCredentialSigninService {
@@ -61,50 +77,37 @@ export class BrowserCredentialSigninService {
       });
       await delay(1500);
 
-      const verifyLoggedIn = () => this.isLoggedIn(activeStagehand);
-
       // The persisted context may already carry a valid session — no need to
       // re-enter credentials if we're already in.
-      if (await verifyLoggedIn()) {
+      if ((await classifyLoginOutcome(activeStagehand)) === 'logged_in') {
         await this.profiles.markVerified(input);
         return { isLoggedIn: true };
       }
 
       const vault = resolveBrowserCredentialVaultAdapter();
-      const result = await reloginWithStoredCredentials({
+      const { outcome } = await signInAndClassify({
         stagehand: activeStagehand,
-        sessions: this.sessions,
         vault,
         input: { profile, targetUrl: input.url },
-        verifyLoggedIn,
         log: (message) => this.logger.log(`[sign-in] ${message}`),
       });
 
-      if (result.isLoggedIn) {
+      if (outcome === 'logged_in') {
         await this.profiles.markVerified(input);
         return { isLoggedIn: true };
       }
 
+      // Narrowed to the failure states now that logged_in is handled.
       await this.profiles.markNeedsReauth({
         ...input,
-        reason: result.reason,
+        reason: FAILURE_REASON[outcome],
       });
-      return { isLoggedIn: false, reason: result.reason };
+      return { isLoggedIn: false, failure: outcome };
     } finally {
       if (stagehand) await this.sessions.safeCloseStagehand(stagehand);
       await this.sessions
         .closeSession(sessionId)
         .catch(() => undefined /* best-effort cleanup */);
     }
-  }
-
-  private async isLoggedIn(stagehand: Stagehand): Promise<boolean> {
-    const result = await stagehand.extract(
-      'Check if the user is logged in to this website. Look for a user avatar, ' +
-        'profile menu, account dropdown, or login/sign-in buttons. Return true ' +
-        'if logged in, false if you see login buttons or a login form.',
-      z.object({ isLoggedIn: z.boolean() }),
-    );
-    return result.isLoggedIn;
   }
 }

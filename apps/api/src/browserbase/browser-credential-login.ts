@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import type {
   BrowserCredentialVaultAdapter,
   RuntimeCredentialMaterial,
@@ -182,4 +183,88 @@ async function runLoginAttempt({
   });
   await delay(1500);
   return page;
+}
+
+export type SignInOutcome =
+  | 'logged_in'
+  | 'invalid_credentials'
+  | 'needs_2fa'
+  | 'challenge'
+  | 'unknown';
+
+/**
+ * Reads the current page after a sign-in attempt and classifies the outcome, so
+ * the connect flow can tell the user what happened and route them correctly.
+ * Never throws — an unreadable page degrades to 'unknown'.
+ */
+export async function classifyLoginOutcome(
+  stagehand: Stagehand,
+): Promise<SignInOutcome> {
+  try {
+    const { state } = await stagehand.extract(
+      'Classify this page after a sign-in attempt. Return exactly one value: ' +
+        '"logged_in" — the user is signed in (a dashboard, account or avatar menu, no login form); ' +
+        '"invalid_credentials" — it shows an incorrect username/email/password error; ' +
+        '"needs_2fa" — it asks for a two-factor, one-time, authenticator, or verification code; ' +
+        '"challenge" — it shows a CAPTCHA, a "verify it\'s you", a device-approval, or an email/SMS link step; ' +
+        '"unknown" — none of the above clearly apply.',
+      z.object({
+        state: z.enum([
+          'logged_in',
+          'invalid_credentials',
+          'needs_2fa',
+          'challenge',
+          'unknown',
+        ]),
+      }),
+    );
+    return state;
+  } catch {
+    return 'unknown';
+  }
+}
+
+/**
+ * The connect flow's first sign-in: fill the stored credentials and classify
+ * where we land. Unlike reloginWithStoredCredentials (used by the scheduler),
+ * this does NOT navigate back to the target afterward — the post-submit page is
+ * exactly what we need to classify (an error, a 2FA prompt, a challenge, or a
+ * signed-in dashboard).
+ */
+export async function signInAndClassify({
+  stagehand,
+  vault,
+  input,
+  log,
+}: {
+  stagehand: Stagehand;
+  vault: BrowserCredentialVaultAdapter;
+  input: CredentialLoginTarget;
+  log: (message: string) => void;
+}): Promise<{ outcome: SignInOutcome }> {
+  const resolveCredentials = () =>
+    vault.resolveCredentialReference({
+      profileId: input.profile.id,
+      provider: input.profile.vaultProvider,
+      externalItemRef: input.profile.vaultExternalItemRef,
+      connectionId: input.profile.vaultConnectionId,
+    });
+
+  const credentials = await resolveCredentials();
+  if (!credentials) return { outcome: 'unknown' };
+
+  await performCredentialLogin({ stagehand, credentials, log });
+  let outcome = await classifyLoginOutcome(stagehand);
+
+  // A 2FA prompt still showing with a stored seed can mean the code landed on
+  // the ~30s rotation boundary — retry once with a freshly generated code.
+  if (outcome === 'needs_2fa' && credentials.totpCode) {
+    const fresh = await resolveCredentials();
+    if (fresh?.totpCode) {
+      await performCredentialLogin({ stagehand, credentials: fresh, log });
+      outcome = await classifyLoginOutcome(stagehand);
+    }
+  }
+
+  return { outcome };
 }

@@ -5,6 +5,13 @@ import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import type { ResolveAuthProfileResponse } from './types';
 
+/** Why an automated sign-in couldn't complete (mirrors the API result). */
+export type AutoSignInFailure =
+  | 'invalid_credentials'
+  | 'needs_2fa'
+  | 'challenge'
+  | 'unknown';
+
 export interface AutoSigninCredentials {
   username: string;
   password: string;

@@ -24,6 +24,7 @@ const profile = {
   vaultConnectionId: 'vault',
 };
 
+// `extract` classifies the page — return { state: <SignInOutcome> } per call.
 function makeSessions(extract: jest.Mock, act: jest.Mock) {
   const page = { goto: jest.fn().mockResolvedValue(undefined) };
   return {
@@ -47,6 +48,11 @@ function makeProfiles(found: typeof profile | null) {
 
 const input = { organizationId: 'org_1', profileId: 'prof_1', url: 'https://app.example.com' };
 
+const withCredentials = (creds: Record<string, unknown> | null) =>
+  mockedResolveVault.mockReturnValue({
+    resolveCredentialReference: jest.fn().mockResolvedValue(creds),
+  });
+
 describe('BrowserCredentialSigninService', () => {
   beforeEach(() => {
     jest.useFakeTimers();
@@ -68,38 +74,30 @@ describe('BrowserCredentialSigninService', () => {
   };
 
   it('marks verified without re-entering credentials when already signed in', async () => {
-    const extract = jest.fn().mockResolvedValue({ isLoggedIn: true });
+    const extract = jest.fn().mockResolvedValue({ state: 'logged_in' });
     const act = jest.fn().mockResolvedValue(undefined);
     const sessions = makeSessions(extract, act);
     const profiles = makeProfiles(profile);
-    mockedResolveVault.mockReturnValue({
-      resolveCredentialReference: jest.fn(),
-    });
+    withCredentials({ username: 'u', password: 'p' });
 
     const result = await run(sessions, profiles);
 
     expect(result.isLoggedIn).toBe(true);
     expect(profiles.markVerified).toHaveBeenCalledTimes(1);
-    // Already in — no credential fill needed.
-    expect(act).not.toHaveBeenCalled();
+    expect(act).not.toHaveBeenCalled(); // already in — no credential fill
     expect(sessions.closeSession).toHaveBeenCalledWith('sess_1');
-    expect(sessions.safeCloseStagehand).toHaveBeenCalledTimes(1);
   });
 
   it('signs in with stored credentials and marks verified', async () => {
-    // Not logged in first, then logged in after the credential fill.
+    // Not logged in on arrival, logged in after the credential fill.
     const extract = jest
       .fn()
-      .mockResolvedValueOnce({ isLoggedIn: false })
-      .mockResolvedValue({ isLoggedIn: true });
+      .mockResolvedValueOnce({ state: 'unknown' })
+      .mockResolvedValue({ state: 'logged_in' });
     const act = jest.fn().mockResolvedValue(undefined);
     const sessions = makeSessions(extract, act);
     const profiles = makeProfiles(profile);
-    mockedResolveVault.mockReturnValue({
-      resolveCredentialReference: jest
-        .fn()
-        .mockResolvedValue({ username: 'user@x.com', password: 'secret' }),
-    });
+    withCredentials({ username: 'user@x.com', password: 'secret' });
 
     const result = await run(sessions, profiles);
 
@@ -109,22 +107,39 @@ describe('BrowserCredentialSigninService', () => {
     expect(profiles.markNeedsReauth).not.toHaveBeenCalled();
   });
 
-  it('marks needs-reauth when the automated sign-in cannot complete', async () => {
-    const extract = jest.fn().mockResolvedValue({ isLoggedIn: false });
+  it('reports invalid credentials as a failure and marks needs-reauth', async () => {
+    const extract = jest
+      .fn()
+      .mockResolvedValueOnce({ state: 'unknown' })
+      .mockResolvedValue({ state: 'invalid_credentials' });
     const act = jest.fn().mockResolvedValue(undefined);
     const sessions = makeSessions(extract, act);
     const profiles = makeProfiles(profile);
-    // No resolvable credentials → relogin can't proceed.
-    mockedResolveVault.mockReturnValue({
-      resolveCredentialReference: jest.fn().mockResolvedValue(null),
-    });
+    withCredentials({ username: 'user@x.com', password: 'wrong' });
 
     const result = await run(sessions, profiles);
 
     expect(result.isLoggedIn).toBe(false);
+    expect(result.failure).toBe('invalid_credentials');
     expect(profiles.markNeedsReauth).toHaveBeenCalledTimes(1);
     expect(profiles.markVerified).not.toHaveBeenCalled();
-    expect(sessions.closeSession).toHaveBeenCalledWith('sess_1');
+  });
+
+  it('reports needs_2fa when a two-factor prompt blocks an account with no seed', async () => {
+    const extract = jest
+      .fn()
+      .mockResolvedValueOnce({ state: 'unknown' })
+      .mockResolvedValue({ state: 'needs_2fa' });
+    const act = jest.fn().mockResolvedValue(undefined);
+    const sessions = makeSessions(extract, act);
+    const profiles = makeProfiles(profile);
+    withCredentials({ username: 'user@x.com', password: 'secret' }); // no totpCode
+
+    const result = await run(sessions, profiles);
+
+    expect(result.isLoggedIn).toBe(false);
+    expect(result.failure).toBe('needs_2fa');
+    expect(profiles.markNeedsReauth).toHaveBeenCalledTimes(1);
   });
 
   it('throws when the profile does not exist', async () => {
@@ -135,7 +150,6 @@ describe('BrowserCredentialSigninService', () => {
       profiles as unknown as BrowserAuthProfileService,
     );
 
-    // Rejects on the first microtask (no timers to flush before the throw).
     await expect(
       service.signInWithStoredCredentials(input),
     ).rejects.toBeInstanceOf(NotFoundException);

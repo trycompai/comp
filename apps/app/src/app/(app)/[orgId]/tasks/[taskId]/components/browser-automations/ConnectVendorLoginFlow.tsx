@@ -4,7 +4,7 @@ import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import type { LoginAnalysis } from '../../hooks/types';
-import { useAutoSignin } from '../../hooks/useAutoSignin';
+import { useAutoSignin, type AutoSignInFailure } from '../../hooks/useAutoSignin';
 import { useBrowserContext } from '../../hooks/useBrowserContext';
 import { useLoginAnalysis } from '../../hooks/useLoginAnalysis';
 import {
@@ -120,12 +120,28 @@ export function ConnectVendorLoginFlow({
     if (!signinRunState) return;
 
     if (signinRunState.status === 'COMPLETED') {
-      const output = signinRunState.output as { isLoggedIn?: boolean } | undefined;
+      const output = signinRunState.output as
+        | { isLoggedIn?: boolean; failure?: AutoSignInFailure }
+        | undefined;
+      setSigninRun(null);
+
       if (output?.isLoggedIn) {
-        setSigninRun(null);
         setStep('connected');
+      } else if (output?.failure === 'invalid_credentials') {
+        // Actionable + our fault to surface: back to the form, not the browser.
+        toast.error("That username or password wasn't accepted — check and try again.");
+        setStep('capture');
+      } else if (output?.failure === 'needs_2fa') {
+        toast.info(
+          'This account uses two-factor. Finish this sign-in in the browser — or add your authenticator setup key for unattended runs.',
+        );
+        setStep('signin');
+        void startAuth(url);
       } else {
-        fallbackToLive();
+        // challenge / unknown — a human step we can't automate.
+        toast.info("We couldn't finish sign-in automatically — please finish it here.");
+        setStep('signin');
+        void startAuth(url);
       }
     } else if (FAILED_RUN_STATUSES.has(signinRunState.status)) {
       fallbackToLive();
