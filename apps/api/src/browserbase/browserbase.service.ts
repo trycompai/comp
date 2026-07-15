@@ -97,6 +97,20 @@ export class BrowserbaseService {
     return this.credentialStorage.storeProfileCredentials(input);
   }
 
+  /**
+   * Kicks off the connect flow's first automated sign-in as a background
+   * Trigger.dev run (browser + AI, which can outlast an HTTP/browser timeout)
+   * and returns a handle the client subscribes to for the result.
+   */
+  async signInAuthProfile(input: {
+    organizationId: string;
+    profileId: string;
+    url: string;
+  }): Promise<{ runId: string; publicAccessToken: string }> {
+    const handle = await tasks.trigger('sign-in-vendor-profile', input);
+    return { runId: handle.id, publicAccessToken: handle.publicAccessToken };
+  }
+
   async getOrCreateOrgContext(organizationId: string) {
     return this.profiles.getOrCreateOrgContext(organizationId);
   }

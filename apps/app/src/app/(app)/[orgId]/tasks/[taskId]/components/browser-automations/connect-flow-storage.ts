@@ -1,8 +1,9 @@
 import type { LoginAnalysis } from '../../hooks/types';
 
 // Only the analysis phase is resumable — a live browser sign-in session can't
-// survive a page unmount, so we never persist those steps.
-export type PersistedStep = 'checking' | 'recommendation';
+// survive a page unmount, and credentials are never persisted, so we only ever
+// store these two steps.
+export type PersistedStep = 'checking' | 'choose';
 
 export interface PersistedConnectState {
   step: PersistedStep;
@@ -19,7 +20,7 @@ const MAX_AGE_MS = 15 * 60 * 1000;
 const storageKey = (taskId: string) => `browser-connect-flow:${taskId}`;
 
 function isPersistedStep(value: unknown): value is PersistedStep {
-  return value === 'checking' || value === 'recommendation';
+  return value === 'checking' || value === 'choose';
 }
 
 /**
@@ -39,11 +40,11 @@ export function loadConnectState(taskId: string): PersistedConnectState | null {
       Date.now() - parsed.savedAt <= MAX_AGE_MS;
 
     // Reject anything we couldn't actually resume from: a stale entry, a
-    // 'checking' step with no run handle to re-subscribe to, or a
-    // 'recommendation' step with no result to show.
+    // 'checking' step with no run handle to re-subscribe to, or a 'choose' step
+    // with no result to show.
     const resumable =
       (parsed?.step === 'checking' && !!parsed.analyzeRun) ||
-      (parsed?.step === 'recommendation' && !!parsed.analysis);
+      (parsed?.step === 'choose' && !!parsed.analysis);
 
     if (!isPersistedStep(parsed?.step) || !fresh || !resumable) {
       window.sessionStorage.removeItem(storageKey(taskId));

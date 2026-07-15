@@ -3,12 +3,27 @@ import type {
   RuntimeCredentialMaterial,
 } from './credential-vault';
 import type { BrowserbaseSessionService } from './browserbase-session.service';
-import type { BrowserEvidenceSessionInput } from './browser-evidence-runner.service';
 
 type Stagehand = import('@browserbasehq/stagehand').Stagehand;
 type ActivePage = Awaited<
   ReturnType<BrowserbaseSessionService['ensureActivePage']>
 >;
+
+/**
+ * The minimum a credential sign-in needs: which profile's stored login to
+ * resolve, and where to land afterward. Both the scheduler (evidence runs) and
+ * the connect flow's first sign-in satisfy this shape, so neither is coupled to
+ * the other's input type.
+ */
+export interface CredentialLoginTarget {
+  profile: {
+    id: string;
+    vaultProvider?: string | null;
+    vaultExternalItemRef?: string | null;
+    vaultConnectionId?: string | null;
+  };
+  targetUrl: string;
+}
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -89,7 +104,7 @@ export async function reloginWithStoredCredentials({
   stagehand: Stagehand;
   sessions: BrowserbaseSessionService;
   vault: BrowserCredentialVaultAdapter;
-  input: BrowserEvidenceSessionInput;
+  input: CredentialLoginTarget;
   verifyLoggedIn: () => Promise<boolean>;
   log: (message: string) => void;
 }): Promise<CredentialReloginResult> {
@@ -154,7 +169,7 @@ async function runLoginAttempt({
   stagehand: Stagehand;
   sessions: BrowserbaseSessionService;
   credentials: RuntimeCredentialMaterial;
-  input: BrowserEvidenceSessionInput;
+  input: CredentialLoginTarget;
   log: (message: string) => void;
 }): Promise<ActivePage> {
   await performCredentialLogin({ stagehand, credentials, log });

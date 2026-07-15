@@ -177,6 +177,27 @@ export class MarkAuthProfileNeedsReauthDto {
   reason?: string;
 }
 
+export class SignInAuthProfileDto {
+  @ApiProperty({
+    description: 'Vendor URL to sign in to (the profile hostname).',
+  })
+  @IsUrl({}, { message: 'url must be a valid URL' })
+  @IsSafeUrl({ message: 'The provided URL is not allowed.' })
+  @IsString()
+  @IsNotEmpty()
+  url: string;
+}
+
+export class SignInAuthProfileResponseDto {
+  @ApiProperty({
+    description: 'Trigger.dev run id for the background automated sign-in',
+  })
+  runId: string;
+
+  @ApiProperty({ description: 'Public access token to subscribe to the run' })
+  publicAccessToken: string;
+}
+
 export class CredentialExtraFieldDto {
   @ApiProperty({ description: 'Field label as shown on the vendor login' })
   @IsString()

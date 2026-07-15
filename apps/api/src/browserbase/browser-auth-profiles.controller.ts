@@ -18,6 +18,8 @@ import {
   ResolveAuthProfileDto,
   ResolveAuthProfileResponseDto,
   SessionResponseDto,
+  SignInAuthProfileDto,
+  SignInAuthProfileResponseDto,
   StoreAuthProfileCredentialsDto,
   VerifyAuthProfileResponseDto,
   VerifyAuthProfileSessionDto,
@@ -136,6 +138,28 @@ export class BrowserAuthProfilesController {
       totpSeed: dto.totpSeed,
       extraFields: dto.extraFields,
     })) as BrowserAuthProfileResponseDto;
+  }
+
+  @Post('profiles/:profileId/sign-in')
+  @RequirePermission('integration', 'update')
+  @ApiOperation({
+    summary: 'Automated sign-in for a browser auth profile',
+    description:
+      'Starts a background run that signs in to the vendor using the credentials stored for this profile, so the user does not have to type them into the browser. Returns a run handle to subscribe to; if the automated sign-in cannot complete (CAPTCHA, email/SMS code, SSO), the connect flow falls back to a live browser.',
+  })
+  @ApiParam({ name: 'profileId', description: 'Browser auth profile ID' })
+  @ApiBody({ type: SignInAuthProfileDto })
+  @ApiResponse({ status: 201, type: SignInAuthProfileResponseDto })
+  async signInProfile(
+    @OrganizationId() organizationId: string,
+    @Param('profileId') profileId: string,
+    @Body() dto: SignInAuthProfileDto,
+  ): Promise<SignInAuthProfileResponseDto> {
+    return this.browserbaseService.signInAuthProfile({
+      organizationId,
+      profileId,
+      url: dto.url,
+    });
   }
 
   @Post('profiles/:profileId/needs-reauth')

@@ -50,7 +50,7 @@ describe('ConnectCaptureForm', () => {
     fireEvent.change(screen.getByLabelText('Password'), {
       target: { value: 'sup3r-secret' },
     });
-    fireEvent.click(screen.getByText('Save & Finish'));
+    fireEvent.click(screen.getByText('Sign in for me'));
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
     expect(onSubmit).toHaveBeenCalledWith(
@@ -63,7 +63,7 @@ describe('ConnectCaptureForm', () => {
     const onSubmit = vi.fn();
     render(<ConnectCaptureForm isSubmitting={false} onSubmit={onSubmit} />);
 
-    fireEvent.click(screen.getByText('Save & Finish'));
+    fireEvent.click(screen.getByText('Sign in for me'));
 
     await waitFor(() => expect(screen.getByText('Username is required')).toBeInTheDocument());
     expect(onSubmit).not.toHaveBeenCalled();

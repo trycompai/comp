@@ -25,9 +25,17 @@ export type ConnectCaptureFormData = z.infer<typeof captureSchema>;
 interface ConnectCaptureFormProps {
   isSubmitting: boolean;
   onSubmit: (data: ConnectCaptureFormData) => void;
+  /** Field labels detected on the vendor login (workspace, subdomain, …). */
+  initialExtraFields?: { label: string }[];
+  submitLabel?: string;
 }
 
-export function ConnectCaptureForm({ isSubmitting, onSubmit }: ConnectCaptureFormProps) {
+export function ConnectCaptureForm({
+  isSubmitting,
+  onSubmit,
+  initialExtraFields,
+  submitLabel = 'Sign in for me',
+}: ConnectCaptureFormProps) {
   const {
     control,
     register,
@@ -35,16 +43,25 @@ export function ConnectCaptureForm({ isSubmitting, onSubmit }: ConnectCaptureFor
     formState: { errors },
   } = useForm<ConnectCaptureFormData>({
     resolver: zodResolver(captureSchema),
-    defaultValues: { username: '', password: '', totpSeed: '', extraFields: [] },
+    defaultValues: {
+      username: '',
+      password: '',
+      totpSeed: '',
+      extraFields: (initialExtraFields ?? []).map((field) => ({
+        label: field.label,
+        value: '',
+      })),
+    },
   });
   const { fields, append, remove } = useFieldArray({ control, name: 'extraFields' });
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex w-full max-w-md flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <h3 className="text-sm text-foreground">The details we can&apos;t see</h3>
+        <h3 className="text-sm text-foreground">Your sign-in details</h3>
         <p className="text-xs text-muted-foreground leading-relaxed">
-          The scheduler needs these to sign in on its own. Stored encrypted — never shared.
+          We&apos;ll sign in for you now, and the scheduler reuses these so you never
+          re-enter them. Stored encrypted in 1Password — never shared.
         </p>
       </div>
 
@@ -118,7 +135,7 @@ export function ConnectCaptureForm({ isSubmitting, onSubmit }: ConnectCaptureFor
       </div>
 
       <Button type="submit" loading={isSubmitting} disabled={isSubmitting}>
-        Save &amp; Finish
+        {submitLabel}
       </Button>
     </form>
   );

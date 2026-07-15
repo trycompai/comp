@@ -19,7 +19,7 @@ describe('connect-flow-storage', () => {
 
   it('round-trips a saved analysis phase', () => {
     saveConnectState(TASK, {
-      step: 'recommendation',
+      step: 'choose',
       url: 'https://notion.so',
       analyzeRun: null,
       analysis: {
@@ -36,7 +36,7 @@ describe('connect-flow-storage', () => {
     });
 
     const loaded = loadConnectState(TASK);
-    expect(loaded?.step).toBe('recommendation');
+    expect(loaded?.step).toBe('choose');
     expect(loaded?.url).toBe('https://notion.so');
     expect(loaded?.analysis?.recommendation.category).toBe('ready');
   });
