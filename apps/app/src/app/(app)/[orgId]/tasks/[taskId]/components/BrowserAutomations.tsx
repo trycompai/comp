@@ -5,6 +5,7 @@ import type { BrowserAutomation } from '../hooks/types';
 import { useBrowserAutomations } from '../hooks/useBrowserAutomations';
 import { useBrowserContext } from '../hooks/useBrowserContext';
 import { useBrowserExecution } from '../hooks/useBrowserExecution';
+import { useBrowserProfiles } from '../hooks/useBrowserProfiles';
 import {
   BrowserAutomationConfigDialog,
   BrowserAutomationsList,
@@ -39,6 +40,15 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
   // Hooks
   const context = useBrowserContext();
   const automations = useBrowserAutomations({ taskId });
+  const { profiles, fetchProfiles } = useBrowserProfiles();
+
+  const handleReconnect = useCallback(
+    (url: string) => {
+      setAuthUrl(url);
+      context.startAuth(url);
+    },
+    [context],
+  );
 
   const handleNeedsReauth = useCallback(
     (automationId: string) => {
@@ -59,7 +69,13 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
     setConnectOpen(false);
     context.checkContextStatus();
     automations.fetchAutomations();
-  }, [context, automations]);
+    fetchProfiles();
+  }, [context, automations, fetchProfiles]);
+
+  // Refresh the connection list whenever a connect/reconnect verifies.
+  useEffect(() => {
+    if (context.status === 'has-context') fetchProfiles();
+  }, [context.status, fetchProfiles]);
 
   // Initialize
   useEffect(() => {
@@ -156,9 +172,10 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
     <>
       <BrowserAutomationsList
         automations={automations.automations}
-        hasContext={context.status === 'has-context'}
+        profiles={profiles}
         runningAutomationId={execution.runningAutomationId}
         onRun={execution.runAutomation}
+        onReconnect={handleReconnect}
         onCreateClick={
           isManualTask ? undefined : () => setDialogState({ open: true, mode: 'create' })
         }

@@ -1,14 +1,12 @@
-import { render, screen } from '@testing-library/react';
-import type { HTMLAttributes } from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  setMockPermissions,
-  mockHasPermission,
   ADMIN_PERMISSIONS,
   AUDITOR_PERMISSIONS,
+  mockHasPermission,
+  setMockPermissions,
 } from '@/test-utils/mocks/permissions';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Mock usePermissions
 vi.mock('@/hooks/use-permissions', () => ({
   usePermissions: () => ({
     permissions: {},
@@ -16,18 +14,11 @@ vi.mock('@/hooks/use-permissions', () => ({
   }),
 }));
 
-vi.mock('@trycompai/design-system', () => ({
-  Badge: ({ children, ...props }: HTMLAttributes<HTMLSpanElement>) => (
-    <span {...props}>{children}</span>
-  ),
+vi.mock('@trycompai/design-system/icons', () => ({
+  Add: () => <span data-testid="icon-add" />,
+  Renew: () => <span data-testid="icon-renew" />,
 }));
 
-// Mock date-fns
-vi.mock('date-fns', () => ({
-  formatDistanceToNow: () => 'in 5 hours',
-}));
-
-// Mock AutomationItem
 vi.mock('./AutomationItem', () => ({
   AutomationItem: ({
     automation,
@@ -42,8 +33,8 @@ vi.mock('./AutomationItem', () => ({
   ),
 }));
 
+import type { BrowserAuthProfile, BrowserAutomation } from '../../hooks/types';
 import { BrowserAutomationsList } from './BrowserAutomationsList';
-import type { BrowserAutomation } from '../../hooks/types';
 
 const mockAutomations: BrowserAutomation[] = [
   {
@@ -56,95 +47,87 @@ const mockAutomations: BrowserAutomation[] = [
   },
 ];
 
+function profile(status: BrowserAuthProfile['status']): BrowserAuthProfile {
+  return {
+    id: 'bap_1',
+    hostname: 'example.com',
+    loginIdentity: '',
+    displayName: 'example.com',
+    contextId: 'ctx_1',
+    status,
+  };
+}
+
 const defaultProps = {
   automations: mockAutomations,
-  hasContext: true,
+  profiles: [] as BrowserAuthProfile[],
   runningAutomationId: null,
   onRun: vi.fn(),
+  onReconnect: vi.fn(),
   onCreateClick: vi.fn(),
   onEditClick: vi.fn(),
   onDelete: vi.fn(),
   onToggleEnabled: vi.fn(),
 };
 
-describe('BrowserAutomationsList permission gating', () => {
+describe('BrowserAutomationsList', () => {
   beforeEach(() => {
     setMockPermissions({});
     vi.clearAllMocks();
   });
 
-  it('renders the automations list heading regardless of permissions', () => {
-    setMockPermissions({});
-
+  it('renders the heading', () => {
     render(<BrowserAutomationsList {...defaultProps} />);
-
-    expect(screen.getByText('Browser Automations')).toBeInTheDocument();
+    expect(screen.getByText('Browser automations')).toBeInTheDocument();
   });
 
-  it('shows "Create Another" button for admin with integration:create', () => {
+  it('shows create actions for admin with integration:create', () => {
     setMockPermissions(ADMIN_PERMISSIONS);
-
     render(<BrowserAutomationsList {...defaultProps} />);
-
-    expect(screen.getByText('Create Another')).toBeInTheDocument();
+    expect(screen.getByText('New automation')).toBeInTheDocument();
   });
 
-  it('hides "Create Another" button for auditor without integration:create', () => {
+  it('hides create actions for auditor without integration:create', () => {
     setMockPermissions(AUDITOR_PERMISSIONS);
-
     render(<BrowserAutomationsList {...defaultProps} />);
-
-    expect(screen.queryByText('Create Another')).not.toBeInTheDocument();
+    expect(screen.queryByText('New automation')).not.toBeInTheDocument();
   });
 
-  it('hides "Create Another" button when user has no permissions', () => {
-    setMockPermissions({});
-
-    render(<BrowserAutomationsList {...defaultProps} />);
-
-    expect(screen.queryByText('Create Another')).not.toBeInTheDocument();
-  });
-
-  it('hides "Create Another" when onCreateClick is not provided (manual task)', () => {
+  it('hides create actions when onCreateClick is not provided (manual task)', () => {
     setMockPermissions(ADMIN_PERMISSIONS);
-
     render(<BrowserAutomationsList {...defaultProps} onCreateClick={undefined} />);
-
-    expect(screen.queryByText('Create Another')).not.toBeInTheDocument();
+    expect(screen.queryByText('New automation')).not.toBeInTheDocument();
   });
 
   it('passes readOnly=false to AutomationItem for admin with integration:update', () => {
     setMockPermissions(ADMIN_PERMISSIONS);
-
     render(<BrowserAutomationsList {...defaultProps} />);
-
-    const item = screen.getByTestId('automation-item-auto_1');
-    expect(item).toHaveAttribute('data-readonly', 'false');
+    expect(screen.getByTestId('automation-item-auto_1')).toHaveAttribute('data-readonly', 'false');
   });
 
   it('passes readOnly=true to AutomationItem for auditor without integration:update', () => {
     setMockPermissions(AUDITOR_PERMISSIONS);
-
     render(<BrowserAutomationsList {...defaultProps} />);
-
-    const item = screen.getByTestId('automation-item-auto_1');
-    expect(item).toHaveAttribute('data-readonly', 'true');
+    expect(screen.getByTestId('automation-item-auto_1')).toHaveAttribute('data-readonly', 'true');
   });
 
-  it('passes readOnly=true to AutomationItem when user has no permissions', () => {
-    setMockPermissions({});
-
-    render(<BrowserAutomationsList {...defaultProps} />);
-
-    const item = screen.getByTestId('automation-item-auto_1');
-    expect(item).toHaveAttribute('data-readonly', 'true');
-  });
-
-  it('shows "Connected" badge when hasContext is true regardless of permissions', () => {
-    setMockPermissions({});
-
-    render(<BrowserAutomationsList {...defaultProps} />);
-
+  it('shows a Connected pill for a matching verified profile', () => {
+    setMockPermissions(ADMIN_PERMISSIONS);
+    render(<BrowserAutomationsList {...defaultProps} profiles={[profile('verified')]} />);
     expect(screen.getByText('Connected')).toBeInTheDocument();
+  });
+
+  it('offers Reconnect for a needs_reauth connection and calls onReconnect', () => {
+    setMockPermissions(ADMIN_PERMISSIONS);
+    const onReconnect = vi.fn();
+    render(
+      <BrowserAutomationsList
+        {...defaultProps}
+        profiles={[profile('needs_reauth')]}
+        onReconnect={onReconnect}
+      />,
+    );
+    fireEvent.click(screen.getByText('Reconnect'));
+    expect(onReconnect).toHaveBeenCalledWith('https://example.com');
   });
 });
