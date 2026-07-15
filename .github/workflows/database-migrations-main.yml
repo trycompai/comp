@@ -4,6 +4,10 @@ on:
     branches:
       - main
   workflow_dispatch: # Allows manual triggering
+
+permissions:
+  contents: read # only needs to check out the repo to run migrations
+
 jobs:
   migrate:
     name: Run Database Migrations
