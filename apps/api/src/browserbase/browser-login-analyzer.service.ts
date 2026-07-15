@@ -56,8 +56,12 @@ export class BrowserLoginAnalyzerService {
     } catch (err) {
       // A page we can't read (or a Browserbase hiccup) isn't an error the user
       // needs to see — fall back to manual entry so the connect flow continues.
+      // Log the full error + stack so a misconfiguration is diagnosable and not
+      // silently hidden behind the manual fallback.
       this.logger.warn('Login analysis failed; falling back to manual entry', {
+        url,
         error: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack : undefined,
       });
       return manualLoginAnalysis();
     } finally {
