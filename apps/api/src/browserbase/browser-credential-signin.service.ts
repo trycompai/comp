@@ -55,7 +55,14 @@ export class BrowserCredentialSigninService {
     profileId: string;
     url: string;
     sessionId: string;
+    /** Live, user-facing progress (surfaced to the connect flow as narration). */
+    onStatus?: (message: string) => void;
   }): Promise<AutoSignInResult> {
+    const status = (message: string) => {
+      this.logger.log(`[sign-in] ${message}`);
+      input.onStatus?.(message);
+    };
+
     const profile = await this.profiles.getProfile({
       profileId: input.profileId,
       organizationId: input.organizationId,
@@ -69,6 +76,7 @@ export class BrowserCredentialSigninService {
       stagehand = await this.sessions.createStagehand(input.sessionId);
       const activeStagehand = stagehand;
       const page = await this.sessions.ensureActivePage(activeStagehand);
+      status('Opening the sign-in page…');
       await page.goto(input.url, {
         waitUntil: 'domcontentloaded',
         timeoutMs: 30000,
@@ -77,6 +85,7 @@ export class BrowserCredentialSigninService {
 
       // The persisted context may already carry a valid session — no need to
       // re-enter credentials if we're already in.
+      status('Checking if you’re already signed in…');
       if ((await classifyLoginOutcome(activeStagehand)) === 'logged_in') {
         await this.profiles.markVerified(input);
         return { isLoggedIn: true };
@@ -84,6 +93,7 @@ export class BrowserCredentialSigninService {
 
       // Get onto the actual sign-in form first — the entered URL may be a
       // homepage or dashboard rather than the login page.
+      status('Finding the sign-in form…');
       await navigateToSignIn(activeStagehand);
 
       const vault = resolveBrowserCredentialVaultAdapter();
@@ -91,8 +101,9 @@ export class BrowserCredentialSigninService {
         stagehand: activeStagehand,
         vault,
         input: { profile, targetUrl: input.url },
-        log: (message) => this.logger.log(`[sign-in] ${message}`),
+        log: status,
       });
+      status('Checking whether that worked…');
 
       if (outcome === 'logged_in') {
         await this.profiles.markVerified(input);

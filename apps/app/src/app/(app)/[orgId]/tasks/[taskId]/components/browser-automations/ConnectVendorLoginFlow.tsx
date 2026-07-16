@@ -237,6 +237,9 @@ export function ConnectVendorLoginFlow({
 
   const host = hostnameOf(url || urlInput);
   const railSubtitle = railSubtitleFor(step);
+  // Live narration the sign-in task publishes as it drives the browser.
+  const signinStatus =
+    (signinRunState?.metadata?.signinStatus as string | undefined) ?? undefined;
 
   return (
     <div className="overflow-hidden rounded-lg border border-border bg-card">
@@ -263,6 +266,7 @@ export function ConnectVendorLoginFlow({
           isCheckingLive={context.status === 'checking'}
           onCheckLive={() => context.checkAuth(url)}
           autoLiveViewUrl={signinLiveView?.liveViewUrl ?? null}
+          signinStatus={signinStatus}
           takeoverCaption={takeoverCaption}
           onTakeoverVerify={handleTakeoverVerify}
           isVerifying={isVerifying}

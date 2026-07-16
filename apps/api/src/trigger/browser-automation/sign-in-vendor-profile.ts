@@ -1,4 +1,4 @@
-import { task } from '@trigger.dev/sdk';
+import { metadata, task } from '@trigger.dev/sdk';
 import {
   BrowserCredentialSigninService,
   type AutoSignInResult,
@@ -25,6 +25,10 @@ export const signInVendorProfile = task({
     url: string;
     sessionId: string;
   }): Promise<AutoSignInResult> => {
-    return signin.signInWithStoredCredentials(payload);
+    return signin.signInWithStoredCredentials({
+      ...payload,
+      // Live narration — surfaced to the connect flow via realtime run metadata.
+      onStatus: (message) => metadata.set('signinStatus', message),
+    });
   },
 });

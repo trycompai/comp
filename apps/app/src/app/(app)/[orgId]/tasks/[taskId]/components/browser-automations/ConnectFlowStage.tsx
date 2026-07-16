@@ -30,6 +30,8 @@ interface ConnectFlowStageProps {
   onCheckLive: () => void;
   /** Automated sign-in session — watched during signing-in, taken over on failure. */
   autoLiveViewUrl: string | null;
+  /** Live narration from the sign-in task (what the AI is doing right now). */
+  signinStatus?: string;
   takeoverCaption: string;
   onTakeoverVerify: () => void;
   isVerifying: boolean;
@@ -54,6 +56,7 @@ export function ConnectFlowStage({
   isCheckingLive,
   onCheckLive,
   autoLiveViewUrl,
+  signinStatus,
   takeoverCaption,
   onTakeoverVerify,
   isVerifying,
@@ -137,6 +140,7 @@ export function ConnectFlowStage({
           host={host}
           liveViewUrl={autoLiveViewUrl}
           caption={`Signing in to ${host} for you — you can watch. If anything needs you, we'll hand it over.`}
+          statusLine={signinStatus}
           working
           onCancel={onCancel}
         />
