@@ -42,6 +42,21 @@ export function hostnameOf(url: string): string {
   }
 }
 
+// Caption shown over the live browser when the automated sign-in handed control
+// back — explains what happened, in view, instead of a disappearing toast.
+export function takeoverCaptionFor(reason: string | null): string {
+  switch (reason) {
+    case 'invalid_credentials':
+      return "That username or password wasn't accepted. Fix it in the browser and confirm, or re-enter your details.";
+    case 'needs_2fa':
+      return 'Enter your two-factor code in the browser to finish. Add your authenticator setup key next time for unattended runs.';
+    case 'challenge':
+      return 'The site needs a quick human check — complete it in the browser, then confirm.';
+    default:
+      return 'Almost there — finish the sign-in in the browser, then confirm.';
+  }
+}
+
 export function railSubtitleFor(step: Step): string {
   switch (step) {
     case 'connected':

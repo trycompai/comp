@@ -13,6 +13,7 @@ import {
   hostnameOf,
   RAIL_INDEX,
   railSubtitleFor,
+  takeoverCaptionFor,
   type Step,
 } from './connect-flow-constants';
 import {
@@ -25,12 +26,6 @@ import type { ConnectCaptureFormData } from './ConnectCaptureForm';
 import { ConnectFlowRail } from './ConnectFlowRail';
 import { ConnectFlowStage } from './ConnectFlowStage';
 import type { ConnectMethodKind } from './ConnectMethodChooser';
-
-interface SigninLiveView {
-  sessionId: string;
-  liveViewUrl: string;
-  profileId: string;
-}
 
 interface ConnectVendorLoginFlowProps {
   taskId: string;
@@ -63,7 +58,12 @@ export function ConnectVendorLoginFlow({
     runId: string;
     accessToken: string;
   } | null>(null);
-  const [signinLiveView, setSigninLiveView] = useState<SigninLiveView | null>(null);
+  const [signinLiveView, setSigninLiveView] = useState<{
+    sessionId: string;
+    liveViewUrl: string;
+    profileId: string;
+  } | null>(null);
+  const [takeoverReason, setTakeoverReason] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
 
   const context = useBrowserContext();
@@ -115,10 +115,17 @@ export function ConnectVendorLoginFlow({
   useEffect(() => {
     if (!signinRun) return;
 
-    if (signinError) {
+    // Any non-success keeps the same browser open (take-over), so the user sees
+    // the real page — the site's error, a 2FA prompt, or a rate-limit/verify
+    // step — instead of a disappearing toast, and finishes it in place.
+    const handOver = (reason: string) => {
       setSigninRun(null);
-      toast.info('Finish the sign-in in the browser.');
+      setTakeoverReason(reason);
       setStep('takeover');
+    };
+
+    if (signinError) {
+      handOver('unknown');
       return;
     }
     if (!signinRunState) return;
@@ -127,31 +134,16 @@ export function ConnectVendorLoginFlow({
       const output = signinRunState.output as
         | { isLoggedIn?: boolean; failure?: string }
         | undefined;
-      setSigninRun(null);
-
       if (output?.isLoggedIn) {
+        setSigninRun(null);
         if (signinLiveView) closeSignInSession(signinLiveView.sessionId);
         setSigninLiveView(null);
         setStep('connected');
-      } else if (output?.failure === 'invalid_credentials') {
-        // Fix the stored password at the source so unattended runs work later.
-        if (signinLiveView) closeSignInSession(signinLiveView.sessionId);
-        setSigninLiveView(null);
-        toast.error("That username or password wasn't accepted — check and try again.");
-        setStep('capture');
       } else {
-        // needs_2fa / challenge / unknown — the user finishes in the same browser.
-        toast.info(
-          output?.failure === 'needs_2fa'
-            ? 'Enter your two-factor code to finish. Add your authenticator setup key next time for unattended runs.'
-            : 'Almost there — finish the sign-in in the browser.',
-        );
-        setStep('takeover');
+        handOver(output?.failure ?? 'unknown');
       }
     } else if (FAILED_RUN_STATUSES.has(signinRunState.status)) {
-      setSigninRun(null);
-      toast.info('Finish the sign-in in the browser.');
-      setStep('takeover');
+      handOver('unknown');
     }
   }, [signinRun, signinRunState, signinError, signinLiveView, closeSignInSession]);
 
@@ -250,6 +242,13 @@ export function ConnectVendorLoginFlow({
     }
   }, [signinLiveView, url, closeSignInSession]);
 
+  const handleReenterDetails = useCallback(() => {
+    if (signinLiveView) closeSignInSession(signinLiveView.sessionId);
+    setSigninLiveView(null);
+    setTakeoverReason(null);
+    setStep('capture');
+  }, [signinLiveView, closeSignInSession]);
+
   const handleCancel = useCallback(() => {
     if (signinLiveView) closeSignInSession(signinLiveView.sessionId);
     setSigninLiveView(null);
@@ -287,7 +286,9 @@ export function ConnectVendorLoginFlow({
           isCheckingLive={context.status === 'checking'}
           onCheckLive={() => context.checkAuth(url)}
           autoLiveViewUrl={signinLiveView?.liveViewUrl ?? null}
+          takeoverCaption={takeoverCaptionFor(takeoverReason)}
           onTakeoverVerify={handleTakeoverVerify}
+          onReenterDetails={handleReenterDetails}
           isVerifying={isVerifying}
           onCancel={handleCancel}
           onConnected={onConnected}

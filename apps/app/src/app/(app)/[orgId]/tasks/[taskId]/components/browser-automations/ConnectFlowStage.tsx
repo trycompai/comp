@@ -30,7 +30,9 @@ interface ConnectFlowStageProps {
   onCheckLive: () => void;
   /** Automated sign-in session — watched during signing-in, taken over on failure. */
   autoLiveViewUrl: string | null;
+  takeoverCaption: string;
   onTakeoverVerify: () => void;
+  onReenterDetails: () => void;
   isVerifying: boolean;
   onCancel: () => void;
   onConnected: () => void;
@@ -53,7 +55,9 @@ export function ConnectFlowStage({
   isCheckingLive,
   onCheckLive,
   autoLiveViewUrl,
+  takeoverCaption,
   onTakeoverVerify,
+  onReenterDetails,
   isVerifying,
   onCancel,
   onConnected,
@@ -144,9 +148,11 @@ export function ConnectFlowStage({
         <ConnectLiveSignin
           host={host}
           liveViewUrl={autoLiveViewUrl}
-          caption="Finish the sign-in above, then confirm."
+          caption={takeoverCaption}
           onConfirm={onTakeoverVerify}
           isConfirming={isVerifying}
+          onSecondary={onReenterDetails}
+          secondaryLabel="Re-enter details"
           onCancel={onCancel}
         />
       )}

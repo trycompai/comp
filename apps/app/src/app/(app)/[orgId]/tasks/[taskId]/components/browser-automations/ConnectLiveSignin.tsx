@@ -12,6 +12,9 @@ interface ConnectLiveSigninProps {
   onConfirm?: () => void;
   confirmLabel?: string;
   isConfirming?: boolean;
+  /** Optional secondary action (e.g. "Re-enter details"). */
+  onSecondary?: () => void;
+  secondaryLabel?: string;
   /** The automation is currently driving the browser — show a working badge. */
   working?: boolean;
 }
@@ -30,6 +33,8 @@ export function ConnectLiveSignin({
   onConfirm,
   confirmLabel = "I've signed in",
   isConfirming = false,
+  onSecondary,
+  secondaryLabel,
   working = false,
 }: ConnectLiveSigninProps) {
   return (
@@ -61,6 +66,11 @@ export function ConnectLiveSignin({
           <Button variant="ghost" onClick={onCancel}>
             Cancel
           </Button>
+          {onSecondary && secondaryLabel && (
+            <Button variant="secondary" onClick={onSecondary}>
+              {secondaryLabel}
+            </Button>
+          )}
           {onConfirm && (
             <Button
               onClick={onConfirm}
