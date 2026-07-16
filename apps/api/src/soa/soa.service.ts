@@ -529,8 +529,8 @@ export class SOAService {
       document.answers.map((answer) => [answer.questionId, answer]),
     );
 
-    // Enforced rule, applied identically on screen and in this export: a fully
-    // remote org's physical-security (7.x) controls are Not Applicable.
+    // A fully remote org's physical-security (7.x) controls default to Not
+    // Applicable, applied identically on screen and in this export.
     const isFullyRemote = await checkIfFullyRemote(
       dto.organizationId,
       this.storageLogger,
@@ -539,11 +539,14 @@ export class SOAService {
     const exportQuestions: SOAExportQuestion[] = questions.map((question) => {
       const answer = answersByQuestionId.get(question.id);
       const closure = question.columnMapping?.closure ?? null;
-      const forceNotApplicable =
-        isFullyRemote && isPhysicalSecurityControl(closure ?? '');
-      // Forced-remote controls always use the remote rationale, never a stale
-      // persisted justification that could contradict the Not Applicable status.
-      const justification = forceNotApplicable
+      // The remote default only fills controls the org has never answered — a
+      // saved answer (including an edited one) always wins, so remote physical
+      // controls stay editable and the export matches the on-screen SoA.
+      const useRemoteDefault =
+        answer === undefined &&
+        isFullyRemote &&
+        isPhysicalSecurityControl(closure ?? '');
+      const justification = useRemoteDefault
         ? FULLY_REMOTE_JUSTIFICATION
         : (answer?.answer ?? null);
       return {
@@ -553,7 +556,7 @@ export class SOAService {
           closure,
           title: question.columnMapping?.title ?? null,
           control_objective: question.columnMapping?.control_objective ?? null,
-          isApplicable: forceNotApplicable ? false : (answer?.isApplicable ?? null),
+          isApplicable: useRemoteDefault ? false : (answer?.isApplicable ?? null),
           justification,
         },
         answer: justification,

@@ -2,12 +2,35 @@
 
 import { cn } from '@/lib/utils';
 import { Badge } from '@trycompai/ui/badge';
+import { Button } from '@trycompai/ui/button';
 import { formatDistanceToNow } from 'date-fns';
 import { ChevronDown } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { StoredCheckRun } from '../hooks/useIntegrationChecks';
 import { groupRunsByConnection } from './check-run-grouping';
 import { EvidenceJsonView } from './EvidenceJsonView';
+
+/** A failing result row the user is acting on, identified the way the
+ * exception endpoints need it (result id to mark; run coords to re-run). */
+export interface RunFindingActionTarget {
+  findingId: string;
+  title: string;
+  resourceId: string;
+  connectionId: string;
+  checkId: string;
+}
+
+/**
+ * Scope actions offered on the latest run's result rows: mark a failing
+ * resource out of scope (creates a finding exception) or move an excepted
+ * resource back in scope (revokes it). `canManage` reflects the caller's
+ * integration:update permission — without it no action is rendered.
+ */
+export interface RunExceptionActions {
+  canManage: boolean;
+  onMarkOutOfScope: (target: RunFindingActionTarget) => void;
+  onRevoke: (target: RunFindingActionTarget & { exceptionId: string }) => void;
+}
 
 /**
  * Run history for a check, grouped by the account (connection) it ran against.
@@ -21,14 +44,22 @@ import { EvidenceJsonView } from './EvidenceJsonView';
 export function AccountRunGroups({
   runs,
   organizationName,
+  exceptionActions,
 }: {
   runs: StoredCheckRun[];
   organizationName: string;
+  exceptionActions?: RunExceptionActions;
 }) {
   const groups = useMemo(() => groupRunsByConnection(runs), [runs]);
 
   if (groups.length <= 1) {
-    return <GroupedCheckRuns runs={runs} organizationName={organizationName} />;
+    return (
+      <GroupedCheckRuns
+        runs={runs}
+        organizationName={organizationName}
+        exceptionActions={exceptionActions}
+      />
+    );
   }
 
   return (
@@ -53,7 +84,12 @@ export function AccountRunGroups({
                 </span>
               )}
             </div>
-            <GroupedCheckRuns runs={group.runs} maxRuns={3} organizationName={organizationName} />
+            <GroupedCheckRuns
+              runs={group.runs}
+              maxRuns={3}
+              organizationName={organizationName}
+              exceptionActions={exceptionActions}
+            />
           </div>
         );
       })}
@@ -66,10 +102,12 @@ export function GroupedCheckRuns({
   runs,
   maxRuns = 5,
   organizationName,
+  exceptionActions,
 }: {
   runs: StoredCheckRun[];
   maxRuns?: number;
   organizationName: string;
+  exceptionActions?: RunExceptionActions;
 }) {
   const [showAll, setShowAll] = useState(false);
 
@@ -119,6 +157,7 @@ export function GroupedCheckRuns({
                   run={run}
                   isLatest={isLatest}
                   organizationName={organizationName}
+                  exceptionActions={exceptionActions}
                 />
               );
             })}
@@ -143,12 +182,21 @@ export function CheckRunItem({
   run,
   isLatest,
   organizationName,
+  exceptionActions,
 }: {
   run: StoredCheckRun;
   isLatest: boolean;
   organizationName: string;
+  exceptionActions?: RunExceptionActions;
 }) {
   const [expanded, setExpanded] = useState(isLatest);
+  const [showAllFindings, setShowAllFindings] = useState(false);
+  const [showAllExcepted, setShowAllExcepted] = useState(false);
+
+  // Scope actions only make sense on the LATEST run — older runs may list
+  // resources that no longer exist. Marking/revoking still applies to the
+  // (connection, check, resource) key, not to a specific run.
+  const showExceptionActions = isLatest && !!exceptionActions?.canManage;
 
   const timeAgo = formatDistanceToNow(new Date(run.createdAt), { addSuffix: true });
   const hasFailed = run.status === 'failed' || run.failedCount > 0;
@@ -162,14 +210,20 @@ export function CheckRunItem({
 
   // `run.results` is capped server-side — a check can produce tens of thousands
   // of results (e.g. a Firebase B2C tenant) which would otherwise ship a
-  // multi-MB payload and OOM the browser. Show the first few from the (bounded)
-  // array, but derive the "+N more" counts from the run's authoritative summary
-  // counts so the totals are still correct.
-  const shownFindings = findings.slice(0, 3);
-  const shownExcepted = excepted.slice(0, 3);
+  // multi-MB payload and OOM the browser. Show the first few by default, but
+  // let the user expand to every SAMPLED finding/excepted row — the scope
+  // actions live on these rows, so capping them at three would leave later
+  // resources unactionable. "+N more" counts beyond that come from the run's
+  // authoritative summary columns (rows outside the server-side sample).
+  const shownFindings = showAllFindings ? findings : findings.slice(0, 3);
+  const shownExcepted = showAllExcepted ? excepted : excepted.slice(0, 3);
   const shownPassing = passing.slice(0, 3);
-  const moreFindings = Math.max(0, run.failedCount - shownFindings.length);
-  const moreExcepted = Math.max(0, (run.exceptedCount ?? 0) - shownExcepted.length);
+  // Sampled rows currently hidden behind the "Show more" toggles.
+  const collapsedFindings = findings.length - shownFindings.length;
+  const collapsedExcepted = excepted.length - shownExcepted.length;
+  // Rows beyond the server-side sample — not in the payload at all.
+  const moreFindings = Math.max(0, run.failedCount - findings.length);
+  const moreExcepted = Math.max(0, (run.exceptedCount ?? 0) - excepted.length);
   const morePassing = Math.max(0, run.passedCount - shownPassing.length);
 
   const statusColor = hasError ? 'text-destructive' : hasFailed ? 'text-warning' : 'text-primary';
@@ -250,7 +304,7 @@ export function CheckRunItem({
                       {finding.remediation && (
                         <p className="text-sm text-primary mt-2">{finding.remediation}</p>
                       )}
-                      <div className="flex items-center gap-2 mt-2">
+                      <div className="flex flex-wrap items-center gap-2 mt-2">
                         <Badge variant="secondary" className="font-mono text-xs">
                           {finding.resourceId}
                         </Badge>
@@ -258,6 +312,25 @@ export function CheckRunItem({
                           <Badge variant="outline" className="text-xs">
                             {finding.severity}
                           </Badge>
+                        )}
+                        {showExceptionActions && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+                            title="Accept this resource as an intentional exception — it will no longer fail this evidence item"
+                            onClick={() =>
+                              exceptionActions?.onMarkOutOfScope({
+                                findingId: finding.id,
+                                title: finding.title,
+                                resourceId: finding.resourceId,
+                                connectionId: run.connectionId,
+                                checkId: run.checkId,
+                              })
+                            }
+                          >
+                            Mark out of scope
+                          </Button>
                         )}
                       </div>
                     </div>
@@ -275,6 +348,15 @@ export function CheckRunItem({
                     )}
                   </div>
                 ))}
+                {collapsedFindings > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllFindings(true)}
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Show {collapsedFindings} more issue{collapsedFindings > 1 ? 's' : ''}
+                  </button>
+                )}
                 {moreFindings > 0 && (
                   <p className="text-sm text-muted-foreground">
                     +{moreFindings} more issues
@@ -283,28 +365,67 @@ export function CheckRunItem({
               </div>
             )}
 
-            {/* Excepted - failing findings the customer marked as an exception.
+            {/* Excepted - failing findings the customer marked out of scope.
                 Shown muted (not an issue) so it's clear the exception applied. */}
             {shownExcepted.length > 0 && (
               <div className="space-y-2">
-                {shownExcepted.map((finding) => (
-                  <div key={finding.id}>
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-muted-foreground">{finding.title}</p>
-                      <Badge variant="outline" className="text-xs">
-                        Exception
-                      </Badge>
+                {shownExcepted.map((finding) => {
+                  const { exceptionId } = finding;
+                  return (
+                    <div key={finding.id}>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-medium text-muted-foreground">
+                          {finding.title}
+                        </p>
+                        <Badge variant="outline" className="text-xs">
+                          Out of scope
+                        </Badge>
+                      </div>
+                      {finding.exceptionReason && (
+                        <p className="text-xs text-muted-foreground italic mt-1">
+                          {finding.exceptionReason}
+                        </p>
+                      )}
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
+                        <Badge variant="secondary" className="font-mono text-xs">
+                          {finding.resourceId}
+                        </Badge>
+                        {showExceptionActions && exceptionId && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+                            title="Remove the exception — this resource will count against the evidence item again"
+                            onClick={() =>
+                              exceptionActions?.onRevoke({
+                                findingId: finding.id,
+                                title: finding.title,
+                                resourceId: finding.resourceId,
+                                connectionId: run.connectionId,
+                                checkId: run.checkId,
+                                exceptionId,
+                              })
+                            }
+                          >
+                            Move back in scope
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                    <div className="mt-1">
-                      <Badge variant="secondary" className="font-mono text-xs">
-                        {finding.resourceId}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
+                {collapsedExcepted > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllExcepted(true)}
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Show {collapsedExcepted} more out of scope
+                  </button>
+                )}
                 {moreExcepted > 0 && (
                   <p className="text-sm text-muted-foreground">
-                    +{moreExcepted} more excepted
+                    +{moreExcepted} more out of scope
                   </p>
                 )}
               </div>

@@ -62,6 +62,10 @@ interface StoredCheckRun {
     collectedAt: string;
     /** True when this failing result is suppressed by an active exception. */
     excepted?: boolean;
+    /** The active exception's id — needed to revoke (move back in scope). */
+    exceptionId?: string;
+    /** The documented reason recorded when the exception was created. */
+    exceptionReason?: string;
   }>;
   createdAt: string;
 }
@@ -143,6 +147,27 @@ export function useIntegrationChecks({ taskId, orgId }: UseIntegrationChecksOpti
     }
 
     throw new Error('Failed to run check');
+  };
+
+  /**
+   * Revoke an active finding exception (move the resource back in scope).
+   * The exception mechanism is shared with Cloud Tests, so this talks to the
+   * cloud-security endpoint; the check run views refresh afterwards.
+   */
+  const revokeException = async (exceptionId: string): Promise<void> => {
+    const response = await api.delete<{ success: boolean }>(
+      `/v1/cloud-security/exceptions/${exceptionId}?organizationId=${orgId}`,
+    );
+
+    if (response.error || !response.data?.success) {
+      throw new Error(
+        typeof response.error === 'string'
+          ? response.error
+          : 'Failed to move the resource back in scope',
+      );
+    }
+
+    await mutateRuns();
   };
 
   /**
@@ -231,6 +256,7 @@ export function useIntegrationChecks({ taskId, orgId }: UseIntegrationChecksOpti
     mutateChecks,
     mutateRuns,
     runCheck,
+    revokeException,
     disconnectCheckFromTask,
     reconnectCheckToTask,
   };
