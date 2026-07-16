@@ -10,11 +10,11 @@ export const FULLY_REMOTE_JUSTIFICATION =
  * this document's own answers (`answerData`) or an in-session autofill result
  * (`processedResult`) — never from the shared framework configuration.
  *
- * The one enforced rule applied here is "fully remote → physical-security (7.x)
- * controls are Not Applicable". It is applied consistently on both the screen
- * (here) and the export, and the field is edit-locked to it, so a fully remote
- * org sees the same Not Applicable result everywhere even before auto-fill has
- * persisted it.
+ * A fully remote org's physical-security (7.x) controls default to Not
+ * Applicable, but only when the org has no saved answer yet — a persisted
+ * answer (or an in-session edit) always wins, so the control stays editable and
+ * the screen agrees with the export. Answers are never locked; the org can move
+ * to a physical office at any time.
  */
 export function resolveSoaDisplay({
   answerData,
@@ -27,17 +27,6 @@ export function resolveSoaDisplay({
   isFullyRemote: boolean;
   isControl7: boolean;
 }): { displayIsApplicable: boolean | null; justificationValue: string | null } {
-  // Enforced rule: fully remote org + physical-security control (7.x) is Not
-  // Applicable. The field is edit-locked to this, so use the remote rationale
-  // unconditionally — never a stale persisted justification that could contradict
-  // the Not Applicable status. The export applies the identical rule.
-  if (isFullyRemote && isControl7) {
-    return {
-      displayIsApplicable: false,
-      justificationValue: FULLY_REMOTE_JUSTIFICATION,
-    };
-  }
-
   // A manual save this session overrides an in-flight autofill result.
   if (answerData?.savedIsApplicable !== undefined) {
     return {
@@ -65,6 +54,16 @@ export function resolveSoaDisplay({
     return {
       displayIsApplicable: answerData.isApplicable ?? null,
       justificationValue: answerData.answer || null,
+    };
+  }
+
+  // No saved answer yet: a fully remote org's physical-security (7.x) controls
+  // default to Not Applicable. This is only a default — any saved answer above
+  // wins and the field stays editable. The export applies the identical fallback.
+  if (isFullyRemote && isControl7) {
+    return {
+      displayIsApplicable: false,
+      justificationValue: FULLY_REMOTE_JUSTIFICATION,
     };
   }
 
