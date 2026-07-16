@@ -1,3 +1,10 @@
+## [3.103.1](https://github.com/trycompai/comp/compare/v3.103.0...v3.103.1) (2026-07-16)
+
+
+### Bug Fixes
+
+* **people:** keep role picker clickable in the invite dialog ([0f24c95](https://github.com/trycompai/comp/commit/0f24c95ee0b20c5403ca7bcc8c46beba1d13bad8))
+
 # [3.103.0](https://github.com/trycompai/comp/compare/v3.102.0...v3.103.0) (2026-07-16)
 
 
