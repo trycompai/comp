@@ -17,7 +17,10 @@ type Stagehand = import('@browserbasehq/stagehand').Stagehand;
 // so viewport size is the only lever for capture sharpness.
 const BROWSER_WIDTH = 1920;
 const BROWSER_HEIGHT = 1080;
-const STAGEHAND_MODEL = 'anthropic/claude-sonnet-4-6';
+// Model behind extract()/act() (reading pages, verdicts, form fills). Separate
+// from the navigation (CUA) model and configurable via env; default unchanged.
+const STAGEHAND_MODEL =
+  process.env.BROWSERBASE_STAGEHAND_MODEL || 'anthropic/claude-sonnet-4-6';
 const BROWSERBASE_API_MAX_ATTEMPTS = 3;
 const BROWSERBASE_RETRY_DELAYS_MS = [250, 750];
 const BROWSERBASE_DEFAULT_HEADERS = { 'accept-encoding': 'identity' };

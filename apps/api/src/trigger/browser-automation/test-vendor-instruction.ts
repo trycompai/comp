@@ -14,9 +14,10 @@ const tester = new BrowserInstructionTestService();
  */
 export const testVendorInstruction = task({
   id: 'test-vendor-instruction',
-  // Sign-in can take ~40s before navigation even starts, so give the run enough
-  // headroom to finish a multi-step task instead of being cut off mid-way.
-  maxDuration: 360,
+  // Sign-in can take ~40s before navigation even starts, so give the run a
+  // generous, safe budget to finish a multi-step task on a complex site instead
+  // of being cut off mid-way. Matches the scheduled run's 10-minute cap.
+  maxDuration: 60 * 10,
   // A browser + AI run isn't safe to blindly retry (the session may be gone),
   // so run it once.
   retry: { maxAttempts: 1 },

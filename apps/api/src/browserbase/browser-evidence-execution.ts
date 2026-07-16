@@ -19,7 +19,23 @@ import { reloginWithStoredCredentials } from './browser-credential-login';
 
 type Stagehand = import('@browserbasehq/stagehand').Stagehand;
 
-const STAGEHAND_CUA_MODEL = 'anthropic/claude-sonnet-4-6';
+// Screenshot-based navigation model. Configurable via env so we can A/B
+// computer-use models without a code change (and without tuning per site).
+// Defaults to the newest Claude our Stagehand supports; set BROWSERBASE_CUA_MODEL
+// to an `openai/…` model (e.g. openai/computer-use-preview) to route to OpenAI.
+const DEFAULT_CUA_MODEL = 'anthropic/claude-sonnet-5';
+// How many screenshot→action steps the agent may take. Generous so it can
+// recover from a wrong turn on a complex site rather than giving up.
+const CUA_MAX_STEPS = 30;
+
+function resolveCuaModel(): { modelName: string; apiKey?: string } {
+  const modelName = process.env.BROWSERBASE_CUA_MODEL || DEFAULT_CUA_MODEL;
+  const apiKey = modelName.startsWith('openai/')
+    ? process.env.OPENAI_API_KEY
+    : process.env.ANTHROPIC_API_KEY;
+  return { modelName, apiKey };
+}
+
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export interface BrowserEvidenceLog {
@@ -126,19 +142,15 @@ export async function executeBrowserEvidence({
 
     currentStage = 'action';
     log('action', 'Running navigation instruction.');
-    // Nudge the agent to be efficient: read what's already on screen instead of
-    // over-navigating (a common cause of hitting the run's time budget), and to
-    // find its own way rather than expecting a precise path.
-    const instruction = `${input.instruction}. Work out the path yourself; you don't need exact directions. If the information is already visible on the current page, capture it there without navigating further. When done, stop and wait.`;
+    // Find its own way (no exact directions needed), self-correct a wrong turn,
+    // and read what's already on screen instead of over-navigating.
+    const instruction = `${input.instruction}. Work out the path yourself — you don't need exact directions. Before finishing, check the page actually matches what was asked; if you opened the wrong item or page, go back and correct it. If the information is already visible, capture it there without navigating further. When you're confident it's right, stop and wait.`;
     await stagehand
       .agent({
         cua: true,
-        model: {
-          modelName: STAGEHAND_CUA_MODEL,
-          apiKey: process.env.ANTHROPIC_API_KEY,
-        },
+        model: resolveCuaModel(),
       })
-      .execute({ instruction, maxSteps: 20 });
+      .execute({ instruction, maxSteps: CUA_MAX_STEPS });
 
     await delay(2000);
     page = await resolveEvidencePage({
