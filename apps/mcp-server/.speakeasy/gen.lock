@@ -1,20 +1,20 @@
 lockVersion: 2.0.0
 id: f7130d09-dac4-4515-9162-6095782b6bb6
 management:
-  docChecksum: 9b3f35eeaeb08f05b06fea2f6154a875
+  docChecksum: 61167898f739bf2f5fcd9e8166b05cd2
   docVersion: "1.0"
   speakeasyVersion: 1.790.2
   generationVersion: 2.918.3
-  releaseVersion: 0.2.2
-  configChecksum: 1095fa29de62e9a2928c0d8534c33233
+  releaseVersion: 0.2.3
+  configChecksum: 89aa425dd93b9bb5fa91f752eb9133df
   repoURL: https://github.com/trycompai/comp.git
   repoSubDirectory: apps/mcp-server
   installationURL: https://github.com/trycompai/comp
   published: true
 persistentEdits:
-  generation_id: d7920931-a226-48a6-92fa-b83bd7b8a238
-  pristine_commit_hash: fb0cf3327881a785350e6f98b3d172e7eb84b479
-  pristine_tree_hash: 1f040b8b98a5d0e175e6fd279c09f35d85efea67
+  generation_id: bb3111c3-6a84-4cbf-913c-49dee406a795
+  pristine_commit_hash: 3486626c1706dec8ac4f7a1ab9fb1b1994b07d00
+  pristine_tree_hash: 14225b46fd2ed6f1e92ce6b25759ace22bb8bb41
 features:
   mcp-typescript:
     additionalDependencies: 0.1.0
@@ -51,12 +51,12 @@ trackedFiles:
     pristine_git_object: 4f9e60a9462fc4def738d60c3aaadf8232ef185f
   manifest.json:
     id: ca642a226869
-    last_write_checksum: sha1:632161db068db159f28849b586913f833701af8a
-    pristine_git_object: 175c3d2daaf268f31c9e3fce6f83ce8be88f8c61
+    last_write_checksum: sha1:8e6495d3bdba45c7091e9e6947faeba0ef78ebad
+    pristine_git_object: f417237872c1bbc425e1cdc9960e714e589948c3
   package.json:
     id: 7030d0b2f71b
-    last_write_checksum: sha1:ef3d175a93c88be00fa6023dbf1532831fa3df13
-    pristine_git_object: 241bfb6192a7bbc6b09e93c997660de0040d375b
+    last_write_checksum: sha1:6ab6bd99f7c213dfb5b1c95436aa96e48d83c83d
+    pristine_git_object: 13aa5cd1a14d30fa8978d1779b43a62af12da170
   src/core.ts:
     id: f431fdbcd144
     last_write_checksum: sha1:3c1fe2275a0f345cf54298150f100299284b3f0e
@@ -1719,16 +1719,16 @@ trackedFiles:
     pristine_git_object: 9c36bf01332084f735909a71036c3544cc4c7e3a
   src/landing-page.ts:
     id: ef64a6ee46d7
-    last_write_checksum: sha1:a61d09d627d7b1aa6f25a8c13d274403acd99f34
-    pristine_git_object: b759398a35d6ef1510359b8f41d732c3349c5b23
+    last_write_checksum: sha1:78f41a26ec831467e422324cac0883b109aab006
+    pristine_git_object: c5c0b22284fb31632d312bfb60dc34bbea755ac9
   src/lib/base64.ts:
     id: "598522066688"
     last_write_checksum: sha1:e9f04a037018040361043104960982f7c22db52d
     pristine_git_object: d4bd8b341290e7a828a171d840bd0b0fff7c7cd7
   src/lib/config.ts:
     id: 320761608fb3
-    last_write_checksum: sha1:4a40df3d798d07b275e7552e6d8f0504b8c0a01f
-    pristine_git_object: 062b0ac8bf0f9c80bbdfc29a8d8a1cdebe596b7e
+    last_write_checksum: sha1:4605239be4fc5185c7dedf4f98612c90b98479fe
+    pristine_git_object: 1e35fc294653344b3b7853b91354e39c78f9cd8c
   src/lib/encodings.ts:
     id: 3bd8ead98afd
     last_write_checksum: sha1:3ff4ad6809b749125820fd39c01427b84d3fe0d6
@@ -1815,8 +1815,8 @@ trackedFiles:
     pristine_git_object: 35c8713b6f8c7f17e2545423d3e74401ff77d04b
   src/mcp-server/mcp-server.ts:
     id: aabbc4ab07c1
-    last_write_checksum: sha1:599d8a0be6249c50917792a5df8e2a16f518060e
-    pristine_git_object: 47c95984c93b1a363baf1e1eb87d31f4d9ed349e
+    last_write_checksum: sha1:316e25298ae3a2de32f9e913bc5a0f3170c711e0
+    pristine_git_object: a8425607e4fc4e80ac453f8b0ca9024bf58eeb9e
   src/mcp-server/prompts.ts:
     id: 26f3d73cbf31
     last_write_checksum: sha1:cadb036e04534a6d9d765809eebb266d188c499b
@@ -1831,8 +1831,8 @@ trackedFiles:
     pristine_git_object: c25696d4c4f70e081fa5d87ad6891874c509a577
   src/mcp-server/server.ts:
     id: 2784dd48e82a
-    last_write_checksum: sha1:0ac9f3dcb5c8146c570f3fce808d1845c8945835
-    pristine_git_object: a3610a1c6cd064c9b1451d2aa346ffa79ad07023
+    last_write_checksum: sha1:957fad16111767561af188b17ee34cf28fde3e9c
+    pristine_git_object: fa33b10cdf08d072ce7b3b0ffa01fe0a2366baa9
   src/mcp-server/shared.ts:
     id: 074e80d4be1e
     last_write_checksum: sha1:19c9034032819a14f15c430de4350c8aba99d725
@@ -4339,8 +4339,8 @@ trackedFiles:
     pristine_git_object: 02853679ca7b14da43e377d54e71d2e0deba12c6
   src/models/peoplecontrollerupdatememberv1op.ts:
     id: f3e9190b63c9
-    last_write_checksum: sha1:3be585709b1ae7415e750717ffae2913e2c659fb
-    pristine_git_object: 994e0a4d31598539269d8d678d1534c48c7a7e98
+    last_write_checksum: sha1:a0fa2d5e9cef7b601079c5e85cb8f169192d62bf
+    pristine_git_object: 623af92ca4733e0004db5b1c527891cbd7fa4a9d
   src/models/peoplecontrolleruploademploymentevidencev1op.ts:
     id: b604a7ca00a1
     last_write_checksum: sha1:8476ce09a55589c5bd90a39c047ce978a3c58e7e
@@ -5387,6 +5387,8 @@ examples:
           application/json: {"message": "Member with ID mem_abc123def456 not found in organization org_abc123def456"}
         "500":
           application/json: {"message": "Internal server error"}
+        "409":
+          application/json: {"message": "That email is already used by another account"}
   PeopleController_deleteMember_v1:
     speakeasy-default-people-controller-delete-member-v1:
       parameters:
@@ -7734,4 +7736,6 @@ examples:
       requestBody:
         application/json: {"name": "Internal Controls"}
 examplesVersion: 1.0.2
-releaseNotes: "## Mcp-typescript SDK Changes:\n* `CompAi.Organization.OrganizationController_updateOrganization_v1()`:  `request` **Changed** (Breaking ⚠️)\n* `CompAi.Integrations.TwoFactorSourceController_getAvailableTwoFactorSources_v1()`: **Added**\n* `CompAi.Integrations.TwoFactorSourceController_setTwoFactorSource_v1()`: **Added**\n* `CompAi.People.PeopleController_getMemberAccess_v1()`: **Added**\n* `CompAi.Integrations.TwoFactorSourceController_getTwoFactorStatuses_v1()`: **Added**\n* `CompAi.Trust Portal.TrustPortalController_updateSecurityQuestionnaire_v1()`: **Added**\n* `CompAi.Trust Access.TrustAccessController_getPublicSecurityQuestionnaire_v1()`: **Added**\n* `CompAi.ISMS.IsmsController_getVersions_v1()`: **Added**\n* `CompAi.Frameworks.FrameworksController_updateCustom_v1()`: **Added**\n* `CompAi.Integrations.TwoFactorSourceController_getTwoFactorSource_v1()`: **Added**\n* `CompAi.ISMS.IsmsController_exportDocument_v1()`: \n  *  `request.body.versionId` **Added**\n* `CompAi.ISMS.IsmsRegistersController_createRow_v1()`: \n  *  `request.body` **Changed**\n* `CompAi.ISMS.IsmsRegistersController_updateRow_v1()`: \n  *  `request.body` **Changed**\n"
+releaseNotes: |
+  ## Mcp-typescript SDK Changes:
+  * `CompAi.People.PeopleController_updateMember_v1()`:  `response.status[409]` **Added** (Breaking ⚠️)

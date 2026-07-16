@@ -38,6 +38,20 @@ export const PeopleControllerUpdateMemberV1InternalServerErrorResponseBody$zodSc
     }).describe("Internal server error");
 
 /**
+ * Conflict - Login email already used by another account, or the member belongs to other organizations
+ */
+export type PeopleControllerUpdateMemberV1ConflictResponseBody = {
+  message?: string | undefined;
+};
+
+export const PeopleControllerUpdateMemberV1ConflictResponseBody$zodSchema:
+  z.ZodType<PeopleControllerUpdateMemberV1ConflictResponseBody> = z.object({
+    message: z.string().optional(),
+  }).describe(
+    "Conflict - Login email already used by another account, or the member belongs to other organizations",
+  );
+
+/**
  * Organization, member, or user not found
  */
 export type PeopleControllerUpdateMemberV1NotFoundResponseBody = {
@@ -80,6 +94,7 @@ export type PeopleControllerUpdateMemberV1Response =
   | PeopleControllerUpdateMemberV1BadRequestResponseBody
   | PeopleControllerUpdateMemberV1UnauthorizedResponseBody
   | PeopleControllerUpdateMemberV1NotFoundResponseBody
+  | PeopleControllerUpdateMemberV1ConflictResponseBody
   | PeopleControllerUpdateMemberV1InternalServerErrorResponseBody;
 
 export const PeopleControllerUpdateMemberV1Response$zodSchema: z.ZodType<
@@ -91,6 +106,7 @@ export const PeopleControllerUpdateMemberV1Response$zodSchema: z.ZodType<
     PeopleControllerUpdateMemberV1UnauthorizedResponseBody$zodSchema
   ),
   z.lazy(() => PeopleControllerUpdateMemberV1NotFoundResponseBody$zodSchema),
+  z.lazy(() => PeopleControllerUpdateMemberV1ConflictResponseBody$zodSchema),
   z.lazy(() =>
     PeopleControllerUpdateMemberV1InternalServerErrorResponseBody$zodSchema
   ),
