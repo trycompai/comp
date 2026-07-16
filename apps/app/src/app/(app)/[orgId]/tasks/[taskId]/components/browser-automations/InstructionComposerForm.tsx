@@ -1,19 +1,13 @@
 'use client';
 
-import { Button, Input, Label, Textarea } from '@trycompai/design-system';
-import { ChevronRight, Play } from '@trycompai/design-system/icons';
-import type { ConnectionRef } from './InstructionComposer';
+import { Button, Label, Textarea } from '@trycompai/design-system';
+import { Play } from '@trycompai/design-system/icons';
 
 interface InstructionComposerFormProps {
-  connection: ConnectionRef;
   instruction: string;
   onInstructionChange: (value: string) => void;
   criteria: string;
   onCriteriaChange: (value: string) => void;
-  advancedOpen: boolean;
-  onToggleAdvanced: () => void;
-  startUrl: string;
-  onStartUrlChange: (value: string) => void;
   testing: boolean;
   canSave: boolean;
   hasResult: boolean;
@@ -98,18 +92,13 @@ function ExampleChips({
   );
 }
 
-/** Left column of the split composer: the instruction, a pass/fail check, an
- * advanced start URL, and the test/save actions (design 1i). */
+/** Left column of the split composer: the instruction, a pass/fail check, and
+ * the test/save actions (design 1i). */
 export function InstructionComposerForm({
-  connection,
   instruction,
   onInstructionChange,
   criteria,
   onCriteriaChange,
-  advancedOpen,
-  onToggleAdvanced,
-  startUrl,
-  onStartUrlChange,
   testing,
   canSave,
   hasResult,
@@ -169,35 +158,6 @@ export function InstructionComposerForm({
         <p className="text-[11px] text-muted-foreground">
           Leave blank to only capture a screenshot.
         </p>
-      </div>
-
-      <div className="flex flex-col gap-1.5">
-        <button
-          type="button"
-          onClick={onToggleAdvanced}
-          className="flex items-center gap-1 text-left text-xs text-primary"
-        >
-          Advanced — start from a specific page
-          <ChevronRight
-            size={12}
-            className={advancedOpen ? 'rotate-90 transition-transform' : 'transition-transform'}
-          />
-        </button>
-        {advancedOpen && (
-          <>
-            <Input
-              id="composer-start-url"
-              value={startUrl}
-              onChange={(event) => onStartUrlChange(event.target.value)}
-              placeholder={connection.url}
-            />
-            <p className="text-[11px] text-muted-foreground">
-              Start the AI on a specific page — handy if it can&apos;t find its way from the
-              home page, or to jump straight to the right screen. Defaults to{' '}
-              {connection.hostname}.
-            </p>
-          </>
-        )}
       </div>
 
       <div className="mt-auto flex flex-col gap-2">

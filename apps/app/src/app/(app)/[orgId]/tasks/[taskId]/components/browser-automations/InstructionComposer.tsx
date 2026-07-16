@@ -78,10 +78,6 @@ export function InstructionComposer({
 }: InstructionComposerProps) {
   const [instruction, setInstruction] = useState(initialValues?.instruction ?? '');
   const [criteria, setCriteria] = useState(initialValues?.evaluationCriteria ?? '');
-  const [advancedOpen, setAdvancedOpen] = useState(
-    !!initialValues?.targetUrl && initialValues.targetUrl !== connection.url,
-  );
-  const [startUrl, setStartUrl] = useState(initialValues?.targetUrl ?? connection.url);
 
   const [phase, setPhase] = useState<TestPhase>('idle');
   const [testRun, setTestRun] = useState<{ runId: string; accessToken: string } | null>(null);
@@ -92,7 +88,8 @@ export function InstructionComposer({
 
   const { startTest, closeTestSession, isStarting } = useInstructionTest();
 
-  const targetUrl = advancedOpen && startUrl.trim() ? startUrl.trim() : connection.url;
+  // The AI starts from the connection and finds its own way — no manual start URL.
+  const targetUrl = initialValues?.targetUrl?.trim() || connection.url;
   const host = useMemo(() => hostnameOf(targetUrl), [targetUrl]);
 
   const { run: runState, error: runError } = useRealtimeRun(testRun?.runId ?? '', {
@@ -253,15 +250,10 @@ export function InstructionComposer({
       {/* Body */}
       <div className="flex min-h-[430px] flex-col md:flex-row">
         <InstructionComposerForm
-          connection={connection}
           instruction={instruction}
           onInstructionChange={setInstruction}
           criteria={criteria}
           onCriteriaChange={setCriteria}
-          advancedOpen={advancedOpen}
-          onToggleAdvanced={() => setAdvancedOpen((prev) => !prev)}
-          startUrl={startUrl}
-          onStartUrlChange={setStartUrl}
           testing={testing}
           canSave={canSave}
           hasResult={!!result}

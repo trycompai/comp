@@ -102,13 +102,6 @@ describe('InstructionComposer', () => {
     ).toBeInTheDocument();
   });
 
-  it('reveals the advanced start URL override', () => {
-    render(<InstructionComposer {...baseProps} mode="create" />);
-    expect(screen.queryByPlaceholderText('https://app.example.com')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByText(/advanced — start from a specific page/i));
-    expect(screen.getByPlaceholderText('https://app.example.com')).toBeInTheDocument();
-  });
-
   it('saves an edited instruction with a derived name', async () => {
     const onUpdate = vi.fn().mockResolvedValue(true);
     render(
