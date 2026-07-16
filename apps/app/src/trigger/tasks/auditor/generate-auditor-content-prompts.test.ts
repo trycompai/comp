@@ -82,6 +82,19 @@ describe('critical-vendors prompt format (CS-747)', () => {
     expect(prompt).not.toContain('(Cloud infrastructure)');
     expect(prompt).not.toContain('(Team messaging)');
   });
+
+  // Once buildVendorsBlock strips the onboarding placeholder, a fallback vendor
+  // reaches the model as a bare name. The prompt must give the model a permitted
+  // source for the function (the well-known named product) so it produces the
+  // actual use case rather than omitting it — the section already relies on
+  // vendor knowledge to classify SaaS/PaaS/IaaS. (cubic P2 / CS-747)
+  it('derives the vendor function from the named product and forbids blank/placeholder functions', () => {
+    expect(prompt).toMatch(/named product/i);
+    expect(prompt).toMatch(/widely known to do/i);
+    expect(prompt).toMatch(/never leave the function blank/i);
+    // No onboarding placeholder may ever be echoed back as a function.
+    expect(prompt).toMatch(/never .*(onboarding|placeholder)/i);
+  });
 });
 
 describe('buildSectionUserPrompt', () => {

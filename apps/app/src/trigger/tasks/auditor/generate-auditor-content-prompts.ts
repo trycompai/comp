@@ -132,7 +132,7 @@ ${NARRATIVE_EXCLUSIONS}${TONE_RULES}`,
 
 Include EVERY vendor listed in the VENDORS TAB. Do NOT shorten the list, do NOT omit any vendor, and do NOT add vendors that are not in the VENDORS TAB.
 
-For each vendor, classify it as SaaS, PaaS, or IaaS and add a short description of its function.
+For each vendor, classify it as SaaS, PaaS, or IaaS and describe its function. Identify each vendor from its name and state what that named product or service is widely known to do — the vendor's name is a sufficient basis for a concise, factual function. Never leave the function blank, and never restate onboarding metadata (for example "selected during onboarding") as the function.
 
 FORMAT — one vendor per line:
 [Vendor Name] - [SaaS/PaaS/IaaS] - [brief function]
@@ -146,6 +146,7 @@ RULES:
 - Do NOT include the section title.
 - One vendor per line, in the exact format above.
 - The VENDORS TAB is the source of truth for which vendors to list — include all of them, invent none.
+- The function must be a real description of what the vendor does — never onboarding placeholder text, "unknown", or a blank.
 ${TONE_RULES}`,
 
   'subservice-organizations': `Identify the subservice organisations for the SOC 2 report, choosing ONLY from the VENDORS TAB provided in the sources.
