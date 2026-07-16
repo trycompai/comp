@@ -82,25 +82,25 @@ describe('BrowserAutomationsList', () => {
 
   it('renders the heading', () => {
     render(<BrowserAutomationsList {...defaultProps} />);
-    expect(screen.getByText('Browser automations')).toBeInTheDocument();
+    expect(screen.getByText('Browser evidence')).toBeInTheDocument();
   });
 
   it('shows create actions for admin with integration:create', () => {
     setMockPermissions(ADMIN_PERMISSIONS);
     render(<BrowserAutomationsList {...defaultProps} />);
-    expect(screen.getByText('New automation')).toBeInTheDocument();
+    expect(screen.getByText('Add instruction')).toBeInTheDocument();
   });
 
   it('hides create actions for auditor without integration:create', () => {
     setMockPermissions(AUDITOR_PERMISSIONS);
     render(<BrowserAutomationsList {...defaultProps} />);
-    expect(screen.queryByText('New automation')).not.toBeInTheDocument();
+    expect(screen.queryByText('Add instruction')).not.toBeInTheDocument();
   });
 
   it('hides create actions when onCreateClick is not provided (manual task)', () => {
     setMockPermissions(ADMIN_PERMISSIONS);
     render(<BrowserAutomationsList {...defaultProps} onCreateClick={undefined} />);
-    expect(screen.queryByText('New automation')).not.toBeInTheDocument();
+    expect(screen.queryByText('Add instruction')).not.toBeInTheDocument();
   });
 
   it('passes readOnly=false to AutomationItem for admin with integration:update', () => {

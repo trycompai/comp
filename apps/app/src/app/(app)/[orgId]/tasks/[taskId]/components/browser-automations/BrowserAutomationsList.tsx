@@ -95,8 +95,25 @@ export function BrowserAutomationsList({
     <div className="overflow-hidden rounded-lg border border-border bg-card">
       <div className="flex items-center justify-between border-b border-border px-5 py-4">
         <div>
-          <h3 className="text-sm font-medium text-foreground">Browser automations</h3>
-          <p className="text-xs text-muted-foreground">Evidence captured from vendor sites</p>
+          <div className="flex items-center gap-2.5">
+            <h3 className="text-base font-medium tracking-tight text-foreground">
+              Browser evidence
+            </h3>
+            <span
+              className="inline-flex items-center gap-1.5 rounded-sm px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em]"
+              style={{
+                backgroundColor: 'color-mix(in oklab, var(--success) 15%, transparent)',
+                color: 'var(--success)',
+              }}
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-current" />
+              Active
+            </span>
+          </div>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Comp signs in to your vendors and captures screenshots as evidence — on a
+            schedule, unattended.
+          </p>
         </div>
         {onCreateClick && canCreateIntegration && (
           <button
@@ -104,7 +121,7 @@ export function BrowserAutomationsList({
             className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground"
           >
             <Add size={14} />
-            New automation
+            Add instruction
           </button>
         )}
       </div>
@@ -178,7 +195,7 @@ export function BrowserAutomationsList({
             className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border/60 py-2.5 text-xs text-muted-foreground transition-colors hover:border-border hover:bg-muted/30 hover:text-foreground"
           >
             <Add size={14} />
-            Create Another
+            Add another instruction
           </button>
         )}
       </div>

@@ -12,12 +12,12 @@ import {
   BrowserLiveView,
   ConnectVendorLoginFlow,
   EmptyWithContextState,
-  NoContextState,
 } from './browser-automations';
 import {
   clearConnectState,
   loadConnectState,
 } from './browser-automations/connect-flow-storage';
+import { BrowserEvidenceEmptyState } from './browser-automations/BrowserEvidenceEmptyState';
 
 interface BrowserAutomationsProps {
   taskId: string;
@@ -165,7 +165,7 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
   // vendor simply reuses the saved session.
   if (!isManualTask && automations.automations.length === 0 && !justConnected) {
     return (
-      <NoContextState
+      <BrowserEvidenceEmptyState
         isStartingAuth={context.isStartingAuth}
         onConnect={() => setConnectOpen(true)}
       />
