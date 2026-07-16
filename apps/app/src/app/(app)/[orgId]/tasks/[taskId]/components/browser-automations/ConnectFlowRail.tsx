@@ -10,13 +10,6 @@ interface ConnectFlowRailProps {
   /** Index of the current rail step (0–4); steps before it render as done. */
   currentIndex: number;
   allDone?: boolean;
-  detecting?: boolean;
-  /**
-   * Show the "what we detect" panel. Only relevant before the user picks a
-   * method — once the chooser lists the methods, repeating them here is
-   * redundant, so the flow turns this off.
-   */
-  showDetectPanel?: boolean;
 }
 
 export function ConnectFlowRail({
@@ -24,8 +17,6 @@ export function ConnectFlowRail({
   subtitle,
   currentIndex,
   allDone = false,
-  detecting = false,
-  showDetectPanel = false,
 }: ConnectFlowRailProps) {
   return (
     <div className="flex flex-col gap-5 border-b border-border bg-muted p-5 sm:border-b-0 sm:border-r">
@@ -62,20 +53,6 @@ export function ConnectFlowRail({
           );
         })}
       </div>
-
-      {showDetectPanel && (
-        <div className="mt-auto flex flex-col gap-2 rounded-md border border-border bg-background p-2.5">
-          <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-            What we detect appears here
-          </span>
-          {detecting && (
-            <>
-              <div className="h-2 w-4/5 animate-pulse rounded bg-accent" />
-              <div className="h-2 w-3/5 animate-pulse rounded bg-accent" />
-            </>
-          )}
-        </div>
-      )}
     </div>
   );
 }

@@ -246,8 +246,6 @@ export function ConnectVendorLoginFlow({
           subtitle={railSubtitle}
           currentIndex={RAIL_INDEX[step]}
           allDone={step === 'connected'}
-          detecting={step === 'checking'}
-          showDetectPanel={step === 'enter-url' || step === 'checking'}
         />
 
         <ConnectFlowStage
