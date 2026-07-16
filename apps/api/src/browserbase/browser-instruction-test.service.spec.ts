@@ -125,7 +125,7 @@ describe('BrowserInstructionTestService', () => {
       success: false,
       status: 'failed',
       error: 'stuck',
-      failureCode: 'action_failed',
+      failureCode: 'timeout',
     });
     const { service } = build(runner);
     let final: { state: string }[] = [];
