@@ -190,6 +190,8 @@ export function CheckRunItem({
   exceptionActions?: RunExceptionActions;
 }) {
   const [expanded, setExpanded] = useState(isLatest);
+  const [showAllFindings, setShowAllFindings] = useState(false);
+  const [showAllExcepted, setShowAllExcepted] = useState(false);
 
   // Scope actions only make sense on the LATEST run — older runs may list
   // resources that no longer exist. Marking/revoking still applies to the
@@ -208,14 +210,20 @@ export function CheckRunItem({
 
   // `run.results` is capped server-side — a check can produce tens of thousands
   // of results (e.g. a Firebase B2C tenant) which would otherwise ship a
-  // multi-MB payload and OOM the browser. Show the first few from the (bounded)
-  // array, but derive the "+N more" counts from the run's authoritative summary
-  // counts so the totals are still correct.
-  const shownFindings = findings.slice(0, 3);
-  const shownExcepted = excepted.slice(0, 3);
+  // multi-MB payload and OOM the browser. Show the first few by default, but
+  // let the user expand to every SAMPLED finding/excepted row — the scope
+  // actions live on these rows, so capping them at three would leave later
+  // resources unactionable. "+N more" counts beyond that come from the run's
+  // authoritative summary columns (rows outside the server-side sample).
+  const shownFindings = showAllFindings ? findings : findings.slice(0, 3);
+  const shownExcepted = showAllExcepted ? excepted : excepted.slice(0, 3);
   const shownPassing = passing.slice(0, 3);
-  const moreFindings = Math.max(0, run.failedCount - shownFindings.length);
-  const moreExcepted = Math.max(0, (run.exceptedCount ?? 0) - shownExcepted.length);
+  // Sampled rows currently hidden behind the "Show more" toggles.
+  const collapsedFindings = findings.length - shownFindings.length;
+  const collapsedExcepted = excepted.length - shownExcepted.length;
+  // Rows beyond the server-side sample — not in the payload at all.
+  const moreFindings = Math.max(0, run.failedCount - findings.length);
+  const moreExcepted = Math.max(0, (run.exceptedCount ?? 0) - excepted.length);
   const morePassing = Math.max(0, run.passedCount - shownPassing.length);
 
   const statusColor = hasError ? 'text-destructive' : hasFailed ? 'text-warning' : 'text-primary';
@@ -340,6 +348,15 @@ export function CheckRunItem({
                     )}
                   </div>
                 ))}
+                {collapsedFindings > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllFindings(true)}
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Show {collapsedFindings} more issue{collapsedFindings > 1 ? 's' : ''}
+                  </button>
+                )}
                 {moreFindings > 0 && (
                   <p className="text-sm text-muted-foreground">
                     +{moreFindings} more issues
@@ -397,6 +414,15 @@ export function CheckRunItem({
                     </div>
                   );
                 })}
+                {collapsedExcepted > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllExcepted(true)}
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Show {collapsedExcepted} more out of scope
+                  </button>
+                )}
                 {moreExcepted > 0 && (
                   <p className="text-sm text-muted-foreground">
                     +{moreExcepted} more out of scope

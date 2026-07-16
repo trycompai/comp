@@ -45,6 +45,7 @@ export interface MarkExceptionModalProps {
   title?: string;
   description?: string;
   confirmLabel?: string;
+  reasonLabel?: string;
   expiryHint?: string;
   successToast?: string;
 }
@@ -68,6 +69,7 @@ export function MarkExceptionModal({
   title = 'Mark this finding as an exception?',
   description = 'Exceptions are recorded in the audit trail. Auditors will see this exception and the reason you provide.',
   confirmLabel = 'Mark as exception',
+  reasonLabel = 'Reason for exception (required) *',
   expiryHint = 'Leave empty for never. If set, the finding reappears in Scan Results on the first scan after this date.',
   successToast = 'Marked as exception',
 }: MarkExceptionModalProps) {
@@ -139,7 +141,7 @@ export function MarkExceptionModal({
               htmlFor="exception-reason"
               className="block text-xs font-medium mb-1"
             >
-              Reason for exception (required) *
+              {reasonLabel}
             </label>
             <textarea
               id="exception-reason"

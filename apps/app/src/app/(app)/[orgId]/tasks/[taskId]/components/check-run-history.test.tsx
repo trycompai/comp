@@ -180,6 +180,38 @@ describe('CheckRunItem scope actions', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('expands beyond the first three failing rows so every sampled resource is markable', () => {
+    const actions = buildActions();
+    const run = buildRun();
+    const now = new Date().toISOString();
+    // 5 sampled failing rows (plus the excepted one from the base fixture).
+    run.results = Array.from({ length: 5 }, (_, i) => ({
+      id: `res_fail_${i}`,
+      passed: false,
+      resourceType: 'aws-s3-bucket',
+      resourceId: `bucket-${i}`,
+      title: `Public access not fully blocked: bucket-${i}`,
+      collectedAt: now,
+    }));
+    run.failedCount = 5;
+    run.exceptedCount = 0;
+
+    render(
+      <CheckRunItem run={run} isLatest organizationName="Acme" exceptionActions={actions} />,
+    );
+
+    // Collapsed: only the first three rows are actionable.
+    expect(screen.getAllByRole('button', { name: 'Mark out of scope' })).toHaveLength(3);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show 2 more issues' }));
+
+    // Expanded: every sampled failing row is actionable.
+    expect(screen.getAllByRole('button', { name: 'Mark out of scope' })).toHaveLength(5);
+    expect(
+      screen.queryByRole('button', { name: /Show .* more issues/ }),
+    ).not.toBeInTheDocument();
+  });
+
   it('renders no actions at all when none are provided (other callers unaffected)', () => {
     render(<CheckRunItem run={buildRun()} isLatest organizationName="Acme" />);
 

@@ -191,13 +191,15 @@ export function TaskIntegrationChecks({
   /**
    * After a scope change (mark / revoke), re-run the affected check so the
    * task's status is recomputed with the new exception set — the run paths
-   * already honor exceptions. Skipped when a run of the same check is in
+   * already honor exceptions. Skipped only when a run of the SAME check is in
    * flight: exceptions are loaded at aggregation time (after the provider
-   * calls), so the in-flight run already reflects the change.
+   * calls), so that in-flight run already reflects the change. A run of a
+   * DIFFERENT check doesn't recompute this one, so it must not suppress the
+   * re-run.
    */
   const rerunAfterScopeChange = useCallback(
     (target: { connectionId: string; checkId: string }) => {
-      if (runningCheck !== null) return;
+      if (runningCheck === target.checkId) return;
       void handleRunCheck(target.connectionId, target.checkId);
     },
     [runningCheck, handleRunCheck],
@@ -1006,6 +1008,7 @@ export function TaskIntegrationChecks({
         title="Mark this resource as out of scope?"
         description="The resource stays visible on this evidence item but no longer fails it. The exception and your reason are recorded in the audit trail for auditors."
         confirmLabel="Mark out of scope"
+        reasonLabel="Reason this resource is out of scope (required) *"
         expiryHint="Leave empty for never. If set, the resource comes back in scope after this date."
         successToast="Marked out of scope — re-running the check to update this evidence item."
         onMarked={handleMarkedOutOfScope}

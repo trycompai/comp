@@ -84,6 +84,7 @@ describe('MarkExceptionModal', () => {
         title="Mark this resource as out of scope?"
         description="The resource stays visible but no longer fails this evidence item."
         confirmLabel="Mark out of scope"
+        reasonLabel="Reason this resource is out of scope (required) *"
         expiryHint="Leave empty for never."
       />,
     );
@@ -93,11 +94,15 @@ describe('MarkExceptionModal', () => {
     expect(
       screen.getByRole('button', { name: /^Mark out of scope$/ }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText(/Reason this resource is out of scope/i),
+    ).toBeInTheDocument();
     expect(screen.getByText('Leave empty for never.')).toBeInTheDocument();
     // Default copy is fully replaced.
     expect(
       screen.queryByText('Mark this finding as an exception?'),
     ).not.toBeInTheDocument();
+    expect(screen.queryByText(/Reason for exception/i)).not.toBeInTheDocument();
   });
 
   it('keeps the submit button disabled until reason reaches min length', () => {
