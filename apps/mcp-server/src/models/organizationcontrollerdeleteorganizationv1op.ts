@@ -6,6 +6,26 @@ import * as z from "zod";
 import { ClosedEnum } from "../types/enums.js";
 
 /**
+ * How the request was authenticated
+ */
+export const OrganizationControllerDeleteOrganizationV1AuthType = {
+  ApiKey: "api-key",
+  Session: "session",
+} as const;
+/**
+ * How the request was authenticated
+ */
+export type OrganizationControllerDeleteOrganizationV1AuthType = ClosedEnum<
+  typeof OrganizationControllerDeleteOrganizationV1AuthType
+>;
+
+export const OrganizationControllerDeleteOrganizationV1AuthType$zodSchema = z
+  .enum([
+    "api-key",
+    "session",
+  ]).describe("How the request was authenticated");
+
+/**
  * Organization not found
  */
 export type OrganizationControllerDeleteOrganizationV1NotFoundResponseBody = {
@@ -43,26 +63,6 @@ export const DeletedOrganization$zodSchema: z.ZodType<DeletedOrganization> = z
     id: z.string().optional().describe("The deleted organization ID"),
     name: z.string().optional().describe("The deleted organization name"),
   });
-
-/**
- * How the request was authenticated
- */
-export const OrganizationControllerDeleteOrganizationV1AuthType = {
-  ApiKey: "api-key",
-  Session: "session",
-} as const;
-/**
- * How the request was authenticated
- */
-export type OrganizationControllerDeleteOrganizationV1AuthType = ClosedEnum<
-  typeof OrganizationControllerDeleteOrganizationV1AuthType
->;
-
-export const OrganizationControllerDeleteOrganizationV1AuthType$zodSchema = z
-  .enum([
-    "api-key",
-    "session",
-  ]).describe("How the request was authenticated");
 
 /**
  * Organization deleted successfully

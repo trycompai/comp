@@ -5,63 +5,6 @@
 import * as z from "zod";
 import { ClosedEnum } from "../types/enums.js";
 
-/**
- * Internal server error
- */
-export type VendorsControllerCreateVendorV1InternalServerErrorResponseBody = {
-  message?: string | undefined;
-};
-
-export const VendorsControllerCreateVendorV1InternalServerErrorResponseBody$zodSchema:
-  z.ZodType<VendorsControllerCreateVendorV1InternalServerErrorResponseBody> = z
-    .object({
-      message: z.string().optional(),
-    }).describe("Internal server error");
-
-/**
- * Organization not found
- */
-export type VendorsControllerCreateVendorV1NotFoundResponseBody = {
-  message?: string | undefined;
-};
-
-export const VendorsControllerCreateVendorV1NotFoundResponseBody$zodSchema:
-  z.ZodType<VendorsControllerCreateVendorV1NotFoundResponseBody> = z.object({
-    message: z.string().optional(),
-  }).describe("Organization not found");
-
-/**
- * Unauthorized - Invalid authentication or insufficient permissions
- */
-export type VendorsControllerCreateVendorV1UnauthorizedResponseBody = {
-  message?: string | undefined;
-};
-
-export const VendorsControllerCreateVendorV1UnauthorizedResponseBody$zodSchema:
-  z.ZodType<VendorsControllerCreateVendorV1UnauthorizedResponseBody> = z.object(
-    {
-      message: z.string().optional(),
-    },
-  ).describe(
-    "Unauthorized - Invalid authentication or insufficient permissions",
-  );
-
-/**
- * Bad request - Invalid input data
- */
-export type VendorsControllerCreateVendorV1BadRequestResponseBody = {
-  message?: Array<string> | undefined;
-  error?: string | undefined;
-  statusCode?: number | undefined;
-};
-
-export const VendorsControllerCreateVendorV1BadRequestResponseBody$zodSchema:
-  z.ZodType<VendorsControllerCreateVendorV1BadRequestResponseBody> = z.object({
-    error: z.string().optional(),
-    message: z.array(z.string()).optional(),
-    statusCode: z.number().optional(),
-  }).describe("Bad request - Invalid input data");
-
 export const VendorsControllerCreateVendorV1Category = {
   Cloud: "cloud",
   Infrastructure: "infrastructure",
@@ -198,6 +141,63 @@ export const VendorsControllerCreateVendorV1AuthType$zodSchema = z.enum([
   "api-key",
   "session",
 ]).describe("How the request was authenticated");
+
+/**
+ * Internal server error
+ */
+export type VendorsControllerCreateVendorV1InternalServerErrorResponseBody = {
+  message?: string | undefined;
+};
+
+export const VendorsControllerCreateVendorV1InternalServerErrorResponseBody$zodSchema:
+  z.ZodType<VendorsControllerCreateVendorV1InternalServerErrorResponseBody> = z
+    .object({
+      message: z.string().optional(),
+    }).describe("Internal server error");
+
+/**
+ * Organization not found
+ */
+export type VendorsControllerCreateVendorV1NotFoundResponseBody = {
+  message?: string | undefined;
+};
+
+export const VendorsControllerCreateVendorV1NotFoundResponseBody$zodSchema:
+  z.ZodType<VendorsControllerCreateVendorV1NotFoundResponseBody> = z.object({
+    message: z.string().optional(),
+  }).describe("Organization not found");
+
+/**
+ * Unauthorized - Invalid authentication or insufficient permissions
+ */
+export type VendorsControllerCreateVendorV1UnauthorizedResponseBody = {
+  message?: string | undefined;
+};
+
+export const VendorsControllerCreateVendorV1UnauthorizedResponseBody$zodSchema:
+  z.ZodType<VendorsControllerCreateVendorV1UnauthorizedResponseBody> = z.object(
+    {
+      message: z.string().optional(),
+    },
+  ).describe(
+    "Unauthorized - Invalid authentication or insufficient permissions",
+  );
+
+/**
+ * Bad request - Invalid input data
+ */
+export type VendorsControllerCreateVendorV1BadRequestResponseBody = {
+  message?: Array<string> | undefined;
+  error?: string | undefined;
+  statusCode?: number | undefined;
+};
+
+export const VendorsControllerCreateVendorV1BadRequestResponseBody$zodSchema:
+  z.ZodType<VendorsControllerCreateVendorV1BadRequestResponseBody> = z.object({
+    error: z.string().optional(),
+    message: z.array(z.string()).optional(),
+    statusCode: z.number().optional(),
+  }).describe("Bad request - Invalid input data");
 
 /**
  * User information (only for session auth)

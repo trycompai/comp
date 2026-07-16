@@ -5,6 +5,25 @@
 import * as z from "zod";
 import { ClosedEnum } from "../types/enums.js";
 
+/**
+ * How the request was authenticated
+ */
+export const PoliciesControllerDeletePolicyV1AuthType = {
+  ApiKey: "api-key",
+  Session: "session",
+} as const;
+/**
+ * How the request was authenticated
+ */
+export type PoliciesControllerDeletePolicyV1AuthType = ClosedEnum<
+  typeof PoliciesControllerDeletePolicyV1AuthType
+>;
+
+export const PoliciesControllerDeletePolicyV1AuthType$zodSchema = z.enum([
+  "api-key",
+  "session",
+]).describe("How the request was authenticated");
+
 export type PoliciesControllerDeletePolicyV1Request = {
   xOrganizationId?: string | undefined;
   id: string;
@@ -55,25 +74,6 @@ export const DeletedPolicy$zodSchema: z.ZodType<DeletedPolicy> = z.object({
   id: z.string().optional().describe("The deleted policy ID"),
   name: z.string().optional().describe("The deleted policy name"),
 });
-
-/**
- * How the request was authenticated
- */
-export const PoliciesControllerDeletePolicyV1AuthType = {
-  ApiKey: "api-key",
-  Session: "session",
-} as const;
-/**
- * How the request was authenticated
- */
-export type PoliciesControllerDeletePolicyV1AuthType = ClosedEnum<
-  typeof PoliciesControllerDeletePolicyV1AuthType
->;
-
-export const PoliciesControllerDeletePolicyV1AuthType$zodSchema = z.enum([
-  "api-key",
-  "session",
-]).describe("How the request was authenticated");
 
 /**
  * Policy deleted successfully

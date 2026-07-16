@@ -9,6 +9,25 @@ import {
   PeopleResponseDto$zodSchema,
 } from "./peopleresponsedto.js";
 
+/**
+ * How the request was authenticated
+ */
+export const PeopleControllerGetAllPeopleV1AuthType = {
+  ApiKey: "api-key",
+  Session: "session",
+} as const;
+/**
+ * How the request was authenticated
+ */
+export type PeopleControllerGetAllPeopleV1AuthType = ClosedEnum<
+  typeof PeopleControllerGetAllPeopleV1AuthType
+>;
+
+export const PeopleControllerGetAllPeopleV1AuthType$zodSchema = z.enum([
+  "api-key",
+  "session",
+]).describe("How the request was authenticated");
+
 export type PeopleControllerGetAllPeopleV1Request = {
   includeDeactivated: string;
   onboardAfter: string;
@@ -65,25 +84,6 @@ export const PeopleControllerGetAllPeopleV1UnauthorizedResponseBody$zodSchema:
   }).describe(
     "Unauthorized - Invalid authentication or insufficient permissions",
   );
-
-/**
- * How the request was authenticated
- */
-export const PeopleControllerGetAllPeopleV1AuthType = {
-  ApiKey: "api-key",
-  Session: "session",
-} as const;
-/**
- * How the request was authenticated
- */
-export type PeopleControllerGetAllPeopleV1AuthType = ClosedEnum<
-  typeof PeopleControllerGetAllPeopleV1AuthType
->;
-
-export const PeopleControllerGetAllPeopleV1AuthType$zodSchema = z.enum([
-  "api-key",
-  "session",
-]).describe("How the request was authenticated");
 
 export type PeopleControllerGetAllPeopleV1AuthenticatedUser = {
   id?: string | undefined;

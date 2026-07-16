@@ -101,79 +101,6 @@ export const QueryParamCategory$zodSchema = z.enum([
   "vendor_management",
 ]).describe("Filter by category");
 
-export type RisksControllerGetAllRisksV1Request = {
-  title?: string | undefined;
-  page?: number | undefined;
-  perPage?: number | undefined;
-  sort?: Sort | undefined;
-  sortDirection?: SortDirection | undefined;
-  status?: RisksControllerGetAllRisksV1QueryParamStatus | undefined;
-  category?: QueryParamCategory | undefined;
-  department?: string | undefined;
-  assigneeId?: string | undefined;
-};
-
-export const RisksControllerGetAllRisksV1Request$zodSchema: z.ZodType<
-  RisksControllerGetAllRisksV1Request
-> = z.object({
-  assigneeId: z.string().describe("Filter by assignee member ID").optional(),
-  category: QueryParamCategory$zodSchema.optional().describe(
-    "Filter by category",
-  ),
-  department: z.string().describe(
-    "Filter by department. Built-in values: none, admin, gov, hr, it, itsm, qms. Custom department names are also accepted.",
-  ).optional(),
-  page: z.number().default(1).describe("Page number (1-indexed)"),
-  perPage: z.number().default(50).describe("Number of items per page"),
-  sort: Sort$zodSchema.default("createdAt").describe("Sort by field"),
-  sortDirection: SortDirection$zodSchema.default("desc").describe(
-    "Sort direction",
-  ),
-  status: RisksControllerGetAllRisksV1QueryParamStatus$zodSchema.optional()
-    .describe("Filter by status"),
-  title: z.string().describe("Search by title (case-insensitive contains)")
-    .optional(),
-});
-
-/**
- * Internal server error
- */
-export type RisksControllerGetAllRisksV1InternalServerErrorResponseBody = {
-  message?: string | undefined;
-};
-
-export const RisksControllerGetAllRisksV1InternalServerErrorResponseBody$zodSchema:
-  z.ZodType<RisksControllerGetAllRisksV1InternalServerErrorResponseBody> = z
-    .object({
-      message: z.string().optional(),
-    }).describe("Internal server error");
-
-/**
- * Organization not found
- */
-export type RisksControllerGetAllRisksV1NotFoundResponseBody = {
-  message?: string | undefined;
-};
-
-export const RisksControllerGetAllRisksV1NotFoundResponseBody$zodSchema:
-  z.ZodType<RisksControllerGetAllRisksV1NotFoundResponseBody> = z.object({
-    message: z.string().optional(),
-  }).describe("Organization not found");
-
-/**
- * Unauthorized - Invalid authentication or insufficient permissions
- */
-export type RisksControllerGetAllRisksV1UnauthorizedResponseBody = {
-  message?: string | undefined;
-};
-
-export const RisksControllerGetAllRisksV1UnauthorizedResponseBody$zodSchema:
-  z.ZodType<RisksControllerGetAllRisksV1UnauthorizedResponseBody> = z.object({
-    message: z.string().optional(),
-  }).describe(
-    "Unauthorized - Invalid authentication or insufficient permissions",
-  );
-
 export const RisksControllerGetAllRisksV1DataCategory = {
   Customer: "customer",
   Governance: "governance",
@@ -275,6 +202,98 @@ export const RisksControllerGetAllRisksV1TreatmentStrategy$zodSchema = z.enum([
   "transfer",
 ]);
 
+/**
+ * How the request was authenticated
+ */
+export const RisksControllerGetAllRisksV1AuthType = {
+  ApiKey: "api-key",
+  Session: "session",
+} as const;
+/**
+ * How the request was authenticated
+ */
+export type RisksControllerGetAllRisksV1AuthType = ClosedEnum<
+  typeof RisksControllerGetAllRisksV1AuthType
+>;
+
+export const RisksControllerGetAllRisksV1AuthType$zodSchema = z.enum([
+  "api-key",
+  "session",
+]).describe("How the request was authenticated");
+
+export type RisksControllerGetAllRisksV1Request = {
+  title?: string | undefined;
+  page?: number | undefined;
+  perPage?: number | undefined;
+  sort?: Sort | undefined;
+  sortDirection?: SortDirection | undefined;
+  status?: RisksControllerGetAllRisksV1QueryParamStatus | undefined;
+  category?: QueryParamCategory | undefined;
+  department?: string | undefined;
+  assigneeId?: string | undefined;
+};
+
+export const RisksControllerGetAllRisksV1Request$zodSchema: z.ZodType<
+  RisksControllerGetAllRisksV1Request
+> = z.object({
+  assigneeId: z.string().describe("Filter by assignee member ID").optional(),
+  category: QueryParamCategory$zodSchema.optional().describe(
+    "Filter by category",
+  ),
+  department: z.string().describe(
+    "Filter by department. Built-in values: none, admin, gov, hr, it, itsm, qms. Custom department names are also accepted.",
+  ).optional(),
+  page: z.number().default(1).describe("Page number (1-indexed)"),
+  perPage: z.number().default(50).describe("Number of items per page"),
+  sort: Sort$zodSchema.default("createdAt").describe("Sort by field"),
+  sortDirection: SortDirection$zodSchema.default("desc").describe(
+    "Sort direction",
+  ),
+  status: RisksControllerGetAllRisksV1QueryParamStatus$zodSchema.optional()
+    .describe("Filter by status"),
+  title: z.string().describe("Search by title (case-insensitive contains)")
+    .optional(),
+});
+
+/**
+ * Internal server error
+ */
+export type RisksControllerGetAllRisksV1InternalServerErrorResponseBody = {
+  message?: string | undefined;
+};
+
+export const RisksControllerGetAllRisksV1InternalServerErrorResponseBody$zodSchema:
+  z.ZodType<RisksControllerGetAllRisksV1InternalServerErrorResponseBody> = z
+    .object({
+      message: z.string().optional(),
+    }).describe("Internal server error");
+
+/**
+ * Organization not found
+ */
+export type RisksControllerGetAllRisksV1NotFoundResponseBody = {
+  message?: string | undefined;
+};
+
+export const RisksControllerGetAllRisksV1NotFoundResponseBody$zodSchema:
+  z.ZodType<RisksControllerGetAllRisksV1NotFoundResponseBody> = z.object({
+    message: z.string().optional(),
+  }).describe("Organization not found");
+
+/**
+ * Unauthorized - Invalid authentication or insufficient permissions
+ */
+export type RisksControllerGetAllRisksV1UnauthorizedResponseBody = {
+  message?: string | undefined;
+};
+
+export const RisksControllerGetAllRisksV1UnauthorizedResponseBody$zodSchema:
+  z.ZodType<RisksControllerGetAllRisksV1UnauthorizedResponseBody> = z.object({
+    message: z.string().optional(),
+  }).describe(
+    "Unauthorized - Invalid authentication or insufficient permissions",
+  );
+
 export type RisksControllerGetAllRisksV1Data = {
   id?: string | undefined;
   title?: string | undefined;
@@ -311,25 +330,6 @@ export const RisksControllerGetAllRisksV1Data$zodSchema: z.ZodType<
     "When the risk was last updated",
   ),
 });
-
-/**
- * How the request was authenticated
- */
-export const RisksControllerGetAllRisksV1AuthType = {
-  ApiKey: "api-key",
-  Session: "session",
-} as const;
-/**
- * How the request was authenticated
- */
-export type RisksControllerGetAllRisksV1AuthType = ClosedEnum<
-  typeof RisksControllerGetAllRisksV1AuthType
->;
-
-export const RisksControllerGetAllRisksV1AuthType$zodSchema = z.enum([
-  "api-key",
-  "session",
-]).describe("How the request was authenticated");
 
 /**
  * User information (only for session auth)

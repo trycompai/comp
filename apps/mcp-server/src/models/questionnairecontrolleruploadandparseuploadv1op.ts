@@ -6,19 +6,6 @@ import * as z from "zod";
 import * as b64$ from "../lib/base64.js";
 import { ClosedEnum } from "../types/enums.js";
 
-export type QuestionnaireControllerUploadAndParseUploadV1File = {
-  fileName: string;
-  content: Uint8Array | string;
-};
-
-export const QuestionnaireControllerUploadAndParseUploadV1File$zodSchema:
-  z.ZodType<QuestionnaireControllerUploadAndParseUploadV1File> = z.object({
-    content: z.string().describe("Base64-encoded binary content").transform(
-      b64$.bytesFromBase64,
-    ),
-    fileName: z.string(),
-  });
-
 /**
  * Source of the upload
  */
@@ -38,6 +25,19 @@ export const QuestionnaireControllerUploadAndParseUploadV1Source$zodSchema = z
     "internal",
     "external",
   ]).describe("Source of the upload");
+
+export type QuestionnaireControllerUploadAndParseUploadV1File = {
+  fileName: string;
+  content: Uint8Array | string;
+};
+
+export const QuestionnaireControllerUploadAndParseUploadV1File$zodSchema:
+  z.ZodType<QuestionnaireControllerUploadAndParseUploadV1File> = z.object({
+    content: z.string().describe("Base64-encoded binary content").transform(
+      b64$.bytesFromBase64,
+    ),
+    fileName: z.string(),
+  });
 
 export type QuestionnaireControllerUploadAndParseUploadV1Request = {
   file: QuestionnaireControllerUploadAndParseUploadV1File | Blob;
