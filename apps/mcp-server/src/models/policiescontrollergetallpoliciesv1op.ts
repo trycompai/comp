@@ -9,6 +9,25 @@ import {
   PolicyResponseDto$zodSchema,
 } from "./policyresponsedto.js";
 
+/**
+ * How the request was authenticated
+ */
+export const PoliciesControllerGetAllPoliciesV1AuthType = {
+  ApiKey: "api-key",
+  Session: "session",
+} as const;
+/**
+ * How the request was authenticated
+ */
+export type PoliciesControllerGetAllPoliciesV1AuthType = ClosedEnum<
+  typeof PoliciesControllerGetAllPoliciesV1AuthType
+>;
+
+export const PoliciesControllerGetAllPoliciesV1AuthType$zodSchema = z.enum([
+  "api-key",
+  "session",
+]).describe("How the request was authenticated");
+
 export type PoliciesControllerGetAllPoliciesV1Request = {
   xOrganizationId?: string | undefined;
   excludeContent?: boolean | undefined;
@@ -43,25 +62,6 @@ export const PoliciesControllerGetAllPoliciesV1UnauthorizedResponseBody$zodSchem
     }).describe(
       "Unauthorized - Invalid authentication or insufficient permissions",
     );
-
-/**
- * How the request was authenticated
- */
-export const PoliciesControllerGetAllPoliciesV1AuthType = {
-  ApiKey: "api-key",
-  Session: "session",
-} as const;
-/**
- * How the request was authenticated
- */
-export type PoliciesControllerGetAllPoliciesV1AuthType = ClosedEnum<
-  typeof PoliciesControllerGetAllPoliciesV1AuthType
->;
-
-export const PoliciesControllerGetAllPoliciesV1AuthType$zodSchema = z.enum([
-  "api-key",
-  "session",
-]).describe("How the request was authenticated");
 
 /**
  * Authenticated user information (only present for session auth)

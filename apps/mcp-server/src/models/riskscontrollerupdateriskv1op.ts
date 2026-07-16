@@ -6,73 +6,6 @@ import * as z from "zod";
 import { ClosedEnum } from "../types/enums.js";
 import { UpdateRiskDto, UpdateRiskDto$zodSchema } from "./updateriskdto.js";
 
-export type RisksControllerUpdateRiskV1Request = {
-  id: string;
-  body: UpdateRiskDto;
-};
-
-export const RisksControllerUpdateRiskV1Request$zodSchema: z.ZodType<
-  RisksControllerUpdateRiskV1Request
-> = z.object({
-  body: UpdateRiskDto$zodSchema.describe("Risk update data"),
-  id: z.string().describe("Risk ID"),
-});
-
-/**
- * Internal server error
- */
-export type RisksControllerUpdateRiskV1InternalServerErrorResponseBody = {
-  message?: string | undefined;
-};
-
-export const RisksControllerUpdateRiskV1InternalServerErrorResponseBody$zodSchema:
-  z.ZodType<RisksControllerUpdateRiskV1InternalServerErrorResponseBody> = z
-    .object({
-      message: z.string().optional(),
-    }).describe("Internal server error");
-
-/**
- * Risk not found
- */
-export type RisksControllerUpdateRiskV1NotFoundResponseBody = {
-  message?: string | undefined;
-};
-
-export const RisksControllerUpdateRiskV1NotFoundResponseBody$zodSchema:
-  z.ZodType<RisksControllerUpdateRiskV1NotFoundResponseBody> = z.object({
-    message: z.string().optional(),
-  }).describe("Risk not found");
-
-/**
- * Unauthorized - Invalid authentication or insufficient permissions
- */
-export type RisksControllerUpdateRiskV1UnauthorizedResponseBody = {
-  message?: string | undefined;
-};
-
-export const RisksControllerUpdateRiskV1UnauthorizedResponseBody$zodSchema:
-  z.ZodType<RisksControllerUpdateRiskV1UnauthorizedResponseBody> = z.object({
-    message: z.string().optional(),
-  }).describe(
-    "Unauthorized - Invalid authentication or insufficient permissions",
-  );
-
-/**
- * Bad request - Invalid input data
- */
-export type RisksControllerUpdateRiskV1BadRequestResponseBody = {
-  message?: Array<string> | undefined;
-  error?: string | undefined;
-  statusCode?: number | undefined;
-};
-
-export const RisksControllerUpdateRiskV1BadRequestResponseBody$zodSchema:
-  z.ZodType<RisksControllerUpdateRiskV1BadRequestResponseBody> = z.object({
-    error: z.string().optional(),
-    message: z.array(z.string()).optional(),
-    statusCode: z.number().optional(),
-  }).describe("Bad request - Invalid input data");
-
 export const RisksControllerUpdateRiskV1Category = {
   Customer: "customer",
   Governance: "governance",
@@ -253,6 +186,73 @@ export const RisksControllerUpdateRiskV1AuthType$zodSchema = z.enum([
   "api-key",
   "session",
 ]).describe("How the request was authenticated");
+
+export type RisksControllerUpdateRiskV1Request = {
+  id: string;
+  body: UpdateRiskDto;
+};
+
+export const RisksControllerUpdateRiskV1Request$zodSchema: z.ZodType<
+  RisksControllerUpdateRiskV1Request
+> = z.object({
+  body: UpdateRiskDto$zodSchema.describe("Risk update data"),
+  id: z.string().describe("Risk ID"),
+});
+
+/**
+ * Internal server error
+ */
+export type RisksControllerUpdateRiskV1InternalServerErrorResponseBody = {
+  message?: string | undefined;
+};
+
+export const RisksControllerUpdateRiskV1InternalServerErrorResponseBody$zodSchema:
+  z.ZodType<RisksControllerUpdateRiskV1InternalServerErrorResponseBody> = z
+    .object({
+      message: z.string().optional(),
+    }).describe("Internal server error");
+
+/**
+ * Risk not found
+ */
+export type RisksControllerUpdateRiskV1NotFoundResponseBody = {
+  message?: string | undefined;
+};
+
+export const RisksControllerUpdateRiskV1NotFoundResponseBody$zodSchema:
+  z.ZodType<RisksControllerUpdateRiskV1NotFoundResponseBody> = z.object({
+    message: z.string().optional(),
+  }).describe("Risk not found");
+
+/**
+ * Unauthorized - Invalid authentication or insufficient permissions
+ */
+export type RisksControllerUpdateRiskV1UnauthorizedResponseBody = {
+  message?: string | undefined;
+};
+
+export const RisksControllerUpdateRiskV1UnauthorizedResponseBody$zodSchema:
+  z.ZodType<RisksControllerUpdateRiskV1UnauthorizedResponseBody> = z.object({
+    message: z.string().optional(),
+  }).describe(
+    "Unauthorized - Invalid authentication or insufficient permissions",
+  );
+
+/**
+ * Bad request - Invalid input data
+ */
+export type RisksControllerUpdateRiskV1BadRequestResponseBody = {
+  message?: Array<string> | undefined;
+  error?: string | undefined;
+  statusCode?: number | undefined;
+};
+
+export const RisksControllerUpdateRiskV1BadRequestResponseBody$zodSchema:
+  z.ZodType<RisksControllerUpdateRiskV1BadRequestResponseBody> = z.object({
+    error: z.string().optional(),
+    message: z.array(z.string()).optional(),
+    statusCode: z.number().optional(),
+  }).describe("Bad request - Invalid input data");
 
 /**
  * User information (only for session auth)

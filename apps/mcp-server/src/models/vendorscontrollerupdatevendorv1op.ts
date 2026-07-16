@@ -9,75 +9,6 @@ import {
   UpdateVendorDto$zodSchema,
 } from "./updatevendordto.js";
 
-export type VendorsControllerUpdateVendorV1Request = {
-  id: string;
-  body: UpdateVendorDto;
-};
-
-export const VendorsControllerUpdateVendorV1Request$zodSchema: z.ZodType<
-  VendorsControllerUpdateVendorV1Request
-> = z.object({
-  body: UpdateVendorDto$zodSchema.describe("Vendor update data"),
-  id: z.string().describe("Vendor ID"),
-});
-
-/**
- * Internal server error
- */
-export type VendorsControllerUpdateVendorV1InternalServerErrorResponseBody = {
-  message?: string | undefined;
-};
-
-export const VendorsControllerUpdateVendorV1InternalServerErrorResponseBody$zodSchema:
-  z.ZodType<VendorsControllerUpdateVendorV1InternalServerErrorResponseBody> = z
-    .object({
-      message: z.string().optional(),
-    }).describe("Internal server error");
-
-/**
- * Vendor not found
- */
-export type VendorsControllerUpdateVendorV1NotFoundResponseBody = {
-  message?: string | undefined;
-};
-
-export const VendorsControllerUpdateVendorV1NotFoundResponseBody$zodSchema:
-  z.ZodType<VendorsControllerUpdateVendorV1NotFoundResponseBody> = z.object({
-    message: z.string().optional(),
-  }).describe("Vendor not found");
-
-/**
- * Unauthorized - Invalid authentication or insufficient permissions
- */
-export type VendorsControllerUpdateVendorV1UnauthorizedResponseBody = {
-  message?: string | undefined;
-};
-
-export const VendorsControllerUpdateVendorV1UnauthorizedResponseBody$zodSchema:
-  z.ZodType<VendorsControllerUpdateVendorV1UnauthorizedResponseBody> = z.object(
-    {
-      message: z.string().optional(),
-    },
-  ).describe(
-    "Unauthorized - Invalid authentication or insufficient permissions",
-  );
-
-/**
- * Bad request - Invalid input data
- */
-export type VendorsControllerUpdateVendorV1BadRequestResponseBody = {
-  message?: Array<string> | undefined;
-  error?: string | undefined;
-  statusCode?: number | undefined;
-};
-
-export const VendorsControllerUpdateVendorV1BadRequestResponseBody$zodSchema:
-  z.ZodType<VendorsControllerUpdateVendorV1BadRequestResponseBody> = z.object({
-    error: z.string().optional(),
-    message: z.array(z.string()).optional(),
-    statusCode: z.number().optional(),
-  }).describe("Bad request - Invalid input data");
-
 export const VendorsControllerUpdateVendorV1Category = {
   Cloud: "cloud",
   Infrastructure: "infrastructure",
@@ -214,6 +145,75 @@ export const VendorsControllerUpdateVendorV1AuthType$zodSchema = z.enum([
   "api-key",
   "session",
 ]).describe("How the request was authenticated");
+
+export type VendorsControllerUpdateVendorV1Request = {
+  id: string;
+  body: UpdateVendorDto;
+};
+
+export const VendorsControllerUpdateVendorV1Request$zodSchema: z.ZodType<
+  VendorsControllerUpdateVendorV1Request
+> = z.object({
+  body: UpdateVendorDto$zodSchema.describe("Vendor update data"),
+  id: z.string().describe("Vendor ID"),
+});
+
+/**
+ * Internal server error
+ */
+export type VendorsControllerUpdateVendorV1InternalServerErrorResponseBody = {
+  message?: string | undefined;
+};
+
+export const VendorsControllerUpdateVendorV1InternalServerErrorResponseBody$zodSchema:
+  z.ZodType<VendorsControllerUpdateVendorV1InternalServerErrorResponseBody> = z
+    .object({
+      message: z.string().optional(),
+    }).describe("Internal server error");
+
+/**
+ * Vendor not found
+ */
+export type VendorsControllerUpdateVendorV1NotFoundResponseBody = {
+  message?: string | undefined;
+};
+
+export const VendorsControllerUpdateVendorV1NotFoundResponseBody$zodSchema:
+  z.ZodType<VendorsControllerUpdateVendorV1NotFoundResponseBody> = z.object({
+    message: z.string().optional(),
+  }).describe("Vendor not found");
+
+/**
+ * Unauthorized - Invalid authentication or insufficient permissions
+ */
+export type VendorsControllerUpdateVendorV1UnauthorizedResponseBody = {
+  message?: string | undefined;
+};
+
+export const VendorsControllerUpdateVendorV1UnauthorizedResponseBody$zodSchema:
+  z.ZodType<VendorsControllerUpdateVendorV1UnauthorizedResponseBody> = z.object(
+    {
+      message: z.string().optional(),
+    },
+  ).describe(
+    "Unauthorized - Invalid authentication or insufficient permissions",
+  );
+
+/**
+ * Bad request - Invalid input data
+ */
+export type VendorsControllerUpdateVendorV1BadRequestResponseBody = {
+  message?: Array<string> | undefined;
+  error?: string | undefined;
+  statusCode?: number | undefined;
+};
+
+export const VendorsControllerUpdateVendorV1BadRequestResponseBody$zodSchema:
+  z.ZodType<VendorsControllerUpdateVendorV1BadRequestResponseBody> = z.object({
+    error: z.string().optional(),
+    message: z.array(z.string()).optional(),
+    statusCode: z.number().optional(),
+  }).describe("Bad request - Invalid input data");
 
 /**
  * User information (only for session auth)

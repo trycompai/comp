@@ -22,11 +22,17 @@ export const Format$zodSchema = z.enum([
   "docx",
 ]).describe("File format to export the ISMS document as");
 
-export type ExportIsmsDocumentDto = { format: Format };
+export type ExportIsmsDocumentDto = {
+  format: Format;
+  versionId?: string | undefined;
+};
 
 export const ExportIsmsDocumentDto$zodSchema: z.ZodType<ExportIsmsDocumentDto> =
   z.object({
     format: Format$zodSchema.describe(
       "File format to export the ISMS document as",
+    ),
+    versionId: z.string().optional().describe(
+      "Published version to export. Omit to export the document's current published version (or the working draft if it has never been published); provide a version id to download exactly what was approved at that version.",
     ),
   });
