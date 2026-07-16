@@ -132,23 +132,34 @@ export function BrowserAutomationsList({
           const needsReconnect =
             group.profile?.status === 'needs_reauth' || group.profile?.status === 'blocked';
           return (
-            <div key={group.hostname} className="flex flex-col gap-2">
-              <div className="flex items-center gap-2">
-                <span className="flex h-5 w-5 items-center justify-center rounded-sm bg-muted text-[10px] font-bold uppercase text-foreground">
-                  {group.hostname.charAt(0)}
-                </span>
-                <span className="font-mono text-xs text-foreground">{group.hostname}</span>
-                <span
-                  className="inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em]"
-                  style={{ backgroundColor: pill.bg, color: pill.fg }}
-                >
+            <div key={group.hostname} className="flex flex-col gap-4">
+              {/* Connection */}
+              <div>
+                <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                  Connection
+                </div>
+                <div className="flex items-center gap-3 rounded-md border border-border p-3">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-sm bg-muted text-[11px] font-bold uppercase text-foreground">
+                    {group.hostname.charAt(0)}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm text-foreground">
+                      {group.profile?.displayName ?? group.hostname}
+                    </div>
+                    <div className="truncate font-mono text-[10px] text-muted-foreground">
+                      {group.hostname}
+                    </div>
+                  </div>
                   <span
-                    className="h-1.5 w-1.5 rounded-full"
-                    style={{ backgroundColor: 'currentColor' }}
-                  />
-                  {pill.label}
-                </span>
-                <div className="ml-auto flex items-center gap-2">
+                    className="inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em]"
+                    style={{ backgroundColor: pill.bg, color: pill.fg }}
+                  >
+                    <span
+                      className="h-1.5 w-1.5 rounded-full"
+                      style={{ backgroundColor: 'currentColor' }}
+                    />
+                    {pill.label}
+                  </span>
                   {needsReconnect && canUpdateIntegration && (
                     <button
                       onClick={() => onReconnect(group.url)}
@@ -167,23 +178,29 @@ export function BrowserAutomationsList({
                 </div>
               </div>
 
-              <div className="flex flex-col gap-2 rounded-md border border-border/60 p-2">
-                {group.automations.map((automation) => (
-                  <AutomationItem
-                    key={automation.id}
-                    automation={automation}
-                    isRunning={runningAutomationId === automation.id}
-                    isExpanded={expandedId === automation.id}
-                    readOnly={!canUpdateIntegration}
-                    onToggleExpand={() =>
-                      setExpandedId(expandedId === automation.id ? null : automation.id)
-                    }
-                    onRun={() => onRun(automation.id)}
-                    onEdit={() => onEditClick(automation)}
-                    onDelete={() => onDelete(automation.id)}
-                    onToggleEnabled={(enabled) => onToggleEnabled(automation.id, enabled)}
-                  />
-                ))}
+              {/* Instructions */}
+              <div>
+                <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                  Instructions
+                </div>
+                <div className="flex flex-col gap-2 rounded-md border border-border/60 p-2">
+                  {group.automations.map((automation) => (
+                    <AutomationItem
+                      key={automation.id}
+                      automation={automation}
+                      isRunning={runningAutomationId === automation.id}
+                      isExpanded={expandedId === automation.id}
+                      readOnly={!canUpdateIntegration}
+                      onToggleExpand={() =>
+                        setExpandedId(expandedId === automation.id ? null : automation.id)
+                      }
+                      onRun={() => onRun(automation.id)}
+                      onEdit={() => onEditClick(automation)}
+                      onDelete={() => onDelete(automation.id)}
+                      onToggleEnabled={(enabled) => onToggleEnabled(automation.id, enabled)}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
           );
