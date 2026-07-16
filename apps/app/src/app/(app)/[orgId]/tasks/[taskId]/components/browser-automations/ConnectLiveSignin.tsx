@@ -5,25 +5,22 @@ import { Button } from '@trycompai/design-system';
 interface ConnectLiveSigninProps {
   host: string;
   liveViewUrl: string | null;
-  /** Helper line under the browser. */
+  /** Helper line shown in the control banner. */
   caption: string;
   onCancel: () => void;
   /** When set, show a confirm button (e.g. "I've signed in") that runs this. */
   onConfirm?: () => void;
   confirmLabel?: string;
   isConfirming?: boolean;
-  /** Optional secondary action (e.g. "Re-enter details"). */
-  onSecondary?: () => void;
-  secondaryLabel?: string;
-  /** The automation is currently driving the browser — show a working badge. */
+  /** The automation is currently driving the browser — show the AI-control banner. */
   working?: boolean;
 }
 
 /**
- * The live-browser view. Used three ways:
- * - watching the automated sign-in drive the browser (`working`),
- * - taking over when it couldn't finish (`onConfirm` + `confirmLabel`),
- * - a fully manual sign-in for SSO / passkey.
+ * The live-browser view with a clear "who's in control" banner:
+ * - `working` → the AI is driving (blue banner, "sit tight");
+ * - otherwise → the user's turn (amber banner + the instruction), used for the
+ *   take-over and for a fully manual SSO / passkey sign-in.
  */
 export function ConnectLiveSignin({
   host,
@@ -33,14 +30,36 @@ export function ConnectLiveSignin({
   onConfirm,
   confirmLabel = "I've signed in",
   isConfirming = false,
-  onSecondary,
-  secondaryLabel,
   working = false,
 }: ConnectLiveSigninProps) {
+  const frameClass = working
+    ? 'border-primary'
+    : onConfirm
+      ? 'border-amber-500'
+      : 'border-border';
+  const bannerClass = working
+    ? 'bg-primary/10 text-primary'
+    : onConfirm
+      ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+      : 'bg-muted text-muted-foreground';
+
   return (
     <div className="flex w-full flex-col gap-3">
-      {liveViewUrl ? (
-        <div className="overflow-hidden rounded-md border border-border">
+      <div className={`overflow-hidden rounded-md border-2 ${frameClass}`}>
+        <div className={`flex items-center gap-2 px-3 py-2 text-xs font-medium ${bannerClass}`}>
+          {working ? (
+            <>
+              <span className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              AI is signing you in — sit tight, no need to touch the browser.
+            </>
+          ) : (
+            <>
+              <span className="flex h-2 w-2 shrink-0 rounded-full bg-current" />
+              Your turn — {caption}
+            </>
+          )}
+        </div>
+        {liveViewUrl ? (
           <iframe
             src={liveViewUrl}
             title="Live sign-in"
@@ -48,39 +67,26 @@ export function ConnectLiveSignin({
             sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
             allow="clipboard-read; clipboard-write"
           />
-        </div>
-      ) : (
-        <div className="flex h-[600px] max-h-[75vh] items-center justify-center text-sm text-muted-foreground">
-          <span className="mr-3 h-4 w-4 animate-spin rounded-full border-2 border-border border-t-primary" />
-          Opening {host}…
-        </div>
-      )}
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          {working && (
-            <span className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-border border-t-primary" />
-          )}
-          {caption}
-        </div>
-        <div className="flex gap-2">
-          <Button variant="ghost" onClick={onCancel}>
-            Cancel
+        ) : (
+          <div className="flex h-[600px] max-h-[75vh] items-center justify-center text-sm text-muted-foreground">
+            <span className="mr-3 h-4 w-4 animate-spin rounded-full border-2 border-border border-t-primary" />
+            Opening {host}…
+          </div>
+        )}
+      </div>
+      <div className="flex items-center justify-end gap-2">
+        <Button variant="ghost" onClick={onCancel}>
+          Cancel
+        </Button>
+        {onConfirm && (
+          <Button
+            onClick={onConfirm}
+            loading={isConfirming}
+            disabled={!liveViewUrl || isConfirming}
+          >
+            {confirmLabel}
           </Button>
-          {onSecondary && secondaryLabel && (
-            <Button variant="secondary" onClick={onSecondary}>
-              {secondaryLabel}
-            </Button>
-          )}
-          {onConfirm && (
-            <Button
-              onClick={onConfirm}
-              loading={isConfirming}
-              disabled={!liveViewUrl || isConfirming}
-            >
-              {confirmLabel}
-            </Button>
-          )}
-        </div>
+        )}
       </div>
     </div>
   );
