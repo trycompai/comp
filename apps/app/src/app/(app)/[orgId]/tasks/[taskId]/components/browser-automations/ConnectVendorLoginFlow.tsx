@@ -13,7 +13,6 @@ import {
   hostnameOf,
   RAIL_INDEX,
   railSubtitleFor,
-  takeoverCaptionFor,
   type Step,
 } from './connect-flow-constants';
 import {
@@ -26,6 +25,12 @@ import type { ConnectCaptureFormData } from './ConnectCaptureForm';
 import { ConnectFlowRail } from './ConnectFlowRail';
 import { ConnectFlowStage } from './ConnectFlowStage';
 import type { ConnectMethodKind } from './ConnectMethodChooser';
+
+interface SigninLiveView {
+  sessionId: string;
+  liveViewUrl: string;
+  profileId: string;
+}
 
 interface ConnectVendorLoginFlowProps {
   taskId: string;
@@ -58,12 +63,7 @@ export function ConnectVendorLoginFlow({
     runId: string;
     accessToken: string;
   } | null>(null);
-  const [signinLiveView, setSigninLiveView] = useState<{
-    sessionId: string;
-    liveViewUrl: string;
-    profileId: string;
-  } | null>(null);
-  const [takeoverReason, setTakeoverReason] = useState<string | null>(null);
+  const [signinLiveView, setSigninLiveView] = useState<SigninLiveView | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
 
   const context = useBrowserContext();
@@ -83,6 +83,9 @@ export function ConnectVendorLoginFlow({
 
   useEffect(() => {
     if (!analyzeRun) return;
+    // Ignore a stale emission from a previous run before the subscription
+    // catches up to the current one.
+    if (analyzeRunState && analyzeRunState.id !== analyzeRun.runId) return;
     if (analyzeError) {
       setAnalyzeRun(null);
       setStep('error');
@@ -114,18 +117,15 @@ export function ConnectVendorLoginFlow({
 
   useEffect(() => {
     if (!signinRun) return;
-
-    // Any non-success keeps the same browser open (take-over), so the user sees
-    // the real page — the site's error, a 2FA prompt, or a rate-limit/verify
-    // step — instead of a disappearing toast, and finishes it in place.
-    const handOver = (reason: string) => {
-      setSigninRun(null);
-      setTakeoverReason(reason);
-      setStep('takeover');
-    };
+    // useRealtimeRun keeps emitting the previous run's result for a render after
+    // we switch runs. Acting on it here would close the new session (and
+    // mis-route), so ignore any state that isn't this run's.
+    if (signinRunState && signinRunState.id !== signinRun.runId) return;
 
     if (signinError) {
-      handOver('unknown');
+      setSigninRun(null);
+      toast.info('Finish the sign-in in the browser.');
+      setStep('takeover');
       return;
     }
     if (!signinRunState) return;
@@ -134,16 +134,31 @@ export function ConnectVendorLoginFlow({
       const output = signinRunState.output as
         | { isLoggedIn?: boolean; failure?: string }
         | undefined;
+      setSigninRun(null);
+
       if (output?.isLoggedIn) {
-        setSigninRun(null);
         if (signinLiveView) closeSignInSession(signinLiveView.sessionId);
         setSigninLiveView(null);
         setStep('connected');
+      } else if (output?.failure === 'invalid_credentials') {
+        // Fix the stored password at the source so unattended runs work later.
+        if (signinLiveView) closeSignInSession(signinLiveView.sessionId);
+        setSigninLiveView(null);
+        toast.error("That username or password wasn't accepted — check and try again.");
+        setStep('capture');
       } else {
-        handOver(output?.failure ?? 'unknown');
+        // needs_2fa / challenge / unknown — the user finishes in the same browser.
+        toast.info(
+          output?.failure === 'needs_2fa'
+            ? 'Enter your two-factor code to finish. Add your authenticator setup key next time for unattended runs.'
+            : 'Almost there — finish the sign-in in the browser.',
+        );
+        setStep('takeover');
       }
     } else if (FAILED_RUN_STATUSES.has(signinRunState.status)) {
-      handOver('unknown');
+      setSigninRun(null);
+      toast.info('Finish the sign-in in the browser.');
+      setStep('takeover');
     }
   }, [signinRun, signinRunState, signinError, signinLiveView, closeSignInSession]);
 
@@ -194,6 +209,12 @@ export function ConnectVendorLoginFlow({
 
   const handleCapture = useCallback(
     async (data: ConnectCaptureFormData) => {
+      // Release any prior sign-in session before starting a new one (keepAlive
+      // sessions don't self-close, so this avoids leaking them).
+      if (signinLiveView) {
+        closeSignInSession(signinLiveView.sessionId);
+        setSigninLiveView(null);
+      }
       const handle = await startSignin({
         url,
         credentials: {
@@ -215,7 +236,7 @@ export function ConnectVendorLoginFlow({
       setSigninRun({ runId: handle.runId, accessToken: handle.publicAccessToken });
       setStep('signing-in');
     },
-    [startSignin, url, handleStartLiveSignin],
+    [startSignin, url, handleStartLiveSignin, signinLiveView, closeSignInSession],
   );
 
   const handleTakeoverVerify = useCallback(async () => {
@@ -241,13 +262,6 @@ export function ConnectVendorLoginFlow({
       setIsVerifying(false);
     }
   }, [signinLiveView, url, closeSignInSession]);
-
-  const handleReenterDetails = useCallback(() => {
-    if (signinLiveView) closeSignInSession(signinLiveView.sessionId);
-    setSigninLiveView(null);
-    setTakeoverReason(null);
-    setStep('capture');
-  }, [signinLiveView, closeSignInSession]);
 
   const handleCancel = useCallback(() => {
     if (signinLiveView) closeSignInSession(signinLiveView.sessionId);
@@ -286,9 +300,7 @@ export function ConnectVendorLoginFlow({
           isCheckingLive={context.status === 'checking'}
           onCheckLive={() => context.checkAuth(url)}
           autoLiveViewUrl={signinLiveView?.liveViewUrl ?? null}
-          takeoverCaption={takeoverCaptionFor(takeoverReason)}
           onTakeoverVerify={handleTakeoverVerify}
-          onReenterDetails={handleReenterDetails}
           isVerifying={isVerifying}
           onCancel={handleCancel}
           onConnected={onConnected}

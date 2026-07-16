@@ -15,6 +15,9 @@ export const analyzeVendorLogin = task({
   // Browser open + AI navigate + AI extract; generous headroom, still well under
   // the Browserbase session lifetime.
   maxDuration: 180,
+  // Analysis already degrades to a manual fallback on failure, so a blind retry
+  // just wastes a browser session.
+  retry: { maxAttempts: 1 },
   run: async (payload: { url: string }): Promise<LoginAnalysis> => {
     return analyzer.analyzeLogin(payload.url);
   },

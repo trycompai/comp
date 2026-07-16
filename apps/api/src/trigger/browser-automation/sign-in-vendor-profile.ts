@@ -16,6 +16,9 @@ const signin = new BrowserCredentialSigninService();
 export const signInVendorProfile = task({
   id: 'sign-in-vendor-profile',
   maxDuration: 240,
+  // A browser + AI sign-in isn't safe to blindly retry (it would re-enter
+  // credentials on a session that may already be gone), so run it once.
+  retry: { maxAttempts: 1 },
   run: async (payload: {
     organizationId: string;
     profileId: string;
