@@ -30,7 +30,8 @@ import type { SignInStep } from './StepList';
 
 interface ConnectVendorLoginFlowProps {
   taskId: string;
-  onConnected: () => void;
+  /** Called with the connected vendor URL so the caller can bind new instructions to it. */
+  onConnected: (url: string) => void;
   onCancel: () => void;
 }
 
@@ -317,7 +318,7 @@ export function ConnectVendorLoginFlow({
           onCapture={handleCapture}
           isStartingSignin={isStartingSignin}
           onCancel={handleCancel}
-          onConnected={onConnected}
+          onConnected={() => onConnected(url)}
           onRetry={() => setStep('enter-url')}
         />
       </div>

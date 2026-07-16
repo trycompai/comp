@@ -118,7 +118,8 @@ export function ConnectLiveSignin({
 
         {/* Right — sign-in activity */}
         <div className="flex w-full flex-col gap-3 p-4 lg:w-[304px] lg:shrink-0">
-          <div className="flex items-center justify-between">
+          {/* Fixed height matches the browser chrome bar so both headers align. */}
+          <div className="flex h-[34px] items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
               Sign-in activity
             </span>

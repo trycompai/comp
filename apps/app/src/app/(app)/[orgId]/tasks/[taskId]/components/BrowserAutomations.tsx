@@ -75,14 +75,20 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
     onComplete: automations.fetchAutomations,
   });
 
-  const handleConnected = useCallback(() => {
-    clearConnectState(taskId);
-    setConnectOpen(false);
-    setJustConnected(true);
-    context.checkContextStatus();
-    automations.fetchAutomations();
-    fetchProfiles();
-  }, [taskId, context, automations, fetchProfiles]);
+  const handleConnected = useCallback(
+    (url: string) => {
+      // Bind new instructions to the vendor that was just connected — otherwise
+      // connection resolution can fall back to a stale profile from another host.
+      setAuthUrl(url);
+      clearConnectState(taskId);
+      setConnectOpen(false);
+      setJustConnected(true);
+      context.checkContextStatus();
+      automations.fetchAutomations();
+      fetchProfiles();
+    },
+    [taskId, context, automations, fetchProfiles],
+  );
 
   const handleCancelConnect = useCallback(() => {
     clearConnectState(taskId);
