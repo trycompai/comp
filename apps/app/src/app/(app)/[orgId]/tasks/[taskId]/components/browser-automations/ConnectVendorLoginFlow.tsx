@@ -1,6 +1,5 @@
 'use client';
 
-import { apiClient } from '@/lib/api-client';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -8,11 +7,14 @@ import type { LoginAnalysis } from '../../hooks/types';
 import { useAutoSignin } from '../../hooks/useAutoSignin';
 import { useBrowserContext } from '../../hooks/useBrowserContext';
 import { useLoginAnalysis } from '../../hooks/useLoginAnalysis';
+import { useSigninSession } from '../../hooks/useSigninSession';
 import {
   FAILED_RUN_STATUSES,
   hostnameOf,
   RAIL_INDEX,
   railSubtitleFor,
+  TAKEOVER_CAPTION_2FA,
+  TAKEOVER_CAPTION_DEFAULT,
   type Step,
 } from './connect-flow-constants';
 import {
@@ -25,12 +27,6 @@ import type { ConnectCaptureFormData } from './ConnectCaptureForm';
 import { ConnectFlowRail } from './ConnectFlowRail';
 import { ConnectFlowStage } from './ConnectFlowStage';
 import type { ConnectMethodKind } from './ConnectMethodChooser';
-
-interface SigninLiveView {
-  sessionId: string;
-  liveViewUrl: string;
-  profileId: string;
-}
 
 interface ConnectVendorLoginFlowProps {
   taskId: string;
@@ -63,15 +59,26 @@ export function ConnectVendorLoginFlow({
     runId: string;
     accessToken: string;
   } | null>(null);
-  const [signinLiveView, setSigninLiveView] = useState<SigninLiveView | null>(null);
-  const [isVerifying, setIsVerifying] = useState(false);
+  const [takeoverCaption, setTakeoverCaption] = useState(TAKEOVER_CAPTION_DEFAULT);
 
   const context = useBrowserContext();
   const { startAnalysis, isStarting } = useLoginAnalysis();
   const { startSignin, isStarting: isStartingSignin } = useAutoSignin();
+  const { signinLiveView, setSigninLiveView, endSession, isVerifying, verify } =
+    useSigninSession();
 
-  const closeSignInSession = useCallback((sessionId: string) => {
-    void apiClient.post('/v1/browserbase/session/close', { sessionId });
+  // Hand the (still-open) browser to the user to finish the sign-in themselves.
+  const goToTakeover = useCallback((failure?: string) => {
+    setSigninRun(null);
+    toast.info(
+      failure === 'needs_2fa'
+        ? 'Enter your two-factor code to finish the sign-in.'
+        : 'Finish the sign-in in the browser.',
+    );
+    setTakeoverCaption(
+      failure === 'needs_2fa' ? TAKEOVER_CAPTION_2FA : TAKEOVER_CAPTION_DEFAULT,
+    );
+    setStep('takeover');
   }, []);
 
   // Analysis (browser + AI) runs as a background task. Watching run/error also
@@ -107,9 +114,8 @@ export function ConnectVendorLoginFlow({
     }
   }, [analyzeRun, analyzeRunState, analyzeError]);
 
-  // The automated sign-in also runs as a background task, but on a session we
-  // show the user (they watch it). On success we're connected; on any failure we
-  // keep that same browser open so the user finishes where the bot stopped.
+  // The automated sign-in runs as a background task on a session we show the
+  // user (they watch it) and hand over on any failure.
   const { run: signinRunState, error: signinError } = useRealtimeRun(
     signinRun?.runId ?? '',
     { accessToken: signinRun?.accessToken, enabled: !!signinRun },
@@ -117,50 +123,34 @@ export function ConnectVendorLoginFlow({
 
   useEffect(() => {
     if (!signinRun) return;
-    // useRealtimeRun keeps emitting the previous run's result for a render after
-    // we switch runs. Acting on it here would close the new session (and
-    // mis-route), so ignore any state that isn't this run's.
+    // Ignore stale emissions from the previous run before the subscription
+    // catches up — acting on them would close the new session and mis-route.
     if (signinRunState && signinRunState.id !== signinRun.runId) return;
-
-    if (signinError) {
-      setSigninRun(null);
-      toast.info('Finish the sign-in in the browser.');
-      setStep('takeover');
-      return;
-    }
+    if (signinError) return goToTakeover();
     if (!signinRunState) return;
 
     if (signinRunState.status === 'COMPLETED') {
       const output = signinRunState.output as
         | { isLoggedIn?: boolean; failure?: string }
         | undefined;
-      setSigninRun(null);
 
-      if (output?.isLoggedIn) {
-        if (signinLiveView) closeSignInSession(signinLiveView.sessionId);
-        setSigninLiveView(null);
-        setStep('connected');
-      } else if (output?.failure === 'invalid_credentials') {
-        // Fix the stored password at the source so unattended runs work later.
-        if (signinLiveView) closeSignInSession(signinLiveView.sessionId);
-        setSigninLiveView(null);
-        toast.error("That username or password wasn't accepted — check and try again.");
-        setStep('capture');
+      // Success and wrong-password both end this session; the rest hand over.
+      if (output?.isLoggedIn || output?.failure === 'invalid_credentials') {
+        setSigninRun(null);
+        endSession();
+        if (output?.isLoggedIn) {
+          setStep('connected');
+        } else {
+          toast.error("That username or password wasn't accepted — check and try again.");
+          setStep('capture');
+        }
       } else {
-        // needs_2fa / challenge / unknown — the user finishes in the same browser.
-        toast.info(
-          output?.failure === 'needs_2fa'
-            ? 'Enter your two-factor code to finish. Add your authenticator setup key next time for unattended runs.'
-            : 'Almost there — finish the sign-in in the browser.',
-        );
-        setStep('takeover');
+        goToTakeover(output?.failure);
       }
     } else if (FAILED_RUN_STATUSES.has(signinRunState.status)) {
-      setSigninRun(null);
-      toast.info('Finish the sign-in in the browser.');
-      setStep('takeover');
+      goToTakeover();
     }
-  }, [signinRun, signinRunState, signinError, signinLiveView, closeSignInSession]);
+  }, [signinRun, signinRunState, signinError, endSession, goToTakeover]);
 
   // Persist the analysis phase so a page unmount can resume; never persist creds.
   useEffect(() => {
@@ -209,12 +199,8 @@ export function ConnectVendorLoginFlow({
 
   const handleCapture = useCallback(
     async (data: ConnectCaptureFormData) => {
-      // Release any prior sign-in session before starting a new one (keepAlive
-      // sessions don't self-close, so this avoids leaking them).
-      if (signinLiveView) {
-        closeSignInSession(signinLiveView.sessionId);
-        setSigninLiveView(null);
-      }
+      // Release any prior sign-in session before starting a new one.
+      endSession();
       const handle = await startSignin({
         url,
         credentials: {
@@ -236,39 +222,18 @@ export function ConnectVendorLoginFlow({
       setSigninRun({ runId: handle.runId, accessToken: handle.publicAccessToken });
       setStep('signing-in');
     },
-    [startSignin, url, handleStartLiveSignin, signinLiveView, closeSignInSession],
+    [startSignin, url, handleStartLiveSignin, endSession, setSigninLiveView],
   );
 
   const handleTakeoverVerify = useCallback(async () => {
-    if (!signinLiveView) return;
-    setIsVerifying(true);
-    try {
-      const res = await apiClient.post<{ auth: { isLoggedIn: boolean } }>(
-        `/v1/browserbase/profiles/${signinLiveView.profileId}/verify`,
-        { sessionId: signinLiveView.sessionId, url },
-      );
-      if (res.error || !res.data) {
-        toast.error(res.error || 'Could not verify the sign-in.');
-        return;
-      }
-      if (res.data.auth.isLoggedIn) {
-        closeSignInSession(signinLiveView.sessionId);
-        setSigninLiveView(null);
-        setStep('connected');
-      } else {
-        toast.error('Still not signed in — finish in the browser, then try again.');
-      }
-    } finally {
-      setIsVerifying(false);
-    }
-  }, [signinLiveView, url, closeSignInSession]);
+    if (await verify(url)) setStep('connected');
+  }, [verify, url]);
 
   const handleCancel = useCallback(() => {
-    if (signinLiveView) closeSignInSession(signinLiveView.sessionId);
-    setSigninLiveView(null);
+    endSession();
     void context.cancelAuth();
     onCancel();
-  }, [signinLiveView, closeSignInSession, context, onCancel]);
+  }, [endSession, context, onCancel]);
 
   const host = hostnameOf(url || urlInput);
   const railSubtitle = railSubtitleFor(step);
@@ -300,6 +265,7 @@ export function ConnectVendorLoginFlow({
           isCheckingLive={context.status === 'checking'}
           onCheckLive={() => context.checkAuth(url)}
           autoLiveViewUrl={signinLiveView?.liveViewUrl ?? null}
+          takeoverCaption={takeoverCaption}
           onTakeoverVerify={handleTakeoverVerify}
           isVerifying={isVerifying}
           onCancel={handleCancel}

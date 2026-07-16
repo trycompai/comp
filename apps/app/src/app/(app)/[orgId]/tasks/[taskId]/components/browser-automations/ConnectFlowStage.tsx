@@ -32,7 +32,6 @@ interface ConnectFlowStageProps {
   autoLiveViewUrl: string | null;
   takeoverCaption: string;
   onTakeoverVerify: () => void;
-  onReenterDetails: () => void;
   isVerifying: boolean;
   onCancel: () => void;
   onConnected: () => void;
@@ -57,7 +56,6 @@ export function ConnectFlowStage({
   autoLiveViewUrl,
   takeoverCaption,
   onTakeoverVerify,
-  onReenterDetails,
   isVerifying,
   onCancel,
   onConnected,
@@ -151,8 +149,6 @@ export function ConnectFlowStage({
           caption={takeoverCaption}
           onConfirm={onTakeoverVerify}
           isConfirming={isVerifying}
-          onSecondary={onReenterDetails}
-          secondaryLabel="Re-enter details"
           onCancel={onCancel}
         />
       )}

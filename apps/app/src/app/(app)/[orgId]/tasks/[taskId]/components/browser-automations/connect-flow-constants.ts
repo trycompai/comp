@@ -42,20 +42,13 @@ export function hostnameOf(url: string): string {
   }
 }
 
-// Caption shown over the live browser when the automated sign-in handed control
-// back — explains what happened, in view, instead of a disappearing toast.
-export function takeoverCaptionFor(reason: string | null): string {
-  switch (reason) {
-    case 'invalid_credentials':
-      return "That username or password wasn't accepted. Fix it in the browser and confirm, or re-enter your details.";
-    case 'needs_2fa':
-      return 'Enter your two-factor code in the browser to finish. Add your authenticator setup key next time for unattended runs.';
-    case 'challenge':
-      return 'The site needs a quick human check — complete it in the browser, then confirm.';
-    default:
-      return 'Almost there — finish the sign-in in the browser, then confirm.';
-  }
-}
+export const TAKEOVER_CAPTION_DEFAULT = 'Finish the sign-in above, then confirm.';
+
+// Passkeys can't complete in a remote browser, so steer 2FA takeovers to a code.
+export const TAKEOVER_CAPTION_2FA =
+  "Enter your authenticator app's 6-digit code above, then confirm. Passkeys " +
+  'can’t complete in this browser — use "More options" to pick the authenticator ' +
+  'app or SMS.';
 
 export function railSubtitleFor(step: Step): string {
   switch (step) {
