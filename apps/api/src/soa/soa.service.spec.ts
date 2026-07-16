@@ -596,7 +596,11 @@ describe('SOAService', () => {
       expect(result).toEqual(generated);
     });
 
-    it('forces Not Applicable on physical-security (7.x) controls for a fully remote org', async () => {
+    it('keeps a fully remote org\'s saved answer on physical-security (7.x) controls so the export matches the editable SoA', async () => {
+      // Regression (CS-749): a fully remote org can mark a 7.x control
+      // Applicable, and the export must reflect the saved answer instead of
+      // force-locking it to Not Applicable — the org can move to a physical
+      // office at any time.
       const generated = {
         fileBuffer: Buffer.from('pdf'),
         mimeType: 'application/pdf',
@@ -643,8 +647,8 @@ describe('SOAService', () => {
         },
         approver: null,
         answers: [
-          // A stale justification persisted before the org went remote — must
-          // NOT leak into the forced Not Applicable output.
+          // This org edited the 7.x control back to Applicable — the export must
+          // honour it, not force Not Applicable.
           {
             questionId: 'q-phys',
             answer: 'We maintain physical access controls at our office',
@@ -660,8 +664,64 @@ describe('SOAService', () => {
       const phys = passedQuestions.find((q) => q.id === 'q-phys');
       const other = passedQuestions.find((q) => q.id === 'q-other');
 
-      // Fully remote + 7.x → forced Not Applicable with the remote justification,
-      // overriding the stale persisted answer.
+      // Fully remote + 7.x, but a saved answer exists → the saved answer wins.
+      expect(phys?.columnMapping.isApplicable).toBe(true);
+      expect(phys?.columnMapping.justification).toBe(
+        'We maintain physical access controls at our office',
+      );
+      expect(phys?.answer).toBe(
+        'We maintain physical access controls at our office',
+      );
+      // Non-physical controls are unaffected and use the org's own answer.
+      expect(other?.columnMapping.isApplicable).toBe(true);
+      expect(other?.columnMapping.justification).toBe('Our own 5.1 justification');
+    });
+
+    it('defaults an unanswered physical-security (7.x) control to Not Applicable for a fully remote org', async () => {
+      const generated = {
+        fileBuffer: Buffer.from('pdf'),
+        mimeType: 'application/pdf',
+        filename: 'statement-of-applicability-iso-27001-v1.pdf',
+      };
+      mockGenerateSOAExportFile.mockReturnValue(generated);
+      mockCheckIfFullyRemote.mockResolvedValue(true);
+      (mockDb.sOADocument.findFirst as jest.Mock).mockResolvedValue({
+        id: 'doc-1',
+        organizationId: 'org-1',
+        preparedBy: 'Comp AI',
+        answeredQuestions: 0,
+        totalQuestions: 1,
+        approvedAt: null,
+        declinedAt: null,
+        status: 'draft',
+        version: 1,
+        framework: { name: 'ISO 27001' },
+        configuration: {
+          questions: [
+            {
+              id: 'q-phys',
+              text: 'Physical entry',
+              columnMapping: {
+                closure: '7.2',
+                title: 'Physical entry',
+                control_objective: 'obj',
+                isApplicable: true,
+                justification: 'another org shared-config text',
+              },
+            },
+          ],
+        },
+        approver: null,
+        // No saved answer for the 7.x control yet.
+        answers: [],
+      });
+
+      await service.exportDocument(dto);
+
+      const passedQuestions = mockGenerateSOAExportFile.mock.calls[0][0];
+      const phys = passedQuestions.find((q) => q.id === 'q-phys');
+
+      // No saved answer → the remote default fills it in.
       expect(phys?.columnMapping.isApplicable).toBe(false);
       expect(phys?.columnMapping.justification).toBe(
         'This control is not applicable as our organization operates fully remotely.',
@@ -669,9 +729,6 @@ describe('SOAService', () => {
       expect(phys?.answer).toBe(
         'This control is not applicable as our organization operates fully remotely.',
       );
-      // Non-physical controls are unaffected and use the org's own answer.
-      expect(other?.columnMapping.isApplicable).toBe(true);
-      expect(other?.columnMapping.justification).toBe('Our own 5.1 justification');
     });
   });
 
