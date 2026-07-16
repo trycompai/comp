@@ -120,22 +120,26 @@ export function InstructionComposerForm({
 }: InstructionComposerFormProps) {
   return (
     <div className="flex flex-col gap-4 border-b border-border p-6 md:w-[400px] md:flex-none md:border-b-0 md:border-r">
-      <div className="flex flex-col gap-1.5">
+      {/* gap-3 between label and field mirrors the test panel's header→browser
+          gap, so this first field lines up with the live browser on the right. */}
+      <div className="flex flex-col gap-3">
         <Label htmlFor="composer-instruction">What should the AI capture?</Label>
-        <Textarea
-          id="composer-instruction"
-          value={instruction}
-          onChange={(event) => onInstructionChange(event.target.value)}
-          placeholder="Go to Settings → Security and screenshot the two-factor authentication policy."
-          rows={3}
-        />
-        {!instruction.trim() && (
-          <ExampleChips examples={INSTRUCTION_EXAMPLES} onPick={onInstructionChange} />
-        )}
-        <p className="text-[11px] text-muted-foreground">
-          Plain English. Where to go, what to capture — goals work too (&ldquo;confirm MFA
-          is enforced&rdquo;).
-        </p>
+        <div className="flex flex-col gap-1.5">
+          <Textarea
+            id="composer-instruction"
+            value={instruction}
+            onChange={(event) => onInstructionChange(event.target.value)}
+            placeholder="Go to Settings → Security and screenshot the two-factor authentication policy."
+            rows={3}
+          />
+          {!instruction.trim() && (
+            <ExampleChips examples={INSTRUCTION_EXAMPLES} onPick={onInstructionChange} />
+          )}
+          <p className="text-[11px] text-muted-foreground">
+            Plain English. Where to go, what to capture — goals work too (&ldquo;confirm MFA
+            is enforced&rdquo;). The AI finds its own way; you don&apos;t need exact steps.
+          </p>
+        </div>
       </div>
 
       <div className="flex flex-col gap-1.5">
@@ -186,8 +190,9 @@ export function InstructionComposerForm({
               placeholder={connection.url}
             />
             <p className="text-[11px] text-muted-foreground">
-              Defaults to {connection.hostname}. Override only if the AI should start on a
-              deeper page.
+              Start the AI on a specific page — handy if it can&apos;t find its way from the
+              home page, or to jump straight to the right screen. Defaults to{' '}
+              {connection.hostname}.
             </p>
           </>
         )}

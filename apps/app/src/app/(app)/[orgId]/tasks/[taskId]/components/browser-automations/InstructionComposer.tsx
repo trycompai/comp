@@ -137,7 +137,13 @@ export function InstructionComposer({
         },
       );
     } else if (FAILED_RUN_STATUSES.has(runState.status)) {
-      finalize({ success: false, error: 'The test run could not complete.' });
+      const timedOut = runState.status === 'TIMED_OUT';
+      finalize({
+        success: false,
+        error: timedOut
+          ? 'The AI ran out of time before finishing. Try a more specific instruction, or use “Advanced — start from a specific page” to begin closer to what you need.'
+          : 'The test run could not complete.',
+      });
     }
   }, [testRun, runState, runError, closeTestSession]);
 
