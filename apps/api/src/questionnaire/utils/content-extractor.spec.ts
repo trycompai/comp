@@ -1,4 +1,5 @@
 import { extractContentFromFile } from './content-extractor';
+import AdmZip from 'adm-zip';
 import ExcelJS from 'exceljs';
 import { PDFDocument } from 'pdf-lib';
 import { generateText } from 'ai';
@@ -161,5 +162,44 @@ describe('content-extractor: extractContentFromFile', () => {
     await expect(
       extractContentFromFile(base64, 'application/octet-stream'),
     ).rejects.toThrow('Unsupported file type');
+  });
+
+  // Regression test for the 2026-07-16 api.trycomp.ai outage: HECVAT Full
+  // ships a whole-sheet dataValidation (~17 billion cells) that makes
+  // ExcelJS block the event loop for minutes. Without the sanitizing step
+  // in loadWorkbook this test does not fail — it hangs.
+  it('should extract content from an Excel file with a whole-sheet data validation', async () => {
+    const buffer = await createTestExcelBuffer([
+      {
+        name: 'Questions',
+        rows: [
+          ['Question', 'Response'],
+          ['Will your company sign a BAA?', 'Yes'],
+        ],
+      },
+    ]);
+
+    const zip = new AdmZip(buffer);
+    const entryName = 'xl/worksheets/sheet1.xml';
+    const xml = zip.readAsText(entryName);
+    const validation =
+      '<dataValidations count="1">' +
+      '<dataValidation allowBlank="1" showInputMessage="1" ' +
+      'prompt="Changes cannot be made in this sheet." ' +
+      'sqref="F18:F1048576 N1:XFD1048576 A3:A1048576"/>' +
+      '</dataValidations>';
+    zip.updateFile(
+      entryName,
+      Buffer.from(
+        xml.replace('</worksheet>', `${validation}</worksheet>`),
+        'utf8',
+      ),
+    );
+    const base64 = zip.toBuffer().toString('base64');
+
+    const result = await extractContentFromFile(base64, XLSX_MIME);
+
+    expect(result).toContain('Will your company sign a BAA?');
+    expect(result).toContain('Yes');
   });
 });
