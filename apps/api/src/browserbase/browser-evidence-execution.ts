@@ -185,7 +185,7 @@ export async function executeBrowserEvidence({
     log('action', 'Running navigation instruction.');
     // Find its own way (no exact directions needed), self-correct a wrong turn,
     // and read what's already on screen instead of over-navigating.
-    const instruction = `${input.instruction}. Work out the path yourself — you don't need exact directions. Before finishing, check the page actually matches what was asked; if you opened the wrong item or page, go back and correct it. If the information is already visible, capture it there without navigating further. When you're confident it's right, stop and wait.`;
+    const instruction = `${input.instruction}. Work out the path yourself — you don't need exact directions. If the instruction names a specific item or page, open it so the final screenshot clearly shows just that item, not a long list of many. Before finishing, verify the page matches what was asked and correct it if you opened the wrong thing. Don't take unnecessary detours. When the right thing is clearly shown, stop and wait.`;
     const primaryModel = resolveCuaModel(logger);
     try {
       await runCuaNavigation({
@@ -239,6 +239,7 @@ export async function executeBrowserEvidence({
     const evaluation = await evaluateIfNeeded({
       stagehand,
       criteria: input.evaluationCriteria,
+      instruction: input.instruction,
       logs,
     });
 
