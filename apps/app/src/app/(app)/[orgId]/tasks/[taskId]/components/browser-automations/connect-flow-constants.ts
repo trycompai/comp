@@ -44,11 +44,13 @@ export function hostnameOf(url: string): string {
 
 export const TAKEOVER_CAPTION_DEFAULT = 'Finish the sign-in above, then confirm.';
 
-// Passkeys can't complete in a remote browser, so steer 2FA takeovers to a code.
+// Passkeys need a hardware authenticator on the user's own device, so they can't
+// complete in this remote browser — steer any 2FA take-over to a code method.
+// Kept vendor-neutral (no site-specific button names).
 export const TAKEOVER_CAPTION_2FA =
-  "Enter your authenticator app's 6-digit code above, then confirm. Passkeys " +
-  'can’t complete in this browser — use "More options" to pick the authenticator ' +
-  'app or SMS.';
+  'Enter your two-factor code above — from your authenticator app, or another ' +
+  "code method the site offers — then confirm. Passkeys can't be completed in " +
+  'this browser.';
 
 export function railSubtitleFor(step: Step): string {
   switch (step) {
