@@ -27,8 +27,14 @@ export const signInVendorProfile = task({
   }): Promise<AutoSignInResult> => {
     return signin.signInWithStoredCredentials({
       ...payload,
-      // Live narration — surfaced to the connect flow via realtime run metadata.
-      onStatus: (message) => metadata.set('signinStatus', message),
+      // Live activity timeline — surfaced to the connect flow via realtime metadata.
+      // Steps are plain JSON; cast to the SDK's value type (named interfaces lack
+      // the index signature DeserializedJson structurally requires).
+      onSteps: (steps) =>
+        metadata.set(
+          'signinSteps',
+          steps as unknown as Parameters<typeof metadata.set>[1],
+        ),
     });
   },
 });

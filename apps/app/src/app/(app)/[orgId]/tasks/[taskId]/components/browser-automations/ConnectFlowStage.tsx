@@ -10,7 +10,6 @@ import type { LoginAnalysis } from '../../hooks/types';
 import type { Step } from './connect-flow-constants';
 import { stripScheme } from './connect-url';
 import { ConnectCaptureForm, type ConnectCaptureFormData } from './ConnectCaptureForm';
-import { ConnectLiveSignin } from './ConnectLiveSignin';
 import { ConnectMethodChooser, type ConnectMethodKind } from './ConnectMethodChooser';
 
 interface ConnectFlowStageProps {
@@ -24,23 +23,16 @@ interface ConnectFlowStageProps {
   onChoose: (kind: ConnectMethodKind) => void;
   onCapture: (data: ConnectCaptureFormData) => void;
   isStartingSignin: boolean;
-  /** Manual / SSO live sign-in (from useBrowserContext). */
-  liveViewUrl: string | null;
-  isCheckingLive: boolean;
-  onCheckLive: () => void;
-  /** Automated sign-in session — watched during signing-in, taken over on failure. */
-  autoLiveViewUrl: string | null;
-  /** Live narration from the sign-in task (what the AI is doing right now). */
-  signinStatus?: string;
-  takeoverCaption: string;
-  onTakeoverVerify: () => void;
-  isVerifying: boolean;
   onCancel: () => void;
   onConnected: () => void;
   onRetry: () => void;
 }
 
-/** The right-hand panel of the connect flow — renders the view for each step. */
+/**
+ * The right-hand panel of the connect flow for the form-sized steps (URL entry,
+ * checking, method chooser, credential capture, connected, error). The live
+ * sign-in steps use the full-width ConnectLiveSignin card instead.
+ */
 export function ConnectFlowStage({
   step,
   host,
@@ -52,30 +44,12 @@ export function ConnectFlowStage({
   onChoose,
   onCapture,
   isStartingSignin,
-  liveViewUrl,
-  isCheckingLive,
-  onCheckLive,
-  autoLiveViewUrl,
-  signinStatus,
-  takeoverCaption,
-  onTakeoverVerify,
-  isVerifying,
   onCancel,
   onConnected,
   onRetry,
 }: ConnectFlowStageProps) {
-  // The live sign-in steps embed a full browser, so give them the room by
-  // trimming the generous padding the other (form-sized) steps use.
-  const isLiveSignin =
-    step === 'signin' || step === 'signing-in' || step === 'takeover';
-
   return (
-    <div
-      className={`flex min-h-[320px] flex-col items-center justify-center ${
-        isLiveSignin ? 'p-3 sm:p-4' : 'p-8'
-      }`}
-    >
-
+    <div className="flex min-h-[320px] flex-col items-center justify-center p-8">
       {step === 'enter-url' && (
         <div className="flex w-full max-w-sm flex-col gap-2.5">
           <div className="text-sm text-foreground">Vendor website</div>
@@ -132,39 +106,6 @@ export function ConnectFlowStage({
           onSubmit={onCapture}
           initialExtraFields={analysis?.extraFields}
           submitLabel="Sign in for me"
-        />
-      )}
-
-      {step === 'signing-in' && (
-        <ConnectLiveSignin
-          host={host}
-          liveViewUrl={autoLiveViewUrl}
-          caption={`Signing in to ${host} for you — you can watch. If anything needs you, we'll hand it over.`}
-          statusLine={signinStatus}
-          working
-          onCancel={onCancel}
-        />
-      )}
-
-      {step === 'takeover' && (
-        <ConnectLiveSignin
-          host={host}
-          liveViewUrl={autoLiveViewUrl}
-          caption={takeoverCaption}
-          onConfirm={onTakeoverVerify}
-          isConfirming={isVerifying}
-          onCancel={onCancel}
-        />
-      )}
-
-      {step === 'signin' && (
-        <ConnectLiveSignin
-          host={host}
-          liveViewUrl={liveViewUrl}
-          caption="Sign in above, then confirm — encrypted, we record only what the automation needs."
-          onConfirm={onCheckLive}
-          isConfirming={isCheckingLive}
-          onCancel={onCancel}
         />
       )}
 

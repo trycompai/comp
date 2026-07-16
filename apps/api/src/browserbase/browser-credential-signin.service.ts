@@ -18,6 +18,22 @@ export type AutoSignInFailure =
   | 'challenge'
   | 'unknown';
 
+export interface SignInStep {
+  /** Step label. */
+  l: string;
+  /** Clock timestamp, e.g. "06:02:14". */
+  t: string;
+  state: 'done' | 'active' | 'pending' | 'warn' | 'fail';
+}
+
+const clock = () =>
+  new Date().toLocaleTimeString('en-US', {
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+
 export interface AutoSignInResult {
   isLoggedIn: boolean;
   /** Why the automated sign-in couldn't complete (set only when not signed in). */
@@ -55,12 +71,24 @@ export class BrowserCredentialSigninService {
     profileId: string;
     url: string;
     sessionId: string;
-    /** Live, user-facing progress (surfaced to the connect flow as narration). */
-    onStatus?: (message: string) => void;
+    /** Live activity timeline, surfaced to the connect flow's activity panel. */
+    onSteps?: (steps: SignInStep[]) => void;
   }): Promise<AutoSignInResult> {
-    const status = (message: string) => {
-      this.logger.log(`[sign-in] ${message}`);
-      input.onStatus?.(message);
+    const steps: SignInStep[] = [];
+    const emit = () => input.onSteps?.(steps.map((s) => ({ ...s })));
+    // Each call advances the timeline: the prior active step becomes done and a
+    // new active step is appended.
+    const step = (label: string) => {
+      const last = steps[steps.length - 1];
+      if (last?.state === 'active') last.state = 'done';
+      steps.push({ l: label, t: clock(), state: 'active' });
+      this.logger.log(`[sign-in] ${label}`);
+      emit();
+    };
+    const finish = (state: SignInStep['state']) => {
+      const last = steps[steps.length - 1];
+      if (last) last.state = state;
+      emit();
     };
 
     const profile = await this.profiles.getProfile({
@@ -76,7 +104,7 @@ export class BrowserCredentialSigninService {
       stagehand = await this.sessions.createStagehand(input.sessionId);
       const activeStagehand = stagehand;
       const page = await this.sessions.ensureActivePage(activeStagehand);
-      status('Opening the sign-in page…');
+      step('Opening the sign-in page');
       await page.goto(input.url, {
         waitUntil: 'domcontentloaded',
         timeoutMs: 30000,
@@ -85,15 +113,16 @@ export class BrowserCredentialSigninService {
 
       // The persisted context may already carry a valid session — no need to
       // re-enter credentials if we're already in.
-      status('Checking if you’re already signed in…');
+      step('Checking if you’re already signed in');
       if ((await classifyLoginOutcome(activeStagehand)) === 'logged_in') {
         await this.profiles.markVerified(input);
+        finish('done');
         return { isLoggedIn: true };
       }
 
       // Get onto the actual sign-in form first — the entered URL may be a
       // homepage or dashboard rather than the login page.
-      status('Finding the sign-in form…');
+      step('Finding the sign-in form');
       await navigateToSignIn(activeStagehand);
 
       const vault = resolveBrowserCredentialVaultAdapter();
@@ -101,12 +130,13 @@ export class BrowserCredentialSigninService {
         stagehand: activeStagehand,
         vault,
         input: { profile, targetUrl: input.url },
-        log: status,
+        log: step,
       });
-      status('Checking whether that worked…');
+      step('Checking whether that worked');
 
       if (outcome === 'logged_in') {
         await this.profiles.markVerified(input);
+        finish('done');
         return { isLoggedIn: true };
       }
 
@@ -116,6 +146,7 @@ export class BrowserCredentialSigninService {
         profileId: input.profileId,
         reason: FAILURE_REASON[outcome],
       });
+      finish('warn');
       return { isLoggedIn: false, failure: outcome };
     } finally {
       // Release our automation handle but leave the session open — the caller

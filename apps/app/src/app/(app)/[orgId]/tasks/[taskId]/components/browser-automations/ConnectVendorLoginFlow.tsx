@@ -13,8 +13,6 @@ import {
   hostnameOf,
   RAIL_INDEX,
   railSubtitleFor,
-  TAKEOVER_CAPTION_2FA,
-  TAKEOVER_CAPTION_DEFAULT,
   type Step,
 } from './connect-flow-constants';
 import {
@@ -26,7 +24,9 @@ import { normalizeUrl, stripScheme } from './connect-url';
 import type { ConnectCaptureFormData } from './ConnectCaptureForm';
 import { ConnectFlowRail } from './ConnectFlowRail';
 import { ConnectFlowStage } from './ConnectFlowStage';
+import { ConnectLiveSignin, type LiveSigninVariant } from './ConnectLiveSignin';
 import type { ConnectMethodKind } from './ConnectMethodChooser';
+import type { SignInStep } from './StepList';
 
 interface ConnectVendorLoginFlowProps {
   taskId: string;
@@ -59,7 +59,10 @@ export function ConnectVendorLoginFlow({
     runId: string;
     accessToken: string;
   } | null>(null);
-  const [takeoverCaption, setTakeoverCaption] = useState(TAKEOVER_CAPTION_DEFAULT);
+  const [takeoverVariant, setTakeoverVariant] = useState<LiveSigninVariant>('finish');
+  // The activity timeline, mirrored into flow state so it survives into the
+  // take-over view after the run's realtime subscription is torn down.
+  const [signinSteps, setSigninSteps] = useState<SignInStep[]>([]);
 
   const context = useBrowserContext();
   const { startAnalysis, isStarting } = useLoginAnalysis();
@@ -75,9 +78,7 @@ export function ConnectVendorLoginFlow({
         ? 'Enter your two-factor code to finish the sign-in.'
         : 'Finish the sign-in in the browser.',
     );
-    setTakeoverCaption(
-      failure === 'needs_2fa' ? TAKEOVER_CAPTION_2FA : TAKEOVER_CAPTION_DEFAULT,
-    );
+    setTakeoverVariant(failure === 'needs_2fa' ? '2fa' : 'finish');
     setStep('takeover');
   }, []);
 
@@ -152,6 +153,15 @@ export function ConnectVendorLoginFlow({
     }
   }, [signinRun, signinRunState, signinError, endSession, goToTakeover]);
 
+  // Mirror the live activity timeline into state so it stays visible after the
+  // run completes and we hand over.
+  useEffect(() => {
+    const steps = signinRunState?.metadata?.signinSteps as
+      | SignInStep[]
+      | undefined;
+    if (steps) setSigninSteps(steps);
+  }, [signinRunState]);
+
   // Persist the analysis phase so a page unmount can resume; never persist creds.
   useEffect(() => {
     if (step === 'checking' && analyzeRun) {
@@ -201,6 +211,7 @@ export function ConnectVendorLoginFlow({
     async (data: ConnectCaptureFormData) => {
       // Release any prior sign-in session before starting a new one.
       endSession();
+      setSigninSteps([]);
       const handle = await startSignin({
         url,
         credentials: {
@@ -236,17 +247,40 @@ export function ConnectVendorLoginFlow({
   }, [endSession, context, onCancel]);
 
   const host = hostnameOf(url || urlInput);
-  const railSubtitle = railSubtitleFor(step);
-  // Live narration the sign-in task publishes as it drives the browser.
-  const signinStatus =
-    (signinRunState?.metadata?.signinStatus as string | undefined) ?? undefined;
+
+  // Live sign-in steps use the full-width activity card (design 1b); the
+  // form-sized steps use the rail + stage layout.
+  if (step === 'signing-in' || step === 'takeover' || step === 'signin') {
+    const isManual = step === 'signin'; // SSO / passkey — no automated run
+    const variant: LiveSigninVariant =
+      step === 'signing-in' ? 'ai' : step === 'takeover' ? takeoverVariant : 'finish';
+    return (
+      <ConnectLiveSignin
+        host={host}
+        liveViewUrl={
+          isManual ? context.liveViewUrl : (signinLiveView?.liveViewUrl ?? null)
+        }
+        variant={variant}
+        steps={signinSteps}
+        onConfirm={
+          step === 'signing-in'
+            ? undefined
+            : isManual
+              ? () => context.checkAuth(url)
+              : handleTakeoverVerify
+        }
+        isConfirming={isManual ? context.status === 'checking' : isVerifying}
+        onCancel={handleCancel}
+      />
+    );
+  }
 
   return (
     <div className="overflow-hidden rounded-lg border border-border bg-card">
       <div className="grid grid-cols-1 sm:grid-cols-[250px_1fr]">
         <ConnectFlowRail
           title={step === 'enter-url' ? 'Connect a vendor login' : host}
-          subtitle={railSubtitle}
+          subtitle={railSubtitleFor(step)}
           currentIndex={RAIL_INDEX[step]}
           allDone={step === 'connected'}
         />
@@ -262,14 +296,6 @@ export function ConnectVendorLoginFlow({
           onChoose={handleChoose}
           onCapture={handleCapture}
           isStartingSignin={isStartingSignin}
-          liveViewUrl={context.liveViewUrl}
-          isCheckingLive={context.status === 'checking'}
-          onCheckLive={() => context.checkAuth(url)}
-          autoLiveViewUrl={signinLiveView?.liveViewUrl ?? null}
-          signinStatus={signinStatus}
-          takeoverCaption={takeoverCaption}
-          onTakeoverVerify={handleTakeoverVerify}
-          isVerifying={isVerifying}
           onCancel={handleCancel}
           onConnected={onConnected}
           onRetry={() => setStep('enter-url')}
