@@ -33,6 +33,9 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
   }>({ open: false, mode: 'create' });
   const [authUrl, setAuthUrl] = useState('https://github.com');
   const [connectOpen, setConnectOpen] = useState(false);
+  // Whether the user just connected within THIS task — org-level connection
+  // status must not make a fresh task look already set up.
+  const [justConnected, setJustConnected] = useState(false);
   const authHostname = (() => {
     try {
       return new URL(authUrl).hostname;
@@ -72,6 +75,7 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
   const handleConnected = useCallback(() => {
     clearConnectState(taskId);
     setConnectOpen(false);
+    setJustConnected(true);
     context.checkContextStatus();
     automations.fetchAutomations();
     fetchProfiles();
@@ -154,8 +158,12 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
     return null;
   }
 
-  // No context - show setup prompt (only for non-manual tasks)
-  if (!isManualTask && context.status === 'no-context' && automations.automations.length === 0) {
+  // A task with no automations of its own isn't set up yet — show the onboarding,
+  // even if the ORG already has a connection from another task. Once the user
+  // connects here, `justConnected` advances to the "add your first automation"
+  // state. Connections are org-level and reused, so connecting an already-connected
+  // vendor simply reuses the saved session.
+  if (!isManualTask && automations.automations.length === 0 && !justConnected) {
     return (
       <NoContextState
         isStartingAuth={context.isStartingAuth}
@@ -164,7 +172,7 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
     );
   }
 
-  // Empty state with context (only for non-manual tasks)
+  // Just connected here, but no automations yet — prompt to create the first one.
   if (!isManualTask && automations.automations.length === 0) {
     return (
       <>
