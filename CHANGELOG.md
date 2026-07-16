@@ -1,3 +1,16 @@
+# [3.104.0](https://github.com/trycompai/comp/compare/v3.103.1...v3.104.0) (2026-07-16)
+
+
+### Bug Fixes
+
+* **app:** address review findings on out-of-scope actions ([5113276](https://github.com/trycompai/comp/commit/51132769d057d8a62fdc6276d5c7159e00d1d2d6))
+* **soa:** allow editing of remote-applicable iso 27001 section 7 controls ([#3433](https://github.com/trycompai/comp/issues/3433)) ([024ced4](https://github.com/trycompai/comp/commit/024ced49a340a26d2ad999b4a2ab120e01c56185))
+
+
+### Features
+
+* **app:** mark evidence check resources out of scope ([b5dd117](https://github.com/trycompai/comp/commit/b5dd11735e5fa3a0804a48246904e49861d47569))
+
 ## [3.103.1](https://github.com/trycompai/comp/compare/v3.103.0...v3.103.1) (2026-07-16)
 
 
