@@ -1,6 +1,7 @@
 import { serverApi } from '@/lib/api-server';
 import type { Metadata } from 'next';
 import { EmailNotificationPreferences } from './components/EmailNotificationPreferences';
+import { LoginEmailSettings } from './components/LoginEmailSettings';
 import { McpOrganizationSelector } from './components/McpOrganizationSelector';
 import type { McpOrganizationData } from './hooks/useMcpOrganization';
 
@@ -41,6 +42,7 @@ export default async function UserSettings({
 
   return (
     <div className="space-y-6">
+      <LoginEmailSettings currentEmail={emailRes.data.email} />
       <EmailNotificationPreferences
         initialPreferences={emailRes.data.preferences}
         email={emailRes.data.email}
