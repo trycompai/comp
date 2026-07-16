@@ -1,3 +1,17 @@
+# [3.103.0](https://github.com/trycompai/comp/compare/v3.102.0...v3.103.0) (2026-07-16)
+
+
+### Bug Fixes
+
+* **auditor:** remove brackets from vendor use case and replace placeholder descriptions ([#3425](https://github.com/trycompai/comp/issues/3425)) ([0bb84a5](https://github.com/trycompai/comp/commit/0bb84a5431d7bbcaa182a639c6348dd2655a0b4f))
+* **people:** restore role selection in invite dialog ([9329dfa](https://github.com/trycompai/comp/commit/9329dfa8b564e9fcee8c830d9a0cd1218dbf26a8))
+* **questionnaire:** strip whole-sheet dataValidations before ExcelJS parse ([#3427](https://github.com/trycompai/comp/issues/3427)) ([e28f51d](https://github.com/trycompai/comp/commit/e28f51d8e6b3015d17a4d24030c4cba02db29b9d))
+
+
+### Features
+
+* **auth:** add self-serve and admin login email change ([#3421](https://github.com/trycompai/comp/issues/3421)) ([a760e33](https://github.com/trycompai/comp/commit/a760e33eaa9b2d1e1c682afcf709defc408d013e))
+
 # [3.102.0](https://github.com/trycompai/comp/compare/v3.101.2...v3.102.0) (2026-07-15)
 
 
