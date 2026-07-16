@@ -559,3 +559,51 @@ export class RunAutomationResponseDto {
   @ApiPropertyOptional()
   blockedReason?: string;
 }
+
+// ===== Instruction Test (coach loop) DTOs =====
+
+export class TestInstructionDto {
+  @ApiProperty({ description: 'URL the AI should start from' })
+  @IsUrl({}, { message: 'targetUrl must be a valid URL' })
+  @IsSafeUrl({ message: 'The provided URL is not allowed.' })
+  @IsString()
+  @IsNotEmpty()
+  targetUrl: string;
+
+  @ApiProperty({ description: 'Natural language instruction to test' })
+  @IsString()
+  @IsNotEmpty()
+  instruction: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Optional pass/fail criteria. When set, the test run gets a verdict.',
+  })
+  @IsString()
+  @IsOptional()
+  evaluationCriteria?: string;
+
+  @ApiPropertyOptional({ description: 'Connection (browser auth profile) to run under' })
+  @IsString()
+  @IsOptional()
+  profileId?: string;
+
+  @ApiPropertyOptional({ description: 'Task the instruction belongs to' })
+  @IsString()
+  @IsOptional()
+  taskId?: string;
+}
+
+export class TestInstructionResponseDto {
+  @ApiProperty({ description: 'Trigger.dev run id to subscribe to' })
+  runId: string;
+
+  @ApiProperty({ description: 'Public token for realtime subscription' })
+  publicAccessToken: string;
+
+  @ApiProperty({ description: 'Browserbase session id backing the live view' })
+  sessionId: string;
+
+  @ApiProperty({ description: 'Live view URL for watching the test run' })
+  liveViewUrl: string;
+}

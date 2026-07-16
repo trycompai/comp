@@ -47,15 +47,24 @@ export async function executeBrowserEvidence({
   sessions,
   logger,
   vault,
+  onLog,
 }: {
   input: BrowserEvidenceSessionInput;
   sessions: BrowserbaseSessionService;
   logger: Logger;
   vault: BrowserCredentialVaultAdapter;
+  /** Called as each stage begins, so a live test run can stream its progress. */
+  onLog?: (log: BrowserEvidenceLog) => void;
 }): Promise<BrowserEvidenceExecutionResult> {
   const logs: BrowserEvidenceLog[] = [];
   const log = (stage: string, message: string) => {
-    logs.push({ timestamp: new Date().toISOString(), stage, message });
+    const entry: BrowserEvidenceLog = {
+      timestamp: new Date().toISOString(),
+      stage,
+      message,
+    };
+    logs.push(entry);
+    onLog?.(entry);
   };
   let stagehand: Stagehand | null = null;
   let currentStage: BrowserAutomationFailureStage = 'session';

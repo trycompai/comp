@@ -39,6 +39,8 @@ import {
   NavigateToUrlDto,
   RunAutomationResponseDto,
   SessionResponseDto,
+  TestInstructionDto,
+  TestInstructionResponseDto,
   UpdateBrowserAutomationDto,
 } from './dto/browserbase.dto';
 
@@ -199,6 +201,29 @@ export class BrowserbaseController {
       dto,
       organizationId,
     )) as BrowserAutomationResponseDto;
+  }
+
+  @Post('automations/test')
+  @RequirePermission('task', 'update')
+  @ApiOperation({
+    summary: 'Test an instruction before saving',
+    description:
+      'Runs a not-yet-saved instruction against the connection’s live session so the user can watch it work before committing it to the schedule. Nothing is persisted. Returns a run handle to subscribe to for live steps and the final result.',
+  })
+  @ApiBody({ type: TestInstructionDto })
+  @ApiResponse({ status: 201, type: TestInstructionResponseDto })
+  async testInstruction(
+    @OrganizationId() organizationId: string,
+    @Body() dto: TestInstructionDto,
+  ): Promise<TestInstructionResponseDto> {
+    return this.browserbaseService.testInstruction({
+      organizationId,
+      taskId: dto.taskId,
+      profileId: dto.profileId,
+      targetUrl: dto.targetUrl,
+      instruction: dto.instruction,
+      evaluationCriteria: dto.evaluationCriteria,
+    });
   }
 
   @Get('automations/task/:taskId')

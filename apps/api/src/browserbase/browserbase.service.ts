@@ -46,6 +46,49 @@ export class BrowserbaseService {
     return { runId: handle.id, publicAccessToken: handle.publicAccessToken };
   }
 
+  /**
+   * Kicks off a live test of an instruction the user hasn't saved yet. Creates
+   * the session up front (so the client shows it as a live view), then runs the
+   * instruction as a background Trigger.dev task that streams its steps. Nothing
+   * is persisted — this only proves the instruction out before it's saved.
+   */
+  async testInstruction(input: {
+    organizationId: string;
+    taskId?: string;
+    profileId?: string;
+    targetUrl: string;
+    instruction: string;
+    evaluationCriteria?: string;
+  }): Promise<{
+    runId: string;
+    publicAccessToken: string;
+    sessionId: string;
+    liveViewUrl: string;
+  }> {
+    const profile = await this.profiles.resolveProfileForTarget({
+      organizationId: input.organizationId,
+      targetUrl: input.targetUrl,
+      profileId: input.profileId,
+    });
+    const { sessionId, liveViewUrl } =
+      await this.createSessionWithContext(profile.contextId);
+    const handle = await tasks.trigger('test-vendor-instruction', {
+      organizationId: input.organizationId,
+      taskId: input.taskId,
+      profileId: profile.id,
+      targetUrl: input.targetUrl,
+      instruction: input.instruction,
+      evaluationCriteria: input.evaluationCriteria,
+      sessionId,
+    });
+    return {
+      runId: handle.id,
+      publicAccessToken: handle.publicAccessToken,
+      sessionId,
+      liveViewUrl,
+    };
+  }
+
   async listAuthProfiles(organizationId: string) {
     return this.profiles.listProfiles(organizationId);
   }

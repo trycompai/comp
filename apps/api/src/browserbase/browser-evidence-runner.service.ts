@@ -35,6 +35,8 @@ export interface BrowserEvidenceRunnerInput {
     vaultConnectionId?: string | null;
   };
   beforeExecution?: () => Promise<void>;
+  /** Live per-stage progress callback (used to stream a test run's activity). */
+  onLog?: (log: BrowserEvidenceLog) => void;
 }
 
 export interface BrowserEvidenceSessionInput extends BrowserEvidenceRunnerInput {
@@ -120,6 +122,7 @@ export class BrowserEvidenceRunnerService {
       sessions: this.sessions,
       logger: this.logger,
       vault: this.vault,
+      onLog: input.onLog,
     });
     let uploaded: { screenshotKey: string; screenshotUrl: string } | null =
       null;

@@ -6,6 +6,7 @@ import { BrowserAuthProfilesController } from './browser-auth-profiles.controlle
 import { BrowserAuthProfileContextService } from './browser-auth-profile-context.service';
 import { BrowserAuthProfileService } from './browser-auth-profile.service';
 import { BrowserEvidenceRunnerService } from './browser-evidence-runner.service';
+import { BrowserInstructionTestService } from './browser-instruction-test.service';
 import { BrowserbaseController } from './browserbase.controller';
 import { BrowserbaseOrgContextService } from './browserbase-org-context.service';
 import { BrowserbaseScreenshotService } from './browserbase-screenshot.service';
@@ -32,6 +33,7 @@ import { AuthModule } from '../auth/auth.module';
     BrowserbaseOrgContextService,
     BrowserbaseScreenshotService,
     BrowserEvidenceRunnerService,
+    BrowserInstructionTestService,
     BrowserCredentialSigninService,
     BrowserCredentialStorageService,
     BrowserLoginAnalyzerService,
