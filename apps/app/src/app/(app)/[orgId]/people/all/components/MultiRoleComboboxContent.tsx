@@ -89,8 +89,6 @@ export function MultiRoleComboboxContent({
               <CommandItem
                 key={role.value}
                 value={getRoleDisplayLabel(role.value)} // Use translated label for search/value
-                onPointerDown={(e) => e.preventDefault()}
-                onClick={(e) => e.stopPropagation()}
                 onSelect={() => {
                   handleSelect(role.value);
                   onCloseDialog();
@@ -140,8 +138,6 @@ export function MultiRoleComboboxContent({
                   <CommandItem
                     key={customRole.id}
                     value={customRole.name}
-                    onPointerDown={(e) => e.preventDefault()}
-                    onClick={(e) => e.stopPropagation()}
                     onSelect={() => {
                       handleSelect(roleValue);
                       onCloseDialog();
