@@ -1,35 +1,10 @@
-import { stripXlsxDataValidations } from '@/utils/sanitize-xlsx';
+import { loadXlsxWorkbook } from '@/utils/load-xlsx';
 import { logger } from '@/vector-store/logger';
 import { anthropic } from '@ai-sdk/anthropic';
 import { openai } from '@ai-sdk/openai';
 import { generateText } from 'ai';
 import ExcelJS from 'exceljs';
 import mammoth from 'mammoth';
-
-/**
- * Loads an Excel workbook from a Uint8Array/Buffer.
- * ExcelJS type declarations are incompatible with Node 22+ / TS 5.8+ Buffer types,
- * so we use a typed wrapper to avoid the mismatch.
- */
-async function loadWorkbook(data: Uint8Array): Promise<ExcelJS.Workbook> {
-  const load = async (bytes: Uint8Array): Promise<ExcelJS.Workbook> => {
-    const workbook = new ExcelJS.Workbook();
-    type LoadFn = (data: Uint8Array) => Promise<ExcelJS.Workbook>;
-    await (workbook.xlsx.load as unknown as LoadFn)(bytes);
-    return workbook;
-  };
-
-  const sanitized = stripXlsxDataValidations(data);
-  if (sanitized === data) {
-    return load(data);
-  }
-  try {
-    return await load(sanitized);
-  } catch {
-    // If the rewritten archive is somehow unreadable, keep the old behavior.
-    return load(data);
-  }
-}
 
 const htmlEntityMap = {
   '&nbsp;': ' ',
@@ -81,7 +56,7 @@ export async function extractContentFromFile(
         fileSizeMB,
       });
 
-      const workbook = await loadWorkbook(fileBuffer);
+      const workbook = await loadXlsxWorkbook(fileBuffer);
 
       // Process sheets sequentially
       const sheets: string[] = [];
