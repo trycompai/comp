@@ -221,10 +221,13 @@ export async function executeBrowserEvidence({
 
     currentStage = 'screenshot';
     log('screenshot', 'Capturing screenshot.');
+    // Full page, not the viewport: a short page would otherwise leave a tall
+    // band of empty viewport below the content (a wide gap above our overlay),
+    // and the full page is more complete evidence.
     const rawScreenshot = await page.screenshot({
       type: 'jpeg',
       quality: 80,
-      fullPage: false,
+      fullPage: true,
     });
 
     const screenshot = await renderScreenshot({
