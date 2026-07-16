@@ -154,7 +154,12 @@ export function MultiRoleCombobox({
   });
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    // `modal` is required: this combobox always renders inside a modal Radix
+    // Dialog (invite + edit-roles). A non-modal Popover portals its content
+    // outside that Dialog, leaving the Dialog's focus/dismiss layer in charge of
+    // the role items, so cmdk's onSelect (driven by the item's native click / a
+    // focus-dependent Enter) never fires and roles can't be selected (CS-748).
+    <Popover open={open} onOpenChange={setOpen} modal>
       <PopoverTrigger asChild>
         <div>
           <MultiRoleComboboxTrigger

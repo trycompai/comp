@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { MultiRoleCombobox } from './MultiRoleCombobox';
@@ -49,6 +49,36 @@ describe('MultiRoleCombobox selection', () => {
     item.dispatchEvent(pointerDown);
 
     expect(pointerDown.defaultPrevented).toBe(false);
+  });
+
+  it('opens the role list as a modal layer so the parent Dialog cannot swallow selections (regression: CS-748)', async () => {
+    // This combobox always renders inside a modal Radix Dialog (invite + edit
+    // roles). A non-modal Popover portals its content outside that Dialog, so the
+    // Dialog's focus/dismiss layer governs the role items and cmdk's onSelect
+    // (driven by the item's native click / a focus-dependent Enter) never fires —
+    // clicking a role does nothing. jsdom's synthetic click bypasses that
+    // pointer/focus path and can't reproduce the failure, so we assert the DOM
+    // contract the fix depends on: the Popover must open as a *modal* dismissable
+    // layer, which disables outside pointer events (body `pointer-events: none`)
+    // and traps focus, taking governance of the items back from the Dialog.
+    render(
+      <MultiRoleCombobox
+        selectedRoles={[]}
+        onSelectedRolesChange={vi.fn()}
+        allowedRoles={ALLOWED}
+        placeholder="Select a role"
+      />,
+    );
+
+    expect(document.body.style.pointerEvents).toBe('');
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('combobox'));
+    await screen.findByText('Admin');
+
+    await waitFor(() => {
+      expect(document.body.style.pointerEvents).toBe('none');
+    });
   });
 
   it('adds a role to the selection when clicked', async () => {
