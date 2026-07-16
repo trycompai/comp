@@ -65,7 +65,6 @@ export function InstructionComposer({
   onSaved,
 }: InstructionComposerProps) {
   const [instruction, setInstruction] = useState(initialValues?.instruction ?? '');
-  const [checkEnabled, setCheckEnabled] = useState(!!initialValues?.evaluationCriteria);
   const [criteria, setCriteria] = useState(initialValues?.evaluationCriteria ?? '');
   const [advancedOpen, setAdvancedOpen] = useState(
     !!initialValues?.targetUrl && initialValues.targetUrl !== connection.url,
@@ -153,7 +152,7 @@ export function InstructionComposer({
       profileId: connection.profileId,
       targetUrl,
       instruction: instruction.trim(),
-      evaluationCriteria: checkEnabled && criteria.trim() ? criteria.trim() : undefined,
+      evaluationCriteria: criteria.trim() ? criteria.trim() : undefined,
       taskId,
     });
     if (!handle) {
@@ -170,7 +169,6 @@ export function InstructionComposer({
     startTest,
     connection.profileId,
     targetUrl,
-    checkEnabled,
     criteria,
     taskId,
   ]);
@@ -184,13 +182,13 @@ export function InstructionComposer({
       name: deriveName(instruction),
       targetUrl,
       instruction: instruction.trim(),
-      evaluationCriteria: checkEnabled && criteria.trim() ? criteria.trim() : undefined,
+      evaluationCriteria: criteria.trim() ? criteria.trim() : undefined,
     };
     const ok = initialValues?.id
       ? await onUpdate({ automationId: initialValues.id, input })
       : await onCreate(input);
     if (ok) onSaved();
-  }, [instruction, targetUrl, checkEnabled, criteria, initialValues?.id, onCreate, onUpdate, onSaved]);
+  }, [instruction, targetUrl, criteria, initialValues?.id, onCreate, onUpdate, onSaved]);
 
   const handleCancel = useCallback(() => {
     if (sessionId) void closeTestSession(sessionId);
@@ -237,8 +235,6 @@ export function InstructionComposer({
           connection={connection}
           instruction={instruction}
           onInstructionChange={setInstruction}
-          checkEnabled={checkEnabled}
-          onToggleCheck={() => setCheckEnabled((prev) => !prev)}
           criteria={criteria}
           onCriteriaChange={setCriteria}
           advancedOpen={advancedOpen}

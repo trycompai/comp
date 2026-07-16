@@ -1,15 +1,13 @@
 'use client';
 
 import { Button, Input, Label, Textarea } from '@trycompai/design-system';
-import { Checkmark, ChevronRight, Play } from '@trycompai/design-system/icons';
+import { ChevronRight, Play } from '@trycompai/design-system/icons';
 import type { ConnectionRef } from './InstructionComposer';
 
 interface InstructionComposerFormProps {
   connection: ConnectionRef;
   instruction: string;
   onInstructionChange: (value: string) => void;
-  checkEnabled: boolean;
-  onToggleCheck: () => void;
   criteria: string;
   onCriteriaChange: (value: string) => void;
   advancedOpen: boolean;
@@ -25,14 +23,65 @@ interface InstructionComposerFormProps {
   onSave: () => void;
 }
 
-/** Left column of the split composer: the instruction, an optional check, an
+/** Short label → full text inserted on click; keeps the chips compact. */
+interface Example {
+  label: string;
+  value: string;
+}
+
+const INSTRUCTION_EXAMPLES: Example[] = [
+  {
+    label: '2FA policy',
+    value: 'Go to Settings → Security and screenshot the two-factor authentication policy.',
+  },
+  {
+    label: 'Password rules',
+    value:
+      'Open the password policy page and capture the minimum length and complexity requirements.',
+  },
+  {
+    label: 'Admin list',
+    value: 'Go to the members page and screenshot the list of users with admin access.',
+  },
+];
+
+const CHECK_EXAMPLES: Example[] = [
+  { label: 'MFA enforced', value: 'Two-factor authentication is enforced for all members.' },
+  { label: 'Password length', value: 'The minimum password length is at least 12 characters.' },
+  { label: 'Admins approved', value: 'Only approved administrators are listed.' },
+];
+
+/** Clickable starter examples — shown while the field is empty, hidden once typing. */
+function ExampleChips({
+  examples,
+  onPick,
+}: {
+  examples: Example[];
+  onPick: (value: string) => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <span className="text-[11px] text-muted-foreground">Examples:</span>
+      {examples.map((example) => (
+        <button
+          key={example.label}
+          type="button"
+          onClick={() => onPick(example.value)}
+          className="rounded-full border border-border px-2.5 py-0.5 text-[11px] text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
+        >
+          {example.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** Left column of the split composer: the instruction, a pass/fail check, an
  * advanced start URL, and the test/save actions (design 1i). */
 export function InstructionComposerForm({
   connection,
   instruction,
   onInstructionChange,
-  checkEnabled,
-  onToggleCheck,
   criteria,
   onCriteriaChange,
   advancedOpen,
@@ -58,6 +107,9 @@ export function InstructionComposerForm({
           placeholder="Go to Settings → Security and screenshot the two-factor authentication policy."
           rows={3}
         />
+        {!instruction.trim() && (
+          <ExampleChips examples={INSTRUCTION_EXAMPLES} onPick={onInstructionChange} />
+        )}
         <p className="text-[11px] text-muted-foreground">
           Plain English. Where to go, what to capture — goals work too (&ldquo;confirm MFA
           is enforced&rdquo;).
@@ -65,45 +117,19 @@ export function InstructionComposerForm({
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <button
-          type="button"
-          onClick={onToggleCheck}
-          className="flex items-center gap-2 text-left"
-        >
-          <span
-            className="grid h-3.5 w-3.5 place-items-center rounded-sm border"
-            style={
-              checkEnabled
-                ? {
-                    background: 'var(--primary)',
-                    borderColor: 'var(--primary)',
-                    color: 'var(--primary-foreground)',
-                  }
-                : { borderColor: 'var(--input)' }
-            }
-          >
-            {checkEnabled && <Checkmark size={9} />}
-          </span>
-          <span className="text-[12.5px] text-foreground">Add a pass / fail check</span>
-          <span className="text-[10px] uppercase tracking-[0.08em] text-muted-foreground">
-            Optional
-          </span>
-        </button>
-        {checkEnabled && (
-          <>
-            <Textarea
-              id="composer-criteria"
-              value={criteria}
-              onChange={(event) => onCriteriaChange(event.target.value)}
-              placeholder="Two-factor authentication is enforced for all members."
-              rows={2}
-            />
-            <p className="text-[11px] text-muted-foreground">
-              Each run, the AI judges the captured page against this sentence and records
-              PASS or FAIL.
-            </p>
-          </>
-        )}
+        <Label htmlFor="composer-criteria">Pass / fail check</Label>
+        <Textarea
+          id="composer-criteria"
+          value={criteria}
+          onChange={(event) => onCriteriaChange(event.target.value)}
+          placeholder="Two-factor authentication is enforced for all members."
+          rows={2}
+        />
+        {!criteria.trim() && <ExampleChips examples={CHECK_EXAMPLES} onPick={onCriteriaChange} />}
+        <p className="text-[11px] text-muted-foreground">
+          Each run judges the captured page against this and records PASS or FAIL. Leave blank
+          to only capture a screenshot.
+        </p>
       </div>
 
       <div className="flex flex-col gap-1.5">

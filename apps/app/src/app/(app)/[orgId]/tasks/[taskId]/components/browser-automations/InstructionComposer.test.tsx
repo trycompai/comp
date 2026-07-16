@@ -67,12 +67,12 @@ describe('InstructionComposer', () => {
     });
   });
 
-  it('includes the pass/fail check when enabled', async () => {
+  it('sends the pass/fail check when the criteria field is filled', async () => {
     render(<InstructionComposer {...baseProps} mode="create" />);
     fireEvent.change(screen.getByPlaceholderText(/screenshot the two-factor/i), {
       target: { value: 'Capture security page' },
     });
-    fireEvent.click(screen.getByText('Add a pass / fail check'));
+    // The check field is always visible now (no opt-in toggle).
     fireEvent.change(screen.getByPlaceholderText(/two-factor authentication is enforced/i), {
       target: { value: 'MFA is on' },
     });
@@ -80,6 +80,25 @@ describe('InstructionComposer', () => {
 
     await waitFor(() => expect(startTest).toHaveBeenCalledTimes(1));
     expect(startTest.mock.calls[0][0].evaluationCriteria).toBe('MFA is on');
+  });
+
+  it('leaves the check off (capture-only) when the criteria field is empty', async () => {
+    render(<InstructionComposer {...baseProps} mode="create" />);
+    fireEvent.change(screen.getByPlaceholderText(/screenshot the two-factor/i), {
+      target: { value: 'Capture security page' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /test instruction/i }));
+
+    await waitFor(() => expect(startTest).toHaveBeenCalledTimes(1));
+    expect(startTest.mock.calls[0][0].evaluationCriteria).toBeUndefined();
+  });
+
+  it('fills a field from an example chip', async () => {
+    render(<InstructionComposer {...baseProps} mode="create" />);
+    fireEvent.click(screen.getByRole('button', { name: 'MFA enforced' }));
+    expect(
+      screen.getByDisplayValue('Two-factor authentication is enforced for all members.'),
+    ).toBeInTheDocument();
   });
 
   it('reveals the advanced start URL override', () => {
