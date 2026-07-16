@@ -104,6 +104,23 @@ export function useBrowserAutomations({ taskId }: UseBrowserAutomationsOptions) 
     [fetchAutomations],
   );
 
+  const setSchedule = useCallback(
+    async (automationId: string, scheduleFrequency: TaskFrequency) => {
+      try {
+        const res = await apiClient.patch<BrowserAutomation>(
+          `/v1/browserbase/automations/${automationId}`,
+          { scheduleFrequency },
+        );
+        if (res.error) throw new Error(res.error);
+        toast.success('Schedule updated');
+        await fetchAutomations();
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Failed to update schedule');
+      }
+    },
+    [fetchAutomations],
+  );
+
   const toggleAutomation = useCallback(
     async (automationId: string, isEnabled: boolean) => {
       try {
@@ -130,5 +147,6 @@ export function useBrowserAutomations({ taskId }: UseBrowserAutomationsOptions) 
     updateAutomation,
     deleteAutomation,
     toggleAutomation,
+    setSchedule,
   };
 }

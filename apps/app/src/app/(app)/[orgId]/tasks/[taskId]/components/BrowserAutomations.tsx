@@ -261,6 +261,7 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
       onEditClick={(automation) => setComposer({ open: true, mode: 'edit', automation })}
       onDelete={automations.deleteAutomation}
       onToggleEnabled={automations.toggleAutomation}
+      onChangeSchedule={automations.setSchedule}
       onConnectionChanged={() => {
         fetchProfiles();
         automations.fetchAutomations();

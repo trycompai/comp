@@ -2,6 +2,7 @@
 
 import { usePermissions } from '@/hooks/use-permissions';
 import { Add, Renew } from '@trycompai/design-system/icons';
+import type { TaskFrequency } from '@db';
 import { useMemo, useState } from 'react';
 import type {
   BrowserAuthProfile,
@@ -53,6 +54,7 @@ interface BrowserAutomationsListProps {
   onEditClick: (automation: BrowserAutomation) => void;
   onDelete: (automationId: string) => void;
   onToggleEnabled: (automationId: string, enabled: boolean) => void;
+  onChangeSchedule: (automationId: string, frequency: TaskFrequency) => void;
   /** Called after a connection is edited or removed, to refresh the list. */
   onConnectionChanged?: () => void;
 }
@@ -67,6 +69,7 @@ export function BrowserAutomationsList({
   onEditClick,
   onDelete,
   onToggleEnabled,
+  onChangeSchedule,
   onConnectionChanged,
 }: BrowserAutomationsListProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -214,6 +217,7 @@ export function BrowserAutomationsList({
                       onEdit={() => onEditClick(automation)}
                       onDelete={() => onDelete(automation.id)}
                       onToggleEnabled={(enabled) => onToggleEnabled(automation.id, enabled)}
+                      onChangeSchedule={(frequency) => onChangeSchedule(automation.id, frequency)}
                     />
                   ))}
                 </div>

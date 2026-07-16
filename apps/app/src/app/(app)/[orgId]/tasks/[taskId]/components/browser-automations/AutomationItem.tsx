@@ -11,7 +11,9 @@ import {
 } from '@trycompai/design-system/icons';
 import { formatDistanceToNow } from 'date-fns';
 import { useState } from 'react';
+import type { TaskFrequency } from '@db';
 import { ScheduleSummary } from '@/components/schedule-summary';
+import { SchedulePicker } from '@/components/schedule-picker';
 import type { BrowserAutomation, BrowserAutomationRun } from '../../hooks/types';
 import { RunHistory } from './RunHistory';
 
@@ -25,6 +27,7 @@ interface AutomationItemProps {
   onEdit: () => void;
   onDelete: () => void;
   onToggleEnabled: (enabled: boolean) => void;
+  onChangeSchedule: (frequency: TaskFrequency) => void;
 }
 
 export function AutomationItem({
@@ -37,6 +40,7 @@ export function AutomationItem({
   onEdit,
   onDelete,
   onToggleEnabled,
+  onChangeSchedule,
 }: AutomationItemProps) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const runs: BrowserAutomationRun[] = automation.runs || [];
@@ -86,11 +90,26 @@ export function AutomationItem({
             <p className="text-xs text-muted-foreground mt-0.5">Never run</p>
           )}
           {automation.scheduleFrequency && (
-            <div className="mt-0.5">
-              <ScheduleSummary
-                scheduleFrequency={automation.scheduleFrequency}
-                lastRunAt={automation.lastRunAt ?? null}
-              />
+            <div className="mt-1.5 flex flex-col gap-1">
+              {readOnly ? (
+                <ScheduleSummary
+                  scheduleFrequency={automation.scheduleFrequency}
+                  lastRunAt={automation.lastRunAt ?? null}
+                />
+              ) : (
+                <>
+                  <div className="w-40">
+                    <SchedulePicker
+                      value={automation.scheduleFrequency}
+                      onChange={onChangeSchedule}
+                    />
+                  </div>
+                  <ScheduleSummary
+                    scheduleFrequency={automation.scheduleFrequency}
+                    lastRunAt={automation.lastRunAt ?? null}
+                  />
+                </>
+              )}
             </div>
           )}
           {latestRun?.failureCode && (

@@ -72,6 +72,7 @@ const defaultProps = {
   onEditClick: vi.fn(),
   onDelete: vi.fn(),
   onToggleEnabled: vi.fn(),
+  onChangeSchedule: vi.fn(),
 };
 
 describe('BrowserAutomationsList', () => {

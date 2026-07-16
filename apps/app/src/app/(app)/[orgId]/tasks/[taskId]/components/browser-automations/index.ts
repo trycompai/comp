@@ -1,4 +1,3 @@
-export { BrowserAutomationConfigDialog } from './BrowserAutomationConfigDialog';
 export { BrowserAutomationsList } from './BrowserAutomationsList';
 export { EmptyWithContextState, NoContextState } from './BrowserEmptyStates';
 export { BrowserLiveView } from './BrowserLiveView';
