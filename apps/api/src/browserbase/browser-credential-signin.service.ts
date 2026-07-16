@@ -38,6 +38,12 @@ export interface AutoSignInResult {
   isLoggedIn: boolean;
   /** Why the automated sign-in couldn't complete (set only when not signed in). */
   failure?: AutoSignInFailure;
+  /**
+   * The page the app landed on after a successful login — an authenticated URL to
+   * target on future runs, so they reuse the session instead of re-logging in
+   * (e.g. sites whose root always shows a login form).
+   */
+  homeUrl?: string;
 }
 
 const FAILURE_REASON: Record<AutoSignInFailure, string> = {
@@ -117,7 +123,7 @@ export class BrowserCredentialSigninService {
       if ((await classifyLoginOutcome(activeStagehand)) === 'logged_in') {
         await this.profiles.markVerified(input);
         finish('done');
-        return { isLoggedIn: true };
+        return { isLoggedIn: true, homeUrl: page.url() };
       }
 
       // Get onto the actual sign-in form first — the entered URL may be a
@@ -137,7 +143,9 @@ export class BrowserCredentialSigninService {
       if (outcome === 'logged_in') {
         await this.profiles.markVerified(input);
         finish('done');
-        return { isLoggedIn: true };
+        // Re-read the active page: signing in usually navigates to an app/home page.
+        const landed = await this.sessions.ensureActivePage(activeStagehand);
+        return { isLoggedIn: true, homeUrl: landed.url() };
       }
 
       // Narrowed to the failure states now that logged_in is handled.

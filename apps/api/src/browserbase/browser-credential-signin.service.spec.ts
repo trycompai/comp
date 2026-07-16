@@ -26,7 +26,10 @@ const profile = {
 
 // `extract` classifies the page — return { state: <SignInOutcome> } per call.
 function makeSessions(extract: jest.Mock, act: jest.Mock) {
-  const page = { goto: jest.fn().mockResolvedValue(undefined) };
+  const page = {
+    goto: jest.fn().mockResolvedValue(undefined),
+    url: jest.fn().mockReturnValue('https://app.example.com/home'),
+  };
   return {
     createStagehand: jest.fn().mockResolvedValue({ extract, act }),
     ensureActivePage: jest.fn().mockResolvedValue(page),
@@ -116,6 +119,8 @@ describe('BrowserCredentialSigninService', () => {
     const result = await run(sessions, profiles);
 
     expect(result.isLoggedIn).toBe(true);
+    // The authenticated landing page is returned so runs can target it directly.
+    expect(result.homeUrl).toBe('https://app.example.com/home');
     expect(act).toHaveBeenCalled(); // navigate to sign-in + fill
     expect(profiles.markVerified).toHaveBeenCalledTimes(1);
     expect(profiles.markNeedsReauth).not.toHaveBeenCalled();

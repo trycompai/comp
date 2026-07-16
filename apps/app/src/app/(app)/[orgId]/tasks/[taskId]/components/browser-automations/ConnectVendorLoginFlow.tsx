@@ -64,6 +64,9 @@ export function ConnectVendorLoginFlow({
   // The activity timeline, mirrored into flow state so it survives into the
   // take-over view after the run's realtime subscription is torn down.
   const [signinSteps, setSigninSteps] = useState<SignInStep[]>([]);
+  // The authenticated page the sign-in landed on — used as the connection's URL
+  // so future runs open the app directly and reuse the session.
+  const [connectedUrl, setConnectedUrl] = useState<string | null>(null);
 
   const context = useBrowserContext();
   const { startAnalysis, isStarting } = useLoginAnalysis();
@@ -133,12 +136,13 @@ export function ConnectVendorLoginFlow({
 
     if (signinRunState.status === 'COMPLETED') {
       const output = signinRunState.output as
-        | { isLoggedIn?: boolean; failure?: string }
+        | { isLoggedIn?: boolean; failure?: string; homeUrl?: string }
         | undefined;
 
       if (output?.isLoggedIn) {
         // Keep the session open for a brief success beat; the effect below
         // closes it and advances to the connected screen.
+        if (output.homeUrl) setConnectedUrl(output.homeUrl);
         setSigninRun(null);
         setStep('signed-in');
       } else if (output?.failure === 'invalid_credentials') {
@@ -318,7 +322,7 @@ export function ConnectVendorLoginFlow({
           onCapture={handleCapture}
           isStartingSignin={isStartingSignin}
           onCancel={handleCancel}
-          onConnected={() => onConnected(url)}
+          onConnected={() => onConnected(connectedUrl ?? url)}
           onRetry={() => setStep('enter-url')}
         />
       </div>
