@@ -10,6 +10,8 @@ import type {
 } from '../../hooks/types';
 import { AutomationItem } from './AutomationItem';
 import { ConnectionManageMenu } from './ConnectionManageMenu';
+import { RunDetailOverlay } from './RunDetailOverlay';
+import { RunHistoryStrip, type RunSummary } from './RunHistoryStrip';
 
 function hostnameFromUrl(url: string): string {
   try {
@@ -68,6 +70,7 @@ export function BrowserAutomationsList({
   onConnectionChanged,
 }: BrowserAutomationsListProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [selectedRun, setSelectedRun] = useState<RunSummary | null>(null);
   const { hasPermission } = usePermissions();
   const canCreateIntegration = hasPermission('integration', 'create');
   const canUpdateIntegration = hasPermission('integration', 'update');
@@ -92,6 +95,7 @@ export function BrowserAutomationsList({
   }, [automations, profiles]);
 
   return (
+    <>
     <div className="overflow-hidden rounded-lg border border-border bg-card">
       <div className="flex items-center justify-between border-b border-border px-5 py-4">
         <div>
@@ -131,6 +135,18 @@ export function BrowserAutomationsList({
           const pill = STATUS_PILL[group.profile?.status ?? 'unverified'];
           const needsReconnect =
             group.profile?.status === 'needs_reauth' || group.profile?.status === 'blocked';
+          const groupRuns: RunSummary[] = group.automations
+            .flatMap((automation) =>
+              (automation.runs ?? []).map((run) => ({
+                run,
+                automationId: automation.id,
+                automationName: automation.name,
+              })),
+            )
+            .sort(
+              (a, b) =>
+                new Date(b.run.createdAt).getTime() - new Date(a.run.createdAt).getTime(),
+            );
           return (
             <div key={group.hostname} className="flex flex-col gap-4">
               {/* Connection */}
@@ -202,6 +218,11 @@ export function BrowserAutomationsList({
                   ))}
                 </div>
               </div>
+
+              {/* Run history */}
+              {groupRuns.length > 0 && (
+                <RunHistoryStrip runs={groupRuns} onSelect={setSelectedRun} />
+              )}
             </div>
           );
         })}
@@ -217,5 +238,12 @@ export function BrowserAutomationsList({
         )}
       </div>
     </div>
+
+    <RunDetailOverlay
+      selected={selectedRun}
+      onClose={() => setSelectedRun(null)}
+      onRerun={canUpdateIntegration ? onRun : undefined}
+    />
+    </>
   );
 }
