@@ -16,55 +16,73 @@ beforeAll(() => {
 });
 
 const ALLOWED = ['admin', 'auditor', 'employee', 'contractor'];
+const CUSTOM_ROLES = [
+  { id: 'orole_1', name: 'Security Reviewer', permissions: { control: ['read'] } },
+];
 
-async function openAndGetRoleItem(name: string) {
-  const user = userEvent.setup();
-  await user.click(screen.getByRole('combobox'));
-  const item = (await screen.findByText(name)).closest('[cmdk-item]');
-  if (!(item instanceof HTMLElement)) {
-    throw new Error(`Role item "${name}" not found`);
-  }
-  return { user, item };
-}
-
-describe('MultiRoleCombobox selection', () => {
-  it('does not cancel pointerdown on a role item (regression: role not selectable)', async () => {
-    // The role items previously had `onPointerDown={(e) => e.preventDefault()}`.
-    // Cancelling pointerdown suppresses the browser's native pointer->click
-    // sequence that drives cmdk's `onSelect`, so clicking a role did nothing.
-    // jsdom fires a synthetic click that bypasses the pointer sequence, so we
-    // assert the underlying DOM contract directly: the item must let the
-    // pointerdown default action proceed.
+describe('MultiRoleCombobox (CS-748)', () => {
+  it('forces pointer-events on the popover content so roles stay clickable inside a modal dialog', async () => {
+    // This combobox is used inside the modal "Add User" Radix Dialog, which
+    // locks `body { pointer-events: none }`. A Radix dismissable-layer version
+    // skew (react-dialog -> 1.1.15 vs react-popover -> 1.1.11) puts the two in
+    // separate module-level layer contexts, so the portaled popover never
+    // re-enables pointer events and its role items inherit `none` — unclickable
+    // and unhoverable. The fix forces pointer-events on the content. jsdom can't
+    // hit-test, so we assert the fix is present here; the end-to-end click
+    // behavior inside the modal is verified in a real browser.
+    const user = userEvent.setup();
     render(
       <MultiRoleCombobox
         selectedRoles={[]}
         onSelectedRolesChange={vi.fn()}
         allowedRoles={ALLOWED}
+        customRoles={CUSTOM_ROLES}
         placeholder="Select a role"
       />,
     );
 
-    const { item } = await openAndGetRoleItem('Admin');
-    const pointerDown = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
-    item.dispatchEvent(pointerDown);
+    await user.click(screen.getByRole('combobox'));
 
-    expect(pointerDown.defaultPrevented).toBe(false);
+    const content = document.querySelector('[data-slot="popover-content"]');
+    expect(content).not.toBeNull();
+    expect(content).toHaveStyle({ pointerEvents: 'auto' });
   });
 
-  it('adds a role to the selection when clicked', async () => {
+  it('selects a built-in role when clicked', async () => {
     const handleChange = vi.fn();
+    const user = userEvent.setup();
     render(
       <MultiRoleCombobox
         selectedRoles={[]}
         onSelectedRolesChange={handleChange}
         allowedRoles={ALLOWED}
+        customRoles={CUSTOM_ROLES}
         placeholder="Select a role"
       />,
     );
 
-    const { user, item } = await openAndGetRoleItem('Admin');
-    await user.click(item);
+    await user.click(screen.getByRole('combobox'));
+    await user.click(await screen.findByText('Admin'));
 
     expect(handleChange).toHaveBeenCalledWith(['admin']);
+  });
+
+  it('selects a custom role when clicked (the customer-reported path)', async () => {
+    const handleChange = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <MultiRoleCombobox
+        selectedRoles={[]}
+        onSelectedRolesChange={handleChange}
+        allowedRoles={ALLOWED}
+        customRoles={CUSTOM_ROLES}
+        placeholder="Select a role"
+      />,
+    );
+
+    await user.click(screen.getByRole('combobox'));
+    await user.click(await screen.findByText('Security Reviewer'));
+
+    expect(handleChange).toHaveBeenCalledWith(['Security Reviewer']);
   });
 });
