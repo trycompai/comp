@@ -23,14 +23,23 @@ type Stagehand = import('@browserbasehq/stagehand').Stagehand;
 // for GUI agents (clicking the right element from a screenshot), so it's the
 // default. Configurable via env for A/B tests, with no per-site tuning.
 const DEFAULT_CUA_MODEL = 'openai/computer-use-preview';
-// Used when an OpenAI model is requested but no OpenAI key is set, so a missing
-// key degrades to Claude instead of hard-failing navigation.
-const FALLBACK_CUA_MODEL = 'anthropic/claude-sonnet-5';
+// Claude fallback used when the primary model is unavailable (missing OpenAI key,
+// preview access, rate limits, upstream errors). Must be a computer-use-capable
+// model Stagehand supports — claude-sonnet-5 is NOT one; the proven Claude CUA
+// options are claude-opus-4-8 / claude-sonnet-4-6 / claude-haiku-4-5.
+const FALLBACK_CUA_MODEL = 'anthropic/claude-sonnet-4-6';
 // How many screenshot→action steps the agent may take. Generous so it can
 // recover from a wrong turn on a complex site rather than giving up.
 const CUA_MAX_STEPS = 30;
 
-function resolveCuaModel(logger: Logger): { modelName: string; apiKey?: string } {
+// A `type` (not `interface`) so it stays assignable to Stagehand's model config,
+// which intersects with Record<string, unknown>.
+type CuaModel = {
+  modelName: string;
+  apiKey?: string;
+};
+
+function resolveCuaModel(logger: Logger): CuaModel {
   const requested = process.env.BROWSERBASE_CUA_MODEL || DEFAULT_CUA_MODEL;
   if (requested.startsWith('openai/') && !process.env.OPENAI_API_KEY) {
     logger.warn(
@@ -47,6 +56,24 @@ function resolveCuaModel(logger: Logger): { modelName: string; apiKey?: string }
       ? process.env.OPENAI_API_KEY
       : process.env.ANTHROPIC_API_KEY,
   };
+}
+
+function claudeFallbackModel(): CuaModel {
+  return { modelName: FALLBACK_CUA_MODEL, apiKey: process.env.ANTHROPIC_API_KEY };
+}
+
+async function runCuaNavigation({
+  stagehand,
+  instruction,
+  model,
+}: {
+  stagehand: Stagehand;
+  instruction: string;
+  model: CuaModel;
+}): Promise<void> {
+  await stagehand
+    .agent({ cua: true, model })
+    .execute({ instruction, maxSteps: CUA_MAX_STEPS });
 }
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -158,12 +185,30 @@ export async function executeBrowserEvidence({
     // Find its own way (no exact directions needed), self-correct a wrong turn,
     // and read what's already on screen instead of over-navigating.
     const instruction = `${input.instruction}. Work out the path yourself — you don't need exact directions. Before finishing, check the page actually matches what was asked; if you opened the wrong item or page, go back and correct it. If the information is already visible, capture it there without navigating further. When you're confident it's right, stop and wait.`;
-    await stagehand
-      .agent({
-        cua: true,
-        model: resolveCuaModel(logger),
-      })
-      .execute({ instruction, maxSteps: CUA_MAX_STEPS });
+    const primaryModel = resolveCuaModel(logger);
+    try {
+      await runCuaNavigation({
+        stagehand: activeStagehand,
+        instruction,
+        model: primaryModel,
+      });
+    } catch (navError) {
+      // The navigation model can be unavailable at runtime (preview access, rate
+      // limits, upstream errors). Fall back to Claude once — unless we were
+      // already on it — rather than failing the whole run.
+      if (primaryModel.modelName === FALLBACK_CUA_MODEL) throw navError;
+      logger.warn(
+        `Navigation with ${primaryModel.modelName} failed; retrying with ${FALLBACK_CUA_MODEL}. ${
+          navError instanceof Error ? navError.message : String(navError)
+        }`,
+      );
+      log('action', 'Primary navigation model unavailable — retrying with a backup model.');
+      await runCuaNavigation({
+        stagehand: activeStagehand,
+        instruction,
+        model: claudeFallbackModel(),
+      });
+    }
 
     await delay(2000);
     page = await resolveEvidencePage({
