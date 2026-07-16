@@ -154,7 +154,6 @@ export async function reloginWithStoredCredentials({
     stagehand,
     sessions,
     credentials,
-    input,
     log,
   });
   if (await verifyLoggedIn()) return { isLoggedIn: true, page };
@@ -168,7 +167,6 @@ export async function reloginWithStoredCredentials({
         stagehand,
         sessions,
         credentials: fresh,
-        input,
         log,
       });
       if (await verifyLoggedIn()) return { isLoggedIn: true, page };
@@ -186,25 +184,21 @@ async function runLoginAttempt({
   stagehand,
   sessions,
   credentials,
-  input,
   log,
 }: {
   stagehand: Stagehand;
   sessions: BrowserbaseSessionService;
   credentials: RuntimeCredentialMaterial;
-  input: CredentialLoginTarget;
   log: (message: string) => void;
 }): Promise<ActivePage> {
   await performCredentialLogin({ stagehand, credentials, log });
-  const page = await sessions.ensureActivePage(stagehand);
-  // Return to the target URL so the evidence step always starts from the same
-  // place, regardless of where the login flow redirected.
-  await page.goto(input.targetUrl, {
-    waitUntil: 'domcontentloaded',
-    timeoutMs: 30000,
-  });
+  // Stay on the page the site lands on after login (typically an app/dashboard)
+  // and verify there. Navigating back to the entered URL can return to a login
+  // page — some apps always show login at the root — which reads as a failed
+  // sign-in even though it succeeded. The evidence instruction navigates from
+  // wherever we land.
   await delay(1500);
-  return page;
+  return sessions.ensureActivePage(stagehand);
 }
 
 export type SignInOutcome =

@@ -109,7 +109,7 @@ describe('reloginWithStoredCredentials', () => {
     expect(stagehand.act).not.toHaveBeenCalled();
   });
 
-  it('signs in and returns to the target URL when verification passes', async () => {
+  it('signs in and verifies on the landing page without forcing a return to the URL', async () => {
     const stagehand = makeStagehand();
     const page = makePage();
     const vault: BrowserCredentialVaultAdapter = {
@@ -127,10 +127,9 @@ describe('reloginWithStoredCredentials', () => {
 
     expect(result.isLoggedIn).toBe(true);
     expect(stagehand.act).toHaveBeenCalled();
-    expect(page.goto).toHaveBeenCalledWith(
-      baseInput.targetUrl,
-      expect.objectContaining({ waitUntil: 'domcontentloaded' }),
-    );
+    // We stay on the post-login landing page and verify there — navigating back
+    // to the entered URL can return to a login page and read as a failed sign-in.
+    expect(page.goto).not.toHaveBeenCalled();
   });
 
   it('retries once with a freshly resolved TOTP code', async () => {

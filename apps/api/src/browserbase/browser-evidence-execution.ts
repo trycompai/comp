@@ -241,8 +241,12 @@ async function checkAuth(
   stagehand: Stagehand,
 ): Promise<{ isLoggedIn: boolean }> {
   const loginSchema = z.object({ isLoggedIn: z.boolean() });
+  // Detect the sign-in state by the presence of a login prompt rather than by
+  // an avatar/profile menu: many apps have no obvious "logged-in" marker, so
+  // requiring one produced false negatives (and needless re-logins). Treat the
+  // page as logged in unless a sign-in prompt is clearly the ask.
   return stagehand.extract(
-    'Check if the user is logged in to this website. Look for a user avatar, profile menu, account dropdown, or login/sign-in buttons. Return true if logged in, false if you see login buttons or a login form.',
+    'Is this page asking the user to sign in? Look for a visible login prompt: a password field, username/email + password fields, an SSO/"Continue with" screen, or a page whose main call to action is Sign in / Log in. Return isLoggedIn=false ONLY if such a sign-in prompt is clearly present. For any ordinary application or content page with no sign-in prompt, return isLoggedIn=true.',
     loginSchema,
   );
 }
