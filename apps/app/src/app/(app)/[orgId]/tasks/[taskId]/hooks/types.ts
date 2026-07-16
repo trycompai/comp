@@ -113,3 +113,16 @@ export interface ExecuteResponse {
 }
 
 export type BrowserContextStatus = 'loading' | 'no-context' | 'has-context' | 'checking';
+
+/** Final result of an ad-hoc instruction test run (mirrors the API task output). */
+export interface InstructionTestResult {
+  success: boolean;
+  screenshotUrl?: string;
+  finalUrl?: string;
+  evaluationStatus?: 'pass' | 'fail';
+  evaluationReason?: string;
+  error?: string;
+  needsReauth?: boolean;
+  failureCode?: string;
+  blockedReason?: string;
+}
