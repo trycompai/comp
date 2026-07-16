@@ -19,8 +19,12 @@ const DATA_VALIDATIONS_BLOCK_RE =
  * Validations only hold dropdown rules and prompts, never cell text, so
  * removing them cannot change extracted content.
  *
- * Best-effort: returns the original bytes untouched when there is nothing
- * to strip or when the archive cannot be rewritten.
+ * Returns the original bytes untouched only when the archive was read
+ * successfully and contained nothing to strip. Fails closed otherwise:
+ * if the archive cannot be inspected or rewritten, it throws rather than
+ * letting potentially unsanitized bytes reach ExcelJS — an archive that
+ * AdmZip cannot read might still be accepted by ExcelJS's more lenient
+ * unzipper, validations included.
  */
 export function stripXlsxDataValidations(data: Uint8Array): Uint8Array {
   try {
@@ -46,7 +50,11 @@ export function stripXlsxDataValidations(data: Uint8Array): Uint8Array {
     }
 
     return changed ? zip.toBuffer() : data;
-  } catch {
-    return data;
+  } catch (error) {
+    throw new Error(
+      `Unable to sanitize the Excel archive: ${
+        error instanceof Error ? error.message : 'unknown error'
+      }. The file may be corrupt — re-save it in Excel and upload it again.`,
+    );
   }
 }

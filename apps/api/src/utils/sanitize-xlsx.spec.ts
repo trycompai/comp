@@ -67,10 +67,15 @@ describe('stripXlsxDataValidations', () => {
     expect(stripXlsxDataValidations(clean)).toBe(clean);
   });
 
-  it('returns the input unchanged when the buffer is not a zip archive', () => {
+  it('fails closed when the buffer is not a readable archive', () => {
+    // An archive AdmZip cannot read might still parse in ExcelJS's more
+    // lenient unzipper, validations included — so it must be rejected,
+    // never passed through unsanitized.
     const garbage = Buffer.from('not an xlsx file');
 
-    expect(stripXlsxDataValidations(garbage)).toBe(garbage);
+    expect(() => stripXlsxDataValidations(garbage)).toThrow(
+      /Unable to sanitize/,
+    );
   });
 
   it('keeps the workbook loadable with all cell text intact', async () => {
