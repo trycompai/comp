@@ -19,10 +19,11 @@ import { reloginWithStoredCredentials } from './browser-credential-login';
 
 type Stagehand = import('@browserbasehq/stagehand').Stagehand;
 
-// Screenshot-based navigation model. OpenAI's computer-use model is purpose-built
-// for GUI agents (clicking the right element from a screenshot), so it's the
-// default. Configurable via env for A/B tests, with no per-site tuning.
-const DEFAULT_CUA_MODEL = 'openai/computer-use-preview';
+// Screenshot-based navigation model. GPT-5.6 Terra is the balanced tier of
+// OpenAI's newest family — strong browser-automation accuracy at roughly half
+// Sol's cost — a good fit for a multi-step agent. Configurable via env for A/B
+// tests (e.g. openai/gpt-5.6-sol for max accuracy), with no per-site tuning.
+const DEFAULT_CUA_MODEL = 'openai/gpt-5.6-terra';
 // Claude fallback used when the primary model is unavailable (missing OpenAI key,
 // preview access, rate limits, upstream errors). Must be a computer-use-capable
 // model Stagehand supports — claude-sonnet-5 is NOT one; the proven Claude CUA
