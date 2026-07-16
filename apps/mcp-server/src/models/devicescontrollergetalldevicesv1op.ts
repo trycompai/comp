@@ -10,6 +10,25 @@ import {
 } from "./deviceresponsedto.js";
 
 /**
+ * How the request was authenticated
+ */
+export const DevicesControllerGetAllDevicesV1AuthType = {
+  ApiKey: "api-key",
+  Session: "session",
+} as const;
+/**
+ * How the request was authenticated
+ */
+export type DevicesControllerGetAllDevicesV1AuthType = ClosedEnum<
+  typeof DevicesControllerGetAllDevicesV1AuthType
+>;
+
+export const DevicesControllerGetAllDevicesV1AuthType$zodSchema = z.enum([
+  "api-key",
+  "session",
+]).describe("How the request was authenticated");
+
+/**
  * Internal server error - FleetDM integration issue
  */
 export type DevicesControllerGetAllDevicesV1InternalServerErrorResponseBody = {
@@ -48,25 +67,6 @@ export const DevicesControllerGetAllDevicesV1UnauthorizedResponseBody$zodSchema:
     }).describe(
       "Unauthorized - Invalid authentication or insufficient permissions",
     );
-
-/**
- * How the request was authenticated
- */
-export const DevicesControllerGetAllDevicesV1AuthType = {
-  ApiKey: "api-key",
-  Session: "session",
-} as const;
-/**
- * How the request was authenticated
- */
-export type DevicesControllerGetAllDevicesV1AuthType = ClosedEnum<
-  typeof DevicesControllerGetAllDevicesV1AuthType
->;
-
-export const DevicesControllerGetAllDevicesV1AuthType$zodSchema = z.enum([
-  "api-key",
-  "session",
-]).describe("How the request was authenticated");
 
 export type DevicesControllerGetAllDevicesV1AuthenticatedUser = {
   id?: string | undefined;

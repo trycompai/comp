@@ -35,6 +35,39 @@ export const IsmsRegistersControllerCreateRowV1Status$zodSchema = z.enum([
   "met",
 ]);
 
+export const IsmsRegistersControllerCreateRowV1AuditRoute = {
+  InHouse: "in_house",
+  External: "external",
+  TrainingPlanned: "training_planned",
+} as const;
+export type IsmsRegistersControllerCreateRowV1AuditRoute = ClosedEnum<
+  typeof IsmsRegistersControllerCreateRowV1AuditRoute
+>;
+
+export const IsmsRegistersControllerCreateRowV1AuditRoute$zodSchema = z.enum([
+  "in_house",
+  "external",
+  "training_planned",
+]);
+
+export const IsmsRegistersControllerCreateRowV1BasisOfCompetence = {
+  Education: "education",
+  Training: "training",
+  Experience: "experience",
+  Combination: "combination",
+} as const;
+export type IsmsRegistersControllerCreateRowV1BasisOfCompetence = ClosedEnum<
+  typeof IsmsRegistersControllerCreateRowV1BasisOfCompetence
+>;
+
+export const IsmsRegistersControllerCreateRowV1BasisOfCompetence$zodSchema = z
+  .enum([
+    "education",
+    "training",
+    "experience",
+    "combination",
+  ]);
+
 /**
  * Register row fields (per-register; validated at runtime by zod)
  */
@@ -56,19 +89,54 @@ export type IsmsRegistersControllerCreateRowV1RequestBody = {
   plan?: string | undefined;
   measurementMethod?: string | undefined;
   status?: IsmsRegistersControllerCreateRowV1Status | undefined;
+  responsibilities?: string | undefined;
+  authorities?: string | undefined;
+  authorityGrantedBy?: string | undefined;
+  requiredCompetence?: string | undefined;
+  auditRoute?: IsmsRegistersControllerCreateRowV1AuditRoute | null | undefined;
+  auditRouteMemberId?: string | null | undefined;
+  auditFirmName?: string | null | undefined;
+  auditEvidenceRef?: string | null | undefined;
+  auditCourse?: string | null | undefined;
+  auditDueDate?: string | null | undefined;
+  roleId?: string | undefined;
+  memberId?: string | undefined;
+  basisOfCompetence?:
+    | IsmsRegistersControllerCreateRowV1BasisOfCompetence
+    | null
+    | undefined;
+  evidenceRetained?: string | null | undefined;
+  gap?: string | null | undefined;
+  remediationAction?: string | null | undefined;
+  remediationDueDate?: string | null | undefined;
   position?: number | undefined;
 };
 
 export const IsmsRegistersControllerCreateRowV1RequestBody$zodSchema: z.ZodType<
   IsmsRegistersControllerCreateRowV1RequestBody
 > = z.object({
+  auditCourse: z.string().nullable().optional(),
+  auditDueDate: z.string().nullable().optional(),
+  auditEvidenceRef: z.string().nullable().optional(),
+  auditFirmName: z.string().nullable().optional(),
+  auditRoute: IsmsRegistersControllerCreateRowV1AuditRoute$zodSchema.nullable()
+    .optional(),
+  auditRouteMemberId: z.string().nullable().optional(),
+  authorities: z.string().optional(),
+  authorityGrantedBy: z.string().optional(),
+  basisOfCompetence:
+    IsmsRegistersControllerCreateRowV1BasisOfCompetence$zodSchema.nullable()
+      .optional(),
   cadence: z.string().optional(),
   category: z.string().optional(),
   description: z.string().optional(),
   effect: z.string().optional(),
+  evidenceRetained: z.string().nullable().optional(),
+  gap: z.string().nullable().optional(),
   interestedPartyId: z.string().optional(),
   kind: IsmsRegistersControllerCreateRowV1Kind$zodSchema.optional(),
   measurementMethod: z.string().optional(),
+  memberId: z.string().optional(),
   name: z.string().optional(),
   needsExpectations: z.string().optional(),
   objective: z.string().optional(),
@@ -76,7 +144,12 @@ export const IsmsRegistersControllerCreateRowV1RequestBody$zodSchema: z.ZodType<
   partyName: z.string().optional(),
   plan: z.string().optional(),
   position: z.int().optional(),
+  remediationAction: z.string().nullable().optional(),
+  remediationDueDate: z.string().nullable().optional(),
+  requiredCompetence: z.string().optional(),
   requirement: z.string().optional(),
+  responsibilities: z.string().optional(),
+  roleId: z.string().optional(),
   status: IsmsRegistersControllerCreateRowV1Status$zodSchema.optional(),
   target: z.string().optional(),
   treatment: z.string().optional(),

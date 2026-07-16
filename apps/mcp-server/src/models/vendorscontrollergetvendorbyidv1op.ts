@@ -5,54 +5,6 @@
 import * as z from "zod";
 import { ClosedEnum } from "../types/enums.js";
 
-export type VendorsControllerGetVendorByIdV1Request = { id: string };
-
-export const VendorsControllerGetVendorByIdV1Request$zodSchema: z.ZodType<
-  VendorsControllerGetVendorByIdV1Request
-> = z.object({
-  id: z.string().describe("Vendor ID"),
-});
-
-/**
- * Internal server error
- */
-export type VendorsControllerGetVendorByIdV1InternalServerErrorResponseBody = {
-  message?: string | undefined;
-};
-
-export const VendorsControllerGetVendorByIdV1InternalServerErrorResponseBody$zodSchema:
-  z.ZodType<VendorsControllerGetVendorByIdV1InternalServerErrorResponseBody> = z
-    .object({
-      message: z.string().optional(),
-    }).describe("Internal server error");
-
-/**
- * Vendor not found
- */
-export type VendorsControllerGetVendorByIdV1NotFoundResponseBody = {
-  message?: string | undefined;
-};
-
-export const VendorsControllerGetVendorByIdV1NotFoundResponseBody$zodSchema:
-  z.ZodType<VendorsControllerGetVendorByIdV1NotFoundResponseBody> = z.object({
-    message: z.string().optional(),
-  }).describe("Vendor not found");
-
-/**
- * Unauthorized - Invalid authentication or insufficient permissions
- */
-export type VendorsControllerGetVendorByIdV1UnauthorizedResponseBody = {
-  message?: string | undefined;
-};
-
-export const VendorsControllerGetVendorByIdV1UnauthorizedResponseBody$zodSchema:
-  z.ZodType<VendorsControllerGetVendorByIdV1UnauthorizedResponseBody> = z
-    .object({
-      message: z.string().optional(),
-    }).describe(
-      "Unauthorized - Invalid authentication or insufficient permissions",
-    );
-
 export const VendorsControllerGetVendorByIdV1Category = {
   Cloud: "cloud",
   Infrastructure: "infrastructure",
@@ -189,6 +141,54 @@ export const VendorsControllerGetVendorByIdV1AuthType$zodSchema = z.enum([
   "api-key",
   "session",
 ]).describe("How the request was authenticated");
+
+export type VendorsControllerGetVendorByIdV1Request = { id: string };
+
+export const VendorsControllerGetVendorByIdV1Request$zodSchema: z.ZodType<
+  VendorsControllerGetVendorByIdV1Request
+> = z.object({
+  id: z.string().describe("Vendor ID"),
+});
+
+/**
+ * Internal server error
+ */
+export type VendorsControllerGetVendorByIdV1InternalServerErrorResponseBody = {
+  message?: string | undefined;
+};
+
+export const VendorsControllerGetVendorByIdV1InternalServerErrorResponseBody$zodSchema:
+  z.ZodType<VendorsControllerGetVendorByIdV1InternalServerErrorResponseBody> = z
+    .object({
+      message: z.string().optional(),
+    }).describe("Internal server error");
+
+/**
+ * Vendor not found
+ */
+export type VendorsControllerGetVendorByIdV1NotFoundResponseBody = {
+  message?: string | undefined;
+};
+
+export const VendorsControllerGetVendorByIdV1NotFoundResponseBody$zodSchema:
+  z.ZodType<VendorsControllerGetVendorByIdV1NotFoundResponseBody> = z.object({
+    message: z.string().optional(),
+  }).describe("Vendor not found");
+
+/**
+ * Unauthorized - Invalid authentication or insufficient permissions
+ */
+export type VendorsControllerGetVendorByIdV1UnauthorizedResponseBody = {
+  message?: string | undefined;
+};
+
+export const VendorsControllerGetVendorByIdV1UnauthorizedResponseBody$zodSchema:
+  z.ZodType<VendorsControllerGetVendorByIdV1UnauthorizedResponseBody> = z
+    .object({
+      message: z.string().optional(),
+    }).describe(
+      "Unauthorized - Invalid authentication or insufficient permissions",
+    );
 
 /**
  * User information (only for session auth)

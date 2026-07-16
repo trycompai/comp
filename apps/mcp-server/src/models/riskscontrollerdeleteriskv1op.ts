@@ -5,6 +5,25 @@
 import * as z from "zod";
 import { ClosedEnum } from "../types/enums.js";
 
+/**
+ * How the request was authenticated
+ */
+export const RisksControllerDeleteRiskV1AuthType = {
+  ApiKey: "api-key",
+  Session: "session",
+} as const;
+/**
+ * How the request was authenticated
+ */
+export type RisksControllerDeleteRiskV1AuthType = ClosedEnum<
+  typeof RisksControllerDeleteRiskV1AuthType
+>;
+
+export const RisksControllerDeleteRiskV1AuthType$zodSchema = z.enum([
+  "api-key",
+  "session",
+]).describe("How the request was authenticated");
+
 export type RisksControllerDeleteRiskV1Request = { id: string };
 
 export const RisksControllerDeleteRiskV1Request$zodSchema: z.ZodType<
@@ -61,25 +80,6 @@ export const DeletedRisk$zodSchema: z.ZodType<DeletedRisk> = z.object({
   id: z.string().optional().describe("Deleted risk ID"),
   title: z.string().optional().describe("Deleted risk title"),
 });
-
-/**
- * How the request was authenticated
- */
-export const RisksControllerDeleteRiskV1AuthType = {
-  ApiKey: "api-key",
-  Session: "session",
-} as const;
-/**
- * How the request was authenticated
- */
-export type RisksControllerDeleteRiskV1AuthType = ClosedEnum<
-  typeof RisksControllerDeleteRiskV1AuthType
->;
-
-export const RisksControllerDeleteRiskV1AuthType$zodSchema = z.enum([
-  "api-key",
-  "session",
-]).describe("How the request was authenticated");
 
 /**
  * User information (only for session auth)
