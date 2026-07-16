@@ -169,7 +169,22 @@ export function MultiRoleCombobox({
           />
         </div>
       </PopoverTrigger>
-      <PopoverContent className="w-[280px] p-0" align="start">
+      {/*
+        This Popover is portaled to <body> while rendered inside a modal Radix
+        Dialog (the invite "Add User" dialog). The Dialog locks
+        `body { pointer-events: none }`, and a Radix version skew
+        (react-dialog -> react-dismissable-layer@1.1.15 vs
+        react-popover -> react-dismissable-layer@1.1.11) means the two live in
+        separate module-level layer contexts, so the popover never re-enables
+        pointer events on itself and its items inherit `none` — making every
+        role unclickable/unhoverable. Forcing pointer-events here restores
+        interactivity for the whole popover subtree. See CS-748.
+      */}
+      <PopoverContent
+        className="w-[280px] p-0"
+        align="start"
+        style={{ pointerEvents: 'auto' }}
+      >
         <MultiRoleComboboxContent
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
