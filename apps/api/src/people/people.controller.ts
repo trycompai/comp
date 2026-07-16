@@ -470,6 +470,7 @@ export class PeopleController {
   @ApiResponse(UPDATE_MEMBER_RESPONSES[400])
   @ApiResponse(UPDATE_MEMBER_RESPONSES[401])
   @ApiResponse(UPDATE_MEMBER_RESPONSES[404])
+  @ApiResponse(UPDATE_MEMBER_RESPONSES[409])
   @ApiResponse(UPDATE_MEMBER_RESPONSES[500])
   async updateMember(
     @Param('id') memberId: string,
