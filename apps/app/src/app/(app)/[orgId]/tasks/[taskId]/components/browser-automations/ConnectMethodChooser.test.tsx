@@ -68,6 +68,28 @@ describe('ConnectMethodChooser', () => {
     expect(onChoose).toHaveBeenCalledWith('live');
   });
 
+  it('warns up front when no unattended method is available (SSO/passkey only)', () => {
+    render(
+      <ConnectMethodChooser
+        analysis={analysisWith(['sso', 'passkey'])}
+        onChoose={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(/can.t run fully unattended/i)).toBeInTheDocument();
+  });
+
+  it('does not warn when password (unattended) is available', () => {
+    render(
+      <ConnectMethodChooser
+        analysis={analysisWith(['password', 'passkey'])}
+        onChoose={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText(/can.t run fully unattended/i)).not.toBeInTheDocument();
+  });
+
   it('falls back to a manual option when nothing is detected', () => {
     const onChoose = vi.fn();
     render(

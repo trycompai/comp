@@ -38,7 +38,7 @@ function optionsFor(analysis: LoginAnalysis): MethodOption[] {
     options.push({
       kind: 'live',
       title: 'Passkey',
-      detail: "Can't be automated — sign in once in the browser.",
+      detail: "Needs your device each time — can't run unattended.",
     });
   }
   if (options.length === 0) {
@@ -63,10 +63,23 @@ export function ConnectMethodChooser({
   onCancel,
 }: ConnectMethodChooserProps) {
   const options = optionsFor(analysis);
+  // "Email & password" is the only method we can replay on a schedule; SSO and
+  // passkey need the person, so warn up front when that's all the site offers.
+  const hasUnattended = analysis.detectedMethods.includes('password');
+  const showCheckInNote =
+    !hasUnattended && analysis.detectedMethods.length > 0;
 
   return (
     <div className="flex w-full max-w-md flex-col gap-3">
       <div className="text-base text-foreground">Choose how to sign in</div>
+      {showCheckInNote && (
+        <div className="rounded-md border border-border bg-muted p-2.5 text-xs text-muted-foreground leading-relaxed">
+          This site only offers sign-in methods that need you (SSO or a passkey on
+          your device), so it can’t run fully unattended. You can still connect —
+          we’ll keep the session alive and email you when it needs a manual
+          refresh.
+        </div>
+      )}
       <div className="flex flex-col gap-2">
         {options.map((option, index) => (
           <button
