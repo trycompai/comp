@@ -111,11 +111,13 @@ export function InstructionTestPanel({
             <iframe
               src={liveViewUrl}
               title="Test run live view"
-              className="h-[260px] w-full"
+              // 16:9 matches the 1920x1080 capture, so the view fills the width
+              // without side gaps and stays crisp (downscaled, not upscaled).
+              className="aspect-video max-h-[70vh] w-full"
               sandbox="allow-same-origin allow-scripts"
             />
           ) : (
-            <div className="grid h-[260px] place-items-center text-xs text-muted-foreground">
+            <div className="grid aspect-video max-h-[70vh] w-full place-items-center text-xs text-muted-foreground">
               Starting the browser…
             </div>
           )}
