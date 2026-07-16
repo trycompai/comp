@@ -5,6 +5,19 @@
 import * as z from "zod";
 import { ClosedEnum } from "../types/enums.js";
 
+export const ContextControllerGetContextByIdV1AuthType = {
+  ApiKey: "api-key",
+  Session: "session",
+} as const;
+export type ContextControllerGetContextByIdV1AuthType = ClosedEnum<
+  typeof ContextControllerGetContextByIdV1AuthType
+>;
+
+export const ContextControllerGetContextByIdV1AuthType$zodSchema = z.enum([
+  "api-key",
+  "session",
+]);
+
 export type ContextControllerGetContextByIdV1Request = { id: string };
 
 export const ContextControllerGetContextByIdV1Request$zodSchema: z.ZodType<
@@ -56,19 +69,6 @@ export const ContextControllerGetContextByIdV1UnauthorizedResponseBody$zodSchema
       message: z.string().optional(),
       statusCode: z.number().optional(),
     }).describe("Unauthorized - Invalid or missing authentication");
-
-export const ContextControllerGetContextByIdV1AuthType = {
-  ApiKey: "api-key",
-  Session: "session",
-} as const;
-export type ContextControllerGetContextByIdV1AuthType = ClosedEnum<
-  typeof ContextControllerGetContextByIdV1AuthType
->;
-
-export const ContextControllerGetContextByIdV1AuthType$zodSchema = z.enum([
-  "api-key",
-  "session",
-]);
 
 /**
  * Context entry retrieved successfully

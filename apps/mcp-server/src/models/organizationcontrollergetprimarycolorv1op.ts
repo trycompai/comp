@@ -5,6 +5,27 @@
 import * as z from "zod";
 import { ClosedEnum } from "../types/enums.js";
 
+/**
+ * How the request was authenticated
+ */
+export const OrganizationControllerGetPrimaryColorV1AuthType = {
+  ApiKey: "api-key",
+  Session: "session",
+} as const;
+/**
+ * How the request was authenticated
+ */
+export type OrganizationControllerGetPrimaryColorV1AuthType = ClosedEnum<
+  typeof OrganizationControllerGetPrimaryColorV1AuthType
+>;
+
+export const OrganizationControllerGetPrimaryColorV1AuthType$zodSchema = z.enum(
+  [
+    "api-key",
+    "session",
+  ],
+).describe("How the request was authenticated");
+
 export type OrganizationControllerGetPrimaryColorV1Request = {
   token?: any | undefined;
 };
@@ -43,27 +64,6 @@ export const OrganizationControllerGetPrimaryColorV1UnauthorizedResponseBody$zod
     }).describe(
       "Unauthorized - Invalid authentication or insufficient permissions",
     );
-
-/**
- * How the request was authenticated
- */
-export const OrganizationControllerGetPrimaryColorV1AuthType = {
-  ApiKey: "api-key",
-  Session: "session",
-} as const;
-/**
- * How the request was authenticated
- */
-export type OrganizationControllerGetPrimaryColorV1AuthType = ClosedEnum<
-  typeof OrganizationControllerGetPrimaryColorV1AuthType
->;
-
-export const OrganizationControllerGetPrimaryColorV1AuthType$zodSchema = z.enum(
-  [
-    "api-key",
-    "session",
-  ],
-).describe("How the request was authenticated");
 
 /**
  * Organization primary color retrieved successfully
