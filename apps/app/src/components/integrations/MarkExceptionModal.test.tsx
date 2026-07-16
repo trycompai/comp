@@ -23,9 +23,15 @@ vi.mock('@trycompai/ui/dialog', () => {
       children: React.ReactNode;
     }) => (open ? <div>{children}</div> : null),
     DialogContent: Pass,
-    DialogDescription: Pass,
+    // Title/description get their own elements so text queries can match
+    // them individually (a fragment would merge them into one text blob).
+    DialogDescription: ({ children }: { children: React.ReactNode }) => (
+      <p>{children}</p>
+    ),
     DialogHeader: Pass,
-    DialogTitle: Pass,
+    DialogTitle: ({ children }: { children: React.ReactNode }) => (
+      <h2>{children}</h2>
+    ),
   };
 });
 
@@ -66,6 +72,32 @@ describe('MarkExceptionModal', () => {
       screen.getByText('IAM password policy < 14 characters'),
     ).toBeInTheDocument();
     expect(screen.getByText('IAM Account: 123456789012')).toBeInTheDocument();
+  });
+
+  it('applies copy overrides for the out-of-scope surface', () => {
+    render(
+      <MarkExceptionModal
+        open
+        onOpenChange={() => {}}
+        findingId="icx_1"
+        findingTitle="Public access not fully blocked: redirect-bucket"
+        title="Mark this resource as out of scope?"
+        description="The resource stays visible but no longer fails this evidence item."
+        confirmLabel="Mark out of scope"
+        expiryHint="Leave empty for never."
+      />,
+    );
+    expect(
+      screen.getByText('Mark this resource as out of scope?'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /^Mark out of scope$/ }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Leave empty for never.')).toBeInTheDocument();
+    // Default copy is fully replaced.
+    expect(
+      screen.queryByText('Mark this finding as an exception?'),
+    ).not.toBeInTheDocument();
   });
 
   it('keeps the submit button disabled until reason reaches min length', () => {

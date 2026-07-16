@@ -2,7 +2,9 @@
 
 import { ConnectIntegrationDialog } from '@/components/integrations/ConnectIntegrationDialog';
 import { ManageIntegrationDialog } from '@/components/integrations/ManageIntegrationDialog';
+import { MarkExceptionModal } from '@/components/integrations/MarkExceptionModal';
 import { SchedulePicker } from '@/components/schedule-picker';
+import { usePermissions } from '@/hooks/use-permissions';
 import { downloadAutomationPDF } from '@/lib/evidence-download';
 import { cn } from '@/lib/utils';
 import { useActiveOrganization } from '@/utils/auth-client';
@@ -46,6 +48,7 @@ import { toast } from 'sonner';
 import type { StoredCheckRun, TaskIntegrationCheck } from '../hooks/useIntegrationChecks';
 import { useIntegrationChecks } from '../hooks/useIntegrationChecks';
 import { summarizeLatestPerAccount } from './check-run-grouping';
+import type { RunExceptionActions, RunFindingActionTarget } from './check-run-history';
 import { AccountRunGroups } from './check-run-history';
 
 interface TaskIntegrationChecksProps {
@@ -83,10 +86,14 @@ export function TaskIntegrationChecks({
     isLoading: loading,
     error: hookError,
     mutateChecks,
+    mutateRuns,
     runCheck,
+    revokeException,
     disconnectCheckFromTask,
     reconnectCheckToTask,
   } = useIntegrationChecks({ taskId, orgId });
+  const { hasPermission } = usePermissions();
+  const canManageExceptions = hasPermission('integration', 'update');
 
   const [runningCheck, setRunningCheck] = useState<string | null>(null);
   const [togglingCheck, setTogglingCheck] = useState<string | null>(null);
@@ -99,6 +106,13 @@ export function TaskIntegrationChecks({
     integrationName: string;
   } | null>(null);
   const [disconnectError, setDisconnectError] = useState<string | null>(null);
+  // Failing resource being marked out of scope (drives the reason modal).
+  const [outOfScopeTarget, setOutOfScopeTarget] = useState<RunFindingActionTarget | null>(null);
+  // Excepted resource being moved back in scope (drives the confirm dialog).
+  const [revokeTarget, setRevokeTarget] = useState<
+    (RunFindingActionTarget & { exceptionId: string }) | null
+  >(null);
+  const [revoking, setRevoking] = useState(false);
 
   // Sync hook-level error into local state
   useEffect(() => {
@@ -172,6 +186,59 @@ export function TaskIntegrationChecks({
       }
     },
     [runCheck, onTaskUpdated],
+  );
+
+  /**
+   * After a scope change (mark / revoke), re-run the affected check so the
+   * task's status is recomputed with the new exception set — the run paths
+   * already honor exceptions. Skipped when a run of the same check is in
+   * flight: exceptions are loaded at aggregation time (after the provider
+   * calls), so the in-flight run already reflects the change.
+   */
+  const rerunAfterScopeChange = useCallback(
+    (target: { connectionId: string; checkId: string }) => {
+      if (runningCheck !== null) return;
+      void handleRunCheck(target.connectionId, target.checkId);
+    },
+    [runningCheck, handleRunCheck],
+  );
+
+  const handleMarkedOutOfScope = useCallback(() => {
+    const target = outOfScopeTarget;
+    setOutOfScopeTarget(null);
+    void mutateRuns();
+    if (target) rerunAfterScopeChange(target);
+  }, [outOfScopeTarget, mutateRuns, rerunAfterScopeChange]);
+
+  const handleConfirmRevoke = useCallback(async () => {
+    if (!revokeTarget) return;
+    setRevoking(true);
+    try {
+      await revokeException(revokeTarget.exceptionId);
+      toast.success(
+        `"${revokeTarget.resourceId}" is back in scope — re-running the check to update this evidence item.`,
+      );
+      const target = revokeTarget;
+      setRevokeTarget(null);
+      rerunAfterScopeChange(target);
+    } catch (err) {
+      console.error('Failed to revoke exception:', err);
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to move the resource back in scope',
+      );
+    } finally {
+      setRevoking(false);
+    }
+  }, [revokeTarget, revokeException, rerunAfterScopeChange]);
+
+  // Stable action handles passed down to the run history rows.
+  const exceptionActions = useMemo<RunExceptionActions>(
+    () => ({
+      canManage: canManageExceptions,
+      onMarkOutOfScope: setOutOfScopeTarget,
+      onRevoke: setRevokeTarget,
+    }),
+    [canManageExceptions],
   );
 
   const handleConfirmDisconnect = useCallback(async () => {
@@ -710,6 +777,7 @@ export function TaskIntegrationChecks({
                           <AccountRunGroups
                             runs={checkRuns}
                             organizationName={organizationName}
+                            exceptionActions={exceptionActions}
                           />
                         </div>
                       </div>
@@ -920,6 +988,63 @@ export function TaskIntegrationChecks({
               disabled={togglingCheck !== null}
             >
               {togglingCheck !== null ? 'Disconnecting...' : 'Disconnect'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Mark a failing resource out of scope — captures the documented reason
+          (recorded as a finding exception, shared with Cloud Tests). */}
+      <MarkExceptionModal
+        open={!!outOfScopeTarget}
+        onOpenChange={(open) => {
+          if (!open) setOutOfScopeTarget(null);
+        }}
+        findingId={outOfScopeTarget?.findingId ?? null}
+        findingTitle={outOfScopeTarget?.title ?? ''}
+        resourceLabel={outOfScopeTarget?.resourceId ?? null}
+        title="Mark this resource as out of scope?"
+        description="The resource stays visible on this evidence item but no longer fails it. The exception and your reason are recorded in the audit trail for auditors."
+        confirmLabel="Mark out of scope"
+        expiryHint="Leave empty for never. If set, the resource comes back in scope after this date."
+        successToast="Marked out of scope — re-running the check to update this evidence item."
+        onMarked={handleMarkedOutOfScope}
+      />
+
+      {/* Confirm moving an excepted resource back in scope */}
+      <AlertDialog
+        open={!!revokeTarget}
+        onOpenChange={(open) => {
+          // Keep the dialog owned by the in-flight revoke request.
+          if (!open && !revoking) {
+            setRevokeTarget(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Move this resource back in scope?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {revokeTarget ? (
+                <>
+                  The exception on <strong>{revokeTarget.resourceId}</strong> will be removed and
+                  the resource will count against this evidence item again on the next check run.
+                </>
+              ) : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={revoking}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                // Keep the dialog open (with its "Removing…" state) until the
+                // async revoke settles — Radix would otherwise auto-close.
+                e.preventDefault();
+                void handleConfirmRevoke();
+              }}
+              disabled={revoking}
+            >
+              {revoking ? 'Removing...' : 'Move back in scope'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

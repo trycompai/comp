@@ -811,9 +811,11 @@ describe('TaskIntegrationsController', () => {
       );
       mockFindingExceptionFindMany.mockResolvedValue([
         {
+          id: 'fex_1',
           connectionId: 'conn_1',
           checkId: 'aws-s3-public-access',
           resourceId: 'reports-bucket',
+          reason: 'Bucket intentionally public: static website redirect only.',
         },
       ]);
       // The excepted-failure count is now computed via a targeted query (the
@@ -827,6 +829,11 @@ describe('TaskIntegrationsController', () => {
       expect(runs[0].exceptedCount).toBe(1);
       expect(runs[0].status).toBe('success');
       expect(runs[0].results[0].excepted).toBe(true);
+      // Excepted rows carry the exception's id (for revoke) and its reason.
+      expect(runs[0].results[0].exceptionId).toBe('fex_1');
+      expect(runs[0].results[0].exceptionReason).toBe(
+        'Bucket intentionally public: static website redirect only.',
+      );
       // Exact count is computed via the targeted query, scoped to this run's
       // excepted resourceIds (not by loading + filtering every result).
       expect(mockCheckRunRepository.countExceptedFailures).toHaveBeenCalledWith(
