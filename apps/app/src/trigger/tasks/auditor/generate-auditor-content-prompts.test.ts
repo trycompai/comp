@@ -3,8 +3,10 @@ import {
   buildContextHubText,
   buildSectionUserPrompt,
   buildVendorsBlock,
+  CUSTOM_ONBOARDING_VENDOR_DESCRIPTION,
   NARRATIVE_SECTIONS,
   sectionPrompts,
+  SELECTED_ONBOARDING_VENDOR_DESCRIPTION,
   SENSITIVE_CONTEXT_QUESTIONS,
   type VendorTabEntry,
 } from './generate-auditor-content-prompts';
@@ -33,6 +35,52 @@ describe('buildVendorsBlock', () => {
 
   it('does not invent entries for an empty Vendors tab', () => {
     expect(buildVendorsBlock([])).toContain('No vendors');
+  });
+
+  it('strips the onboarding fallback placeholder descriptions (CS-747: they were echoed as "(Onboarding-selected vendor)")', () => {
+    const vendors: VendorTabEntry[] = [
+      {
+        name: 'Claude AI',
+        description: SELECTED_ONBOARDING_VENDOR_DESCRIPTION,
+        category: 'other',
+        website: null,
+      },
+      {
+        name: 'Acme Internal',
+        description: CUSTOM_ONBOARDING_VENDOR_DESCRIPTION,
+        category: 'other',
+        website: null,
+      },
+      { name: 'AWS', description: 'Cloud hosting', category: 'cloud', website: null },
+    ];
+
+    const block = buildVendorsBlock(vendors);
+
+    // The meaningless placeholders never reach the prompt — the model would
+    // otherwise reproduce them as the vendor's business function.
+    expect(block).not.toContain(SELECTED_ONBOARDING_VENDOR_DESCRIPTION);
+    expect(block).not.toContain(CUSTOM_ONBOARDING_VENDOR_DESCRIPTION);
+
+    // Every vendor is still listed, and real descriptions still flow through.
+    expect(block).toContain('Claude AI');
+    expect(block).toContain('Acme Internal');
+    expect(block).toContain('Cloud hosting');
+    expect(block.split('\n')).toHaveLength(vendors.length);
+  });
+});
+
+describe('critical-vendors prompt format (CS-747)', () => {
+  const prompt = sectionPrompts['critical-vendors'];
+
+  it('does not wrap the vendor function in parentheses', () => {
+    expect(prompt).toContain('[Vendor Name] - [SaaS/PaaS/IaaS] - [brief function]');
+    expect(prompt).not.toMatch(/\(\[brief function\]\)/);
+
+    // The worked examples are unparenthesised too.
+    expect(prompt).toContain('Vercel - PaaS - Application hosting');
+    expect(prompt).not.toContain('(Application hosting)');
+    expect(prompt).not.toContain('(Cloud infrastructure)');
+    expect(prompt).not.toContain('(Team messaging)');
   });
 });
 
