@@ -102,13 +102,19 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
     (automation?: BrowserAutomation): ConnectionRef | null => {
       const findByHost = (host: string) => profiles.find((p) => p.hostname === host);
       const toRef = (
-        profile: { id: string; hostname: string; displayName: string },
+        profile: {
+          id: string;
+          hostname: string;
+          displayName: string;
+          status: ConnectionRef['status'];
+        },
         url: string,
       ): ConnectionRef => ({
         profileId: profile.id,
         hostname: profile.hostname,
         displayName: profile.displayName || profile.hostname,
         url,
+        status: profile.status,
       });
 
       if (automation) {

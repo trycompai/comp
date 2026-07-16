@@ -51,6 +51,28 @@ const CHECK_EXAMPLES: Example[] = [
   { label: 'Admins approved', value: 'Only approved administrators are listed.' },
 ];
 
+/** Small PASS / FAIL pill matching the run-history badges. */
+function VerdictBadge({ kind }: { kind: 'pass' | 'fail' }) {
+  const style =
+    kind === 'pass'
+      ? {
+          background: 'color-mix(in oklab, var(--success) 15%, transparent)',
+          color: 'var(--success)',
+        }
+      : {
+          background: 'color-mix(in oklab, var(--destructive) 12%, transparent)',
+          color: 'var(--destructive)',
+        };
+  return (
+    <span
+      className="rounded-sm px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em]"
+      style={style}
+    >
+      {kind === 'pass' ? 'Pass' : 'Fail'}
+    </span>
+  );
+}
+
 /** Clickable starter examples — shown while the field is empty, hidden once typing. */
 function ExampleChips({
   examples,
@@ -118,6 +140,12 @@ export function InstructionComposerForm({
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="composer-criteria">Pass / fail check</Label>
+        <div className="flex items-center gap-2">
+          <VerdictBadge kind="pass" />
+          <span className="text-[11.5px] text-muted-foreground">
+            when this is true on the captured page:
+          </span>
+        </div>
         <Textarea
           id="composer-criteria"
           value={criteria}
@@ -126,9 +154,14 @@ export function InstructionComposerForm({
           rows={2}
         />
         {!criteria.trim() && <ExampleChips examples={CHECK_EXAMPLES} onPick={onCriteriaChange} />}
+        <div className="flex items-center gap-2">
+          <VerdictBadge kind="fail" />
+          <span className="text-[11.5px] text-muted-foreground">
+            otherwise — recorded automatically.
+          </span>
+        </div>
         <p className="text-[11px] text-muted-foreground">
-          Each run judges the captured page against this and records PASS or FAIL. Leave blank
-          to only capture a screenshot.
+          Leave blank to only capture a screenshot.
         </p>
       </div>
 

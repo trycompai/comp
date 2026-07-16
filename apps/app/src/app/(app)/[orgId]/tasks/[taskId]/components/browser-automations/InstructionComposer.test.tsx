@@ -21,6 +21,7 @@ const connection: ConnectionRef = {
   hostname: 'app.example.com',
   displayName: 'Statushub',
   url: 'https://app.example.com',
+  status: 'verified',
 };
 
 const baseProps = {
@@ -44,10 +45,10 @@ describe('InstructionComposer', () => {
     });
   });
 
-  it('renders the connection chip and create heading', () => {
+  it('renders the connection chip (hostname) and create heading', () => {
     render(<InstructionComposer {...baseProps} mode="create" />);
     expect(screen.getByText('New instruction')).toBeInTheDocument();
-    expect(screen.getByText('Statushub')).toBeInTheDocument();
+    expect(screen.getByText('app.example.com')).toBeInTheDocument();
   });
 
   it('tests the instruction against the connection URL', async () => {

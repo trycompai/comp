@@ -4,7 +4,11 @@ import { Close } from '@trycompai/design-system/icons';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import type { BrowserAutomation, InstructionTestResult } from '../../hooks/types';
+import type {
+  BrowserAuthProfileStatus,
+  BrowserAutomation,
+  InstructionTestResult,
+} from '../../hooks/types';
 import { useInstructionTest } from '../../hooks/useInstructionTest';
 import { FAILED_RUN_STATUSES, hostnameOf } from './connect-flow-constants';
 import { InstructionComposerForm } from './InstructionComposerForm';
@@ -17,6 +21,14 @@ export interface ConnectionRef {
   hostname: string;
   displayName: string;
   url: string;
+  status: BrowserAuthProfileStatus;
+}
+
+/** Dot color for the connection chip — reflects the real profile status. */
+function statusDotColor(status: BrowserAuthProfileStatus): string {
+  if (status === 'verified') return 'var(--success)';
+  if (status === 'needs_reauth' || status === 'blocked') return 'var(--warning)';
+  return 'var(--muted-foreground)';
 }
 
 type InstructionInput = {
@@ -214,10 +226,13 @@ export function InstructionComposer({
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-border py-1 pl-1.5 pr-2.5 text-[11.5px] text-foreground">
             <span className="grid h-4 w-4 place-items-center rounded-full bg-muted text-[8px] font-bold uppercase">
-              {connection.displayName.charAt(0)}
+              {connection.hostname.charAt(0)}
             </span>
-            {connection.displayName}
-            <span className="h-1.5 w-1.5 rounded-full" style={{ background: 'var(--success)' }} />
+            {connection.hostname}
+            <span
+              className="h-1.5 w-1.5 rounded-full"
+              style={{ background: statusDotColor(connection.status) }}
+            />
           </span>
           <button
             onClick={handleCancel}
