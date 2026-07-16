@@ -110,7 +110,7 @@ export function ConnectFlowStage({
       )}
 
       {step === 'connected' && (
-        <div className="flex w-full max-w-md flex-col gap-3 text-center">
+        <div className="flex w-full max-w-md flex-col gap-3 text-center animate-in fade-in-0 duration-500">
           <div className="text-base text-foreground">{host} is connected</div>
           <div className="text-sm text-muted-foreground leading-relaxed">
             We saved the session — Comp will sign in on its own for scheduled runs.

@@ -135,16 +135,16 @@ export function ConnectVendorLoginFlow({
         | { isLoggedIn?: boolean; failure?: string }
         | undefined;
 
-      // Success and wrong-password both end this session; the rest hand over.
-      if (output?.isLoggedIn || output?.failure === 'invalid_credentials') {
+      if (output?.isLoggedIn) {
+        // Keep the session open for a brief success beat; the effect below
+        // closes it and advances to the connected screen.
+        setSigninRun(null);
+        setStep('signed-in');
+      } else if (output?.failure === 'invalid_credentials') {
         setSigninRun(null);
         endSession();
-        if (output?.isLoggedIn) {
-          setStep('connected');
-        } else {
-          toast.error("That username or password wasn't accepted — check and try again.");
-          setStep('capture');
-        }
+        toast.error("That username or password wasn't accepted — check and try again.");
+        setStep('capture');
       } else {
         goToTakeover(output?.failure);
       }
@@ -173,10 +173,21 @@ export function ConnectVendorLoginFlow({
     }
   }, [taskId, step, url, analyzeRun, analysis]);
 
-  // Manual/SSO live sign-in verified → connected.
+  // Manual/SSO live sign-in verified → success beat.
   useEffect(() => {
-    if (step === 'signin' && context.status === 'has-context') setStep('connected');
+    if (step === 'signin' && context.status === 'has-context') setStep('signed-in');
   }, [step, context.status]);
+
+  // Gentle hand-off: hold a brief "Signed in" confirmation over the live browser,
+  // then release the session and fade into the connected screen.
+  useEffect(() => {
+    if (step !== 'signed-in') return;
+    const timer = setTimeout(() => {
+      endSession();
+      setStep('connected');
+    }, 1300);
+    return () => clearTimeout(timer);
+  }, [step, endSession]);
 
   const handleAnalyze = useCallback(async () => {
     const target = normalizeUrl(urlInput);
@@ -237,7 +248,7 @@ export function ConnectVendorLoginFlow({
   );
 
   const handleTakeoverVerify = useCallback(async () => {
-    if (await verify(url)) setStep('connected');
+    if (await verify(url)) setStep('signed-in');
   }, [verify, url]);
 
   const handleCancel = useCallback(() => {
@@ -250,20 +261,29 @@ export function ConnectVendorLoginFlow({
 
   // Live sign-in steps use the full-width activity card (design 1b); the
   // form-sized steps use the rail + stage layout.
-  if (step === 'signing-in' || step === 'takeover' || step === 'signin') {
+  if (
+    step === 'signing-in' ||
+    step === 'takeover' ||
+    step === 'signin' ||
+    step === 'signed-in'
+  ) {
     const isManual = step === 'signin'; // SSO / passkey — no automated run
+    const success = step === 'signed-in';
     const variant: LiveSigninVariant =
-      step === 'signing-in' ? 'ai' : step === 'takeover' ? takeoverVariant : 'finish';
+      step === 'signing-in' ? 'ai' : step === 'signin' ? 'finish' : takeoverVariant;
     return (
       <ConnectLiveSignin
         host={host}
         liveViewUrl={
-          isManual ? context.liveViewUrl : (signinLiveView?.liveViewUrl ?? null)
+          isManual
+            ? context.liveViewUrl
+            : (signinLiveView?.liveViewUrl ?? context.liveViewUrl)
         }
         variant={variant}
+        success={success}
         steps={signinSteps}
         onConfirm={
-          step === 'signing-in'
+          step === 'signing-in' || success
             ? undefined
             : isManual
               ? () => context.checkAuth(url)

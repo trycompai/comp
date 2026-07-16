@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@trycompai/design-system';
-import { Close, Locked } from '@trycompai/design-system/icons';
+import { Checkmark, Close, Locked } from '@trycompai/design-system/icons';
 import { StepList, type SignInStep } from './StepList';
 
 /** ai = automation drives; 2fa = user enters a code; finish = user completes it. */
@@ -16,6 +16,8 @@ interface ConnectLiveSigninProps {
   /** Confirm button (verify) — shown for the 2fa / finish variants. */
   onConfirm?: () => void;
   isConfirming?: boolean;
+  /** Sign-in just succeeded — show a brief confirmation before moving on. */
+  success?: boolean;
 }
 
 function StatusPill({ variant }: { variant: LiveSigninVariant }) {
@@ -61,9 +63,10 @@ export function ConnectLiveSignin({
   onCancel,
   onConfirm,
   isConfirming = false,
+  success = false,
 }: ConnectLiveSigninProps) {
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-card">
+    <div className="relative overflow-hidden rounded-lg border border-border bg-card">
       <div className="flex items-start justify-between border-b border-border px-5 py-3">
         <div>
           <div className="text-base text-foreground">Connect to {host}</div>
@@ -173,6 +176,24 @@ export function ConnectLiveSignin({
           )}
         </div>
       </div>
+
+      {success && (
+        <div
+          className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 backdrop-blur-sm animate-in fade-in-0 duration-300"
+          style={{ background: 'color-mix(in oklab, var(--background) 82%, transparent)' }}
+        >
+          <span
+            className="grid h-14 w-14 place-items-center rounded-full text-white animate-in zoom-in-50 duration-300"
+            style={{ background: 'var(--success)' }}
+          >
+            <Checkmark size={26} />
+          </span>
+          <div className="text-center">
+            <div className="text-base text-foreground">Signed in</div>
+            <div className="mt-0.5 text-xs text-muted-foreground">Saving the session…</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

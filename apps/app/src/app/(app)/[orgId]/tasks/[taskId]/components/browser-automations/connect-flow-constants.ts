@@ -6,6 +6,7 @@ export type Step =
   | 'signing-in'
   | 'takeover'
   | 'signin'
+  | 'signed-in'
   | 'connected'
   | 'error';
 
@@ -19,6 +20,7 @@ export const RAIL_INDEX: Record<Step, number> = {
   capture: 3,
   'signing-in': 3,
   takeover: 3,
+  'signed-in': 4,
   connected: 4,
   error: 0,
 };
@@ -44,6 +46,7 @@ export function hostnameOf(url: string): string {
 
 export function railSubtitleFor(step: Step): string {
   switch (step) {
+    case 'signed-in':
     case 'connected':
       return 'Connected';
     case 'checking':
