@@ -126,7 +126,10 @@ export async function executeBrowserEvidence({
 
     currentStage = 'action';
     log('action', 'Running navigation instruction.');
-    const instruction = `${input.instruction}. After completing all navigation steps, stop and wait.`;
+    // Nudge the agent to be efficient: read what's already on screen instead of
+    // over-navigating (a common cause of hitting the run's time budget), and to
+    // find its own way rather than expecting a precise path.
+    const instruction = `${input.instruction}. Work out the path yourself; you don't need exact directions. If the information is already visible on the current page, capture it there without navigating further. When done, stop and wait.`;
     await stagehand
       .agent({
         cua: true,
