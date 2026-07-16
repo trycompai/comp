@@ -199,6 +199,10 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
         onEditClick={(automation) => setDialogState({ open: true, mode: 'edit', automation })}
         onDelete={automations.deleteAutomation}
         onToggleEnabled={automations.toggleAutomation}
+        onConnectionChanged={() => {
+          fetchProfiles();
+          automations.fetchAutomations();
+        }}
       />
       <BrowserAutomationConfigDialog
         isOpen={dialogState.open}

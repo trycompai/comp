@@ -33,6 +33,10 @@ vi.mock('./AutomationItem', () => ({
   ),
 }));
 
+vi.mock('./ConnectionManageMenu', () => ({
+  ConnectionManageMenu: () => <div data-testid="connection-manage-menu" />,
+}));
+
 import type { BrowserAuthProfile, BrowserAutomation } from '../../hooks/types';
 import { BrowserAutomationsList } from './BrowserAutomationsList';
 

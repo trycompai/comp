@@ -19,6 +19,7 @@ import {
   USERNAME_FIELD_TITLE,
   buildItemReference,
   buildOrgVaultTitle,
+  parseItemReference,
 } from './onepassword-credential-item';
 
 export interface StoreProfileCredentialsInput {
@@ -88,6 +89,28 @@ export class BrowserCredentialStorageService {
         vaultConnectionId: vaultId,
       },
     });
+  }
+
+  /**
+   * Best-effort removal of a profile's stored login from 1Password when its
+   * connection is deleted, so we don't leave orphaned secrets in the vault.
+   * Never throws — a failed cleanup shouldn't block removing the connection.
+   */
+  async deleteProfileCredentialItem(profile: {
+    vaultExternalItemRef?: string | null;
+  }): Promise<void> {
+    if (!isOnePasswordConfigured() || !profile.vaultExternalItemRef) return;
+    const { vaultId, itemId } = parseItemReference(profile.vaultExternalItemRef);
+    if (!vaultId || !itemId) return;
+    try {
+      const client = await getOnePasswordClient();
+      await client.items.delete(vaultId, itemId);
+      this.logger.log(`Deleted 1Password item for a removed connection.`);
+    } catch (error) {
+      this.logger.warn('Failed to delete 1Password item on connection removal', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
   }
 
   private async ensureOrgVault({

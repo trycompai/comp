@@ -168,6 +168,23 @@ export class VerifyAuthProfileSessionDto {
   url: string;
 }
 
+export class UpdateAuthProfileDto {
+  @ApiPropertyOptional({ description: 'Display name for the connection' })
+  @IsString()
+  @IsOptional()
+  displayName?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Sign-in URL. Changing to a different hostname signs the connection out.',
+  })
+  @IsUrl({}, { message: 'url must be a valid URL' })
+  @IsSafeUrl({ message: 'The provided URL is not allowed.' })
+  @IsString()
+  @IsOptional()
+  url?: string;
+}
+
 export class MarkAuthProfileNeedsReauthDto {
   @ApiPropertyOptional({
     description: 'Reason the profile needs re-authentication',

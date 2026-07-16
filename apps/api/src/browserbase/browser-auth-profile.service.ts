@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { db } from '@db';
+import { db, Prisma } from '@db';
 import {
   defaultProfileDisplayName,
   normalizeHostnameFromUrl,
@@ -222,6 +222,52 @@ export class BrowserAuthProfileService {
         blockedReason: null,
       },
     });
+  }
+
+  async updateProfile(input: {
+    organizationId: string;
+    profileId: string;
+    displayName?: string;
+    url?: string;
+  }) {
+    const profile = await this.getProfile(input);
+    if (!profile) {
+      throw new NotFoundException('Browser auth profile not found');
+    }
+
+    const data: Prisma.BrowserAuthProfileUpdateInput = {};
+
+    const name = input.displayName?.trim();
+    if (name) data.displayName = name;
+
+    if (input.url !== undefined) {
+      data.lastAuthCheckUrl = input.url;
+      // A different hostname means the saved session no longer applies — the
+      // connection must be re-established. (Hostname is the connection identity,
+      // so we don't reassign it here.)
+      try {
+        if (normalizeHostnameFromUrl(input.url) !== profile.hostname) {
+          data.status = 'needs_reauth';
+          data.blockedReason = 'Sign-in URL changed — reconnect required.';
+        }
+      } catch {
+        // Ignore an unparseable URL — leave status untouched.
+      }
+    }
+
+    return db.browserAuthProfile.update({
+      where: { id: profile.id },
+      data,
+    });
+  }
+
+  async deleteProfile(input: { organizationId: string; profileId: string }) {
+    const profile = await this.getProfile(input);
+    if (!profile) {
+      throw new NotFoundException('Browser auth profile not found');
+    }
+    await db.browserAuthProfile.delete({ where: { id: profile.id } });
+    return { success: true, profile };
   }
 
   async markNeedsReauth(input: {

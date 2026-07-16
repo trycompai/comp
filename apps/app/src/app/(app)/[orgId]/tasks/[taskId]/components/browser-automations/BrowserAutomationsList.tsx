@@ -9,6 +9,7 @@ import type {
   BrowserAutomation,
 } from '../../hooks/types';
 import { AutomationItem } from './AutomationItem';
+import { ConnectionManageMenu } from './ConnectionManageMenu';
 
 function hostnameFromUrl(url: string): string {
   try {
@@ -50,6 +51,8 @@ interface BrowserAutomationsListProps {
   onEditClick: (automation: BrowserAutomation) => void;
   onDelete: (automationId: string) => void;
   onToggleEnabled: (automationId: string, enabled: boolean) => void;
+  /** Called after a connection is edited or removed, to refresh the list. */
+  onConnectionChanged?: () => void;
 }
 
 export function BrowserAutomationsList({
@@ -62,6 +65,7 @@ export function BrowserAutomationsList({
   onEditClick,
   onDelete,
   onToggleEnabled,
+  onConnectionChanged,
 }: BrowserAutomationsListProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const { hasPermission } = usePermissions();
@@ -127,15 +131,23 @@ export function BrowserAutomationsList({
                   />
                   {pill.label}
                 </span>
-                {needsReconnect && canUpdateIntegration && (
-                  <button
-                    onClick={() => onReconnect(group.url)}
-                    className="ml-auto flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs text-foreground"
-                  >
-                    <Renew size={11} />
-                    {group.profile?.status === 'blocked' ? 'Sign in once' : 'Reconnect'}
-                  </button>
-                )}
+                <div className="ml-auto flex items-center gap-2">
+                  {needsReconnect && canUpdateIntegration && (
+                    <button
+                      onClick={() => onReconnect(group.url)}
+                      className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs text-foreground"
+                    >
+                      <Renew size={11} />
+                      {group.profile?.status === 'blocked' ? 'Sign in once' : 'Reconnect'}
+                    </button>
+                  )}
+                  {group.profile && canUpdateIntegration && (
+                    <ConnectionManageMenu
+                      profile={group.profile}
+                      onChanged={onConnectionChanged}
+                    />
+                  )}
+                </div>
               </div>
 
               <div className="flex flex-col gap-2 rounded-md border border-border/60 p-2">

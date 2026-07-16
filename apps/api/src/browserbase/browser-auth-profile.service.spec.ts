@@ -10,6 +10,7 @@ jest.mock('@db', () => ({
       findFirst: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      delete: jest.fn(),
       deleteMany: jest.fn(),
     },
     browserbaseContext: {
@@ -186,6 +187,86 @@ describe('BrowserAuthProfileService', () => {
     );
     expect(db.browserbaseContext.deleteMany).toHaveBeenCalledWith({
       where: { organizationId: 'org_1', contextId: '__PENDING__' },
+    });
+  });
+
+  describe('updateProfile / deleteProfile', () => {
+    const existing = {
+      id: 'bap_1',
+      organizationId: 'org_1',
+      hostname: 'app.example.com',
+      displayName: 'Example',
+      status: 'verified',
+    };
+
+    beforeEach(() => {
+      (db.browserAuthProfile.update as jest.Mock).mockImplementation(
+        ({ data }) => ({ ...existing, ...data }),
+      );
+      (db.browserAuthProfile.delete as jest.Mock).mockResolvedValue(existing);
+    });
+
+    it('updates only the display name (trimmed)', async () => {
+      (db.browserAuthProfile.findFirst as jest.Mock).mockResolvedValue(existing);
+      await service.updateProfile({
+        organizationId: 'org_1',
+        profileId: 'bap_1',
+        displayName: '  New name  ',
+      });
+      expect(db.browserAuthProfile.update).toHaveBeenCalledWith({
+        where: { id: 'bap_1' },
+        data: { displayName: 'New name' },
+      });
+    });
+
+    it('keeps the connection signed in when the URL stays on the same host', async () => {
+      (db.browserAuthProfile.findFirst as jest.Mock).mockResolvedValue(existing);
+      await service.updateProfile({
+        organizationId: 'org_1',
+        profileId: 'bap_1',
+        url: 'https://app.example.com/account/login',
+      });
+      const data = (db.browserAuthProfile.update as jest.Mock).mock.calls[0][0]
+        .data;
+      expect(data.lastAuthCheckUrl).toBe(
+        'https://app.example.com/account/login',
+      );
+      expect(data.status).toBeUndefined();
+    });
+
+    it('marks needs_reauth when the URL moves to a different host', async () => {
+      (db.browserAuthProfile.findFirst as jest.Mock).mockResolvedValue(existing);
+      await service.updateProfile({
+        organizationId: 'org_1',
+        profileId: 'bap_1',
+        url: 'https://other.com/login',
+      });
+      const data = (db.browserAuthProfile.update as jest.Mock).mock.calls[0][0]
+        .data;
+      expect(data.status).toBe('needs_reauth');
+    });
+
+    it('deletes the profile', async () => {
+      (db.browserAuthProfile.findFirst as jest.Mock).mockResolvedValue(existing);
+      const result = await service.deleteProfile({
+        organizationId: 'org_1',
+        profileId: 'bap_1',
+      });
+      expect(db.browserAuthProfile.delete).toHaveBeenCalledWith({
+        where: { id: 'bap_1' },
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('throws when updating a missing profile', async () => {
+      (db.browserAuthProfile.findFirst as jest.Mock).mockResolvedValue(null);
+      await expect(
+        service.updateProfile({
+          organizationId: 'org_1',
+          profileId: 'nope',
+          displayName: 'x',
+        }),
+      ).rejects.toThrow('not found');
     });
   });
 });

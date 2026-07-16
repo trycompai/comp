@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBody,
   ApiOperation,
@@ -21,6 +30,7 @@ import {
   SignInAuthProfileDto,
   SignInAuthProfileResponseDto,
   StoreAuthProfileCredentialsDto,
+  UpdateAuthProfileDto,
   VerifyAuthProfileResponseDto,
   VerifyAuthProfileSessionDto,
 } from './dto/browserbase.dto';
@@ -160,6 +170,49 @@ export class BrowserAuthProfilesController {
       profileId,
       url: dto.url,
     });
+  }
+
+  @Patch('profiles/:profileId')
+  @RequirePermission('integration', 'update')
+  @ApiOperation({
+    summary: 'Update a browser auth profile',
+    description:
+      'Edit a connection’s display name and/or sign-in URL. Changing to a different hostname marks the connection as needing reconnection.',
+  })
+  @ApiParam({ name: 'profileId', description: 'Browser auth profile ID' })
+  @ApiBody({ type: UpdateAuthProfileDto })
+  @ApiResponse({ status: 200, type: BrowserAuthProfileResponseDto })
+  async updateProfile(
+    @OrganizationId() organizationId: string,
+    @Param('profileId') profileId: string,
+    @Body() dto: UpdateAuthProfileDto,
+  ): Promise<BrowserAuthProfileResponseDto> {
+    return (await this.browserbaseService.updateAuthProfile({
+      organizationId,
+      profileId,
+      displayName: dto.displayName,
+      url: dto.url,
+    })) as BrowserAuthProfileResponseDto;
+  }
+
+  @Delete('profiles/:profileId')
+  @RequirePermission('integration', 'delete')
+  @ApiOperation({
+    summary: 'Remove a browser auth profile',
+    description:
+      'Delete a connection and best-effort remove its stored login from the vault. Automations that relied on it stop running until reconnected.',
+  })
+  @ApiParam({ name: 'profileId', description: 'Browser auth profile ID' })
+  @ApiResponse({ status: 200 })
+  async deleteProfile(
+    @OrganizationId() organizationId: string,
+    @Param('profileId') profileId: string,
+  ): Promise<{ success: boolean }> {
+    const result = await this.browserbaseService.deleteAuthProfile({
+      organizationId,
+      profileId,
+    });
+    return { success: result.success };
   }
 
   @Post('profiles/:profileId/needs-reauth')

@@ -18,6 +18,14 @@ export function buildItemReference(vaultId: string, itemId: string): string {
   return `op://${vaultId}/${itemId}`;
 }
 
+export function parseItemReference(itemRef: string): {
+  vaultId?: string;
+  itemId?: string;
+} {
+  const [vaultId, itemId] = itemRef.replace(/^op:\/\//, '').split('/');
+  return { vaultId, itemId };
+}
+
 export function buildFieldReference(
   itemRef: string,
   fieldTitle: string,

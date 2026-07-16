@@ -86,6 +86,25 @@ export class BrowserbaseService {
     return this.profiles.markNeedsReauth(input);
   }
 
+  async updateAuthProfile(input: {
+    organizationId: string;
+    profileId: string;
+    displayName?: string;
+    url?: string;
+  }) {
+    return this.profiles.updateProfile(input);
+  }
+
+  async deleteAuthProfile(input: { organizationId: string; profileId: string }) {
+    // Best-effort: remove the stored login from 1Password before dropping the
+    // profile, so we don't leave orphaned secrets behind.
+    const profile = await this.profiles.getProfile(input);
+    if (profile?.vaultExternalItemRef) {
+      await this.credentialStorage.deleteProfileCredentialItem(profile);
+    }
+    return this.profiles.deleteProfile(input);
+  }
+
   async storeAuthProfileCredentials(input: {
     organizationId: string;
     profileId: string;
