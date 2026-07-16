@@ -92,7 +92,7 @@ export async function executeBrowserEvidence({
     if (!authCheck.isLoggedIn) {
       log(
         'auth',
-        'Session expired; attempting sign-in with stored credentials.',
+        'Not signed in on this page — signing in with stored credentials.',
       );
       const relogin = await reloginWithStoredCredentials({
         stagehand: activeStagehand,
