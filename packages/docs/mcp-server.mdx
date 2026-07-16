@@ -202,6 +202,44 @@ Save and reload Windsurf.
 
 That's it. The first time you start a chat in your AI client after install, the assistant will discover the Comp AI tools and start using them.
 
+## Self-hosted deployments
+
+If you're connecting to a self-hosted Comp AI instance instead of the hosted service, include the `--server-url` argument in every MCP server configuration.
+
+Example:
+
+```json
+{
+  "mcpServers": {
+    "comp-ai": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@trycompai/mcp-server",
+        "start",
+        "--apikey",
+        "comp_your_api_key_here",
+        "--server-url",
+        "https://your-comp-api.example.com"
+      ]
+    }
+  }
+}
+```
+
+This applies to:
+
+- Claude Desktop
+- Cursor
+- VS Code
+- Claude Code
+- Codex
+- Gemini
+- Windsurf
+- Any other MCP-compatible client
+
+Hosted users (`app.trycomp.ai`) can omit the `--server-url` argument.
+
 ## Verify it worked
 
 Open a fresh chat in your AI client and ask:
