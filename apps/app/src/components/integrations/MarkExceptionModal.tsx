@@ -39,6 +39,15 @@ export interface MarkExceptionModalProps {
   findingTitle: string;
   resourceLabel?: string | null;
   onMarked?: () => void;
+  /** Copy overrides so the same flow reads naturally on each surface —
+   * Cloud Tests says "exception", evidence tasks say "out of scope".
+   * The underlying mechanism (a FindingException) is identical. */
+  title?: string;
+  description?: string;
+  confirmLabel?: string;
+  reasonLabel?: string;
+  expiryHint?: string;
+  successToast?: string;
 }
 
 /**
@@ -46,6 +55,9 @@ export interface MarkExceptionModalProps {
  * date for marking a finding as an exception. Talks to POST
  * /v1/cloud-security/findings/:id/exception. Calls onMarked() on success
  * so the parent can refresh its findings list.
+ *
+ * Shared by the Cloud Tests findings view and the evidence-task check view
+ * (which brands the same flow "mark out of scope" via the copy props).
  */
 export function MarkExceptionModal({
   open,
@@ -54,6 +66,12 @@ export function MarkExceptionModal({
   findingTitle,
   resourceLabel,
   onMarked,
+  title = 'Mark this finding as an exception?',
+  description = 'Exceptions are recorded in the audit trail. Auditors will see this exception and the reason you provide.',
+  confirmLabel = 'Mark as exception',
+  reasonLabel = 'Reason for exception (required) *',
+  expiryHint = 'Leave empty for never. If set, the finding reappears in Scan Results on the first scan after this date.',
+  successToast = 'Marked as exception',
 }: MarkExceptionModalProps) {
   const api = useApi();
   const [reason, setReason] = useState('');
@@ -85,7 +103,7 @@ export function MarkExceptionModal({
       return;
     }
 
-    toast.success('Marked as exception');
+    toast.success(successToast);
     setReason('');
     setReviewedBy('');
     setExpiresAt('');
@@ -106,11 +124,8 @@ export function MarkExceptionModal({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Mark this finding as an exception?</DialogTitle>
-          <DialogDescription>
-            Exceptions are recorded in the audit trail. Auditors will see this
-            exception and the reason you provide.
-          </DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3 py-2">
@@ -126,7 +141,7 @@ export function MarkExceptionModal({
               htmlFor="exception-reason"
               className="block text-xs font-medium mb-1"
             >
-              Reason for exception (required) *
+              {reasonLabel}
             </label>
             <textarea
               id="exception-reason"
@@ -180,10 +195,7 @@ export function MarkExceptionModal({
               min={tomorrowLocalDateString()}
               className="w-full rounded-md border bg-background px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
-            <p className="text-muted-foreground mt-1 text-[10px]">
-              Leave empty for never. If set, the finding reappears in Scan
-              Results on the first scan after this date.
-            </p>
+            <p className="text-muted-foreground mt-1 text-[10px]">{expiryHint}</p>
           </div>
         </div>
 
@@ -204,7 +216,7 @@ export function MarkExceptionModal({
             {submitting ? (
               <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
             ) : null}
-            Mark as exception
+            {confirmLabel}
           </Button>
         </div>
       </DialogContent>
