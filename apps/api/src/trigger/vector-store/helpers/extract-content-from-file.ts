@@ -1,3 +1,4 @@
+import { stripXlsxDataValidations } from '@/utils/sanitize-xlsx';
 import { logger } from '@/vector-store/logger';
 import { anthropic } from '@ai-sdk/anthropic';
 import { openai } from '@ai-sdk/openai';
@@ -11,10 +12,23 @@ import mammoth from 'mammoth';
  * so we use a typed wrapper to avoid the mismatch.
  */
 async function loadWorkbook(data: Uint8Array): Promise<ExcelJS.Workbook> {
-  const workbook = new ExcelJS.Workbook();
-  type LoadFn = (data: Uint8Array) => Promise<ExcelJS.Workbook>;
-  await (workbook.xlsx.load as unknown as LoadFn)(data);
-  return workbook;
+  const load = async (bytes: Uint8Array): Promise<ExcelJS.Workbook> => {
+    const workbook = new ExcelJS.Workbook();
+    type LoadFn = (data: Uint8Array) => Promise<ExcelJS.Workbook>;
+    await (workbook.xlsx.load as unknown as LoadFn)(bytes);
+    return workbook;
+  };
+
+  const sanitized = stripXlsxDataValidations(data);
+  if (sanitized === data) {
+    return load(data);
+  }
+  try {
+    return await load(sanitized);
+  } catch {
+    // If the rewritten archive is somehow unreadable, keep the old behavior.
+    return load(data);
+  }
 }
 
 const htmlEntityMap = {

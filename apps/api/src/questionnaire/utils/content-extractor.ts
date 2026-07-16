@@ -5,6 +5,7 @@ import ExcelJS from 'exceljs';
 import AdmZip from 'adm-zip';
 import mammoth from 'mammoth';
 import { PDFDocument } from 'pdf-lib';
+import { stripXlsxDataValidations } from '@/utils/sanitize-xlsx';
 import { PARSING_MODEL, VISION_EXTRACTION_PROMPT } from './constants';
 import { parseQuestionsAndAnswers } from './question-parser';
 
@@ -12,10 +13,23 @@ import { parseQuestionsAndAnswers } from './question-parser';
  * Loads an Excel workbook from a buffer.
  */
 async function loadWorkbook(data: Uint8Array): Promise<ExcelJS.Workbook> {
-  const workbook = new ExcelJS.Workbook();
-  type LoadFn = (data: Uint8Array) => Promise<ExcelJS.Workbook>;
-  await (workbook.xlsx.load as unknown as LoadFn)(data);
-  return workbook;
+  const load = async (bytes: Uint8Array): Promise<ExcelJS.Workbook> => {
+    const workbook = new ExcelJS.Workbook();
+    type LoadFn = (data: Uint8Array) => Promise<ExcelJS.Workbook>;
+    await (workbook.xlsx.load as unknown as LoadFn)(bytes);
+    return workbook;
+  };
+
+  const sanitized = stripXlsxDataValidations(data);
+  if (sanitized === data) {
+    return load(data);
+  }
+  try {
+    return await load(sanitized);
+  } catch {
+    // If the rewritten archive is somehow unreadable, keep the old behavior.
+    return load(data);
+  }
 }
 
 export interface ContentExtractionLogger {
