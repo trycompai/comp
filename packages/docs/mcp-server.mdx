@@ -56,6 +56,20 @@ The `npx -y @trycompai/mcp-server` command you'll see throughout is what handles
 
 No JSON editing required.
 
+<Warning>
+**Self-hosted deployments**
+
+The drag-and-drop installer currently configures the hosted Comp AI service.
+
+If you're connecting to a self-hosted Comp AI deployment, use the **Advanced — manual JSON config** below and include:
+
+```text
+--server-url https://your-comp-api.example.com
+```
+
+in the `args` array.
+</Warning>
+
 <Accordion title="Advanced — manual JSON config">
 If you prefer to manage `claude_desktop_config.json` yourself, open **Settings → Developer → Edit Config** and merge:
 
@@ -69,7 +83,9 @@ If you prefer to manage `claude_desktop_config.json` yourself, open **Settings �
         "@trycompai/mcp-server",
         "start",
         "--apikey",
-        "comp_your_api_key_here"
+        "comp_your_api_key_here",
+        "--server-url",
+        "https://your-comp-api.example.com"
       ]
     }
   }
@@ -100,7 +116,9 @@ Open **Cursor → Settings → Tools and Integrations → New MCP Server** and p
     "@trycompai/mcp-server",
     "start",
     "--apikey",
-    "comp_your_api_key_here"
+    "comp_your_api_key_here",
+    "--server-url",
+    "https://your-comp-api.example.com"
   ]
 }
 ```
@@ -129,7 +147,9 @@ Open the **Command Palette → MCP: Open User Configuration** and paste:
     "@trycompai/mcp-server",
     "start",
     "--apikey",
-    "comp_your_api_key_here"
+    "comp_your_api_key_here",
+    "--server-url",
+    "https://your-comp-api.example.com"
   ]
 }
 ```
@@ -142,7 +162,10 @@ Open the **Command Palette → MCP: Open User Configuration** and paste:
 Install with one command:
 
 ```bash
-claude mcp add CompAI -- npx -y @trycompai/mcp-server start --apikey comp_your_api_key_here
+claude mcp add CompAI -- \
+npx -y @trycompai/mcp-server start \
+--apikey comp_your_api_key_here \
+--server-url https://your-comp-api.example.com
 ```
 
 Claude Code registers the server immediately — Comp AI tools become available in your next session.
@@ -154,7 +177,10 @@ Claude Code registers the server immediately — Comp AI tools become available 
 Install with one command:
 
 ```bash
-codex mcp add comp-ai -- npx -y @trycompai/mcp-server start --apikey comp_your_api_key_here
+codex mcp add comp-ai -- \
+npx -y @trycompai/mcp-server start \
+--apikey comp_your_api_key_here \
+--server-url https://your-comp-api.example.com
 ```
 
 Codex registers the server immediately — Comp AI tools become available in your next session.
@@ -168,7 +194,10 @@ For ChatGPT desktop / web with MCP support, follow OpenAI's MCP integration docs
 Install with one command:
 
 ```bash
-gemini mcp add CompAI -- npx -y @trycompai/mcp-server start --apikey comp_your_api_key_here
+gemini mcp add CompAI -- \
+npx -y @trycompai/mcp-server start \
+--apikey comp_your_api_key_here \
+--server-url https://your-comp-api.example.com
 ```
 
 </Tab>
@@ -176,37 +205,6 @@ gemini mcp add CompAI -- npx -y @trycompai/mcp-server start --apikey comp_your_a
 <Tab title="Windsurf">
 
 Open **Windsurf → Settings → Cascade → Manage MCPs → View raw config** and paste:
-
-```json
-{
-  "mcpServers": {
-    "comp-ai": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@trycompai/mcp-server",
-        "start",
-        "--apikey",
-        "comp_your_api_key_here"
-      ]
-    }
-  }
-}
-```
-
-Save and reload Windsurf.
-
-</Tab>
-
-</Tabs>
-
-That's it. The first time you start a chat in your AI client after install, the assistant will discover the Comp AI tools and start using them.
-
-## Self-hosted deployments
-
-If you're connecting to a self-hosted Comp AI instance instead of the hosted service, include the `--server-url` argument in every MCP server configuration.
-
-Example:
 
 ```json
 {
@@ -227,18 +225,14 @@ Example:
 }
 ```
 
-This applies to:
+Save and reload Windsurf.
 
-- Claude Desktop
-- Cursor
-- VS Code
-- Claude Code
-- Codex
-- Gemini
-- Windsurf
-- Any other MCP-compatible client
+</Tab>
 
-Hosted users (`app.trycomp.ai`) can omit the `--server-url` argument.
+</Tabs>
+
+That's it. The first time you start a chat in your AI client after install, the assistant will discover the Comp AI tools and start using them.
+
 
 ## Verify it worked
 
