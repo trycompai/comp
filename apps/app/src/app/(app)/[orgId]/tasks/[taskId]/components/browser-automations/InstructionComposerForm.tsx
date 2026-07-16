@@ -120,10 +120,12 @@ export function InstructionComposerForm({
 }: InstructionComposerFormProps) {
   return (
     <div className="flex flex-col gap-4 border-b border-border p-6 md:w-[400px] md:flex-none md:border-b-0 md:border-r">
-      {/* gap-3 between label and field mirrors the test panel's header→browser
+      {/* The h-6 label row + gap-3 mirrors the test panel's header height and
           gap, so this first field lines up with the live browser on the right. */}
       <div className="flex flex-col gap-3">
-        <Label htmlFor="composer-instruction">What should the AI capture?</Label>
+        <div className="flex h-6 items-center">
+          <Label htmlFor="composer-instruction">What should the AI capture?</Label>
+        </div>
         <div className="flex flex-col gap-1.5">
           <Textarea
             id="composer-instruction"

@@ -52,8 +52,10 @@ function verdict(result: InstructionTestResult): { label: string; bg: string; fg
 }
 
 function TestRunHeader({ children }: { children: React.ReactNode }) {
+  // Fixed height so this header lines up with the composer's field label on the
+  // left, keeping the browser view and the first input on the same baseline.
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex h-6 items-center justify-between">
       <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
         Test run
       </span>
