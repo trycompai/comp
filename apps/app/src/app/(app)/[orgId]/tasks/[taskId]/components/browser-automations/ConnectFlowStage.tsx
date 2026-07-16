@@ -113,11 +113,11 @@ export function ConnectFlowStage({
         <div className="flex w-full max-w-md flex-col gap-3 text-center">
           <div className="text-base text-foreground">{host} is connected</div>
           <div className="text-sm text-muted-foreground leading-relaxed">
-            The scheduler now signs in on its own. If a human is ever needed, we&apos;ll
-            email you — runs pause, never fail silently.
+            We saved the session — Comp will sign in on its own for scheduled runs.
+            Next, tell it what to capture as evidence.
           </div>
           <div className="mt-1 flex justify-center">
-            <Button onClick={onConnected}>Done</Button>
+            <Button onClick={onConnected}>Add an instruction</Button>
           </div>
         </div>
       )}
