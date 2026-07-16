@@ -10,8 +10,13 @@ import { isNoPageError } from './run-error-formatter';
 
 type Stagehand = import('@browserbasehq/stagehand').Stagehand;
 
-const BROWSER_WIDTH = 1440;
-const BROWSER_HEIGHT = 900;
+// A larger native viewport keeps the embedded live view (and evidence
+// screenshots) sharp: our panels are well under 1920px wide, so the viewer
+// downscales rather than upscaling — the latter is what looked soft, especially
+// on HiDPI/Retina displays. Browserbase exposes no device-pixel-ratio setting,
+// so viewport size is the only lever for capture sharpness.
+const BROWSER_WIDTH = 1920;
+const BROWSER_HEIGHT = 1080;
 const STAGEHAND_MODEL = 'anthropic/claude-sonnet-4-6';
 const BROWSERBASE_API_MAX_ATTEMPTS = 3;
 const BROWSERBASE_RETRY_DELAYS_MS = [250, 750];
