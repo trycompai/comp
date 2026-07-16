@@ -19,21 +19,34 @@ import { reloginWithStoredCredentials } from './browser-credential-login';
 
 type Stagehand = import('@browserbasehq/stagehand').Stagehand;
 
-// Screenshot-based navigation model. Configurable via env so we can A/B
-// computer-use models without a code change (and without tuning per site).
-// Defaults to the newest Claude our Stagehand supports; set BROWSERBASE_CUA_MODEL
-// to an `openai/…` model (e.g. openai/computer-use-preview) to route to OpenAI.
-const DEFAULT_CUA_MODEL = 'anthropic/claude-sonnet-5';
+// Screenshot-based navigation model. OpenAI's computer-use model is purpose-built
+// for GUI agents (clicking the right element from a screenshot), so it's the
+// default. Configurable via env for A/B tests, with no per-site tuning.
+const DEFAULT_CUA_MODEL = 'openai/computer-use-preview';
+// Used when an OpenAI model is requested but no OpenAI key is set, so a missing
+// key degrades to Claude instead of hard-failing navigation.
+const FALLBACK_CUA_MODEL = 'anthropic/claude-sonnet-5';
 // How many screenshot→action steps the agent may take. Generous so it can
 // recover from a wrong turn on a complex site rather than giving up.
 const CUA_MAX_STEPS = 30;
 
-function resolveCuaModel(): { modelName: string; apiKey?: string } {
-  const modelName = process.env.BROWSERBASE_CUA_MODEL || DEFAULT_CUA_MODEL;
-  const apiKey = modelName.startsWith('openai/')
-    ? process.env.OPENAI_API_KEY
-    : process.env.ANTHROPIC_API_KEY;
-  return { modelName, apiKey };
+function resolveCuaModel(logger: Logger): { modelName: string; apiKey?: string } {
+  const requested = process.env.BROWSERBASE_CUA_MODEL || DEFAULT_CUA_MODEL;
+  if (requested.startsWith('openai/') && !process.env.OPENAI_API_KEY) {
+    logger.warn(
+      `OPENAI_API_KEY not set; falling back from ${requested} to ${FALLBACK_CUA_MODEL} for navigation.`,
+    );
+    return {
+      modelName: FALLBACK_CUA_MODEL,
+      apiKey: process.env.ANTHROPIC_API_KEY,
+    };
+  }
+  return {
+    modelName: requested,
+    apiKey: requested.startsWith('openai/')
+      ? process.env.OPENAI_API_KEY
+      : process.env.ANTHROPIC_API_KEY,
+  };
 }
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -148,7 +161,7 @@ export async function executeBrowserEvidence({
     await stagehand
       .agent({
         cua: true,
-        model: resolveCuaModel(),
+        model: resolveCuaModel(logger),
       })
       .execute({ instruction, maxSteps: CUA_MAX_STEPS });
 
