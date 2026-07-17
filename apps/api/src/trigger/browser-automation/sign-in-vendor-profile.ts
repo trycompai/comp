@@ -24,6 +24,7 @@ export const signInVendorProfile = task({
     profileId: string;
     url: string;
     sessionId: string;
+    mode?: 'password' | 'sso';
   }): Promise<AutoSignInResult> => {
     return signin.signInWithStoredCredentials({
       ...payload,

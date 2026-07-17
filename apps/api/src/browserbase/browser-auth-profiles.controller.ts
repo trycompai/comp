@@ -169,6 +169,7 @@ export class BrowserAuthProfilesController {
       organizationId,
       profileId,
       url: dto.url,
+      mode: dto.mode,
     });
   }
 

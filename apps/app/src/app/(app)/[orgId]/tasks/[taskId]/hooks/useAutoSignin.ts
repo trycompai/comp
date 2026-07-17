@@ -41,9 +41,12 @@ export function useAutoSignin() {
     async ({
       url,
       credentials,
+      mode = 'password',
     }: {
       url: string;
-      credentials: AutoSigninCredentials;
+      /** Omitted for SSO — there are no credentials to store. */
+      credentials?: AutoSigninCredentials;
+      mode?: 'password' | 'sso';
     }): Promise<AutoSigninHandle | null> => {
       setIsStarting(true);
       try {
@@ -57,29 +60,33 @@ export function useAutoSignin() {
           return null;
         }
 
-        const credRes = await apiClient.post(
-          `/v1/browserbase/profiles/${profileId}/credentials`,
-          {
-            username: credentials.username,
-            password: credentials.password,
-            totpSeed: credentials.totpSeed?.trim() || undefined,
-            extraFields: credentials.extraFields?.length
-              ? credentials.extraFields
-              : undefined,
-          },
-        );
-        if (credRes.error) {
-          // 503 = automatic sign-in isn't provisioned on this environment (no
-          // credential vault). That's not an error the user caused — let the
-          // caller fall back to a manual sign-in with a calmer message.
-          if (credRes.status === 503) {
-            toast.info(
-              "Automatic sign-in isn't set up on this environment — you can sign in manually instead.",
-            );
-          } else {
-            toast.error(credRes.error || 'Could not store the login.');
+        // Password mode stores the login for unattended replay; SSO has nothing
+        // to store — the user finishes at their identity provider.
+        if (credentials) {
+          const credRes = await apiClient.post(
+            `/v1/browserbase/profiles/${profileId}/credentials`,
+            {
+              username: credentials.username,
+              password: credentials.password,
+              totpSeed: credentials.totpSeed?.trim() || undefined,
+              extraFields: credentials.extraFields?.length
+                ? credentials.extraFields
+                : undefined,
+            },
+          );
+          if (credRes.error) {
+            // 503 = automatic sign-in isn't provisioned on this environment (no
+            // credential vault). That's not an error the user caused — let the
+            // caller fall back to a manual sign-in with a calmer message.
+            if (credRes.status === 503) {
+              toast.info(
+                "Automatic sign-in isn't set up on this environment — you can sign in manually instead.",
+              );
+            } else {
+              toast.error(credRes.error || 'Could not store the login.');
+            }
+            return null;
           }
-          return null;
         }
 
         const signinRes = await apiClient.post<{
@@ -87,7 +94,7 @@ export function useAutoSignin() {
           publicAccessToken: string;
           sessionId: string;
           liveViewUrl: string;
-        }>(`/v1/browserbase/profiles/${profileId}/sign-in`, { url });
+        }>(`/v1/browserbase/profiles/${profileId}/sign-in`, { url, mode });
         if (signinRes.error || !signinRes.data?.runId) {
           toast.error(signinRes.error || 'Could not start the sign-in.');
           return null;

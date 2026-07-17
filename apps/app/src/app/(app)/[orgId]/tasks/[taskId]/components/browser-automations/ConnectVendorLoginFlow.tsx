@@ -213,15 +213,38 @@ export function ConnectVendorLoginFlow({
     void startAuth(url);
   }, [startAuth, url]);
 
+  // SSO: the AI opens the identity provider (no credentials to store), then hands
+  // the live browser to the user to finish there. Reuses the live sign-in run.
+  const handleStartSso = useCallback(async () => {
+    endSession();
+    setSigninSteps([]);
+    const handle = await startSignin({ url, mode: 'sso' });
+    if (!handle) {
+      handleStartLiveSignin();
+      return;
+    }
+    setSigninLiveView({
+      sessionId: handle.sessionId,
+      liveViewUrl: handle.liveViewUrl,
+      profileId: handle.profileId,
+    });
+    setSigninRun({ runId: handle.runId, accessToken: handle.publicAccessToken });
+    setStep('signing-in');
+  }, [startSignin, url, handleStartLiveSignin, endSession, setSigninLiveView]);
+
   const handleChoose = useCallback(
     (kind: ConnectMethodKind) => {
       if (kind === 'password') {
         setStep('capture');
         return;
       }
+      if (kind === 'sso') {
+        void handleStartSso();
+        return;
+      }
       handleStartLiveSignin();
     },
-    [handleStartLiveSignin],
+    [handleStartSso, handleStartLiveSignin],
   );
 
   const handleCapture = useCallback(

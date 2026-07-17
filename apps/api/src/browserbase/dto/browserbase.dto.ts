@@ -203,6 +203,15 @@ export class SignInAuthProfileDto {
   @IsString()
   @IsNotEmpty()
   url: string;
+
+  @ApiPropertyOptional({
+    enum: ['password', 'sso'],
+    description:
+      "'password' fills stored credentials; 'sso' has the AI open the identity provider for the user to finish.",
+  })
+  @IsEnum({ password: 'password', sso: 'sso' })
+  @IsOptional()
+  mode?: 'password' | 'sso';
 }
 
 export class SignInAuthProfileResponseDto {

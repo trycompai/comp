@@ -170,6 +170,7 @@ export class BrowserbaseService {
     organizationId: string;
     profileId: string;
     url: string;
+    mode?: 'password' | 'sso';
   }): Promise<{
     runId: string;
     publicAccessToken: string;

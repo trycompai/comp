@@ -16,6 +16,8 @@ export type AutoSignInFailure =
   | 'invalid_credentials'
   | 'needs_2fa'
   | 'challenge'
+  // SSO: the AI opened the identity provider; the user finishes the login there.
+  | 'sso_handoff'
   | 'unknown';
 
 export interface SignInStep {
@@ -50,6 +52,7 @@ const FAILURE_REASON: Record<AutoSignInFailure, string> = {
   invalid_credentials: 'The stored username or password was not accepted.',
   needs_2fa: 'The account requires a two-factor code to sign in.',
   challenge: 'The site asked for a human verification step.',
+  sso_handoff: 'Finish signing in with your identity provider.',
   unknown: 'Automated sign-in could not complete.',
 };
 
@@ -77,9 +80,12 @@ export class BrowserCredentialSigninService {
     profileId: string;
     url: string;
     sessionId: string;
+    /** 'password' fills stored credentials; 'sso' drives to the identity provider. */
+    mode?: 'password' | 'sso';
     /** Live activity timeline, surfaced to the connect flow's activity panel. */
     onSteps?: (steps: SignInStep[]) => void;
   }): Promise<AutoSignInResult> {
+    const mode = input.mode ?? 'password';
     const steps: SignInStep[] = [];
     const emit = () => input.onSteps?.(steps.map((s) => ({ ...s })));
     // Each call advances the timeline: the prior active step becomes done and a
@@ -130,6 +136,25 @@ export class BrowserCredentialSigninService {
       // homepage or dashboard rather than the login page.
       step('Finding the sign-in form');
       await navigateToSignIn(activeStagehand);
+
+      // SSO: we can't hold the customer's identity-provider credentials, so the
+      // AI only clicks through to the provider, then hands the live browser to
+      // the user to finish there (their IdP login + MFA).
+      if (mode === 'sso') {
+        step('Opening your single sign-on provider');
+        try {
+          await activeStagehand.act(
+            "Click the option to sign in with single sign-on (SSO) or an identity provider — buttons labeled like 'Sign in with SSO', 'Continue with Google/Microsoft/Okta', 'Use SSO', or a company login. Do not type any username or password.",
+          );
+        } catch {
+          // Best effort — if we can't find the button, the user can click it in
+          // the live browser during take-over.
+        }
+        await delay(2500);
+        step('Finish signing in with your provider');
+        finish('warn');
+        return { isLoggedIn: false, failure: 'sso_handoff' };
+      }
 
       const vault = resolveBrowserCredentialVaultAdapter();
       const { outcome } = await signInAndClassify({

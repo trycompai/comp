@@ -70,7 +70,7 @@ describe('ConnectMethodChooser', () => {
     expect(onChoose).toHaveBeenCalledWith('password');
   });
 
-  it('routes SSO to the live browser path', () => {
+  it('routes SSO to the AI-driven SSO path', () => {
     const onChoose = vi.fn();
     render(
       <ConnectMethodChooser
@@ -80,7 +80,7 @@ describe('ConnectMethodChooser', () => {
       />,
     );
     fireEvent.click(screen.getByText('Single sign-on (SSO)'));
-    expect(onChoose).toHaveBeenCalledWith('live');
+    expect(onChoose).toHaveBeenCalledWith('sso');
   });
 
   it('warns up front when no unattended method is available (SSO/passkey only)', () => {

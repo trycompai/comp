@@ -4,8 +4,12 @@ import { Button } from '@trycompai/design-system';
 import { ArrowRight } from '@trycompai/design-system/icons';
 import type { LoginAnalysis } from '../../hooks/types';
 
-/** password = we sign in for you; live = the user signs in in the browser. */
-export type ConnectMethodKind = 'password' | 'live';
+/**
+ * password = we sign in for you;
+ * sso = the AI opens your identity provider, then you finish there;
+ * live = you sign in yourself in the browser (fallback when nothing is detected).
+ */
+export type ConnectMethodKind = 'password' | 'sso' | 'live';
 
 interface MethodOption {
   kind: ConnectMethodKind;
@@ -32,9 +36,9 @@ function optionsFor(analysis: LoginAnalysis): MethodOption[] {
   }
   if (methods.includes('sso')) {
     options.push({
-      kind: 'live',
+      kind: 'sso',
       title: 'Single sign-on (SSO)',
-      detail: "You sign in once; we'll email you if it needs a refresh.",
+      detail: 'The AI opens your provider; you just finish the login there.',
     });
   }
   return options;
