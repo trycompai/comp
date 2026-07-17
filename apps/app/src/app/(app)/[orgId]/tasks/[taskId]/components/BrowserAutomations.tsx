@@ -39,6 +39,8 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
     open: boolean;
     mode: 'create' | 'edit';
     automation?: BrowserAutomation;
+    /** When set, the composer targets this specific connection (add to a vendor). */
+    connection?: ConnectionRef;
   }>({ open: false, mode: 'create' });
   const [authUrl, setAuthUrl] = useState('https://github.com');
   const [connectOpen, setConnectOpen] = useState(false);
@@ -76,19 +78,29 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
   });
 
   const handleConnected = useCallback(
-    (url: string) => {
+    async (url: string) => {
       // Bind new instructions to the vendor that was just connected — otherwise
       // connection resolution can fall back to a stale profile from another host.
       setAuthUrl(url);
-      clearConnectState(taskId);
-      setConnectOpen(false);
       setJustConnected(true);
+      clearConnectState(taskId);
       context.checkContextStatus();
-      automations.fetchAutomations();
-      fetchProfiles();
+      // Load the fresh connection before opening the composer so it resolves the
+      // just-connected vendor (not a stale profile). Keep the connect view up
+      // during the load so there's no flash back to the empty state.
+      await Promise.all([fetchProfiles(), automations.fetchAutomations()]);
+      setConnectOpen(false);
+      // One flow: go straight into writing the first instruction.
+      setComposer({ open: true, mode: 'create' });
     },
     [taskId, context, automations, fetchProfiles],
   );
+
+  // Connect a brand-new vendor (a new connection) — start the connect flow fresh.
+  const handleConnectAnother = useCallback(() => {
+    clearConnectState(taskId);
+    setConnectOpen(true);
+  }, [taskId]);
 
   const handleCancelConnect = useCallback(() => {
     clearConnectState(taskId);
@@ -160,8 +172,11 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
   }, [context.checkContextStatus, automations.fetchAutomations]);
 
   const composerConnection = useMemo(
-    () => (composer.open ? buildConnectionRef(composer.automation) : null),
-    [composer.open, composer.automation, buildConnectionRef],
+    () =>
+      composer.open
+        ? (composer.connection ?? buildConnectionRef(composer.automation))
+        : null,
+    [composer.open, composer.connection, composer.automation, buildConnectionRef],
   );
 
   // Loading state
@@ -267,9 +282,12 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
       runningAutomationId={execution.runningAutomationId}
       onRun={execution.runAutomation}
       onReconnect={handleReconnect}
-      onCreateClick={
-        isManualTask ? undefined : () => setComposer({ open: true, mode: 'create' })
+      onAddInstruction={
+        isManualTask
+          ? undefined
+          : (connection) => setComposer({ open: true, mode: 'create', connection })
       }
+      onConnectAnother={isManualTask ? undefined : handleConnectAnother}
       onEditClick={(automation) => setComposer({ open: true, mode: 'edit', automation })}
       onDelete={automations.deleteAutomation}
       onToggleEnabled={automations.toggleAutomation}

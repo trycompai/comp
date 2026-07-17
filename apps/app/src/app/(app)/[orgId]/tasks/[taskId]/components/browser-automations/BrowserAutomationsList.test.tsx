@@ -68,7 +68,8 @@ const defaultProps = {
   runningAutomationId: null,
   onRun: vi.fn(),
   onReconnect: vi.fn(),
-  onCreateClick: vi.fn(),
+  onAddInstruction: vi.fn(),
+  onConnectAnother: vi.fn(),
   onEditClick: vi.fn(),
   onDelete: vi.fn(),
   onToggleEnabled: vi.fn(),
@@ -86,22 +87,39 @@ describe('BrowserAutomationsList', () => {
     expect(screen.getByText('Browser evidence')).toBeInTheDocument();
   });
 
-  it('shows create actions for admin with integration:create', () => {
+  it('shows "Connect another vendor" for admin with integration:create', () => {
     setMockPermissions(ADMIN_PERMISSIONS);
     render(<BrowserAutomationsList {...defaultProps} />);
-    expect(screen.getByText('Add instruction')).toBeInTheDocument();
+    expect(screen.getAllByText('Connect another vendor').length).toBeGreaterThan(0);
   });
 
-  it('hides create actions for auditor without integration:create', () => {
+  it('hides connect/add actions for auditor without integration:create', () => {
     setMockPermissions(AUDITOR_PERMISSIONS);
-    render(<BrowserAutomationsList {...defaultProps} />);
+    render(<BrowserAutomationsList {...defaultProps} profiles={[profile('verified')]} />);
+    expect(screen.queryByText('Connect another vendor')).not.toBeInTheDocument();
     expect(screen.queryByText('Add instruction')).not.toBeInTheDocument();
   });
 
-  it('hides create actions when onCreateClick is not provided (manual task)', () => {
+  it('hides connect actions when onConnectAnother is not provided (manual task)', () => {
     setMockPermissions(ADMIN_PERMISSIONS);
-    render(<BrowserAutomationsList {...defaultProps} onCreateClick={undefined} />);
-    expect(screen.queryByText('Add instruction')).not.toBeInTheDocument();
+    render(<BrowserAutomationsList {...defaultProps} onConnectAnother={undefined} />);
+    expect(screen.queryByText('Connect another vendor')).not.toBeInTheDocument();
+  });
+
+  it('adds an instruction to the specific connection it belongs to', () => {
+    setMockPermissions(ADMIN_PERMISSIONS);
+    const onAddInstruction = vi.fn();
+    render(
+      <BrowserAutomationsList
+        {...defaultProps}
+        profiles={[profile('verified')]}
+        onAddInstruction={onAddInstruction}
+      />,
+    );
+    fireEvent.click(screen.getByText('Add instruction'));
+    expect(onAddInstruction).toHaveBeenCalledWith(
+      expect.objectContaining({ profileId: 'bap_1', hostname: 'example.com' }),
+    );
   });
 
   it('passes readOnly=false to AutomationItem for admin with integration:update', () => {

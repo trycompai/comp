@@ -184,15 +184,16 @@ export function ConnectVendorLoginFlow({
   }, [step, context.status]);
 
   // Gentle hand-off: hold a brief "Signed in" confirmation over the live browser,
-  // then release the session and fade into the connected screen.
+  // then release the session and continue straight into the instruction composer
+  // (one flow — no intermediate "connected, now click create" screen).
   useEffect(() => {
     if (step !== 'signed-in') return;
     const timer = setTimeout(() => {
       endSession();
-      setStep('connected');
+      onConnected(connectedUrl ?? url);
     }, 1300);
     return () => clearTimeout(timer);
-  }, [step, endSession]);
+  }, [step, endSession, onConnected, connectedUrl, url]);
 
   const handleAnalyze = useCallback(async () => {
     const target = normalizeUrl(urlInput);

@@ -11,6 +11,7 @@ import type {
 } from '../../hooks/types';
 import { AutomationItem } from './AutomationItem';
 import { ConnectionManageMenu } from './ConnectionManageMenu';
+import type { ConnectionRef } from './InstructionComposer';
 import { RunDetailOverlay } from './RunDetailOverlay';
 import { RunHistoryStrip, type RunSummary } from './RunHistoryStrip';
 
@@ -50,7 +51,10 @@ interface BrowserAutomationsListProps {
   runningAutomationId: string | null;
   onRun: (automationId: string) => void;
   onReconnect: (url: string) => void;
-  onCreateClick?: () => void;
+  /** Add an instruction to a specific connection. Omitted for read-only tasks. */
+  onAddInstruction?: (connection: ConnectionRef) => void;
+  /** Connect a new vendor (a new connection). Omitted for read-only tasks. */
+  onConnectAnother?: () => void;
   onEditClick: (automation: BrowserAutomation) => void;
   onDelete: (automationId: string) => void;
   onToggleEnabled: (automationId: string, enabled: boolean) => void;
@@ -65,7 +69,8 @@ export function BrowserAutomationsList({
   runningAutomationId,
   onRun,
   onReconnect,
-  onCreateClick,
+  onAddInstruction,
+  onConnectAnother,
   onEditClick,
   onDelete,
   onToggleEnabled,
@@ -122,13 +127,13 @@ export function BrowserAutomationsList({
             schedule, unattended.
           </p>
         </div>
-        {onCreateClick && canCreateIntegration && (
+        {onConnectAnother && canCreateIntegration && (
           <button
-            onClick={onCreateClick}
+            onClick={onConnectAnother}
             className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground"
           >
             <Add size={14} />
-            Add instruction
+            Connect another vendor
           </button>
         )}
       </div>
@@ -138,6 +143,15 @@ export function BrowserAutomationsList({
           const pill = STATUS_PILL[group.profile?.status ?? 'unverified'];
           const needsReconnect =
             group.profile?.status === 'needs_reauth' || group.profile?.status === 'blocked';
+          const connectionRef: ConnectionRef | null = group.profile
+            ? {
+                profileId: group.profile.id,
+                hostname: group.hostname,
+                displayName: group.profile.displayName || group.hostname,
+                url: group.url,
+                status: group.profile.status,
+              }
+            : null;
           const groupRuns: RunSummary[] = group.automations
             .flatMap((automation) =>
               (automation.runs ?? []).map((run) => ({
@@ -199,8 +213,19 @@ export function BrowserAutomationsList({
 
               {/* Instructions */}
               <div>
-                <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                  Instructions
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                    Instructions
+                  </span>
+                  {onAddInstruction && canCreateIntegration && connectionRef && (
+                    <button
+                      onClick={() => onAddInstruction(connectionRef)}
+                      className="flex items-center gap-1 text-[11px] text-primary hover:underline"
+                    >
+                      <Add size={12} />
+                      Add instruction
+                    </button>
+                  )}
                 </div>
                 <div className="flex flex-col gap-2 rounded-md border border-border/60 p-2">
                   {group.automations.map((automation) => (
@@ -231,13 +256,13 @@ export function BrowserAutomationsList({
           );
         })}
 
-        {onCreateClick && canCreateIntegration && (
+        {onConnectAnother && canCreateIntegration && (
           <button
-            onClick={onCreateClick}
+            onClick={onConnectAnother}
             className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border/60 py-2.5 text-xs text-muted-foreground transition-colors hover:border-border hover:bg-muted/30 hover:text-foreground"
           >
             <Add size={14} />
-            Add another instruction
+            Connect another vendor
           </button>
         )}
       </div>
