@@ -154,7 +154,18 @@ export function MultiRoleCombobox({
   });
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    // `modal` is required: this Popover renders inside the modal "Add User" /
+    // "Edit Roles" Radix Dialog. A non-modal popover dismisses itself on any
+    // focus outside its content, and the Dialog's focus trap yanks focus out
+    // the moment the popover autofocuses its search input. In Safari (which,
+    // unlike Chrome, never focuses buttons on click) that focus lands on a
+    // non-trigger element, so the picker closed the instant it opened
+    // (CS-748/CS-755). `modal` opts out of focus-outside dismissal and traps
+    // focus in the popover. Matches packages/ui combobox-dropdown.tsx. This
+    // only works while react-popover and react-dialog share one copy of the
+    // Radix focus-scope/dismissable-layer singletons — guarded by the module
+    // identity test in MultiRoleCombobox.test.tsx.
+    <Popover open={open} onOpenChange={setOpen} modal>
       <PopoverTrigger asChild>
         <div>
           <MultiRoleComboboxTrigger
@@ -169,22 +180,7 @@ export function MultiRoleCombobox({
           />
         </div>
       </PopoverTrigger>
-      {/*
-        This Popover is portaled to <body> while rendered inside a modal Radix
-        Dialog (the invite "Add User" dialog). The Dialog locks
-        `body { pointer-events: none }`, and a Radix version skew
-        (react-dialog -> react-dismissable-layer@1.1.15 vs
-        react-popover -> react-dismissable-layer@1.1.11) means the two live in
-        separate module-level layer contexts, so the popover never re-enables
-        pointer events on itself and its items inherit `none` — making every
-        role unclickable/unhoverable. Forcing pointer-events here restores
-        interactivity for the whole popover subtree. See CS-748.
-      */}
-      <PopoverContent
-        className="w-[280px] p-0"
-        align="start"
-        style={{ pointerEvents: 'auto' }}
-      >
+      <PopoverContent className="w-[280px] p-0" align="start">
         <MultiRoleComboboxContent
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
