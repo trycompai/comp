@@ -46,6 +46,14 @@ type CodeScanningStatus =
   | { status: 'permission-denied'; isPrivate: boolean }
   | { status: 'ghas-required' };
 
+/**
+ * Whether GitHub Advanced Security is enabled for a repo. `unknown` covers the
+ * case where GitHub omits the repo's `security_and_analysis` block because the
+ * token lacks repo-admin visibility (common over OAuth connections) — we must
+ * NOT treat that as `disabled`.
+ */
+type GhasStatus = 'enabled' | 'disabled' | 'unknown';
+
 const decodeFile = (file: GitHubFileResponse): string => {
   if (!file?.content) return '';
   if (file.encoding === 'base64') {
@@ -149,12 +157,12 @@ export const codeScanningCheck: IntegrationCheck = {
       repoName,
       tree,
       isPrivate,
-      isGhasEnabled,
+      ghasStatus,
     }: {
       repoName: string;
       tree: GitHubTreeEntry[];
       isPrivate: boolean;
-      isGhasEnabled: boolean;
+      ghasStatus: GhasStatus;
     }): Promise<CodeScanningStatus> => {
       let apiGot403 = false;
 
@@ -178,7 +186,7 @@ export const codeScanningCheck: IntegrationCheck = {
           // workflow file contents only requires contents:read. A 403 here does
           // not mean we can't check for code scanning workflows.
           ctx.log(
-            `Code scanning API returned 403 for ${repoName} (private: ${isPrivate}, ghas: ${isGhasEnabled}). Falling back to workflow file scanning.`,
+            `Code scanning API returned 403 for ${repoName} (private: ${isPrivate}, ghas: ${ghasStatus}). Falling back to workflow file scanning.`,
           );
           apiGot403 = true;
         } else {
@@ -200,10 +208,14 @@ export const codeScanningCheck: IntegrationCheck = {
       }
 
       if (apiGot403) {
-        if (isPrivate) {
-          if (isGhasEnabled) {
-            return { status: 'permission-denied', isPrivate };
-          }
+        // A 403 from the code-scanning API on a private repo can mean either GHAS
+        // is off (CodeQL genuinely can't be configured) OR the token lacks the
+        // repo-admin visibility the API requires. Only claim "GHAS required" when
+        // we can positively confirm GHAS is disabled. Over an OAuth connection
+        // without repo admin, GitHub omits the repo's `security_and_analysis`
+        // block, so ghasStatus is 'unknown' — treat that (and 'enabled') as
+        // permission-denied rather than falsely reporting GHAS is not enabled.
+        if (isPrivate && ghasStatus === 'disabled') {
           return { status: 'ghas-required' };
         }
         return { status: 'permission-denied', isPrivate };
@@ -217,13 +229,17 @@ export const codeScanningCheck: IntegrationCheck = {
       if (!repo) continue;
 
       const tree = await fetchRepoTree(repo.full_name, repo.default_branch);
-      const isGhasEnabled = repo.security_and_analysis?.advanced_security?.status === 'enabled';
+      // `security_and_analysis` is only returned to repo admins, so over an OAuth
+      // connection without admin visibility this is undefined — 'unknown', NOT
+      // 'disabled'. Conflating the two is what made us falsely report GHAS off.
+      const ghasStatus: GhasStatus =
+        repo.security_and_analysis?.advanced_security?.status ?? 'unknown';
 
       const codeScanningStatus = await getCodeScanningStatus({
         repoName: repo.full_name,
         tree,
         isPrivate: repo.private,
-        isGhasEnabled,
+        ghasStatus,
       });
 
       switch (codeScanningStatus.status) {
