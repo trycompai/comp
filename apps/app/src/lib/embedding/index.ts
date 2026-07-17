@@ -65,6 +65,9 @@ const TASK_VECTOR_PAGE_SIZE = 1000;
 // Backstop so a misbehaving cursor can't loop forever. 500 pages × 1000 = 500k
 // task vectors, far beyond any real org — hitting it signals a bug, not scale.
 const TASK_VECTOR_MAX_PAGES = 500;
+// Upstash caps `fetch` at 1000 ids per request — batch the existence check for
+// hash-matched entities (see `findEntitiesWithoutVectors`) accordingly.
+const VECTOR_FETCH_BATCH_SIZE = 1000;
 
 let cachedIndex: Index | null = null;
 
@@ -128,6 +131,49 @@ export function computeEntityContentHash({
 }
 
 /**
+ * Of a set of entities whose stored hash matches the current content (so the
+ * dedup guard in `upsertEntityEmbeddings` would otherwise skip them), return
+ * those whose vector is actually ABSENT from Upstash and therefore must be
+ * re-embedded.
+ *
+ * A matching `embeddingHash` proves the content is unchanged — NOT that the
+ * vector still exists. Vectors can vanish independently of the DB hash (index
+ * re-provision, cache eviction, a partial earlier delete), leaving a row
+ * hash-cached with no vector. Skipping those on the hash alone never rewrites
+ * the missing vector, so `findSimilarTasks` enumerates zero candidates and
+ * "Draft plan & suggest links" returns 0/0 on every run — recurring forever
+ * because the hash never changes (CS-681). Earlier fixes pruned ORPHAN vectors;
+ * this heals the inverse desync (a live row with a MISSING vector).
+ *
+ * `fetch` returns one entry per id aligned to the input, or `null` when the id
+ * is absent — existence is all we need, so `includeVectors` is omitted to keep
+ * the payload tiny.
+ */
+async function findEntitiesWithoutVectors({
+  kind,
+  organizationId,
+  candidates,
+}: {
+  kind: EntityKind;
+  organizationId: string;
+  candidates: Array<{ entity: EntityInput; hash: string }>;
+}): Promise<Array<{ entity: EntityInput; hash: string }>> {
+  if (candidates.length === 0) return [];
+  const index = getIndex();
+  const missing: Array<{ entity: EntityInput; hash: string }> = [];
+  for (let i = 0; i < candidates.length; i += VECTOR_FETCH_BATCH_SIZE) {
+    const batch = candidates.slice(i, i + VECTOR_FETCH_BATCH_SIZE);
+    const fetched = await index.fetch(
+      batch.map(({ entity }) => embeddingId(kind, organizationId, entity.id)),
+    );
+    fetched.forEach((row, j) => {
+      if (!row) missing.push(batch[j]);
+    });
+  }
+  return missing;
+}
+
+/**
  * Upsert per-org entity embeddings into Upstash Vector.
  *
  * NOTE: this duplicates a thin slice of `apps/api/src/vector-store/`. Consolidate
@@ -143,17 +189,33 @@ export async function upsertEntityEmbeddings({
   const valid = entities.filter((e) => e.text.trim().length > 0);
   if (valid.length === 0) return { appliedHashes: [], skippedCount: 0 };
 
-  // Skip entities whose stored hash matches the current content hash —
-  // text + model + dims + department haven't changed, so the existing
-  // vector is still authoritative. Saves the OpenAI embed AND the Upstash
-  // upsert (the two non-trivial costs in this path).
+  // A stored hash matching the current content hash means text + model + dims
+  // + department are unchanged, so the existing vector is still authoritative —
+  // skipping saves the OpenAI embed AND the Upstash upsert (the two non-trivial
+  // costs in this path).
   const withHashes = valid.map((entity) => ({
     entity,
     hash: computeEntityContentHash({ text: entity.text, department: entity.department }),
   }));
-  const toEmbed = withHashes.filter(
+  const changed = withHashes.filter(
     ({ entity, hash }) => existingHashes?.get(entity.id) !== hash,
   );
+  // The hash optimization is only sound while a matching hash implies the
+  // vector still exists. When a vector has vanished but its hash lingers
+  // (index re-provision, eviction, a partial earlier delete), skipping on the
+  // hash alone leaves that entity permanently vectorless — the desync that made
+  // treatment-plan suggestions return 0/0 on every run (CS-681). So verify the
+  // hash-matched entities' vectors are actually present, and re-embed any gone.
+  const unchanged = withHashes.filter(
+    ({ entity, hash }) => existingHashes?.get(entity.id) === hash,
+  );
+  const missingVectors = await findEntitiesWithoutVectors({
+    kind,
+    organizationId,
+    candidates: unchanged,
+  });
+
+  const toEmbed = [...changed, ...missingVectors];
   const skippedCount = withHashes.length - toEmbed.length;
   if (toEmbed.length === 0) {
     return { appliedHashes: [], skippedCount };

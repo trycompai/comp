@@ -6,6 +6,7 @@ const queryMock = vi.fn();
 const infoMock = vi.fn();
 const deleteMock = vi.fn();
 const rangeMock = vi.fn();
+const fetchMock = vi.fn();
 
 vi.mock('@upstash/vector', () => ({
   Index: vi.fn().mockImplementation(() => ({
@@ -14,6 +15,7 @@ vi.mock('@upstash/vector', () => ({
     info: infoMock,
     delete: deleteMock,
     range: rangeMock,
+    fetch: fetchMock,
   })),
 }));
 
@@ -34,6 +36,7 @@ import {
   upsertEntityEmbeddings,
   findSimilarTasks,
   cosineToUnitScore,
+  computeEntityContentHash,
   waitForIndexed,
   pruneOrphanTaskVectors,
 } from './index';
@@ -44,6 +47,11 @@ beforeEach(() => {
   infoMock.mockReset();
   deleteMock.mockReset();
   rangeMock.mockReset();
+  fetchMock.mockReset();
+  // Default: every requested vector is present in Upstash, so the dedup guard's
+  // existence check confirms hash-matched entities can be safely skipped. Tests
+  // exercising the missing-vector desync override this to return null per id.
+  fetchMock.mockImplementation(async (ids: string[]) => ids.map((id) => ({ id })));
   process.env.UPSTASH_VECTOR_REST_URL = 'https://test.upstash.io';
   process.env.UPSTASH_VECTOR_REST_TOKEN = 'test-token';
 });
@@ -167,6 +175,44 @@ describe('upsertEntityEmbeddings', () => {
     expect(upsertMock).toHaveBeenCalledTimes(2);
     expect(second.appliedHashes.map((h) => h.id).sort()).toEqual(['tsk_a', 'tsk_c']);
     expect(second.skippedCount).toBe(1);
+  });
+
+  it('re-embeds a hash-matched entity whose vector is missing from Upstash (CS-681)', async () => {
+    // Desync: the stored hash matches the current content (dedup guard would
+    // normally skip), but the vector is GONE from Upstash (index re-provision /
+    // eviction / partial delete). Skipping on the hash alone never rewrites the
+    // vector, so findSimilarTasks enumerates zero candidates and "Draft plan &
+    // suggest links" returns 0/0 forever — the hash never changes so it recurs
+    // on every run. The guard must detect the absent vector and re-embed it.
+    const text = 'unchanged task content';
+    const hash = computeEntityContentHash({ text });
+
+    // tsk_present still has its vector; tsk_missing's is gone.
+    fetchMock.mockImplementation(async (ids: string[]) =>
+      ids.map((id) => (id === 'task_org_1_tsk_missing' ? null : { id })),
+    );
+
+    const result = await upsertEntityEmbeddings({
+      organizationId: 'org_1',
+      kind: 'task',
+      entities: [
+        { id: 'tsk_present', text },
+        { id: 'tsk_missing', text },
+      ],
+      existingHashes: new Map([
+        ['tsk_present', hash],
+        ['tsk_missing', hash],
+      ]),
+    });
+
+    // Only the vectorless task is re-embedded + re-upserted; the present one
+    // stays skipped (the hash optimization still holds when the vector exists).
+    expect(upsertMock).toHaveBeenCalledTimes(1);
+    expect(upsertMock).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'task_org_1_tsk_missing' }),
+    );
+    expect(result.appliedHashes).toEqual([{ id: 'tsk_missing', hash }]);
+    expect(result.skippedCount).toBe(1);
   });
 });
 
