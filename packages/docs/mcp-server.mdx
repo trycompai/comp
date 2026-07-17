@@ -222,9 +222,15 @@ Save and reload Windsurf.
 
 If you're connecting to a self-hosted Comp AI deployment instead of the hosted Comp AI service, you must include the `--server-url` argument in your MCP server configuration.
 
-Hosted Comp AI users do not need to specify --server-url.
+Hosted Comp AI users do not need to specify `--server-url`.
 
-### Example
+Choose your AI client below and update its configuration by adding the `--server-url` argument.
+
+<Tabs>
+
+<Tab title="Claude Desktop">
+
+Update the manual JSON configuration by adding the `--server-url` argument.
 
 ```json
 {
@@ -244,14 +250,106 @@ Hosted Comp AI users do not need to specify --server-url.
   }
 }
 ```
+</Tab>
 
-For CLI-based clients, append:
+<Tab title="Cursor">
 
-```text
---server-url https://your-self-hosted-comp-api.example.com
+Update the manual JSON configuration by adding the `--server-url` argument.
+
+```json
+{
+  "command": "npx",
+  "args": [
+    "-y",
+    "@trycompai/mcp-server",
+    "start",
+    "--apikey",
+    "comp_your_api_key_here",
+    "--server-url",
+    "https://your-self-hosted-comp-api.example.com"
+  ]
+}
 ```
+</Tab>
 
-to the existing installation command.
+<Tab title="VS Code">
+
+Update your MCP configuration by adding the `--server-url` argument.
+
+```json
+{
+  "command": "npx",
+  "args": [
+    "-y",
+    "@trycompai/mcp-server",
+    "start",
+    "--apikey",
+    "comp_your_api_key_here",
+    "--server-url",
+    "https://your-self-hosted-comp-api.example.com"
+  ]
+}
+```
+</Tab>
+
+<Tab title="Claude Code (CLI)">
+
+Append the `--server-url` argument to your existing installation command.
+
+```bash
+claude mcp add CompAI -- npx -y @trycompai/mcp-server start \
+  --apikey comp_your_api_key_here \
+  --server-url https://your-self-hosted-comp-api.example.com
+```
+</Tab>
+
+<Tab title="Codex CLI">
+
+Append the `--server-url` argument to your existing installation command.
+
+```bash
+codex mcp add comp-ai -- npx -y @trycompai/mcp-server start \
+  --apikey comp_your_api_key_here \
+  --server-url https://your-self-hosted-comp-api.example.com
+```
+</Tab>
+
+<Tab title="Gemini CLI">
+
+Append the `--server-url` argument to your existing installation command.
+
+```bash
+gemini mcp add CompAI -- npx -y @trycompai/mcp-server start \
+  --apikey comp_your_api_key_here \
+  --server-url https://your-self-hosted-comp-api.example.com
+```
+</Tab>
+
+<Tab title="Windsurf">
+
+Update your MCP configuration by adding the `--server-url` argument.
+
+```json
+{
+  "mcpServers": {
+    "comp-ai": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@trycompai/mcp-server",
+        "start",
+        "--apikey",
+        "comp_your_api_key_here",
+        "--server-url",
+        "https://your-self-hosted-comp-api.example.com"
+      ]
+    }
+  }
+}
+```
+</Tab>
+
+</Tabs>
 
 That's it. The first time you start a chat in your AI client after install, the assistant will discover the Comp AI tools and start using them.
 
