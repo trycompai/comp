@@ -28,7 +28,7 @@ function analysisWith(methods: LoginAnalysis['detectedMethods']): LoginAnalysis 
 }
 
 describe('ConnectMethodChooser', () => {
-  it('lists detected methods with password recommended first', () => {
+  it('lists usable methods (password recommended) and never offers passkey', () => {
     render(
       <ConnectMethodChooser
         analysis={analysisWith(['password', 'sso', 'passkey'])}
@@ -38,8 +38,23 @@ describe('ConnectMethodChooser', () => {
     );
     expect(screen.getByText('Email & password')).toBeInTheDocument();
     expect(screen.getByText('Single sign-on (SSO)')).toBeInTheDocument();
-    expect(screen.getByText('Passkey')).toBeInTheDocument();
+    // Passkey can't work in a cloud browser, so it's never offered as an option.
+    expect(screen.queryByText('Passkey')).not.toBeInTheDocument();
     expect(screen.getByText('Recommended')).toBeInTheDocument();
+  });
+
+  it('explains a passkey-only site cannot be connected (no dead-end option)', () => {
+    const onChoose = vi.fn();
+    render(
+      <ConnectMethodChooser
+        analysis={analysisWith(['passkey'])}
+        onChoose={onChoose}
+        onCancel={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(/only supports passkeys/i)).toBeInTheDocument();
+    expect(screen.queryByText('Sign in manually')).not.toBeInTheDocument();
+    expect(onChoose).not.toHaveBeenCalled();
   });
 
   it('routes the password option to the automated path', () => {
