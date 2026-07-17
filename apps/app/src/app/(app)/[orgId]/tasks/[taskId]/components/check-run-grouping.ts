@@ -1,4 +1,7 @@
-import type { StoredCheckRun } from '../hooks/useIntegrationChecks';
+import type {
+  CheckRunAttempt,
+  StoredCheckRun,
+} from '../hooks/useIntegrationChecks';
 
 export interface AccountRunGroup {
   connectionId: string;
@@ -46,9 +49,18 @@ export interface RunsSummary {
 /**
  * Aggregate the latest run per account for the card header — so a multi-account
  * check shows totals across all accounts, not just the most recently run one.
+ *
+ * `lastAttempts` (optional, already filtered to this check) carries WHEN each
+ * account last ran INCLUDING runs the server held back from `runs`. A check
+ * whose recent runs are all held still ran — without this, "Last ran" froze at
+ * the older visible run and customers read it as "the schedule stopped"
+ * (CS-753). Counts/status always come from visible runs only, and a check with
+ * no visible run at all keeps `lastRunAt: null` ("Not run yet") — held
+ * outcomes stay hidden; only the timestamp advances.
  */
 export function summarizeLatestPerAccount(
   runs: StoredCheckRun[],
+  lastAttempts: CheckRunAttempt[] = [],
 ): RunsSummary {
   const groups = groupRunsByConnection(runs);
   let passed = 0;
@@ -69,6 +81,17 @@ export function summarizeLatestPerAccount(
     const at = latest.completedAt || latest.createdAt;
     if (at && (!lastRunAt || new Date(at) > new Date(lastRunAt))) {
       lastRunAt = at;
+    }
+  }
+
+  if (lastRunAt) {
+    for (const attempt of lastAttempts) {
+      if (
+        attempt.lastAttemptAt &&
+        new Date(attempt.lastAttemptAt) > new Date(lastRunAt)
+      ) {
+        lastRunAt = attempt.lastAttemptAt;
+      }
     }
   }
 
