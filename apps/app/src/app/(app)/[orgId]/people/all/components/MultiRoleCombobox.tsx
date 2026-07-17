@@ -154,7 +154,14 @@ export function MultiRoleCombobox({
   });
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    // `modal` is required: this Popover renders inside the modal "Add User" /
+    // "Edit Roles" Radix Dialog. A non-modal Popover portals its cmdk content
+    // outside the Dialog while the Dialog's focus/dismiss layer keeps governing
+    // it, so CommandItem.onSelect never fires and no role can be selected
+    // (CS-748/CS-755). `modal` makes the popover the top dismissable layer — it
+    // traps focus on the search input and re-enables its own pointer events — so
+    // role clicks reach cmdk. Matches packages/ui combobox-dropdown.tsx.
+    <Popover open={open} onOpenChange={setOpen} modal>
       <PopoverTrigger asChild>
         <div>
           <MultiRoleComboboxTrigger
@@ -169,22 +176,7 @@ export function MultiRoleCombobox({
           />
         </div>
       </PopoverTrigger>
-      {/*
-        This Popover is portaled to <body> while rendered inside a modal Radix
-        Dialog (the invite "Add User" dialog). The Dialog locks
-        `body { pointer-events: none }`, and a Radix version skew
-        (react-dialog -> react-dismissable-layer@1.1.15 vs
-        react-popover -> react-dismissable-layer@1.1.11) means the two live in
-        separate module-level layer contexts, so the popover never re-enables
-        pointer events on itself and its items inherit `none` — making every
-        role unclickable/unhoverable. Forcing pointer-events here restores
-        interactivity for the whole popover subtree. See CS-748.
-      */}
-      <PopoverContent
-        className="w-[280px] p-0"
-        align="start"
-        style={{ pointerEvents: 'auto' }}
-      >
+      <PopoverContent className="w-[280px] p-0" align="start">
         <MultiRoleComboboxContent
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}

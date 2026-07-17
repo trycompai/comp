@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { MultiRoleCombobox } from './MultiRoleCombobox';
@@ -20,16 +20,17 @@ const CUSTOM_ROLES = [
   { id: 'orole_1', name: 'Security Reviewer', permissions: { control: ['read'] } },
 ];
 
-describe('MultiRoleCombobox (CS-748)', () => {
-  it('forces pointer-events on the popover content so roles stay clickable inside a modal dialog', async () => {
-    // This combobox is used inside the modal "Add User" Radix Dialog, which
-    // locks `body { pointer-events: none }`. A Radix dismissable-layer version
-    // skew (react-dialog -> 1.1.15 vs react-popover -> 1.1.11) puts the two in
-    // separate module-level layer contexts, so the portaled popover never
-    // re-enables pointer events and its role items inherit `none` — unclickable
-    // and unhoverable. The fix forces pointer-events on the content. jsdom can't
-    // hit-test, so we assert the fix is present here; the end-to-end click
-    // behavior inside the modal is verified in a real browser.
+describe('MultiRoleCombobox (CS-748 / CS-755)', () => {
+  it('opens as a modal popover so cmdk role items stay interactive inside a modal dialog', async () => {
+    // This combobox renders inside the modal "Add User" / "Edit Roles" Radix
+    // Dialog. If its Popover is non-modal, the popover portals its cmdk content
+    // outside the Dialog while the Dialog's focus/dismiss layer keeps governing
+    // it, so CommandItem.onSelect never fires and no role can be selected. That
+    // repro is browser-only — jsdom's synthetic click bypasses the pointer/focus
+    // layer path, so a click test passes even when the flow is broken (which is
+    // why CS-748 shipped a fix that didn't hold and CS-755 reopened it). The
+    // fix is a *modal* Popover, and the observable DOM contract of a modal Radix
+    // dismissable layer is that it disables outside pointer events on the body.
     const user = userEvent.setup();
     render(
       <MultiRoleCombobox
@@ -43,6 +44,14 @@ describe('MultiRoleCombobox (CS-748)', () => {
 
     await user.click(screen.getByRole('combobox'));
 
+    // Only a modal dismissable layer locks the rest of the page. A non-modal
+    // popover leaves the body untouched, so this fails before the fix.
+    await waitFor(() => {
+      expect(document.body.style.pointerEvents).toBe('none');
+    });
+
+    // ...and the modal layer re-enables pointer events on its own content, so
+    // the role items remain clickable.
     const content = document.querySelector('[data-slot="popover-content"]');
     expect(content).not.toBeNull();
     expect(content).toHaveStyle({ pointerEvents: 'auto' });
