@@ -94,6 +94,38 @@ describe('useIntegrationChecks', () => {
     expect(result.current.checks[1]!.isDisabledForTask).toBe(true);
   });
 
+  it('exposes lastAttempts from the runs endpoint, defaulting to [] when absent (CS-753)', async () => {
+    const attempt = {
+      connectionId: 'icn_1',
+      checkId: 'branch_protection',
+      lastAttemptAt: '2026-07-16T06:00:00.000Z',
+    };
+    fetchMock.mockImplementation((url: string) => {
+      if (url.includes('/checks')) {
+        return Promise.resolve(
+          createJsonResponse({
+            checks: [makeCheck()],
+            task: { id: TASK_ID, title: 'Test', templateId: 'tpl_1' },
+          }),
+        );
+      }
+      if (url.includes('/runs')) {
+        return Promise.resolve(
+          createJsonResponse({ runs: [], lastAttempts: [attempt] }),
+        );
+      }
+      return Promise.resolve(createJsonResponse({}));
+    });
+
+    const { result } = renderHook(
+      () => useIntegrationChecks({ taskId: TASK_ID, orgId: ORG_ID }),
+      { wrapper },
+    );
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.lastAttempts).toEqual([attempt]);
+  });
+
   it('disconnectCheckFromTask POSTs to the disconnect endpoint and updates the cache', async () => {
     mockInitialLoad([makeCheck({ checkId: 'branch_protection' })]);
 
