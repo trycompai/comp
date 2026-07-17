@@ -155,12 +155,16 @@ export function MultiRoleCombobox({
 
   return (
     // `modal` is required: this Popover renders inside the modal "Add User" /
-    // "Edit Roles" Radix Dialog. A non-modal Popover portals its cmdk content
-    // outside the Dialog while the Dialog's focus/dismiss layer keeps governing
-    // it, so CommandItem.onSelect never fires and no role can be selected
-    // (CS-748/CS-755). `modal` makes the popover the top dismissable layer — it
-    // traps focus on the search input and re-enables its own pointer events — so
-    // role clicks reach cmdk. Matches packages/ui combobox-dropdown.tsx.
+    // "Edit Roles" Radix Dialog. A non-modal popover dismisses itself on any
+    // focus outside its content, and the Dialog's focus trap yanks focus out
+    // the moment the popover autofocuses its search input. In Safari (which,
+    // unlike Chrome, never focuses buttons on click) that focus lands on a
+    // non-trigger element, so the picker closed the instant it opened
+    // (CS-748/CS-755). `modal` opts out of focus-outside dismissal and traps
+    // focus in the popover. Matches packages/ui combobox-dropdown.tsx. This
+    // only works while react-popover and react-dialog share one copy of the
+    // Radix focus-scope/dismissable-layer singletons — guarded by the module
+    // identity test in MultiRoleCombobox.test.tsx.
     <Popover open={open} onOpenChange={setOpen} modal>
       <PopoverTrigger asChild>
         <div>
