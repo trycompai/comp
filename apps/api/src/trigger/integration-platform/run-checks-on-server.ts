@@ -2,12 +2,19 @@ import type { runAllChecks } from '@trycompai/integration-platform';
 
 export type RunAllChecksResult = Awaited<ReturnType<typeof runAllChecks>>;
 
-// Generous backstop for a hung connection (no response). AWS checks legitimately
-// take minutes across many buckets/regions, so this is deliberately well below
-// the task's 15-minute maxDuration but high enough never to abort a real run —
-// it only catches a stalled socket so the error surfaces and the task retries
-// instead of blocking the whole 15 minutes.
-const REQUEST_TIMEOUT_MS = 10 * 60 * 1000;
+// Generous backstop for a hung connection (no response). Server-delegated runs
+// legitimately take many minutes — AWS across many buckets/regions, and large
+// dynamic tenants such as Entra ID enumerating MFA state over tens of thousands
+// of users — so this must sit ABOVE the slowest real run and only ever catch a
+// stalled socket. At 10 minutes it aborted legitimate large-tenant runs: the
+// abort was recorded as an execution error, so the task never advanced
+// integrationLastRunAt and the daily schedule kept retrying and re-failing, while
+// the in-process paths (Google Workspace in the Trigger runtime, the manual "Run"
+// on the API server) have no such cap and complete. 30 minutes matches our other
+// long-running integration tasks and stays within the task's maxDuration, so a
+// truly hung socket still surfaces an error and the task retries. Exported so the
+// abort test tracks this value instead of hard-coding it.
+export const REQUEST_TIMEOUT_MS = 30 * 60 * 1000;
 
 /**
  * Run a connection's checks ON OUR SERVER (ECS) and return the raw result.

@@ -1,4 +1,4 @@
-import { runChecksOnServer } from './run-checks-on-server';
+import { REQUEST_TIMEOUT_MS, runChecksOnServer } from './run-checks-on-server';
 
 describe('runChecksOnServer', () => {
   const ORIGINAL_TOKEN = process.env.SERVICE_TOKEN_TRIGGER;
@@ -61,8 +61,46 @@ describe('runChecksOnServer', () => {
     const promise = runChecksOnServer(params);
     // Surface the rejection without an unhandled-rejection warning.
     const assertion = expect(promise).rejects.toThrow('timed out');
-    await jest.advanceTimersByTimeAsync(10 * 60 * 1000);
+    await jest.advanceTimersByTimeAsync(REQUEST_TIMEOUT_MS);
     await assertion;
+
+    jest.useRealTimers();
+  });
+
+  it('does not abort a legitimately slow run that finishes after the old 10-minute cap', async () => {
+    // Regression (CS-753): a large dynamic tenant — e.g. Entra ID MFA
+    // enumeration over tens of thousands of users — can take longer than the
+    // previous 10-minute abort. That cap aborted such runs, which were then
+    // recorded as execution errors, so the task never advanced
+    // integrationLastRunAt and the daily schedule kept retrying and re-failing.
+    // A slow-but-completing run must resolve, not abort — matching the in-process
+    // paths (Google Workspace, the manual "Run") that have no such cap.
+    jest.useFakeTimers();
+    const SLOW_RUN_MS = 12 * 60 * 1000; // beyond the old 10-min cap
+    expect(SLOW_RUN_MS).toBeGreaterThan(10 * 60 * 1000);
+    expect(SLOW_RUN_MS).toBeLessThan(REQUEST_TIMEOUT_MS);
+
+    const runResult = { results: [{}], totalFindings: 10, totalPassing: 34 };
+    jest.spyOn(global, 'fetch').mockImplementation(
+      (_url, opts) =>
+        new Promise((resolve, reject) => {
+          (opts as RequestInit).signal?.addEventListener('abort', () =>
+            reject(new Error('aborted')),
+          );
+          setTimeout(
+            () =>
+              resolve({
+                ok: true,
+                json: async () => runResult,
+              } as unknown as Response),
+            SLOW_RUN_MS,
+          );
+        }),
+    );
+
+    const promise = runChecksOnServer(params);
+    await jest.advanceTimersByTimeAsync(SLOW_RUN_MS);
+    await expect(promise).resolves.toEqual(runResult);
 
     jest.useRealTimers();
   });
