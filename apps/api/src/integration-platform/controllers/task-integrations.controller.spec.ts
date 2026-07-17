@@ -220,6 +220,7 @@ describe('TaskIntegrationsController', () => {
     complete: jest.fn(),
     addResults: jest.fn(),
     findLatestPerConnectionAndCheckByTask: jest.fn(),
+    findLastAttemptPerConnectionAndCheckByTask: jest.fn(),
     countExceptedFailures: jest.fn(),
   };
   const mockCredentialVaultService = { getDecryptedCredentials: jest.fn() };
@@ -290,6 +291,10 @@ describe('TaskIntegrationsController', () => {
     // Default: nothing excepted (no count query needed). Exception tests
     // override this to the exact excepted-failure count for the run.
     mockCheckRunRepository.countExceptedFailures.mockResolvedValue(0);
+    // Default: no last-attempt rows (tests that care set their own).
+    mockCheckRunRepository.findLastAttemptPerConnectionAndCheckByTask.mockResolvedValue(
+      [],
+    );
     mockCredentialVaultService.getDecryptedCredentials.mockResolvedValue(
       VALID_CREDS,
     );
@@ -889,6 +894,30 @@ describe('TaskIntegrationsController', () => {
       expect(
         mockCheckRunRepository.findLatestPerConnectionAndCheckByTask,
       ).not.toHaveBeenCalled();
+    });
+
+    it('returns lastAttempts (incl. held runs) so "Last ran" stays truthful (CS-753)', async () => {
+      // The visible runs list can be days older than the newest attempt when
+      // recent runs were held (they're excluded from `runs`). The endpoint
+      // must surface WHEN each (connection, check) last ran — timestamps only.
+      mockCheckRunRepository.findLatestPerConnectionAndCheckByTask.mockResolvedValue(
+        [],
+      );
+      const attempt = {
+        connectionId: 'conn_1',
+        checkId: 'entra_id_mfa',
+        lastAttemptAt: new Date('2026-07-16T06:00:00Z'),
+      };
+      mockCheckRunRepository.findLastAttemptPerConnectionAndCheckByTask.mockResolvedValue(
+        [attempt],
+      );
+
+      const response = await controller.getTaskCheckRuns('task_1', 'org_1');
+
+      expect(response.lastAttempts).toEqual([attempt]);
+      expect(
+        mockCheckRunRepository.findLastAttemptPerConnectionAndCheckByTask,
+      ).toHaveBeenCalledWith('task_1');
     });
 
     it('bounds a run with a huge result set + logs so the payload stays small (CS-588)', async () => {

@@ -925,6 +925,15 @@ export class TaskIntegrationsController {
       }),
     );
 
-    return { runs: mappedRuns };
+    // WHEN each (connection, check) last ran, INCLUDING runs held as
+    // 'inconclusive' (which are excluded from `runs`). Timestamps only — held
+    // outcomes stay hidden. Without this the UI's "Last ran" froze at the last
+    // visible run while the daily schedule kept running (CS-753).
+    const lastAttempts =
+      await this.checkRunRepository.findLastAttemptPerConnectionAndCheckByTask(
+        taskId,
+      );
+
+    return { runs: mappedRuns, lastAttempts };
   }
 }

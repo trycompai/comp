@@ -70,7 +70,17 @@ interface StoredCheckRun {
   createdAt: string;
 }
 
-export type { StoredCheckRun, TaskIntegrationCheck };
+/**
+ * When a (connection, check) last ran — INCLUDING runs held server-side (which
+ * never appear in `runs`). Timestamp only; held outcomes stay hidden.
+ */
+interface CheckRunAttempt {
+  connectionId: string;
+  checkId: string;
+  lastAttemptAt: string;
+}
+
+export type { CheckRunAttempt, StoredCheckRun, TaskIntegrationCheck };
 
 export const integrationChecksKey = (taskId: string, orgId: string) =>
   ['/v1/integrations/tasks/checks', taskId, orgId] as const;
@@ -105,23 +115,29 @@ export function useIntegrationChecks({ taskId, orgId }: UseIntegrationChecksOpti
   );
 
   const {
-    data: runs,
+    data: runsData,
     error: runsError,
     isLoading: runsLoading,
     mutate: mutateRuns,
   } = useSWR(
     integrationRunsKey(taskId, orgId),
     async () => {
-      const response = await api.get<{ runs: StoredCheckRun[] }>(
-        `/v1/integrations/tasks/${taskId}/runs?organizationId=${orgId}`,
-      );
+      const response = await api.get<{
+        runs: StoredCheckRun[];
+        lastAttempts?: CheckRunAttempt[];
+      }>(`/v1/integrations/tasks/${taskId}/runs?organizationId=${orgId}`);
       if (response.error) throw new Error(response.error);
-      return response.data?.runs ?? [];
+      return {
+        runs: response.data?.runs ?? [],
+        lastAttempts: response.data?.lastAttempts ?? [],
+      };
     },
     {
       revalidateOnFocus: false,
     },
   );
+  const runs = runsData?.runs;
+  const lastAttempts = runsData?.lastAttempts;
 
   const runCheck = async (
     connectionId: string,
@@ -251,6 +267,7 @@ export function useIntegrationChecks({ taskId, orgId }: UseIntegrationChecksOpti
   return {
     checks: Array.isArray(checks) ? checks : [],
     runs: Array.isArray(runs) ? runs : [],
+    lastAttempts: Array.isArray(lastAttempts) ? lastAttempts : [],
     isLoading: checksLoading || runsLoading,
     error: checksError?.message || runsError?.message || null,
     mutateChecks,

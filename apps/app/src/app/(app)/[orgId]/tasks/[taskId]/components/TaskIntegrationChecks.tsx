@@ -83,6 +83,7 @@ export function TaskIntegrationChecks({
   const {
     checks,
     runs: storedRuns,
+    lastAttempts,
     isLoading: loading,
     error: hookError,
     mutateChecks,
@@ -530,8 +531,13 @@ export function TaskIntegrationChecks({
                 const checkRuns = runsByCheck[check.checkId] || [];
                 // A check runs once per connected account; summarize the latest
                 // run of EACH account so the header reflects all of them, not
-                // just the most recently run one.
-                const summary = summarizeLatestPerAccount(checkRuns);
+                // just the most recently run one. `lastAttempts` keeps "Last
+                // ran" truthful when newer runs exist but are held server-side
+                // (they never appear in `checkRuns`).
+                const summary = summarizeLatestPerAccount(
+                  checkRuns,
+                  lastAttempts.filter((a) => a.checkId === check.checkId),
+                );
                 const isRunning = runningCheck === check.checkId;
                 const isExpanded = expandedCheck === check.checkId;
                 const needsConfig = check.needsConfiguration;
