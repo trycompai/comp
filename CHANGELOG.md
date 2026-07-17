@@ -1,3 +1,13 @@
+## [3.104.1](https://github.com/trycompai/comp/compare/v3.104.0...v3.104.1) (2026-07-17)
+
+
+### Bug Fixes
+
+* **app:** keep task automation "Last ran" fresh when recent runs are held ([990f025](https://github.com/trycompai/comp/commit/990f025e895434607c632b0251ab0f9cc2a7aa1b))
+* **github-integration:** distinguish ghas disabled from permission denied in oauth flow ([ec42f96](https://github.com/trycompai/comp/commit/ec42f969ce659735645f4667a775a09883be14ea))
+* **people:** make role picker modal-aware in invite members dialog ([#3448](https://github.com/trycompai/comp/issues/3448)) ([5f8a031](https://github.com/trycompai/comp/commit/5f8a0318876f73e18d17177e739d81a9f49655cd))
+* **todo:** [bug] trust center config write endpoints return "organizati ([#3444](https://github.com/trycompai/comp/issues/3444)) ([2304d1f](https://github.com/trycompai/comp/commit/2304d1ff56bcacc0f9ffccdbc2cb298ca8091af0))
+
 # [3.104.0](https://github.com/trycompai/comp/compare/v3.103.1...v3.104.0) (2026-07-16)
 
 
