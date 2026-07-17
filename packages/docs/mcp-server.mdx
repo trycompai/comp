@@ -56,6 +56,12 @@ The `npx -y @trycompai/mcp-server` command you'll see throughout is what handles
 
 No JSON editing required.
 
+<Warning>
+The drag-and-drop installer is configured for the hosted Comp AI service.
+
+If you're using a self-hosted deployment, use the manual JSON configuration and include the `--server-url` argument.
+</Warning>
+
 <Accordion title="Advanced — manual JSON config">
 If you prefer to manage `claude_desktop_config.json` yourself, open **Settings → Developer → Edit Config** and merge:
 
@@ -89,6 +95,12 @@ Fully quit and reopen Claude Desktop.
 
 Click the button above, confirm in Cursor, then paste your Comp AI API key when prompted.
 
+<Warning>
+The one-click installer is configured for the hosted Comp AI service.
+
+If you're using a self-hosted deployment, use the Advanced — manual JSON config below and include the `--server-url` argument.
+</Warning>
+
 <Accordion title="Advanced — manual JSON config">
 Open **Cursor → Settings → Tools and Integrations → New MCP Server** and paste:
 
@@ -117,6 +129,12 @@ Save and reload Cursor.
 [![Install in VS Code](https://img.shields.io/badge/VS_Code-VS_Code?style=flat-square&label=Install%20CompAi%20MCP&color=0098FF)](vscode://ms-vscode.vscode-mcp/install?name=CompAi&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyJAdHJ5Y29tcGFpL21jcC1zZXJ2ZXIiLCJzdGFydCIsIi0tYXBpa2V5IiwiIl19)
 
 Click the button above, confirm in VS Code, then paste your Comp AI API key when prompted.
+
+<Warning>
+The one-click installer is configured for the hosted Comp AI service.
+
+If you're using a self-hosted deployment, use the Advanced — manual JSON config below and include the `--server-url` argument.
+</Warning>
 
 <Accordion title="Advanced — manual JSON config">
 Open the **Command Palette → MCP: Open User Configuration** and paste:
@@ -199,6 +217,41 @@ Save and reload Windsurf.
 </Tab>
 
 </Tabs>
+
+## Self-hosted deployments
+
+If you're connecting to a self-hosted Comp AI deployment instead of the hosted Comp AI service, you must include the `--server-url` argument in your MCP server configuration.
+
+Hosted Comp AI users do not need to specify --server-url.
+
+### Example
+
+```json
+{
+  "mcpServers": {
+    "comp-ai": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@trycompai/mcp-server",
+        "start",
+        "--apikey",
+        "comp_your_api_key_here",
+        "--server-url",
+        "https://your-self-hosted-comp-api.example.com"
+      ]
+    }
+  }
+}
+```
+
+For CLI-based clients, append:
+
+```text
+--server-url https://your-self-hosted-comp-api.example.com
+```
+
+to the existing installation command.
 
 That's it. The first time you start a chat in your AI client after install, the assistant will discover the Comp AI tools and start using them.
 
