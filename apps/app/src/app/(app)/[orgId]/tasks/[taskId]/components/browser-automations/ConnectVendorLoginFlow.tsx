@@ -1,7 +1,7 @@
 'use client';
 
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import type { LoginAnalysis } from '../../hooks/types';
 import { useAutoSignin } from '../../hooks/useAutoSignin';
@@ -33,12 +33,22 @@ interface ConnectVendorLoginFlowProps {
   /** Called with the connected vendor URL so the caller can bind new instructions to it. */
   onConnected: (url: string) => void;
   onCancel: () => void;
+  /**
+   * Re-authenticate an existing connection instead of connecting a new one:
+   * skip URL entry and immediately sign in (password = stored creds, no
+   * interaction; sso = AI drives to the IdP, user finishes).
+   */
+  reconnect?: { url: string; mode: 'password' | 'sso' };
+  /** Called after a reconnect verifies (refresh the list; don't open the composer). */
+  onReconnected?: () => void;
 }
 
 export function ConnectVendorLoginFlow({
   taskId,
   onConnected,
   onCancel,
+  reconnect,
+  onReconnected,
 }: ConnectVendorLoginFlowProps) {
   // Rehydrate an in-flight analysis if the user navigated away and came back.
   // Only the analysis phase is resumable — credentials are never persisted.
@@ -190,10 +200,37 @@ export function ConnectVendorLoginFlow({
     if (step !== 'signed-in') return;
     const timer = setTimeout(() => {
       endSession();
-      onConnected(connectedUrl ?? url);
+      // Reconnect just refreshes the list; a fresh connect flows into the composer.
+      if (reconnect) onReconnected?.();
+      else onConnected(connectedUrl ?? url);
     }, 1300);
     return () => clearTimeout(timer);
-  }, [step, endSession, onConnected, connectedUrl, url]);
+  }, [step, endSession, onConnected, onReconnected, reconnect, connectedUrl, url]);
+
+  // Reconnect entry point: skip URL entry and immediately re-authenticate.
+  const reconnectStarted = useRef(false);
+  useEffect(() => {
+    if (!reconnect || reconnectStarted.current) return;
+    reconnectStarted.current = true;
+    setUrl(reconnect.url);
+    setStep('signing-in');
+    endSession();
+    setSigninSteps([]);
+    void startSignin({ url: reconnect.url, mode: reconnect.mode }).then((handle) => {
+      if (!handle) {
+        // Fall back to a manual sign-in in the live browser.
+        setStep('signin');
+        void context.startAuth(reconnect.url);
+        return;
+      }
+      setSigninLiveView({
+        sessionId: handle.sessionId,
+        liveViewUrl: handle.liveViewUrl,
+        profileId: handle.profileId,
+      });
+      setSigninRun({ runId: handle.runId, accessToken: handle.publicAccessToken });
+    });
+  }, [reconnect, startSignin, endSession, setSigninLiveView, context]);
 
   const handleAnalyze = useCallback(async () => {
     const target = normalizeUrl(urlInput);

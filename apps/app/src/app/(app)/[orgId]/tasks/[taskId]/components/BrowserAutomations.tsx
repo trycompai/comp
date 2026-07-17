@@ -44,6 +44,12 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
   }>({ open: false, mode: 'create' });
   const [authUrl, setAuthUrl] = useState('https://github.com');
   const [connectOpen, setConnectOpen] = useState(false);
+  // When set, the connect flow re-authenticates an existing connection instead
+  // of connecting a new one.
+  const [reconnectSeed, setReconnectSeed] = useState<{
+    url: string;
+    mode: 'password' | 'sso';
+  } | null>(null);
   // Whether the user just connected within THIS task — org-level connection
   // status must not make a fresh task look already set up.
   const [justConnected, setJustConnected] = useState(false);
@@ -56,10 +62,17 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
 
   const handleReconnect = useCallback(
     (url: string) => {
-      setAuthUrl(url);
-      context.startAuth(url);
+      const profile = profiles.find((p) => p.hostname === hostnameFromUrl(url));
+      // Stored credentials → re-sign-in automatically; otherwise it's SSO, so the
+      // AI drives to the identity provider and the user finishes there.
+      const mode: 'password' | 'sso' = profile?.vaultExternalItemRef
+        ? 'password'
+        : 'sso';
+      clearConnectState(taskId);
+      setReconnectSeed({ url, mode });
+      setConnectOpen(true);
     },
-    [context],
+    [taskId, profiles],
   );
 
   const handleNeedsReauth = useCallback(
@@ -102,9 +115,20 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
     setConnectOpen(true);
   }, [taskId]);
 
+  // A reconnect verified — refresh the connection list; don't open the composer.
+  const handleReconnected = useCallback(() => {
+    clearConnectState(taskId);
+    setConnectOpen(false);
+    setReconnectSeed(null);
+    context.checkContextStatus();
+    fetchProfiles();
+    automations.fetchAutomations();
+  }, [taskId, context, fetchProfiles, automations]);
+
   const handleCancelConnect = useCallback(() => {
     clearConnectState(taskId);
     setConnectOpen(false);
+    setReconnectSeed(null);
   }, [taskId]);
 
   // Resolve the connection an instruction should run under: the edited
@@ -207,6 +231,8 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
         taskId={taskId}
         onConnected={handleConnected}
         onCancel={handleCancelConnect}
+        reconnect={reconnectSeed ?? undefined}
+        onReconnected={handleReconnected}
       />
     );
   }
