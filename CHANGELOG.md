@@ -1,3 +1,10 @@
+# [3.105.0](https://github.com/trycompai/comp/compare/v3.104.2...v3.105.0) (2026-07-20)
+
+
+### Features
+
+* **isms:** monitoring & measurement framework — clause 9.1 (CS-723) ([#3460](https://github.com/trycompai/comp/issues/3460)) ([585e162](https://github.com/trycompai/comp/commit/585e162d2bcc64f01eb1c6621efe49df8ec560e2))
+
 ## [3.104.2](https://github.com/trycompai/comp/compare/v3.104.1...v3.104.2) (2026-07-20)
 
 
