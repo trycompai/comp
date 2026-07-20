@@ -18,6 +18,12 @@ import {
 import { updateDraftSnapshot } from './utils/draft-snapshot';
 import { EXPORT_DOCUMENT_INCLUDE } from './utils/export-payload';
 import { lockDocument } from './utils/document-lock';
+import {
+  isMetricOverdue,
+  periodStartFor,
+  toPeriodKey,
+  type MetricCadenceValue,
+} from './utils/metric-periods';
 import { IsmsVersionService } from './isms-version.service';
 
 /**
@@ -65,6 +71,11 @@ export class IsmsService {
       where: { organizationId, frameworkId },
     });
 
+    const monitoringDoc = documents.find((doc) => doc.type === 'monitoring');
+    const overdueMetricCount = monitoringDoc
+      ? await this.countOverdueMetrics(monitoringDoc.id)
+      : 0;
+
     return {
       success: true,
       documents: documents.map((doc) => ({
@@ -79,8 +90,46 @@ export class IsmsService {
         // versioned artifact on their next approval.
         hasApprovedVersion:
           doc.currentVersionId != null || doc.status === 'approved',
+        // The ISMS overview's "Metrics overdue" tile (CS-723); only meaningful
+        // on the monitoring document row.
+        ...(doc.type === 'monitoring' ? { overdueMetricCount } : {}),
       })),
     };
+  }
+
+  /**
+   * Metrics whose most recent measurement's period is older than the cadence
+   * allows (the CS-723 overdue signal — see isMetricOverdue). Powers the ISMS
+   * overview tile; the Monitoring page derives the same state client-side.
+   */
+  private async countOverdueMetrics(documentId: string): Promise<number> {
+    const metrics = await db.ismsMetric.findMany({
+      where: { documentId, isActive: true, cadence: { not: null } },
+      select: {
+        cadence: true,
+        createdAt: true,
+        measurements: {
+          orderBy: { periodStart: 'desc' },
+          take: 1,
+          select: { periodStart: true },
+        },
+      },
+    });
+    const now = new Date();
+    return metrics.filter((metric) => {
+      const cadence = metric.cadence as MetricCadenceValue;
+      const latest = metric.measurements[0]
+        ? toPeriodKey(metric.measurements[0].periodStart)
+        : null;
+      return isMetricOverdue({
+        cadence,
+        latestMeasured: latest,
+        // Anchor is only consulted when there are no measurements at all, so
+        // the creation period is sufficient here.
+        anchor: periodStartFor(cadence, metric.createdAt),
+        now,
+      });
+    }).length;
   }
 
   /**

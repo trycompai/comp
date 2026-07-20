@@ -16,7 +16,7 @@ export const SEED_METRIC_DEFINITIONS: SeedMetricDefinition[] = [
     method:
       'Comp AI training tracker: completed assignments over total assigned, per campaign with monthly follow-up.',
     cadence: 'monthly',
-    target: '≥ 95% completion',
+    target: '95% completion or above',
   },
   {
     metricKey: 'vendor_review_currency',
@@ -56,7 +56,7 @@ export const SEED_METRIC_DEFINITIONS: SeedMetricDefinition[] = [
     method:
       'Comp AI policy tracker: members with all assigned policies acknowledged, over all members with assignments.',
     cadence: 'quarterly',
-    target: '≥ 95% acknowledgement coverage',
+    target: '95% acknowledgement coverage or above',
   },
   {
     metricKey: 'uptime',
@@ -65,7 +65,7 @@ export const SEED_METRIC_DEFINITIONS: SeedMetricDefinition[] = [
     method:
       'Cloud monitoring uptime reports (e.g. AWS / GCP / status page) for production services.',
     cadence: 'monthly',
-    target: '≥ 99.9% availability',
+    target: '99.9% availability or above',
   },
   {
     metricKey: 'vulnerability_remediation',
@@ -75,7 +75,7 @@ export const SEED_METRIC_DEFINITIONS: SeedMetricDefinition[] = [
     method:
       'SAST / SCA findings and tracker SLA timers: days from detection to closure per Critical/High vulnerability.',
     cadence: 'monthly',
-    target: 'Critical ≤ 7 days; High ≤ 30 days',
+    target: 'Critical within 7 days; High within 30 days',
   },
   {
     metricKey: 'unauthorised_access',

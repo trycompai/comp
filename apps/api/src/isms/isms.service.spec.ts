@@ -11,6 +11,7 @@ jest.mock('@db', () => ({
       findMany: jest.fn(),
       createMany: jest.fn(),
     },
+    ismsMetric: { findMany: jest.fn() },
     control: { findMany: jest.fn() },
     ismsDocumentControlLink: { createMany: jest.fn() },
   },
@@ -112,6 +113,79 @@ describe('IsmsService ensureSetup', () => {
           false,
         ]);
       });
+    });
+
+    it('reports overdueMetricCount on the monitoring document row (CS-723)', async () => {
+      const { addPeriods, periodStartFor } = jest.requireActual<
+        typeof import('./utils/metric-periods')
+      >('./utils/metric-periods');
+      const current = periodStartFor('monthly', new Date());
+
+      (
+        mockDb.frameworkEditorFramework.findUnique as jest.Mock
+      ).mockResolvedValue({ id: 'fw_1', requirements: [] });
+      (mockDb.ismsDocument.findMany as jest.Mock).mockResolvedValueOnce([
+        {
+          id: 'doc_mon',
+          type: 'monitoring',
+          status: 'draft',
+          requirementId: null,
+          currentVersionId: null,
+        },
+        {
+          id: 'doc_ctx',
+          type: 'context_of_organization',
+          status: 'draft',
+          requirementId: null,
+          currentVersionId: null,
+        },
+      ]);
+      (mockDb.ismsMetric.findMany as jest.Mock).mockResolvedValue([
+        {
+          // Latest measurement three periods back → overdue.
+          cadence: 'monthly',
+          createdAt: new Date(`${addPeriods('monthly', current, -6)}T00:00:00Z`),
+          measurements: [
+            {
+              periodStart: new Date(
+                `${addPeriods('monthly', current, -3)}T00:00:00Z`,
+              ),
+            },
+          ],
+        },
+        {
+          // Previous period recorded → within cadence.
+          cadence: 'monthly',
+          createdAt: new Date(`${addPeriods('monthly', current, -6)}T00:00:00Z`),
+          measurements: [
+            {
+              periodStart: new Date(
+                `${addPeriods('monthly', current, -1)}T00:00:00Z`,
+              ),
+            },
+          ],
+        },
+      ]);
+
+      const result = await service.ensureSetup({ ...dto, canWrite: false });
+
+      const monitoringRow = result.documents.find(
+        (doc) => doc.type === 'monitoring',
+      );
+      const contextRow = result.documents.find(
+        (doc) => doc.type === 'context_of_organization',
+      );
+      expect(monitoringRow).toMatchObject({ overdueMetricCount: 1 });
+      expect(contextRow).not.toHaveProperty('overdueMetricCount');
+      expect(mockDb.ismsMetric.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            documentId: 'doc_mon',
+            isActive: true,
+            cadence: { not: null },
+          },
+        }),
+      );
     });
 
     describe('template-driven (templates seeded)', () => {

@@ -11,7 +11,8 @@ export type IsmsDocumentType =
   | 'isms_scope'
   | 'leadership_commitment'
   | 'roles_and_responsibilities'
-  | 'objectives_plan';
+  | 'objectives_plan'
+  | 'monitoring';
 
 export type IsmsDocumentStatus =
   | 'draft'
@@ -30,6 +31,7 @@ export type IsmsCompetenceBasis =
   | 'experience'
   | 'combination';
 export type IsmsAuditRoute = 'in_house' | 'external' | 'training_planned';
+export type IsmsMetricCadence = 'monthly' | 'quarterly';
 
 /**
  * The ISO 27001 clause 4.1 category taxonomy auditors expect, scoped by kind.
@@ -142,6 +144,55 @@ export interface IsmsRole {
   assignments: IsmsRoleAssignment[];
 }
 
+/** One recorded value for a monitoring metric (clause 9.1). Append-style
+ * history: `recordedAt` and `enteredById` are server-set and immutable. */
+export interface IsmsMeasurement {
+  id: string;
+  metricId: string;
+  /** First day of the covered period (ISO date), aligned to the metric cadence. */
+  periodStart: string;
+  value: string;
+  note: string | null;
+  /** When the value was actually entered — the honest-backfill guardrail. */
+  recordedAt: string;
+  enteredById: string | null;
+  source: string;
+}
+
+/** The Objectives-Plan row a metric's target may link to (clause 6.2 → 9.1). */
+export interface IsmsMetricObjectiveRef {
+  id: string;
+  objective: string;
+  target: string | null;
+}
+
+/** Register: Monitoring, Measurement, Analysis & Evaluation (clause 9.1). */
+export interface IsmsMetric {
+  id: string;
+  /** Stable key for the nine seeded metrics; null for custom metrics. */
+  metricKey: string | null;
+  name: string;
+  whatIsMeasured: string;
+  method: string;
+  cadence: IsmsMetricCadence | null;
+  /** Null means "defaults to the SPO" (resolved at display/export time). */
+  monitorMemberId: string | null;
+  analyzeMemberId: string | null;
+  target: string | null;
+  objectiveId: string | null;
+  objective: IsmsMetricObjectiveRef | null;
+  /** Where values come from — always 'manual' in v1. */
+  dataSource: string;
+  isActive: boolean;
+  source: IsmsContextSource;
+  derivedFrom: string | null;
+  position: number;
+  /** Anchors the missing-period walk for due/overdue/backfill. */
+  createdAt: string;
+  /** Full history, newest first (periodStart desc, recordedAt desc). */
+  measurements: IsmsMeasurement[];
+}
+
 /** Narrative shape for the ISMS Scope singleton (clause 4.3). */
 export interface IsmsScopeNarrative {
   certificateScopeSentence: string;
@@ -203,6 +254,8 @@ export interface IsmsSetupDocument {
   status: IsmsDocumentStatus;
   requirementId: string | null;
   hasApprovedVersion: boolean;
+  /** Only on the monitoring row: active metrics currently overdue (CS-723). */
+  overdueMetricCount?: number;
 }
 
 export interface IsmsEnsureSetupResponse {
@@ -230,6 +283,7 @@ export interface IsmsDocument {
   interestedPartyRequirements: IsmsInterestedPartyRequirement[];
   objectives: IsmsObjective[];
   roles: IsmsRole[];
+  metrics: IsmsMetric[];
   controlLinks: IsmsControlLink[];
   /** Working-draft narrative for the singleton documents (Scope, Leadership). */
   draftNarrative:
@@ -308,6 +362,14 @@ export const ISMS_TYPE_META: IsmsTypeMeta[] = [
     description: 'Information security objectives and the plans to achieve them.',
     detailRouteEnabled: true,
   },
+  {
+    type: 'monitoring',
+    clause: '9.1',
+    title: 'Monitoring, Measurement, Analysis and Evaluation',
+    description:
+      'The metrics the organization monitors — what is measured, how, when, by whom, and who analyses the results.',
+    detailRouteEnabled: true,
+  },
 ];
 
 /** Map a URL slug (e.g. "context-of-organization") to the canonical type. */
@@ -319,6 +381,7 @@ export const ISMS_SLUG_TO_TYPE: Record<string, IsmsDocumentType> = {
   leadership: 'leadership_commitment',
   roles: 'roles_and_responsibilities',
   objectives: 'objectives_plan',
+  monitoring: 'monitoring',
 };
 
 /** Inverse of ISMS_SLUG_TO_TYPE for fast type -> slug lookup. */
@@ -330,6 +393,7 @@ const ISMS_TYPE_TO_SLUG: Record<IsmsDocumentType, string> = {
   leadership_commitment: 'leadership',
   roles_and_responsibilities: 'roles',
   objectives_plan: 'objectives',
+  monitoring: 'monitoring',
 };
 
 export function slugToType(slug: string): IsmsDocumentType | undefined {
