@@ -119,6 +119,33 @@ export interface OperationalOwnershipRow {
   owners: string[];
 }
 
+/** The nine seeded monitoring metrics and their pre-filled default text (9.1). */
+export interface SeedMetricDefinition {
+  metricKey: string;
+  name: string;
+  whatIsMeasured: string;
+  method: string;
+  cadence: 'monthly' | 'quarterly';
+  target: string;
+}
+
+/** A metric, resolved for export: fields + named people + current value. */
+export interface MetricExportRow {
+  metricKey: string | null;
+  name: string;
+  whatIsMeasured: string;
+  method: string;
+  /** Humanized cadence ("Monthly"/"Quarterly") or null when unset. */
+  cadence: string | null;
+  /** Display name of who monitors / analyses (SPO fallback already applied). */
+  monitorName: string;
+  analyzeName: string;
+  /** Free-text target, or the linked objective's target (frozen at build time). */
+  target: string;
+  /** Most recent value with its period, e.g. "99.95% (July 2026)", or "—". */
+  currentValue: string;
+}
+
 /**
  * The organization profile that fills the narrative parts of the Context of the
  * Organization document (clause 4.1) — overview table, mission, intended
@@ -168,4 +195,6 @@ export interface DocumentExportInput {
   operationalOwnership?: OperationalOwnershipRow[];
   /** Team-size band — only populated for the Roles document (5.3). */
   band?: IsmsTeamSizeBand;
+  /** Active metrics with resolved people + values — only populated for the Monitoring document (9.1). */
+  metrics?: MetricExportRow[];
 }

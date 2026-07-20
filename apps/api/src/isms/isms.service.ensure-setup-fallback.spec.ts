@@ -72,7 +72,7 @@ describe('IsmsService ensureSetup fallback to ISMS_TYPE_DEFINITIONS (no template
     const result = await service.ensureSetup(dto);
 
     expect(mockDb.ismsDocument.createMany).toHaveBeenCalledTimes(1);
-    expect(createManyData()).toHaveLength(6);
+    expect(createManyData()).toHaveLength(7);
     // Definition-derived docs carry no templateId.
     expect(createManyData()[0].templateId).toBeNull();
     expect(result.success).toBe(true);
@@ -96,7 +96,7 @@ describe('IsmsService ensureSetup fallback to ISMS_TYPE_DEFINITIONS (no template
 
     await service.ensureSetup(dto);
 
-    expect(createManyData()).toHaveLength(7);
+    expect(createManyData()).toHaveLength(8);
     expect(createManyData()[0].requirementId).toBeNull();
   });
 });

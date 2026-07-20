@@ -127,7 +127,7 @@ describe('IsmsService ensureSetup', () => {
         });
       });
 
-      it('creates docs from templates with templateId set', async () => {
+      it('creates docs from templates with templateId set, plus definition fallbacks for untemplated types', async () => {
         mockTemplates.mockResolvedValue([
           {
             id: 'tpl_ctx',
@@ -146,13 +146,19 @@ describe('IsmsService ensureSetup', () => {
         await service.ensureSetup(dto);
 
         expect(mockDb.ismsDocument.createMany).toHaveBeenCalledTimes(1);
-        expect(createManyData()).toHaveLength(1);
+        // 1 template-driven + 7 definition fallbacks: a type shipped before its
+        // template seed re-runs (e.g. monitoring, CS-723) still provisions.
+        expect(createManyData()).toHaveLength(8);
         expect(createManyData()[0]).toMatchObject({
           type: 'context_of_organization',
           title: 'Context of the Organization',
           templateId: 'tpl_ctx',
           requirementId: 'req_41', // resolved via clause fallback "4.1"
         });
+        const monitoring = createManyData().find(
+          (doc: { type: string }) => doc.type === 'monitoring',
+        );
+        expect(monitoring).toMatchObject({ templateId: null });
       });
 
       it('prefers an explicit framework requirement link over clause match', async () => {
@@ -226,8 +232,13 @@ describe('IsmsService ensureSetup', () => {
 
         await service.ensureSetup(dto);
 
-        expect(createManyData()).toHaveLength(1);
+        // objectives (template) + 6 definition fallbacks; the existing
+        // context_of_organization is skipped.
+        expect(createManyData()).toHaveLength(7);
         expect(createManyData()[0].type).toBe('objectives_plan');
+        expect(
+          createManyData().map((doc: { type: string }) => doc.type),
+        ).not.toContain('context_of_organization');
       });
 
       it('auto-derives org control links from the template control links', async () => {
@@ -310,10 +321,19 @@ describe('IsmsService ensureSetup', () => {
             controlLinks: [{ controlTemplateId: 'ct_1' }],
           },
         ]);
-        // Document already exists, so no create and no control derivation runs;
-        // any manual control links the org added are left untouched.
+        // Every type already exists, so no create and no control derivation
+        // runs; any manual control links the org added are left untouched.
         (mockDb.ismsDocument.findMany as jest.Mock)
-          .mockResolvedValueOnce([{ type: 'context_of_organization' }])
+          .mockResolvedValueOnce([
+            { type: 'context_of_organization' },
+            { type: 'interested_parties_register' },
+            { type: 'interested_parties_requirements' },
+            { type: 'isms_scope' },
+            { type: 'leadership_commitment' },
+            { type: 'roles_and_responsibilities' },
+            { type: 'objectives_plan' },
+            { type: 'monitoring' },
+          ])
           .mockResolvedValueOnce([]);
 
         await service.ensureSetup(dto);

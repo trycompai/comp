@@ -14,8 +14,10 @@ export interface IsmsDocumentPlan {
  * Build one create-plan per ISMS document type. Template-driven when the
  * FrameworkEditorIsmsDocumentTemplate rows are seeded; the requirement comes
  * from the framework-scoped link if present, otherwise from clause matching.
- * Falls back to ISMS_TYPE_DEFINITIONS (no templates) so unseeded DBs still
- * work — those plans carry a null templateId and no control links.
+ * Types with no template row fall back to ISMS_TYPE_DEFINITIONS — so unseeded
+ * DBs still work, and a newly-shipped type (e.g. monitoring, CS-723) provisions
+ * even before the template seed has been re-run. Fallback plans carry a null
+ * templateId and no control links.
  */
 export async function resolveDocumentPlans({
   frameworkId,
@@ -39,17 +41,7 @@ export async function resolveDocumentPlans({
     },
   });
 
-  if (templates.length === 0) {
-    return ISMS_TYPE_DEFINITIONS.map((def) => ({
-      type: def.type,
-      title: def.title,
-      templateId: null,
-      controlTemplateIds: [],
-      requirementId: matchRequirementId({ clause: def.clause, requirements }),
-    }));
-  }
-
-  return templates.map((template) => ({
+  const templatePlans: IsmsDocumentPlan[] = templates.map((template) => ({
     type: template.documentType,
     title: template.name,
     templateId: template.id,
@@ -60,6 +52,19 @@ export async function resolveDocumentPlans({
       template.requirementLinks[0]?.requirementId ??
       matchRequirementId({ clause: template.clause, requirements }),
   }));
+
+  const templatedTypes = new Set(templatePlans.map((plan) => plan.type));
+  const fallbackPlans: IsmsDocumentPlan[] = ISMS_TYPE_DEFINITIONS.filter(
+    (def) => !templatedTypes.has(def.type),
+  ).map((def) => ({
+    type: def.type,
+    title: def.title,
+    templateId: null,
+    controlTemplateIds: [],
+    requirementId: matchRequirementId({ clause: def.clause, requirements }),
+  }));
+
+  return [...templatePlans, ...fallbackPlans];
 }
 
 /**
