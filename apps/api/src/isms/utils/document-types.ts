@@ -66,6 +66,13 @@ export const ISMS_TYPE_DEFINITIONS: IsmsTypeDefinition[] = [
     description:
       'Measurable information security objectives and the plan to achieve them (ISO 27001 clause 6.2).',
   },
+  {
+    type: 'monitoring',
+    clause: '9.1',
+    title: 'Monitoring, Measurement, Analysis and Evaluation',
+    description:
+      'The metrics the organization monitors — what is measured, how, when, by whom, and who analyses the results (ISO 27001 clause 9.1).',
+  },
 ];
 
 /**

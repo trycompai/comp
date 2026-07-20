@@ -245,6 +245,13 @@ const ISMS_DOCUMENT_TEMPLATES = [
     description:
       'Measurable information security objectives and the plan to achieve them (ISO 27001 clause 6.2).',
   },
+  {
+    documentType: 'monitoring',
+    name: 'Monitoring, Measurement, Analysis and Evaluation',
+    clause: '9.1',
+    description:
+      'The metrics the organization monitors — what is measured, how, when, by whom, and who analyses the results (ISO 27001 clause 9.1).',
+  },
 ] as const;
 
 async function seedIsmsDocumentTemplates() {

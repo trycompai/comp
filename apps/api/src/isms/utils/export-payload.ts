@@ -7,6 +7,11 @@ import {
   loadRolesExtras,
   type RolesExtras,
 } from '../documents/roles-export-data';
+import {
+  loadMonitoringExtras,
+  mapMetrics,
+  type MonitoringExtras,
+} from '../documents/monitoring-export-data';
 import type {
   DocumentExportInput,
   IsmsOrgProfile,
@@ -45,6 +50,18 @@ export const EXPORT_DOCUMENT_INCLUDE = {
   roles: {
     orderBy: { position: 'asc' },
     include: { assignments: { orderBy: { position: 'asc' } } },
+  },
+  metrics: {
+    orderBy: { position: 'asc' },
+    include: {
+      objective: { select: { objective: true, target: true } },
+      // Only the most recent measurement: the document renders the current
+      // value, never the history (which stays in the platform / CSV export).
+      measurements: {
+        orderBy: [{ periodStart: 'desc' }, { recordedAt: 'desc' }],
+        take: 1,
+      },
+    },
   },
 } satisfies Prisma.IsmsDocumentInclude;
 
@@ -85,6 +102,18 @@ export async function resolveRolesExtras(
   return loadRolesExtras({ organizationId: document.organizationId, client });
 }
 
+/** The Monitoring document (9.1) resolves people + the SPO fallback; other types don't. */
+export async function resolveMonitoringExtras(
+  document: LoadedExportDocument,
+  client?: Prisma.TransactionClient,
+): Promise<MonitoringExtras | undefined> {
+  if (document.type !== 'monitoring') return undefined;
+  return loadMonitoringExtras({
+    organizationId: document.organizationId,
+    client,
+  });
+}
+
 function formatDateYmd(date: Date | null): string | null {
   return date ? date.toISOString().slice(0, 10) : null;
 }
@@ -121,10 +150,12 @@ export function buildExportInput({
   document,
   orgProfile,
   rolesExtras,
+  monitoringExtras,
 }: {
   document: LoadedExportDocument;
   orgProfile?: IsmsOrgProfile;
   rolesExtras?: RolesExtras;
+  monitoringExtras?: MonitoringExtras;
 }): DocumentExportInput {
   return {
     contextIssues: document.contextIssues.map((issue) => ({
@@ -156,6 +187,9 @@ export function buildExportInput({
     roles: rolesExtras ? mapRoles(document, rolesExtras) : undefined,
     operationalOwnership: rolesExtras?.operationalOwnership,
     band: rolesExtras?.band,
+    metrics: monitoringExtras
+      ? mapMetrics(document.metrics, monitoringExtras)
+      : undefined,
   };
 }
 
@@ -176,7 +210,13 @@ export async function buildDraftSnapshot(
 ): Promise<IsmsExportSnapshot> {
   const orgProfile = await resolveOrgProfile(document);
   const rolesExtras = await resolveRolesExtras(document);
-  const input = buildExportInput({ document, orgProfile, rolesExtras });
+  const monitoringExtras = await resolveMonitoringExtras(document);
+  const input = buildExportInput({
+    document,
+    orgProfile,
+    rolesExtras,
+    monitoringExtras,
+  });
   const metadata = buildExportMetadata({
     type: document.type,
     title: document.title,

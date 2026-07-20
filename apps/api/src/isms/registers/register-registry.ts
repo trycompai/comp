@@ -6,6 +6,8 @@ import type { IsmsObjectiveService } from '../isms-objective.service';
 import type { IsmsRequirementService } from '../isms-requirement.service';
 import type { IsmsRoleService } from '../isms-role.service';
 import type { IsmsRoleAssignmentService } from '../isms-role-assignment.service';
+import type { IsmsMetricService } from '../isms-metric.service';
+import type { IsmsMeasurementService } from '../isms-measurement.service';
 
 /**
  * One generic dispatch for every ISMS register row (context issues, interested
@@ -25,6 +27,7 @@ const COMPETENCE_BASIS = [
   'experience',
   'combination',
 ] as const;
+const METRIC_CADENCE = ['monthly', 'quarterly'] as const;
 
 const schemas = {
   contextIssueCreate: z.object({
@@ -134,7 +137,54 @@ const schemas = {
     remediationDueDate: z.string().nullish(),
     position,
   }),
+  metricCreate: z.object({
+    name: z.string().min(1),
+    whatIsMeasured: z.string().optional(),
+    method: z.string().optional(),
+    // Nullish: a custom metric can be drafted without a cadence; the clause-9.1
+    // submit gate requires one on every active metric.
+    cadence: z.enum(METRIC_CADENCE).nullish(),
+    monitorMemberId: z.string().nullish(),
+    analyzeMemberId: z.string().nullish(),
+    target: z.string().nullish(),
+    objectiveId: z.string().nullish(),
+    isActive: z.boolean().optional(),
+    position,
+  }),
+  metricUpdate: z.object({
+    name: z.string().min(1).optional(),
+    whatIsMeasured: z.string().optional(),
+    method: z.string().optional(),
+    // Nullish: undefined = leave as-is, null = clear.
+    cadence: z.enum(METRIC_CADENCE).nullish(),
+    monitorMemberId: z.string().nullish(),
+    analyzeMemberId: z.string().nullish(),
+    target: z.string().nullish(),
+    objectiveId: z.string().nullish(),
+    isActive: z.boolean().optional(),
+    position,
+  }),
+  measurementCreate: z.object({
+    metricId: z.string(),
+    periodStart: z.string(), // 'YYYY-MM-DD'; cadence alignment checked by the service
+    value: z.string().trim().min(1),
+    note: z.string().nullish(),
+  }),
+  // recordedAt / enteredById / source are server-set and immutable by design.
+  measurementUpdate: z.object({
+    periodStart: z.string().optional(),
+    value: z.string().trim().min(1).optional(),
+    note: z.string().nullish(),
+  }),
 } as const;
+
+/** One-save payload for the "Metrics due" / backfill views. */
+export const measurementBulkCreateSchema = z.object({
+  measurements: z
+    .array(schemas.measurementCreate)
+    .min(1)
+    .max(200), // a backfill save is bounded by the missing-period cap per metric
+});
 
 // Inferred input types — the single source of truth for register row shapes.
 // Service method signatures use these directly; the per-register DTO classes were
@@ -159,6 +209,13 @@ export type CreateRoleAssignmentInput = z.infer<
 export type UpdateRoleAssignmentInput = z.infer<
   typeof schemas.roleAssignmentUpdate
 >;
+export type CreateMetricInput = z.infer<typeof schemas.metricCreate>;
+export type UpdateMetricInput = z.infer<typeof schemas.metricUpdate>;
+export type CreateMeasurementInput = z.infer<typeof schemas.measurementCreate>;
+export type UpdateMeasurementInput = z.infer<typeof schemas.measurementUpdate>;
+export type BulkCreateMeasurementInput = z.infer<
+  typeof measurementBulkCreateSchema
+>;
 
 export const ISMS_REGISTER_KEYS = [
   'context-issues',
@@ -167,6 +224,8 @@ export const ISMS_REGISTER_KEYS = [
   'objectives',
   'roles',
   'role-assignments',
+  'metrics',
+  'measurements',
 ] as const;
 
 export type IsmsRegisterKey = (typeof ISMS_REGISTER_KEYS)[number];
@@ -176,6 +235,8 @@ export interface RegisterHandler {
     documentId: string;
     organizationId: string;
     data: unknown;
+    /** The caller's member id (session auth only). Measurements record it as enteredById. */
+    memberId?: string | null;
   }): Promise<unknown>;
   update(args: {
     rowId: string;
@@ -203,6 +264,8 @@ export interface RegisterServices {
   objectives: IsmsObjectiveService;
   roles: IsmsRoleService;
   roleAssignments: IsmsRoleAssignmentService;
+  metrics: IsmsMetricService;
+  measurements: IsmsMeasurementService;
 }
 
 /** Build the register → handler map from the injected per-register services. */
@@ -309,5 +372,48 @@ export function createRegisterRegistry(
           organizationId,
         }),
     },
+    metrics: {
+      create: ({ documentId, organizationId, data }) =>
+        services.metrics.create({
+          documentId,
+          organizationId,
+          dto: parse(schemas.metricCreate, data),
+        }),
+      update: ({ rowId, organizationId, data }) =>
+        services.metrics.update({
+          metricId: rowId,
+          organizationId,
+          dto: parse(schemas.metricUpdate, data),
+        }),
+      remove: ({ rowId, organizationId }) =>
+        services.metrics.remove({ metricId: rowId, organizationId }),
+    },
+    measurements: {
+      create: ({ documentId, organizationId, data, memberId }) =>
+        services.measurements.create({
+          documentId,
+          organizationId,
+          memberId,
+          dto: parse(schemas.measurementCreate, data),
+        }),
+      update: ({ rowId, organizationId, data }) =>
+        services.measurements.update({
+          measurementId: rowId,
+          organizationId,
+          dto: parse(schemas.measurementUpdate, data),
+        }),
+      remove: ({ rowId, organizationId }) =>
+        services.measurements.remove({
+          measurementId: rowId,
+          organizationId,
+        }),
+    },
   };
+}
+
+/** Parse the bulk-measurements body (used by the dedicated bulk endpoint). */
+export function parseMeasurementBulkBody(
+  data: unknown,
+): BulkCreateMeasurementInput {
+  return parse(measurementBulkCreateSchema, data);
 }

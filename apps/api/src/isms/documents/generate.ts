@@ -5,6 +5,7 @@ import { deriveInterestedParties } from './interested-parties';
 import { deriveRequirements } from './requirements';
 import { deriveObjectives } from './objectives';
 import { seedRolesIfMissing } from './roles';
+import { seedMetricsIfMissing } from './monitoring';
 import { deriveNarrativeForType, isNarrativeType } from './registry';
 import type { IsmsPlatformData } from './types';
 
@@ -253,6 +254,12 @@ export async function runDerivation({
     // Idempotent seed only — never a destructive replace, so member assignments
     // (IsmsRoleAssignment) and customer edits survive every regenerate.
     await seedRolesIfMissing({ tx, documentId, memberCount: data.memberCount });
+    return;
+  }
+  if (type === 'monitoring') {
+    // Idempotent seed only (same guarantee as roles): a regenerate can never
+    // clobber metric edits, deactivations, or measurement history.
+    await seedMetricsIfMissing({ tx, documentId });
     return;
   }
   if (isNarrativeType(type)) {

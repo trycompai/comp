@@ -11,9 +11,19 @@ import { deriveControlLinks, resolveDocumentPlans } from './utils/ensure-setup-p
 import { collectPlatformData } from './documents/data-source';
 import { runDerivation } from './documents/generate';
 import { roleValidationMessages, seedRolesIfMissing } from './documents/roles';
+import {
+  metricValidationMessages,
+  seedMetricsIfMissing,
+} from './documents/monitoring';
 import { updateDraftSnapshot } from './utils/draft-snapshot';
 import { EXPORT_DOCUMENT_INCLUDE } from './utils/export-payload';
 import { lockDocument } from './utils/document-lock';
+import {
+  isMetricOverdue,
+  periodStartFor,
+  toPeriodKey,
+  type MetricCadenceValue,
+} from './utils/metric-periods';
 import { IsmsVersionService } from './isms-version.service';
 
 /**
@@ -61,6 +71,11 @@ export class IsmsService {
       where: { organizationId, frameworkId },
     });
 
+    const monitoringDoc = documents.find((doc) => doc.type === 'monitoring');
+    const overdueMetricCount = monitoringDoc
+      ? await this.countOverdueMetrics(monitoringDoc.id)
+      : 0;
+
     return {
       success: true,
       documents: documents.map((doc) => ({
@@ -75,8 +90,46 @@ export class IsmsService {
         // versioned artifact on their next approval.
         hasApprovedVersion:
           doc.currentVersionId != null || doc.status === 'approved',
+        // The ISMS overview's "Metrics overdue" tile (CS-723); only meaningful
+        // on the monitoring document row.
+        ...(doc.type === 'monitoring' ? { overdueMetricCount } : {}),
       })),
     };
+  }
+
+  /**
+   * Metrics whose most recent measurement's period is older than the cadence
+   * allows (the CS-723 overdue signal — see isMetricOverdue). Powers the ISMS
+   * overview tile; the Monitoring page derives the same state client-side.
+   */
+  private async countOverdueMetrics(documentId: string): Promise<number> {
+    const metrics = await db.ismsMetric.findMany({
+      where: { documentId, isActive: true, cadence: { not: null } },
+      select: {
+        cadence: true,
+        createdAt: true,
+        measurements: {
+          orderBy: { periodStart: 'desc' },
+          take: 1,
+          select: { periodStart: true },
+        },
+      },
+    });
+    const now = new Date();
+    return metrics.filter((metric) => {
+      const cadence = metric.cadence as MetricCadenceValue;
+      const latest = metric.measurements[0]
+        ? toPeriodKey(metric.measurements[0].periodStart)
+        : null;
+      return isMetricOverdue({
+        cadence,
+        latestMeasured: latest,
+        // Anchor is only consulted when there are no measurements at all, so
+        // the creation period is sufficient here.
+        anchor: periodStartFor(cadence, metric.createdAt),
+        now,
+      });
+    }).length;
   }
 
   /**
@@ -152,6 +205,15 @@ export class IsmsService {
         seedRolesIfMissing({ tx, documentId: rolesDoc.id, memberCount }),
       );
     }
+
+    // Same first-load guarantee for Monitoring (9.1): the nine default metrics
+    // are active from day one. Idempotent by metricKey.
+    const monitoringDoc = created.find((doc) => doc.type === 'monitoring');
+    if (monitoringDoc) {
+      await db.$transaction((tx) =>
+        seedMetricsIfMissing({ tx, documentId: monitoringDoc.id }),
+      );
+    }
   }
 
   async getDocument({
@@ -176,6 +238,17 @@ export class IsmsService {
         roles: {
           orderBy: { position: 'asc' },
           include: { assignments: { orderBy: { position: 'asc' } } },
+        },
+        metrics: {
+          orderBy: { position: 'asc' },
+          include: {
+            // Full history, newest first: the Monitoring page renders it and
+            // derives due/overdue/backfill periods client-side from it.
+            measurements: {
+              orderBy: [{ periodStart: 'desc' }, { recordedAt: 'desc' }],
+            },
+            objective: { select: { id: true, objective: true, target: true } },
+          },
         },
         controlLinks: {
           select: {
@@ -223,6 +296,10 @@ export class IsmsService {
       // bypassed by calling the API directly (the client disables Submit too).
       if (document.type === 'roles_and_responsibilities') {
         await this.assertRolesComplete({ tx, documentId, organizationId });
+      }
+      // Clause 9.1: at least one active metric, each with a cadence (CS-723).
+      if (document.type === 'monitoring') {
+        await this.assertMonitoringComplete({ tx, documentId });
       }
 
       return tx.ismsDocument.update({
@@ -425,6 +502,25 @@ export class IsmsService {
     if (messages.length > 0) {
       throw new BadRequestException(
         `This Clause 5.3 document is not ready to submit. ${messages.join(' ')}`,
+      );
+    }
+  }
+
+  private async assertMonitoringComplete({
+    tx,
+    documentId,
+  }: {
+    tx: Prisma.TransactionClient;
+    documentId: string;
+  }) {
+    const metrics = await tx.ismsMetric.findMany({
+      where: { documentId },
+      select: { name: true, cadence: true, isActive: true },
+    });
+    const messages = metricValidationMessages({ metrics });
+    if (messages.length > 0) {
+      throw new BadRequestException(
+        `This Clause 9.1 document is not ready to submit. ${messages.join(' ')}`,
       );
     }
   }
