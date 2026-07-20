@@ -170,8 +170,13 @@ export class PeopleInviteService {
     });
 
     if (!existingUser) {
+      // Mark the email verified up front: the address is admin-provided, and
+      // every sign-in method (OTP, magic link, trusted OAuth) proves mailbox
+      // ownership anyway. An unverified user row makes better-auth refuse to
+      // link Google/Microsoft sign-ins to it (account_not_linked), which
+      // strands invited employees at the portal sign-in page.
       const newUser = await db.user.create({
-        data: { emailVerified: false, email, name: email.split('@')[0] },
+        data: { emailVerified: true, email, name: email.split('@')[0] },
       });
       userId = newUser.id;
     }

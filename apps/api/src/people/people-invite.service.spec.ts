@@ -324,6 +324,39 @@ describe('PeopleInviteService', () => {
       );
     });
 
+    it('creates invited employees with a verified email so trusted SSO providers can link', async () => {
+      (mockDb.organization.findUnique as jest.Mock).mockResolvedValue({
+        name: 'Test Org',
+      });
+      (mockDb.user.findFirst as jest.Mock).mockResolvedValue(null);
+      (mockDb.user.create as jest.Mock).mockResolvedValue({
+        id: 'user_new',
+        email: 'emp@example.com',
+      });
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue(null);
+      (mockDb.member.create as jest.Mock).mockResolvedValue({
+        id: 'member_new',
+      });
+      (
+        mockDb.employeeTrainingVideoCompletion.createMany as jest.Mock
+      ).mockResolvedValue({
+        count: 5,
+      });
+
+      const results = await service.inviteMembers({
+        ...baseParams,
+        invites: [{ email: 'emp@example.com', roles: ['employee'] }],
+      });
+
+      expect(results[0].success).toBe(true);
+      // An unverified local user makes better-auth refuse to link trusted
+      // OAuth providers (account_not_linked), stranding invited employees at
+      // the portal sign-in page, so new users must be created verified.
+      expect(mockDb.user.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ emailVerified: true }),
+      });
+    });
+
     it('should reactivate deactivated members', async () => {
       (mockDb.organization.findUnique as jest.Mock).mockResolvedValue({
         name: 'Test Org',

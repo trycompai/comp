@@ -171,12 +171,16 @@ async function createNewUser({
   organizationId: string;
   department: Departments;
 }): Promise<Member> {
-  // Create a skeleton user
+  // Create a skeleton user. The email is marked verified up front: the address
+  // is admin-provided, and every sign-in method (OTP, magic link, trusted
+  // OAuth) proves mailbox ownership anyway. An unverified user row makes
+  // better-auth refuse to link Google/Microsoft sign-ins to it
+  // (account_not_linked), stranding the employee at the portal sign-in page.
   const user = await db.user.create({
     data: {
       name,
       email,
-      emailVerified: false,
+      emailVerified: true,
     },
   });
 
