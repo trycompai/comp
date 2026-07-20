@@ -339,11 +339,19 @@ describe('Employee Compliance obligation implies portal access', () => {
     expect(mockOnChange).toHaveBeenCalledWith({ control: ['read'] });
   });
 
-  it('does not inject portal permissions when an unrelated resource permission changes', () => {
+  it('does not inject portal permissions or touch obligations when an unrelated resource permission changes', () => {
     // Only the 'compliance' obligation toggle should sync portal — a plain
     // resource-permission change must not go through the obligation branch.
     const mockOnChange = vi.fn();
-    render(<PermissionMatrix value={{}} onChange={mockOnChange} />);
+    const mockOnObligationsChange = vi.fn();
+    render(
+      <PermissionMatrix
+        value={{}}
+        onChange={mockOnChange}
+        obligations={{}}
+        onObligationsChange={mockOnObligationsChange}
+      />,
+    );
 
     const controlsText = screen.getByText('Controls');
     const controlsRow = controlsText.closest('[class*="grid"]');
@@ -354,6 +362,7 @@ describe('Employee Compliance obligation implies portal access', () => {
 
     expect(mockOnChange).toHaveBeenCalledTimes(1);
     expect(mockOnChange).toHaveBeenCalledWith({ control: ['read'] });
+    expect(mockOnObligationsChange).not.toHaveBeenCalled();
   });
 });
 
