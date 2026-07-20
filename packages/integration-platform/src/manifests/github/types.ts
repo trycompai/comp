@@ -17,6 +17,11 @@ export interface GitHubRepo {
   default_branch: string;
   owner: { login: string; type?: 'User' | 'Organization' };
   security_and_analysis?: {
+    // GitHub's 2026 "Code Security" GA renamed the code-scanning entitlement from
+    // `advanced_security` to `code_security`. Newer API responses only carry
+    // `code_security`; `advanced_security` is kept for GitHub Enterprise Server
+    // and older responses.
+    code_security?: { status: 'enabled' | 'disabled' };
     advanced_security?: { status: 'enabled' | 'disabled' };
     dependabot_security_updates?: { status: 'enabled' | 'disabled' };
     secret_scanning?: { status: 'enabled' | 'disabled' };
