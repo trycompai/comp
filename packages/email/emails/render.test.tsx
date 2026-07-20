@@ -1,6 +1,7 @@
 import { render } from '@react-email/render';
 import { describe, expect, it } from 'vitest';
 import { AllPolicyNotificationEmail } from './all-policy-notification';
+import { ChangeEmailConfirmationEmail } from './change-email-confirmation';
 import { InviteEmail } from './invite';
 import { InvitePortalEmail } from './invite-portal';
 import { MagicLinkEmail } from './magic-link';
@@ -119,6 +120,16 @@ const cases = [
   {
     name: 'verify-email',
     el: <VerifyEmail email="user@example.com" url="https://app.trycomp.ai/verify" />,
+  },
+  {
+    name: 'change-email-confirmation',
+    el: (
+      <ChangeEmailConfirmationEmail
+        currentEmail="old@example.com"
+        newEmail="new@example.com"
+        url="https://app.trycomp.ai/verify"
+      />
+    ),
   },
   {
     name: 'training-completed',

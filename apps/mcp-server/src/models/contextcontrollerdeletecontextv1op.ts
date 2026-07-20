@@ -5,6 +5,19 @@
 import * as z from "zod";
 import { ClosedEnum } from "../types/enums.js";
 
+export const ContextControllerDeleteContextV1AuthType = {
+  ApiKey: "api-key",
+  Session: "session",
+} as const;
+export type ContextControllerDeleteContextV1AuthType = ClosedEnum<
+  typeof ContextControllerDeleteContextV1AuthType
+>;
+
+export const ContextControllerDeleteContextV1AuthType$zodSchema = z.enum([
+  "api-key",
+  "session",
+]);
+
 export type ContextControllerDeleteContextV1Request = { id: string };
 
 export const ContextControllerDeleteContextV1Request$zodSchema: z.ZodType<
@@ -66,19 +79,6 @@ export const DeletedContext$zodSchema: z.ZodType<DeletedContext> = z.object({
   id: z.string().optional(),
   question: z.string().optional(),
 });
-
-export const ContextControllerDeleteContextV1AuthType = {
-  ApiKey: "api-key",
-  Session: "session",
-} as const;
-export type ContextControllerDeleteContextV1AuthType = ClosedEnum<
-  typeof ContextControllerDeleteContextV1AuthType
->;
-
-export const ContextControllerDeleteContextV1AuthType$zodSchema = z.enum([
-  "api-key",
-  "session",
-]);
 
 /**
  * Context entry deleted successfully

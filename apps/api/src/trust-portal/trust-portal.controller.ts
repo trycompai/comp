@@ -378,6 +378,28 @@ export class TrustPortalController {
   @Put('settings/faqs')
   @RequirePermission('trust', 'update')
   @ApiOperation({ summary: 'Update trust portal FAQs' })
+  // organizationId comes from the authenticated context (@OrganizationId), so the
+  // body only carries faqs. Without an explicit @ApiBody the generated spec has no
+  // request body and the MCP tool can't send FAQs at all. (CS-752)
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['faqs'],
+      properties: {
+        faqs: {
+          type: 'array',
+          items: {
+            type: 'object',
+            required: ['question', 'answer'],
+            properties: {
+              question: { type: 'string' },
+              answer: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+  })
   async updateFaqs(
     @OrganizationId() organizationId: string,
     @Body() body: { faqs: Array<{ question: string; answer: string }> },
@@ -551,6 +573,27 @@ export class TrustPortalController {
   @ApiOperation({
     summary: 'Update trust portal overview section',
   })
+  // Mirrors UpdateTrustOverviewSchema plus the organizationId the handler reads
+  // from the body. Without an explicit @ApiBody the generated OpenAPI spec has
+  // no request body, so the MCP tool sends none, organizationId arrives
+  // undefined, and assertOrganizationAccess 400s for API-key callers. (CS-752)
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['organizationId'],
+      properties: {
+        organizationId: {
+          type: 'string',
+          description:
+            "Organization that owns the trust portal. Must match the authenticated API key's organization.",
+          example: 'org_6914cd0e16e4c7dccbb54426',
+        },
+        overviewTitle: { type: 'string', maxLength: 200, nullable: true },
+        overviewContent: { type: 'string', maxLength: 10000, nullable: true },
+        showOverview: { type: 'boolean' },
+      },
+    },
+  })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Overview updated successfully',
@@ -584,6 +627,25 @@ export class TrustPortalController {
   @RequirePermission('trust', 'update')
   @ApiOperation({
     summary: 'Create a custom link for trust portal',
+  })
+  // Mirrors CreateCustomLinkSchema plus the organizationId the handler reads
+  // from the body (see updateOverview for why the explicit body matters). (CS-752)
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['organizationId', 'title', 'url'],
+      properties: {
+        organizationId: {
+          type: 'string',
+          description:
+            "Organization that owns the trust portal. Must match the authenticated API key's organization.",
+          example: 'org_6914cd0e16e4c7dccbb54426',
+        },
+        title: { type: 'string', minLength: 1, maxLength: 100 },
+        description: { type: 'string', maxLength: 500, nullable: true },
+        url: { type: 'string', format: 'uri', maxLength: 2000 },
+      },
+    },
   })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -646,6 +708,27 @@ export class TrustPortalController {
   @RequirePermission('trust', 'update')
   @ApiOperation({
     summary: 'Reorder custom links',
+  })
+  // Mirrors ReorderCustomLinksSchema plus the organizationId the handler reads
+  // from the body (see updateOverview for why the explicit body matters). (CS-752)
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['organizationId', 'linkIds'],
+      properties: {
+        organizationId: {
+          type: 'string',
+          description:
+            "Organization that owns the trust portal. Must match the authenticated API key's organization.",
+          example: 'org_6914cd0e16e4c7dccbb54426',
+        },
+        linkIds: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Custom link IDs in the desired display order.',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: HttpStatus.OK,

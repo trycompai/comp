@@ -6,7 +6,7 @@ import {
   Injectable,
   Logger,
 } from '@nestjs/common';
-import { db } from '@db';
+import { db, Prisma } from '@db';
 import {
   createMacedClient,
   MacedApiError,
@@ -43,6 +43,12 @@ import {
   type ReportContextNote,
 } from './report-appendix.util';
 import { PentestCreditsService } from './pentest-credits.service';
+import { toCustomerFacingError } from './pentest-run-error.util';
+import {
+  collapsedStatus,
+  MAX_ATTEMPTS,
+  type PentestRunStatus,
+} from './pentest-lineage.util';
 
 /**
  * Drops events that mention our infrastructure provider in any string
@@ -133,6 +139,51 @@ type CreatePentestBodyWithScanProfile = CreatePentestBody & {
   scanDepth?: ScanDepth;
   evidenceLevel?: EvidenceLevel;
   checks?: PentestCheck[];
+};
+
+/**
+ * Where a run sits in its retry lineage. Originals use the default
+ * (`attemptNumber: 1`, no parent, `rootRunId: null` → resolved to the run's
+ * own providerRunId once Maced assigns it). Auto-retries pass the inherited
+ * root and incremented attempt number.
+ */
+interface RunLineage {
+  attemptNumber: number;
+  rootRunId: string | null;
+  retryOfProviderRunId: string | null;
+}
+
+/** Lineage fields persisted on the ownership row (rootRunId resolved). */
+interface OwnershipLineage {
+  rootRunId: string;
+  attemptNumber: number;
+  retryOfProviderRunId: string | null;
+  scanParams: RetryScanParams;
+}
+
+/**
+ * The subset of a create request needed to faithfully re-run a scan. Stored on
+ * the ownership row so an auto-retry reconstructs the request from our own DB.
+ * `additionalContext` here is the caller's original free-text briefing only —
+ * on retry it is passed back through `resolveAdditionalContext`, which re-adds
+ * the target's finding-context notes. `webhookUrl` is excluded (re-resolved to
+ * our endpoint).
+ */
+interface RetryScanParams {
+  targetUrl: string;
+  repoUrl?: string;
+  pipelineTesting?: boolean;
+  testMode?: boolean;
+  scanDepth?: ScanDepth;
+  evidenceLevel?: EvidenceLevel;
+  checks?: PentestCheck[];
+  additionalContext?: string;
+}
+
+const ORIGINAL_RUN_LINEAGE: RunLineage = {
+  attemptNumber: 1,
+  rootRunId: null,
+  retryOfProviderRunId: null,
 };
 
 @Injectable()
@@ -232,24 +283,69 @@ export class SecurityPenetrationTestsService {
   async listReports(
     organizationId: string,
   ): Promise<SecurityPenetrationTest[]> {
-    const ownedRunIds = await this.listOwnedRunIds(organizationId);
-    if (ownedRunIds.size === 0) {
+    const rows = await db.securityPenetrationTestRun.findMany({
+      where: { organizationId },
+      select: {
+        providerRunId: true,
+        rootRunId: true,
+        attemptNumber: true,
+        scanParams: true,
+      },
+    });
+    if (rows.length === 0) {
       return [];
+    }
+
+    // Collapse each lineage to its active (highest-numbered) attempt so the
+    // customer sees one entry per scan — retries never appear as separate rows.
+    const activeByRoot = new Map<
+      string,
+      { providerRunId: string; attemptNumber: number; retryable: boolean }
+    >();
+    for (const row of rows) {
+      const root = row.rootRunId ?? row.providerRunId;
+      const current = activeByRoot.get(root);
+      if (!current || row.attemptNumber > current.attemptNumber) {
+        activeByRoot.set(root, {
+          providerRunId: row.providerRunId,
+          attemptNumber: row.attemptNumber,
+          // Re-runnable only if the stored params actually validate (same check
+          // as the retry path), not merely non-null.
+          retryable: this.fromScanParams(row.scanParams) != null,
+        });
+      }
     }
 
     const reports = await this.callMaced(
       () => this.macedClient.pentests.list(),
       'listing penetration tests',
     );
+    const reportById = new Map(reports.map((report) => [report.id, report]));
 
-    return reports
-      .filter((report) => ownedRunIds.has(report.id))
-      .map((report) => this.mapMacedRunToSecurityPenetrationTest(report));
+    const result: SecurityPenetrationTest[] = [];
+    for (const [rootRunId, active] of activeByRoot) {
+      const report = reportById.get(active.providerRunId);
+      // The provider may not know a just-created run yet, or may have pruned
+      // it — skip rather than surface a half-populated row.
+      if (!report) continue;
+      result.push(
+        this.collapseRun(report, {
+          rootRunId,
+          attemptNumber: active.attemptNumber,
+          retryEligible:
+            active.attemptNumber < MAX_ATTEMPTS && active.retryable,
+        }),
+      );
+    }
+    return result;
   }
 
   async createReport(
     organizationId: string,
     payload: CreatePenetrationTestDto,
+    // Internal: set by the auto-retry path to link a new run into an existing
+    // lineage. User-initiated creates use the original-run default.
+    lineage: RunLineage = ORIGINAL_RUN_LINEAGE,
   ): Promise<SecurityPenetrationTest> {
     const resolvedWebhookUrl = this.resolveWebhookUrl(payload.webhookUrl);
     // Resolved before the billing reservation so a DB failure here can't
@@ -258,6 +354,13 @@ export class SecurityPenetrationTestsService {
       organizationId,
       payload,
     );
+    // Always a unique reservation id per create call. A deterministic
+    // per-parent id (to dedupe concurrent duplicate retries) is NOT safe here:
+    // the billing consume is idempotent on this id AND a refund leaves the
+    // consume event in place, so after a failed-create-then-refund the next
+    // (redelivered) attempt would reuse the key, skip the debit, and run the
+    // scan for free. Provider-scan de-duplication for concurrent duplicates is
+    // handled by the Maced idempotency key below instead.
     const billingUsageSourceId = `pending:${randomUUID()}`;
     let consumedSubscriptionAllowance = false;
 
@@ -350,10 +453,22 @@ export class SecurityPenetrationTestsService {
       },
     };
 
+    // For an auto-retry, use a deterministic idempotency key tied to the parent
+    // run so concurrent duplicate `pentest.failed` webhooks dedupe AT THE
+    // PROVIDER — both create calls return the same run instead of launching two
+    // scans (one of which would be orphaned). User-initiated creates pass none.
+    const idempotencyKey = lineage.retryOfProviderRunId
+      ? `retry:${lineage.retryOfProviderRunId}`
+      : undefined;
+
     let createdReport: PentestCreated;
     try {
       createdReport = await this.callMaced(
-        () => this.macedClient.pentests.create(body),
+        () =>
+          this.macedClient.pentests.create(
+            body,
+            idempotencyKey ? { idempotencyKey } : undefined,
+          ),
         'creating penetration test',
       );
     } catch (error) {
@@ -400,6 +515,13 @@ export class SecurityPenetrationTestsService {
       organizationId,
       providerRunId,
       consumedSubscriptionAllowance ? billingUsageSourceId : null,
+      {
+        // An original run is its own lineage root; a retry inherits it.
+        rootRunId: lineage.rootRunId ?? providerRunId,
+        attemptNumber: lineage.attemptNumber,
+        retryOfProviderRunId: lineage.retryOfProviderRunId,
+        scanParams: this.toScanParams(payload),
+      },
     );
     if (!ownershipPersisted) {
       // We debited and Maced created the run, but our DB rejected the
@@ -482,34 +604,75 @@ export class SecurityPenetrationTestsService {
     });
   }
 
+  /**
+   * Resolves ownership + the active attempt, fetches the run, and returns both
+   * the collapsed customer-facing run and the active provider run id. Callers
+   * that also need the active id (report/PDF downloads) use this to avoid
+   * re-resolving the lineage a second time.
+   */
+  private async getReportResolved(
+    organizationId: string,
+    id: string,
+  ): Promise<{ run: SecurityPenetrationTest; activeProviderRunId: string }> {
+    await this.assertRunOwnership(organizationId, id);
+    const { rootRunId, activeProviderRunId, attemptNumber, retryEligible } =
+      await this.resolveActiveAttempt(organizationId, id);
+    const report = await this.callMaced(
+      () => this.macedClient.pentests.get(activeProviderRunId),
+      `fetching penetration test ${activeProviderRunId}`,
+    );
+    return {
+      run: this.collapseRun(report, {
+        rootRunId,
+        attemptNumber,
+        retryEligible,
+      }),
+      activeProviderRunId,
+    };
+  }
+
   async getReport(
     organizationId: string,
     id: string,
   ): Promise<SecurityPenetrationTest> {
-    await this.assertRunOwnership(organizationId, id);
-    const report = await this.callMaced(
-      () => this.macedClient.pentests.get(id),
-      `fetching penetration test ${id}`,
-    );
-    return this.mapMacedRunToSecurityPenetrationTest(report);
+    const { run } = await this.getReportResolved(organizationId, id);
+    return run;
   }
 
   async getReportProgress(
     organizationId: string,
     id: string,
   ): Promise<PentestProgress> {
-    await this.assertRunOwnership(organizationId, id);
-    return this.callMaced(
-      () => this.macedClient.pentests.progress(id),
-      `fetching penetration test progress ${id}`,
+    // Resolve via the shared helper so progress reports the SAME collapsed,
+    // grace-based status as getReport — the two endpoints can never contradict
+    // each other for the same run (a failed non-final attempt reads as
+    // in-progress within the grace window, and as failed once it elapses).
+    const { run, activeProviderRunId } = await this.getReportResolved(
+      organizationId,
+      id,
     );
+    const progress = await this.callMaced(
+      () => this.macedClient.pentests.progress(activeProviderRunId),
+      `fetching penetration test progress ${activeProviderRunId}`,
+    );
+    // The only divergence from progress's own status is the failed↔provisioning
+    // masking that getReport applies (grace-based). Override just those so the
+    // two endpoints agree; every other state already matches.
+    if (run.status === 'failed' || run.status === 'provisioning') {
+      return { ...progress, status: run.status };
+    }
+    return progress;
   }
 
   async getReportIssues(organizationId: string, id: string): Promise<Issue[]> {
     await this.assertRunOwnership(organizationId, id);
+    const { activeProviderRunId } = await this.resolveActiveAttempt(
+      organizationId,
+      id,
+    );
     return this.callMaced(
-      () => this.macedClient.pentests.issues(id),
-      `fetching penetration test issues ${id}`,
+      () => this.macedClient.pentests.issues(activeProviderRunId),
+      `fetching penetration test issues ${activeProviderRunId}`,
     );
   }
 
@@ -518,9 +681,13 @@ export class SecurityPenetrationTestsService {
     id: string,
   ): Promise<PentestEvent[]> {
     await this.assertRunOwnership(organizationId, id);
+    const { activeProviderRunId } = await this.resolveActiveAttempt(
+      organizationId,
+      id,
+    );
     const events = await this.callMaced(
-      () => this.macedClient.pentests.events(id),
-      `fetching penetration test events ${id}`,
+      () => this.macedClient.pentests.events(activeProviderRunId),
+      `fetching penetration test events ${activeProviderRunId}`,
     );
     // Filter at the API layer (defense in depth) — a UI-only filter
     // would leave Maced-internal tool names (`mcp__maced-helper__*`)
@@ -535,11 +702,14 @@ export class SecurityPenetrationTestsService {
     organizationId: string,
     id: string,
   ): Promise<BinaryArtifact> {
-    const run = await this.getReport(organizationId, id);
+    const { run, activeProviderRunId } = await this.getReportResolved(
+      organizationId,
+      id,
+    );
 
     const report = await this.callMaced(
-      () => this.macedClient.pentests.report(id),
-      `fetching penetration test report ${id}`,
+      () => this.macedClient.pentests.report(activeProviderRunId),
+      `fetching penetration test report ${activeProviderRunId}`,
     );
 
     const notes = await this.findContextNotesQuietly(
@@ -562,11 +732,14 @@ export class SecurityPenetrationTestsService {
     organizationId: string,
     id: string,
   ): Promise<BinaryArtifact> {
-    const run = await this.getReport(organizationId, id);
+    const { run, activeProviderRunId } = await this.getReportResolved(
+      organizationId,
+      id,
+    );
 
     const blob = await this.callMaced(
-      () => this.macedClient.pentests.reportPdf(id),
-      `fetching penetration test PDF ${id}`,
+      () => this.macedClient.pentests.reportPdf(activeProviderRunId),
+      `fetching penetration test PDF ${activeProviderRunId}`,
     );
 
     const original = Buffer.from(await blob.arrayBuffer());
@@ -688,6 +861,26 @@ export class SecurityPenetrationTestsService {
     // customer would silently lose their credit.
     if (event.type === 'pentest.failed' || event.type === 'pentest.cancelled') {
       await this.refundOnTerminalFailure(event.data.pentestId, event.type);
+    }
+
+    // Auto-retry transient failures so customers never see intermediate
+    // failures. Only `pentest.failed` — a `pentest.cancelled` is a deliberate
+    // stop (staff cancels a run and it's refunded) and must never be re-run.
+    // If spawning the retry fails, `maybeAutoRetry` releases its claim and
+    // rethrows so this handler returns non-2xx and Maced redelivers — the
+    // refund above is idempotent (`creditRefundedAt`), so redelivery safely
+    // re-attempts only the retry rather than dropping it.
+    if (event.type === 'pentest.failed') {
+      await this.maybeAutoRetry(event.data.pentestId);
+    }
+
+    // A cancellation is terminal. Record a lineage-wide block so a late or
+    // duplicate `pentest.failed` for the same run (arriving after the cancel)
+    // can never spawn a retry of a scan that was deliberately stopped. If the
+    // block can't be stored, this throws so Maced redelivers the cancellation
+    // until it sticks (the refund above already ran and is idempotent).
+    if (event.type === 'pentest.cancelled') {
+      await this.blockAutoRetry(event.data.pentestId);
     }
 
     // Successful completion deserves its own audit-log row so the
@@ -831,6 +1024,146 @@ export class SecurityPenetrationTestsService {
     });
   }
 
+  /**
+   * Automatically re-runs a failed scan with the same parameters, up to
+   * `MAX_ATTEMPTS - 1` times, so transient provider/infra failures are invisible
+   * to the customer. Runs after the failure has already been refunded.
+   *
+   * Idempotency and durability are governed by whether a retry child actually
+   * exists (a row whose `retryOfProviderRunId` is this run), NOT by a mutable
+   * claim:
+   *   - If a child already exists, the retry succeeded on an earlier delivery →
+   *     skip (idempotent under redelivery).
+   *   - If the spawn fails, no child is created, so the error is rethrown; the
+   *     handler returns non-2xx, Maced redelivers, and the next delivery sees no
+   *     child and re-attempts. The refund is idempotent (`creditRefundedAt`), so
+   *     redelivery re-attempts only the retry. A transient spawn/DB failure can
+   *     never permanently strand the retry.
+   *
+   * Cancellation is a DISTINCT marker (`retryBlockedAt`, set lineage-wide), so a
+   * late `pentest.failed` for a cancelled scan is always blocked here regardless
+   * of arrival order — it can't be confused with a spawn claim.
+   *
+   * Returns (without rethrowing) when a retry legitimately shouldn't happen:
+   * orphan run, exhausted lineage, cancelled lineage, an existing child, or
+   * unusable stored params.
+   */
+  private async maybeAutoRetry(failedProviderRunId: string): Promise<void> {
+    const row = await db.securityPenetrationTestRun.findUnique({
+      where: { providerRunId: failedProviderRunId },
+      select: {
+        organizationId: true,
+        attemptNumber: true,
+        rootRunId: true,
+        scanParams: true,
+      },
+    });
+    if (!row) {
+      this.logger.log(
+        `[Retry] skip run=${failedProviderRunId} (no ownership row — orphan)`,
+      );
+      return;
+    }
+    if (row.attemptNumber >= MAX_ATTEMPTS) {
+      this.logger.log(
+        `[Retry] skip run=${failedProviderRunId} (lineage exhausted, attempt ${row.attemptNumber}/${MAX_ATTEMPTS})`,
+      );
+      return;
+    }
+
+    const rootRunId = row.rootRunId ?? failedProviderRunId;
+
+    // Cancelled lineage → never retry (distinct marker, order-independent).
+    const blocked = await db.securityPenetrationTestRun.findFirst({
+      where: { rootRunId, retryBlockedAt: { not: null } },
+      select: { providerRunId: true },
+    });
+    if (blocked) {
+      this.logger.log(
+        `[Retry] skip run=${failedProviderRunId} (lineage cancelled)`,
+      );
+      return;
+    }
+
+    // Idempotency: if a retry child already exists, an earlier delivery already
+    // spawned it — nothing to do.
+    const existingChild = await db.securityPenetrationTestRun.findFirst({
+      where: { retryOfProviderRunId: failedProviderRunId },
+      select: { providerRunId: true },
+    });
+    if (existingChild) {
+      this.logger.log(
+        `[Retry] skip run=${failedProviderRunId} (retry child ${existingChild.providerRunId} already exists)`,
+      );
+      return;
+    }
+
+    const payload = this.fromScanParams(row.scanParams);
+    if (!payload) {
+      this.logger.warn(
+        `[Retry] skip run=${failedProviderRunId} (missing/invalid scanParams)`,
+      );
+      return;
+    }
+
+    // Record when the retry was initiated (informational only).
+    await db.securityPenetrationTestRun
+      .updateMany({
+        where: { providerRunId: failedProviderRunId },
+        data: { retryTriggeredAt: new Date() },
+      })
+      .catch(() => undefined);
+
+    const nextAttempt = row.attemptNumber + 1;
+    try {
+      const retried = await this.createReport(row.organizationId, payload, {
+        attemptNumber: nextAttempt,
+        rootRunId,
+        retryOfProviderRunId: failedProviderRunId,
+      });
+      this.logger.log(
+        `[Retry] spawned run=${retried.id} attempt=${nextAttempt}/${MAX_ATTEMPTS} root=${rootRunId} from=${failedProviderRunId}`,
+      );
+    } catch (error) {
+      // No child was created, so rethrow: the handler 5xx's, Maced redelivers,
+      // and the next delivery sees no child and re-attempts. Nothing to release.
+      this.logger.error(
+        `[Retry] spawn failed for run=${failedProviderRunId}; will retry on redelivery: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Marks a whole lineage as cancelled (via the distinct `retryBlockedAt`
+   * marker) so no `pentest.failed` — for the cancelled run or any sibling — can
+   * spawn a retry of a deliberately stopped scan, regardless of webhook arrival
+   * order. Best-effort.
+   *
+   * Stops NEW retries; a retry already in flight when the cancel arrives is not
+   * force-cancelled at the provider (bounded — it is refunded and only wastes
+   * compute).
+   *
+   * Errors are NOT swallowed: if recording the block fails, it propagates so the
+   * handler returns non-2xx and Maced redelivers the cancellation until the
+   * block is durably stored (mirrors the refund/retry durability pattern). The
+   * refund runs first and is idempotent, so redelivery is safe. Without this, a
+   * lost block could let a later `pentest.failed` retry a cancelled scan.
+   */
+  private async blockAutoRetry(providerRunId: string): Promise<void> {
+    const row = await db.securityPenetrationTestRun.findUnique({
+      where: { providerRunId },
+      select: { rootRunId: true },
+    });
+    const rootRunId = row?.rootRunId ?? providerRunId;
+    await db.securityPenetrationTestRun.updateMany({
+      where: { rootRunId, retryBlockedAt: null },
+      data: { retryBlockedAt: new Date() },
+    });
+  }
+
   private formatDurationMs(ms: number): string {
     const totalMin = Math.max(Math.round(ms / 60_000), 0);
     const hours = Math.floor(totalMin / 60);
@@ -889,6 +1222,42 @@ export class SecurityPenetrationTestsService {
     };
   }
 
+  /**
+   * Maps a provider run into a customer-facing run for a lineage: applies the
+   * collapsed status (masking a failed non-final attempt as in-progress),
+   * pins the id to the stable lineage root, and — only when a genuine, final
+   * failure is revealed — replaces the raw provider error with a clean,
+   * white-labeled message. The active (highest) attempt is authoritative
+   * because we only ever retry `failed` runs.
+   */
+  private collapseRun(
+    report: Pentest | PentestWithProgress,
+    ctx: { rootRunId: string; attemptNumber: number; retryEligible: boolean },
+  ): SecurityPenetrationTest {
+    const mapped = this.mapMacedRunToSecurityPenetrationTest(report);
+    const activeStatus: PentestRunStatus = mapped.status;
+    const parsedFailedAt =
+      activeStatus === 'failed' && mapped.updatedAt
+        ? Date.parse(mapped.updatedAt)
+        : NaN;
+    const status = collapsedStatus({
+      activeStatus,
+      attemptNumber: ctx.attemptNumber,
+      retryEligible: ctx.retryEligible,
+      failedAtMs: Number.isNaN(parsedFailedAt) ? null : parsedFailedAt,
+      nowMs: Date.now(),
+    });
+    const customerError =
+      status === 'failed' ? toCustomerFacingError(mapped.error) : null;
+    return {
+      ...mapped,
+      id: ctx.rootRunId,
+      status,
+      error: customerError,
+      failedReason: customerError,
+    };
+  }
+
   private getScanProfileFields(
     report: Pentest | PentestWithProgress | PentestCreated,
   ): Pick<SecurityPenetrationTest, 'scanDepth' | 'evidenceLevel' | 'checks'> {
@@ -918,6 +1287,67 @@ export class SecurityPenetrationTestsService {
     }
 
     return fields;
+  }
+
+  /**
+   * Extracts the re-runnable scan parameters from a create request, to persist
+   * on the ownership row for a future auto-retry. Only defined fields are
+   * included so the stored JSON stays clean.
+   */
+  private toScanParams(payload: CreatePenetrationTestDto): RetryScanParams {
+    const params: RetryScanParams = { targetUrl: payload.targetUrl };
+    if (payload.repoUrl !== undefined) params.repoUrl = payload.repoUrl;
+    if (payload.pipelineTesting !== undefined) {
+      params.pipelineTesting = payload.pipelineTesting;
+    }
+    if (payload.testMode !== undefined) params.testMode = payload.testMode;
+    if (payload.scanDepth !== undefined) params.scanDepth = payload.scanDepth;
+    if (payload.evidenceLevel !== undefined) {
+      params.evidenceLevel = payload.evidenceLevel;
+    }
+    if (payload.checks !== undefined) params.checks = payload.checks;
+    if (payload.additionalContext !== undefined) {
+      params.additionalContext = payload.additionalContext;
+    }
+    return params;
+  }
+
+  /**
+   * Rebuilds a create DTO from persisted scanParams for an auto-retry, reusing
+   * the same type guards as the provider-response mapping. Returns null when
+   * the stored value is missing or malformed (retry is then skipped).
+   */
+  private fromScanParams(
+    raw: Prisma.JsonValue | null | undefined,
+  ): CreatePenetrationTestDto | null {
+    if (!this.isRecord(raw)) return null;
+    const targetUrl = raw.targetUrl;
+    if (typeof targetUrl !== 'string') return null;
+
+    const dto: CreatePenetrationTestDto = { targetUrl };
+    if (typeof raw.repoUrl === 'string') dto.repoUrl = raw.repoUrl;
+    if (typeof raw.pipelineTesting === 'boolean') {
+      dto.pipelineTesting = raw.pipelineTesting;
+    }
+    if (typeof raw.testMode === 'boolean') dto.testMode = raw.testMode;
+    if (this.isScanDepth(raw.scanDepth)) dto.scanDepth = raw.scanDepth;
+    if (this.isEvidenceLevel(raw.evidenceLevel)) {
+      dto.evidenceLevel = raw.evidenceLevel;
+    }
+    if (Array.isArray(raw.checks)) {
+      // Preserve the original selection faithfully: assign the validated array
+      // whenever checks were stored, including an explicit empty selection
+      // (`[]`) — omitting it would let the provider fall back to its default
+      // check set. Stale entries (e.g. a check enum value removed between
+      // deploys) are filtered out rather than dropping the whole selection.
+      dto.checks = raw.checks.filter((check): check is PentestCheck =>
+        this.isPentestCheck(check),
+      );
+    }
+    if (typeof raw.additionalContext === 'string') {
+      dto.additionalContext = raw.additionalContext;
+    }
+    return dto;
   }
 
   private isScanDepth(value: unknown): value is ScanDepth {
@@ -1136,6 +1566,7 @@ export class SecurityPenetrationTestsService {
     organizationId: string,
     reportId: string,
     billingUsageSourceId: string | null,
+    lineage: OwnershipLineage,
   ): Promise<void> {
     // Defensive: if a row already exists for this providerRunId, do NOT
     // overwrite its organizationId. Maced generates unique providerRunIds
@@ -1153,6 +1584,12 @@ export class SecurityPenetrationTestsService {
         organizationId,
         providerRunId: reportId,
         billingUsageSourceId,
+        rootRunId: lineage.rootRunId,
+        attemptNumber: lineage.attemptNumber,
+        retryOfProviderRunId: lineage.retryOfProviderRunId,
+        // Cast at the DB boundary: RetryScanParams is a flat, JSON-safe object,
+        // but its optional fields aren't assignable to InputJsonValue directly.
+        scanParams: lineage.scanParams as unknown as Prisma.InputJsonValue,
       },
       update: {},
     });
@@ -1162,6 +1599,7 @@ export class SecurityPenetrationTestsService {
     organizationId: string,
     reportId: string,
     billingUsageSourceId: string | null,
+    lineage: OwnershipLineage,
   ): Promise<boolean> {
     for (let attempt = 1; attempt <= 3; attempt += 1) {
       try {
@@ -1169,6 +1607,7 @@ export class SecurityPenetrationTestsService {
           organizationId,
           reportId,
           billingUsageSourceId,
+          lineage,
         );
         return true;
       } catch (error) {
@@ -1180,6 +1619,47 @@ export class SecurityPenetrationTestsService {
     }
 
     return false;
+  }
+
+  /**
+   * Resolves any attempt id in a lineage to the currently active (highest
+   * attemptNumber) attempt, so reads always follow retries. Callers use the
+   * returned `activeProviderRunId` for provider calls and `rootRunId` as the
+   * stable customer-facing id. Coalesces a null `rootRunId` (legacy row) to the
+   * requested id so pre-feature runs resolve to themselves.
+   */
+  private async resolveActiveAttempt(
+    organizationId: string,
+    requestedId: string,
+  ): Promise<{
+    rootRunId: string;
+    activeProviderRunId: string;
+    attemptNumber: number;
+    retryEligible: boolean;
+  }> {
+    const row = await db.securityPenetrationTestRun.findUnique({
+      where: { providerRunId: requestedId },
+      select: { rootRunId: true },
+    });
+    const rootRunId = row?.rootRunId ?? requestedId;
+    const active = await db.securityPenetrationTestRun.findFirst({
+      where: { organizationId, rootRunId },
+      orderBy: { attemptNumber: 'desc' },
+      select: { providerRunId: true, attemptNumber: true, scanParams: true },
+    });
+    const attemptNumber = active?.attemptNumber ?? 1;
+    return {
+      rootRunId,
+      activeProviderRunId: active?.providerRunId ?? requestedId,
+      attemptNumber,
+      // A failure can only be masked as in-progress if a retry could actually
+      // happen: under the attempt cap AND re-runnable. Reuse the same params
+      // validation `maybeAutoRetry` uses, so malformed (not just null) scan
+      // params are treated as ineligible and revealed immediately.
+      retryEligible:
+        attemptNumber < MAX_ATTEMPTS &&
+        this.fromScanParams(active?.scanParams) != null,
+    };
   }
 
   private async assertRunOwnership(
@@ -1219,20 +1699,6 @@ export class SecurityPenetrationTestsService {
     }
 
     return marker.organizationId;
-  }
-
-  private async listOwnedRunIds(organizationId: string): Promise<Set<string>> {
-    const markers =
-      (await db.securityPenetrationTestRun.findMany({
-        where: {
-          organizationId,
-        },
-        select: {
-          providerRunId: true,
-        },
-      })) ?? [];
-
-    return new Set(markers.map(({ providerRunId }) => providerRunId));
   }
 
   private isCompWebhookUrl(value: string): boolean {

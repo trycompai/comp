@@ -1,12 +1,16 @@
-import { glob } from 'glob';
 import { defineConfig } from 'tsup';
 
-const components = glob.sync('src/components/**/*.{ts,tsx}');
-const hooks = glob.sync('src/hooks/**/*.{ts,tsx}');
-const utils = glob.sync('src/utils/**/*.{ts,tsx}');
-
 export default defineConfig({
-  entry: ['src/index.ts', ...components, ...hooks, ...utils],
+  // tsup expands these globs itself via tinyglobby (picomatch/fdir). We avoid
+  // importing the `glob` package here: loading it during config evaluation
+  // pulls in glob→minimatch→brace-expansion (ESM), whose `balanced-match`
+  // resolution is fragile under bun's hoisting and breaks the build on CI.
+  entry: [
+    'src/index.ts',
+    'src/components/**/*.{ts,tsx}',
+    'src/hooks/**/*.{ts,tsx}',
+    'src/utils/**/*.{ts,tsx}',
+  ],
   format: ['esm'],
   dts: true,
   splitting: false,

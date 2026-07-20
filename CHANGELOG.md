@@ -1,3 +1,75 @@
+## [3.104.1](https://github.com/trycompai/comp/compare/v3.104.0...v3.104.1) (2026-07-17)
+
+
+### Bug Fixes
+
+* **app:** keep task automation "Last ran" fresh when recent runs are held ([990f025](https://github.com/trycompai/comp/commit/990f025e895434607c632b0251ab0f9cc2a7aa1b))
+* **github-integration:** distinguish ghas disabled from permission denied in oauth flow ([ec42f96](https://github.com/trycompai/comp/commit/ec42f969ce659735645f4667a775a09883be14ea))
+* **people:** make role picker modal-aware in invite members dialog ([#3448](https://github.com/trycompai/comp/issues/3448)) ([5f8a031](https://github.com/trycompai/comp/commit/5f8a0318876f73e18d17177e739d81a9f49655cd))
+* **todo:** [bug] trust center config write endpoints return "organizati ([#3444](https://github.com/trycompai/comp/issues/3444)) ([2304d1f](https://github.com/trycompai/comp/commit/2304d1ff56bcacc0f9ffccdbc2cb298ca8091af0))
+
+# [3.104.0](https://github.com/trycompai/comp/compare/v3.103.1...v3.104.0) (2026-07-16)
+
+
+### Bug Fixes
+
+* **app:** address review findings on out-of-scope actions ([5113276](https://github.com/trycompai/comp/commit/51132769d057d8a62fdc6276d5c7159e00d1d2d6))
+* **soa:** allow editing of remote-applicable iso 27001 section 7 controls ([#3433](https://github.com/trycompai/comp/issues/3433)) ([024ced4](https://github.com/trycompai/comp/commit/024ced49a340a26d2ad999b4a2ab120e01c56185))
+
+
+### Features
+
+* **app:** mark evidence check resources out of scope ([b5dd117](https://github.com/trycompai/comp/commit/b5dd11735e5fa3a0804a48246904e49861d47569))
+
+## [3.103.1](https://github.com/trycompai/comp/compare/v3.103.0...v3.103.1) (2026-07-16)
+
+
+### Bug Fixes
+
+* **people:** keep role picker clickable in the invite dialog ([0f24c95](https://github.com/trycompai/comp/commit/0f24c95ee0b20c5403ca7bcc8c46beba1d13bad8))
+
+# [3.103.0](https://github.com/trycompai/comp/compare/v3.102.0...v3.103.0) (2026-07-16)
+
+
+### Bug Fixes
+
+* **auditor:** remove brackets from vendor use case and replace placeholder descriptions ([#3425](https://github.com/trycompai/comp/issues/3425)) ([0bb84a5](https://github.com/trycompai/comp/commit/0bb84a5431d7bbcaa182a639c6348dd2655a0b4f))
+* **people:** restore role selection in invite dialog ([9329dfa](https://github.com/trycompai/comp/commit/9329dfa8b564e9fcee8c830d9a0cd1218dbf26a8))
+* **questionnaire:** strip whole-sheet dataValidations before ExcelJS parse ([#3427](https://github.com/trycompai/comp/issues/3427)) ([e28f51d](https://github.com/trycompai/comp/commit/e28f51d8e6b3015d17a4d24030c4cba02db29b9d))
+
+
+### Features
+
+* **auth:** add self-serve and admin login email change ([#3421](https://github.com/trycompai/comp/issues/3421)) ([a760e33](https://github.com/trycompai/comp/commit/a760e33eaa9b2d1e1c682afcf709defc408d013e))
+
+# [3.102.0](https://github.com/trycompai/comp/compare/v3.101.2...v3.102.0) (2026-07-15)
+
+
+### Bug Fixes
+
+* **ci:** pin Syft 1.46.0 in SBOM action (1.42.3 can't parse bun.lock) ([#3415](https://github.com/trycompai/comp/issues/3415)) ([5f47024](https://github.com/trycompai/comp/commit/5f470240e56ae47a8489cfeb731e44e5950cd35b))
+* **ci:** scan bun.lock via file: input so the SBOM isn't empty ([#3414](https://github.com/trycompai/comp/issues/3414)) ([e47e6fd](https://github.com/trycompai/comp/commit/e47e6fd43a07b031fbaaa4bd77a7963625639dc3))
+* **deps:** override uuid to ^11.1.1 (Dependabot [#85](https://github.com/trycompai/comp/issues/85)) ([#3418](https://github.com/trycompai/comp/issues/3418)) ([598ff8c](https://github.com/trycompai/comp/commit/598ff8c5ca4105b7c8d1503f02b7f8286a8d4da7))
+* **deps:** patch tmp and js-yaml in mcp-server (Dependabot [#58](https://github.com/trycompai/comp/issues/58)/[#59](https://github.com/trycompai/comp/issues/59)/[#71](https://github.com/trycompai/comp/issues/71)) ([#3412](https://github.com/trycompai/comp/issues/3412)) ([59a6b0f](https://github.com/trycompai/comp/commit/59a6b0faaf8700b80b25b3897d572cf78198c900))
+* **deps:** remediate dependency security vulnerabilities ([#3403](https://github.com/trycompai/comp/issues/3403)) ([7577a37](https://github.com/trycompai/comp/commit/7577a3783defd68059583ed1ec4012cec7cbb6e5))
+* **deps:** remediate dependency security vulnerabilities (165→16, 4 critical→0) ([#3406](https://github.com/trycompai/comp/issues/3406)) ([d403e9c](https://github.com/trycompai/comp/commit/d403e9c9805cf1fd4731caef9968745fbf4fe055))
+* **device-agent:** implement the installer-cleanup fix ([#3381](https://github.com/trycompai/comp/issues/3381)) ([0f7581b](https://github.com/trycompai/comp/commit/0f7581b36bafa7157adb6e355b424a8b9459afe5))
+* **security:** prevent SSRF in task-automation enterprise API calls ([#3411](https://github.com/trycompai/comp/issues/3411)) ([dcec288](https://github.com/trycompai/comp/commit/dcec288f4f9667e08602beecc00ce04594326b66)), closes [#116](https://github.com/trycompai/comp/issues/116)
+* **security:** resolve open CodeQL alerts (XSS, sanitization, workflow perms) ([#3419](https://github.com/trycompai/comp/issues/3419)) ([32329be](https://github.com/trycompai/comp/commit/32329be11fcf6ca9cc7255921bfcec03f0a507d8)), closes [#108](https://github.com/trycompai/comp/issues/108) [js/xss-throu#dom](https://github.com/js/xss-throu/issues/dom) [#95](https://github.com/trycompai/comp/issues/95) [84/#85](https://github.com/trycompai/comp/issues/85)
+
+
+### Features
+
+* **framework-editor:** raise requirement description limit to 100,000 chars (FRAME-2) ([67c9f4a](https://github.com/trycompai/comp/commit/67c9f4a01b0cf7b33d6ecaaf341385ca520556a4))
+
+## [3.101.2](https://github.com/trycompai/comp/compare/v3.101.1...v3.101.2) (2026-07-14)
+
+
+### Bug Fixes
+
+* **api:** pentest retry follow-ups from production review ([#3400](https://github.com/trycompai/comp/issues/3400)) ([e6e9239](https://github.com/trycompai/comp/commit/e6e9239dd4b4cecaea642f828cdd29f14993359e))
+* **api:** revert deterministic retry billing id (caused free-scan on redelivery) ([#3401](https://github.com/trycompai/comp/issues/3401)) ([6033674](https://github.com/trycompai/comp/commit/6033674a51c75bb1c2f390008dabcf920855495e))
+
 ## [3.101.1](https://github.com/trycompai/comp/compare/v3.101.0...v3.101.1) (2026-07-13)
 
 

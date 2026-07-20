@@ -10,7 +10,7 @@ interface OrgChartTabContentProps {
 }
 
 export function OrgChartTabContent({ organizationId }: OrgChartTabContentProps) {
-  const { orgChart } = useOrgChart();
+  const { orgChart, mutate } = useOrgChart();
   const { members } = useTeamMembers({ organizationId });
 
   const chartMembers: OrgChartMember[] = members
@@ -25,5 +25,11 @@ export function OrgChartTabContent({ organizationId }: OrgChartTabContentProps) 
       jobTitle: m.jobTitle ?? null,
     }));
 
-  return <OrgChartContent chartData={orgChart} members={chartMembers} />;
+  return (
+    <OrgChartContent
+      chartData={orgChart}
+      members={chartMembers}
+      onChartChange={mutate}
+    />
+  );
 }

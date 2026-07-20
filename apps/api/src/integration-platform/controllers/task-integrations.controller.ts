@@ -857,23 +857,33 @@ export class TaskIntegrationsController {
 
         // Tag each sampled result with whether it's excepted (for display);
         // authoritative totals come from the run's summary columns +
-        // exceptedCount above. Cap evidence so one oversized blob can't bloat
-        // the payload that the browser must parse + render.
-        const sample = run.results.map((r) => ({
-          id: r.id,
-          passed: r.passed,
-          resourceType: r.resourceType,
-          resourceId: r.resourceId,
-          title: r.title,
-          description: r.description,
-          severity: r.severity,
-          remediation: r.remediation,
-          evidence: r.evidence,
-          collectedAt: r.collectedAt,
-          excepted:
+        // exceptedCount above. Excepted rows also carry the exception's id
+        // (so the UI can offer revoke) and its documented reason. Cap evidence
+        // so one oversized blob can't bloat the payload that the browser must
+        // parse + render.
+        const sample = run.results.map((r) => {
+          const excepted =
             !r.passed &&
-            exceptions.has(run.connectionId, run.checkId, r.resourceId),
-        }));
+            exceptions.has(run.connectionId, run.checkId, r.resourceId);
+          const exceptionInfo = excepted
+            ? exceptions.infoFor(run.connectionId, run.checkId, r.resourceId)
+            : null;
+          return {
+            id: r.id,
+            passed: r.passed,
+            resourceType: r.resourceType,
+            resourceId: r.resourceId,
+            title: r.title,
+            description: r.description,
+            severity: r.severity,
+            remediation: r.remediation,
+            evidence: r.evidence,
+            collectedAt: r.collectedAt,
+            excepted,
+            exceptionId: exceptionInfo?.id,
+            exceptionReason: exceptionInfo?.reason,
+          };
+        });
         const results = capResultsForList(sample).map((r) => ({
           ...r,
           evidence: capEvidence(r.evidence),
@@ -915,6 +925,15 @@ export class TaskIntegrationsController {
       }),
     );
 
-    return { runs: mappedRuns };
+    // WHEN each (connection, check) last ran, INCLUDING runs held as
+    // 'inconclusive' (which are excluded from `runs`). Timestamps only — held
+    // outcomes stay hidden. Without this the UI's "Last ran" froze at the last
+    // visible run while the daily schedule kept running (CS-753).
+    const lastAttempts =
+      await this.checkRunRepository.findLastAttemptPerConnectionAndCheckByTask(
+        taskId,
+      );
+
+    return { runs: mappedRuns, lastAttempts };
   }
 }
