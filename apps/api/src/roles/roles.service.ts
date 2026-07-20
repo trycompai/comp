@@ -232,13 +232,23 @@ export class RolesService {
       );
     }
 
-    // Validate permissions
+    // Validate permission shape (resource/action names) as submitted.
     this.validatePermissions(dto.permissions);
 
-    // Check for privilege escalation
+    // Derive the final permission set (including the compliance -> portal
+    // invariant) before checking privilege escalation, so a caller can't
+    // grant themselves/others portal access merely by setting
+    // obligations.compliance=true without explicitly requesting 'portal'.
+    const obligations = dto.obligations || {};
+    const permissions = this.withCompliancePortalInvariant(
+      dto.permissions,
+      obligations,
+    );
+
+    // Check for privilege escalation against the FINAL permission set.
     await this.validateNoPrivilegeEscalation(
       callerRoles,
-      dto.permissions,
+      permissions,
       organizationId,
     );
 
@@ -268,11 +278,6 @@ export class RolesService {
     }
 
     // Create the role
-    const obligations = dto.obligations || {};
-    const permissions = this.withCompliancePortalInvariant(
-      dto.permissions,
-      obligations,
-    );
     const role = await db.organizationRole.create({
       data: {
         name: dto.name,
@@ -429,14 +434,9 @@ export class RolesService {
       }
     }
 
-    // Validate and check permissions if provided
+    // Validate permission shape (resource/action names) as submitted.
     if (dto.permissions) {
       this.validatePermissions(dto.permissions);
-      await this.validateNoPrivilegeEscalation(
-        callerRoles,
-        dto.permissions,
-        organizationId,
-      );
     }
 
     // Re-derive the compliance -> portal invariant whenever either
@@ -459,6 +459,18 @@ export class RolesService {
       permissionsToPersist = this.withCompliancePortalInvariant(
         effectivePermissions,
         effectiveObligations,
+      );
+
+      // Validate against the FINAL permission set that will actually be
+      // written — not just the submitted `dto.permissions`. This also
+      // catches the portal grant the invariant above may have just added
+      // on an obligations-only update (no `dto.permissions` at all), which
+      // would otherwise let a caller without portal access grant it to a
+      // role simply by toggling the compliance obligation.
+      await this.validateNoPrivilegeEscalation(
+        callerRoles,
+        permissionsToPersist,
+        organizationId,
       );
     }
 

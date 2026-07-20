@@ -415,6 +415,28 @@ describe('RolesService', () => {
 
       expect(result.permissions.portal.sort()).toEqual(['read', 'update']);
     });
+
+    it('rejects creating a compliance-obligated role when the caller lacks portal access (privilege escalation)', async () => {
+      // Regression: the compliance -> portal invariant must be validated,
+      // not just applied — otherwise a caller without 'portal' could grant
+      // it to a role merely by setting obligations.compliance=true.
+      const dto = {
+        name: 'devops-engineer',
+        permissions: { control: ['read'] }, // 'auditor' has this
+        obligations: { compliance: true },
+      };
+
+      // 'auditor' in this mock has control:['read'] but no 'portal' key.
+      await expect(
+        service.createRole(organizationId, dto, ['auditor']),
+      ).rejects.toThrow(ForbiddenException);
+      await expect(
+        service.createRole(organizationId, dto, ['auditor']),
+      ).rejects.toThrow(
+        "Cannot grant 'portal:read' permission - you don't have this permission",
+      );
+      expect(mockDb.organizationRole.create).not.toHaveBeenCalled();
+    });
   });
 
   describe('listRoles', () => {
@@ -562,6 +584,36 @@ describe('RolesService', () => {
           ['employee'],
         ),
       ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('rejects an obligations-only update that would grant portal access when the caller lacks it (privilege escalation)', async () => {
+      // Regression (P1): before this check ran against permissionsToPersist,
+      // an obligations-only update never validated privilege escalation at
+      // all, so any caller could grant a role portal access just by
+      // flipping obligations.compliance=true — even a caller without portal
+      // permission themselves.
+      const existingRole = {
+        id: roleId,
+        name: 'devops-engineer',
+        permissions: JSON.stringify({ control: ['read'] }), // 'auditor' has this
+        obligations: '{}',
+      };
+
+      (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(
+        existingRole,
+      );
+
+      // 'auditor' has control:['read'] (matches the existing role) but no
+      // 'portal' key — the newly-merged portal grant must be caught.
+      await expect(
+        service.updateRole(
+          organizationId,
+          roleId,
+          { obligations: { compliance: true } },
+          ['auditor'],
+        ),
+      ).rejects.toThrow(ForbiddenException);
+      expect(mockDb.organizationRole.update).not.toHaveBeenCalled();
     });
 
     it('grants portal:read/update when enabling the compliance obligation on an obligations-only update', async () => {
