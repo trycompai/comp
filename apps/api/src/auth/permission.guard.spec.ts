@@ -19,18 +19,36 @@ jest.mock('@trycompai/auth', () => ({
   PRIVILEGED_ROLES: ['owner', 'admin', 'auditor'],
 }));
 
-// Mock ./app-access (used to authorize MCP OAuth requests). Mocked here so the
-// spec doesn't pull in @db via the real module; permissionsGrant uses the real
-// (trivial) logic so only resolveRolePermissions needs stubbing.
+// Mock ./app-access (used to authorize MCP OAuth requests and the portal
+// fallback). Mocked here so the spec doesn't pull in @db via the real module;
+// permissionsGrant/allPermissionsGranted use the real (trivial) logic so only
+// the role-resolving functions need stubbing.
 const mockResolveRolePermissions = jest.fn();
+const mockResolveRolePermissionsWithImplicitPortal = jest.fn();
+function permissionsGrant(
+  perms: Record<string, string[]>,
+  resource: string,
+  action: string,
+) {
+  return perms?.[resource]?.includes(action) ?? false;
+}
 jest.mock('./app-access', () => ({
   resolveRolePermissions: (...args: unknown[]) =>
     mockResolveRolePermissions(...args),
+  resolveRolePermissionsWithImplicitPortal: (...args: unknown[]) =>
+    mockResolveRolePermissionsWithImplicitPortal(...args),
   permissionsGrant: (
     perms: Record<string, string[]>,
     resource: string,
     action: string,
-  ) => perms?.[resource]?.includes(action) ?? false,
+  ) => permissionsGrant(perms, resource, action),
+  allPermissionsGranted: (
+    perms: Record<string, string[]>,
+    required: Record<string, string[]>,
+  ) =>
+    Object.entries(required).every(([resource, actions]) =>
+      actions.every((action) => permissionsGrant(perms, resource, action)),
+    ),
 }));
 
 describe('PermissionGuard', () => {
@@ -77,6 +95,7 @@ describe('PermissionGuard', () => {
     reflector = module.get<Reflector>(Reflector);
     mockHasPermission.mockReset();
     mockResolveRolePermissions.mockReset();
+    mockResolveRolePermissionsWithImplicitPortal.mockReset();
   });
 
   describe('MCP OAuth authorization', () => {
@@ -303,6 +322,111 @@ describe('PermissionGuard', () => {
       await expect(guard.canActivate(context)).rejects.toThrow(
         ForbiddenException,
       );
+    });
+  });
+
+  describe('portal fallback for custom roles', () => {
+    it('grants portal access via the fallback when a custom role has no stored portal permission', async () => {
+      // Reproduces the reported bug: a custom role (e.g. "DevOps Engineer")
+      // has no 'portal' entry in its stored permissions because the
+      // custom-role editor UI has no toggle for it, so better-auth's
+      // hasPermission denies it — the guard must fall back and grant it.
+      jest
+        .spyOn(reflector, 'getAllAndOverride')
+        .mockReturnValue([{ resource: 'portal', actions: ['update'] }]);
+
+      mockHasPermission.mockResolvedValue({
+        success: false,
+        error: 'Permission denied',
+      });
+      mockResolveRolePermissionsWithImplicitPortal.mockResolvedValue({
+        control: ['read'],
+        portal: ['read', 'update'],
+      });
+
+      const context = createMockExecutionContext({
+        headers: { authorization: 'Bearer token' },
+        userRoles: ['devops-engineer'],
+        organizationId: 'org_1',
+      });
+
+      await expect(guard.canActivate(context)).resolves.toBe(true);
+      expect(mockResolveRolePermissionsWithImplicitPortal).toHaveBeenCalledWith(
+        'org_1',
+        ['devops-engineer'],
+      );
+    });
+
+    it('does not invoke the fallback for non-portal permission requirements', async () => {
+      jest
+        .spyOn(reflector, 'getAllAndOverride')
+        .mockReturnValue([{ resource: 'control', actions: ['delete'] }]);
+
+      mockHasPermission.mockResolvedValue({
+        success: false,
+        error: 'Permission denied',
+      });
+
+      const context = createMockExecutionContext({
+        headers: { authorization: 'Bearer token' },
+        userRoles: ['devops-engineer'],
+        organizationId: 'org_1',
+      });
+
+      await expect(guard.canActivate(context)).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(
+        mockResolveRolePermissionsWithImplicitPortal,
+      ).not.toHaveBeenCalled();
+    });
+
+    it('still denies when the fallback resolution also lacks the required portal action', async () => {
+      jest
+        .spyOn(reflector, 'getAllAndOverride')
+        .mockReturnValue([{ resource: 'portal', actions: ['update'] }]);
+
+      mockHasPermission.mockResolvedValue({
+        success: false,
+        error: 'Permission denied',
+      });
+      mockResolveRolePermissionsWithImplicitPortal.mockResolvedValue({
+        portal: ['read'], // read only — 'update' still missing
+      });
+
+      const context = createMockExecutionContext({
+        headers: { authorization: 'Bearer token' },
+        userRoles: ['read-only-custom-role'],
+        organizationId: 'org_1',
+      });
+
+      await expect(guard.canActivate(context)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('does not invoke the fallback when userRoles is null (no roles resolved)', async () => {
+      jest
+        .spyOn(reflector, 'getAllAndOverride')
+        .mockReturnValue([{ resource: 'portal', actions: ['read'] }]);
+
+      mockHasPermission.mockResolvedValue({
+        success: false,
+        error: 'Permission denied',
+      });
+
+      const context = createMockExecutionContext({
+        headers: { authorization: 'Bearer token' },
+        userRoles: null,
+        organizationId: 'org_1',
+      });
+
+      await expect(guard.canActivate(context)).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(
+        mockResolveRolePermissionsWithImplicitPortal,
+      ).not.toHaveBeenCalled();
     });
   });
 

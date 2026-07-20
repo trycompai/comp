@@ -7,7 +7,11 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { RESTRICTED_ROLES, PRIVILEGED_ROLES } from '@trycompai/auth';
-import { permissionsGrant, resolveRolePermissions } from './app-access';
+import {
+  allPermissionsGranted,
+  resolveRolePermissions,
+  resolveRolePermissionsWithImplicitPortal,
+} from './app-access';
 import { auth } from './auth.server';
 import { resolveServiceByName } from './service-token.config';
 import { AuthenticatedRequest } from './types';
@@ -139,9 +143,7 @@ export class PermissionGuard implements CanActivate {
         request.organizationId,
         request.userRoles ?? [],
       );
-      const granted = Object.entries(permissionBody).every(([resource, actions]) =>
-        actions.every((action) => permissionsGrant(perms, resource, action)),
-      );
+      const granted = allPermissionsGranted(perms, permissionBody);
       if (!granted) {
         this.logger.warn(
           `[PermissionGuard] MCP OAuth access denied for ${request.method} ${request.url}. Required: ${JSON.stringify(permissionBody)}`,
@@ -154,7 +156,35 @@ export class PermissionGuard implements CanActivate {
     try {
       const hasPermission = await this.checkPermission(request, permissionBody);
 
-      if (!hasPermission) {
+      if (hasPermission) {
+        return true;
+      }
+
+      // Fallback: portal self-service isn't exposed as a toggle in the
+      // custom-role editor UI (PermissionMatrix.tsx only has an 'app'
+      // toggle), so a custom role's stored permissions never include
+      // 'portal' — better-auth's hasPermission reads the stored permissions
+      // verbatim and denies it. Re-check independently with portal
+      // implicitly granted to custom roles before failing. Built-in roles
+      // are unaffected (e.g. auditor still correctly lacks portal). Only
+      // attempted when the requirement actually touches 'portal', so an
+      // unrelated denial doesn't pay for an extra role-permissions lookup.
+      const requiresPortal = Object.prototype.hasOwnProperty.call(
+        permissionBody,
+        'portal',
+      );
+      const grantedWithImplicitPortal =
+        requiresPortal &&
+        request.userRoles != null &&
+        allPermissionsGranted(
+          await resolveRolePermissionsWithImplicitPortal(
+            request.organizationId,
+            request.userRoles,
+          ),
+          permissionBody,
+        );
+
+      if (!grantedWithImplicitPortal) {
         this.logger.warn(
           `[PermissionGuard] Access denied for ${request.method} ${request.url}. Required: ${JSON.stringify(permissionBody)}`,
         );

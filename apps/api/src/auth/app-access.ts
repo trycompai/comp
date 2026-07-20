@@ -1,4 +1,4 @@
-import { BUILT_IN_ROLE_PERMISSIONS } from '@trycompai/auth';
+import { BUILT_IN_ROLE_PERMISSIONS, statement } from '@trycompai/auth';
 import { db } from '@db';
 
 /** Safely parse a custom role's stored permissions; malformed JSON → `{}` (never throws). */
@@ -25,7 +25,7 @@ function mergeInto(
 ): void {
   for (const [resource, actions] of Object.entries(perms)) {
     if (!Array.isArray(actions)) continue;
-    (target[resource] ??= new Set<string>());
+    target[resource] ??= new Set<string>();
     for (const action of actions) target[resource].add(action);
   }
 }
@@ -76,6 +76,47 @@ export function permissionsGrant(
   action: string,
 ): boolean {
   return permissions[resource]?.includes(action) ?? false;
+}
+
+/**
+ * Same as `resolveRolePermissions`, but every custom (non-built-in) role
+ * additionally grants `portal` access. The custom-role editor UI has no
+ * toggle for the 'portal' resource (`PermissionMatrix.tsx`'s
+ * `ACCESS_TOGGLES` only exposes 'app'), so a custom role's stored
+ * permissions never include it — without this, no custom role could ever
+ * pass a `portal:*` check (e.g. training video completions), regardless of
+ * what the org admin intended when creating the role. Built-in roles are
+ * unaffected: their real statement already decides whether they get portal
+ * (e.g. `auditor` intentionally does not).
+ */
+export async function resolveRolePermissionsWithImplicitPortal(
+  organizationId: string,
+  roles: string[],
+): Promise<Record<string, string[]>> {
+  const resolved = await resolveRolePermissions(organizationId, roles);
+
+  const hasCustomRole = roles.some(
+    (role) =>
+      role &&
+      !Object.prototype.hasOwnProperty.call(BUILT_IN_ROLE_PERMISSIONS, role),
+  );
+  if (!hasCustomRole) return resolved;
+
+  const portalActions = new Set([
+    ...(resolved.portal ?? []),
+    ...statement.portal,
+  ]);
+  return { ...resolved, portal: [...portalActions] };
+}
+
+/** Whether every required `resource:action` pair is present in `permissions`. */
+export function allPermissionsGranted(
+  permissions: Record<string, string[]>,
+  required: Record<string, string[]>,
+): boolean {
+  return Object.entries(required).every(([resource, actions]) =>
+    actions.every((action) => permissionsGrant(permissions, resource, action)),
+  );
 }
 
 /**
