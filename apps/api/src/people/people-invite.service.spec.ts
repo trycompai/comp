@@ -19,6 +19,7 @@ jest.mock('@db', () => ({
     user: {
       findFirst: jest.fn(),
       create: jest.fn(),
+      update: jest.fn(),
     },
     member: {
       findFirst: jest.fn(),
@@ -354,6 +355,92 @@ describe('PeopleInviteService', () => {
       // the portal sign-in page, so new users must be created verified.
       expect(mockDb.user.create).toHaveBeenCalledWith({
         data: expect.objectContaining({ emailVerified: true }),
+      });
+    });
+
+    it('upgrades a legacy unverified user to verified when re-invited as an employee', async () => {
+      (mockDb.organization.findUnique as jest.Mock).mockResolvedValue({
+        name: 'Test Org',
+      });
+      // Legacy row: created before employees were created verified, and no
+      // longer a member anywhere, so the one-time member backfill missed it.
+      (mockDb.user.findFirst as jest.Mock).mockResolvedValue({
+        id: 'user_legacy',
+        email: 'emp@example.com',
+        emailVerified: false,
+      });
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue(null);
+      (mockDb.member.create as jest.Mock).mockResolvedValue({
+        id: 'member_new',
+      });
+      (
+        mockDb.employeeTrainingVideoCompletion.createMany as jest.Mock
+      ).mockResolvedValue({ count: 5 });
+
+      const results = await service.inviteMembers({
+        ...baseParams,
+        invites: [{ email: 'emp@example.com', roles: ['employee'] }],
+      });
+
+      expect(results[0].success).toBe(true);
+      expect(mockDb.user.update).toHaveBeenCalledWith({
+        where: { id: 'user_legacy' },
+        data: { emailVerified: true },
+      });
+    });
+
+    it('does not touch an already-verified user when re-invited', async () => {
+      (mockDb.organization.findUnique as jest.Mock).mockResolvedValue({
+        name: 'Test Org',
+      });
+      (mockDb.user.findFirst as jest.Mock).mockResolvedValue({
+        id: 'user_verified',
+        email: 'emp@example.com',
+        emailVerified: true,
+      });
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue(null);
+      (mockDb.member.create as jest.Mock).mockResolvedValue({
+        id: 'member_new',
+      });
+      (
+        mockDb.employeeTrainingVideoCompletion.createMany as jest.Mock
+      ).mockResolvedValue({ count: 5 });
+
+      const results = await service.inviteMembers({
+        ...baseParams,
+        invites: [{ email: 'emp@example.com', roles: ['employee'] }],
+      });
+
+      expect(results[0].success).toBe(true);
+      expect(mockDb.user.update).not.toHaveBeenCalled();
+    });
+
+    it('upgrades a legacy unverified user to verified when invited to an admin role', async () => {
+      (mockDb.user.findFirst as jest.Mock).mockResolvedValue({
+        id: 'user_legacy',
+        email: 'admin@example.com',
+        emailVerified: false,
+      });
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue(null);
+      (mockDb.organization.findUnique as jest.Mock).mockResolvedValue({
+        name: 'Test Org',
+      });
+      (mockDb.invitation.create as jest.Mock).mockResolvedValue({
+        id: 'inv_new',
+      });
+
+      const results = await service.inviteMembers({
+        ...baseParams,
+        invites: [{ email: 'admin@example.com', roles: ['admin'] }],
+      });
+
+      expect(results[0].success).toBe(true);
+      expect(mockDb.invitation.create).toHaveBeenCalled();
+      // The invitee signs in to accept; an unverified row would block linking
+      // a Google/Microsoft sign-in to it (account_not_linked).
+      expect(mockDb.user.update).toHaveBeenCalledWith({
+        where: { id: 'user_legacy' },
+        data: { emailVerified: true },
       });
     });
 
