@@ -339,7 +339,7 @@ describe('Employee Compliance obligation implies portal access', () => {
     expect(mockOnChange).toHaveBeenCalledWith({ control: ['read'] });
   });
 
-  it('does not call onChange (permissions) when an unrelated resource permission changes', () => {
+  it('does not inject portal permissions when an unrelated resource permission changes', () => {
     // Only the 'compliance' obligation toggle should sync portal — a plain
     // resource-permission change must not go through the obligation branch.
     const mockOnChange = vi.fn();
