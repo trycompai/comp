@@ -28,6 +28,7 @@ jest.mock('@trycompai/auth', () => {
     apiKey: ['create', 'read', 'delete'],
     app: ['read'],
     trust: ['read', 'update'],
+    portal: ['read', 'update'],
   };
 
   const BUILT_IN_ROLE_PERMISSIONS: Record<string, Record<string, string[]>> = {
@@ -340,6 +341,80 @@ describe('RolesService', () => {
         service.createRole(organizationId, dto, ['employee', 'auditor']),
       ).resolves.toBeDefined();
     });
+
+    it('grants portal:read/update when the compliance obligation is set, even if not requested', async () => {
+      // Regression: a role created with obligations.compliance=true via any
+      // caller other than the roles settings UI (which syncs this itself in
+      // PermissionMatrix.tsx) would otherwise lack 'portal' entirely and be
+      // unable to reach portal-gated endpoints (e.g. training completions).
+      const dto = {
+        name: 'devops-engineer',
+        permissions: { control: ['read'] },
+        obligations: { compliance: true },
+      };
+
+      (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(null);
+      (mockDb.organizationRole.count as jest.Mock).mockResolvedValue(0);
+      (mockDb.organizationRole.create as jest.Mock).mockImplementation(
+        ({ data }) => ({
+          id: 'rol_devops',
+          ...data,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      );
+
+      const result = await service.createRole(organizationId, dto, ['owner']);
+
+      expect(result.permissions.portal).toEqual(
+        expect.arrayContaining(['read', 'update']),
+      );
+    });
+
+    it('does not add portal without the compliance obligation', async () => {
+      const dto = {
+        name: 'read-only-role',
+        permissions: { control: ['read'] },
+      };
+
+      (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(null);
+      (mockDb.organizationRole.count as jest.Mock).mockResolvedValue(0);
+      (mockDb.organizationRole.create as jest.Mock).mockImplementation(
+        ({ data }) => ({
+          id: 'rol_readonly',
+          ...data,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      );
+
+      const result = await service.createRole(organizationId, dto, ['owner']);
+
+      expect(result.permissions.portal).toBeUndefined();
+    });
+
+    it('does not duplicate portal actions already requested alongside the compliance obligation', async () => {
+      const dto = {
+        name: 'portal-explicit',
+        permissions: { portal: ['read'] },
+        obligations: { compliance: true },
+      };
+
+      (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(null);
+      (mockDb.organizationRole.count as jest.Mock).mockResolvedValue(0);
+      (mockDb.organizationRole.create as jest.Mock).mockImplementation(
+        ({ data }) => ({
+          id: 'rol_portal',
+          ...data,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      );
+
+      const result = await service.createRole(organizationId, dto, ['owner']);
+
+      expect(result.permissions.portal.sort()).toEqual(['read', 'update']);
+    });
   });
 
   describe('listRoles', () => {
@@ -487,6 +562,105 @@ describe('RolesService', () => {
           ['employee'],
         ),
       ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('grants portal:read/update when enabling the compliance obligation on an obligations-only update', async () => {
+      // An obligations-only PATCH (no `permissions` in the request) must
+      // still merge portal into the role's EXISTING stored permissions —
+      // otherwise re-saving obligations alone wouldn't fix a role that was
+      // missing portal.
+      const existingRole = {
+        id: roleId,
+        name: 'devops-engineer',
+        permissions: JSON.stringify({ control: ['read'] }),
+        obligations: '{}',
+      };
+
+      (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(
+        existingRole,
+      );
+      (mockDb.organizationRole.update as jest.Mock).mockImplementation(
+        ({ data }) => ({
+          id: roleId,
+          name: existingRole.name,
+          ...data,
+          updatedAt: new Date(),
+        }),
+      );
+
+      const result = await service.updateRole(
+        organizationId,
+        roleId,
+        { obligations: { compliance: true } },
+        ['owner'],
+      );
+
+      expect(result.permissions.portal).toEqual(
+        expect.arrayContaining(['read', 'update']),
+      );
+      expect(result.permissions.control).toEqual(['read']);
+    });
+
+    it('grants portal:read/update when updating permissions on a role whose existing obligations already require compliance', async () => {
+      // A permissions-only update (no `obligations` in the request) must
+      // still see the role's EXISTING obligations to know portal applies.
+      const existingRole = {
+        id: roleId,
+        name: 'devops-engineer',
+        permissions: JSON.stringify({ control: ['read'] }),
+        obligations: JSON.stringify({ compliance: true }),
+      };
+
+      (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(
+        existingRole,
+      );
+      (mockDb.organizationRole.update as jest.Mock).mockImplementation(
+        ({ data }) => ({
+          id: roleId,
+          name: existingRole.name,
+          obligations: existingRole.obligations,
+          ...data,
+          updatedAt: new Date(),
+        }),
+      );
+
+      const result = await service.updateRole(
+        organizationId,
+        roleId,
+        { permissions: { control: ['read', 'update'] } },
+        ['owner'],
+      );
+
+      expect(result.permissions.portal).toEqual(
+        expect.arrayContaining(['read', 'update']),
+      );
+    });
+
+    it('does not touch permissions when neither permissions nor obligations are part of the update', async () => {
+      const existingRole = {
+        id: roleId,
+        name: 'old-name',
+        permissions: JSON.stringify({ control: ['read'] }),
+        obligations: '{}',
+      };
+
+      (mockDb.organizationRole.findFirst as jest.Mock)
+        .mockResolvedValueOnce(existingRole)
+        .mockResolvedValueOnce(null);
+      (mockDb.organizationRole.update as jest.Mock).mockResolvedValue({
+        ...existingRole,
+        name: 'new-name',
+        updatedAt: new Date(),
+      });
+
+      await service.updateRole(organizationId, roleId, { name: 'new-name' }, [
+        'owner',
+      ]);
+
+      expect(mockDb.organizationRole.update).toHaveBeenCalledWith({
+        where: { id: roleId },
+        data: { name: 'new-name' },
+      });
     });
   });
 
@@ -746,7 +920,10 @@ describe('RolesService', () => {
 
     it('returns the hardcoded default when no override row exists', async () => {
       (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(null);
-      const result = await service.getBuiltInObligations(organizationId, 'owner');
+      const result = await service.getBuiltInObligations(
+        organizationId,
+        'owner',
+      );
       expect(result).toEqual({ compliance: true });
     });
 
@@ -754,7 +931,10 @@ describe('RolesService', () => {
       (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue({
         obligations: JSON.stringify({ compliance: false }),
       });
-      const result = await service.getBuiltInObligations(organizationId, 'owner');
+      const result = await service.getBuiltInObligations(
+        organizationId,
+        'owner',
+      );
       expect(result).toEqual({ compliance: false });
     });
 
@@ -762,13 +942,19 @@ describe('RolesService', () => {
       (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue({
         obligations: { compliance: false },
       });
-      const result = await service.getBuiltInObligations(organizationId, 'owner');
+      const result = await service.getBuiltInObligations(
+        organizationId,
+        'owner',
+      );
       expect(result).toEqual({ compliance: false });
     });
 
     it('returns empty for admin (no default compliance, no override)', async () => {
       (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(null);
-      const result = await service.getBuiltInObligations(organizationId, 'admin');
+      const result = await service.getBuiltInObligations(
+        organizationId,
+        'admin',
+      );
       expect(result).toEqual({});
     });
 
@@ -784,7 +970,10 @@ describe('RolesService', () => {
       (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue({
         obligations: '{}',
       });
-      const result = await service.getBuiltInObligations(organizationId, 'owner');
+      const result = await service.getBuiltInObligations(
+        organizationId,
+        'owner',
+      );
       expect(result).toEqual({ compliance: true });
     });
   });
@@ -804,7 +993,10 @@ describe('RolesService', () => {
         { compliance: false },
       );
 
-      expect(result).toEqual({ name: 'owner', obligations: { compliance: false } });
+      expect(result).toEqual({
+        name: 'owner',
+        obligations: { compliance: false },
+      });
       expect(mockDb.organizationRole.upsert).toHaveBeenCalledWith({
         where: { organizationId_name: { organizationId, name: 'owner' } },
         create: expect.objectContaining({
@@ -924,14 +1116,18 @@ describe('RolesService', () => {
 
       const result = await service.listRoles(organizationId);
       // Override row must not appear as a custom role
-      expect(result.customRoles.map((r) => r.name)).toEqual(['compliance-lead']);
+      expect(result.customRoles.map((r) => r.name)).toEqual([
+        'compliance-lead',
+      ]);
       // Built-in entries carry effective obligations — owner reflects the override
       const ownerEntry = result.builtInRoles.find((r) => r.name === 'owner');
       expect(ownerEntry?.obligations).toEqual({ compliance: false });
       // Other built-ins still show their hardcoded defaults
       const adminEntry = result.builtInRoles.find((r) => r.name === 'admin');
       expect(adminEntry?.obligations).toEqual({});
-      const employeeEntry = result.builtInRoles.find((r) => r.name === 'employee');
+      const employeeEntry = result.builtInRoles.find(
+        (r) => r.name === 'employee',
+      );
       expect(employeeEntry?.obligations).toEqual({ compliance: true });
     });
 
