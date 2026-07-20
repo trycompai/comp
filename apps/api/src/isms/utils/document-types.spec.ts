@@ -1,8 +1,8 @@
 import { ISMS_TYPE_DEFINITIONS, matchRequirementId } from './document-types';
 
 describe('ISMS_TYPE_DEFINITIONS', () => {
-  it('defines all seven foundational document types with clauses', () => {
-    expect(ISMS_TYPE_DEFINITIONS).toHaveLength(7);
+  it('defines all eight foundational document types with clauses', () => {
+    expect(ISMS_TYPE_DEFINITIONS).toHaveLength(8);
     const types = ISMS_TYPE_DEFINITIONS.map((d) => d.type);
     expect(types).toEqual(
       expect.arrayContaining([
@@ -13,8 +13,16 @@ describe('ISMS_TYPE_DEFINITIONS', () => {
         'leadership_commitment',
         'roles_and_responsibilities',
         'objectives_plan',
+        'monitoring',
       ]),
     );
+  });
+
+  it('maps monitoring to clause 9.1', () => {
+    const monitoring = ISMS_TYPE_DEFINITIONS.find(
+      (d) => d.type === 'monitoring',
+    );
+    expect(monitoring?.clause).toBe('9.1');
   });
 
   it('maps 4.2 to both interested-parties documents', () => {

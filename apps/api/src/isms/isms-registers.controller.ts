@@ -19,7 +19,7 @@ import {
   ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
-import { OrganizationId } from '@/auth/auth-context.decorator';
+import { MemberId, OrganizationId } from '@/auth/auth-context.decorator';
 import { HybridAuthGuard } from '@/auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
@@ -29,9 +29,12 @@ import { IsmsRequirementService } from './isms-requirement.service';
 import { IsmsObjectiveService } from './isms-objective.service';
 import { IsmsRoleService } from './isms-role.service';
 import { IsmsRoleAssignmentService } from './isms-role-assignment.service';
+import { IsmsMetricService } from './isms-metric.service';
+import { IsmsMeasurementService } from './isms-measurement.service';
 import { IsmsNarrativeService } from './isms-narrative.service';
 import {
   createRegisterRegistry,
+  parseMeasurementBulkBody,
   type IsmsRegisterKey,
   type RegisterHandler,
 } from './registers/register-registry';
@@ -95,8 +98,49 @@ const REGISTER_ROW_BODY = {
       gap: { type: 'string', nullable: true },
       remediationAction: { type: 'string', nullable: true },
       remediationDueDate: { type: 'string', nullable: true },
+      // Monitoring register (9.1) metrics + measurements
+      whatIsMeasured: { type: 'string' },
+      method: { type: 'string' },
+      monitorMemberId: { type: 'string', nullable: true },
+      analyzeMemberId: { type: 'string', nullable: true },
+      objectiveId: { type: 'string', nullable: true },
+      isActive: { type: 'boolean' },
+      metricId: { type: 'string' },
+      periodStart: {
+        type: 'string',
+        description:
+          'First day of the covered period (YYYY-MM-DD), aligned to the metric cadence',
+      },
+      value: { type: 'string' },
+      note: { type: 'string', nullable: true },
       position: { type: 'integer', minimum: 0 },
     },
+  },
+} as const;
+
+const MEASUREMENT_BULK_BODY = {
+  description:
+    'Measurements to record in one save (Metrics due / backfill views)',
+  schema: {
+    type: 'object',
+    properties: {
+      measurements: {
+        type: 'array',
+        minItems: 1,
+        maxItems: 200,
+        items: {
+          type: 'object',
+          properties: {
+            metricId: { type: 'string' },
+            periodStart: { type: 'string' },
+            value: { type: 'string' },
+            note: { type: 'string', nullable: true },
+          },
+          required: ['metricId', 'periodStart', 'value'],
+        },
+      },
+    },
+    required: ['measurements'],
   },
 } as const;
 
@@ -136,6 +180,8 @@ export class IsmsRegistersController {
     objectiveService: IsmsObjectiveService,
     roleService: IsmsRoleService,
     roleAssignmentService: IsmsRoleAssignmentService,
+    metricService: IsmsMetricService,
+    private readonly measurementService: IsmsMeasurementService,
     private readonly narrativeService: IsmsNarrativeService,
   ) {
     this.registry = createRegisterRegistry({
@@ -145,6 +191,8 @@ export class IsmsRegistersController {
       objectives: objectiveService,
       roles: roleService,
       roleAssignments: roleAssignmentService,
+      metrics: metricService,
+      measurements: this.measurementService,
     });
   }
 
@@ -169,11 +217,15 @@ export class IsmsRegistersController {
     // Read req.body directly: the global ValidationPipe mangles nested JSON.
     @Req() req: Request,
     @OrganizationId() organizationId: string,
+    // Session-auth member; undefined under API-key auth. Measurements record
+    // it as the immutable enteredById.
+    @MemberId() memberId: string | undefined,
   ) {
     return this.resolve(register).create({
       documentId: id,
       organizationId,
       data: req.body,
+      memberId: memberId ?? null,
     });
   }
 
@@ -208,6 +260,33 @@ export class IsmsRegistersController {
     @OrganizationId() organizationId: string,
   ) {
     return this.resolve(register).remove({ rowId, organizationId });
+  }
+
+  // --- Monitoring (9.1): one-save bulk measurement entry ---
+
+  @Post('documents/:id/measurements/bulk')
+  @HttpCode(HttpStatus.CREATED)
+  @RequirePermission('evidence', 'update')
+  @ApiOperation({
+    summary:
+      'Record measurements for several metrics/periods in one save (Metrics due / backfill)',
+  })
+  @ApiConsumes('application/json')
+  @ApiBody(MEASUREMENT_BULK_BODY)
+  @ApiOkResponse({ description: 'Measurements recorded' })
+  async bulkCreateMeasurements(
+    @Param('id') id: string,
+    // Read req.body directly: the global ValidationPipe mangles nested JSON.
+    @Req() req: Request,
+    @OrganizationId() organizationId: string,
+    @MemberId() memberId: string | undefined,
+  ) {
+    return this.measurementService.bulkCreate({
+      documentId: id,
+      organizationId,
+      memberId: memberId ?? null,
+      dto: parseMeasurementBulkBody(req.body),
+    });
   }
 
   // --- Singleton narrative (4.3 scope, 5.1 leadership) ---

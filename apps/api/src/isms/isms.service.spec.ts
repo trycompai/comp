@@ -11,6 +11,7 @@ jest.mock('@db', () => ({
       findMany: jest.fn(),
       createMany: jest.fn(),
     },
+    ismsMetric: { findMany: jest.fn() },
     control: { findMany: jest.fn() },
     ismsDocumentControlLink: { createMany: jest.fn() },
   },
@@ -114,6 +115,79 @@ describe('IsmsService ensureSetup', () => {
       });
     });
 
+    it('reports overdueMetricCount on the monitoring document row (CS-723)', async () => {
+      const { addPeriods, periodStartFor } = jest.requireActual<
+        typeof import('./utils/metric-periods')
+      >('./utils/metric-periods');
+      const current = periodStartFor('monthly', new Date());
+
+      (
+        mockDb.frameworkEditorFramework.findUnique as jest.Mock
+      ).mockResolvedValue({ id: 'fw_1', requirements: [] });
+      (mockDb.ismsDocument.findMany as jest.Mock).mockResolvedValueOnce([
+        {
+          id: 'doc_mon',
+          type: 'monitoring',
+          status: 'draft',
+          requirementId: null,
+          currentVersionId: null,
+        },
+        {
+          id: 'doc_ctx',
+          type: 'context_of_organization',
+          status: 'draft',
+          requirementId: null,
+          currentVersionId: null,
+        },
+      ]);
+      (mockDb.ismsMetric.findMany as jest.Mock).mockResolvedValue([
+        {
+          // Latest measurement three periods back → overdue.
+          cadence: 'monthly',
+          createdAt: new Date(`${addPeriods('monthly', current, -6)}T00:00:00Z`),
+          measurements: [
+            {
+              periodStart: new Date(
+                `${addPeriods('monthly', current, -3)}T00:00:00Z`,
+              ),
+            },
+          ],
+        },
+        {
+          // Previous period recorded → within cadence.
+          cadence: 'monthly',
+          createdAt: new Date(`${addPeriods('monthly', current, -6)}T00:00:00Z`),
+          measurements: [
+            {
+              periodStart: new Date(
+                `${addPeriods('monthly', current, -1)}T00:00:00Z`,
+              ),
+            },
+          ],
+        },
+      ]);
+
+      const result = await service.ensureSetup({ ...dto, canWrite: false });
+
+      const monitoringRow = result.documents.find(
+        (doc) => doc.type === 'monitoring',
+      );
+      const contextRow = result.documents.find(
+        (doc) => doc.type === 'context_of_organization',
+      );
+      expect(monitoringRow).toMatchObject({ overdueMetricCount: 1 });
+      expect(contextRow).not.toHaveProperty('overdueMetricCount');
+      expect(mockDb.ismsMetric.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            documentId: 'doc_mon',
+            isActive: true,
+            cadence: { not: null },
+          },
+        }),
+      );
+    });
+
     describe('template-driven (templates seeded)', () => {
       beforeEach(() => {
         (
@@ -127,7 +201,7 @@ describe('IsmsService ensureSetup', () => {
         });
       });
 
-      it('creates docs from templates with templateId set', async () => {
+      it('creates docs from templates with templateId set, plus definition fallbacks for untemplated types', async () => {
         mockTemplates.mockResolvedValue([
           {
             id: 'tpl_ctx',
@@ -146,13 +220,19 @@ describe('IsmsService ensureSetup', () => {
         await service.ensureSetup(dto);
 
         expect(mockDb.ismsDocument.createMany).toHaveBeenCalledTimes(1);
-        expect(createManyData()).toHaveLength(1);
+        // 1 template-driven + 7 definition fallbacks: a type shipped before its
+        // template seed re-runs (e.g. monitoring, CS-723) still provisions.
+        expect(createManyData()).toHaveLength(8);
         expect(createManyData()[0]).toMatchObject({
           type: 'context_of_organization',
           title: 'Context of the Organization',
           templateId: 'tpl_ctx',
           requirementId: 'req_41', // resolved via clause fallback "4.1"
         });
+        const monitoring = createManyData().find(
+          (doc: { type: string }) => doc.type === 'monitoring',
+        );
+        expect(monitoring).toMatchObject({ templateId: null });
       });
 
       it('prefers an explicit framework requirement link over clause match', async () => {
@@ -226,8 +306,13 @@ describe('IsmsService ensureSetup', () => {
 
         await service.ensureSetup(dto);
 
-        expect(createManyData()).toHaveLength(1);
+        // objectives (template) + 6 definition fallbacks; the existing
+        // context_of_organization is skipped.
+        expect(createManyData()).toHaveLength(7);
         expect(createManyData()[0].type).toBe('objectives_plan');
+        expect(
+          createManyData().map((doc: { type: string }) => doc.type),
+        ).not.toContain('context_of_organization');
       });
 
       it('auto-derives org control links from the template control links', async () => {
@@ -310,10 +395,19 @@ describe('IsmsService ensureSetup', () => {
             controlLinks: [{ controlTemplateId: 'ct_1' }],
           },
         ]);
-        // Document already exists, so no create and no control derivation runs;
-        // any manual control links the org added are left untouched.
+        // Every type already exists, so no create and no control derivation
+        // runs; any manual control links the org added are left untouched.
         (mockDb.ismsDocument.findMany as jest.Mock)
-          .mockResolvedValueOnce([{ type: 'context_of_organization' }])
+          .mockResolvedValueOnce([
+            { type: 'context_of_organization' },
+            { type: 'interested_parties_register' },
+            { type: 'interested_parties_requirements' },
+            { type: 'isms_scope' },
+            { type: 'leadership_commitment' },
+            { type: 'roles_and_responsibilities' },
+            { type: 'objectives_plan' },
+            { type: 'monitoring' },
+          ])
           .mockResolvedValueOnce([]);
 
         await service.ensureSetup(dto);

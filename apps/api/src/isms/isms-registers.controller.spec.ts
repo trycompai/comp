@@ -12,6 +12,8 @@ import { IsmsRequirementService } from './isms-requirement.service';
 import { IsmsObjectiveService } from './isms-objective.service';
 import { IsmsRoleService } from './isms-role.service';
 import { IsmsRoleAssignmentService } from './isms-role-assignment.service';
+import { IsmsMetricService } from './isms-metric.service';
+import { IsmsMeasurementService } from './isms-measurement.service';
 import { IsmsNarrativeService } from './isms-narrative.service';
 
 jest.mock('../auth/auth.server', () => ({
@@ -45,6 +47,12 @@ jest.mock('./isms-role.service', () => ({
 }));
 jest.mock('./isms-role-assignment.service', () => ({
   IsmsRoleAssignmentService: class {},
+}));
+jest.mock('./isms-metric.service', () => ({
+  IsmsMetricService: class {},
+}));
+jest.mock('./isms-measurement.service', () => ({
+  IsmsMeasurementService: class {},
 }));
 jest.mock('./isms-narrative.service', () => ({
   IsmsNarrativeService: class {},
@@ -86,6 +94,17 @@ describe('IsmsRegistersController', () => {
     update: jest.fn(),
     remove: jest.fn(),
   };
+  const metricService = {
+    create: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
+  };
+  const measurementService = {
+    create: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
+    bulkCreate: jest.fn(),
+  };
   const narrativeService = { save: jest.fn() };
 
   const mockGuard = { canActivate: jest.fn().mockReturnValue(true) };
@@ -103,6 +122,8 @@ describe('IsmsRegistersController', () => {
         { provide: IsmsObjectiveService, useValue: objectiveService },
         { provide: IsmsRoleService, useValue: roleService },
         { provide: IsmsRoleAssignmentService, useValue: roleAssignmentService },
+        { provide: IsmsMetricService, useValue: metricService },
+        { provide: IsmsMeasurementService, useValue: measurementService },
         { provide: IsmsNarrativeService, useValue: narrativeService },
       ],
     })
@@ -128,6 +149,7 @@ describe('IsmsRegistersController', () => {
         'interested-parties',
         reqWith(dto),
         'org_1',
+        undefined,
       );
       expect(interestedPartyService.create).toHaveBeenCalledWith({
         documentId: 'doc_1',
@@ -148,6 +170,7 @@ describe('IsmsRegistersController', () => {
         'context-issues',
         reqWith(body),
         'org_1',
+        undefined,
       );
       expect(contextIssueService.create).toHaveBeenCalledWith({
         documentId: 'doc_1',
@@ -163,6 +186,7 @@ describe('IsmsRegistersController', () => {
         'requirements',
         reqWith(body),
         'org_1',
+        undefined,
       );
       expect(requirementService.create).toHaveBeenCalledWith({
         documentId: 'doc_1',
@@ -173,7 +197,13 @@ describe('IsmsRegistersController', () => {
 
     it('dispatches objectives create with parsed dto', async () => {
       const body = { objective: 'o' };
-      await controller.createRow('doc_1', 'objectives', reqWith(body), 'org_1');
+      await controller.createRow(
+        'doc_1',
+        'objectives',
+        reqWith(body),
+        'org_1',
+        undefined,
+      );
       expect(objectiveService.create).toHaveBeenCalledWith({
         documentId: 'doc_1',
         organizationId: 'org_1',
@@ -181,10 +211,100 @@ describe('IsmsRegistersController', () => {
       });
     });
 
+    it('dispatches metrics create without forwarding the member id', async () => {
+      const body = { name: 'Custom metric', cadence: 'monthly' };
+      await controller.createRow(
+        'doc_1',
+        'metrics',
+        reqWith(body),
+        'org_1',
+        'mem_1',
+      );
+      expect(metricService.create).toHaveBeenCalledWith({
+        documentId: 'doc_1',
+        organizationId: 'org_1',
+        dto: body,
+      });
+    });
+
+    it('dispatches measurements create with the caller member id as enteredBy', async () => {
+      const body = { metricId: 'met_1', periodStart: '2026-07-01', value: '5' };
+      await controller.createRow(
+        'doc_1',
+        'measurements',
+        reqWith(body),
+        'org_1',
+        'mem_1',
+      );
+      expect(measurementService.create).toHaveBeenCalledWith({
+        documentId: 'doc_1',
+        organizationId: 'org_1',
+        memberId: 'mem_1',
+        dto: body,
+      });
+    });
+
+    it('passes memberId null under API-key auth (no session member)', async () => {
+      const body = { metricId: 'met_1', periodStart: '2026-07-01', value: '5' };
+      await controller.createRow(
+        'doc_1',
+        'measurements',
+        reqWith(body),
+        'org_1',
+        undefined,
+      );
+      expect(measurementService.create).toHaveBeenCalledWith(
+        expect.objectContaining({ memberId: null }),
+      );
+    });
+
     it('throws BadRequestException for an unknown register', async () => {
       await expect(
-        controller.createRow('doc_1', 'nope', reqWith({}), 'org_1'),
+        controller.createRow('doc_1', 'nope', reqWith({}), 'org_1', undefined),
       ).rejects.toBeInstanceOf(BadRequestException);
+    });
+  });
+
+  describe('bulkCreateMeasurements', () => {
+    it('parses the body and dispatches to the measurement service', async () => {
+      const measurements = [
+        { metricId: 'met_1', periodStart: '2026-07-01', value: '99.9%' },
+        { metricId: 'met_2', periodStart: '2026-04-01', value: '0', note: 'n' },
+      ];
+      await controller.bulkCreateMeasurements(
+        'doc_1',
+        reqWith({ measurements }),
+        'org_1',
+        'mem_1',
+      );
+      expect(measurementService.bulkCreate).toHaveBeenCalledWith({
+        documentId: 'doc_1',
+        organizationId: 'org_1',
+        memberId: 'mem_1',
+        dto: {
+          measurements: [
+            { metricId: 'met_1', periodStart: '2026-07-01', value: '99.9%' },
+            {
+              metricId: 'met_2',
+              periodStart: '2026-04-01',
+              value: '0',
+              note: 'n',
+            },
+          ],
+        },
+      });
+    });
+
+    it('rejects an empty measurements array', async () => {
+      await expect(
+        controller.bulkCreateMeasurements(
+          'doc_1',
+          reqWith({ measurements: [] }),
+          'org_1',
+          'mem_1',
+        ),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(measurementService.bulkCreate).not.toHaveBeenCalled();
     });
   });
 
@@ -273,6 +393,7 @@ describe('IsmsRegistersController', () => {
         'createRow',
         'updateRow',
         'deleteRow',
+        'bulkCreateMeasurements',
         'saveNarrative',
       ] as const) {
         expect(permissionsFor(method)).toEqual([

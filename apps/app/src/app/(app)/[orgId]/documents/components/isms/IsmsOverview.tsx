@@ -16,6 +16,7 @@ import {
   Incomplete,
   MagicWand,
   Renew,
+  Time,
   WarningAlt,
   WarningAltFilled,
 } from '@trycompai/design-system/icons';
@@ -88,6 +89,10 @@ export function IsmsOverview({ organizationId }: { organizationId: string }) {
     const approved = documents.filter((doc) => doc.status === 'approved').length;
     const outstanding = total - approved;
     const needsReview = isContextStale ? 1 : 0;
+    // Metrics whose latest measurement is older than their cadence allows
+    // (CS-723) — computed server-side on the monitoring document row.
+    const metricsOverdue =
+      documents.find((doc) => doc.type === 'monitoring')?.overdueMetricCount ?? 0;
     return [
       { label: 'Documents', value: total, icon: DocumentMultiple_01 },
       { label: 'Approved', value: approved, icon: CheckmarkFilled, tone: 'success' },
@@ -97,6 +102,12 @@ export function IsmsOverview({ organizationId }: { organizationId: string }) {
         value: needsReview,
         icon: WarningAltFilled,
         tone: needsReview > 0 ? 'warning' : 'default',
+      },
+      {
+        label: 'Metrics overdue',
+        value: metricsOverdue,
+        icon: Time,
+        tone: metricsOverdue > 0 ? 'warning' : 'default',
       },
     ];
   }, [documents, isContextStale]);
@@ -163,7 +174,7 @@ export function IsmsOverview({ organizationId }: { organizationId: string }) {
 
       <Section
         title="Foundational Documents"
-        description="The ISO 27001 clause 4–6 documents that establish your information security management system."
+        description="The ISO 27001 clause 4–9 documents that establish and monitor your information security management system."
         actions={wizardAction}
       >
         <Grid cols={{ base: '1', md: '2', xl: '3' }} gap="4">

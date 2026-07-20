@@ -10,6 +10,7 @@ import { ContextOfOrganizationClient } from '../components/ContextOfOrganization
 import { InterestedPartiesClient } from '../components/InterestedPartiesClient';
 import type { ApproverOption } from '../components/IsmsApprovalSection';
 import { LeadershipClient } from '../components/LeadershipClient';
+import { MonitoringClient } from '../components/MonitoringClient';
 import { ObjectivesClient } from '../components/ObjectivesClient';
 import { RequirementsClient } from '../components/RequirementsClient';
 import { RolesClient } from '../components/RolesClient';
@@ -43,6 +44,7 @@ const ISMS_DETAIL_CLIENTS: Record<
   interested_parties_requirements: RequirementsClient,
   objectives_plan: ObjectivesClient,
   roles_and_responsibilities: RolesClient,
+  monitoring: MonitoringClient,
   isms_scope: ScopeClient,
   leadership_commitment: LeadershipClient,
 };
