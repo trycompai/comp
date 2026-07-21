@@ -1,15 +1,24 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { MaxCommentTextLength } from '../validators/max-comment-text-length.validator';
+
+// `content` is serialized Tiptap JSON (or plain text for API callers). The
+// 2000-char limit applies to the visible text a user typed, not the raw
+// JSON — see MaxCommentTextLength. This raw-string cap only bounds payload
+// size against pathologically formatted input.
+const RAW_CONTENT_MAX_LENGTH = 50_000;
 
 export class UpdateCommentDto {
   @ApiProperty({
-    description: 'Updated content of the comment',
+    description:
+      'Updated content of the comment (plain text or serialized Tiptap JSON). Limited to 2000 characters of visible text; maxLength bounds the serialized payload size, not the visible text.',
     example: 'This task needs to be completed by end of week (updated)',
-    maxLength: 2000,
+    maxLength: RAW_CONTENT_MAX_LENGTH,
   })
   @IsString()
   @IsNotEmpty()
-  @MaxLength(2000)
+  @MaxLength(RAW_CONTENT_MAX_LENGTH)
+  @MaxCommentTextLength(2000)
   content: string;
 
   @ApiProperty({
