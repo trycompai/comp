@@ -4,8 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { db } from '@db';
-import type { Prisma } from '@db';
+import { db, Prisma } from '@db';
 import { SubmitIsmsForApprovalDto } from './dto/submit-isms-for-approval.dto';
 import { deriveControlLinks, resolveDocumentPlans } from './utils/ensure-setup-plan';
 import { collectPlatformData } from './documents/data-source';
@@ -218,38 +217,32 @@ export class IsmsService {
     }
 
     // Same first-load guarantee for Internal Audit (9.2): the Programme
-    // paragraph opens with its default text. Seed-if-empty: under concurrent
-    // setup calls the "created" lookup can also match a row the other call
-    // just created, so an unconditional write could clobber an early edit.
+    // paragraph opens with its default text. The write is conditional on the
+    // narrative still being NULL (its creation state), so it is atomic: under
+    // concurrent setup calls — where the "created" lookup can also match a row
+    // the other call just created — an early customer edit can never be
+    // clobbered (the seed simply matches zero rows).
     const internalAuditDoc = created.find(
       (doc) => doc.type === 'internal_audit',
     );
     if (internalAuditDoc) {
-      const existing = await db.ismsDocument.findUnique({
-        where: { id: internalAuditDoc.id },
-        select: { draftNarrative: true },
+      const organization = await db.organization.findUnique({
+        where: { id: organizationId },
+        select: { name: true },
       });
-      const hasNarrative =
-        existing?.draftNarrative != null &&
-        typeof existing.draftNarrative === 'object' &&
-        !Array.isArray(existing.draftNarrative) &&
-        Object.keys(existing.draftNarrative).length > 0;
-      if (!hasNarrative) {
-        const organization = await db.organization.findUnique({
-          where: { id: organizationId },
-          select: { name: true },
-        });
-        await db.ismsDocument.update({
-          where: { id: internalAuditDoc.id },
-          data: {
-            draftNarrative: {
-              programme: defaultProgrammeText(
-                organization?.name ?? 'The organization',
-              ),
-            },
+      await db.ismsDocument.updateMany({
+        where: {
+          id: internalAuditDoc.id,
+          draftNarrative: { equals: Prisma.AnyNull },
+        },
+        data: {
+          draftNarrative: {
+            programme: defaultProgrammeText(
+              organization?.name ?? 'The organization',
+            ),
           },
-        });
-      }
+        },
+      });
     }
   }
 

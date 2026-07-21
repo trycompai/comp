@@ -1,5 +1,5 @@
 import { NotFoundException } from '@nestjs/common';
-import { db } from '@db';
+import { db, Prisma } from '@db';
 import { IsmsService } from './isms.service';
 import type { IsmsVersionService } from './isms-version.service';
 
@@ -10,14 +10,15 @@ jest.mock('@db', () => ({
     ismsDocument: {
       findMany: jest.fn(),
       createMany: jest.fn(),
-      findUnique: jest.fn(),
-      update: jest.fn(),
+      updateMany: jest.fn(),
     },
     ismsMetric: { findMany: jest.fn() },
     organization: { findUnique: jest.fn() },
     control: { findMany: jest.fn() },
     ismsDocumentControlLink: { createMany: jest.fn() },
   },
+  // The programme seed filters on the Prisma JSON-null sentinel.
+  Prisma: { AnyNull: Symbol.for('prisma.AnyNull') },
 }));
 jest.mock('./documents/data-source', () => ({
   collectPlatformData: jest.fn(),
@@ -118,16 +119,13 @@ describe('IsmsService ensureSetup', () => {
       });
     });
 
-    it('seeds the programme paragraph on a newly-provisioned Internal Audit doc (CS-724)', async () => {
+    it('seeds the programme on a new Internal Audit doc atomically — only while the narrative is still NULL (CS-724)', async () => {
       (
         mockDb.frameworkEditorFramework.findUnique as jest.Mock
       ).mockResolvedValue({ id: 'fw_1', requirements: [] });
       mockTemplates.mockResolvedValue([]);
       (mockDb.organization.findUnique as jest.Mock).mockResolvedValue({
         name: 'Acme Corp',
-      });
-      (mockDb.ismsDocument.findUnique as jest.Mock).mockResolvedValue({
-        draftNarrative: null,
       });
       (mockDb.ismsDocument.findMany as jest.Mock)
         .mockResolvedValueOnce([]) // existing-types probe
@@ -136,8 +134,14 @@ describe('IsmsService ensureSetup', () => {
 
       await service.ensureSetup(dto);
 
-      expect(mockDb.ismsDocument.update).toHaveBeenCalledWith({
-        where: { id: 'doc_ia' },
+      // The NULL filter is the concurrency guard: a narrative written between
+      // provisioning and this seed (concurrent setup call or an early customer
+      // edit) makes the update match zero rows instead of overwriting.
+      expect(mockDb.ismsDocument.updateMany).toHaveBeenCalledWith({
+        where: {
+          id: 'doc_ia',
+          draftNarrative: { equals: Prisma.AnyNull },
+        },
         data: {
           draftNarrative: {
             programme: expect.stringContaining(
@@ -146,25 +150,6 @@ describe('IsmsService ensureSetup', () => {
           },
         },
       });
-    });
-
-    it('never overwrites an already-populated programme narrative (CS-724)', async () => {
-      (
-        mockDb.frameworkEditorFramework.findUnique as jest.Mock
-      ).mockResolvedValue({ id: 'fw_1', requirements: [] });
-      mockTemplates.mockResolvedValue([]);
-      // A concurrent setup call created + seeded (or the customer edited) it.
-      (mockDb.ismsDocument.findUnique as jest.Mock).mockResolvedValue({
-        draftNarrative: { programme: 'Customer-edited programme.' },
-      });
-      (mockDb.ismsDocument.findMany as jest.Mock)
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([{ id: 'doc_ia', type: 'internal_audit' }])
-        .mockResolvedValueOnce([]);
-
-      await service.ensureSetup(dto);
-
-      expect(mockDb.ismsDocument.update).not.toHaveBeenCalled();
     });
 
     it('reports overdueMetricCount on the monitoring document row (CS-723)', async () => {

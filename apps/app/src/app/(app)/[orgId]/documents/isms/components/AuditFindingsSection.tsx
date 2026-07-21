@@ -103,7 +103,9 @@ export function AuditFindingsSection({
             </Button>
           </HStack>
           <AddFindingForm
-            key={prefill.controlId}
+            // Keyed by row AND type so re-marking the same row (e.g. from
+            // non-conformity to observation) re-initializes the form.
+            key={`${prefill.controlId}:${prefill.type}`}
             audit={audit}
             memberOptions={memberOptions}
             initialValues={{
