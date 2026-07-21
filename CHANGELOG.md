@@ -1,3 +1,19 @@
+# [3.105.0](https://github.com/trycompai/comp/compare/v3.104.2...v3.105.0) (2026-07-20)
+
+
+### Features
+
+* **isms:** monitoring & measurement framework — clause 9.1 (CS-723) ([#3460](https://github.com/trycompai/comp/issues/3460)) ([585e162](https://github.com/trycompai/comp/commit/585e162d2bcc64f01eb1c6621efe49df8ec560e2))
+
+## [3.104.2](https://github.com/trycompai/comp/compare/v3.104.1...v3.104.2) (2026-07-20)
+
+
+### Bug Fixes
+
+* **auth:** redirect microsoft sso callback errors to portal instead of api docs ([7920bae](https://github.com/trycompai/comp/commit/7920baec27f21571030553bc43b6b63cc779701a))
+* **integrations:** report code scanning off vs missing permission correctly ([220d60f](https://github.com/trycompai/comp/commit/220d60f902038654665ccadeb23e6c2bbd6e1b9b))
+* **people:** create invited employees with verified emails so SSO can link ([#3459](https://github.com/trycompai/comp/issues/3459)) ([cd31daf](https://github.com/trycompai/comp/commit/cd31daf4f78ce385e664d2a4eb658f5432ea8661))
+
 ## [3.104.1](https://github.com/trycompai/comp/compare/v3.104.0...v3.104.1) (2026-07-17)
 
 

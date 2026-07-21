@@ -90,6 +90,10 @@ const TYPE_DRIFT_SOURCES: Record<IsmsDocumentType, Array<keyof DiffMap>> = {
   // consumes is headcount, which sets the team-size band (small vs standard) and
   // so changes the team-size note + operational-responsibilities rendering.
   roles_and_responsibilities: ['members'],
+  // Monitoring (9.1) renders entirely from its own metrics register (seeded
+  // static defaults + customer edits + measurements); no platform snapshot
+  // input changes its rendering, so it can never be platform-drift stale.
+  monitoring: [],
   isms_scope: [
     'frameworks',
     'vendors',

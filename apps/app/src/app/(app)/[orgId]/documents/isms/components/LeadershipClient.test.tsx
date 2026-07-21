@@ -173,6 +173,7 @@ function makeDocument(overrides: Partial<IsmsDocument> = {}): IsmsDocument {
     interestedPartyRequirements: [],
     objectives: [],
     roles: [],
+    metrics: [],
     controlLinks: [],
     draftNarrative: NARRATIVE,
     currentVersionId: null,
