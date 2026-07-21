@@ -235,6 +235,7 @@ export class ApiKeyService {
               organizationId: true,
               expiresAt: true,
               scopes: true,
+              createdByMemberId: true,
             },
           });
           const legacyMatch = legacyRecords.find((record) => {
