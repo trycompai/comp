@@ -2,6 +2,7 @@
 
 import { Button } from '@trycompai/design-system';
 import { Checkmark, Close, Locked } from '@trycompai/design-system/icons';
+import { LiveActivityBorder } from './LiveActivityBorder';
 import { StepList, type SignInStep } from './StepList';
 
 /** ai = automation drives; 2fa = user enters a code; finish = user completes it. */
@@ -87,7 +88,7 @@ export function ConnectLiveSignin({
       <div className="flex flex-col lg:flex-row">
         {/* Left — the live cloud browser */}
         <div className="min-w-0 flex-1 p-4 lg:pr-0">
-          <div className="overflow-hidden rounded-md border border-border">
+          <div className="relative overflow-hidden rounded-md border border-border">
             <div className="flex h-[34px] items-center gap-2 border-b border-border bg-muted px-3">
               <Locked size={11} className="text-muted-foreground" />
               <span className="truncate font-mono text-[11.5px] text-foreground">{host}</span>
@@ -112,6 +113,9 @@ export function ConnectLiveSignin({
                 <span className="mr-3 h-4 w-4 animate-spin rounded-full border-2 border-border border-t-primary" />
                 Opening {host}…
               </div>
+            )}
+            {!success && (
+              <LiveActivityBorder state={variant === 'ai' ? 'ai' : 'you'} />
             )}
           </div>
         </div>

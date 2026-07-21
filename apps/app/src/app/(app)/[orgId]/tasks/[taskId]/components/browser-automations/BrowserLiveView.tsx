@@ -2,6 +2,7 @@
 
 import { Button, Spinner } from '@trycompai/design-system';
 import { Play, Renew, Screen } from '@trycompai/design-system/icons';
+import { LiveActivityBorder } from './LiveActivityBorder';
 
 interface BrowserLiveViewProps {
   title: string;
@@ -65,13 +66,14 @@ export function BrowserLiveView({
         </div>
       </div>
       <div className="p-4">
-        <div className="overflow-hidden rounded-lg border">
+        <div className="relative overflow-hidden rounded-lg border">
           <iframe
             src={liveViewUrl}
             className="h-[500px] w-full"
             sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
             allow="clipboard-read; clipboard-write"
           />
+          <LiveActivityBorder state={variant === 'execution' ? 'ai' : 'you'} />
         </div>
       </div>
     </div>

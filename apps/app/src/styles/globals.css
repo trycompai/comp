@@ -148,3 +148,24 @@ body {
 [data-slot='table-scroll']::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* Live browser activity border — signals who's driving the live view: a primary
+   glow when the AI is acting, amber when it's the user's turn. Inset so the
+   overflow-hidden live-view container never clips it. Color is set per-element
+   via --activity-color. */
+@keyframes browser-activity-glow {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 0 0 2px var(--activity-color),
+      inset 0 0 6px 0 color-mix(in oklab, var(--activity-color) 22%, transparent);
+  }
+  50% {
+    box-shadow:
+      inset 0 0 0 2px var(--activity-color),
+      inset 0 0 18px 3px color-mix(in oklab, var(--activity-color) 48%, transparent);
+  }
+}
+.browser-activity-border {
+  animation: browser-activity-glow 1.8s ease-in-out infinite;
+}

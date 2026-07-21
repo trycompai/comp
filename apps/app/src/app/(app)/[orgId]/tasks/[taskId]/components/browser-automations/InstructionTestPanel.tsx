@@ -3,6 +3,7 @@
 import { Checkmark, Close, Locked, Play } from '@trycompai/design-system/icons';
 import Image from 'next/image';
 import type { InstructionTestResult } from '../../hooks/types';
+import { LiveActivityBorder } from './LiveActivityBorder';
 import { StepList, type SignInStep } from './StepList';
 
 export type TestPhase = 'idle' | 'testing' | 'result';
@@ -104,7 +105,7 @@ export function InstructionTestPanel({
           </span>
         </TestRunHeader>
 
-        <div className="overflow-hidden rounded-md border border-border bg-background">
+        <div className="relative overflow-hidden rounded-md border border-border bg-background">
           <div className="flex h-8 items-center gap-2 border-b border-border px-3">
             <Locked size={11} className="text-muted-foreground" />
             <span className="truncate font-mono text-[10.5px] text-muted-foreground">{host}</span>
@@ -123,6 +124,7 @@ export function InstructionTestPanel({
               Starting the browser…
             </div>
           )}
+          <LiveActivityBorder state="ai" />
         </div>
 
         {steps.length > 0 && (
