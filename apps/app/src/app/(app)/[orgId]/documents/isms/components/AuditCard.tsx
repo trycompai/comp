@@ -193,7 +193,7 @@ export function AuditCard({
       {isEditing ? (
         <AuditFields control={control} auditorOptions={auditorOptions} />
       ) : (
-        <Stack gap="5">
+        <Stack gap="6">
           <Grid cols={{ base: '1', md: '2' }} gap="3">
             <IsmsRegisterField label="Scope">{audit.scope || '—'}</IsmsRegisterField>
             <IsmsRegisterField label="Criteria">{audit.criteria || '—'}</IsmsRegisterField>

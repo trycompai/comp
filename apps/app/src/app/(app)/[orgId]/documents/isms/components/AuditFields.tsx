@@ -64,7 +64,7 @@ function AuditorSelect({
     );
   }
   return (
-    <Select value={value || undefined} onValueChange={onChange}>
+    <Select value={value || undefined} onValueChange={(next) => onChange(next ?? '')}>
       <SelectTrigger aria-label="Auditor">
         <SelectValue placeholder="Select the auditor" />
       </SelectTrigger>

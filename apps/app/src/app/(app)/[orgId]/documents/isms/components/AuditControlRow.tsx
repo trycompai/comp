@@ -94,11 +94,11 @@ export function AuditControlRow({
     setIsEditing(false);
   });
 
-  const handleResultChange = async (next: string) => {
+  const handleResultChange = async (next: string | null) => {
     setIsSavingResult(true);
     try {
       await onUpdateControl(controlRow.id, {
-        result: next === NO_RESULT ? null : next,
+        result: !next || next === NO_RESULT ? null : next,
       });
     } catch {
       // Error already surfaced via toast by the caller.
@@ -191,7 +191,9 @@ export function AuditControlRow({
 
   return (
     <TableRow>
-      <TableCell className="font-medium">{controlRow.controlRef}</TableCell>
+      <TableCell>
+        <span className="font-medium">{controlRow.controlRef}</span>
+      </TableCell>
       <TableCell>{controlRow.whatWasTested || '—'}</TableCell>
       <TableCell>{controlRow.whereToFind || '—'}</TableCell>
       <TableCell>
