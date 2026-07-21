@@ -1,4 +1,4 @@
-import { db, Prisma } from '@db';
+import { db, Prisma, PolicyStatus } from '@db';
 import type {
   FrameworkEditorFramework,
   FrameworkEditorPolicyTemplate,
@@ -79,21 +79,52 @@ export async function updatePolicyInDatabase(
   try {
     const policy = await db.policy.findUnique({
       where: { id: policyId },
-      select: { id: true },
+      select: { id: true, status: true, currentVersionId: true },
     });
 
     if (!policy) throw new Error(`Policy not found: ${policyId}`);
 
     const versionContent = content as unknown as Prisma.InputJsonValue[];
 
-    // Regeneration must NOT mutate the published policy. This previously deleted
-    // every version (and its PDF) and overwrote policy.content / currentVersionId
-    // while clearing signedBy — replacing the live, signed policy with unreviewed
-    // AI content and wiping every signature (CS-766). Instead, create a new DRAFT
-    // version holding the regenerated content and leave the published content,
-    // currentVersionId, signatures, PDF and existing versions untouched. The draft
-    // is reviewed through the normal version workflow; only publishing it (which
-    // clears signedBy) re-triggers signing.
+    // A draft policy has never been published: there is no live, signed content
+    // to protect. The editor renders the CURRENT version's content
+    // (currentVersion.content, falling back to policy.content), so regeneration
+    // must overwrite the draft's working content IN PLACE — mirroring how
+    // PoliciesService.updateById persists draft content edits. Appending an
+    // unattached version instead (the published path below) would leave
+    // policy.content / currentVersionId pointing at the old text, so the user
+    // regenerates but keeps seeing the stale draft (CS-766).
+    if (policy.status === PolicyStatus.draft) {
+      await db.$transaction(async (tx) => {
+        if (policy.currentVersionId) {
+          await tx.policyVersion.update({
+            where: { id: policy.currentVersionId },
+            data: {
+              content: versionContent,
+              changelog: 'Regenerated policy content',
+            },
+          });
+        }
+        await tx.policy.update({
+          where: { id: policyId },
+          data: {
+            content: versionContent,
+            draftContent: versionContent,
+          },
+        });
+      });
+      return;
+    }
+
+    // Published / needs_review: regeneration must NOT mutate the live policy.
+    // This previously deleted every version (and its PDF) and overwrote
+    // policy.content / currentVersionId while clearing signedBy — replacing the
+    // live, signed policy with unreviewed AI content and wiping every signature
+    // (CS-766). Instead, create a new DRAFT version holding the regenerated
+    // content and leave the published content, currentVersionId, signatures, PDF
+    // and existing versions untouched. The draft is reviewed through the normal
+    // version workflow; only publishing it (which clears signedBy) re-triggers
+    // signing.
     for (
       let attempt = 1;
       attempt <= POLICY_VERSION_CREATE_RETRIES;

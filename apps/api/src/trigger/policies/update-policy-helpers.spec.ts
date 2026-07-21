@@ -20,6 +20,11 @@ jest.mock('@db', () => ({
   Prisma: {
     PrismaClientKnownRequestError: class PrismaClientKnownRequestError {},
   },
+  PolicyStatus: {
+    draft: 'draft',
+    published: 'published',
+    needs_review: 'needs_review',
+  },
 }));
 
 jest.mock('@trigger.dev/sdk', () => ({
@@ -163,6 +168,7 @@ describe('updatePolicyInDatabase (published policy regeneration)', () => {
     // A published policy: v1 is the current, signed, live version.
     (db.policy.findUnique as jest.Mock).mockResolvedValue({
       id: 'pol_1',
+      status: 'published',
       content: [
         { type: 'paragraph', content: [{ type: 'text', text: 'Published v1' }] },
       ],
@@ -216,5 +222,88 @@ describe('updatePolicyInDatabase (published policy regeneration)', () => {
       expect(data).not.toHaveProperty('content');
       expect(data).not.toHaveProperty('currentVersionId');
     }
+  });
+});
+
+// CS-766 follow-up: Regenerating a DRAFT policy (never published, unsigned) must
+// SURFACE the regenerated content. The editor renders the current version's
+// content (falling back to policy.content), so regeneration overwrites the
+// current draft version IN PLACE and syncs policy.content/draftContent — it must
+// NOT append an unattached version that leaves the draft showing stale text.
+describe('updatePolicyInDatabase (draft policy regeneration)', () => {
+  const REGEN_CONTENT = [
+    {
+      type: 'paragraph',
+      content: [{ type: 'text', text: 'Regenerated draft content' }],
+    },
+  ];
+
+  let txPolicyUpdate: jest.Mock;
+  let txVersionUpdate: jest.Mock;
+  let txVersionCreate: jest.Mock;
+  let txVersionDeleteMany: jest.Mock;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+
+    // A draft policy: v1 is the current, unpublished, unsigned working version.
+    (db.policy.findUnique as jest.Mock).mockResolvedValue({
+      id: 'pol_1',
+      status: 'draft',
+      currentVersionId: 'pv_1',
+      content: [
+        { type: 'paragraph', content: [{ type: 'text', text: 'Stale draft' }] },
+      ],
+      signedBy: [],
+      versions: [{ id: 'pv_1', pdfUrl: null, version: 1 }],
+    });
+
+    txPolicyUpdate = jest.fn();
+    txVersionUpdate = jest.fn();
+    txVersionCreate = jest.fn(() => ({ id: 'pv_2' }));
+    txVersionDeleteMany = jest.fn();
+
+    (db.$transaction as jest.Mock).mockImplementation(
+      async (cb: (tx: unknown) => Promise<unknown>) =>
+        cb({
+          policy: { update: txPolicyUpdate },
+          policyVersion: {
+            update: txVersionUpdate,
+            create: txVersionCreate,
+            deleteMany: txVersionDeleteMany,
+            findFirst: jest.fn().mockResolvedValue({ version: 1 }),
+          },
+        }),
+    );
+  });
+
+  it('overwrites the current draft version in place and syncs policy content (no unattached version)', async () => {
+    await updatePolicyInDatabase('pol_1', REGEN_CONTENT, 'mem_regen');
+
+    // The regenerated content overwrites the CURRENT draft version in place so
+    // the editor (which reads currentVersion.content) surfaces it.
+    expect(txVersionUpdate).toHaveBeenCalledTimes(1);
+    const versionUpdate = txVersionUpdate.mock.calls[0][0];
+    expect(versionUpdate.where.id).toBe('pv_1');
+    expect(JSON.stringify(versionUpdate.data.content)).toContain(
+      'Regenerated draft content',
+    );
+
+    // No unattached extra version is appended (and nothing is deleted) for a
+    // draft — the working version is edited in place.
+    expect(txVersionCreate).not.toHaveBeenCalled();
+    expect(txVersionDeleteMany).not.toHaveBeenCalled();
+
+    // policy.content AND draftContent advance to the regenerated content so the
+    // draft no longer shows stale text; currentVersionId is not repointed.
+    expect(txPolicyUpdate).toHaveBeenCalledTimes(1);
+    const policyUpdate = txPolicyUpdate.mock.calls[0][0].data;
+    expect(JSON.stringify(policyUpdate.content)).toContain(
+      'Regenerated draft content',
+    );
+    expect(JSON.stringify(policyUpdate.draftContent)).toContain(
+      'Regenerated draft content',
+    );
+    expect(policyUpdate).not.toHaveProperty('currentVersionId');
   });
 });
