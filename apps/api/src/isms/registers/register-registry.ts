@@ -8,6 +8,9 @@ import type { IsmsRoleService } from '../isms-role.service';
 import type { IsmsRoleAssignmentService } from '../isms-role-assignment.service';
 import type { IsmsMetricService } from '../isms-metric.service';
 import type { IsmsMeasurementService } from '../isms-measurement.service';
+import type { IsmsAuditService } from '../isms-audit.service';
+import type { IsmsAuditControlService } from '../isms-audit-control.service';
+import type { IsmsAuditFindingService } from '../isms-audit-finding.service';
 
 /**
  * One generic dispatch for every ISMS register row (context issues, interested
@@ -28,6 +31,20 @@ const COMPETENCE_BASIS = [
   'combination',
 ] as const;
 const METRIC_CADENCE = ['monthly', 'quarterly'] as const;
+const AUDIT_STATUS = ['planned', 'in_progress', 'complete'] as const;
+const AUDIT_CONCLUSION_VERDICT = [
+  'conform',
+  'substantially_conform',
+  'not_yet_conform',
+] as const;
+const AUDIT_CONTROL_RESULT = [
+  'conformity_confirmed',
+  'nonconformity_raised',
+  'observation_raised',
+  'not_sampled',
+] as const;
+const AUDIT_FINDING_TYPE = ['nc_major', 'nc_minor', 'ofi', 'observation'] as const;
+const AUDIT_FINDING_STATUS = ['open', 'in_progress', 'closed'] as const;
 
 const schemas = {
   contextIssueCreate: z.object({
@@ -176,6 +193,78 @@ const schemas = {
     value: z.string().trim().min(1).optional(),
     note: z.string().nullish(),
   }),
+  // reference is server-generated ("IA-YYYY-NN") and immutable; scope/criteria
+  // default to the clause-9.2 template text when omitted or blank.
+  auditCreate: z.object({
+    scope: z.string().optional(),
+    criteria: z.string().optional(),
+    auditorName: z.string().nullish(),
+    plannedStartDate: z.string().nullish(), // ISO date string
+    plannedEndDate: z.string().nullish(),
+    position,
+  }),
+  auditUpdate: z.object({
+    scope: z.string().min(1).optional(),
+    criteria: z.string().min(1).optional(),
+    // Nullish: undefined = leave as-is, null = clear.
+    auditorName: z.string().nullish(),
+    plannedStartDate: z.string().nullish(),
+    plannedEndDate: z.string().nullish(),
+    status: z.enum(AUDIT_STATUS).optional(),
+    conclusionVerdict: z.enum(AUDIT_CONCLUSION_VERDICT).nullish(),
+    conclusionNotes: z.string().nullish(),
+    // Sign-off slots: free-text names + ISO dates, each independently clearable.
+    signoffAuditorName: z.string().nullish(),
+    signoffAuditorDate: z.string().nullish(),
+    signoffSpoName: z.string().nullish(),
+    signoffSpoDate: z.string().nullish(),
+    signoffTopMgmtName: z.string().nullish(),
+    signoffTopMgmtDate: z.string().nullish(),
+    position,
+  }),
+  auditControlCreate: z.object({
+    auditId: z.string(),
+    controlRef: z.string().min(1),
+    whatWasTested: z.string().optional(),
+    whereToFind: z.string().optional(),
+    // Nullish: a row can be drafted before the auditor records an outcome.
+    result: z.enum(AUDIT_CONTROL_RESULT).nullish(),
+    notes: z.string().nullish(),
+    position,
+  }),
+  auditControlUpdate: z.object({
+    controlRef: z.string().min(1).optional(),
+    whatWasTested: z.string().optional(),
+    whereToFind: z.string().optional(),
+    result: z.enum(AUDIT_CONTROL_RESULT).nullish(),
+    notes: z.string().nullish(),
+    position,
+  }),
+  // reference is server-generated ("F-NN") and immutable.
+  auditFindingCreate: z.object({
+    auditId: z.string(),
+    type: z.enum(AUDIT_FINDING_TYPE),
+    // Nullish: null/absent = a standalone finding not tied to a control row.
+    controlId: z.string().nullish(),
+    clauseOrControl: z.string().nullish(),
+    description: z.string().trim().min(1),
+    ownerMemberId: z.string().nullish(),
+    dueDate: z.string().nullish(), // ISO date string
+    status: z.enum(AUDIT_FINDING_STATUS).optional(),
+    closureEvidence: z.string().nullish(),
+    position,
+  }),
+  auditFindingUpdate: z.object({
+    type: z.enum(AUDIT_FINDING_TYPE).optional(),
+    controlId: z.string().nullish(),
+    clauseOrControl: z.string().nullish(),
+    description: z.string().trim().min(1).optional(),
+    ownerMemberId: z.string().nullish(),
+    dueDate: z.string().nullish(),
+    status: z.enum(AUDIT_FINDING_STATUS).optional(),
+    closureEvidence: z.string().nullish(),
+    position,
+  }),
 } as const;
 
 /** One-save payload for the "Metrics due" / backfill views. */
@@ -216,6 +305,20 @@ export type UpdateMeasurementInput = z.infer<typeof schemas.measurementUpdate>;
 export type BulkCreateMeasurementInput = z.infer<
   typeof measurementBulkCreateSchema
 >;
+export type CreateAuditInput = z.infer<typeof schemas.auditCreate>;
+export type UpdateAuditInput = z.infer<typeof schemas.auditUpdate>;
+export type CreateAuditControlInput = z.infer<
+  typeof schemas.auditControlCreate
+>;
+export type UpdateAuditControlInput = z.infer<
+  typeof schemas.auditControlUpdate
+>;
+export type CreateAuditFindingInput = z.infer<
+  typeof schemas.auditFindingCreate
+>;
+export type UpdateAuditFindingInput = z.infer<
+  typeof schemas.auditFindingUpdate
+>;
 
 export const ISMS_REGISTER_KEYS = [
   'context-issues',
@@ -226,6 +329,9 @@ export const ISMS_REGISTER_KEYS = [
   'role-assignments',
   'metrics',
   'measurements',
+  'audits',
+  'audit-controls',
+  'audit-findings',
 ] as const;
 
 export type IsmsRegisterKey = (typeof ISMS_REGISTER_KEYS)[number];
@@ -266,6 +372,9 @@ export interface RegisterServices {
   roleAssignments: IsmsRoleAssignmentService;
   metrics: IsmsMetricService;
   measurements: IsmsMeasurementService;
+  audits: IsmsAuditService;
+  auditControls: IsmsAuditControlService;
+  auditFindings: IsmsAuditFindingService;
 }
 
 /** Build the register → handler map from the injected per-register services. */
@@ -407,6 +516,54 @@ export function createRegisterRegistry(
           measurementId: rowId,
           organizationId,
         }),
+    },
+    audits: {
+      create: ({ documentId, organizationId, data }) =>
+        services.audits.create({
+          documentId,
+          organizationId,
+          dto: parse(schemas.auditCreate, data),
+        }),
+      update: ({ rowId, organizationId, data }) =>
+        services.audits.update({
+          auditId: rowId,
+          organizationId,
+          dto: parse(schemas.auditUpdate, data),
+        }),
+      remove: ({ rowId, organizationId }) =>
+        services.audits.remove({ auditId: rowId, organizationId }),
+    },
+    'audit-controls': {
+      create: ({ documentId, organizationId, data }) =>
+        services.auditControls.create({
+          documentId,
+          organizationId,
+          dto: parse(schemas.auditControlCreate, data),
+        }),
+      update: ({ rowId, organizationId, data }) =>
+        services.auditControls.update({
+          controlId: rowId,
+          organizationId,
+          dto: parse(schemas.auditControlUpdate, data),
+        }),
+      remove: ({ rowId, organizationId }) =>
+        services.auditControls.remove({ controlId: rowId, organizationId }),
+    },
+    'audit-findings': {
+      create: ({ documentId, organizationId, data }) =>
+        services.auditFindings.create({
+          documentId,
+          organizationId,
+          dto: parse(schemas.auditFindingCreate, data),
+        }),
+      update: ({ rowId, organizationId, data }) =>
+        services.auditFindings.update({
+          findingId: rowId,
+          organizationId,
+          dto: parse(schemas.auditFindingUpdate, data),
+        }),
+      remove: ({ rowId, organizationId }) =>
+        services.auditFindings.remove({ findingId: rowId, organizationId }),
     },
   };
 }

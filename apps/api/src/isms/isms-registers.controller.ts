@@ -31,6 +31,9 @@ import { IsmsRoleService } from './isms-role.service';
 import { IsmsRoleAssignmentService } from './isms-role-assignment.service';
 import { IsmsMetricService } from './isms-metric.service';
 import { IsmsMeasurementService } from './isms-measurement.service';
+import { IsmsAuditService } from './isms-audit.service';
+import { IsmsAuditControlService } from './isms-audit-control.service';
+import { IsmsAuditFindingService } from './isms-audit-finding.service';
 import { IsmsNarrativeService } from './isms-narrative.service';
 import {
   createRegisterRegistry,
@@ -181,6 +184,9 @@ export class IsmsRegistersController {
     roleService: IsmsRoleService,
     roleAssignmentService: IsmsRoleAssignmentService,
     metricService: IsmsMetricService,
+    auditService: IsmsAuditService,
+    auditControlService: IsmsAuditControlService,
+    auditFindingService: IsmsAuditFindingService,
     private readonly measurementService: IsmsMeasurementService,
     private readonly narrativeService: IsmsNarrativeService,
   ) {
@@ -193,6 +199,9 @@ export class IsmsRegistersController {
       roleAssignments: roleAssignmentService,
       metrics: metricService,
       measurements: this.measurementService,
+      audits: auditService,
+      auditControls: auditControlService,
+      auditFindings: auditFindingService,
     });
   }
 

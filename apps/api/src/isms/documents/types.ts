@@ -146,6 +146,62 @@ export interface MetricExportRow {
   currentValue: string;
 }
 
+/** The fifteen seeded Controls Tested rows and their pre-filled text (9.2). */
+export interface SeedAuditControlDefinition {
+  controlKey: string;
+  controlRef: string;
+  whatWasTested: string;
+  whereToFind: string;
+}
+
+/** One Controls Tested row, resolved for export (result/notes humanized). */
+export interface AuditControlExportRow {
+  controlRef: string;
+  whatWasTested: string;
+  whereToFind: string;
+  /** Humanized result label ("Conformity confirmed") or a dash when unset. */
+  result: string;
+  notes: string;
+}
+
+/** One finding row, resolved for export (owner name frozen at build time). */
+export interface AuditFindingExportRow {
+  reference: string;
+  /** Humanized type label ("NC minor"). */
+  type: string;
+  clauseOrControl: string;
+  description: string;
+  ownerName: string;
+  dueDate: string;
+  /** Humanized status label ("Open"). */
+  status: string;
+}
+
+/** One sign-off slot rendered in the audit's sign-off table. */
+export interface AuditSignoffExportRow {
+  role: string;
+  name: string;
+  date: string;
+}
+
+/** An audit instance, resolved for export: fields + child tables + sign-off. */
+export interface AuditExportRow {
+  reference: string;
+  scope: string;
+  criteria: string;
+  auditorName: string;
+  plannedStartDate: string | null;
+  plannedEndDate: string | null;
+  /** Humanized status label ("In progress"). */
+  status: string;
+  /** Assembled conclusion sentence, or null while no verdict is chosen. */
+  conclusion: string | null;
+  conclusionNotes: string | null;
+  controls: AuditControlExportRow[];
+  findings: AuditFindingExportRow[];
+  signoffs: AuditSignoffExportRow[];
+}
+
 /**
  * The organization profile that fills the narrative parts of the Context of the
  * Organization document (clause 4.1) — overview table, mission, intended
@@ -197,4 +253,6 @@ export interface DocumentExportInput {
   band?: IsmsTeamSizeBand;
   /** Active metrics with resolved people + values — only populated for the Monitoring document (9.1). */
   metrics?: MetricExportRow[];
+  /** Audit instances with resolved names — only populated for the Internal Audit document (9.2). */
+  audits?: AuditExportRow[];
 }

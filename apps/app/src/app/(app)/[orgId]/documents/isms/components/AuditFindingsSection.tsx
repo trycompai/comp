@@ -1,0 +1,160 @@
+'use client';
+
+import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  Badge,
+  Button,
+  Heading,
+  HStack,
+  Stack,
+  Text,
+} from '@trycompai/design-system';
+import { Add } from '@trycompai/design-system/icons';
+import { useForm } from 'react-hook-form';
+import type { IsmsAudit } from '../isms-types';
+import { AuditFindingFields } from './AuditFindingFields';
+import { AuditFindingRow } from './AuditFindingRow';
+import type { ApproverOption } from './IsmsApprovalSection';
+import { findingSchema, type FindingFormValues } from './audit-schema';
+import { IsmsAddCard } from './shared';
+
+interface AuditFindingsSectionProps {
+  audit: IsmsAudit;
+  canEdit: boolean;
+  memberOptions: ApproverOption[];
+  onCreateFinding: (values: FindingFormValues) => Promise<void>;
+  onUpdateFinding: (findingId: string, values: FindingFormValues) => Promise<void>;
+  onDeleteFinding: (findingId: string) => Promise<void>;
+}
+
+const EMPTY_FINDING: FindingFormValues = {
+  type: 'observation',
+  controlId: '',
+  clauseOrControl: '',
+  description: '',
+  ownerMemberId: '',
+  dueDate: '',
+  status: 'open',
+  closureEvidence: '',
+};
+
+/**
+ * The audit's findings, inline below the Controls Tested table. Most findings
+ * come from marking a control row "Non-conformity raised" or "Observation
+ * raised" and linking back to it; standalone findings are also allowed. An
+ * empty table is fine — the generated document renders "No findings raised".
+ */
+export function AuditFindingsSection({
+  audit,
+  canEdit,
+  memberOptions,
+  onCreateFinding,
+  onUpdateFinding,
+  onDeleteFinding,
+}: AuditFindingsSectionProps) {
+  return (
+    <Stack gap="3">
+      <HStack align="center" gap="2">
+        <Heading level="5">Findings</Heading>
+        <Badge variant="secondary">{String(audit.findings.length)}</Badge>
+      </HStack>
+      <Text size="sm" variant="muted">
+        Raise a finding for every control row marked &quot;Non-conformity raised&quot; or
+        &quot;Observation raised&quot;, and link it back to the row. No findings is fine — the
+        document renders &quot;No findings raised&quot;.
+      </Text>
+
+      {audit.findings.length > 0 ? (
+        <Stack gap="3">
+          {audit.findings.map((finding) => (
+            <AuditFindingRow
+              key={finding.id}
+              audit={audit}
+              finding={finding}
+              canEdit={canEdit}
+              memberOptions={memberOptions}
+              onUpdateFinding={onUpdateFinding}
+              onDeleteFinding={onDeleteFinding}
+            />
+          ))}
+        </Stack>
+      ) : null}
+
+      {canEdit ? (
+        <IsmsAddCard addLabel="Add finding" formTitle="New finding">
+          {({ close }) => (
+            <AddFindingForm
+              audit={audit}
+              memberOptions={memberOptions}
+              onAdd={onCreateFinding}
+              onClose={close}
+            />
+          )}
+        </IsmsAddCard>
+      ) : null}
+    </Stack>
+  );
+}
+
+function AddFindingForm({
+  audit,
+  memberOptions,
+  onAdd,
+  onClose,
+}: {
+  audit: IsmsAudit;
+  memberOptions: ApproverOption[];
+  onAdd: (values: FindingFormValues) => Promise<void>;
+  onClose: () => void;
+}) {
+  const {
+    control,
+    handleSubmit,
+    reset,
+    setValue,
+    getValues,
+    formState: { isSubmitting },
+  } = useForm<FindingFormValues>({
+    resolver: zodResolver(findingSchema),
+    defaultValues: EMPTY_FINDING,
+  });
+
+  const handleAdd = handleSubmit(async (values) => {
+    try {
+      await onAdd(values);
+    } catch {
+      // Keep the user's input and the form open when the save fails.
+      return;
+    }
+    reset(EMPTY_FINDING);
+    onClose();
+  });
+
+  return (
+    <form onSubmit={handleAdd} className="flex flex-col gap-3">
+      <AuditFindingFields
+        control={control}
+        controlRows={audit.controls}
+        memberOptions={memberOptions}
+        onRelatedControlPicked={(row) => {
+          // Pre-fill the clause text from the picked row (still editable).
+          if (row && !getValues('clauseOrControl')) {
+            setValue('clauseOrControl', row.controlRef, { shouldDirty: true });
+          }
+        }}
+      />
+      <HStack justify="end">
+        <Button
+          type="submit"
+          size="sm"
+          variant="secondary"
+          loading={isSubmitting}
+          disabled={isSubmitting}
+          iconLeft={<Add size={16} />}
+        >
+          Add finding
+        </Button>
+      </HStack>
+    </form>
+  );
+}

@@ -15,6 +15,8 @@ import {
   metricValidationMessages,
   seedMetricsIfMissing,
 } from './documents/monitoring';
+import { auditValidationMessages } from './documents/internal-audit';
+import { defaultProgrammeText } from './documents/internal-audit-defaults';
 import { updateDraftSnapshot } from './utils/draft-snapshot';
 import { EXPORT_DOCUMENT_INCLUDE } from './utils/export-payload';
 import { lockDocument } from './utils/document-lock';
@@ -214,6 +216,29 @@ export class IsmsService {
         seedMetricsIfMissing({ tx, documentId: monitoringDoc.id }),
       );
     }
+
+    // Same first-load guarantee for Internal Audit (9.2): the Programme
+    // paragraph opens with its default text. The document was just created
+    // with an empty draft, so this write can never clobber a customer edit.
+    const internalAuditDoc = created.find(
+      (doc) => doc.type === 'internal_audit',
+    );
+    if (internalAuditDoc) {
+      const organization = await db.organization.findUnique({
+        where: { id: organizationId },
+        select: { name: true },
+      });
+      await db.ismsDocument.update({
+        where: { id: internalAuditDoc.id },
+        data: {
+          draftNarrative: {
+            programme: defaultProgrammeText(
+              organization?.name ?? 'The organization',
+            ),
+          },
+        },
+      });
+    }
   }
 
   async getDocument({
@@ -248,6 +273,13 @@ export class IsmsService {
               orderBy: [{ periodStart: 'desc' }, { recordedAt: 'desc' }],
             },
             objective: { select: { id: true, objective: true, target: true } },
+          },
+        },
+        audits: {
+          orderBy: { position: 'asc' },
+          include: {
+            controls: { orderBy: { position: 'asc' } },
+            findings: { orderBy: { position: 'asc' } },
           },
         },
         controlLinks: {
@@ -300,6 +332,11 @@ export class IsmsService {
       // Clause 9.1: at least one active metric, each with a cadence (CS-723).
       if (document.type === 'monitoring') {
         await this.assertMonitoringComplete({ tx, documentId });
+      }
+      // Clause 9.2: at least one audit, and a conclusion verdict on every
+      // completed audit (CS-724).
+      if (document.type === 'internal_audit') {
+        await this.assertInternalAuditComplete({ tx, documentId });
       }
 
       return tx.ismsDocument.update({
@@ -521,6 +558,25 @@ export class IsmsService {
     if (messages.length > 0) {
       throw new BadRequestException(
         `This Clause 9.1 document is not ready to submit. ${messages.join(' ')}`,
+      );
+    }
+  }
+
+  private async assertInternalAuditComplete({
+    tx,
+    documentId,
+  }: {
+    tx: Prisma.TransactionClient;
+    documentId: string;
+  }) {
+    const audits = await tx.ismsAudit.findMany({
+      where: { documentId },
+      select: { reference: true, status: true, conclusionVerdict: true },
+    });
+    const messages = auditValidationMessages({ audits });
+    if (messages.length > 0) {
+      throw new BadRequestException(
+        `This Clause 9.2 document is not ready to submit. ${messages.join(' ')}`,
       );
     }
   }
