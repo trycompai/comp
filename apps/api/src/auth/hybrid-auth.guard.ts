@@ -80,7 +80,10 @@ export class HybridAuthGuard implements CanActivate {
     // without an extra DB lookup.
     request.apiKeyId = result.apiKeyId;
     request.apiKeyName = result.apiKeyName;
-    // API keys are organization-scoped and are not tied to a specific user/member.
+    // The member who created the key (if recorded). Lets ActingUserResolver
+    // attribute mutations to the real creator instead of the org owner.
+    request.apiKeyCreatedByMemberId = result.createdByMemberId;
+    // API keys are organization-scoped; no session user/member is attached here.
     request.userRoles = null;
 
     return true;

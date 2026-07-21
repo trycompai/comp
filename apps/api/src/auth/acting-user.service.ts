@@ -15,6 +15,7 @@ import type { AuthenticatedRequest } from './types';
 export type ActingUserSource =
   | 'session'
   | 'service-token-acting'
+  | 'api-key-creator'
   | 'org-owner-fallback';
 
 export interface ResolvedActingUser {
@@ -40,10 +41,14 @@ export interface ResolvedActingUser {
  *   2. Service tokens calling on behalf of a specific user — HybridAuthGuard
  *      sets `req.userId` from the `x-user-id` header after Member validation.
  *      Same short-circuit as session.
- *   3. API keys, or service tokens without `x-user-id` — no per-user identity
- *      exists. We attribute to the org's OLDEST owner (deterministic + stable
- *      across deletes of newer owners). This is consistent with how 19+
- *      other places in the codebase already look up org owners
+ *   3. API keys with a recorded creator — attribute to the member who created
+ *      the key (if still an active member of the org), so the audit trail
+ *      reflects who set up the automation.
+ *   4. Everything else (legacy API keys with no recorded creator, keys whose
+ *      creator was deactivated/removed, or service tokens without `x-user-id`)
+ *      — no per-user identity exists, so we attribute to the org's OLDEST owner
+ *      (deterministic + stable across deletes of newer owners), consistent with
+ *      how 19+ other places in the codebase look up org owners
  *      (`Member.role.contains('owner')`).
  *
  * Returning null userId is a soft failure — callers must surface a 400 with
@@ -67,7 +72,31 @@ export class ActingUserResolver {
       };
     }
 
-    // Path 3 — fall back to the org's owner.
+    // Path 3 — API key with a recorded creator who is still an active member
+    // of this org. Attribute to that member's user so the audit trail reflects
+    // who set up the automation, not the org owner. Legacy keys (no recorded
+    // creator) and keys whose creator has been deactivated/removed fall through
+    // to the owner fallback below.
+    if (req.isApiKey && req.apiKeyCreatedByMemberId) {
+      const creator = await db.member.findFirst({
+        where: {
+          id: req.apiKeyCreatedByMemberId,
+          organizationId,
+          deactivated: false,
+          isActive: true,
+        },
+        select: { userId: true },
+      });
+      if (creator) {
+        return {
+          userId: creator.userId,
+          source: 'api-key-creator',
+          callerLabel: this.buildCallerLabel(req),
+        };
+      }
+    }
+
+    // Path 4 — fall back to the org's owner.
     const ownerUserId = await this.findOrgOwnerUserId(organizationId);
     if (!ownerUserId) {
       // No owner found. Don't invent one — the caller should reject the
