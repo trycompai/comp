@@ -175,6 +175,8 @@ export interface AuditFindingExportRow {
   dueDate: string;
   /** Humanized status label ("Open"). */
   status: string;
+  /** How a closed corrective action was evidenced; empty when not recorded. */
+  closureEvidence: string;
 }
 
 /** One sign-off slot rendered in the audit's sign-off table. */

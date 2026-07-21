@@ -191,7 +191,12 @@ function buildAuditSections(
           finding.reference,
           finding.type,
           finding.clauseOrControl,
-          finding.description,
+          // Closure evidence rides in the description cell so the exported
+          // record shows how a corrective action was evidenced without
+          // widening the reference document's seven-column table.
+          finding.closureEvidence
+            ? `${finding.description} — Closure evidence: ${finding.closureEvidence}`
+            : finding.description,
           finding.ownerName,
           finding.dueDate,
           finding.status,

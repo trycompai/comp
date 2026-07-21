@@ -45,6 +45,7 @@ const audit: AuditExportRow = {
       ownerName: 'Alex Petrisor',
       dueDate: '2026-06-15',
       status: 'Open',
+      closureEvidence: '',
     },
   ],
   signoffs: [
@@ -296,6 +297,27 @@ describe('buildInternalAuditSections', () => {
     expect(noFindings[4].table).toBeUndefined();
     // No intro either: the renderers show emptyText only for empty sections.
     expect(noFindings[4].intro).toBeUndefined();
+  });
+
+  it('appends closure evidence to a finding description in the export', () => {
+    const sections = buildInternalAuditSections({
+      ...baseInput,
+      audits: [
+        {
+          ...audit,
+          findings: [
+            {
+              ...audit.findings[0],
+              status: 'Closed',
+              closureEvidence: 'Restore test evidenced in task ev_123.',
+            },
+          ],
+        },
+      ],
+    });
+    expect(sections[4].table?.rows[0][3]).toBe(
+      'Three of nine metrics have no measurement in 90 days. — Closure evidence: Restore test evidenced in task ev_123.',
+    );
   });
 
   it('renders the conclusion sentence plus notes, or a placeholder', () => {

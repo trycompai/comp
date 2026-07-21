@@ -143,6 +143,7 @@ export function mapAudits(
         : '',
       dueDate: formatDateYmd(finding.dueDate) ?? '',
       status: FINDING_STATUS_LABELS[finding.status] ?? finding.status,
+      closureEvidence: finding.closureEvidence ?? '',
     })),
     signoffs: mapSignoffs(audit),
   }));
