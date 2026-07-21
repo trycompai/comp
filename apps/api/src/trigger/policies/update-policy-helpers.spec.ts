@@ -1,14 +1,24 @@
 import { db } from '@db';
 import { generateObject } from 'ai';
-import { processPolicyUpdate } from './update-policy-helpers';
+import {
+  processPolicyUpdate,
+  updatePolicyInDatabase,
+} from './update-policy-helpers';
 
 jest.mock('@db', () => ({
   db: {
     organization: { findUnique: jest.fn() },
     policy: { findUnique: jest.fn(), update: jest.fn() },
     frameworkEditorPolicyTemplate: { findUnique: jest.fn() },
-    policyVersion: { create: jest.fn(), deleteMany: jest.fn() },
+    policyVersion: {
+      findFirst: jest.fn(),
+      create: jest.fn(),
+      deleteMany: jest.fn(),
+    },
     $transaction: jest.fn(),
+  },
+  Prisma: {
+    PrismaClientKnownRequestError: class PrismaClientKnownRequestError {},
   },
 }));
 
@@ -79,6 +89,7 @@ describe('processPolicyUpdate (individual policy regeneration)', () => {
         cb({
           policy: { update: jest.fn() },
           policyVersion: {
+            findFirst: jest.fn().mockResolvedValue(null),
             create: jest.fn(({ data }: { data: { content: unknown[] } }) => {
               storedContent = data.content;
               return { id: 'pv_1' };
@@ -125,5 +136,85 @@ describe('processPolicyUpdate (individual policy regeneration)', () => {
     expect(serialized).not.toContain('Generic boilerplate policy content.');
 
     expect(result.policyName).toBe('Information Security Policy');
+  });
+});
+
+// CS-766: Regenerating a PUBLISHED, signed policy must not touch the live
+// version. It must append a new DRAFT version (for the approval workflow) while
+// leaving policy.content, currentVersionId, signedBy, pdfUrl and the existing
+// versions intact. Only publishing that draft (elsewhere) clears signedBy and
+// re-triggers signing.
+describe('updatePolicyInDatabase (published policy regeneration)', () => {
+  const REGEN_CONTENT = [
+    {
+      type: 'paragraph',
+      content: [{ type: 'text', text: 'Regenerated draft content' }],
+    },
+  ];
+
+  let txPolicyUpdate: jest.Mock;
+  let txVersionCreate: jest.Mock;
+  let txVersionDeleteMany: jest.Mock;
+  let txVersionFindFirst: jest.Mock;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+
+    // A published policy: v1 is the current, signed, live version.
+    (db.policy.findUnique as jest.Mock).mockResolvedValue({
+      id: 'pol_1',
+      content: [
+        { type: 'paragraph', content: [{ type: 'text', text: 'Published v1' }] },
+      ],
+      currentVersionId: 'pv_1',
+      signedBy: ['mem_a', 'mem_b'],
+      pdfUrl: 'org_1/policies/pol_1/v1.pdf',
+      versions: [{ id: 'pv_1', pdfUrl: null, version: 1 }],
+    });
+
+    txPolicyUpdate = jest.fn();
+    txVersionCreate = jest.fn(() => ({ id: 'pv_2' }));
+    txVersionDeleteMany = jest.fn();
+    txVersionFindFirst = jest.fn().mockResolvedValue({ version: 1 });
+
+    (db.$transaction as jest.Mock).mockImplementation(
+      async (cb: (tx: unknown) => Promise<unknown>) =>
+        cb({
+          policy: { update: txPolicyUpdate },
+          policyVersion: {
+            findFirst: txVersionFindFirst,
+            create: txVersionCreate,
+            deleteMany: txVersionDeleteMany,
+          },
+        }),
+    );
+  });
+
+  it('appends a new draft version and preserves the published version + signatures', async () => {
+    await updatePolicyInDatabase('pol_1', REGEN_CONTENT, 'mem_regen');
+
+    // Existing versions (and their PDFs) must survive — the published version
+    // must not be destroyed.
+    expect(txVersionDeleteMany).not.toHaveBeenCalled();
+
+    // A brand-new version is appended at the next number (not overwriting v1).
+    expect(txVersionCreate).toHaveBeenCalledTimes(1);
+    const createData = txVersionCreate.mock.calls[0][0].data;
+    expect(createData.version).toBe(2);
+    expect(createData.changelog).toBe('Regenerated policy content');
+    expect(JSON.stringify(createData.content)).toContain(
+      'Regenerated draft content',
+    );
+
+    // The published policy row must NOT be mutated: no signature wipe, no live
+    // content swap, no currentVersion repoint.
+    const policyUpdateData = txPolicyUpdate.mock.calls.map(
+      (call) => (call[0] as { data?: Record<string, unknown> })?.data ?? {},
+    );
+    for (const data of policyUpdateData) {
+      expect(data).not.toHaveProperty('signedBy');
+      expect(data).not.toHaveProperty('content');
+      expect(data).not.toHaveProperty('currentVersionId');
+    }
   });
 });

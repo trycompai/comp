@@ -1,9 +1,8 @@
-import { db } from '@db';
+import { db, Prisma } from '@db';
 import type {
   FrameworkEditorFramework,
   FrameworkEditorPolicyTemplate,
   Policy,
-  Prisma,
 } from '@db';
 import { logger } from '@trigger.dev/sdk';
 import { processTemplate } from './process-policy-template';
@@ -67,6 +66,11 @@ export async function fetchOrganizationAndPolicy(
   return { organization, policy, policyTemplate };
 }
 
+// Mirror PoliciesService.versionCreateRetries: retry version creation on a
+// unique-constraint race so two near-simultaneous regenerations don't collide
+// on the [policyId, version] key.
+const POLICY_VERSION_CREATE_RETRIES = 3;
+
 export async function updatePolicyInDatabase(
   policyId: string,
   content: Record<string, unknown>[],
@@ -75,79 +79,57 @@ export async function updatePolicyInDatabase(
   try {
     const policy = await db.policy.findUnique({
       where: { id: policyId },
-      include: { versions: { select: { id: true, pdfUrl: true } } },
+      select: { id: true },
     });
 
     if (!policy) throw new Error(`Policy not found: ${policyId}`);
 
-    // Delete S3 files for existing versions
-    const pdfUrlsToDelete = policy.versions
-      .map((v) => v.pdfUrl)
-      .filter((url): url is string => !!url);
+    const versionContent = content as unknown as Prisma.InputJsonValue[];
 
-    if (pdfUrlsToDelete.length > 0) {
+    // Regeneration must NOT mutate the published policy. This previously deleted
+    // every version (and its PDF) and overwrote policy.content / currentVersionId
+    // while clearing signedBy — replacing the live, signed policy with unreviewed
+    // AI content and wiping every signature (CS-766). Instead, create a new DRAFT
+    // version holding the regenerated content and leave the published content,
+    // currentVersionId, signatures, PDF and existing versions untouched. The draft
+    // is reviewed through the normal version workflow; only publishing it (which
+    // clears signedBy) re-triggers signing.
+    for (
+      let attempt = 1;
+      attempt <= POLICY_VERSION_CREATE_RETRIES;
+      attempt += 1
+    ) {
       try {
-        const { S3Client, DeleteObjectCommand } =
-          await import('@aws-sdk/client-s3');
-        const bucketName = process.env.APP_AWS_BUCKET_NAME;
-        if (bucketName) {
-          const s3 = new S3Client({
-            region: process.env.AWS_REGION || 'us-east-1',
+        await db.$transaction(async (tx) => {
+          const latestVersion = await tx.policyVersion.findFirst({
+            where: { policyId },
+            orderBy: { version: 'desc' },
+            select: { version: true },
           });
-          await Promise.allSettled(
-            pdfUrlsToDelete.map((pdfUrl) =>
-              s3.send(
-                new DeleteObjectCommand({ Bucket: bucketName, Key: pdfUrl }),
-              ),
-            ),
-          );
+          const nextVersion = (latestVersion?.version ?? 0) + 1;
+
+          await tx.policyVersion.create({
+            data: {
+              policyId,
+              version: nextVersion,
+              content: versionContent,
+              publishedById: memberId || null,
+              changelog: 'Regenerated policy content',
+            },
+          });
+        });
+        return;
+      } catch (error) {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002' &&
+          attempt < POLICY_VERSION_CREATE_RETRIES
+        ) {
+          continue;
         }
-      } catch (s3Error) {
-        logger.error(`Error deleting S3 files during regeneration: ${s3Error}`);
+        throw error;
       }
     }
-
-    await db.$transaction(async (tx) => {
-      // Clear version references first to avoid FK constraint issues during deletion.
-      // Clear approverId alongside pendingVersionId so the two fields never diverge
-      // — any lingering approverId without a pending version produces the inconsistent
-      // state behind CS-254/260/261 ("No pending version to approve").
-      if (policy.versions.length > 0) {
-        await tx.policy.update({
-          where: { id: policyId },
-          data: {
-            currentVersionId: null,
-            pendingVersionId: null,
-            approverId: null,
-          },
-        });
-        await tx.policyVersion.deleteMany({ where: { policyId } });
-      }
-
-      const newVersion = await tx.policyVersion.create({
-        data: {
-          policyId,
-          version: 1,
-          content: content as unknown as Prisma.InputJsonValue[],
-          publishedById: memberId || null,
-          changelog: 'Regenerated policy content',
-        },
-      });
-
-      await tx.policy.update({
-        where: { id: policyId },
-        data: {
-          content: content as unknown as Prisma.InputJsonValue[],
-          draftContent: content as unknown as Prisma.InputJsonValue[],
-          currentVersionId: newVersion.id,
-          pendingVersionId: null,
-          approverId: null,
-          signedBy: [],
-          pdfUrl: null,
-          displayFormat: 'EDITOR',
-        },
-      });
-    });
   } catch (dbError) {
     logger.error(`Failed to update policy in database: ${dbError}`);
     throw dbError;
