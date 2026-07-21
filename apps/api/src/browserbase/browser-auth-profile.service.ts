@@ -9,7 +9,10 @@ import {
   normalizeHostnameFromUrl,
   normalizeLoginIdentity,
 } from './browserbase-url';
-import { BrowserbaseSessionService } from './browserbase-session.service';
+import {
+  BrowserbaseSessionService,
+  INTERACTIVE_VIEWPORT,
+} from './browserbase-session.service';
 import { BrowserAuthProfileContextService } from './browser-auth-profile-context.service';
 import {
   BrowserbaseOrgContextService,
@@ -163,7 +166,12 @@ export class BrowserAuthProfileService {
       throw new NotFoundException('Browser auth profile not found');
     }
     const readyProfile = await this.profileContexts.ready(profile);
-    return this.sessions.createSessionWithContext(readyProfile.contextId);
+    // Human-facing session — use the smaller viewport so the sign-in page reads
+    // larger in the live view.
+    return this.sessions.createSessionWithContext(
+      readyProfile.contextId,
+      INTERACTIVE_VIEWPORT,
+    );
   }
 
   async verifyProfileSession(input: {

@@ -10,13 +10,22 @@ import { isNoPageError } from './run-error-formatter';
 
 type Stagehand = import('@browserbasehq/stagehand').Stagehand;
 
-// A larger native viewport keeps the embedded live view (and evidence
-// screenshots) sharp: our panels are well under 1920px wide, so the viewer
-// downscales rather than upscaling — the latter is what looked soft, especially
-// on HiDPI/Retina displays. Browserbase exposes no device-pixel-ratio setting,
-// so viewport size is the only lever for capture sharpness.
-const BROWSER_WIDTH = 1920;
-const BROWSER_HEIGHT = 1080;
+export interface BrowserViewport {
+  width: number;
+  height: number;
+}
+
+// A larger native viewport keeps unattended evidence screenshots sharp: our
+// panels are well under 1920px wide, so the viewer downscales rather than
+// upscaling — the latter is what looked soft, especially on HiDPI displays.
+// Browserbase exposes no device-pixel-ratio setting, so viewport size is the
+// only lever for capture sharpness. This is the default.
+export const CAPTURE_VIEWPORT: BrowserViewport = { width: 1920, height: 1080 };
+
+// A smaller viewport for human-facing sessions (sign-in, take-over, SSO,
+// reconnect): the page renders larger in the embedded live view, so forms are
+// easier to read and fill. Capture runs stay on CAPTURE_VIEWPORT.
+export const INTERACTIVE_VIEWPORT: BrowserViewport = { width: 1280, height: 800 };
 // Model behind extract()/act() (reading pages, verdicts, form fills). Separate
 // from the navigation (CUA) model and configurable via env; default unchanged.
 const STAGEHAND_MODEL =
@@ -56,6 +65,7 @@ export class BrowserbaseSessionService {
 
   async createSessionWithContext(
     contextId: string,
+    viewport: BrowserViewport = CAPTURE_VIEWPORT,
   ): Promise<{ sessionId: string; liveViewUrl: string }> {
     const bb = this.getBrowserbase();
 
@@ -71,13 +81,13 @@ export class BrowserbaseSessionService {
             },
             fingerprint: {
               screen: {
-                maxHeight: BROWSER_HEIGHT,
-                maxWidth: BROWSER_WIDTH,
-                minHeight: BROWSER_HEIGHT,
-                minWidth: BROWSER_WIDTH,
+                maxHeight: viewport.height,
+                maxWidth: viewport.width,
+                minHeight: viewport.height,
+                minWidth: viewport.width,
               },
             },
-            viewport: { width: BROWSER_WIDTH, height: BROWSER_HEIGHT },
+            viewport: { width: viewport.width, height: viewport.height },
           },
           keepAlive: true,
         }),
