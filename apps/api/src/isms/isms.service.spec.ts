@@ -134,13 +134,17 @@ describe('IsmsService ensureSetup', () => {
 
       await service.ensureSetup(dto);
 
-      // The NULL filter is the concurrency guard: a narrative written between
-      // provisioning and this seed (concurrent setup call or an early customer
-      // edit) makes the update match zero rows instead of overwriting.
+      // The empty-narrative filter (NULL or {}, generateNarrative's definition)
+      // is the concurrency guard: a narrative written between provisioning and
+      // this seed (concurrent setup call or an early customer edit) makes the
+      // update match zero rows instead of overwriting.
       expect(mockDb.ismsDocument.updateMany).toHaveBeenCalledWith({
         where: {
           id: 'doc_ia',
-          draftNarrative: { equals: Prisma.AnyNull },
+          OR: [
+            { draftNarrative: { equals: Prisma.AnyNull } },
+            { draftNarrative: { equals: {} } },
+          ],
         },
         data: {
           draftNarrative: {

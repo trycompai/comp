@@ -233,7 +233,12 @@ export class IsmsService {
       await db.ismsDocument.updateMany({
         where: {
           id: internalAuditDoc.id,
-          draftNarrative: { equals: Prisma.AnyNull },
+          // "Empty" matches generateNarrative's definition: NULL (the
+          // creation state) or an empty object — never a populated draft.
+          OR: [
+            { draftNarrative: { equals: Prisma.AnyNull } },
+            { draftNarrative: { equals: {} } },
+          ],
         },
         data: {
           draftNarrative: {
