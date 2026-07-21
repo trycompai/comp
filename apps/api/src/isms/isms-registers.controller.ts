@@ -31,6 +31,9 @@ import { IsmsRoleService } from './isms-role.service';
 import { IsmsRoleAssignmentService } from './isms-role-assignment.service';
 import { IsmsMetricService } from './isms-metric.service';
 import { IsmsMeasurementService } from './isms-measurement.service';
+import { IsmsAuditService } from './isms-audit.service';
+import { IsmsAuditControlService } from './isms-audit-control.service';
+import { IsmsAuditFindingService } from './isms-audit-finding.service';
 import { IsmsNarrativeService } from './isms-narrative.service';
 import {
   createRegisterRegistry,
@@ -68,9 +71,21 @@ const REGISTER_ROW_BODY = {
       cadence: { type: 'string' },
       plan: { type: 'string' },
       measurementMethod: { type: 'string' },
+      // Per-register status: objectives use the first four values, audits the
+      // next three, and findings open/in_progress/closed.
       status: {
         type: 'string',
-        enum: ['not_started', 'on_track', 'at_risk', 'met'],
+        enum: [
+          'not_started',
+          'on_track',
+          'at_risk',
+          'met',
+          'planned',
+          'in_progress',
+          'complete',
+          'open',
+          'closed',
+        ],
       },
       // Roles register (5.3) + role assignments (7.2 competence)
       responsibilities: { type: 'string' },
@@ -113,6 +128,47 @@ const REGISTER_ROW_BODY = {
       },
       value: { type: 'string' },
       note: { type: 'string', nullable: true },
+      // Internal audit register (9.2): audits + audit-controls + audit-findings
+      scope: { type: 'string' },
+      criteria: { type: 'string' },
+      auditorName: { type: 'string', nullable: true },
+      plannedStartDate: { type: 'string', nullable: true },
+      plannedEndDate: { type: 'string', nullable: true },
+      conclusionVerdict: {
+        type: 'string',
+        enum: ['conform', 'substantially_conform', 'not_yet_conform'],
+        nullable: true,
+      },
+      conclusionNotes: { type: 'string', nullable: true },
+      signoffAuditorName: { type: 'string', nullable: true },
+      signoffAuditorDate: { type: 'string', nullable: true },
+      signoffSpoName: { type: 'string', nullable: true },
+      signoffSpoDate: { type: 'string', nullable: true },
+      signoffTopMgmtName: { type: 'string', nullable: true },
+      signoffTopMgmtDate: { type: 'string', nullable: true },
+      auditId: { type: 'string' },
+      controlRef: { type: 'string' },
+      whatWasTested: { type: 'string' },
+      whereToFind: { type: 'string' },
+      result: {
+        type: 'string',
+        enum: [
+          'conformity_confirmed',
+          'nonconformity_raised',
+          'observation_raised',
+          'not_sampled',
+        ],
+        nullable: true,
+      },
+      notes: { type: 'string', nullable: true },
+      type: {
+        type: 'string',
+        enum: ['nc_major', 'nc_minor', 'ofi', 'observation'],
+      },
+      controlId: { type: 'string', nullable: true },
+      clauseOrControl: { type: 'string', nullable: true },
+      dueDate: { type: 'string', nullable: true },
+      closureEvidence: { type: 'string', nullable: true },
       position: { type: 'integer', minimum: 0 },
     },
   },
@@ -181,6 +237,9 @@ export class IsmsRegistersController {
     roleService: IsmsRoleService,
     roleAssignmentService: IsmsRoleAssignmentService,
     metricService: IsmsMetricService,
+    auditService: IsmsAuditService,
+    auditControlService: IsmsAuditControlService,
+    auditFindingService: IsmsAuditFindingService,
     private readonly measurementService: IsmsMeasurementService,
     private readonly narrativeService: IsmsNarrativeService,
   ) {
@@ -193,6 +252,9 @@ export class IsmsRegistersController {
       roleAssignments: roleAssignmentService,
       metrics: metricService,
       measurements: this.measurementService,
+      audits: auditService,
+      auditControls: auditControlService,
+      auditFindings: auditFindingService,
     });
   }
 

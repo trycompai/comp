@@ -252,6 +252,13 @@ const ISMS_DOCUMENT_TEMPLATES = [
     description:
       'The metrics the organization monitors — what is measured, how, when, by whom, and who analyses the results (ISO 27001 clause 9.1).',
   },
+  {
+    documentType: 'internal_audit',
+    name: 'Internal Audit',
+    clause: '9.2',
+    description:
+      'The internal audit programme and the plan, controls tested, findings and conclusion of each internal audit of the ISMS (ISO 27001 clause 9.2).',
+  },
 ] as const;
 
 async function seedIsmsDocumentTemplates() {
