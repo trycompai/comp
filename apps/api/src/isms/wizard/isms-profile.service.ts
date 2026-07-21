@@ -34,6 +34,7 @@ const GENERATION_ORDER: Record<IsmsDocumentType, number> = {
   roles_and_responsibilities: 5,
   objectives_plan: 6,
   monitoring: 7,
+  internal_audit: 8,
 };
 const GENERATION_ORDER_DEFAULT = Object.keys(GENERATION_ORDER).length;
 

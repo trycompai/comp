@@ -19,6 +19,7 @@ enum IsmsDocumentType {
   roles_and_responsibilities // 5.3
   objectives_plan // 6.2
   monitoring // 9.1
+  internal_audit // 9.2
 }
 
 enum IsmsDocumentStatus {
@@ -87,6 +88,7 @@ model IsmsDocument {
   objectives                  IsmsObjective[] // 6.2 register
   roles                       IsmsRole[] // 5.3 register (governance roles, responsibilities & authorities)
   metrics                     IsmsMetric[] // 9.1 register (monitoring & measurement framework)
+  audits                      IsmsAudit[] // 9.2 register (internal audit programme, plan and report)
   controlLinks                IsmsDocumentControlLink[] // CS-437: org controls this document maps to
 
   @@unique([organizationId, frameworkId, type]) // one document per type per framework per org
@@ -478,6 +480,180 @@ model IsmsMeasurement {
 
   @@index([metricId, periodStart])
   @@index([documentId])
+}
+
+// --- Register: Internal Audit Programme, Plan & Report (clause 9.2) ---
+
+enum IsmsAuditStatus {
+  planned
+  in_progress
+  complete
+}
+
+// The bracketed choice in the audit conclusion template: "...found the ISMS to
+// [conform / substantially conform with the non-conformities recorded below /
+// not yet conform] to ISO/IEC 27001:2022."
+enum IsmsAuditConclusionVerdict {
+  conform
+  substantially_conform
+  not_yet_conform
+}
+
+// The auditor's finding for one sampled control (Controls Tested row).
+enum IsmsAuditControlResult {
+  conformity_confirmed
+  nonconformity_raised
+  observation_raised
+  not_sampled // deliberately scoped out this cycle (still rendered in the doc)
+}
+
+enum IsmsAuditFindingType {
+  nc_major
+  nc_minor
+  ofi // opportunity for improvement
+  observation
+}
+
+enum IsmsAuditFindingStatus {
+  open
+  in_progress
+  closed
+}
+
+// One internal audit instance (clause 9.2). The v1 shape is one annual full
+// audit; every field ships with auditor-defensible template text the customer
+// can accept or edit. All values are typed in by the customer (manual-first);
+// the schema accepts later automation without a UI change.
+model IsmsAudit {
+  id         String       @id @default(dbgenerated("generate_prefixed_cuid('isms_aud'::text)"))
+  documentId String
+  document   IsmsDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  // Server-generated "IA-YYYY-NN" (year of creation, per-document sequence).
+  reference String
+  scope     String
+  criteria  String
+
+  // The auditor as a display string ("Sarah Chen, Assured Compliance Ltd").
+  // Free text, frozen at selection: the UI offers the Internal Auditor holder
+  // from ISMS > Roles (5.3) — a member or an external firm — but the audit
+  // record must keep the name that performed THIS audit even if Roles changes.
+  auditorName String?
+
+  plannedStartDate DateTime?       @db.Date
+  plannedEndDate   DateTime?       @db.Date
+  status           IsmsAuditStatus @default(planned)
+
+  // Conclusion: the customer picks the bracketed verdict and may add narrative.
+  conclusionVerdict IsmsAuditConclusionVerdict?
+  conclusionNotes   String?
+
+  // Sign-off: three signature slots per audit (auditor / SPO / top management).
+  // Names are free text (external auditors are not members); a slot is "signed"
+  // when both its name and date are set. Rendered as the document's sign-off
+  // table and frozen into the version contentSnapshot at publish.
+  signoffAuditorName    String?
+  signoffAuditorDate    DateTime? @db.Date
+  signoffSpoName        String?
+  signoffSpoDate        DateTime? @db.Date
+  signoffTopMgmtName    String?
+  signoffTopMgmtDate    DateTime? @db.Date
+
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  controls IsmsAuditControl[]
+  findings IsmsAuditFinding[]
+
+  // References are generated under the per-document lock, so this never fires
+  // in practice; it keeps concurrent creates honest at the database layer.
+  @@unique([documentId, reference])
+  @@index([documentId])
+}
+
+// One sampled control in an audit's Controls Tested table. Fifteen default
+// rows are seeded per audit (seed-if-missing by controlKey, mirroring
+// IsmsMetric.metricKey); the customer/auditor fills in Result and Notes, and
+// may add, edit, or remove rows freely.
+model IsmsAuditControl {
+  id      String    @id @default(dbgenerated("generate_prefixed_cuid('isms_ac'::text)"))
+  auditId String
+  audit   IsmsAudit @relation(fields: [auditId], references: [id], onDelete: Cascade)
+
+  // Denormalized document id so control rows can be listed org-scoped and
+  // mutated through the generic register CRUD (mirrors IsmsRoleAssignment).
+  documentId String
+
+  // Stable key for the fifteen seeded rows (e.g. 'clause_4_1_context');
+  // null for customer-added rows. Seeding is idempotent on (auditId,
+  // controlKey); NULLs stay distinct so many custom rows are allowed.
+  controlKey String?
+
+  controlRef    String // e.g. "Clause 4.1 Context" / "A.8.13 Backup"
+  whatWasTested String // short description of what the control covers
+  // Pre-filled with a "Comp AI > ..." location; free text so the customer can
+  // point at an external location when evidence lives outside Comp AI.
+  whereToFind   String
+
+  // Null until the auditor records an outcome for the row.
+  result IsmsAuditControlResult?
+  notes  String? // external evidence, dates, or auditor commentary
+
+  source      IsmsContextSource @default(derived)
+  derivedFrom String? // provenance for seeded rows, e.g. "seed:clause_4_1_context"
+
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Findings raised against this control row (link survives row edits; the
+  // finding keeps its own clauseOrControl text as the frozen label).
+  findings IsmsAuditFinding[]
+
+  @@unique([auditId, controlKey])
+  @@index([auditId])
+  @@index([documentId])
+}
+
+// A non-conformity, opportunity for improvement, or observation raised during
+// an audit. Most findings are created from a Controls Tested row (result
+// non-conformity/observation); standalone findings are also allowed.
+model IsmsAuditFinding {
+  id      String    @id @default(dbgenerated("generate_prefixed_cuid('isms_af'::text)"))
+  auditId String
+  audit   IsmsAudit @relation(fields: [auditId], references: [id], onDelete: Cascade)
+
+  // Denormalized document id for org-scoped generic register CRUD.
+  documentId String
+
+  // Server-generated "F-NN" (per-audit sequence).
+  reference String
+
+  type IsmsAuditFindingType
+
+  // Optional link back to the Controls Tested row that raised this finding.
+  controlId String?
+  control   IsmsAuditControl? @relation(fields: [controlId], references: [id], onDelete: SetNull)
+
+  // Free text; pre-fills from the linked control row's reference in the UI.
+  clauseOrControl String?
+  description     String
+
+  ownerMemberId String? // responsible member (plain id, like IsmsObjective.ownerMemberId)
+  dueDate       DateTime? @db.Date
+
+  status          IsmsAuditFindingStatus @default(open)
+  closureEvidence String? // free text or link
+
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([auditId, reference])
+  @@index([auditId])
+  @@index([documentId])
+  @@index([controlId])
 }
 
 // --- Org-level link: an ISMS document maps to individual controls (CS-437) ---

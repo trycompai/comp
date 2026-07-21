@@ -8,6 +8,7 @@ import { resolveUserPermissions } from '@/lib/permissions.server';
 import { auth } from '@/utils/auth';
 import { ContextOfOrganizationClient } from '../components/ContextOfOrganizationClient';
 import { InterestedPartiesClient } from '../components/InterestedPartiesClient';
+import { InternalAuditClient } from '../components/InternalAuditClient';
 import type { ApproverOption } from '../components/IsmsApprovalSection';
 import { LeadershipClient } from '../components/LeadershipClient';
 import { MonitoringClient } from '../components/MonitoringClient';
@@ -33,6 +34,8 @@ interface IsmsDetailClientProps {
   approverOptions: ApproverOption[];
   /** All active members (for the Roles member pickers); superset of approvers. */
   memberOptions: ApproverOption[];
+  /** Internal Auditor holder(s) from Roles (5.3) — only for the 9.2 document. */
+  auditorOptions?: string[];
 }
 
 const ISMS_DETAIL_CLIENTS: Record<
@@ -45,6 +48,7 @@ const ISMS_DETAIL_CLIENTS: Record<
   objectives_plan: ObjectivesClient,
   roles_and_responsibilities: RolesClient,
   monitoring: MonitoringClient,
+  internal_audit: InternalAuditClient,
   isms_scope: ScopeClient,
   leadership_commitment: LeadershipClient,
 };
@@ -163,6 +167,39 @@ export default async function IsmsDocumentPage({
     .map((p) => ({ id: p.id, name: p.user?.name ?? p.user?.email ?? 'Unknown' }))
     .sort((a, b) => a.name.localeCompare(b.name));
 
+  // The Internal Audit auditor dropdown is whoever Roles (5.3) says the
+  // Internal Auditor is — assigned members and/or the external firm. No
+  // defaulting on our part: an empty list means Roles is not configured yet.
+  let auditorOptions: string[] = [];
+  if (documentType === 'internal_audit') {
+    const rolesDoc = setupResult.data?.documents?.find(
+      (doc) => doc.type === 'roles_and_responsibilities',
+    );
+    if (rolesDoc) {
+      const rolesResult = await serverApi.get<IsmsDocumentData>(
+        `/v1/isms/documents/${rolesDoc.id}`,
+      );
+      const auditorRole = rolesResult.data?.roles?.find(
+        (role) => role.roleKey === 'internal_auditor',
+      );
+      const memberNames = new Map(memberOptions.map((m) => [m.id, m.name]));
+      const holders = (auditorRole?.assignments ?? [])
+        .map((assignment) => memberNames.get(assignment.memberId))
+        .filter((name): name is string => !!name);
+      const routeHolder = auditorRole?.auditRouteMemberId
+        ? memberNames.get(auditorRole.auditRouteMemberId)
+        : undefined;
+      const firm = auditorRole?.auditFirmName?.trim();
+      auditorOptions = [
+        ...new Set(
+          [...holders, routeHolder, firm].filter(
+            (name): name is string => !!name,
+          ),
+        ),
+      ];
+    }
+  }
+
   const DetailClient = ISMS_DETAIL_CLIENTS[documentType];
 
   return (
@@ -175,6 +212,7 @@ export default async function IsmsDocumentPage({
         currentMemberId={currentMember?.id ?? null}
         approverOptions={approverOptions}
         memberOptions={memberOptions}
+        auditorOptions={auditorOptions}
       />
     </PageLayout>
   );

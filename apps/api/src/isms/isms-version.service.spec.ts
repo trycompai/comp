@@ -26,6 +26,7 @@ jest.mock('./utils/export-payload', () => ({
   resolveOrgProfile: jest.fn(),
   resolveRolesExtras: jest.fn(),
   resolveMonitoringExtras: jest.fn(),
+  resolveInternalAuditExtras: jest.fn(),
   parseExportSnapshot: jest.fn(() => null),
 }));
 jest.mock('./utils/export-metadata', () => ({

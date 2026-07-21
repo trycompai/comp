@@ -155,6 +155,7 @@ function makeDocument(overrides: Partial<IsmsDocument> = {}): IsmsDocument {
     objectives: [],
     roles: [],
     metrics: [OVERDUE_METRIC, HEALTHY_METRIC],
+    audits: [],
     controlLinks: [],
     draftNarrative: null,
     currentVersionId: null,

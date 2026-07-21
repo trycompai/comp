@@ -8,6 +8,11 @@ import { buildObjectivesSections } from './objectives';
 import { buildRolesSections } from './roles';
 import { buildMonitoringSections } from './monitoring';
 import {
+  buildInternalAuditSections,
+  deriveInternalAuditNarrative,
+  internalAuditNarrativeSchema,
+} from './internal-audit';
+import {
   buildScopeSections,
   deriveScopeNarrative,
   ismsScopeNarrativeSchema,
@@ -35,6 +40,7 @@ const EXPORT_SECTION_BUILDERS: Record<
   objectives_plan: buildObjectivesSections,
   roles_and_responsibilities: buildRolesSections,
   monitoring: buildMonitoringSections,
+  internal_audit: buildInternalAuditSections,
   isms_scope: buildScopeSections,
   leadership_commitment: buildLeadershipSections,
 };
@@ -49,16 +55,22 @@ export function buildExportSections({
   return EXPORT_SECTION_BUILDERS[type](input);
 }
 
-/** Zod schema validating the narrative payload for each singleton document type. */
+/**
+ * Zod schema validating the narrative payload for each document type that
+ * stores one. Covers the singleton documents plus the Internal Audit document,
+ * whose narrative holds only the Programme paragraph (its audits live in their
+ * own registers, so it is NOT a narrative type).
+ */
 export function narrativeSchemaForType(
   type: IsmsDocumentType,
 ): ZodTypeAny | null {
   if (type === 'isms_scope') return ismsScopeNarrativeSchema;
   if (type === 'leadership_commitment') return leadershipNarrativeSchema;
+  if (type === 'internal_audit') return internalAuditNarrativeSchema;
   return null;
 }
 
-/** Derive the default narrative payload for a singleton document type. */
+/** Derive the default narrative payload for a document type that stores one. */
 export function deriveNarrativeForType({
   type,
   data,
@@ -68,6 +80,7 @@ export function deriveNarrativeForType({
 }): Record<string, unknown> | null {
   if (type === 'isms_scope') return deriveScopeNarrative(data);
   if (type === 'leadership_commitment') return deriveLeadershipNarrative(data);
+  if (type === 'internal_audit') return deriveInternalAuditNarrative(data);
   return null;
 }
 
