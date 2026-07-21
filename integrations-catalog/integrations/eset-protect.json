@@ -8,7 +8,7 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Log in to ESET Protect Cloud console\n2. Go to More > Users > API Users\n3. Create a new API user with Device Management read permissions\n4. Note your region from the console URL (eu, de, us, jpn, or ca)\n5. Enter the API username, password, and region prefix",
+      "setupInstructions": "1. Create the API user in ESET PROTECT Hub (or ESET Business Account if your company has not migrated to Hub). Do NOT use the \"New Mapped Account\" option in the ESET PROTECT web console — that only creates a console login and does not grant API access.\n2. In Hub/EBA, open Users, edit that user, and enable the \"Integrations\" toggle under Permissions / Access Rights. A Superuser must do this, and it cannot be enabled on their own account.\n3. Have that user sign in once so API access is activated.\n4. Note your region from the console URL (eu, de, us, jpn, or ca).\n5. Enter the API username, password, and region prefix below, then reconnect.",
       "credentialFields": [
         {
           "label": "API Username",
