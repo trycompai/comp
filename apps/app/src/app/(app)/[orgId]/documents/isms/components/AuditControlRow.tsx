@@ -37,11 +37,17 @@ import {
 
 const NO_RESULT = 'no-result';
 
+/** Results that should prompt the customer to raise a linked finding. */
+export type RaisedResult = 'nonconformity_raised' | 'observation_raised';
+
 interface AuditControlRowProps {
   control: IsmsAuditControl;
   canEdit: boolean;
   onUpdateControl: (controlId: string, payload: Record<string, unknown>) => Promise<void>;
   onDeleteControl: (controlId: string) => Promise<void>;
+  /** Called after a result is saved as non-conformity / observation, so the
+   * findings section can open a linked-finding form pre-filled from this row. */
+  onResultRaised?: (control: IsmsAuditControl, result: RaisedResult) => void;
 }
 
 function toFormValues(control: IsmsAuditControl): AuditControlFormValues {
@@ -64,6 +70,7 @@ export function AuditControlRow({
   canEdit,
   onUpdateControl,
   onDeleteControl,
+  onResultRaised,
 }: AuditControlRowProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [isSavingResult, setIsSavingResult] = useState(false);
@@ -74,7 +81,7 @@ export function AuditControlRow({
     control,
     handleSubmit,
     reset,
-    formState: { isDirty, isSubmitting },
+    formState: { isDirty, isValid, isSubmitting },
   } = useForm<AuditControlFormValues>({
     resolver: zodResolver(auditControlSchema),
     mode: 'onChange',
@@ -102,8 +109,14 @@ export function AuditControlRow({
       });
     } catch {
       // Error already surfaced via toast by the caller.
+      return;
     } finally {
       setIsSavingResult(false);
+    }
+    // Ticket flow: a raised non-conformity / observation prompts the customer
+    // to record a finding linked back to this row.
+    if (next === 'nonconformity_raised' || next === 'observation_raised') {
+      onResultRaised?.(controlRow, next);
     }
   };
 
@@ -178,7 +191,7 @@ export function AuditControlRow({
               size="sm"
               variant="secondary"
               onClick={handleSave}
-              disabled={!isDirty || isSubmitting}
+              disabled={!isDirty || !isValid || isSubmitting}
               loading={isSubmitting}
             >
               Save

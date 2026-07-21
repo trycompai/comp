@@ -136,8 +136,10 @@ export class IsmsAuditService {
 
   /**
    * Next "IA-YYYY-NN" for the document: the year of creation plus a two-digit
-   * per-document, per-year sequence. Max + 1 (not count + 1) so a deleted
-   * audit's number is never reissued. Runs under the per-document lock.
+   * per-document, per-year sequence. Max + 1 over the surviving rows, so
+   * deleting an older audit never reissues its number (deleting the newest
+   * audit frees its number — acceptable, since audits are freely deletable
+   * drafts until published). Runs under the per-document lock.
    */
   private async nextReference({
     tx,
@@ -202,8 +204,13 @@ export class IsmsAuditService {
     auditId: string;
     organizationId: string;
   }) {
+    // Type-scoped like create: an audit row can only ever live on THIS org's
+    // Internal Audit document (belt-and-braces with the creation guard).
     const audit = await db.ismsAudit.findFirst({
-      where: { id: auditId, document: { organizationId } },
+      where: {
+        id: auditId,
+        document: { organizationId, type: 'internal_audit' },
+      },
     });
     if (!audit) {
       throw new NotFoundException('Audit not found');

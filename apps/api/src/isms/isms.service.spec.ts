@@ -10,6 +10,7 @@ jest.mock('@db', () => ({
     ismsDocument: {
       findMany: jest.fn(),
       createMany: jest.fn(),
+      findUnique: jest.fn(),
       update: jest.fn(),
     },
     ismsMetric: { findMany: jest.fn() },
@@ -125,6 +126,9 @@ describe('IsmsService ensureSetup', () => {
       (mockDb.organization.findUnique as jest.Mock).mockResolvedValue({
         name: 'Acme Corp',
       });
+      (mockDb.ismsDocument.findUnique as jest.Mock).mockResolvedValue({
+        draftNarrative: null,
+      });
       (mockDb.ismsDocument.findMany as jest.Mock)
         .mockResolvedValueOnce([]) // existing-types probe
         .mockResolvedValueOnce([{ id: 'doc_ia', type: 'internal_audit' }]) // created lookup
@@ -142,6 +146,25 @@ describe('IsmsService ensureSetup', () => {
           },
         },
       });
+    });
+
+    it('never overwrites an already-populated programme narrative (CS-724)', async () => {
+      (
+        mockDb.frameworkEditorFramework.findUnique as jest.Mock
+      ).mockResolvedValue({ id: 'fw_1', requirements: [] });
+      mockTemplates.mockResolvedValue([]);
+      // A concurrent setup call created + seeded (or the customer edited) it.
+      (mockDb.ismsDocument.findUnique as jest.Mock).mockResolvedValue({
+        draftNarrative: { programme: 'Customer-edited programme.' },
+      });
+      (mockDb.ismsDocument.findMany as jest.Mock)
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([{ id: 'doc_ia', type: 'internal_audit' }])
+        .mockResolvedValueOnce([]);
+
+      await service.ensureSetup(dto);
+
+      expect(mockDb.ismsDocument.update).not.toHaveBeenCalled();
     });
 
     it('reports overdueMetricCount on the monitoring document row (CS-723)', async () => {

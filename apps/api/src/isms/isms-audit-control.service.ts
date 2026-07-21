@@ -152,7 +152,10 @@ export class IsmsAuditControlService {
     organizationId: string;
   }) {
     const control = await db.ismsAuditControl.findFirst({
-      where: { id: controlId, audit: { document: { organizationId } } },
+      where: {
+        id: controlId,
+        audit: { document: { organizationId, type: 'internal_audit' } },
+      },
     });
     if (!control) {
       throw new NotFoundException('Audit control row not found');

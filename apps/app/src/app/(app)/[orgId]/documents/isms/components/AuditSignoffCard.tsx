@@ -121,9 +121,13 @@ export function AuditSignoffCard({ audit, canEdit, onSave }: AuditSignoffCardPro
     defaultValues: toFormValues(audit),
   });
 
+  // Re-sync only when the PERSISTED sign-off values change (own save landing),
+  // not on every audit refresh — a sibling register update must not discard
+  // unsaved sign-off input.
+  const persistedFingerprint = JSON.stringify(toFormValues(audit));
   useEffect(() => {
-    reset(toFormValues(audit));
-  }, [audit, reset]);
+    reset(JSON.parse(persistedFingerprint) as SignoffFormValues);
+  }, [persistedFingerprint, reset]);
 
   const handleSave = handleSubmit(async (values) => {
     try {

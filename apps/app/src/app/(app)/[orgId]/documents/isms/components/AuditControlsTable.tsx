@@ -20,8 +20,8 @@ import {
 } from '@trycompai/design-system';
 import { Add } from '@trycompai/design-system/icons';
 import { Controller, useForm } from 'react-hook-form';
-import type { IsmsAudit } from '../isms-types';
-import { AuditControlRow } from './AuditControlRow';
+import type { IsmsAudit, IsmsAuditControl } from '../isms-types';
+import { AuditControlRow, type RaisedResult } from './AuditControlRow';
 import {
   auditControlSchema,
   type AuditControlFormValues,
@@ -34,6 +34,7 @@ interface AuditControlsTableProps {
   onCreateControl: (values: AuditControlFormValues) => Promise<void>;
   onUpdateControl: (controlId: string, payload: Record<string, unknown>) => Promise<void>;
   onDeleteControl: (controlId: string) => Promise<void>;
+  onResultRaised?: (control: IsmsAuditControl, result: RaisedResult) => void;
 }
 
 const EMPTY_CONTROL: AuditControlFormValues = {
@@ -55,6 +56,7 @@ export function AuditControlsTable({
   onCreateControl,
   onUpdateControl,
   onDeleteControl,
+  onResultRaised,
 }: AuditControlsTableProps) {
   const controls = audit.controls;
 
@@ -96,6 +98,7 @@ export function AuditControlsTable({
                   canEdit={canEdit}
                   onUpdateControl={onUpdateControl}
                   onDeleteControl={onDeleteControl}
+                  onResultRaised={onResultRaised}
                 />
               ))}
             </TableBody>

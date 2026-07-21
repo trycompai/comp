@@ -218,26 +218,38 @@ export class IsmsService {
     }
 
     // Same first-load guarantee for Internal Audit (9.2): the Programme
-    // paragraph opens with its default text. The document was just created
-    // with an empty draft, so this write can never clobber a customer edit.
+    // paragraph opens with its default text. Seed-if-empty: under concurrent
+    // setup calls the "created" lookup can also match a row the other call
+    // just created, so an unconditional write could clobber an early edit.
     const internalAuditDoc = created.find(
       (doc) => doc.type === 'internal_audit',
     );
     if (internalAuditDoc) {
-      const organization = await db.organization.findUnique({
-        where: { id: organizationId },
-        select: { name: true },
-      });
-      await db.ismsDocument.update({
+      const existing = await db.ismsDocument.findUnique({
         where: { id: internalAuditDoc.id },
-        data: {
-          draftNarrative: {
-            programme: defaultProgrammeText(
-              organization?.name ?? 'The organization',
-            ),
-          },
-        },
+        select: { draftNarrative: true },
       });
+      const hasNarrative =
+        existing?.draftNarrative != null &&
+        typeof existing.draftNarrative === 'object' &&
+        !Array.isArray(existing.draftNarrative) &&
+        Object.keys(existing.draftNarrative).length > 0;
+      if (!hasNarrative) {
+        const organization = await db.organization.findUnique({
+          where: { id: organizationId },
+          select: { name: true },
+        });
+        await db.ismsDocument.update({
+          where: { id: internalAuditDoc.id },
+          data: {
+            draftNarrative: {
+              programme: defaultProgrammeText(
+                organization?.name ?? 'The organization',
+              ),
+            },
+          },
+        });
+      }
     }
   }
 

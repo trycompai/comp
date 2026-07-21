@@ -23,7 +23,10 @@ import { useForm } from 'react-hook-form';
 import type { IsmsAudit } from '../isms-types';
 import { AuditControlsTable } from './AuditControlsTable';
 import { AuditFields } from './AuditFields';
-import { AuditFindingsSection } from './AuditFindingsSection';
+import {
+  AuditFindingsSection,
+  type FindingPrefill,
+} from './AuditFindingsSection';
 import { AuditSignoffCard } from './AuditSignoffCard';
 import type { ApproverOption } from './IsmsApprovalSection';
 import {
@@ -90,6 +93,11 @@ export function AuditCard({
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  // Set when a Controls Tested row is marked non-conformity / observation:
+  // the findings section opens a linked-finding form pre-filled from the row.
+  const [findingPrefill, setFindingPrefill] = useState<FindingPrefill | null>(
+    null,
+  );
 
   const {
     control,
@@ -218,12 +226,21 @@ export function AuditCard({
             onCreateControl={(values) => onCreateControl(audit.id, values)}
             onUpdateControl={onUpdateControl}
             onDeleteControl={onDeleteControl}
+            onResultRaised={(control, result) =>
+              setFindingPrefill({
+                controlId: control.id,
+                controlRef: control.controlRef,
+                type: result === 'nonconformity_raised' ? 'nc_minor' : 'observation',
+              })
+            }
           />
 
           <AuditFindingsSection
             audit={audit}
             canEdit={canEdit}
             memberOptions={memberOptions}
+            prefill={findingPrefill}
+            onPrefillDismiss={() => setFindingPrefill(null)}
             onCreateFinding={(values) => onCreateFinding(audit.id, values)}
             onUpdateFinding={onUpdateFinding}
             onDeleteFinding={onDeleteFinding}

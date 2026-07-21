@@ -235,7 +235,10 @@ export class IsmsAuditFindingService {
     organizationId: string;
   }) {
     const finding = await db.ismsAuditFinding.findFirst({
-      where: { id: findingId, audit: { document: { organizationId } } },
+      where: {
+        id: findingId,
+        audit: { document: { organizationId, type: 'internal_audit' } },
+      },
     });
     if (!finding) {
       throw new NotFoundException('Finding not found');

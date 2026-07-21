@@ -69,6 +69,8 @@ export function AuditFindingRow({
     control,
     handleSubmit,
     reset,
+    setValue,
+    getValues,
     formState: { isDirty, isValid, isSubmitting },
   } = useForm<FindingFormValues>({
     resolver: zodResolver(findingSchema),
@@ -178,6 +180,12 @@ export function AuditFindingRow({
           control={control}
           controlRows={audit.controls}
           memberOptions={memberOptions}
+          onRelatedControlPicked={(row) => {
+            // Same prefill-if-empty behavior as the add form.
+            if (row && !getValues('clauseOrControl')) {
+              setValue('clauseOrControl', row.controlRef, { shouldDirty: true });
+            }
+          }}
         />
       ) : (
         <Stack gap="3">

@@ -189,7 +189,10 @@ describe('IsmsAuditService', () => {
         service.update({ auditId: 'aud_x', organizationId: 'org_1', dto: {} }),
       ).rejects.toThrow(NotFoundException);
       expect(mockDb.ismsAudit.findFirst).toHaveBeenCalledWith({
-        where: { id: 'aud_x', document: { organizationId: 'org_1' } },
+        where: {
+          id: 'aud_x',
+          document: { organizationId: 'org_1', type: 'internal_audit' },
+        },
       });
     });
   });

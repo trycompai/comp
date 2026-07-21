@@ -204,8 +204,8 @@ const schemas = {
     position,
   }),
   auditUpdate: z.object({
-    scope: z.string().min(1).optional(),
-    criteria: z.string().min(1).optional(),
+    scope: z.string().trim().min(1).optional(),
+    criteria: z.string().trim().min(1).optional(),
     // Nullish: undefined = leave as-is, null = clear.
     auditorName: z.string().nullish(),
     plannedStartDate: z.string().nullish(),
@@ -224,7 +224,7 @@ const schemas = {
   }),
   auditControlCreate: z.object({
     auditId: z.string(),
-    controlRef: z.string().min(1),
+    controlRef: z.string().trim().min(1),
     whatWasTested: z.string().optional(),
     whereToFind: z.string().optional(),
     // Nullish: a row can be drafted before the auditor records an outcome.
@@ -233,7 +233,7 @@ const schemas = {
     position,
   }),
   auditControlUpdate: z.object({
-    controlRef: z.string().min(1).optional(),
+    controlRef: z.string().trim().min(1).optional(),
     whatWasTested: z.string().optional(),
     whereToFind: z.string().optional(),
     result: z.enum(AUDIT_CONTROL_RESULT).nullish(),

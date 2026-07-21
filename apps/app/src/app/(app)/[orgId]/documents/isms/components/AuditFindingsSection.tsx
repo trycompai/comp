@@ -18,10 +18,20 @@ import type { ApproverOption } from './IsmsApprovalSection';
 import { findingSchema, type FindingFormValues } from './audit-schema';
 import { IsmsAddCard } from './shared';
 
+/** Pre-fill for the linked-finding prompt raised from a Controls Tested row. */
+export interface FindingPrefill {
+  controlId: string;
+  controlRef: string;
+  type: FindingFormValues['type'];
+}
+
 interface AuditFindingsSectionProps {
   audit: IsmsAudit;
   canEdit: boolean;
   memberOptions: ApproverOption[];
+  /** When set, the add-finding form opens pre-filled from the raising row. */
+  prefill?: FindingPrefill | null;
+  onPrefillDismiss?: () => void;
   onCreateFinding: (values: FindingFormValues) => Promise<void>;
   onUpdateFinding: (findingId: string, values: FindingFormValues) => Promise<void>;
   onDeleteFinding: (findingId: string) => Promise<void>;
@@ -48,6 +58,8 @@ export function AuditFindingsSection({
   audit,
   canEdit,
   memberOptions,
+  prefill,
+  onPrefillDismiss,
   onCreateFinding,
   onUpdateFinding,
   onDeleteFinding,
@@ -80,7 +92,30 @@ export function AuditFindingsSection({
         </Stack>
       ) : null}
 
-      {canEdit ? (
+      {canEdit && prefill ? (
+        // The ticket's linked-finding prompt: a row was just marked
+        // non-conformity / observation, so the form opens pre-filled from it.
+        <div className="flex flex-col gap-3 rounded-md border border-dashed border-border bg-muted/30 p-4">
+          <HStack align="center" justify="between" gap="3">
+            <Heading level="4">New finding for {prefill.controlRef}</Heading>
+            <Button type="button" size="sm" variant="ghost" onClick={onPrefillDismiss}>
+              Dismiss
+            </Button>
+          </HStack>
+          <AddFindingForm
+            key={prefill.controlId}
+            audit={audit}
+            memberOptions={memberOptions}
+            initialValues={{
+              type: prefill.type,
+              controlId: prefill.controlId,
+              clauseOrControl: prefill.controlRef,
+            }}
+            onAdd={onCreateFinding}
+            onClose={() => onPrefillDismiss?.()}
+          />
+        </div>
+      ) : canEdit ? (
         <IsmsAddCard addLabel="Add finding" formTitle="New finding">
           {({ close }) => (
             <AddFindingForm
@@ -99,11 +134,13 @@ export function AuditFindingsSection({
 function AddFindingForm({
   audit,
   memberOptions,
+  initialValues,
   onAdd,
   onClose,
 }: {
   audit: IsmsAudit;
   memberOptions: ApproverOption[];
+  initialValues?: Partial<FindingFormValues>;
   onAdd: (values: FindingFormValues) => Promise<void>;
   onClose: () => void;
 }) {
@@ -116,7 +153,7 @@ function AddFindingForm({
     formState: { isSubmitting },
   } = useForm<FindingFormValues>({
     resolver: zodResolver(findingSchema),
-    defaultValues: EMPTY_FINDING,
+    defaultValues: { ...EMPTY_FINDING, ...initialValues },
   });
 
   const handleAdd = handleSubmit(async (values) => {
