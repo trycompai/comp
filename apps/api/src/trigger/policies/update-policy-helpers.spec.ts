@@ -246,16 +246,21 @@ describe('updatePolicyInDatabase (draft policy regeneration)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    // A draft policy: v1 is the current, unpublished, unsigned working version.
+    // A draft policy uploaded as a PDF: displayFormat is 'PDF' and both the
+    // policy and its current version carry a stale pdfUrl (the old document).
     (db.policy.findUnique as jest.Mock).mockResolvedValue({
       id: 'pol_1',
       status: 'draft',
       currentVersionId: 'pv_1',
+      displayFormat: 'PDF',
+      pdfUrl: 'org_1/policies/pol_1/uploaded.pdf',
       content: [
         { type: 'paragraph', content: [{ type: 'text', text: 'Stale draft' }] },
       ],
       signedBy: [],
-      versions: [{ id: 'pv_1', pdfUrl: null, version: 1 }],
+      versions: [
+        { id: 'pv_1', pdfUrl: 'org_1/policies/pol_1/v1.pdf', version: 1 },
+      ],
     });
 
     txPolicyUpdate = jest.fn();
@@ -305,5 +310,21 @@ describe('updatePolicyInDatabase (draft policy regeneration)', () => {
       'Regenerated draft content',
     );
     expect(policyUpdate).not.toHaveProperty('currentVersionId');
+  });
+
+  it('clears stale PDF references and switches to EDITOR display when the draft was uploaded as a PDF', async () => {
+    await updatePolicyInDatabase('pol_1', REGEN_CONTENT, 'mem_regen');
+
+    // Regeneration produces EDITOR content: the policy must switch back to the
+    // editor and drop its stale policy-level PDF, otherwise the page opens on
+    // the PDF tab / export keeps serving the old uploaded document.
+    const policyUpdate = txPolicyUpdate.mock.calls[0][0].data;
+    expect(policyUpdate.displayFormat).toBe('EDITOR');
+    expect(policyUpdate.pdfUrl).toBeNull();
+
+    // The current version's stale PDF (used first by render/export via
+    // currentVersion.pdfUrl ?? policy.pdfUrl) must be cleared too.
+    const versionUpdate = txVersionUpdate.mock.calls[0][0];
+    expect(versionUpdate.data.pdfUrl).toBeNull();
   });
 });

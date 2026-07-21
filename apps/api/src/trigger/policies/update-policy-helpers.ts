@@ -94,6 +94,14 @@ export async function updatePolicyInDatabase(
     // unattached version instead (the published path below) would leave
     // policy.content / currentVersionId pointing at the old text, so the user
     // regenerates but keeps seeing the stale draft (CS-766).
+    //
+    // A draft can be in PDF display mode (the user uploaded a PDF as its
+    // content): displayFormat = 'PDF' with pdfUrl set on the policy and/or the
+    // current version. Regeneration produces EDITOR content, so we must clear
+    // those stale PDF references and switch displayFormat back to 'EDITOR' —
+    // otherwise the page opens on the PDF tab and export/render (which use
+    // currentVersion.pdfUrl ?? policy.pdfUrl) keep serving the old uploaded
+    // document instead of the regenerated content (CS-766).
     if (policy.status === PolicyStatus.draft) {
       await db.$transaction(async (tx) => {
         if (policy.currentVersionId) {
@@ -102,6 +110,7 @@ export async function updatePolicyInDatabase(
             data: {
               content: versionContent,
               changelog: 'Regenerated policy content',
+              pdfUrl: null,
             },
           });
         }
@@ -110,6 +119,8 @@ export async function updatePolicyInDatabase(
           data: {
             content: versionContent,
             draftContent: versionContent,
+            pdfUrl: null,
+            displayFormat: 'EDITOR',
           },
         });
       });
