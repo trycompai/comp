@@ -1,6 +1,16 @@
 'use client';
 
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@trycompai/design-system';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import type { LoginAnalysis } from '../../hooks/types';
@@ -77,6 +87,9 @@ export function ConnectVendorLoginFlow({
   // The authenticated page the sign-in landed on — used as the connection's URL
   // so future runs open the app directly and reuse the session.
   const [connectedUrl, setConnectedUrl] = useState<string | null>(null);
+  // Guard against a stray click on the close button discarding an in-progress
+  // live sign-in (the user is typing a 2FA code / finishing a login).
+  const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
 
   const context = useBrowserContext();
   const { startAnalysis, isStarting } = useLoginAnalysis();
@@ -325,6 +338,22 @@ export function ConnectVendorLoginFlow({
     onCancel();
   }, [endSession, context, onCancel]);
 
+  // Closing during a live sign-in tears down the session — confirm first so a
+  // misclick doesn't wipe the user's progress. Outside a live session there's
+  // nothing to lose, so cancel immediately.
+  const requestCancel = useCallback(() => {
+    if (step === 'signing-in' || step === 'takeover' || step === 'signin') {
+      setConfirmCancelOpen(true);
+      return;
+    }
+    handleCancel();
+  }, [step, handleCancel]);
+
+  const confirmCancel = useCallback(() => {
+    setConfirmCancelOpen(false);
+    handleCancel();
+  }, [handleCancel]);
+
   const host = hostnameOf(url || urlInput);
 
   // Live sign-in steps use the full-width activity card (design 1b); the
@@ -340,26 +369,45 @@ export function ConnectVendorLoginFlow({
     const variant: LiveSigninVariant =
       step === 'signing-in' ? 'ai' : step === 'signin' ? 'finish' : takeoverVariant;
     return (
-      <ConnectLiveSignin
-        host={host}
-        liveViewUrl={
-          isManual
-            ? context.liveViewUrl
-            : (signinLiveView?.liveViewUrl ?? context.liveViewUrl)
-        }
-        variant={variant}
-        success={success}
-        steps={signinSteps}
-        onConfirm={
-          step === 'signing-in' || success
-            ? undefined
-            : isManual
-              ? () => context.checkAuth(url)
-              : handleTakeoverVerify
-        }
-        isConfirming={isManual ? context.status === 'checking' : isVerifying}
-        onCancel={handleCancel}
-      />
+      <>
+        <ConnectLiveSignin
+          host={host}
+          liveViewUrl={
+            isManual
+              ? context.liveViewUrl
+              : (signinLiveView?.liveViewUrl ?? context.liveViewUrl)
+          }
+          variant={variant}
+          success={success}
+          steps={signinSteps}
+          onConfirm={
+            step === 'signing-in' || success
+              ? undefined
+              : isManual
+                ? () => context.checkAuth(url)
+                : handleTakeoverVerify
+          }
+          isConfirming={isManual ? context.status === 'checking' : isVerifying}
+          onCancel={requestCancel}
+        />
+        <AlertDialog open={confirmCancelOpen} onOpenChange={setConfirmCancelOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Discard this sign-in?</AlertDialogTitle>
+              <AlertDialogDescription>
+                You&apos;re in the middle of signing in. Closing now ends the live
+                browser session and you&apos;ll have to start over.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Keep signing in</AlertDialogCancel>
+              <AlertDialogAction variant="destructive" onClick={confirmCancel}>
+                Discard
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </>
     );
   }
 
