@@ -73,7 +73,8 @@ export function BrowserLiveView({
             sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
             allow="clipboard-read; clipboard-write"
           />
-          <LiveActivityBorder state={variant === 'execution' ? 'ai' : 'you'} />
+          {/* Only when the AI is running — not the manual auth (your-turn) view. */}
+          {variant === 'execution' && <LiveActivityBorder />}
         </div>
       </div>
     </div>
