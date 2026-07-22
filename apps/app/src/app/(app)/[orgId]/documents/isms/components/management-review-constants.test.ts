@@ -59,6 +59,9 @@ describe('parseAttendees / isReviewSigned / parseProcedure', () => {
         { memberId: 'm2' },
         'garbage',
         { memberId: 'm3', name: '  ' },
+        // Empty memberId must not count — mirrors the server schema, so the
+        // Submit UI can't look ready while the server rejects the list.
+        { memberId: '', name: 'Ghost' },
       ]),
     ).toEqual([{ memberId: 'm1', name: 'Jane' }]);
     expect(parseAttendees(null)).toEqual([]);

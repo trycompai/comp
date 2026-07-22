@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { db } from '@db';
 import type { Prisma } from '@db';
-import { isReviewSigned } from './documents/management-review';
+import { loadReviewLockState } from './documents/management-review';
 import { invalidateApprovalIfNeeded } from './utils/approval';
 import { lockDocument } from './utils/document-lock';
 import { parseOptionalDate } from './utils/parse-optional-date';
@@ -14,14 +14,22 @@ import type {
   UpdateReviewActionInput,
 } from './registers/register-registry';
 
+/** The only action fields editable once its review is signed: the tracking
+ * trio. The description (and ordering) are part of the signed minutes. */
+const SIGNED_ACTION_EDITABLE_FIELDS = new Set([
+  'ownerMemberId',
+  'dueDate',
+  'status',
+]);
+
 /**
  * CRUD for a review's Actions arising (9.3.3, CS-726). The reference is
  * server-generated ("A01", per-review sequence — displayed as
  * "MR-YYYY-NN-A01") and immutable. Open actions carry forward automatically
  * to the next review's input (a), computed at display/export time. Signing a
- * review freezes WHICH actions arose (no create/delete), but existing actions
- * stay fully updatable — the ticket's "actions still track to closure after
- * that".
+ * review freezes WHAT was agreed (no create/delete, description immutable),
+ * but the tracking fields — owner, due date, status — stay live to closure:
+ * the ticket's "actions still track to closure after that".
  */
 @Injectable()
 export class IsmsReviewActionService {
@@ -39,11 +47,6 @@ export class IsmsReviewActionService {
       documentId,
       organizationId,
     });
-    if (isReviewSigned(review)) {
-      throw new BadRequestException(
-        `Review ${review.reference} is signed and locked. Clear the chair sign-off to add actions.`,
-      );
-    }
     const ownerMemberId = await this.resolveMember({
       memberId: dto.ownerMemberId,
       organizationId,
@@ -54,6 +57,14 @@ export class IsmsReviewActionService {
       // The lock also serializes reference generation, so concurrent creates
       // can never both compute the same next "A-NN".
       await lockDocument(tx, review.documentId);
+      // Signed state re-read UNDER the lock: a concurrent sign-off can commit
+      // after the pre-read, and the locked minutes must win (TOCTOU).
+      const lock = await loadReviewLockState({ tx, reviewId: review.id });
+      if (lock.signed) {
+        throw new BadRequestException(
+          `Review ${lock.reference} is signed and locked. Clear the chair sign-off to add actions.`,
+        );
+      }
       const position =
         dto.position ?? (await this.nextPosition({ tx, reviewId: review.id }));
       await invalidateApprovalIfNeeded({ tx, documentId: review.documentId });
@@ -81,8 +92,6 @@ export class IsmsReviewActionService {
     organizationId: string;
     dto: UpdateReviewActionInput;
   }) {
-    // Deliberately NOT gated on the review being signed: actions track to
-    // closure after sign-off (owner, due date, and status stay live).
     const action = await this.requireAction({ actionId, organizationId });
     const ownerMemberId = await this.resolveMember({
       memberId: dto.ownerMemberId,
@@ -93,6 +102,21 @@ export class IsmsReviewActionService {
       // Same per-document lock submit/approve take, so an edit can't race the
       // submission's completeness check.
       await lockDocument(tx, action.documentId);
+      // Once the review is signed, only the tracking trio (owner / due date /
+      // status) stays editable — the description is part of the minutes.
+      // Re-read UNDER the lock so a concurrent sign-off can't be raced.
+      const lock = await loadReviewLockState({ tx, reviewId: action.reviewId });
+      if (lock.signed) {
+        const blocked = Object.entries(dto).some(
+          ([key, value]) =>
+            value !== undefined && !SIGNED_ACTION_EDITABLE_FIELDS.has(key),
+        );
+        if (blocked) {
+          throw new BadRequestException(
+            `Review ${lock.reference} is signed and locked. Only the owner, due date, and status of its actions can change; clear the chair sign-off to edit anything else.`,
+          );
+        }
+      }
       await invalidateApprovalIfNeeded({ tx, documentId: action.documentId });
       return tx.ismsReviewAction.update({
         where: { id: actionId },
@@ -116,13 +140,15 @@ export class IsmsReviewActionService {
     organizationId: string;
   }) {
     const action = await this.requireAction({ actionId, organizationId });
-    if (isReviewSigned(action.review)) {
-      throw new BadRequestException(
-        `Review ${action.review.reference} is signed and locked. Clear the chair sign-off to remove actions.`,
-      );
-    }
     await db.$transaction(async (tx) => {
       await lockDocument(tx, action.documentId);
+      // Signed state re-read UNDER the lock (see create).
+      const lock = await loadReviewLockState({ tx, reviewId: action.reviewId });
+      if (lock.signed) {
+        throw new BadRequestException(
+          `Review ${lock.reference} is signed and locked. Clear the chair sign-off to remove actions.`,
+        );
+      }
       await invalidateApprovalIfNeeded({ tx, documentId: action.documentId });
       await tx.ismsReviewAction.delete({ where: { id: actionId } });
     });
@@ -222,15 +248,6 @@ export class IsmsReviewActionService {
       where: {
         id: actionId,
         review: { document: { organizationId, type: 'management_review' } },
-      },
-      include: {
-        review: {
-          select: {
-            reference: true,
-            signoffChairName: true,
-            signoffChairDate: true,
-          },
-        },
       },
     });
     if (!action) {

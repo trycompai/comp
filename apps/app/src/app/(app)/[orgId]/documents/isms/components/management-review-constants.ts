@@ -75,7 +75,8 @@ export function fullActionReference(
   return `${reviewReference}-${actionReference}`;
 }
 
-/** Parse a review's attendees defensively (stale/invalid JSON → empty list). */
+/** Parse a review's attendees defensively (stale/invalid JSON → empty list).
+ * Mirrors the server's reviewAttendeeSchema: memberId AND name non-empty. */
 export function parseAttendees(value: unknown): IsmsReviewAttendee[] {
   if (!Array.isArray(value)) return [];
   return value.filter(
@@ -83,6 +84,7 @@ export function parseAttendees(value: unknown): IsmsReviewAttendee[] {
       !!entry &&
       typeof entry === 'object' &&
       typeof (entry as { memberId?: unknown }).memberId === 'string' &&
+      (entry as { memberId: string }).memberId.length > 0 &&
       typeof (entry as { name?: unknown }).name === 'string' &&
       (entry as { name: string }).name.trim().length > 0,
   );

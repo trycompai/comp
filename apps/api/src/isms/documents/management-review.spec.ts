@@ -1,5 +1,6 @@
 import type { Prisma } from '@db';
 import {
+  dedupeReviewAttendees,
   deriveManagementReviewNarrative,
   isReviewSigned,
   parseReviewAttendees,
@@ -60,6 +61,19 @@ describe('parseReviewAttendees / isReviewSigned', () => {
     expect(parseReviewAttendees(null)).toEqual([]);
     expect(parseReviewAttendees('not-an-array')).toEqual([]);
     expect(parseReviewAttendees([{ memberId: 'mem_1' }])).toEqual([]);
+  });
+
+  it('dedupes attendees by member, first occurrence winning', () => {
+    expect(
+      dedupeReviewAttendees([
+        { memberId: 'm1', name: 'Jane' },
+        { memberId: 'm2', name: 'Ada' },
+        { memberId: 'm1', name: 'Jane (dup)' },
+      ]),
+    ).toEqual([
+      { memberId: 'm1', name: 'Jane' },
+      { memberId: 'm2', name: 'Ada' },
+    ]);
   });
 
   it('treats a review as signed only when both name and date are set', () => {

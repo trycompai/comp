@@ -6,7 +6,8 @@ import {
 import { db } from '@db';
 import type { Prisma } from '@db';
 import {
-  isReviewSigned,
+  dedupeReviewAttendees,
+  loadReviewLockState,
   seedReviewInputsIfMissing,
   type ReviewAttendee,
 } from './documents/management-review';
@@ -77,8 +78,9 @@ export class IsmsManagementReviewService {
         tx,
         organizationId,
       });
-      const attendees: ReviewAttendee[] =
-        dto.attendees ?? defaults.attendees;
+      const attendees: ReviewAttendee[] = dedupeReviewAttendees(
+        dto.attendees ?? defaults.attendees,
+      );
       const review = await tx.ismsManagementReview.create({
         data: {
           documentId,
@@ -107,18 +109,25 @@ export class IsmsManagementReviewService {
     dto: UpdateReviewInput;
   }) {
     const review = await this.requireReview({ reviewId, organizationId });
-    this.assertEditableWhileSigned({ review, dto });
     if (dto.attendees) {
       await validateReviewAttendees({
         attendees: dto.attendees,
         organizationId,
       });
     }
+    const attendees =
+      dto.attendees === undefined
+        ? undefined
+        : dedupeReviewAttendees(dto.attendees);
 
     return db.$transaction(async (tx) => {
       // Same per-document lock submit/approve take, so an edit can't race the
       // submission's completeness check.
       await lockDocument(tx, review.documentId);
+      // Signed state re-read UNDER the lock: a concurrent sign-off can commit
+      // after the pre-read, and the locked minutes must win (TOCTOU).
+      const lock = await loadReviewLockState({ tx, reviewId });
+      this.assertEditableWhileSigned({ lock, dto });
       await invalidateApprovalIfNeeded({ tx, documentId: review.documentId });
       return tx.ismsManagementReview.update({
         where: { id: reviewId },
@@ -126,9 +135,9 @@ export class IsmsManagementReviewService {
           meetingDate: parseOptionalDate(dto.meetingDate),
           chairName: this.optionalText(dto.chairName),
           attendees:
-            dto.attendees === undefined
+            attendees === undefined
               ? undefined
-              : dto.attendees.map((attendee) => ({ ...attendee })),
+              : attendees.map((attendee) => ({ ...attendee })),
           status: dto.status ?? undefined,
           conclusionVerdict:
             dto.conclusionVerdict === undefined
@@ -153,13 +162,15 @@ export class IsmsManagementReviewService {
     organizationId: string;
   }) {
     const review = await this.requireReview({ reviewId, organizationId });
-    if (isReviewSigned(review)) {
-      throw new BadRequestException(
-        `Review ${review.reference} is signed and locked and cannot be deleted. Clear the chair sign-off first.`,
-      );
-    }
     await db.$transaction(async (tx) => {
       await lockDocument(tx, review.documentId);
+      // Signed state re-read UNDER the lock (see update).
+      const lock = await loadReviewLockState({ tx, reviewId });
+      if (lock.signed) {
+        throw new BadRequestException(
+          `Review ${lock.reference} is signed and locked and cannot be deleted. Clear the chair sign-off first.`,
+        );
+      }
       await invalidateApprovalIfNeeded({ tx, documentId: review.documentId });
       // Cascades to the review's input rows and actions.
       await tx.ismsManagementReview.delete({ where: { id: reviewId } });
@@ -174,20 +185,20 @@ export class IsmsManagementReviewService {
    * deliberately not gated here — see IsmsReviewActionService.
    */
   private assertEditableWhileSigned({
-    review,
+    lock,
     dto,
   }: {
-    review: { reference: string; signoffChairName: string | null; signoffChairDate: Date | null };
+    lock: { reference: string; signed: boolean };
     dto: UpdateReviewInput;
   }): void {
-    if (!isReviewSigned(review)) return;
+    if (!lock.signed) return;
     const blocked = Object.entries(dto).some(
       ([key, value]) =>
         value !== undefined && !SIGNED_REVIEW_EDITABLE_FIELDS.has(key),
     );
     if (blocked) {
       throw new BadRequestException(
-        `Review ${review.reference} is signed and locked. Clear the chair sign-off to edit it.`,
+        `Review ${lock.reference} is signed and locked. Clear the chair sign-off to edit it.`,
       );
     }
   }

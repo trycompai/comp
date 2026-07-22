@@ -78,6 +78,12 @@ export function ReviewInputRow({
     if (!isEditing) reset(toFormValues(input));
   }, [input, isEditing, reset]);
 
+  // If the review becomes signed while this row is being edited, exit edit
+  // mode — the server rejects input edits on a signed review.
+  useEffect(() => {
+    if (!canEdit && isEditing) setIsEditing(false);
+  }, [canEdit, isEditing]);
+
   const handleSave = handleSubmit(async (values) => {
     try {
       await onUpdateInput(input.id, toInputPayload(values));
@@ -110,7 +116,7 @@ export function ReviewInputRow({
     }
   };
 
-  if (isEditing) {
+  if (isEditing && canEdit) {
     return (
       <TableRow>
         <TableCell>

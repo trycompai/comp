@@ -128,6 +128,13 @@ export function ReviewCard({
     if (!isEditing) reset(toFormValues(review));
   }, [review, isEditing, reset]);
 
+  // If the review becomes signed while the details form is open (another
+  // user signs, SWR refreshes), close the form — the server would reject the
+  // save and the lock notice explains why.
+  useEffect(() => {
+    if (!canEditContent && isEditing) setIsEditing(false);
+  }, [canEditContent, isEditing]);
+
   const handleSave = handleSubmit(async (values) => {
     try {
       await onUpdateReview(review.id, values);
@@ -213,7 +220,7 @@ export function ReviewCard({
       }
       headerEnd={headerActions}
     >
-      {isEditing ? (
+      {isEditing && canEditContent ? (
         <ReviewFields control={control} chairOptions={chairOptions} />
       ) : (
         <Stack gap="6">

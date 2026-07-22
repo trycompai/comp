@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { db } from '@db';
 import type { Prisma } from '@db';
-import { isReviewSigned } from './documents/management-review';
+import { loadReviewLockState } from './documents/management-review';
 import { invalidateApprovalIfNeeded } from './utils/approval';
 import { lockDocument } from './utils/document-lock';
 import type {
@@ -36,12 +36,14 @@ export class IsmsReviewInputService {
       documentId,
       organizationId,
     });
-    this.assertReviewUnsigned(review);
 
     return db.$transaction(async (tx) => {
       // Same per-document lock submit/approve take, so an edit can't race the
       // submission's completeness check.
       await lockDocument(tx, review.documentId);
+      // Signed state re-read UNDER the lock: a concurrent sign-off can commit
+      // after the pre-read, and the locked minutes must win (TOCTOU).
+      await this.assertReviewUnsigned({ tx, reviewId: review.id });
       const position =
         dto.position ?? (await this.nextPosition({ tx, reviewId: review.id }));
       await invalidateApprovalIfNeeded({ tx, documentId: review.documentId });
@@ -71,10 +73,11 @@ export class IsmsReviewInputService {
     dto: UpdateReviewInputInput;
   }) {
     const input = await this.requireInput({ inputId, organizationId });
-    this.assertReviewUnsigned(input.review);
 
     return db.$transaction(async (tx) => {
       await lockDocument(tx, input.documentId);
+      // Signed state re-read UNDER the lock (see create).
+      await this.assertReviewUnsigned({ tx, reviewId: input.reviewId });
       await invalidateApprovalIfNeeded({ tx, documentId: input.documentId });
       return tx.ismsReviewInput.update({
         where: { id: inputId },
@@ -88,6 +91,9 @@ export class IsmsReviewInputService {
               : dto.discussionNotes?.trim() || null,
           discussed: dto.discussed ?? undefined,
           position: dto.position ?? undefined,
+          // An edited seed row is the customer's row now — record the
+          // override like every other ISMS register (audit-controls precedent).
+          source: 'manual',
         },
       });
     });
@@ -101,9 +107,10 @@ export class IsmsReviewInputService {
     organizationId: string;
   }) {
     const input = await this.requireInput({ inputId, organizationId });
-    this.assertReviewUnsigned(input.review);
     await db.$transaction(async (tx) => {
       await lockDocument(tx, input.documentId);
+      // Signed state re-read UNDER the lock (see create).
+      await this.assertReviewUnsigned({ tx, reviewId: input.reviewId });
       await invalidateApprovalIfNeeded({ tx, documentId: input.documentId });
       await tx.ismsReviewInput.delete({ where: { id: inputId } });
     });
@@ -111,14 +118,17 @@ export class IsmsReviewInputService {
   }
 
   /** A signed review's Inputs table is part of the chair-approved minutes. */
-  private assertReviewUnsigned(review: {
-    reference: string;
-    signoffChairName: string | null;
-    signoffChairDate: Date | null;
-  }): void {
-    if (isReviewSigned(review)) {
+  private async assertReviewUnsigned({
+    tx,
+    reviewId,
+  }: {
+    tx: Prisma.TransactionClient;
+    reviewId: string;
+  }): Promise<void> {
+    const lock = await loadReviewLockState({ tx, reviewId });
+    if (lock.signed) {
       throw new BadRequestException(
-        `Review ${review.reference} is signed and locked. Clear the chair sign-off to edit its inputs.`,
+        `Review ${lock.reference} is signed and locked. Clear the chair sign-off to edit its inputs.`,
       );
     }
   }
@@ -171,15 +181,6 @@ export class IsmsReviewInputService {
       where: {
         id: inputId,
         review: { document: { organizationId, type: 'management_review' } },
-      },
-      include: {
-        review: {
-          select: {
-            reference: true,
-            signoffChairName: true,
-            signoffChairDate: true,
-          },
-        },
       },
     });
     if (!input) {

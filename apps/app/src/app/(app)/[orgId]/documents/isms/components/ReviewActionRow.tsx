@@ -90,7 +90,7 @@ export function ReviewActionRow({
     control,
     handleSubmit,
     reset,
-    formState: { isDirty, isValid, isSubmitting },
+    formState: { isDirty, isValid, isSubmitting, dirtyFields },
   } = useForm<ReviewActionFormValues>({
     resolver: zodResolver(reviewActionSchema),
     mode: 'onChange',
@@ -104,10 +104,21 @@ export function ReviewActionRow({
   const reference = fullActionReference(review.reference, action.reference);
 
   const handleSave = handleSubmit(async (values) => {
-    try {
-      await onUpdateAction(action.id, toActionPayload(values));
-    } catch {
-      return;
+    // Patch only what changed: an untouched owner (possibly a former member)
+    // must not be re-submitted — the server validates PROVIDED owners against
+    // the active roster — and a signed review accepts only tracking fields.
+    const full = toActionPayload(values);
+    const patch = Object.fromEntries(
+      Object.entries(full).filter(
+        ([key]) => dirtyFields[key as keyof ReviewActionFormValues],
+      ),
+    );
+    if (Object.keys(patch).length > 0) {
+      try {
+        await onUpdateAction(action.id, patch);
+      } catch {
+        return;
+      }
     }
     setIsEditing(false);
   });
@@ -149,7 +160,13 @@ export function ReviewActionRow({
               name="description"
               render={({ field: { ref: _ref, ...field }, fieldState }) => (
                 <>
-                  <Textarea {...field} rows={2} aria-label="Action description" />
+                  {/* Part of the signed minutes — frozen once the chair signs. */}
+                  <Textarea
+                    {...field}
+                    rows={2}
+                    aria-label="Action description"
+                    disabled={locked}
+                  />
                   <FieldError>{fieldState.error?.message}</FieldError>
                 </>
               )}

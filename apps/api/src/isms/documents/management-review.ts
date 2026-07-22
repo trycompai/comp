@@ -59,6 +59,47 @@ export function isReviewSigned(review: {
 }
 
 /**
+ * Re-read a review's sign-off state INSIDE an open transaction that already
+ * holds the per-document advisory lock. Every mutation gated on "unsigned"
+ * must use this rather than a pre-transaction read: a concurrent chair
+ * sign-off (which takes the same lock) can commit between the pre-read and
+ * the lock acquisition, and only the locked read is authoritative (TOCTOU).
+ */
+export async function loadReviewLockState({
+  tx,
+  reviewId,
+}: {
+  tx: Tx;
+  reviewId: string;
+}): Promise<{ reference: string; signed: boolean }> {
+  const review = await tx.ismsManagementReview.findUniqueOrThrow({
+    where: { id: reviewId },
+    select: {
+      reference: true,
+      signoffChairName: true,
+      signoffChairDate: true,
+    },
+  });
+  return { reference: review.reference, signed: isReviewSigned(review) };
+}
+
+/**
+ * Normalize an attendee list before persisting: at most one entry per member
+ * (first occurrence wins), so generated minutes and attendee counts stay
+ * accurate even if a caller sends duplicates.
+ */
+export function dedupeReviewAttendees(
+  attendees: ReviewAttendee[],
+): ReviewAttendee[] {
+  const seen = new Set<string>();
+  return attendees.filter((attendee) => {
+    if (seen.has(attendee.memberId)) return false;
+    seen.add(attendee.memberId);
+    return true;
+  });
+}
+
+/**
  * Clause-9.3 completeness check, shared by the submit-for-approval server gate
  * and the client Submit button (management-review-constants.ts mirrors it).
  * Requires the Procedure paragraph, at least one review instance (an ISMS with

@@ -15,6 +15,7 @@ jest.mock('@db', () => {
     },
     ismsManagementReview: {
       findFirst: jest.fn(),
+      findUniqueOrThrow: jest.fn(),
       findMany: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
@@ -224,6 +225,10 @@ describe('IsmsManagementReviewService', () => {
 
     beforeEach(() => {
       (mockDb.ismsManagementReview.update as jest.Mock).mockResolvedValue({});
+      // The signed-state re-read UNDER the document lock (TOCTOU guard).
+      (
+        mockDb.ismsManagementReview.findUniqueOrThrow as jest.Mock
+      ).mockResolvedValue(unsignedReview);
     });
 
     it('updates fields on an unsigned review, leaving omitted fields untouched', async () => {
@@ -250,6 +255,29 @@ describe('IsmsManagementReviewService', () => {
       (mockDb.ismsManagementReview.findFirst as jest.Mock).mockResolvedValue(
         signedReview,
       );
+      (
+        mockDb.ismsManagementReview.findUniqueOrThrow as jest.Mock
+      ).mockResolvedValue(signedReview);
+
+      await expect(
+        service.update({
+          reviewId: 'mr_1',
+          organizationId: 'org_1',
+          dto: { conclusionNotes: 'rewriting history' },
+        }),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockDb.ismsManagementReview.update).not.toHaveBeenCalled();
+    });
+
+    it('rejects an edit racing a concurrent sign-off (locked re-read wins over the pre-read)', async () => {
+      // Pre-transaction read saw an unsigned review...
+      (mockDb.ismsManagementReview.findFirst as jest.Mock).mockResolvedValue(
+        unsignedReview,
+      );
+      // ...but by the time the advisory lock is held, the chair has signed.
+      (
+        mockDb.ismsManagementReview.findUniqueOrThrow as jest.Mock
+      ).mockResolvedValue(signedReview);
 
       await expect(
         service.update({
@@ -265,6 +293,9 @@ describe('IsmsManagementReviewService', () => {
       (mockDb.ismsManagementReview.findFirst as jest.Mock).mockResolvedValue(
         signedReview,
       );
+      (
+        mockDb.ismsManagementReview.findUniqueOrThrow as jest.Mock
+      ).mockResolvedValue(signedReview);
 
       await service.update({
         reviewId: 'mr_1',
@@ -311,14 +342,21 @@ describe('IsmsManagementReviewService', () => {
   });
 
   describe('remove', () => {
+    const storedReview = {
+      id: 'mr_1',
+      documentId: 'doc_1',
+      reference: `MR-${currentYear}-01`,
+      signoffChairName: null,
+      signoffChairDate: null,
+    };
+
     it('deletes an unsigned review (cascading to inputs and actions)', async () => {
-      (mockDb.ismsManagementReview.findFirst as jest.Mock).mockResolvedValue({
-        id: 'mr_1',
-        documentId: 'doc_1',
-        reference: `MR-${currentYear}-01`,
-        signoffChairName: null,
-        signoffChairDate: null,
-      });
+      (mockDb.ismsManagementReview.findFirst as jest.Mock).mockResolvedValue(
+        storedReview,
+      );
+      (
+        mockDb.ismsManagementReview.findUniqueOrThrow as jest.Mock
+      ).mockResolvedValue(storedReview);
       (mockDb.ismsManagementReview.delete as jest.Mock).mockResolvedValue({});
 
       const result = await service.remove({
@@ -332,11 +370,15 @@ describe('IsmsManagementReviewService', () => {
       });
     });
 
-    it('refuses to delete a signed review', async () => {
-      (mockDb.ismsManagementReview.findFirst as jest.Mock).mockResolvedValue({
-        id: 'mr_1',
-        documentId: 'doc_1',
-        reference: `MR-${currentYear}-01`,
+    it('refuses to delete a signed review (locked re-read wins over the pre-read)', async () => {
+      // Pre-read saw unsigned; the locked re-read sees a committed sign-off.
+      (mockDb.ismsManagementReview.findFirst as jest.Mock).mockResolvedValue(
+        storedReview,
+      );
+      (
+        mockDb.ismsManagementReview.findUniqueOrThrow as jest.Mock
+      ).mockResolvedValue({
+        ...storedReview,
         signoffChairName: 'Raoul Plickat',
         signoffChairDate: new Date('2026-05-01T00:00:00.000Z'),
       });

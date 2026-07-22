@@ -10,6 +10,7 @@ jest.mock('@db', () => {
     },
     ismsManagementReview: {
       findFirst: jest.fn(),
+      findUniqueOrThrow: jest.fn(),
     },
     ismsReviewInput: {
       findFirst: jest.fn(),
@@ -46,6 +47,10 @@ describe('IsmsReviewInputService', () => {
     (mockDb.ismsDocument.findUnique as jest.Mock).mockResolvedValue({
       status: 'draft',
     });
+    // The signed-state re-read UNDER the document lock (TOCTOU guard).
+    (
+      mockDb.ismsManagementReview.findUniqueOrThrow as jest.Mock
+    ).mockResolvedValue(UNSIGNED_REVIEW);
     service = new IsmsReviewInputService();
   });
 
@@ -81,10 +86,14 @@ describe('IsmsReviewInputService', () => {
       });
     });
 
-    it('rejects new rows on a signed review (locked minutes)', async () => {
+    it('rejects new rows when the locked re-read sees a signed review (racing sign-off)', async () => {
+      // Pre-read saw unsigned; the in-transaction re-read is authoritative.
       (mockDb.ismsManagementReview.findFirst as jest.Mock).mockResolvedValue(
-        SIGNED_REVIEW,
+        UNSIGNED_REVIEW,
       );
+      (
+        mockDb.ismsManagementReview.findUniqueOrThrow as jest.Mock
+      ).mockResolvedValue(SIGNED_REVIEW);
       await expect(service.create(args)).rejects.toThrow(BadRequestException);
       expect(mockDb.ismsReviewInput.create).not.toHaveBeenCalled();
     });
@@ -98,11 +107,11 @@ describe('IsmsReviewInputService', () => {
   });
 
   describe('update / remove', () => {
-    it('updates notes and the discussed tick on an unsigned review', async () => {
+    it('updates notes and the discussed tick, recording the override as manual', async () => {
       (mockDb.ismsReviewInput.findFirst as jest.Mock).mockResolvedValue({
         id: 'mri_1',
+        reviewId: 'mr_1',
         documentId: 'doc_1',
-        review: UNSIGNED_REVIEW,
       });
       (mockDb.ismsReviewInput.update as jest.Mock).mockResolvedValue({});
 
@@ -117,14 +126,19 @@ describe('IsmsReviewInputService', () => {
       expect(data.discussionNotes).toBe('Covered in full.');
       expect(data.discussed).toBe(true);
       expect(data.inputRef).toBeUndefined();
+      // Edited seed rows record the customer override (audit-controls precedent).
+      expect(data.source).toBe('manual');
     });
 
     it('rejects edits and deletes on a signed review', async () => {
       (mockDb.ismsReviewInput.findFirst as jest.Mock).mockResolvedValue({
         id: 'mri_1',
+        reviewId: 'mr_1',
         documentId: 'doc_1',
-        review: SIGNED_REVIEW,
       });
+      (
+        mockDb.ismsManagementReview.findUniqueOrThrow as jest.Mock
+      ).mockResolvedValue(SIGNED_REVIEW);
 
       await expect(
         service.update({
@@ -143,8 +157,8 @@ describe('IsmsReviewInputService', () => {
     it('deletes rows (including seeded ones) on an unsigned review', async () => {
       (mockDb.ismsReviewInput.findFirst as jest.Mock).mockResolvedValue({
         id: 'mri_1',
+        reviewId: 'mr_1',
         documentId: 'doc_1',
-        review: UNSIGNED_REVIEW,
       });
       (mockDb.ismsReviewInput.delete as jest.Mock).mockResolvedValue({});
 

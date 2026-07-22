@@ -11,6 +11,7 @@ import {
   Text,
 } from '@trycompai/design-system';
 import { Close } from '@trycompai/design-system/icons';
+import { useState } from 'react';
 import type {
   IsmsManagementReview,
   IsmsReviewAttendee,
@@ -40,27 +41,43 @@ export function AttendeesField({
   memberOptions,
   onSave,
 }: AttendeesFieldProps) {
+  // Controlled picker value so it reliably returns to its placeholder after
+  // each selection (the RoleAssignments pattern).
+  const [pendingMember, setPendingMember] = useState('');
+  // Each save PATCHes the WHOLE list, so overlapping saves built from a stale
+  // render would drop each other's change — serialize by disabling the
+  // affordances while one is in flight.
+  const [isSaving, setIsSaving] = useState(false);
+
   const attendees = parseAttendees(review.attendees);
   const attendingIds = new Set(attendees.map((attendee) => attendee.memberId));
   const availableMembers = memberOptions.filter(
     (option) => !attendingIds.has(option.id),
   );
 
+  const save = async (next: IsmsReviewAttendee[]) => {
+    setIsSaving(true);
+    try {
+      await onSave(next);
+    } catch {
+      // Error already surfaced via toast by the caller.
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleAdd = (memberId: string | null | undefined) => {
-    if (!memberId) return;
+    if (!memberId || isSaving) return;
     const member = memberOptions.find((option) => option.id === memberId);
     if (!member) return;
-    // The caller surfaces failures via toast and re-throws; swallow here so a
-    // failed add can't leak an unhandled promise rejection.
-    void onSave([...attendees, { memberId: member.id, name: member.name }]).catch(
-      () => {},
-    );
+    // Reset the picker back to its placeholder after selecting.
+    setPendingMember('');
+    void save([...attendees, { memberId: member.id, name: member.name }]);
   };
 
   const handleRemove = (memberId: string) => {
-    void onSave(attendees.filter((attendee) => attendee.memberId !== memberId)).catch(
-      () => {},
-    );
+    if (isSaving) return;
+    void save(attendees.filter((attendee) => attendee.memberId !== memberId));
   };
 
   return (
@@ -85,6 +102,7 @@ export function AttendeesField({
                     size="sm"
                     variant="ghost"
                     onClick={() => handleRemove(attendee.memberId)}
+                    disabled={isSaving}
                     iconLeft={<Close size={16} />}
                     aria-label={`Remove attendee ${attendee.name}`}
                   />
@@ -96,7 +114,11 @@ export function AttendeesField({
 
         {canEdit && availableMembers.length > 0 ? (
           <div className="w-full md:max-w-sm">
-            <Select value={undefined} onValueChange={handleAdd}>
+            <Select
+              value={pendingMember || undefined}
+              onValueChange={handleAdd}
+              disabled={isSaving}
+            >
               <SelectTrigger aria-label="Add an attendee">
                 <SelectValue placeholder="Add an attendee…" />
               </SelectTrigger>

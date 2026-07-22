@@ -10,6 +10,7 @@ jest.mock('@db', () => {
     },
     ismsManagementReview: {
       findFirst: jest.fn(),
+      findUniqueOrThrow: jest.fn(),
     },
     ismsReviewAction: {
       findFirst: jest.fn(),
@@ -52,6 +53,10 @@ describe('IsmsReviewActionService', () => {
     });
     (mockDb.ismsReviewAction.findMany as jest.Mock).mockResolvedValue([]);
     (mockDb.ismsReviewAction.findFirst as jest.Mock).mockResolvedValue(null);
+    // The signed-state re-read UNDER the document lock (TOCTOU guard).
+    (
+      mockDb.ismsManagementReview.findUniqueOrThrow as jest.Mock
+    ).mockResolvedValue(UNSIGNED_REVIEW);
     service = new IsmsReviewActionService();
   });
 
@@ -106,10 +111,14 @@ describe('IsmsReviewActionService', () => {
       });
     });
 
-    it('rejects new actions on a signed review (the arising set is frozen)', async () => {
+    it('rejects new actions when the locked re-read sees a signed review (racing sign-off)', async () => {
+      // Pre-read saw unsigned; the in-transaction re-read is authoritative.
       (mockDb.ismsManagementReview.findFirst as jest.Mock).mockResolvedValue(
-        SIGNED_REVIEW,
+        UNSIGNED_REVIEW,
       );
+      (
+        mockDb.ismsManagementReview.findUniqueOrThrow as jest.Mock
+      ).mockResolvedValue(SIGNED_REVIEW);
       await expect(service.create(args)).rejects.toThrow(BadRequestException);
       expect(mockDb.ismsReviewAction.create).not.toHaveBeenCalled();
     });
@@ -131,12 +140,19 @@ describe('IsmsReviewActionService', () => {
   });
 
   describe('update / remove', () => {
-    it('still updates an action on a SIGNED review — actions track to closure', async () => {
-      (mockDb.ismsReviewAction.findFirst as jest.Mock).mockResolvedValue({
-        id: 'mra_1',
-        documentId: 'doc_1',
-        review: SIGNED_REVIEW,
-      });
+    const storedAction = {
+      id: 'mra_1',
+      reviewId: 'mr_1',
+      documentId: 'doc_1',
+    };
+
+    it('still updates the tracking trio on a SIGNED review — actions track to closure', async () => {
+      (mockDb.ismsReviewAction.findFirst as jest.Mock).mockResolvedValue(
+        storedAction,
+      );
+      (
+        mockDb.ismsManagementReview.findUniqueOrThrow as jest.Mock
+      ).mockResolvedValue(SIGNED_REVIEW);
       (mockDb.ismsReviewAction.update as jest.Mock).mockResolvedValue({});
 
       await service.update({
@@ -151,12 +167,48 @@ describe('IsmsReviewActionService', () => {
       expect(data.description).toBeUndefined();
     });
 
-    it('refuses to delete an action from a signed review', async () => {
-      (mockDb.ismsReviewAction.findFirst as jest.Mock).mockResolvedValue({
-        id: 'mra_1',
-        documentId: 'doc_1',
-        review: SIGNED_REVIEW,
+    it('rejects a description change on a signed review — the minutes are frozen', async () => {
+      (mockDb.ismsReviewAction.findFirst as jest.Mock).mockResolvedValue(
+        storedAction,
+      );
+      (
+        mockDb.ismsManagementReview.findUniqueOrThrow as jest.Mock
+      ).mockResolvedValue(SIGNED_REVIEW);
+
+      await expect(
+        service.update({
+          actionId: 'mra_1',
+          organizationId: 'org_1',
+          dto: { description: 'rewriting what was agreed' },
+        }),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockDb.ismsReviewAction.update).not.toHaveBeenCalled();
+    });
+
+    it('updates the description on an unsigned review', async () => {
+      (mockDb.ismsReviewAction.findFirst as jest.Mock).mockResolvedValue(
+        storedAction,
+      );
+      (mockDb.ismsReviewAction.update as jest.Mock).mockResolvedValue({});
+
+      await service.update({
+        actionId: 'mra_1',
+        organizationId: 'org_1',
+        dto: { description: 'Sharper wording.' },
       });
+
+      const { data } = (mockDb.ismsReviewAction.update as jest.Mock).mock
+        .calls[0][0];
+      expect(data.description).toBe('Sharper wording.');
+    });
+
+    it('refuses to delete an action from a signed review', async () => {
+      (mockDb.ismsReviewAction.findFirst as jest.Mock).mockResolvedValue(
+        storedAction,
+      );
+      (
+        mockDb.ismsManagementReview.findUniqueOrThrow as jest.Mock
+      ).mockResolvedValue(SIGNED_REVIEW);
 
       await expect(
         service.remove({ actionId: 'mra_1', organizationId: 'org_1' }),
@@ -165,11 +217,9 @@ describe('IsmsReviewActionService', () => {
     });
 
     it('deletes an action from an unsigned review', async () => {
-      (mockDb.ismsReviewAction.findFirst as jest.Mock).mockResolvedValue({
-        id: 'mra_1',
-        documentId: 'doc_1',
-        review: UNSIGNED_REVIEW,
-      });
+      (mockDb.ismsReviewAction.findFirst as jest.Mock).mockResolvedValue(
+        storedAction,
+      );
       (mockDb.ismsReviewAction.delete as jest.Mock).mockResolvedValue({});
 
       const result = await service.remove({
