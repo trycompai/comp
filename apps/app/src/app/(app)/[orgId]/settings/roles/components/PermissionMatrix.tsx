@@ -239,16 +239,15 @@ export function PermissionMatrix({ value, onChange, obligations, onObligationsCh
     // The 'compliance' obligation (Employee Compliance) implies portal
     // self-service access (sign policies, watch training, etc.) — there's
     // no separate matrix row for the 'portal' resource itself (it's
-    // excluded from RESOURCE_LABELS/RESOURCE_SECTIONS), so keep it in sync
-    // with this toggle instead.
-    if (key === 'compliance') {
-      const newPermissions = { ...value };
-      if (enabled) {
-        newPermissions.portal = [...statement.portal];
-      } else {
-        delete newPermissions.portal;
-      }
-      onChange(newPermissions);
+    // excluded from RESOURCE_LABELS/RESOURCE_SECTIONS), so grant it here
+    // when the obligation is enabled. This is intentionally one-directional:
+    // disabling the obligation must NOT strip 'portal' back off, since a
+    // role can also hold portal access independently of this obligation
+    // (e.g. granted directly through the API) — the UI has no separate row
+    // for 'portal' to tell those cases apart, so it must never revoke an
+    // access grant it didn't itself create.
+    if (key === 'compliance' && enabled) {
+      onChange({ ...value, portal: [...statement.portal] });
     }
   };
 

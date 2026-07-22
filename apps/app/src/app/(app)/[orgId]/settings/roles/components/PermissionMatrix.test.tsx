@@ -321,7 +321,11 @@ describe('Employee Compliance obligation implies portal access', () => {
     });
   });
 
-  it('removes portal permissions when the compliance obligation is disabled', () => {
+  it('does not touch permissions when the compliance obligation is disabled (one-directional implication)', () => {
+    // Disabling compliance must NOT strip 'portal' back off — a role can
+    // hold portal access independently of this obligation (e.g. granted
+    // directly through the API), and the matrix has no separate row for
+    // 'portal' to tell that case apart from "granted via this toggle".
     const mockOnChange = vi.fn();
     const mockOnObligationsChange = vi.fn();
     render(
@@ -336,7 +340,7 @@ describe('Employee Compliance obligation implies portal access', () => {
     fireEvent.click(findComplianceSwitch());
 
     expect(mockOnObligationsChange).toHaveBeenCalledWith({});
-    expect(mockOnChange).toHaveBeenCalledWith({ control: ['read'] });
+    expect(mockOnChange).not.toHaveBeenCalled();
   });
 
   it('does not inject portal permissions or touch obligations when an unrelated resource permission changes', () => {
