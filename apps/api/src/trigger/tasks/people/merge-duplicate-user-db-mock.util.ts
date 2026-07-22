@@ -40,9 +40,17 @@ export function createDbProxyMock(): Record<string, unknown> {
   const models: Record<string, ModelMock> = {};
   let dbProxy: Record<string, unknown>;
   const dbMock = {
-    $transaction: jest.fn(
-      async (fn: (tx: unknown) => Promise<unknown>) => fn(dbProxy),
+    $transaction: jest.fn(async (fn: (tx: unknown) => Promise<unknown>) =>
+      fn(dbProxy),
     ),
+    // Raw-query methods (used for catalog-driven FK discovery — see
+    // merge-duplicate-user-fk-discovery.ts) are explicit callable stubs
+    // rather than falling into the generic "unknown prop -> model mock"
+    // branch below, which would produce a non-callable object instead of a
+    // jest.fn(). Default to harmless empty results; tests that need
+    // specific rows override these directly.
+    $queryRaw: jest.fn().mockResolvedValue([]),
+    $executeRaw: jest.fn().mockResolvedValue(0),
   };
   dbProxy = new Proxy(dbMock, {
     get: (target, prop) => {

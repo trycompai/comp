@@ -21,6 +21,21 @@ jest.mock('@db', () => {
   return { db: createDbProxyMock() };
 });
 
+// Member-relation re-pointing (catalog-driven FK discovery + exceptions) is
+// its own concern with its own dedicated specs
+// (merge-duplicate-user-fk-discovery.spec.ts, merge-duplicate-user-member-relations.spec.ts).
+// Mocked here so this file only asserts the task's orchestration: that it's
+// called with the right ids and that the transaction proceeds around it.
+const mockRepointMemberRelations = jest.fn().mockResolvedValue({
+  foreignKeysDiscovered: 0,
+  genericRepointed: [],
+  signedByPoliciesUpdated: 0,
+});
+jest.mock('./merge-duplicate-user-member-relations', () => ({
+  repointMemberRelations: (...args: unknown[]) =>
+    mockRepointMemberRelations(...args),
+}));
+
 // schemaTask's declared return type doesn't expose `run` as callable, but our
 // mock above makes `schemaTask` return the config object verbatim — this
 // narrows just enough to invoke it without an `any` escape hatch.
@@ -123,7 +138,11 @@ describe('mergeDuplicateUser', () => {
     (db.user.findUnique as jest.Mock).mockResolvedValue(null);
 
     await expect(
-      runMerge({ organizationId: ORG_ID, oldEmail: OLD_EMAIL, newEmail: NEW_EMAIL }),
+      runMerge({
+        organizationId: ORG_ID,
+        oldEmail: OLD_EMAIL,
+        newEmail: NEW_EMAIL,
+      }),
     ).rejects.toThrow(`Old user not found: ${OLD_EMAIL}`);
   });
 
@@ -131,7 +150,11 @@ describe('mergeDuplicateUser', () => {
     (db.member.findFirst as jest.Mock).mockResolvedValue(null);
 
     await expect(
-      runMerge({ organizationId: ORG_ID, oldEmail: OLD_EMAIL, newEmail: NEW_EMAIL }),
+      runMerge({
+        organizationId: ORG_ID,
+        oldEmail: OLD_EMAIL,
+        newEmail: NEW_EMAIL,
+      }),
     ).rejects.toThrow(/Old member not found/);
   });
 
@@ -142,7 +165,11 @@ describe('mergeDuplicateUser', () => {
     );
 
     await expect(
-      runMerge({ organizationId: ORG_ID, oldEmail: OLD_EMAIL, newEmail: NEW_EMAIL }),
+      runMerge({
+        organizationId: ORG_ID,
+        oldEmail: OLD_EMAIL,
+        newEmail: NEW_EMAIL,
+      }),
     ).rejects.toThrow(`New user not found: ${NEW_EMAIL}`);
   });
 
@@ -153,7 +180,11 @@ describe('mergeDuplicateUser', () => {
     );
 
     await expect(
-      runMerge({ organizationId: ORG_ID, oldEmail: OLD_EMAIL, newEmail: NEW_EMAIL }),
+      runMerge({
+        organizationId: ORG_ID,
+        oldEmail: OLD_EMAIL,
+        newEmail: NEW_EMAIL,
+      }),
     ).rejects.toThrow(/New member not found/);
   });
 
@@ -165,11 +196,15 @@ describe('mergeDuplicateUser', () => {
         newEmail: NEW_EMAIL,
       });
 
-      expect(db.task.updateMany).toHaveBeenCalledWith({
-        where: { assigneeId: 'mem_old' },
-        data: { assigneeId: 'mem_new' },
+      expect(mockRepointMemberRelations).toHaveBeenCalledWith(
+        expect.anything(), // tx
+        ORG_ID,
+        'mem_old',
+        'mem_new',
+      );
+      expect(db.member.delete).toHaveBeenCalledWith({
+        where: { id: 'mem_old' },
       });
-      expect(db.member.delete).toHaveBeenCalledWith({ where: { id: 'mem_old' } });
       expect(db.invitation.updateMany).toHaveBeenCalledWith({
         where: { email: OLD_EMAIL, organizationId: ORG_ID },
         data: { email: NEW_EMAIL },
@@ -198,7 +233,11 @@ describe('mergeDuplicateUser', () => {
     });
 
     it('keeps the old user record instead of deleting it', async () => {
-      await runMerge({ organizationId: ORG_ID, oldEmail: OLD_EMAIL, newEmail: NEW_EMAIL });
+      await runMerge({
+        organizationId: ORG_ID,
+        oldEmail: OLD_EMAIL,
+        newEmail: NEW_EMAIL,
+      });
 
       expect(db.user.delete).not.toHaveBeenCalled();
     });
@@ -229,7 +268,9 @@ describe('mergeDuplicateUser', () => {
         newEmail: NEW_EMAIL,
       });
 
-      expect(db.member.delete).toHaveBeenCalledWith({ where: { id: 'mem_old' } });
+      expect(db.member.delete).toHaveBeenCalledWith({
+        where: { id: 'mem_old' },
+      });
       expect(db.invitation.updateMany).toHaveBeenCalledWith({
         where: { email: OLD_EMAIL, organizationId: ORG_ID },
         data: { email: NEW_EMAIL },
@@ -238,7 +279,11 @@ describe('mergeDuplicateUser', () => {
     });
 
     it('skips every other user-scoped relation, since the old user still belongs elsewhere', async () => {
-      await runMerge({ organizationId: ORG_ID, oldEmail: OLD_EMAIL, newEmail: NEW_EMAIL });
+      await runMerge({
+        organizationId: ORG_ID,
+        oldEmail: OLD_EMAIL,
+        newEmail: NEW_EMAIL,
+      });
 
       expect(db.fleetPolicyResult.updateMany).not.toHaveBeenCalled();
       expect(db.oauthAccessToken.updateMany).not.toHaveBeenCalled();
@@ -260,11 +305,15 @@ describe('mergeDuplicateUser', () => {
         where: { createdByAdminId: 'usr_old' },
         data: { createdByAdminId: 'usr_new' },
       });
-      expect(db.offboardingChecklistCompletion.updateMany).not.toHaveBeenCalledWith({
+      expect(
+        db.offboardingChecklistCompletion.updateMany,
+      ).not.toHaveBeenCalledWith({
         where: { completedById: 'usr_old' },
         data: { completedById: 'usr_new' },
       });
-      expect(db.offboardingAccessRevocation.updateMany).not.toHaveBeenCalledWith({
+      expect(
+        db.offboardingAccessRevocation.updateMany,
+      ).not.toHaveBeenCalledWith({
         where: { revokedById: 'usr_old' },
         data: { revokedById: 'usr_new' },
       });

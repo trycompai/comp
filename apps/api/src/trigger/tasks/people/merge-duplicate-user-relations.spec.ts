@@ -1,10 +1,17 @@
 import { db } from '@db';
 import { mergeDuplicateUser } from './merge-duplicate-user';
 
-// Companion to merge-duplicate-user.spec.ts: field-by-field coverage of every
-// relation re-pointed by the merge, plus the dedup branches (unique
-// constraints where a duplicate must be dropped instead of migrated). Split
-// out to keep each spec file under the project's 300-line limit.
+// Companion to merge-duplicate-user.spec.ts: field-by-field coverage of
+// every USER-scoped relation re-pointed by the merge. Split out to keep each
+// spec file under the project's 300-line limit.
+//
+// Member-scoped relations moved to their own dedicated specs when that
+// side switched to catalog-driven FK discovery:
+// - merge-duplicate-user-fk-discovery.spec.ts (the generic discovery/repoint/
+//   dangling-check mechanism)
+// - merge-duplicate-user-member-relations.spec.ts (orchestration + the
+//   hand-written exceptions: unique-constraint dedupe, Policy.signedBy,
+//   IsmsObjective.ownerMemberId)
 
 jest.mock('@trigger.dev/sdk', () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
@@ -16,6 +23,15 @@ jest.mock('@db', () => {
   const { createDbProxyMock } = require('./merge-duplicate-user-db-mock.util');
   return { db: createDbProxyMock() };
 });
+
+// See merge-duplicate-user.spec.ts for why this is mocked here too.
+jest.mock('./merge-duplicate-user-member-relations', () => ({
+  repointMemberRelations: jest.fn().mockResolvedValue({
+    foreignKeysDiscovered: 0,
+    genericRepointed: [],
+    signedByPoliciesUpdated: 0,
+  }),
+}));
 
 interface MergeDuplicateUserRunnable {
   run: (params: {
@@ -40,7 +56,7 @@ const newUser = { id: 'usr_new', email: NEW_EMAIL };
 const oldMember = { id: 'mem_old', userId: 'usr_old' };
 const newMember = { id: 'mem_new', userId: 'usr_new' };
 
-describe('mergeDuplicateUser relation re-pointing', () => {
+describe('mergeDuplicateUser user-relation re-pointing', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
@@ -61,163 +77,12 @@ describe('mergeDuplicateUser relation re-pointing', () => {
     (db.member.count as jest.Mock).mockResolvedValue(0);
   });
 
-  it('re-points every other simple member-scoped relation', async () => {
-    await runMerge({ organizationId: ORG_ID, oldEmail: OLD_EMAIL, newEmail: NEW_EMAIL });
-
-    const o = 'mem_old';
-    const n = 'mem_new';
-    expect(db.policy.updateMany).toHaveBeenCalledWith({
-      where: { approverId: o },
-      data: { approverId: n },
-    });
-    expect(db.policyVersion.updateMany).toHaveBeenCalledWith({
-      where: { publishedById: o },
-      data: { publishedById: n },
-    });
-    expect(db.risk.updateMany).toHaveBeenCalledWith({
-      where: { assigneeId: o },
-      data: { assigneeId: n },
-    });
-    expect(db.vendor.updateMany).toHaveBeenCalledWith({
-      where: { assigneeId: o },
-      data: { assigneeId: n },
-    });
-    expect(db.finding.updateMany).toHaveBeenCalledWith({
-      where: { memberId: o },
-      data: { memberId: n },
-    });
-    expect(db.comment.updateMany).toHaveBeenCalledWith({
-      where: { authorId: o },
-      data: { authorId: n },
-    });
-    expect(db.device.updateMany).toHaveBeenCalledWith({
-      where: { memberId: o },
-      data: { memberId: n },
-    });
-    expect(db.trustAccessRequest.updateMany).toHaveBeenCalledWith({
-      where: { reviewerMemberId: o },
-      data: { reviewerMemberId: n },
-    });
-    expect(db.sOADocument.updateMany).toHaveBeenCalledWith({
-      where: { approverId: o },
-      data: { approverId: n },
-    });
-    expect(db.ismsDocument.updateMany).toHaveBeenCalledWith({
-      where: { approverId: o },
-      data: { approverId: n },
-    });
-    expect(db.ismsObjective.updateMany).toHaveBeenCalledWith({
-      where: { ownerMemberId: o },
-      data: { ownerMemberId: n },
-    });
-  });
-
-  it('replaces the old member id inside Policy.signedBy arrays', async () => {
-    (db.policy.findMany as jest.Mock).mockResolvedValue([
-      { id: 'pol_1', signedBy: ['mem_old', 'mem_other'] },
-    ]);
-
-    await runMerge({ organizationId: ORG_ID, oldEmail: OLD_EMAIL, newEmail: NEW_EMAIL });
-
-    expect(db.policy.update).toHaveBeenCalledWith({
-      where: { id: 'pol_1' },
-      data: { signedBy: ['mem_new', 'mem_other'] },
-    });
-  });
-
-  it('drops the old BackgroundCheckRequest when the new member already has one', async () => {
-    (db.backgroundCheckRequest.findUnique as jest.Mock).mockResolvedValue({
-      id: 'bg_new',
-    });
-
-    await runMerge({ organizationId: ORG_ID, oldEmail: OLD_EMAIL, newEmail: NEW_EMAIL });
-
-    expect(db.backgroundCheckRequest.deleteMany).toHaveBeenCalledWith({
-      where: { memberId: 'mem_old' },
-    });
-    expect(db.backgroundCheckRequest.updateMany).not.toHaveBeenCalled();
-  });
-
-  it('migrates the old BackgroundCheckRequest when the new member has none', async () => {
-    (db.backgroundCheckRequest.findUnique as jest.Mock).mockResolvedValue(null);
-
-    await runMerge({ organizationId: ORG_ID, oldEmail: OLD_EMAIL, newEmail: NEW_EMAIL });
-
-    expect(db.backgroundCheckRequest.updateMany).toHaveBeenCalledWith({
-      where: { memberId: 'mem_old' },
-      data: { memberId: 'mem_new' },
-    });
-    expect(db.backgroundCheckRequest.deleteMany).not.toHaveBeenCalled();
-  });
-
-  it('migrates non-duplicate OffboardingChecklistCompletion rows and drops duplicates', async () => {
-    (db.offboardingChecklistCompletion.findMany as jest.Mock).mockImplementation(
-      ({ where }: { where: { memberId: string } }) =>
-        where.memberId === 'mem_old'
-          ? [
-              { id: 'occ_1', templateItemId: 'tpl_1' },
-              { id: 'occ_2', templateItemId: 'tpl_2' },
-            ]
-          : [{ templateItemId: 'tpl_2' }],
-    );
-
-    await runMerge({ organizationId: ORG_ID, oldEmail: OLD_EMAIL, newEmail: NEW_EMAIL });
-
-    expect(db.offboardingChecklistCompletion.updateMany).toHaveBeenCalledWith({
-      where: { id: { in: ['occ_1'] } },
-      data: { memberId: 'mem_new' },
-    });
-    expect(db.offboardingChecklistCompletion.deleteMany).toHaveBeenCalledWith({
-      where: { id: { in: ['occ_2'] } },
-    });
-  });
-
-  it('migrates non-duplicate OffboardingAccessRevocation rows and drops duplicates', async () => {
-    (db.offboardingAccessRevocation.findMany as jest.Mock).mockImplementation(
-      ({ where }: { where: { memberId: string } }) =>
-        where.memberId === 'mem_old'
-          ? [
-              { id: 'oar_1', vendorId: 'vnd_1' },
-              { id: 'oar_2', vendorId: 'vnd_2' },
-            ]
-          : [{ vendorId: 'vnd_2' }],
-    );
-
-    await runMerge({ organizationId: ORG_ID, oldEmail: OLD_EMAIL, newEmail: NEW_EMAIL });
-
-    expect(db.offboardingAccessRevocation.updateMany).toHaveBeenCalledWith({
-      where: { id: { in: ['oar_1'] } },
-      data: { memberId: 'mem_new' },
-    });
-    expect(db.offboardingAccessRevocation.deleteMany).toHaveBeenCalledWith({
-      where: { id: { in: ['oar_2'] } },
-    });
-  });
-
-  it('migrates non-duplicate EmployeeTrainingVideoCompletion rows and leaves duplicates for cascade cleanup', async () => {
-    (db.employeeTrainingVideoCompletion.findMany as jest.Mock).mockImplementation(
-      ({ where }: { where: { memberId: string } }) =>
-        where.memberId === 'mem_old'
-          ? [
-              { id: 'evc_1', videoId: 'vid_1' },
-              { id: 'evc_2', videoId: 'vid_2' },
-            ]
-          : [{ videoId: 'vid_2' }],
-    );
-
-    await runMerge({ organizationId: ORG_ID, oldEmail: OLD_EMAIL, newEmail: NEW_EMAIL });
-
-    expect(db.employeeTrainingVideoCompletion.updateMany).toHaveBeenCalledWith({
-      where: { id: { in: ['evc_1'] } },
-      data: { memberId: 'mem_new' },
-    });
-    // No delete branch exists for this model — the duplicate row is left on
-    // the old member and is cleaned up by the member.delete cascade.
-    expect(db.employeeTrainingVideoCompletion.deleteMany).not.toHaveBeenCalled();
-  });
-
   it('re-points every other simple user-scoped relation', async () => {
-    await runMerge({ organizationId: ORG_ID, oldEmail: OLD_EMAIL, newEmail: NEW_EMAIL });
+    await runMerge({
+      organizationId: ORG_ID,
+      oldEmail: OLD_EMAIL,
+      newEmail: NEW_EMAIL,
+    });
 
     const o = 'usr_old';
     const n = 'usr_new';
@@ -260,7 +125,11 @@ describe('mergeDuplicateUser relation re-pointing', () => {
   });
 
   it('deletes (not updates) the old McpOrgBinding, since userId is unique', async () => {
-    await runMerge({ organizationId: ORG_ID, oldEmail: OLD_EMAIL, newEmail: NEW_EMAIL });
+    await runMerge({
+      organizationId: ORG_ID,
+      oldEmail: OLD_EMAIL,
+      newEmail: NEW_EMAIL,
+    });
 
     expect(db.mcpOrgBinding.deleteMany).toHaveBeenCalledWith({
       where: { userId: 'usr_old' },
