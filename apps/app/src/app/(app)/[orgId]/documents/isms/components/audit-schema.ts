@@ -12,16 +12,31 @@ import {
  * them to null for the register API (which treats null as "clear").
  */
 
-export const auditDetailsSchema = z.object({
-  scope: z.string().trim().min(1, 'Scope is required'),
-  criteria: z.string().trim().min(1, 'Criteria is required'),
-  auditorName: z.string(),
-  plannedStartDate: z.string(),
-  plannedEndDate: z.string(),
-  status: z.enum(AUDIT_STATUSES),
-  conclusionVerdict: z.union([z.enum(CONCLUSION_VERDICTS), z.literal('')]),
-  conclusionNotes: z.string(),
-});
+export const auditDetailsSchema = z
+  .object({
+    scope: z.string().trim().min(1, 'Scope is required'),
+    criteria: z.string().trim().min(1, 'Criteria is required'),
+    auditorName: z.string(),
+    plannedStartDate: z.string(),
+    plannedEndDate: z.string(),
+    status: z.enum(AUDIT_STATUSES),
+    conclusionVerdict: z.union([z.enum(CONCLUSION_VERDICTS), z.literal('')]),
+    conclusionNotes: z.string(),
+  })
+  .superRefine((values, ctx) => {
+    // YYYY-MM-DD strings order lexicographically, so direct comparison is safe.
+    if (
+      values.plannedStartDate &&
+      values.plannedEndDate &&
+      values.plannedEndDate < values.plannedStartDate
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['plannedEndDate'],
+        message: 'Planned end date must be on or after the start date',
+      });
+    }
+  });
 
 export type AuditDetailsFormValues = z.infer<typeof auditDetailsSchema>;
 

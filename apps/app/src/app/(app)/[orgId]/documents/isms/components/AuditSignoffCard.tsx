@@ -138,8 +138,10 @@ export function AuditSignoffCard({ audit, canEdit, onSave }: AuditSignoffCardPro
   });
 
   const values = toFormValues(audit);
+  // Trimmed, so a whitespace-only name (normalized to null by the API on
+  // save) never counts as signed here either.
   const signedCount = SLOTS.filter(
-    (slot) => values[slot.nameField] && values[slot.dateField],
+    (slot) => values[slot.nameField].trim() && values[slot.dateField],
   ).length;
 
   return (

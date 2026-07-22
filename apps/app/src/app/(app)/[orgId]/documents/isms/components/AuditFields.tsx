@@ -155,13 +155,18 @@ export function AuditFields({ control, auditorOptions }: AuditFieldsProps) {
           />
         </IsmsFieldLabel>
         <IsmsFieldLabel label="Planned end date">
-          <Controller
-            control={control}
-            name="plannedEndDate"
-            render={({ field: { ref: _ref, ...field } }) => (
-              <Input {...field} type="date" aria-label="Planned end date" />
-            )}
-          />
+          <Field>
+            <Controller
+              control={control}
+              name="plannedEndDate"
+              render={({ field: { ref: _ref, ...field }, fieldState }) => (
+                <>
+                  <Input {...field} type="date" aria-label="Planned end date" />
+                  <FieldError>{fieldState.error?.message}</FieldError>
+                </>
+              )}
+            />
+          </Field>
         </IsmsFieldLabel>
       </Grid>
       <IsmsFieldLabel label="Conclusion — overall, this audit found the ISMS to ...">

@@ -17,6 +17,7 @@ import {
   TableHeader,
   TableRow,
   Text,
+  Textarea,
 } from '@trycompai/design-system';
 import { Add } from '@trycompai/design-system/icons';
 import { Controller, useForm } from 'react-hook-form';
@@ -181,6 +182,20 @@ function AddControlForm({
               {...field}
               aria-label="Where to find it"
               placeholder="Comp AI > ... or an external location"
+            />
+          )}
+        />
+      </IsmsFieldLabel>
+      <IsmsFieldLabel label="Notes (optional)">
+        <Controller
+          control={control}
+          name="notes"
+          render={({ field: { ref: _ref, ...field } }) => (
+            <Textarea
+              {...field}
+              rows={2}
+              aria-label="Notes"
+              placeholder="External evidence, dates, or auditor commentary"
             />
           )}
         />
