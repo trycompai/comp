@@ -1,3 +1,17 @@
+# [3.107.0](https://github.com/trycompai/comp/compare/v3.106.0...v3.107.0) (2026-07-22)
+
+
+### Bug Fixes
+
+* **api:** resolve comments left by Cubic-dev-ai from Production-Deploy PR ([#3483](https://github.com/trycompai/comp/issues/3483)) ([e489af6](https://github.com/trycompai/comp/commit/e489af6f5aa99d965ea2545cf06e5780ab89aba2))
+* **app:** show the actual error reason when comment deletion fails ([#3485](https://github.com/trycompai/comp/issues/3485)) ([25ac1d9](https://github.com/trycompai/comp/commit/25ac1d9f12cc371240a7d1fc301a73b5e68be21d))
+* **isms:** management review deploy-review fixes ([#3486](https://github.com/trycompai/comp/issues/3486)) ([49fcd6a](https://github.com/trycompai/comp/commit/49fcd6a3d46758490e0e4a7e64435c450324ab61))
+
+
+### Features
+
+* isms management review (clause 9.3) ([#3481](https://github.com/trycompai/comp/issues/3481)) ([b201b7e](https://github.com/trycompai/comp/commit/b201b7e2459ff4080ccbb4143688439d7ff29076))
+
 # [3.106.0](https://github.com/trycompai/comp/compare/v3.105.0...v3.106.0) (2026-07-22)
 
 
