@@ -2,6 +2,7 @@
 
 import { Checkmark, Close, Locked, Play } from '@trycompai/design-system/icons';
 import Image from 'next/image';
+import { useEffect, useState } from 'react';
 import type { InstructionTestResult } from '../../hooks/types';
 import { LiveActivityBorder } from './LiveActivityBorder';
 import { StepList, type SignInStep } from './StepList';
@@ -73,6 +74,10 @@ export function InstructionTestPanel({
   steps,
   result,
 }: InstructionTestPanelProps) {
+  // Gate the ring on the iframe's load so it appears with the page, not before.
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => setLoaded(false), [liveViewUrl]);
+
   if (phase === 'idle') {
     return (
       <div className="grid flex-1 place-items-center rounded-md border border-dashed border-border">
@@ -110,21 +115,26 @@ export function InstructionTestPanel({
             <Locked size={11} className="text-muted-foreground" />
             <span className="truncate font-mono text-[10.5px] text-muted-foreground">{host}</span>
           </div>
-          {liveViewUrl ? (
-            <iframe
-              src={liveViewUrl}
-              title="Test run live view"
-              // 16:9 matches the 1920x1080 capture, so the view fills the width
-              // without side gaps and stays crisp (downscaled, not upscaled).
-              className="aspect-video max-h-[70vh] w-full"
-              sandbox="allow-same-origin allow-scripts"
-            />
-          ) : (
-            <div className="grid aspect-video max-h-[70vh] w-full place-items-center text-xs text-muted-foreground">
-              Starting the browser…
-            </div>
-          )}
-          <LiveActivityBorder state="ai" />
+          {/* Wrap only the browser view so the ring hugs the page, not our
+              chrome bar; show it once the iframe has rendered. */}
+          <div className="relative">
+            {liveViewUrl ? (
+              <iframe
+                src={liveViewUrl}
+                title="Test run live view"
+                // 16:9 matches the 1920x1080 capture, so the view fills the width
+                // without side gaps and stays crisp (downscaled, not upscaled).
+                className="block aspect-video max-h-[70vh] w-full"
+                sandbox="allow-same-origin allow-scripts"
+                onLoad={() => setLoaded(true)}
+              />
+            ) : (
+              <div className="grid aspect-video max-h-[70vh] w-full place-items-center text-xs text-muted-foreground">
+                Starting the browser…
+              </div>
+            )}
+            {loaded && <LiveActivityBorder state="ai" />}
+          </div>
         </div>
 
         {steps.length > 0 && (

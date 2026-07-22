@@ -33,7 +33,7 @@ export function LiveActivityBorder({ state = 'ai' }: { state?: 'ai' | 'you' }) {
     return (
       <div
         aria-hidden
-        className="ai-ring-in pointer-events-none absolute inset-0 z-[5]"
+        className="pointer-events-none absolute inset-0 z-[5] animate-in fade-in-0 duration-700"
       >
         <StatusPill label="Your turn" bg="#b45309" dot="#fcd34d" />
       </div>
@@ -43,7 +43,7 @@ export function LiveActivityBorder({ state = 'ai' }: { state?: 'ai' | 'you' }) {
   return (
     <div
       aria-hidden
-      className="ai-ring-in pointer-events-none absolute inset-0 z-[5] rounded-[inherit]"
+      className="pointer-events-none absolute inset-0 z-[5] rounded-[inherit] animate-in fade-in-0 duration-700"
     >
       {/* Faint always-on haze so the edge never fully disappears mid-breath. */}
       <div

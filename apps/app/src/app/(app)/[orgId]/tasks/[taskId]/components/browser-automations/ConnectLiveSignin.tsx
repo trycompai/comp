@@ -2,6 +2,7 @@
 
 import { Button } from '@trycompai/design-system';
 import { Checkmark, Close, Locked } from '@trycompai/design-system/icons';
+import { useEffect, useState } from 'react';
 import { LiveActivityBorder } from './LiveActivityBorder';
 import { StepList, type SignInStep } from './StepList';
 
@@ -66,6 +67,10 @@ export function ConnectLiveSignin({
   isConfirming = false,
   success = false,
 }: ConnectLiveSigninProps) {
+  // Gate the ring on the iframe's load so it appears with the page, not before.
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => setLoaded(false), [liveViewUrl]);
+
   return (
     <div className="relative overflow-hidden rounded-lg border border-border bg-card">
       <div className="flex items-start justify-between border-b border-border px-5 py-3">
@@ -100,25 +105,31 @@ export function ConnectLiveSignin({
                 Cloud browser
               </span>
             </div>
-            {liveViewUrl ? (
-              <iframe
-                src={liveViewUrl}
-                title="Live sign-in"
-                className="h-[640px] max-h-[80vh] w-full"
-                sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
-                allow="clipboard-read; clipboard-write"
-              />
-            ) : (
-              <div className="flex h-[640px] max-h-[80vh] items-center justify-center text-sm text-muted-foreground">
-                <span className="mr-3 h-4 w-4 animate-spin rounded-full border-2 border-border border-t-primary" />
-                Opening {host}…
-              </div>
-            )}
-            {/* Green glow + pill while the AI drives; an amber "Your turn" pill
-                (no glow) when the user needs to act. */}
-            {!success && (
-              <LiveActivityBorder state={variant === 'ai' ? 'ai' : 'you'} />
-            )}
+            {/* Wrap only the browser view so the ring hugs the page, not our
+                chrome bar. */}
+            <div className="relative">
+              {liveViewUrl ? (
+                <iframe
+                  src={liveViewUrl}
+                  title="Live sign-in"
+                  className="block h-[640px] max-h-[80vh] w-full"
+                  sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+                  allow="clipboard-read; clipboard-write"
+                  onLoad={() => setLoaded(true)}
+                />
+              ) : (
+                <div className="flex h-[640px] max-h-[80vh] items-center justify-center text-sm text-muted-foreground">
+                  <span className="mr-3 h-4 w-4 animate-spin rounded-full border-2 border-border border-t-primary" />
+                  Opening {host}…
+                </div>
+              )}
+              {/* Show the ring only once the browser has rendered, so it fades in
+                  with the page instead of appearing over a blank frame. Green
+                  glow while the AI drives; amber "Your turn" when the user acts. */}
+              {!success && loaded && (
+                <LiveActivityBorder state={variant === 'ai' ? 'ai' : 'you'} />
+              )}
+            </div>
           </div>
         </div>
 
