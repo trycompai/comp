@@ -12,7 +12,8 @@ export type IsmsDocumentType =
   | 'leadership_commitment'
   | 'roles_and_responsibilities'
   | 'objectives_plan'
-  | 'monitoring';
+  | 'monitoring'
+  | 'internal_audit';
 
 export type IsmsDocumentStatus =
   | 'draft'
@@ -32,6 +33,18 @@ export type IsmsCompetenceBasis =
   | 'combination';
 export type IsmsAuditRoute = 'in_house' | 'external' | 'training_planned';
 export type IsmsMetricCadence = 'monthly' | 'quarterly';
+export type IsmsAuditStatus = 'planned' | 'in_progress' | 'complete';
+export type IsmsAuditConclusionVerdict =
+  | 'conform'
+  | 'substantially_conform'
+  | 'not_yet_conform';
+export type IsmsAuditControlResult =
+  | 'conformity_confirmed'
+  | 'nonconformity_raised'
+  | 'observation_raised'
+  | 'not_sampled';
+export type IsmsAuditFindingType = 'nc_major' | 'nc_minor' | 'ofi' | 'observation';
+export type IsmsAuditFindingStatus = 'open' | 'in_progress' | 'closed';
 
 /**
  * The ISO 27001 clause 4.1 category taxonomy auditors expect, scoped by kind.
@@ -193,6 +206,70 @@ export interface IsmsMetric {
   measurements: IsmsMeasurement[];
 }
 
+/** One sampled control in an audit's Controls Tested table (clause 9.2). */
+export interface IsmsAuditControl {
+  id: string;
+  auditId: string;
+  /** Stable key for the fifteen seeded rows; null for custom rows. */
+  controlKey: string | null;
+  controlRef: string;
+  whatWasTested: string;
+  whereToFind: string;
+  /** Null until the auditor records an outcome. */
+  result: IsmsAuditControlResult | null;
+  notes: string | null;
+  source: IsmsContextSource;
+  derivedFrom: string | null;
+  position: number;
+}
+
+/** A finding raised during an audit (clause 9.2). */
+export interface IsmsAuditFinding {
+  id: string;
+  auditId: string;
+  /** Server-generated "F-NN", immutable. */
+  reference: string;
+  type: IsmsAuditFindingType;
+  /** Optional link back to the Controls Tested row that raised it. */
+  controlId: string | null;
+  clauseOrControl: string | null;
+  description: string;
+  ownerMemberId: string | null;
+  dueDate: string | null;
+  status: IsmsAuditFindingStatus;
+  closureEvidence: string | null;
+  position: number;
+}
+
+/** Register: one internal audit instance (clause 9.2). */
+export interface IsmsAudit {
+  id: string;
+  /** Server-generated "IA-YYYY-NN", immutable. */
+  reference: string;
+  scope: string;
+  criteria: string;
+  auditorName: string | null;
+  plannedStartDate: string | null;
+  plannedEndDate: string | null;
+  status: IsmsAuditStatus;
+  conclusionVerdict: IsmsAuditConclusionVerdict | null;
+  conclusionNotes: string | null;
+  signoffAuditorName: string | null;
+  signoffAuditorDate: string | null;
+  signoffSpoName: string | null;
+  signoffSpoDate: string | null;
+  signoffTopMgmtName: string | null;
+  signoffTopMgmtDate: string | null;
+  position: number;
+  controls: IsmsAuditControl[];
+  findings: IsmsAuditFinding[];
+}
+
+/** Narrative shape for the Internal Audit document: the Programme paragraph. */
+export interface IsmsInternalAuditNarrative {
+  programme: string;
+}
+
 /** Narrative shape for the ISMS Scope singleton (clause 4.3). */
 export interface IsmsScopeNarrative {
   certificateScopeSentence: string;
@@ -284,11 +361,13 @@ export interface IsmsDocument {
   objectives: IsmsObjective[];
   roles: IsmsRole[];
   metrics: IsmsMetric[];
+  audits: IsmsAudit[];
   controlLinks: IsmsControlLink[];
-  /** Working-draft narrative for the singleton documents (Scope, Leadership). */
+  /** Working-draft narrative (Scope, Leadership, Internal Audit programme). */
   draftNarrative:
     | IsmsScopeNarrative
     | IsmsLeadershipNarrative
+    | IsmsInternalAuditNarrative
     | Record<string, unknown>
     | null;
   currentVersionId: string | null;
@@ -370,6 +449,14 @@ export const ISMS_TYPE_META: IsmsTypeMeta[] = [
       'The metrics the organization monitors — what is measured, how, when, by whom, and who analyses the results.',
     detailRouteEnabled: true,
   },
+  {
+    type: 'internal_audit',
+    clause: '9.2',
+    title: 'Internal Audit',
+    description:
+      'The internal audit programme and the plan, controls tested, findings and conclusion of each audit.',
+    detailRouteEnabled: true,
+  },
 ];
 
 /** Map a URL slug (e.g. "context-of-organization") to the canonical type. */
@@ -382,6 +469,7 @@ export const ISMS_SLUG_TO_TYPE: Record<string, IsmsDocumentType> = {
   roles: 'roles_and_responsibilities',
   objectives: 'objectives_plan',
   monitoring: 'monitoring',
+  'internal-audit': 'internal_audit',
 };
 
 /** Inverse of ISMS_SLUG_TO_TYPE for fast type -> slug lookup. */
@@ -394,6 +482,7 @@ const ISMS_TYPE_TO_SLUG: Record<IsmsDocumentType, string> = {
   roles_and_responsibilities: 'roles',
   objectives_plan: 'objectives',
   monitoring: 'monitoring',
+  internal_audit: 'internal-audit',
 };
 
 export function slugToType(slug: string): IsmsDocumentType | undefined {

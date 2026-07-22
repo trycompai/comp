@@ -15,6 +15,7 @@ export interface AuthenticatedRequest extends Request {
   apiKeyScopes?: string[]; // Scopes for API key auth (empty = legacy full access)
   apiKeyId?: string; // ApiKey row id — only set for API key auth. Used by ActingUserResolver / audit log attribution.
   apiKeyName?: string; // Human-readable API key name (e.g. "CI Pipeline") — only set for API key auth.
+  apiKeyCreatedByMemberId?: string | null; // Member (org membership) that created the key — only set for API key auth. Lets ActingUserResolver attribute mutations to the real creator instead of the org owner.
   impersonatedBy?: string; // User ID of the admin who initiated impersonation (only set during impersonation sessions)
   sessionId?: string; // Session ID (only set for session auth)
   sessionDeviceAgent?: boolean; // Whether the session is a device-agent session (only set for session auth)

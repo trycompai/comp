@@ -18,6 +18,7 @@ jest.mock('@db', () => {
     },
     member: { findFirst: jest.fn(), findMany: jest.fn() },
     ismsRole: { findMany: jest.fn() },
+    ismsAudit: { findMany: jest.fn() },
     // lockDocument runs $executeRaw; submitForApproval wraps validate+update in a tx.
     $executeRaw: jest.fn(),
     $transaction: jest.fn((cb: (tx: unknown) => unknown) => cb(db)),
@@ -184,6 +185,57 @@ describe('IsmsService document lifecycle', () => {
           auditEvidenceRef: 'LA cert on file',
           assignments: [{ memberId: 'd' }],
         },
+      ]);
+      (mockDb.ismsDocument.update as jest.Mock).mockResolvedValue({
+        id: 'doc_1',
+        status: 'needs_review',
+      });
+
+      await service.submitForApproval(args);
+      expect(mockDb.ismsDocument.update).toHaveBeenCalled();
+    });
+
+    it('blocks an Internal Audit doc with no audits recorded (clause 9.2)', async () => {
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({ id: 'mem_1' });
+      (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
+        id: 'doc_1',
+        type: 'internal_audit',
+      });
+      (mockDb.ismsAudit.findMany as jest.Mock).mockResolvedValue([]);
+
+      await expect(service.submitForApproval(args)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(mockDb.ismsDocument.update).not.toHaveBeenCalled();
+    });
+
+    it('blocks an Internal Audit doc with a completed audit missing its verdict', async () => {
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({ id: 'mem_1' });
+      (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
+        id: 'doc_1',
+        type: 'internal_audit',
+      });
+      (mockDb.ismsAudit.findMany as jest.Mock).mockResolvedValue([
+        {
+          reference: 'IA-2026-01',
+          status: 'complete',
+          conclusionVerdict: null,
+        },
+      ]);
+
+      await expect(service.submitForApproval(args)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('allows an Internal Audit doc with a planned audit on record', async () => {
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({ id: 'mem_1' });
+      (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
+        id: 'doc_1',
+        type: 'internal_audit',
+      });
+      (mockDb.ismsAudit.findMany as jest.Mock).mockResolvedValue([
+        { reference: 'IA-2026-01', status: 'planned', conclusionVerdict: null },
       ]);
       (mockDb.ismsDocument.update as jest.Mock).mockResolvedValue({
         id: 'doc_1',

@@ -1,3 +1,22 @@
+# [3.106.0](https://github.com/trycompai/comp/compare/v3.105.0...v3.106.0) (2026-07-22)
+
+
+### Bug Fixes
+
+* **auth:** attribute API-key mutations to the key's creator, not the org owner ([#3472](https://github.com/trycompai/comp/issues/3472)) ([206ed96](https://github.com/trycompai/comp/commit/206ed9664742b120aa3b476311cc807df5370400)), closes [hi#risk](https://github.com/hi/issues/risk)
+* **deps:** bump adm-zip 0.5.18 -> 0.6.0 in apps/api (Dependabot [#88](https://github.com/trycompai/comp/issues/88)/[#89](https://github.com/trycompai/comp/issues/89)) ([#3462](https://github.com/trycompai/comp/issues/3462)) ([300f2a1](https://github.com/trycompai/comp/commit/300f2a1aed312adbd3a6a0675f7f48c987657a4c)), closes [#3451](https://github.com/trycompai/comp/issues/3451)
+* **deps:** override tar to ^7.5.19 to clear node-tar Dependabot alerts ([#94](https://github.com/trycompai/comp/issues/94)-[#104](https://github.com/trycompai/comp/issues/104)) ([#3466](https://github.com/trycompai/comp/issues/3466)) ([8ab5709](https://github.com/trycompai/comp/commit/8ab5709c2a484510fe9ca8f1c4c04df5ac1ababc))
+* **deps:** patch engine.io ([#93](https://github.com/trycompai/comp/issues/93)) and body-parser ([#92](https://github.com/trycompai/comp/issues/92)) Dependabot alerts ([#3464](https://github.com/trycompai/comp/issues/3464)) ([94c33b1](https://github.com/trycompai/comp/commit/94c33b1202661f7e99fc4e3b41e46e79878f81c2))
+* **isms:** harden internal-audit validation and edge cases from deploy review ([#3473](https://github.com/trycompai/comp/issues/3473)) ([c6c7379](https://github.com/trycompai/comp/commit/c6c737974151a9cbcf8741dceb4522692a821c82))
+* **policies:** create draft version on policy regenerate instead of overwriting published ([#3471](https://github.com/trycompai/comp/issues/3471)) ([ff31dbd](https://github.com/trycompai/comp/commit/ff31dbd262b568e81fe8b838fe2af9b864fd6dba))
+* **policies:** delete detached PDF objects when regenerating a draft ([#3474](https://github.com/trycompai/comp/issues/3474)) ([ecd1bd0](https://github.com/trycompai/comp/commit/ecd1bd0ef710823065e50de5b242b9a43024f90f))
+* **policies:** rename CreateVersionDto to avoid swagger collision with automations ([#3469](https://github.com/trycompai/comp/issues/3469)) ([2d5290a](https://github.com/trycompai/comp/commit/2d5290a2d32086f7bb26c4e7a7b161716afe0eea))
+
+
+### Features
+
+* **isms:** internal audit programme, plan and report — clause 9.2 (CS-724) ([#3468](https://github.com/trycompai/comp/issues/3468)) ([42e5ebd](https://github.com/trycompai/comp/commit/42e5ebd789d034ca07ff996985301cc150ea8dc1)), closes [hi#impact](https://github.com/hi/issues/impact)
+
 # [3.105.0](https://github.com/trycompai/comp/compare/v3.104.2...v3.105.0) (2026-07-20)
 
 

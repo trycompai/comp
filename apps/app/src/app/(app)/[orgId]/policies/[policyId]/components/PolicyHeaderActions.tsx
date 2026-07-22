@@ -86,7 +86,7 @@ export function PolicyHeaderActions({
       if (toastIdRef.current) {
         toast.dismiss(toastIdRef.current);
       }
-      toast.success('Policy content updated!');
+      toast.success('New draft version created for review');
       setIsRegenerating(false);
       setRunInfo(null);
       toastIdRef.current = null;
@@ -259,9 +259,9 @@ export function PolicyHeaderActions({
           <DialogHeader>
             <DialogTitle>Regenerate Policy</DialogTitle>
             <DialogDescription>
-              This will generate new policy content using your org context and frameworks. It will
-              delete all existing versions and their PDFs for this policy. This cannot be undone.
-              Continue?
+              This will generate new policy content using your org context and frameworks and save
+              it as a new draft version. Your published policy and its signatures stay unchanged
+              until you review and approve the draft. Continue?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

@@ -232,6 +232,7 @@ model Member {
   assignedTaskItems                TaskItem[]               @relation("TaskItemAssignee")
   createdFindings                  Finding[]                @relation("FindingCreatedBy")
   subjectFindings                  Finding[]                @relation("FindingSubject")
+  createdApiKeys                   ApiKey[]                 @relation("ApiKeyCreatedBy")
   publishedPolicyVersions          PolicyVersion[]          @relation("PolicyVersionPublisher")
   performedFrameworkSyncOperations FrameworkSyncOperation[] @relation("FrameworkSyncOperationPerformer")
   approvedTasks                    Task[]                   @relation("TaskApprover")

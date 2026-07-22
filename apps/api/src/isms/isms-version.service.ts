@@ -15,6 +15,7 @@ import {
   buildExportInput,
   parseExportSnapshot,
   renderSnapshot,
+  resolveInternalAuditExtras,
   resolveMonitoringExtras,
   resolveOrgProfile,
   resolveRolesExtras,
@@ -73,11 +74,13 @@ export class IsmsVersionService {
     const orgProfile = await resolveOrgProfile(document, tx);
     const rolesExtras = await resolveRolesExtras(document, tx);
     const monitoringExtras = await resolveMonitoringExtras(document, tx);
+    const internalAuditExtras = await resolveInternalAuditExtras(document, tx);
     const input = buildExportInput({
       document,
       orgProfile,
       rolesExtras,
       monitoringExtras,
+      internalAuditExtras,
     });
     const metadata = buildExportMetadata({
       type: document.type,
