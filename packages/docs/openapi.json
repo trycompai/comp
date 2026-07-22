@@ -21375,7 +21375,12 @@
                       "not_started",
                       "on_track",
                       "at_risk",
-                      "met"
+                      "met",
+                      "planned",
+                      "in_progress",
+                      "complete",
+                      "open",
+                      "closed"
                     ]
                   },
                   "responsibilities": {
@@ -21483,6 +21488,112 @@
                     "type": "string"
                   },
                   "note": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "scope": {
+                    "type": "string"
+                  },
+                  "criteria": {
+                    "type": "string"
+                  },
+                  "auditorName": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "plannedStartDate": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "plannedEndDate": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "conclusionVerdict": {
+                    "type": "string",
+                    "enum": [
+                      "conform",
+                      "substantially_conform",
+                      "not_yet_conform"
+                    ],
+                    "nullable": true
+                  },
+                  "conclusionNotes": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "signoffAuditorName": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "signoffAuditorDate": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "signoffSpoName": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "signoffSpoDate": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "signoffTopMgmtName": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "signoffTopMgmtDate": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "auditId": {
+                    "type": "string"
+                  },
+                  "controlRef": {
+                    "type": "string"
+                  },
+                  "whatWasTested": {
+                    "type": "string"
+                  },
+                  "whereToFind": {
+                    "type": "string"
+                  },
+                  "result": {
+                    "type": "string",
+                    "enum": [
+                      "conformity_confirmed",
+                      "nonconformity_raised",
+                      "observation_raised",
+                      "not_sampled"
+                    ],
+                    "nullable": true
+                  },
+                  "notes": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "nc_major",
+                      "nc_minor",
+                      "ofi",
+                      "observation"
+                    ]
+                  },
+                  "controlId": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "clauseOrControl": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "dueDate": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "closureEvidence": {
                     "type": "string",
                     "nullable": true
                   },
@@ -21611,7 +21722,12 @@
                       "not_started",
                       "on_track",
                       "at_risk",
-                      "met"
+                      "met",
+                      "planned",
+                      "in_progress",
+                      "complete",
+                      "open",
+                      "closed"
                     ]
                   },
                   "responsibilities": {
@@ -21719,6 +21835,112 @@
                     "type": "string"
                   },
                   "note": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "scope": {
+                    "type": "string"
+                  },
+                  "criteria": {
+                    "type": "string"
+                  },
+                  "auditorName": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "plannedStartDate": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "plannedEndDate": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "conclusionVerdict": {
+                    "type": "string",
+                    "enum": [
+                      "conform",
+                      "substantially_conform",
+                      "not_yet_conform"
+                    ],
+                    "nullable": true
+                  },
+                  "conclusionNotes": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "signoffAuditorName": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "signoffAuditorDate": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "signoffSpoName": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "signoffSpoDate": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "signoffTopMgmtName": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "signoffTopMgmtDate": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "auditId": {
+                    "type": "string"
+                  },
+                  "controlRef": {
+                    "type": "string"
+                  },
+                  "whatWasTested": {
+                    "type": "string"
+                  },
+                  "whereToFind": {
+                    "type": "string"
+                  },
+                  "result": {
+                    "type": "string",
+                    "enum": [
+                      "conformity_confirmed",
+                      "nonconformity_raised",
+                      "observation_raised",
+                      "not_sampled"
+                    ],
+                    "nullable": true
+                  },
+                  "notes": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "nc_major",
+                      "nc_minor",
+                      "ofi",
+                      "observation"
+                    ]
+                  },
+                  "controlId": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "clauseOrControl": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "dueDate": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "closureEvidence": {
                     "type": "string",
                     "nullable": true
                   },
@@ -25130,14 +25352,6 @@
             }
           },
           {
-            "name": "frameworkInstanceId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "formType",
             "required": true,
             "in": "path",
@@ -25158,6 +25372,14 @@
                 "tabletop_exercise",
                 "account_types"
               ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "frameworkInstanceId",
+            "required": true,
+            "in": "query",
+            "schema": {
               "type": "string"
             }
           }
