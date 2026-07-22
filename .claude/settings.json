@@ -7,6 +7,10 @@
           {
             "type": "command",
             "command": "file=\"$CLAUDE_FILE_PATH\"; if echo \"$file\" | grep -qE '\\.(ts|tsx)$' && echo \"$file\" | grep -qE '^(apps/|packages/)'; then echo 'TypeScript file modified — run the cleanup skill and typecheck before committing'; fi"
+          },
+          {
+            "type": "command",
+            "command": "f=\"$CLAUDE_FILE_PATH\"; case \"$f\" in *.spec.ts|*.test.ts) exit 0 ;; esac; case \"$f\" in *apps/api/src/*|*apps/app/src/app/api/*|*/route.ts|*middleware.ts|*packages/auth/*|*packages/db/prisma/schema/*|*packages/db/prisma/migrations/*) echo \"Security-sensitive change (API / service / route / auth / prisma) — run the security-review skill on the change before committing or pushing\"; exit 0 ;; esac; if grep -qE \"dangerouslySetInnerHTML|queryRaw|executeRaw|child_process|execSync|spawn\\(|new Function\\(|eval\\(|getSignedUrl|createPresignedUrl|PutObjectCommand|\\.(findUnique|findFirst|update|delete)\\(\" \"$f\" 2>/dev/null; then echo \"High-risk pattern (raw SQL / HTML injection / exec / signed URL / by-id data access = possible IDOR) — run the security-review skill before committing or pushing\"; fi"
           }
         ]
       },

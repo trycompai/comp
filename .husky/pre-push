@@ -1,0 +1,42 @@
+# Hard security gate — blocks a push that changes the security-sensitive surface
+# unless the change has been reviewed. After running the security-review skill,
+# re-push with:  SECURITY_REVIEWED=1 git push
+# Emergency bypass:  git push --no-verify   (CI still runs CodeQL regardless.)
+
+[ "$SECURITY_REVIEWED" = "1" ] && exit 0
+
+base="$(git merge-base HEAD origin/main 2>/dev/null)"
+if [ -n "$base" ]; then
+  range="$base...HEAD"
+else
+  range="HEAD"
+fi
+files="$(git diff --name-only "$range" 2>/dev/null)"
+
+hit=""
+for f in $files; do
+  case "$f" in
+    *.spec.ts | *.test.ts) continue ;;
+  esac
+  case "$f" in
+    *apps/api/src/* | *apps/app/src/app/api/* | */route.ts | *middleware.ts | *packages/auth/* | *packages/db/prisma/schema/* | *packages/db/prisma/migrations/*)
+      hit="$f"
+      break
+      ;;
+  esac
+  if [ -f "$f" ] && grep -qE "dangerouslySetInnerHTML|queryRaw|executeRaw|child_process|execSync|spawn\(|new Function\(|eval\(|getSignedUrl|createPresignedUrl|PutObjectCommand|\.(findUnique|findFirst|update|delete)\(" "$f" 2>/dev/null; then
+    hit="$f"
+    break
+  fi
+done
+
+if [ -n "$hit" ]; then
+  echo ""
+  echo "🔒 Push blocked — this branch changes the security-sensitive surface (e.g. $hit)."
+  echo "   Review the change with the security-review skill, then re-push with:"
+  echo "       SECURITY_REVIEWED=1 git push"
+  echo "   Emergency bypass: git push --no-verify   (CI still runs CodeQL.)"
+  echo ""
+  exit 1
+fi
+exit 0
