@@ -287,7 +287,7 @@ export class CloudSecurityController {
   async scan(
     @Param('connectionId') connectionId: string,
     @OrganizationId() organizationId: string,
-    @Req() req: { userId?: string; authType?: string },
+    @Req() req: AuthenticatedRequest,
   ) {
     this.logger.log(
       `Cloud security scan requested for connection ${connectionId}`,
@@ -325,13 +325,15 @@ export class CloudSecurityController {
     const failedCount = result.findings.filter((f) => !f.passed).length;
     const passedCount = result.findings.filter((f) => f.passed).length;
 
-    // Only write audit log when we have a real userId (session auth).
-    // API key auth has no user context, and auditLog.userId is a FK to User.
-    const scanUserId = req.userId;
-    if (scanUserId)
+    // Attribute to the acting user. Session callers already have req.userId;
+    // API key / service token callers resolve to the key creator or org owner.
+    // Skip the audit entry (rather than fail the completed scan) only when no
+    // user can be attributed — auditLog.userId is a FK to User.
+    const acting = await this.actingUser.resolve(req, organizationId);
+    if (acting.userId)
       await logCloudSecurityActivity({
         organizationId,
-        userId: scanUserId,
+        userId: acting.userId,
         connectionId,
         action: 'scan_completed',
         description: `Ran cloud security scan — ${totalFindings} findings (${failedCount} failed, ${passedCount} passed)`,

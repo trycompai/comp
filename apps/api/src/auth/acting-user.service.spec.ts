@@ -35,6 +35,7 @@ describe('ActingUserResolver', () => {
     it('returns req.userId without a DB query', async () => {
       const req = makeReq({
         userId: 'usr_session_alice',
+        memberId: 'mem_session_alice',
         authType: 'session',
       });
 
@@ -42,6 +43,7 @@ describe('ActingUserResolver', () => {
 
       expect(result).toEqual({
         userId: 'usr_session_alice',
+        memberId: 'mem_session_alice',
         source: 'session',
       });
       // Critical regression guard — session auth must NEVER hit the DB
@@ -83,6 +85,7 @@ describe('ActingUserResolver', () => {
   describe('API key caller (owner fallback)', () => {
     it('resolves to the org owner and labels the caller for the audit log', async () => {
       mockDb.member.findFirst.mockResolvedValueOnce({
+        id: 'mem_owner_carol',
         userId: 'usr_owner_carol',
       });
 
@@ -97,6 +100,8 @@ describe('ActingUserResolver', () => {
       const result = await resolver.resolve(req, 'org_1');
 
       expect(result.userId).toBe('usr_owner_carol');
+      // The fallback owner's member is surfaced too, for Member-FK sinks.
+      expect(result.memberId).toBe('mem_owner_carol');
       expect(result.source).toBe('org-owner-fallback');
       expect(result.callerLabel).toBe('via API key "CI Pipeline"');
     });
@@ -215,6 +220,7 @@ describe('ActingUserResolver', () => {
       const result = await resolver.resolve(req, 'org_1');
 
       expect(result.userId).toBe('usr_creator_dave');
+      expect(result.memberId).toBe('mem_creator');
       expect(result.source).toBe('api-key-creator');
       expect(result.callerLabel).toBe('via API key "Mariano CLI"');
       // Single lookup: the creator, scoped to the org + active membership.
