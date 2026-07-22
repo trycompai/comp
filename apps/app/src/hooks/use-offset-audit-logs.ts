@@ -58,7 +58,7 @@ export function useOffsetAuditLogs({
     setTotal(0);
   }, [filterKey]);
 
-  const { isLoading } = useSWR(
+  const { isLoading, error } = useSWR(
     [...cacheKey, offset],
     () => fetchPage({ take: AUDIT_LOG_PAGE_SIZE, offset }),
     {
@@ -77,8 +77,12 @@ export function useOffsetAuditLogs({
   );
 
   const loadMore = useCallback(() => {
+    // Only advance once the current batch has settled successfully. While it's
+    // still loading (or errored — SWR retries the same offset), advancing would
+    // skip the in-flight batch entirely, dropping those rows from the pager.
+    if (isLoading || error) return;
     setOffset((prev) => prev + AUDIT_LOG_PAGE_SIZE);
-  }, []);
+  }, [isLoading, error]);
 
   return {
     logs,

@@ -8,6 +8,7 @@ import { AuditLogEntityType, db } from '@db';
 import { triggerEmail } from '../email/trigger-email';
 import { InviteEmail } from '../email/templates/invite-member';
 import { UpdateAdminOrganizationDto } from './dto/update-admin-organization.dto';
+import { MAX_AUDIT_LOG_OFFSET } from '../audit/audit-log.pagination';
 
 @Injectable()
 export class AdminOrganizationsService {
@@ -447,7 +448,9 @@ export class AdminOrganizationsService {
     const parsedTake = take
       ? Math.min(200, Math.max(1, parseInt(take, 10) || 100))
       : 100;
-    const parsedOffset = offset ? Math.max(0, parseInt(offset, 10) || 0) : 0;
+    const parsedOffset = offset
+      ? Math.min(MAX_AUDIT_LOG_OFFSET, Math.max(0, parseInt(offset, 10) || 0))
+      : 0;
 
     const [logs, total] = await Promise.all([
       db.auditLog.findMany({

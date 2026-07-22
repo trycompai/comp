@@ -6,6 +6,7 @@ import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
+import { MAX_AUDIT_LOG_OFFSET } from './audit-log.pagination';
 
 @ApiTags('Audit Logs')
 @Controller({ path: 'audit-logs', version: '1' })
@@ -77,7 +78,9 @@ export class AuditLogController {
     const parsedTake = take
       ? Math.min(100, Math.max(1, parseInt(take, 10) || 50))
       : 50;
-    const parsedOffset = offset ? Math.max(0, parseInt(offset, 10) || 0) : 0;
+    const parsedOffset = offset
+      ? Math.min(MAX_AUDIT_LOG_OFFSET, Math.max(0, parseInt(offset, 10) || 0))
+      : 0;
 
     // `total` drives the client pager (how many pages exist / when to stop
     // fetching); the stable `id` secondary sort keeps offset paging

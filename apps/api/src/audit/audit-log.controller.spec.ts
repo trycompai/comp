@@ -151,6 +151,24 @@ describe('AuditLogController', () => {
       );
     });
 
+    it('should clamp an oversized offset to the maximum', async () => {
+      mockFindMany.mockResolvedValue([]);
+
+      await controller.getAuditLogs(
+        'org_1',
+        mockAuthContext,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        '999999999',
+      );
+
+      expect(mockFindMany).toHaveBeenCalledWith(
+        expect.objectContaining({ skip: 100_000 }),
+      );
+    });
+
     it('should count with the same filters as the query', async () => {
       mockFindMany.mockResolvedValue([]);
 

@@ -542,6 +542,14 @@ describe('AdminOrganizationsService', () => {
       );
     });
 
+    it('clamps an oversized offset to the maximum', async () => {
+      await service.getAuditLogs({ orgId: 'org_1', offset: '999999999' });
+
+      expect(mockDb.auditLog.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ skip: 100_000 }),
+      );
+    });
+
     it('builds a single-value entityType filter', async () => {
       await service.getAuditLogs({ orgId: 'org_1', entityType: 'policy' });
 

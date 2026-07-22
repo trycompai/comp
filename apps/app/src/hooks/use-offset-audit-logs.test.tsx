@@ -7,8 +7,13 @@ import type { AuditLogWithRelations } from '@/hooks/use-audit-logs';
 import { AUDIT_LOG_PAGE_SIZE, useOffsetAuditLogs } from './use-offset-audit-logs';
 
 // Fresh SWR cache per hook render so batches don't leak between tests.
+// Retry is disabled so a rejected batch stays failed deterministically.
 function wrapper({ children }: { children: ReactNode }) {
-  return <SWRConfig value={{ provider: () => new Map() }}>{children}</SWRConfig>;
+  return (
+    <SWRConfig value={{ provider: () => new Map(), shouldRetryOnError: false }}>
+      {children}
+    </SWRConfig>
+  );
 }
 
 // RecentAuditLogs / the pager only key off `id`, so a trimmed shape is enough.
@@ -53,6 +58,38 @@ describe('useOffsetAuditLogs', () => {
       take: AUDIT_LOG_PAGE_SIZE,
       offset: AUDIT_LOG_PAGE_SIZE,
     });
+  });
+
+  it('does not skip a batch when a load-more fetch fails', async () => {
+    const fetchPage = vi
+      .fn()
+      .mockResolvedValueOnce({ data: makeLogs(['a', 'b']), total: 10 }) // offset 0 ok
+      .mockRejectedValueOnce(new Error('boom')); // offset 100 fails
+
+    const { result } = renderHook(
+      () => useOffsetAuditLogs({ cacheKey: ['k'], fetchPage }),
+      { wrapper },
+    );
+
+    await waitFor(() => expect(result.current.logs).toHaveLength(2));
+
+    // First load-more requests offset 100, which fails.
+    act(() => result.current.loadMore());
+    await waitFor(() =>
+      expect(fetchPage).toHaveBeenCalledWith({
+        take: AUDIT_LOG_PAGE_SIZE,
+        offset: AUDIT_LOG_PAGE_SIZE,
+      }),
+    );
+
+    // A second load-more must NOT jump to offset 200 and skip the failed batch.
+    act(() => result.current.loadMore());
+    await Promise.resolve();
+    expect(fetchPage).not.toHaveBeenCalledWith({
+      take: AUDIT_LOG_PAGE_SIZE,
+      offset: AUDIT_LOG_PAGE_SIZE * 2,
+    });
+    expect(fetchPage).toHaveBeenCalledTimes(2);
   });
 
   it('resets the accumulated window when the filter identity changes', async () => {
