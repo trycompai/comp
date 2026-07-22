@@ -15,6 +15,7 @@ jest.mock('@db', () => {
     },
     ismsAudit: {
       findFirst: jest.fn(),
+      findUniqueOrThrow: jest.fn(),
       findMany: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
@@ -137,6 +138,19 @@ describe('IsmsAuditService', () => {
       ).rejects.toThrow(BadRequestException);
       expect(mockDb.ismsAudit.create).not.toHaveBeenCalled();
     });
+
+    it('rejects a planned end date before the start date', async () => {
+      (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
+        id: 'doc_1',
+      });
+      await expect(
+        service.create({
+          ...args,
+          dto: { plannedStartDate: '2026-05-20', plannedEndDate: '2026-05-15' },
+        }),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockDb.ismsAudit.create).not.toHaveBeenCalled();
+    });
   });
 
   describe('update', () => {
@@ -144,8 +158,40 @@ describe('IsmsAuditService', () => {
       (mockDb.ismsAudit.findFirst as jest.Mock).mockResolvedValue({
         id: 'aud_1',
         documentId: 'doc_1',
+        plannedStartDate: null,
+        plannedEndDate: null,
       });
       (mockDb.ismsAudit.update as jest.Mock).mockResolvedValue({});
+    });
+
+    it('rejects an end date before the STORED start date (re-read under the document lock)', async () => {
+      (mockDb.ismsAudit.findUniqueOrThrow as jest.Mock).mockResolvedValue({
+        plannedStartDate: new Date('2026-05-15T00:00:00.000Z'),
+        plannedEndDate: null,
+      });
+
+      await expect(
+        service.update({
+          auditId: 'aud_1',
+          organizationId: 'org_1',
+          dto: { plannedEndDate: '2026-05-10' },
+        }),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockDb.ismsAudit.update).not.toHaveBeenCalled();
+    });
+
+    it('allows fixing an inverted schedule by moving both dates together', async () => {
+      (mockDb.ismsAudit.findUniqueOrThrow as jest.Mock).mockResolvedValue({
+        plannedStartDate: new Date('2026-06-10T00:00:00.000Z'),
+        plannedEndDate: new Date('2026-05-01T00:00:00.000Z'),
+      });
+
+      await service.update({
+        auditId: 'aud_1',
+        organizationId: 'org_1',
+        dto: { plannedStartDate: '2026-06-01', plannedEndDate: '2026-06-05' },
+      });
+      expect(mockDb.ismsAudit.update).toHaveBeenCalled();
     });
 
     it('updates status and conclusion, leaving omitted fields untouched', async () => {

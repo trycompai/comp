@@ -11,6 +11,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   Button,
+  Field,
+  FieldError,
   Input,
   Select,
   SelectContent,
@@ -136,13 +138,18 @@ export function AuditControlRow({
     return (
       <TableRow>
         <TableCell>
-          <Controller
-            control={control}
-            name="controlRef"
-            render={({ field: { ref: _ref, ...field } }) => (
-              <Input {...field} aria-label="Control reference" />
-            )}
-          />
+          <Field>
+            <Controller
+              control={control}
+              name="controlRef"
+              render={({ field: { ref: _ref, ...field }, fieldState }) => (
+                <>
+                  <Input {...field} aria-label="Control reference" />
+                  <FieldError>{fieldState.error?.message}</FieldError>
+                </>
+              )}
+            />
+          </Field>
         </TableCell>
         <TableCell>
           <Controller

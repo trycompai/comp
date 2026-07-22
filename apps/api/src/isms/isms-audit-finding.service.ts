@@ -31,7 +31,7 @@ export class IsmsAuditFindingService {
       documentId,
       organizationId,
     });
-    const controlId = await this.resolveControl({
+    const control = await this.resolveControl({
       controlId: dto.controlId,
       auditId: audit.id,
     });
@@ -54,8 +54,12 @@ export class IsmsAuditFindingService {
           documentId: audit.documentId,
           reference: await this.nextReference({ tx, auditId: audit.id }),
           type: dto.type,
-          controlId: controlId ?? null,
-          clauseOrControl: dto.clauseOrControl?.trim() || null,
+          controlId: control?.id ?? null,
+          // A linked finding without its own clause text inherits the row's
+          // reference, so unlinking (or deleting the row) never leaves the
+          // finding unlabelled in the generated document.
+          clauseOrControl:
+            dto.clauseOrControl?.trim() || control?.controlRef || null,
           description: dto.description,
           ownerMemberId: ownerMemberId ?? null,
           dueDate: dueDate ?? null,
@@ -77,10 +81,17 @@ export class IsmsAuditFindingService {
     dto: UpdateAuditFindingInput;
   }) {
     const finding = await this.requireFinding({ findingId, organizationId });
-    const controlId = await this.resolveControl({
+    const control = await this.resolveControl({
       controlId: dto.controlId,
       auditId: finding.auditId,
     });
+    // Same inheritance on link change: when this update links a control and
+    // the finding's effective clause text is empty, derive it from the row.
+    const requestedClause =
+      dto.clauseOrControl === undefined
+        ? finding.clauseOrControl
+        : dto.clauseOrControl?.trim() || null;
+    const derivedClause = requestedClause ?? control?.controlRef ?? null;
     const ownerMemberId = await this.resolveMember({
       memberId: dto.ownerMemberId,
       organizationId,
@@ -95,11 +106,11 @@ export class IsmsAuditFindingService {
         where: { id: findingId },
         data: {
           type: dto.type ?? undefined,
-          controlId: dto.controlId === undefined ? undefined : controlId,
+          controlId: dto.controlId === undefined ? undefined : (control?.id ?? null),
           clauseOrControl:
-            dto.clauseOrControl === undefined
+            dto.clauseOrControl === undefined && control === undefined
               ? undefined
-              : dto.clauseOrControl?.trim() || null,
+              : derivedClause,
           description: dto.description ?? undefined,
           ownerMemberId:
             dto.ownerMemberId === undefined ? undefined : ownerMemberId,
@@ -131,7 +142,12 @@ export class IsmsAuditFindingService {
     return { success: true };
   }
 
-  /** Next "F-NN" for the audit. Max + 1, so a deleted reference never recurs. */
+  /**
+   * Next "F-NN" for the audit: max + 1 over the surviving rows, so deleting an
+   * older finding never reissues its number (deleting the newest frees it —
+   * acceptable: findings are draft rows until published, and every published
+   * version freezes its own findings in the version contentSnapshot).
+   */
   private async nextReference({
     tx,
     auditId,
@@ -150,24 +166,29 @@ export class IsmsAuditFindingService {
     return `F-${String(maxSequence + 1).padStart(2, '0')}`;
   }
 
-  /** The linked Controls Tested row must belong to the SAME audit. */
+  /**
+   * The linked Controls Tested row must belong to the SAME audit. Returns the
+   * row (id + reference) so callers can inherit the clause label; undefined =
+   * link untouched, null = explicitly unlinked.
+   */
   private async resolveControl({
     controlId,
     auditId,
   }: {
     controlId: string | null | undefined;
     auditId: string;
-  }): Promise<string | null | undefined> {
+  }): Promise<{ id: string; controlRef: string } | null | undefined> {
     if (controlId === undefined) return undefined;
     const trimmed = controlId?.trim();
     if (!trimmed) return null;
     const control = await db.ismsAuditControl.findFirst({
       where: { id: trimmed, auditId },
+      select: { id: true, controlRef: true },
     });
     if (!control) {
       throw new NotFoundException('Audit control row not found in this audit');
     }
-    return trimmed;
+    return control;
   }
 
   private async resolveMember({
