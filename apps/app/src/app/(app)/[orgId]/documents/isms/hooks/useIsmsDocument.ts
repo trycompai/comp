@@ -28,7 +28,10 @@ export type IsmsRegister =
   | 'roles'
   | 'role-assignments'
   | 'metrics'
-  | 'measurements';
+  | 'measurements'
+  | 'audits'
+  | 'audit-controls'
+  | 'audit-findings';
 
 interface IssueInput {
   kind: IsmsContextIssueKind;

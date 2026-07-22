@@ -1,5 +1,5 @@
 import { NotFoundException } from '@nestjs/common';
-import { db } from '@db';
+import { db, Prisma } from '@db';
 import { IsmsService } from './isms.service';
 import type { IsmsVersionService } from './isms-version.service';
 
@@ -10,11 +10,15 @@ jest.mock('@db', () => ({
     ismsDocument: {
       findMany: jest.fn(),
       createMany: jest.fn(),
+      updateMany: jest.fn(),
     },
     ismsMetric: { findMany: jest.fn() },
+    organization: { findUnique: jest.fn() },
     control: { findMany: jest.fn() },
     ismsDocumentControlLink: { createMany: jest.fn() },
   },
+  // The programme seed filters on the Prisma JSON-null sentinel.
+  Prisma: { AnyNull: Symbol.for('prisma.AnyNull') },
 }));
 jest.mock('./documents/data-source', () => ({
   collectPlatformData: jest.fn(),
@@ -112,6 +116,43 @@ describe('IsmsService ensureSetup', () => {
           true,
           false,
         ]);
+      });
+    });
+
+    it('seeds the programme on a new Internal Audit doc atomically — only while the narrative is still NULL (CS-724)', async () => {
+      (
+        mockDb.frameworkEditorFramework.findUnique as jest.Mock
+      ).mockResolvedValue({ id: 'fw_1', requirements: [] });
+      mockTemplates.mockResolvedValue([]);
+      (mockDb.organization.findUnique as jest.Mock).mockResolvedValue({
+        name: 'Acme Corp',
+      });
+      (mockDb.ismsDocument.findMany as jest.Mock)
+        .mockResolvedValueOnce([]) // existing-types probe
+        .mockResolvedValueOnce([{ id: 'doc_ia', type: 'internal_audit' }]) // created lookup
+        .mockResolvedValueOnce([]); // final list
+
+      await service.ensureSetup(dto);
+
+      // The empty-narrative filter (NULL or {}, generateNarrative's definition)
+      // is the concurrency guard: a narrative written between provisioning and
+      // this seed (concurrent setup call or an early customer edit) makes the
+      // update match zero rows instead of overwriting.
+      expect(mockDb.ismsDocument.updateMany).toHaveBeenCalledWith({
+        where: {
+          id: 'doc_ia',
+          OR: [
+            { draftNarrative: { equals: Prisma.AnyNull } },
+            { draftNarrative: { equals: {} } },
+          ],
+        },
+        data: {
+          draftNarrative: {
+            programme: expect.stringContaining(
+              'Acme Corp runs an annual internal audit',
+            ),
+          },
+        },
       });
     });
 
@@ -220,9 +261,9 @@ describe('IsmsService ensureSetup', () => {
         await service.ensureSetup(dto);
 
         expect(mockDb.ismsDocument.createMany).toHaveBeenCalledTimes(1);
-        // 1 template-driven + 7 definition fallbacks: a type shipped before its
+        // 1 template-driven + 8 definition fallbacks: a type shipped before its
         // template seed re-runs (e.g. monitoring, CS-723) still provisions.
-        expect(createManyData()).toHaveLength(8);
+        expect(createManyData()).toHaveLength(9);
         expect(createManyData()[0]).toMatchObject({
           type: 'context_of_organization',
           title: 'Context of the Organization',
@@ -306,9 +347,9 @@ describe('IsmsService ensureSetup', () => {
 
         await service.ensureSetup(dto);
 
-        // objectives (template) + 6 definition fallbacks; the existing
+        // objectives (template) + 7 definition fallbacks; the existing
         // context_of_organization is skipped.
-        expect(createManyData()).toHaveLength(7);
+        expect(createManyData()).toHaveLength(8);
         expect(createManyData()[0].type).toBe('objectives_plan');
         expect(
           createManyData().map((doc: { type: string }) => doc.type),
@@ -407,6 +448,7 @@ describe('IsmsService ensureSetup', () => {
             { type: 'roles_and_responsibilities' },
             { type: 'objectives_plan' },
             { type: 'monitoring' },
+            { type: 'internal_audit' },
           ])
           .mockResolvedValueOnce([]);
 

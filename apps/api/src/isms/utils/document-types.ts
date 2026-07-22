@@ -73,6 +73,13 @@ export const ISMS_TYPE_DEFINITIONS: IsmsTypeDefinition[] = [
     description:
       'The metrics the organization monitors — what is measured, how, when, by whom, and who analyses the results (ISO 27001 clause 9.1).',
   },
+  {
+    type: 'internal_audit',
+    clause: '9.2',
+    title: 'Internal Audit',
+    description:
+      'The internal audit programme and the plan, controls tested, findings and conclusion of each internal audit of the ISMS (ISO 27001 clause 9.2).',
+  },
 ];
 
 /**

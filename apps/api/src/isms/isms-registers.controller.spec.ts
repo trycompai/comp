@@ -14,6 +14,9 @@ import { IsmsRoleService } from './isms-role.service';
 import { IsmsRoleAssignmentService } from './isms-role-assignment.service';
 import { IsmsMetricService } from './isms-metric.service';
 import { IsmsMeasurementService } from './isms-measurement.service';
+import { IsmsAuditService } from './isms-audit.service';
+import { IsmsAuditControlService } from './isms-audit-control.service';
+import { IsmsAuditFindingService } from './isms-audit-finding.service';
 import { IsmsNarrativeService } from './isms-narrative.service';
 
 jest.mock('../auth/auth.server', () => ({
@@ -53,6 +56,15 @@ jest.mock('./isms-metric.service', () => ({
 }));
 jest.mock('./isms-measurement.service', () => ({
   IsmsMeasurementService: class {},
+}));
+jest.mock('./isms-audit.service', () => ({
+  IsmsAuditService: class {},
+}));
+jest.mock('./isms-audit-control.service', () => ({
+  IsmsAuditControlService: class {},
+}));
+jest.mock('./isms-audit-finding.service', () => ({
+  IsmsAuditFindingService: class {},
 }));
 jest.mock('./isms-narrative.service', () => ({
   IsmsNarrativeService: class {},
@@ -105,6 +117,21 @@ describe('IsmsRegistersController', () => {
     remove: jest.fn(),
     bulkCreate: jest.fn(),
   };
+  const auditService = {
+    create: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
+  };
+  const auditControlService = {
+    create: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
+  };
+  const auditFindingService = {
+    create: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
+  };
   const narrativeService = { save: jest.fn() };
 
   const mockGuard = { canActivate: jest.fn().mockReturnValue(true) };
@@ -124,6 +151,9 @@ describe('IsmsRegistersController', () => {
         { provide: IsmsRoleAssignmentService, useValue: roleAssignmentService },
         { provide: IsmsMetricService, useValue: metricService },
         { provide: IsmsMeasurementService, useValue: measurementService },
+        { provide: IsmsAuditService, useValue: auditService },
+        { provide: IsmsAuditControlService, useValue: auditControlService },
+        { provide: IsmsAuditFindingService, useValue: auditFindingService },
         { provide: IsmsNarrativeService, useValue: narrativeService },
       ],
     })
@@ -256,6 +286,68 @@ describe('IsmsRegistersController', () => {
       expect(measurementService.create).toHaveBeenCalledWith(
         expect.objectContaining({ memberId: null }),
       );
+    });
+
+    it('dispatches audits create with an empty body (defaults server-side)', async () => {
+      await controller.createRow(
+        'doc_1',
+        'audits',
+        reqWith({}),
+        'org_1',
+        'mem_1',
+      );
+      expect(auditService.create).toHaveBeenCalledWith({
+        documentId: 'doc_1',
+        organizationId: 'org_1',
+        dto: {},
+      });
+    });
+
+    it('dispatches audit-controls and audit-findings create with parsed dtos', async () => {
+      const controlBody = { auditId: 'aud_1', controlRef: 'A.8.16' };
+      await controller.createRow(
+        'doc_1',
+        'audit-controls',
+        reqWith(controlBody),
+        'org_1',
+        'mem_1',
+      );
+      expect(auditControlService.create).toHaveBeenCalledWith({
+        documentId: 'doc_1',
+        organizationId: 'org_1',
+        dto: controlBody,
+      });
+
+      const findingBody = {
+        auditId: 'aud_1',
+        type: 'observation',
+        description: 'No restore test evidenced.',
+      };
+      await controller.createRow(
+        'doc_1',
+        'audit-findings',
+        reqWith(findingBody),
+        'org_1',
+        'mem_1',
+      );
+      expect(auditFindingService.create).toHaveBeenCalledWith({
+        documentId: 'doc_1',
+        organizationId: 'org_1',
+        dto: findingBody,
+      });
+    });
+
+    it('rejects an audit-findings create without a description', async () => {
+      await expect(
+        controller.createRow(
+          'doc_1',
+          'audit-findings',
+          reqWith({ auditId: 'aud_1', type: 'ofi' }),
+          'org_1',
+          'mem_1',
+        ),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(auditFindingService.create).not.toHaveBeenCalled();
     });
 
     it('throws BadRequestException for an unknown register', async () => {
