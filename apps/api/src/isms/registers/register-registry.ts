@@ -11,6 +11,10 @@ import type { IsmsMeasurementService } from '../isms-measurement.service';
 import type { IsmsAuditService } from '../isms-audit.service';
 import type { IsmsAuditControlService } from '../isms-audit-control.service';
 import type { IsmsAuditFindingService } from '../isms-audit-finding.service';
+import type { IsmsManagementReviewService } from '../isms-management-review.service';
+import type { IsmsReviewInputService } from '../isms-review-input.service';
+import type { IsmsReviewActionService } from '../isms-review-action.service';
+import { reviewAttendeeSchema } from '../documents/management-review';
 
 /**
  * One generic dispatch for every ISMS register row (context issues, interested
@@ -45,6 +49,9 @@ const AUDIT_CONTROL_RESULT = [
 ] as const;
 const AUDIT_FINDING_TYPE = ['nc_major', 'nc_minor', 'ofi', 'observation'] as const;
 const AUDIT_FINDING_STATUS = ['open', 'in_progress', 'closed'] as const;
+const REVIEW_STATUS = ['planned', 'in_progress', 'complete'] as const;
+const REVIEW_CONCLUSION_VERDICT = ['suitable', 'adequate', 'effective'] as const;
+const REVIEW_ACTION_STATUS = ['open', 'in_progress', 'closed'] as const;
 
 const schemas = {
   contextIssueCreate: z.object({
@@ -265,6 +272,63 @@ const schemas = {
     closureEvidence: z.string().nullish(),
     position,
   }),
+  // reference ("MR-YYYY-NN") and recordedAt are server-generated and immutable;
+  // chair/attendees default to the Roles (5.3) Top Management + SPO holders and
+  // the outputs default to the clause-9.3 template text when omitted.
+  reviewCreate: z.object({
+    meetingDate: z.string().nullish(), // ISO date string
+    chairName: z.string().nullish(),
+    attendees: z.array(reviewAttendeeSchema).optional(),
+    position,
+  }),
+  reviewUpdate: z.object({
+    // Nullish: undefined = leave as-is, null = clear.
+    meetingDate: z.string().nullish(),
+    chairName: z.string().nullish(),
+    attendees: z.array(reviewAttendeeSchema).optional(),
+    status: z.enum(REVIEW_STATUS).optional(),
+    conclusionVerdict: z.enum(REVIEW_CONCLUSION_VERDICT).nullish(),
+    conclusionNotes: z.string().nullish(),
+    decisionsText: z.string().nullish(),
+    changesText: z.string().nullish(),
+    // Single sign-off slot: free-text chair name + ISO date, each clearable.
+    signoffChairName: z.string().nullish(),
+    signoffChairDate: z.string().nullish(),
+    position,
+  }),
+  reviewInputCreate: z.object({
+    reviewId: z.string(),
+    inputRef: z.string().trim().min(1),
+    whatItCovers: z.string().optional(),
+    whereToFind: z.string().optional(),
+    discussionNotes: z.string().nullish(),
+    discussed: z.boolean().optional(),
+    position,
+  }),
+  reviewInputUpdate: z.object({
+    inputRef: z.string().trim().min(1).optional(),
+    whatItCovers: z.string().optional(),
+    whereToFind: z.string().optional(),
+    discussionNotes: z.string().nullish(),
+    discussed: z.boolean().optional(),
+    position,
+  }),
+  // reference is server-generated ("A01", shown as "MR-YYYY-NN-A01") and immutable.
+  reviewActionCreate: z.object({
+    reviewId: z.string(),
+    description: z.string().trim().min(1),
+    ownerMemberId: z.string().nullish(),
+    dueDate: z.string().nullish(), // ISO date string
+    status: z.enum(REVIEW_ACTION_STATUS).optional(),
+    position,
+  }),
+  reviewActionUpdate: z.object({
+    description: z.string().trim().min(1).optional(),
+    ownerMemberId: z.string().nullish(),
+    dueDate: z.string().nullish(),
+    status: z.enum(REVIEW_ACTION_STATUS).optional(),
+    position,
+  }),
 } as const;
 
 /** One-save payload for the "Metrics due" / backfill views. */
@@ -319,6 +383,20 @@ export type CreateAuditFindingInput = z.infer<
 export type UpdateAuditFindingInput = z.infer<
   typeof schemas.auditFindingUpdate
 >;
+export type CreateReviewInput = z.infer<typeof schemas.reviewCreate>;
+export type UpdateReviewInput = z.infer<typeof schemas.reviewUpdate>;
+export type CreateReviewInputInput = z.infer<
+  typeof schemas.reviewInputCreate
+>;
+export type UpdateReviewInputInput = z.infer<
+  typeof schemas.reviewInputUpdate
+>;
+export type CreateReviewActionInput = z.infer<
+  typeof schemas.reviewActionCreate
+>;
+export type UpdateReviewActionInput = z.infer<
+  typeof schemas.reviewActionUpdate
+>;
 
 export const ISMS_REGISTER_KEYS = [
   'context-issues',
@@ -332,6 +410,9 @@ export const ISMS_REGISTER_KEYS = [
   'audits',
   'audit-controls',
   'audit-findings',
+  'reviews',
+  'review-inputs',
+  'review-actions',
 ] as const;
 
 export type IsmsRegisterKey = (typeof ISMS_REGISTER_KEYS)[number];
@@ -375,6 +456,9 @@ export interface RegisterServices {
   audits: IsmsAuditService;
   auditControls: IsmsAuditControlService;
   auditFindings: IsmsAuditFindingService;
+  reviews: IsmsManagementReviewService;
+  reviewInputs: IsmsReviewInputService;
+  reviewActions: IsmsReviewActionService;
 }
 
 /** Build the register → handler map from the injected per-register services. */
@@ -564,6 +648,54 @@ export function createRegisterRegistry(
         }),
       remove: ({ rowId, organizationId }) =>
         services.auditFindings.remove({ findingId: rowId, organizationId }),
+    },
+    reviews: {
+      create: ({ documentId, organizationId, data }) =>
+        services.reviews.create({
+          documentId,
+          organizationId,
+          dto: parse(schemas.reviewCreate, data),
+        }),
+      update: ({ rowId, organizationId, data }) =>
+        services.reviews.update({
+          reviewId: rowId,
+          organizationId,
+          dto: parse(schemas.reviewUpdate, data),
+        }),
+      remove: ({ rowId, organizationId }) =>
+        services.reviews.remove({ reviewId: rowId, organizationId }),
+    },
+    'review-inputs': {
+      create: ({ documentId, organizationId, data }) =>
+        services.reviewInputs.create({
+          documentId,
+          organizationId,
+          dto: parse(schemas.reviewInputCreate, data),
+        }),
+      update: ({ rowId, organizationId, data }) =>
+        services.reviewInputs.update({
+          inputId: rowId,
+          organizationId,
+          dto: parse(schemas.reviewInputUpdate, data),
+        }),
+      remove: ({ rowId, organizationId }) =>
+        services.reviewInputs.remove({ inputId: rowId, organizationId }),
+    },
+    'review-actions': {
+      create: ({ documentId, organizationId, data }) =>
+        services.reviewActions.create({
+          documentId,
+          organizationId,
+          dto: parse(schemas.reviewActionCreate, data),
+        }),
+      update: ({ rowId, organizationId, data }) =>
+        services.reviewActions.update({
+          actionId: rowId,
+          organizationId,
+          dto: parse(schemas.reviewActionUpdate, data),
+        }),
+      remove: ({ rowId, organizationId }) =>
+        services.reviewActions.remove({ actionId: rowId, organizationId }),
     },
   };
 }

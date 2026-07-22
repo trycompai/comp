@@ -19,6 +19,9 @@ import { IsmsMeasurementService } from './isms-measurement.service';
 import { IsmsAuditService } from './isms-audit.service';
 import { IsmsAuditControlService } from './isms-audit-control.service';
 import { IsmsAuditFindingService } from './isms-audit-finding.service';
+import { IsmsManagementReviewService } from './isms-management-review.service';
+import { IsmsReviewInputService } from './isms-review-input.service';
+import { IsmsReviewActionService } from './isms-review-action.service';
 import { IsmsNarrativeService } from './isms-narrative.service';
 
 jest.mock('../auth/auth.server', () => ({
@@ -70,6 +73,15 @@ jest.mock('./isms-audit-control.service', () => ({
 }));
 jest.mock('./isms-audit-finding.service', () => ({
   IsmsAuditFindingService: class {},
+}));
+jest.mock('./isms-management-review.service', () => ({
+  IsmsManagementReviewService: class {},
+}));
+jest.mock('./isms-review-input.service', () => ({
+  IsmsReviewInputService: class {},
+}));
+jest.mock('./isms-review-action.service', () => ({
+  IsmsReviewActionService: class {},
 }));
 jest.mock('./isms-narrative.service', () => ({
   IsmsNarrativeService: class {},
@@ -137,6 +149,21 @@ describe('IsmsRegistersController', () => {
     update: jest.fn(),
     remove: jest.fn(),
   };
+  const reviewService = {
+    create: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
+  };
+  const reviewInputService = {
+    create: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
+  };
+  const reviewActionService = {
+    create: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
+  };
   const narrativeService = { save: jest.fn() };
   const mockActingUser = { resolve: jest.fn() };
 
@@ -160,6 +187,9 @@ describe('IsmsRegistersController', () => {
         { provide: IsmsAuditService, useValue: auditService },
         { provide: IsmsAuditControlService, useValue: auditControlService },
         { provide: IsmsAuditFindingService, useValue: auditFindingService },
+        { provide: IsmsManagementReviewService, useValue: reviewService },
+        { provide: IsmsReviewInputService, useValue: reviewInputService },
+        { provide: IsmsReviewActionService, useValue: reviewActionService },
         { provide: IsmsNarrativeService, useValue: narrativeService },
         { provide: ActingUserResolver, useValue: mockActingUser },
       ],
