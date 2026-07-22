@@ -1,8 +1,13 @@
 'use client';
 
 import { Loader2 } from 'lucide-react';
-import type { SOAFieldSavePayload, SOATableAnswerData } from './EditableSOAFields';
+import type {
+  SOAFieldSavePayload,
+  SOAProcessedResult,
+  SOATableAnswerData,
+} from './EditableSOAFields';
 import { EditableSOAFields } from './EditableSOAFields';
+import { resolveSoaDisplay } from './soa-display';
 
 type SOAColumn = {
   name: string;
@@ -21,19 +26,12 @@ type SOAQuestion = {
   };
 };
 
-type ProcessedResult = {
-  success: boolean;
-  isApplicable: boolean | null;
-  justification?: string | null;
-  insufficientData?: boolean;
-};
-
 interface SOAMobileRowProps {
   question: SOAQuestion;
   columns: SOAColumn[];
   answerData?: SOATableAnswerData;
   questionStatus?: string;
-  processedResult?: ProcessedResult;
+  processedResult?: SOAProcessedResult;
   isFullyRemote: boolean;
   documentId: string;
   isPendingApproval: boolean;
@@ -56,32 +54,15 @@ export function SOAMobileRow({
   const controlClosure = question.columnMapping.closure || '';
   const isControl7 = controlClosure.startsWith('7.');
 
-  let displayIsApplicable: boolean | null;
-  let justificationValue: string | null;
-
-  if (isFullyRemote && isControl7) {
-    displayIsApplicable = false;
-    justificationValue =
-      processedResult?.justification ||
-      answerData?.answer ||
-      question.columnMapping.justification ||
-      'This control is not applicable as our organization operates fully remotely.';
-  } else if (answerData?.savedIsApplicable !== undefined) {
-    displayIsApplicable = answerData.savedIsApplicable;
-    justificationValue =
-      answerData.answer ?? question.columnMapping.justification ?? null;
-  } else {
-    displayIsApplicable =
-      processedResult?.isApplicable !== null && processedResult?.isApplicable !== undefined
-        ? processedResult.isApplicable
-        : (question.columnMapping.isApplicable ?? true);
-
-    justificationValue =
-      processedResult?.justification ||
-      answerData?.answer ||
-      question.columnMapping.justification ||
-      null;
-  }
+  // Applicability + justification are per-organization values from this
+  // document's own answers or an in-session autofill result — never from the
+  // shared framework configuration.
+  const { displayIsApplicable, justificationValue } = resolveSoaDisplay({
+    answerData,
+    processedResult,
+    isFullyRemote,
+    isControl7,
+  });
 
   return (
     <div className="p-4 space-y-3">
@@ -114,8 +95,6 @@ export function SOAMobileRow({
             isApplicable={displayIsApplicable}
             justification={justificationValue}
             isPendingApproval={isPendingApproval}
-            isControl7={isControl7}
-            isFullyRemote={isFullyRemote}
             organizationId={organizationId}
             onUpdate={onUpdate}
           />

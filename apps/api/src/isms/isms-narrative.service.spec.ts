@@ -9,11 +9,8 @@ jest.mock('@db', () => {
       findUnique: jest.fn(),
       update: jest.fn(),
     },
-    ismsDocumentVersion: {
-      findFirst: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-    },
+    // Advisory lock taken by invalidateApprovalIfNeeded (serializes vs approve).
+    $executeRaw: jest.fn(),
     // Run the callback with the same mock as the transaction client.
     $transaction: jest.fn((cb: (tx: unknown) => unknown) => cb(db)),
   };
@@ -36,6 +33,9 @@ describe('IsmsNarrativeService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     service = new IsmsNarrativeService();
+    (mockDb.ismsDocument.update as jest.Mock).mockResolvedValue({
+      id: 'doc_1',
+    });
   });
 
   it('throws NotFoundException when document missing', async () => {
@@ -77,14 +77,14 @@ describe('IsmsNarrativeService', () => {
     ).rejects.toThrow(BadRequestException);
   });
 
-  it('creates a version when none exists', async () => {
+  it('writes the validated narrative onto the document draft (CS-701)', async () => {
     (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
       id: 'doc_1',
       type: 'isms_scope',
     });
-    (mockDb.ismsDocumentVersion.findFirst as jest.Mock).mockResolvedValue(null);
-    (mockDb.ismsDocumentVersion.create as jest.Mock).mockResolvedValue({
-      id: 'ver_1',
+    // Non-approved: invalidateApprovalIfNeeded is a no-op.
+    (mockDb.ismsDocument.findUnique as jest.Mock).mockResolvedValue({
+      status: 'draft',
     });
 
     await service.save({
@@ -93,38 +93,20 @@ describe('IsmsNarrativeService', () => {
       narrative: validScope,
     });
 
-    expect(mockDb.ismsDocumentVersion.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ documentId: 'doc_1', version: 1 }),
-      }),
-    );
+    // The draft narrative lives on IsmsDocument, never on a version row.
+    expect(mockDb.ismsDocument.update).toHaveBeenCalledTimes(1);
+    expect(mockDb.ismsDocument.update).toHaveBeenCalledWith({
+      where: { id: 'doc_1' },
+      data: {
+        draftNarrative: expect.objectContaining({
+          certificateScopeSentence: 'The ISMS covers Acme.',
+        }),
+      },
+      select: { id: true, draftNarrative: true },
+    });
   });
 
-  it('updates the latest version when present', async () => {
-    (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
-      id: 'doc_1',
-      type: 'isms_scope',
-    });
-    (mockDb.ismsDocumentVersion.findFirst as jest.Mock).mockResolvedValue({
-      id: 'ver_1',
-    });
-    (mockDb.ismsDocumentVersion.update as jest.Mock).mockResolvedValue({
-      id: 'ver_1',
-    });
-
-    await service.save({
-      documentId: 'doc_1',
-      organizationId: 'org_1',
-      narrative: validScope,
-    });
-
-    expect(mockDb.ismsDocumentVersion.update).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 'ver_1' } }),
-    );
-    expect(mockDb.ismsDocument.update).not.toHaveBeenCalled();
-  });
-
-  it('reverts an approved document to draft so it needs re-approval', async () => {
+  it('reverts an approved document to draft, then writes the narrative', async () => {
     (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
       id: 'doc_1',
       type: 'isms_scope',
@@ -132,12 +114,6 @@ describe('IsmsNarrativeService', () => {
     (mockDb.ismsDocument.findUnique as jest.Mock).mockResolvedValue({
       status: 'approved',
     });
-    (mockDb.ismsDocumentVersion.findFirst as jest.Mock).mockResolvedValue({
-      id: 'ver_1',
-    });
-    (mockDb.ismsDocumentVersion.update as jest.Mock).mockResolvedValue({
-      id: 'ver_1',
-    });
 
     await service.save({
       documentId: 'doc_1',
@@ -145,9 +121,19 @@ describe('IsmsNarrativeService', () => {
       narrative: validScope,
     });
 
-    expect(mockDb.ismsDocument.update).toHaveBeenCalledWith({
+    // First the approval invalidation, then the narrative write — both in-tx.
+    expect(mockDb.ismsDocument.update).toHaveBeenNthCalledWith(1, {
       where: { id: 'doc_1' },
       data: { status: 'draft', approvedAt: null, approverId: null },
+    });
+    expect(mockDb.ismsDocument.update).toHaveBeenNthCalledWith(2, {
+      where: { id: 'doc_1' },
+      data: {
+        draftNarrative: expect.objectContaining({
+          certificateScopeSentence: 'The ISMS covers Acme.',
+        }),
+      },
+      select: { id: true, draftNarrative: true },
     });
   });
 });

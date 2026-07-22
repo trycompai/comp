@@ -62,11 +62,25 @@ interface StoredCheckRun {
     collectedAt: string;
     /** True when this failing result is suppressed by an active exception. */
     excepted?: boolean;
+    /** The active exception's id — needed to revoke (move back in scope). */
+    exceptionId?: string;
+    /** The documented reason recorded when the exception was created. */
+    exceptionReason?: string;
   }>;
   createdAt: string;
 }
 
-export type { StoredCheckRun, TaskIntegrationCheck };
+/**
+ * When a (connection, check) last ran — INCLUDING runs held server-side (which
+ * never appear in `runs`). Timestamp only; held outcomes stay hidden.
+ */
+interface CheckRunAttempt {
+  connectionId: string;
+  checkId: string;
+  lastAttemptAt: string;
+}
+
+export type { CheckRunAttempt, StoredCheckRun, TaskIntegrationCheck };
 
 export const integrationChecksKey = (taskId: string, orgId: string) =>
   ['/v1/integrations/tasks/checks', taskId, orgId] as const;
@@ -101,23 +115,29 @@ export function useIntegrationChecks({ taskId, orgId }: UseIntegrationChecksOpti
   );
 
   const {
-    data: runs,
+    data: runsData,
     error: runsError,
     isLoading: runsLoading,
     mutate: mutateRuns,
   } = useSWR(
     integrationRunsKey(taskId, orgId),
     async () => {
-      const response = await api.get<{ runs: StoredCheckRun[] }>(
-        `/v1/integrations/tasks/${taskId}/runs?organizationId=${orgId}`,
-      );
+      const response = await api.get<{
+        runs: StoredCheckRun[];
+        lastAttempts?: CheckRunAttempt[];
+      }>(`/v1/integrations/tasks/${taskId}/runs?organizationId=${orgId}`);
       if (response.error) throw new Error(response.error);
-      return response.data?.runs ?? [];
+      return {
+        runs: response.data?.runs ?? [],
+        lastAttempts: response.data?.lastAttempts ?? [],
+      };
     },
     {
       revalidateOnFocus: false,
     },
   );
+  const runs = runsData?.runs;
+  const lastAttempts = runsData?.lastAttempts;
 
   const runCheck = async (
     connectionId: string,
@@ -143,6 +163,27 @@ export function useIntegrationChecks({ taskId, orgId }: UseIntegrationChecksOpti
     }
 
     throw new Error('Failed to run check');
+  };
+
+  /**
+   * Revoke an active finding exception (move the resource back in scope).
+   * The exception mechanism is shared with Cloud Tests, so this talks to the
+   * cloud-security endpoint; the check run views refresh afterwards.
+   */
+  const revokeException = async (exceptionId: string): Promise<void> => {
+    const response = await api.delete<{ success: boolean }>(
+      `/v1/cloud-security/exceptions/${exceptionId}?organizationId=${orgId}`,
+    );
+
+    if (response.error || !response.data?.success) {
+      throw new Error(
+        typeof response.error === 'string'
+          ? response.error
+          : 'Failed to move the resource back in scope',
+      );
+    }
+
+    await mutateRuns();
   };
 
   /**
@@ -226,11 +267,13 @@ export function useIntegrationChecks({ taskId, orgId }: UseIntegrationChecksOpti
   return {
     checks: Array.isArray(checks) ? checks : [],
     runs: Array.isArray(runs) ? runs : [],
+    lastAttempts: Array.isArray(lastAttempts) ? lastAttempts : [],
     isLoading: checksLoading || runsLoading,
     error: checksError?.message || runsError?.message || null,
     mutateChecks,
     mutateRuns,
     runCheck,
+    revokeException,
     disconnectCheckFromTask,
     reconnectCheckToTask,
   };

@@ -1,6 +1,7 @@
 'use client';
 
 import { authClient } from '@/app/lib/auth-client';
+import { buildSignInCallbackUrls } from '@/app/lib/auth-callback';
 import { Button } from '@trycompai/ui/button';
 import { Icons } from '@trycompai/ui/icons';
 import { Spinner } from '@trycompai/design-system';
@@ -20,26 +21,18 @@ export function MicrosoftSignIn({
     setLoading(true);
 
     try {
-      // Build the callback URL with search params
-      const baseURL = window.location.origin;
-      const isDeviceAuth = searchParams?.get('device_auth') === 'true';
-      const path = isDeviceAuth
-        ? '/auth/device-callback'
-        : inviteCode
-          ? `/invite/${inviteCode}`
-          : '/';
-      const redirectTo = new URL(path, baseURL);
-
-      // Append all search params if they exist
-      if (searchParams) {
-        searchParams.forEach((value, key) => {
-          redirectTo.searchParams.append(key, value);
-        });
-      }
+      const { callbackURL, errorCallbackURL } = buildSignInCallbackUrls({
+        origin: window.location.origin,
+        inviteCode,
+        searchParams,
+      });
 
       await authClient.signIn.social({
         provider: 'microsoft',
-        callbackURL: redirectTo.toString(),
+        callbackURL,
+        // Without this, an OAuth callback error redirects to the API root
+        // (Swagger docs) instead of back to the portal. See CS-760.
+        errorCallbackURL,
       });
     } catch (error) {
       setLoading(false);

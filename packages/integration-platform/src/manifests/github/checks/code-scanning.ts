@@ -46,6 +46,15 @@ type CodeScanningStatus =
   | { status: 'permission-denied'; isPrivate: boolean }
   | { status: 'ghas-required' };
 
+/**
+ * Whether the repo's code-scanning entitlement (GitHub Code Security, formerly
+ * Advanced Security) is enabled. `unknown` covers the case where GitHub omits the
+ * repo's `security_and_analysis` block because the token lacks repo-admin
+ * visibility (common over OAuth connections) — we must NOT treat that as
+ * `disabled`.
+ */
+type GhasStatus = 'enabled' | 'disabled' | 'unknown';
+
 const decodeFile = (file: GitHubFileResponse): string => {
   if (!file?.content) return '';
   if (file.encoding === 'base64') {
@@ -149,14 +158,21 @@ export const codeScanningCheck: IntegrationCheck = {
       repoName,
       tree,
       isPrivate,
-      isGhasEnabled,
+      ghasStatus,
     }: {
       repoName: string;
       tree: GitHubTreeEntry[];
       isPrivate: boolean;
-      isGhasEnabled: boolean;
+      ghasStatus: GhasStatus;
     }): Promise<CodeScanningStatus> => {
       let apiGot403 = false;
+      // GitHub returns 403 for two very different reasons, and only one is our
+      // fault. When the code-scanning feature is simply not turned on for the
+      // repo, the 403 body says "…must be enabled…" (Code Security / Advanced
+      // Security). When our token genuinely lacks access it says "Resource not
+      // accessible by integration". This flag records the former so we don't
+      // report a repo-configuration gap as a missing integration permission.
+      let featureDisabled = false;
 
       // First, try the default setup API
       try {
@@ -174,11 +190,18 @@ export const codeScanningCheck: IntegrationCheck = {
         const errorStr = String(error);
 
         if (errorStr.includes('403') || errorStr.includes('Forbidden')) {
-          // The code-scanning API requires GHAS for private repos, but reading
-          // workflow file contents only requires contents:read. A 403 here does
-          // not mean we can't check for code scanning workflows.
+          // The code-scanning API requires Code Security for private repos, but
+          // reading workflow file contents only requires contents:read. A 403
+          // here does not mean we can't check for code scanning workflows.
+          //
+          // `ctx.fetch` puts GitHub's response body in the error message, so we
+          // can read GitHub's own explanation. "…must be enabled…" means the
+          // feature is off on the repo, not that we lack permission.
+          if (/must be enabled|advanced security|code security/i.test(errorStr)) {
+            featureDisabled = true;
+          }
           ctx.log(
-            `Code scanning API returned 403 for ${repoName} (private: ${isPrivate}, ghas: ${isGhasEnabled}). Falling back to workflow file scanning.`,
+            `Code scanning API returned 403 for ${repoName} (private: ${isPrivate}, ghas: ${ghasStatus}, featureDisabled: ${featureDisabled}). Falling back to workflow file scanning.`,
           );
           apiGot403 = true;
         } else {
@@ -200,10 +223,20 @@ export const codeScanningCheck: IntegrationCheck = {
       }
 
       if (apiGot403) {
-        if (isPrivate) {
-          if (isGhasEnabled) {
-            return { status: 'permission-denied', isPrivate };
-          }
+        // Prefer GitHub's own explanation. If it told us the feature must be
+        // enabled, this is a repo-configuration gap, not a permission problem:
+        // a private repo needs GitHub Code Security (paid), while a public repo
+        // just has not set code scanning up.
+        if (featureDisabled) {
+          return isPrivate ? { status: 'ghas-required' } : { status: 'not-configured' };
+        }
+        // No feature-off signal in the body. Fall back to the repo's
+        // `security_and_analysis` block: only claim "Code Security required" when
+        // we can positively confirm it is disabled. Over a connection without
+        // repo-admin visibility GitHub omits that block, so ghasStatus is
+        // 'unknown' — treat that (and 'enabled') as permission-denied rather than
+        // falsely reporting the feature is off.
+        if (isPrivate && ghasStatus === 'disabled') {
           return { status: 'ghas-required' };
         }
         return { status: 'permission-denied', isPrivate };
@@ -217,13 +250,23 @@ export const codeScanningCheck: IntegrationCheck = {
       if (!repo) continue;
 
       const tree = await fetchRepoTree(repo.full_name, repo.default_branch);
-      const isGhasEnabled = repo.security_and_analysis?.advanced_security?.status === 'enabled';
+      // Read the code-scanning entitlement. GitHub's 2026 Code Security GA renamed
+      // this from `advanced_security` to `code_security`; check the new key first
+      // and fall back to the old one for GitHub Enterprise Server / older payloads.
+      // `security_and_analysis` is only returned to repo admins, so over a
+      // connection without admin visibility the whole block is undefined —
+      // 'unknown', NOT 'disabled'. Conflating the two is what made us falsely
+      // report the feature off (or, after the OAuth fix, falsely report a
+      // permission problem).
+      const sa = repo.security_and_analysis;
+      const ghasStatus: GhasStatus =
+        sa?.code_security?.status ?? sa?.advanced_security?.status ?? 'unknown';
 
       const codeScanningStatus = await getCodeScanningStatus({
         repoName: repo.full_name,
         tree,
         isPrivate: repo.private,
-        isGhasEnabled,
+        ghasStatus,
       });
 
       switch (codeScanningStatus.status) {
@@ -255,14 +298,14 @@ export const codeScanningCheck: IntegrationCheck = {
 
         case 'ghas-required':
           ctx.fail({
-            title: `Code scanning requires GitHub Advanced Security for ${repo.name}`,
+            title: `Code scanning requires GitHub Code Security for ${repo.name}`,
             description:
-              'This is a private repository. GitHub Advanced Security (GHAS) must be enabled before CodeQL can be configured. GHAS is a paid feature for private repositories.',
+              'This private repository has no code scanning configured. GitHub CodeQL requires GitHub Code Security (formerly GitHub Advanced Security), a paid feature for private repositories. A third-party SAST tool (Semgrep, Snyk, Trivy, etc.) that uploads SARIF results also satisfies this check.',
             resourceType: 'repository',
             resourceId: repo.full_name,
             severity: 'medium',
             remediation:
-              'Enable GitHub Advanced Security in the repository settings (Settings → Code security and analysis → GitHub Advanced Security), then enable CodeQL.',
+              'Enable GitHub Code Security for this repository (Settings → Code security → GitHub Advanced Security / Code Security) and turn on CodeQL default setup, or add a workflow under .github/workflows that runs a SAST tool and uploads SARIF (github/codeql-action/upload-sarif).',
             evidence: {
               [repo.full_name]: {
                 code_scanning: {
@@ -278,12 +321,12 @@ export const codeScanningCheck: IntegrationCheck = {
           ctx.fail({
             title: `Cannot access code scanning configuration for ${repo.name}`,
             description:
-              'The GitHub integration does not have permission to read code scanning configuration. This may be due to missing permissions or organization policies.',
+              "GitHub returned 403 when reading this repository's code scanning configuration. GitHub requires admin (Administration: read) access to the repository to read this setting, and the connected account or GitHub App installation does not currently have it for this repo.",
             resourceType: 'repository',
             resourceId: repo.full_name,
             severity: 'medium',
             remediation:
-              'Ensure the GitHub App has "Code scanning alerts: Read" permission. If this is an organization repository, check that organization policies allow access.',
+              'Reconnect with an account that has admin access to this repository, or grant the GitHub App installation admin (Administration: read) access to it. If this is an organization repository, also confirm organization policies allow the app to access it.',
             evidence: {
               [repo.full_name]: {
                 code_scanning: {

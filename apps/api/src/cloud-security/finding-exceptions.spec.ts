@@ -44,23 +44,50 @@ describe('ActiveExceptionSet', () => {
     expect(set.has('c1', 'check-a', resourceId)).toBe(true);
     expect(set.exceptedResourceIds('c1', 'check-a')).toEqual([resourceId]);
   });
+
+  it('exposes exception metadata via infoFor when built with it', () => {
+    const key = ActiveExceptionSet.key('c1', 'check-a', 'r1');
+    const set = new ActiveExceptionSet(
+      [key],
+      new Map([[key, { id: 'fex_1', reason: 'Intentional public bucket' }]]),
+    );
+    expect(set.infoFor('c1', 'check-a', 'r1')).toEqual({
+      id: 'fex_1',
+      reason: 'Intentional public bucket',
+    });
+    expect(set.infoFor('c1', 'check-a', 'r2')).toBeNull();
+  });
+
+  it('infoFor returns null on a set built from bare keys (has() still true)', () => {
+    const set = new ActiveExceptionSet([
+      ActiveExceptionSet.key('c1', 'check-a', 'r1'),
+    ]);
+    expect(set.has('c1', 'check-a', 'r1')).toBe(true);
+    expect(set.infoFor('c1', 'check-a', 'r1')).toBeNull();
+  });
 });
 
 describe('loadActiveExceptionSet', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('builds the set from active exceptions', async () => {
+  it('builds the set from active exceptions, carrying id + reason', async () => {
     findMany.mockResolvedValue([
       {
+        id: 'fex_1',
         connectionId: 'c1',
         checkId: 'aws-s3-public-access',
         resourceId: 'bucket-1',
+        reason: 'Bucket only hosts a static website redirect.',
       },
     ] as never);
 
     const set = await loadActiveExceptionSet('org_1');
 
     expect(set.has('c1', 'aws-s3-public-access', 'bucket-1')).toBe(true);
+    expect(set.infoFor('c1', 'aws-s3-public-access', 'bucket-1')).toEqual({
+      id: 'fex_1',
+      reason: 'Bucket only hosts a static website redirect.',
+    });
     // Query only active exceptions (not revoked, not expired).
     expect(findMany).toHaveBeenCalledWith(
       expect.objectContaining({

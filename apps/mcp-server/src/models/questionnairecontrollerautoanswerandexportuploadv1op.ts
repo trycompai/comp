@@ -6,19 +6,6 @@ import * as z from "zod";
 import * as b64$ from "../lib/base64.js";
 import { ClosedEnum } from "../types/enums.js";
 
-export type QuestionnaireControllerAutoAnswerAndExportUploadV1File = {
-  fileName: string;
-  content: Uint8Array | string;
-};
-
-export const QuestionnaireControllerAutoAnswerAndExportUploadV1File$zodSchema:
-  z.ZodType<QuestionnaireControllerAutoAnswerAndExportUploadV1File> = z.object({
-    content: z.string().describe("Base64-encoded binary content").transform(
-      b64$.bytesFromBase64,
-    ),
-    fileName: z.string(),
-  });
-
 /**
  * Output format (defaults to XLSX)
  */
@@ -39,6 +26,19 @@ export const QuestionnaireControllerAutoAnswerAndExportUploadV1Format$zodSchema 
     "csv",
     "xlsx",
   ]).describe("Output format (defaults to XLSX)");
+
+export type QuestionnaireControllerAutoAnswerAndExportUploadV1File = {
+  fileName: string;
+  content: Uint8Array | string;
+};
+
+export const QuestionnaireControllerAutoAnswerAndExportUploadV1File$zodSchema:
+  z.ZodType<QuestionnaireControllerAutoAnswerAndExportUploadV1File> = z.object({
+    content: z.string().describe("Base64-encoded binary content").transform(
+      b64$.bytesFromBase64,
+    ),
+    fileName: z.string(),
+  });
 
 export type QuestionnaireControllerAutoAnswerAndExportUploadV1Request = {
   file: QuestionnaireControllerAutoAnswerAndExportUploadV1File | Blob;

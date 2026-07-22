@@ -33,13 +33,22 @@ jest.mock('@trycompai/integration-platform', () => ({
   getManifest: jest.fn(),
   getActiveManifests: jest.fn(),
   runAllChecks: jest.fn(),
+  // Default: not a code manifest, so isDynamic falls through to the
+  // dynamicIntegration lookup (the pre-guard behavior these tests rely on).
+  // A code-manifest case is exercised explicitly below.
+  isCodeManifest: jest.fn(() => false),
 }));
 
 import { db } from '@db';
-import { getManifest, runAllChecks } from '@trycompai/integration-platform';
+import {
+  getManifest,
+  isCodeManifest,
+  runAllChecks,
+} from '@trycompai/integration-platform';
 
 const mockedGetManifest = getManifest as jest.Mock;
 const mockedRunAllChecks = runAllChecks as jest.Mock;
+const mockedIsCodeManifest = isCodeManifest as jest.Mock;
 // Grab through the module reference to avoid the `unbound-method` lint rule.
 const mockedTask = db.task as unknown as {
   findUnique: jest.Mock;
@@ -211,6 +220,7 @@ describe('TaskIntegrationsController', () => {
     complete: jest.fn(),
     addResults: jest.fn(),
     findLatestPerConnectionAndCheckByTask: jest.fn(),
+    findLastAttemptPerConnectionAndCheckByTask: jest.fn(),
     countExceptedFailures: jest.fn(),
   };
   const mockCredentialVaultService = { getDecryptedCredentials: jest.fn() };
@@ -265,6 +275,12 @@ describe('TaskIntegrationsController', () => {
       slug: 'aws',
     });
     mockedGetManifest.mockReturnValue(MANIFEST);
+    // Default: treat the provider as NOT a code manifest, so isDynamic falls
+    // through to the dynamicIntegration lookup (pre-guard behavior). The
+    // code-manifest case is exercised explicitly in its own test. Set here so a
+    // test that opts into `true` never leaks into the next (clearAllMocks keeps
+    // implementations).
+    mockedIsCodeManifest.mockReturnValue(false);
     // Default: no active exceptions (existing tests behave as before).
     mockFindingExceptionFindMany.mockResolvedValue([]);
     mockCheckRunRepository.create.mockImplementation(() =>
@@ -275,6 +291,10 @@ describe('TaskIntegrationsController', () => {
     // Default: nothing excepted (no count query needed). Exception tests
     // override this to the exact excepted-failure count for the run.
     mockCheckRunRepository.countExceptedFailures.mockResolvedValue(0);
+    // Default: no last-attempt rows (tests that care set their own).
+    mockCheckRunRepository.findLastAttemptPerConnectionAndCheckByTask.mockResolvedValue(
+      [],
+    );
     mockCredentialVaultService.getDecryptedCredentials.mockResolvedValue(
       VALID_CREDS,
     );
@@ -503,6 +523,49 @@ describe('TaskIntegrationsController', () => {
       expect(result.taskStatus).toBe('failed');
       // A genuine compliance finding is a REAL failure — the run row stays
       // 'failed' (visible to the customer), never held.
+      expect(mockCheckRunRepository.complete).toHaveBeenCalledWith(
+        'icr_x',
+        expect.objectContaining({ status: 'failed' }),
+      );
+    });
+
+    it('treats a CODE-BASED provider as static even when a dynamic row shares its slug — shows the real fail, never held (CS-715)', async () => {
+      // A code manifest wins over a dynamic integration of the same slug, so the
+      // check is static. Pre-fix, the mere existence of the dynamic row forced the
+      // run to be HELD as 'inconclusive' (hidden from the customer). It must be
+      // classified static: a real finding shows 'failed' and fails the task.
+      mockedIsCodeManifest.mockReturnValue(true);
+      mockProviderRepository.findById.mockResolvedValue({
+        id: 'prov_gh',
+        slug: 'github',
+      });
+      // An active dynamic 'github' row exists — pre-fix this alone forced the hold.
+      mockDynamicIntegrationFindFirst.mockResolvedValue({ id: 'din_github' });
+      mockConnectionRepository.findById.mockResolvedValue({
+        id: 'conn_1',
+        organizationId: 'org_1',
+        providerId: 'prov_gh',
+        status: 'active',
+      });
+      mockConnectionRepository.findActiveByProviderAndOrg.mockResolvedValue([
+        {
+          id: 'conn_1',
+          organizationId: 'org_1',
+          providerId: 'prov_gh',
+          metadata: {},
+          variables: {},
+        },
+      ]);
+      mockedRunAllChecks.mockResolvedValue(failingResult());
+
+      const result = await controller.runCheckForTask('task_1', 'org_1', {
+        connectionId: 'conn_1',
+        checkId: 'aws-s3-encryption',
+      });
+
+      // Not held: the finding fails the task and the run row is 'failed' (shown),
+      // even though an active dynamic row exists for the same slug.
+      expect(result.taskStatus).toBe('failed');
       expect(mockCheckRunRepository.complete).toHaveBeenCalledWith(
         'icr_x',
         expect.objectContaining({ status: 'failed' }),
@@ -753,9 +816,11 @@ describe('TaskIntegrationsController', () => {
       );
       mockFindingExceptionFindMany.mockResolvedValue([
         {
+          id: 'fex_1',
           connectionId: 'conn_1',
           checkId: 'aws-s3-public-access',
           resourceId: 'reports-bucket',
+          reason: 'Bucket intentionally public: static website redirect only.',
         },
       ]);
       // The excepted-failure count is now computed via a targeted query (the
@@ -769,6 +834,11 @@ describe('TaskIntegrationsController', () => {
       expect(runs[0].exceptedCount).toBe(1);
       expect(runs[0].status).toBe('success');
       expect(runs[0].results[0].excepted).toBe(true);
+      // Excepted rows carry the exception's id (for revoke) and its reason.
+      expect(runs[0].results[0].exceptionId).toBe('fex_1');
+      expect(runs[0].results[0].exceptionReason).toBe(
+        'Bucket intentionally public: static website redirect only.',
+      );
       // Exact count is computed via the targeted query, scoped to this run's
       // excepted resourceIds (not by loading + filtering every result).
       expect(mockCheckRunRepository.countExceptedFailures).toHaveBeenCalledWith(
@@ -824,6 +894,30 @@ describe('TaskIntegrationsController', () => {
       expect(
         mockCheckRunRepository.findLatestPerConnectionAndCheckByTask,
       ).not.toHaveBeenCalled();
+    });
+
+    it('returns lastAttempts (incl. held runs) so "Last ran" stays truthful (CS-753)', async () => {
+      // The visible runs list can be days older than the newest attempt when
+      // recent runs were held (they're excluded from `runs`). The endpoint
+      // must surface WHEN each (connection, check) last ran — timestamps only.
+      mockCheckRunRepository.findLatestPerConnectionAndCheckByTask.mockResolvedValue(
+        [],
+      );
+      const attempt = {
+        connectionId: 'conn_1',
+        checkId: 'entra_id_mfa',
+        lastAttemptAt: new Date('2026-07-16T06:00:00Z'),
+      };
+      mockCheckRunRepository.findLastAttemptPerConnectionAndCheckByTask.mockResolvedValue(
+        [attempt],
+      );
+
+      const response = await controller.getTaskCheckRuns('task_1', 'org_1');
+
+      expect(response.lastAttempts).toEqual([attempt]);
+      expect(
+        mockCheckRunRepository.findLastAttemptPerConnectionAndCheckByTask,
+      ).toHaveBeenCalledWith('task_1');
     });
 
     it('bounds a run with a huge result set + logs so the payload stays small (CS-588)', async () => {

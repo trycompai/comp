@@ -3,7 +3,11 @@
 import { Card } from '@trycompai/ui';
 import { Button } from '@trycompai/design-system';
 import { ChevronUp, ChevronDown } from '@trycompai/design-system/icons';
-import type { SOAFieldSavePayload, SOATableAnswerData } from './EditableSOAFields';
+import type {
+  SOAFieldSavePayload,
+  SOAProcessedResult,
+  SOATableAnswerData,
+} from './EditableSOAFields';
 import { SOATableRow } from './SOATableRow';
 import { SOAMobileRow } from './SOAMobileRow';
 
@@ -26,19 +30,12 @@ type SOAQuestion = {
   };
 };
 
-type ProcessedResult = {
-  success: boolean;
-  isApplicable: boolean | null;
-  justification?: string | null;
-  insufficientData?: boolean;
-};
-
 interface SOATableProps {
   columns: SOAColumn[];
   questions: SOAQuestion[];
   answersMap: Map<string, SOATableAnswerData>;
   questionStatuses: Map<string, string>;
-  processedResults: Map<string, ProcessedResult>;
+  processedResults: Map<string, SOAProcessedResult>;
   isFullyRemote: boolean;
   isExpanded: boolean;
   onToggleExpand: () => void;

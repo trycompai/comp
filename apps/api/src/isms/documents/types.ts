@@ -77,6 +77,133 @@ export interface DerivedObjective extends DerivedRegisterRow {
   measurementMethod: string | null;
 }
 
+/** Team-size band that drives the Roles document's copy and defaults (5.3). */
+export type IsmsTeamSizeBand = 'small' | 'standard'; // small = 1-3 people, standard = 4+
+
+/** The four seeded ISMS governance roles and their pre-filled default text. */
+export interface SeedRoleDefinition {
+  roleKey: 'top_management' | 'spo' | 'deputy_spo' | 'internal_auditor';
+  name: string;
+  description: string;
+  responsibilities: string;
+  authorities: string;
+  authorityGrantedBy: string;
+  requiredCompetence: string;
+}
+
+/** A role, resolved for export: fields + named holders + internal-audit route. */
+export interface RoleExportRow {
+  roleKey: string | null;
+  name: string;
+  description: string;
+  responsibilities: string;
+  authorities: string;
+  authorityGrantedBy: string;
+  requiredCompetence: string;
+  /** Display names of the assigned members (resolved + frozen at build time). */
+  holders: string[];
+  auditRoute: string | null;
+  auditRouteHolderName: string | null;
+  auditFirmName: string | null;
+  auditEvidenceRef: string | null;
+  auditCourse: string | null;
+  auditDueDate: string | null;
+}
+
+/** One row of the operational-responsibilities summary (5.3 §5). */
+export interface OperationalOwnershipRow {
+  artifact: string;
+  assignedWhere: string;
+  ownerResponsibility: string;
+  /** Distinct owner display names read from the platform (may be empty). */
+  owners: string[];
+}
+
+/** The nine seeded monitoring metrics and their pre-filled default text (9.1). */
+export interface SeedMetricDefinition {
+  metricKey: string;
+  name: string;
+  whatIsMeasured: string;
+  method: string;
+  cadence: 'monthly' | 'quarterly';
+  target: string;
+}
+
+/** A metric, resolved for export: fields + named people + current value. */
+export interface MetricExportRow {
+  metricKey: string | null;
+  name: string;
+  whatIsMeasured: string;
+  method: string;
+  /** Humanized cadence ("Monthly"/"Quarterly") or null when unset. */
+  cadence: string | null;
+  /** Display name of who monitors / analyses (SPO fallback already applied). */
+  monitorName: string;
+  analyzeName: string;
+  /** Free-text target, or the linked objective's target (frozen at build time). */
+  target: string;
+  /** Most recent value with its period, e.g. "99.95% (July 2026)", or "—". */
+  currentValue: string;
+}
+
+/** The fifteen seeded Controls Tested rows and their pre-filled text (9.2). */
+export interface SeedAuditControlDefinition {
+  controlKey: string;
+  controlRef: string;
+  whatWasTested: string;
+  whereToFind: string;
+}
+
+/** One Controls Tested row, resolved for export (result/notes humanized). */
+export interface AuditControlExportRow {
+  controlRef: string;
+  whatWasTested: string;
+  whereToFind: string;
+  /** Humanized result label ("Conformity confirmed") or a dash when unset. */
+  result: string;
+  notes: string;
+}
+
+/** One finding row, resolved for export (owner name frozen at build time). */
+export interface AuditFindingExportRow {
+  reference: string;
+  /** Humanized type label ("NC minor"). */
+  type: string;
+  clauseOrControl: string;
+  description: string;
+  ownerName: string;
+  dueDate: string;
+  /** Humanized status label ("Open"). */
+  status: string;
+  /** How a closed corrective action was evidenced; empty when not recorded. */
+  closureEvidence: string;
+}
+
+/** One sign-off slot rendered in the audit's sign-off table. */
+export interface AuditSignoffExportRow {
+  role: string;
+  name: string;
+  date: string;
+}
+
+/** An audit instance, resolved for export: fields + child tables + sign-off. */
+export interface AuditExportRow {
+  reference: string;
+  scope: string;
+  criteria: string;
+  auditorName: string;
+  plannedStartDate: string | null;
+  plannedEndDate: string | null;
+  /** Humanized status label ("In progress"). */
+  status: string;
+  /** Assembled conclusion sentence, or null while no verdict is chosen. */
+  conclusion: string | null;
+  conclusionNotes: string | null;
+  controls: AuditControlExportRow[];
+  findings: AuditFindingExportRow[];
+  signoffs: AuditSignoffExportRow[];
+}
+
 /**
  * The organization profile that fills the narrative parts of the Context of the
  * Organization document (clause 4.1) — overview table, mission, intended
@@ -120,4 +247,14 @@ export interface DocumentExportInput {
   narrative: unknown;
   /** Org overview/mission/outcomes — only populated for the Context document. */
   orgProfile?: IsmsOrgProfile;
+  /** Governance roles with resolved holders — only populated for the Roles document (5.3). */
+  roles?: RoleExportRow[];
+  /** Operational per-artifact ownership — only populated for the Roles document (5.3). */
+  operationalOwnership?: OperationalOwnershipRow[];
+  /** Team-size band — only populated for the Roles document (5.3). */
+  band?: IsmsTeamSizeBand;
+  /** Active metrics with resolved people + values — only populated for the Monitoring document (9.1). */
+  metrics?: MetricExportRow[];
+  /** Audit instances with resolved names — only populated for the Internal Audit document (9.2). */
+  audits?: AuditExportRow[];
 }

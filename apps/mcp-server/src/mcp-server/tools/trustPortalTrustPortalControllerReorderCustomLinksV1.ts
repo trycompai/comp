@@ -3,10 +3,15 @@
  */
 
 import { trustPortalTrustPortalControllerReorderCustomLinksV1 } from "../../funcs/trustPortalTrustPortalControllerReorderCustomLinksV1.js";
+import { TrustPortalControllerReorderCustomLinksV1Request$zodSchema } from "../../models/trustportalcontrollerreordercustomlinksv1op.js";
 import { formatResult, ToolDefinition } from "../tools.js";
 
+const args = {
+  request: TrustPortalControllerReorderCustomLinksV1Request$zodSchema,
+};
+
 export const tool$trustPortalTrustPortalControllerReorderCustomLinksV1:
-  ToolDefinition = {
+  ToolDefinition<typeof args> = {
     name: "reorder-custom-links",
     description: `Reorder custom links
 
@@ -18,10 +23,12 @@ Reorder custom links in Comp AI. Configure the live Trust Center, custom domain,
       "openWorldHint": false,
       "readOnlyHint": false,
     },
-    tool: async (client, ctx) => {
+    args,
+    tool: async (client, args, ctx) => {
       const [result] =
         await trustPortalTrustPortalControllerReorderCustomLinksV1(
           client,
+          args.request,
           { fetchOptions: { signal: ctx.signal } },
         ).$inspect();
 

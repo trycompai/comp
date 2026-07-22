@@ -60,6 +60,7 @@ module.exports = {
     perMachine: true,
     allowToChangeInstallationDirectory: false,
     artifactName: 'CompAI-Device-Agent-${version}-setup.${ext}',
+    deleteAppDataOnUninstall: true,
   },
   linux: {
     target: [
@@ -78,6 +79,7 @@ module.exports = {
   },
   deb: {
     afterInstall: 'assets/linux/after-install.sh',
+    afterRemove: 'assets/linux/after-remove.sh',
     packageName: 'comp-ai-device-agent',
     compression: 'xz',
   },

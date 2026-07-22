@@ -53,11 +53,32 @@ export const ISMS_TYPE_DEFINITIONS: IsmsTypeDefinition[] = [
       'Evidence of top management leadership and commitment to the ISMS (ISO 27001 clause 5.1).',
   },
   {
+    type: 'roles_and_responsibilities',
+    clause: '5.3',
+    title: 'Roles, Responsibilities and Authorities',
+    description:
+      'The ISMS governance roles, their responsibilities and authorities, and the members who hold them (ISO 27001 clause 5.3).',
+  },
+  {
     type: 'objectives_plan',
     clause: '6.2',
     title: 'Information Security Objectives and Plan',
     description:
       'Measurable information security objectives and the plan to achieve them (ISO 27001 clause 6.2).',
+  },
+  {
+    type: 'monitoring',
+    clause: '9.1',
+    title: 'Monitoring, Measurement, Analysis and Evaluation',
+    description:
+      'The metrics the organization monitors — what is measured, how, when, by whom, and who analyses the results (ISO 27001 clause 9.1).',
+  },
+  {
+    type: 'internal_audit',
+    clause: '9.2',
+    title: 'Internal Audit',
+    description:
+      'The internal audit programme and the plan, controls tested, findings and conclusion of each internal audit of the ISMS (ISO 27001 clause 9.2).',
   },
 ];
 

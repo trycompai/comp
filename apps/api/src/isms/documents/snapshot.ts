@@ -86,6 +86,17 @@ const TYPE_DRIFT_SOURCES: Record<IsmsDocumentType, Array<keyof DiffMap>> = {
     'members',
     'wizardAnswers',
   ],
+  // Roles text is static defaults; the only platform input the 5.3 document
+  // consumes is headcount, which sets the team-size band (small vs standard) and
+  // so changes the team-size note + operational-responsibilities rendering.
+  roles_and_responsibilities: ['members'],
+  // Monitoring (9.1) renders entirely from its own metrics register (seeded
+  // static defaults + customer edits + measurements); no platform snapshot
+  // input changes its rendering, so it can never be platform-drift stale.
+  monitoring: [],
+  // Internal Audit (9.2) renders from its own audits register + the Programme
+  // narrative (customer-owned once seeded); it never goes platform-drift stale.
+  internal_audit: [],
   isms_scope: [
     'frameworks',
     'vendors',

@@ -21,10 +21,12 @@ import { toast } from 'sonner';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useIsmsDocument, type UseIsmsDocumentReturn } from '../hooks/useIsmsDocument';
 import { useIsmsDrift } from '../hooks/useIsmsDrift';
+import { useIsmsDocumentVersions } from '../hooks/useIsmsDocumentVersions';
 import type { IsmsDocument as IsmsDocumentData } from '../isms-types';
 import { DriftBanner } from './DriftBanner';
 import { IsmsControlMappings } from './IsmsControlMappings';
 import { IsmsApprovalSection, type ApproverOption } from './IsmsApprovalSection';
+import { IsmsVersionHistory } from './IsmsVersionHistory';
 import { IsmsPageHeader } from './shared';
 
 /** Arguments passed to the per-document body render-prop. */
@@ -53,6 +55,13 @@ export interface IsmsDocumentShellProps {
   sectionDescription: string;
   /** Toast shown after a successful generate, e.g. "Generated issues from platform data". */
   generateSuccessMessage: string;
+  /**
+   * Optional per-document validation gate. When it returns a non-null reason for
+   * the current document, "Submit for approval" is disabled and the reason is
+   * shown (used by the Roles document to enforce clause-5.3 completeness). Other
+   * documents omit it and are never gated.
+   */
+  getSubmitBlockedReason?: (document: IsmsDocumentData) => string | null;
   /** Renders the register-specific body once a document is loaded. */
   children: (args: IsmsDocumentBodyArgs) => ReactNode;
 }
@@ -76,6 +85,7 @@ export function IsmsDocumentShell({
   sectionTitle,
   sectionDescription,
   generateSuccessMessage,
+  getSubmitBlockedReason,
   children,
 }: IsmsDocumentShellProps) {
   const { hasPermission } = usePermissions();
@@ -94,6 +104,14 @@ export function IsmsDocumentShell({
     handleExport,
   } = hook;
   const { isStale, drift, mutateDrift } = useIsmsDrift(documentId);
+  const {
+    versions,
+    isLoading: versionsLoading,
+    error: versionsError,
+    downloadingVersionId,
+    downloadVersion,
+    mutateVersions,
+  } = useIsmsDocumentVersions(documentId, organizationId);
 
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -122,10 +140,15 @@ export function IsmsDocumentShell({
   const handleApprove = async () => {
     try {
       await approve();
-      toast.success('Document approved');
     } catch (caught) {
       toast.error(caught instanceof Error ? caught.message : 'Failed to approve');
+      return;
     }
+    // Approval already persisted. Refreshing the history list + drift baseline is
+    // best-effort — a revalidation hiccup must not look like an approval failure
+    // (which would tempt the user to retry an already-published document).
+    toast.success('Document approved');
+    await Promise.allSettled([mutateVersions(), mutateDrift()]);
   };
 
   const handleDecline = async () => {
@@ -188,6 +211,7 @@ export function IsmsDocumentShell({
           canManage={canManage}
           currentMemberId={currentMemberId}
           approverOptions={approverOptions}
+          submitBlockedReason={getSubmitBlockedReason?.(document) ?? null}
           onSubmitForApproval={handleSubmit}
           onApprove={handleApprove}
           onDecline={handleDecline}
@@ -243,6 +267,16 @@ export function IsmsDocumentShell({
 
       {document && (
         <IsmsControlMappings document={document} organizationId={organizationId} canManage={canManage} />
+      )}
+
+      {document && (
+        <IsmsVersionHistory
+          versions={versions}
+          isLoading={versionsLoading}
+          error={versionsError}
+          downloadingVersionId={downloadingVersionId}
+          onDownload={downloadVersion}
+        />
       )}
     </Stack>
   );

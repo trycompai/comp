@@ -105,6 +105,10 @@ export const toolNames: Array<{ name: string; description: string }>= [
     "description": "Delete member\n\nPermanently removes a member from the organization. This action cannot be undone."
   },
   {
+    "name": "get-member-access",
+    "description": "Member's access across connected integrations\n\nAggregates the latest Employee Access check results from every connected integration bound to the Employee Access task, matched to the member by email."
+  },
+  {
     "name": "get-training-videos",
     "description": "Get training video completions for a member\n\nGet training video completions for a member in Comp AI. Invite and manage workforce members, training status, device compliance, email preferences, and employee evidence records."
   },
@@ -155,6 +159,258 @@ export const toolNames: Array<{ name: string; description: string }>= [
   {
     "name": "create-upload-url",
     "description": "Get a presigned URL to upload a file\n\nReturns a presigned S3 URL plus the s3Key the file lands at. PUT the raw file bytes to that URL, then call the feature tool (e.g. upload-and-parse) with the s3Key instead of sending file data. Bytes never pass through the LLM."
+  },
+  {
+    "name": "list-providers",
+    "description": "List integration providers\n\nList available integration providers that can connect to the organization for automated evidence collection and compliance checks."
+  },
+  {
+    "name": "get-provider",
+    "description": "Get an integration provider by slug\n\nGet an integration provider by slug in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "list-connections",
+    "description": "List integration connections\n\nList integration connections in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "create-connection",
+    "description": "Create integration connection\n\nCreate an integration connection so Comp AI can collect evidence, run checks, or sync data from a connected provider."
+  },
+  {
+    "name": "get-connection",
+    "description": "Get an integration connection by ID\n\nGet an integration connection by ID in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "delete-connection",
+    "description": "Delete an integration connection\n\nDelete an integration connection in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "update-connection",
+    "description": "Update an integration connection\n\nUpdate an integration connection in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "test-connection",
+    "description": "Test an integration connection\n\nTest an integration connection in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "pause-connection",
+    "description": "Pause an integration connection\n\nPause an integration connection in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "resume-connection",
+    "description": "Resume an integration connection\n\nResume an integration connection in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "disconnect-connection",
+    "description": "Disconnect an integration\n\nDisconnect an integration in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "update-connection-services",
+    "description": "Set services enabled on a connection\n\nSet services enabled on a connection in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "get-connection-services",
+    "description": "List services enabled on a connection\n\nList services enabled on a connection in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "list-provider-checks",
+    "description": "List check definitions for a provider\n\nList check definitions for a provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "list-connection-checks",
+    "description": "List checks for a connection\n\nList checks for a connection in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "run-connection-checks",
+    "description": "Run integration checks\n\nRun all compliance checks for an integration connection and capture results as automated evidence."
+  },
+  {
+    "name": "run-single-check",
+    "description": "Run a single check on a connection\n\nRun a single check on a connection in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "get-provider-variables",
+    "description": "List variable definitions for a provider\n\nList variable definitions for a provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "get-connection-variables",
+    "description": "List connection variables\n\nList connection variables in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "save-connection-variables",
+    "description": "Update connection variables\n\nUpdate connection variables in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "fetch-variable-options",
+    "description": "Get options for a connection variable\n\nGet options for a connection variable in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "get-checks-for-task-template",
+    "description": "List checks for a task template\n\nList checks for a task template in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "get-checks-for-task",
+    "description": "List checks attached to a task\n\nList checks attached to a task in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "run-check-for-task",
+    "description": "Run a check for a task\n\nRun a check for a task in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "disconnect-check-from-task",
+    "description": "Disconnect checks from a task\n\nDisconnect checks from a task in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "reconnect-check-to-task",
+    "description": "Reconnect checks to a task\n\nReconnect checks to a task in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "get-task-check-runs",
+    "description": "List check runs for a task\n\nList check runs for a task in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "sync-google-workspace-employees",
+    "description": "Sync Google Workspace employees\n\nSync Google Workspace employees in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "get-google-workspace-status",
+    "description": "Get Google Workspace sync status\n\nGet Google Workspace sync status in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "sync-rippling-employees",
+    "description": "Sync Rippling employees\n\nSync Rippling employees in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "get-rippling-status",
+    "description": "Get Rippling sync status\n\nGet Rippling sync status in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "sync-jump-cloud-employees",
+    "description": "Sync JumpCloud employees\n\nSync JumpCloud employees in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "get-jump-cloud-status",
+    "description": "Get JumpCloud sync status\n\nGet JumpCloud sync status in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "get-employee-sync-provider",
+    "description": "Get the currently configured employee sync provider\n\nGet the currently configured employee sync provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "set-employee-sync-provider",
+    "description": "Set the employee sync provider\n\nSet the employee sync provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "get-device-sync-provider",
+    "description": "Get the currently configured device sync provider\n\nGet the currently configured device sync provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "set-device-sync-provider",
+    "description": "Set the device sync provider\n\nSet the device sync provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "get-available-sync-providers",
+    "description": "List sync providers available to the org\n\nList sync providers available to the org in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "sync-dynamic-provider-employees",
+    "description": "Sync employees for a dynamic provider\n\nSync employees for a dynamic provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "sync-dynamic-provider-devices",
+    "description": "Sync devices for a dynamic provider\n\nSync devices for a dynamic provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "get-two-factor-source",
+    "description": "Get the configured 2FA source provider\n\nGet the configured 2FA source provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "set-two-factor-source",
+    "description": "Set the 2FA source provider\n\nSet the 2FA source provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "get-available-two-factor-sources",
+    "description": "List integrations that can supply per-user 2FA status\n\nList integrations that can supply per-user 2FA status in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "get-two-factor-statuses",
+    "description": "Per-user 2FA status from the configured source\n\nPer-user 2FA status from the configured source in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "get-activity",
+    "description": "List recent cloud security activity\n\nList recent cloud security activity in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work."
+  },
+  {
+    "name": "get-providers",
+    "description": "List supported cloud providers\n\nList supported cloud providers in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work."
+  },
+  {
+    "name": "get-findings",
+    "description": "List cloud security findings\n\nList cloud security findings discovered by scans so teams can prioritize remediation before issues become audit findings."
+  },
+  {
+    "name": "mark-finding-as-exception",
+    "description": "Mark a finding as an exception so it no longer appears in the active Scan Results list\n\nAccepts session, API key, or service token auth. For API key / service token callers without an explicit user attribution, the action is attributed to the org's owner and the audit log description records the calling key/service name."
+  },
+  {
+    "name": "update-aws-scan-mode",
+    "description": "Switch the AWS scan engine for a connection (Comp AI scanners ↔ Security Hub)\n\nAccepts session, API key, or service token auth. For API key / service token callers without an explicit user attribution, the action is attributed to the org's owner."
+  },
+  {
+    "name": "revoke-exception",
+    "description": "Revoke an exception, reopening the finding\n\nAccepts session, API key, or service token auth. For API key / service token callers without an explicit user attribution, the action is attributed to the org's owner."
+  },
+  {
+    "name": "get-history",
+    "description": "List resolution, exception, and regression history for a connection\n\nList resolution, exception, and regression history for a connection in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work."
+  },
+  {
+    "name": "get-check-definition",
+    "description": "Resolve the \"About this check\" description for a finding (AI-cached for AWS; provider-derived for GCP/Azure)\n\nResolve the \"About this check\" description for a finding (AI-cached for AWS; provider-derived for GCP/Azure) in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture."
+  },
+  {
+    "name": "resolve-session",
+    "description": "Resolve short-lived AWS credentials for a connection (internal only)\n\nResolve short-lived AWS credentials for a connection (internal only) in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work."
+  },
+  {
+    "name": "scan",
+    "description": "Run cloud security scan\n\nTrigger a cloud security scan for a connected AWS, Azure, or GCP account and collect findings for compliance remediation."
+  },
+  {
+    "name": "detect-services",
+    "description": "Detect available cloud services for a connection\n\nDetect available cloud services for a connection in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work."
+  },
+  {
+    "name": "detect-gcp-org",
+    "description": "Detect the GCP organization for a connection\n\nDetect the GCP organization for a connection in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work."
+  },
+  {
+    "name": "select-gcp-projects",
+    "description": "Select GCP projects for a connection\n\nSelect GCP projects for a connection in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work."
+  },
+  {
+    "name": "setup-gcp",
+    "description": "Set up GCP for a connection\n\nSet up GCP for a connection in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work."
+  },
+  {
+    "name": "resolve-gcp-setup-step",
+    "description": "Resolve a GCP setup step\n\nResolve a GCP setup step in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work."
+  },
+  {
+    "name": "setup-azure",
+    "description": "Set up Azure for a connection\n\nSet up Azure for a connection in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work."
+  },
+  {
+    "name": "validate-azure",
+    "description": "Validate Azure credentials for a connection\n\nValidate Azure credentials for a connection in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work."
+  },
+  {
+    "name": "trigger-scan",
+    "description": "Trigger a cloud security run for a connection\n\nTrigger a cloud security run for a connection in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work."
+  },
+  {
+    "name": "get-run-status",
+    "description": "Get a cloud security scan run by ID\n\nGet a cloud security scan run by ID in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work."
   },
   {
     "name": "get-all-risks",
@@ -621,6 +877,10 @@ export const toolNames: Array<{ name: string; description: string }>= [
     "description": "Update trust portal framework settings\n\nUpdate trust portal framework settings in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources, documents, links, and vendor disclosures."
   },
   {
+    "name": "update-security-questionnaire",
+    "description": "Show or hide the Security Questionnaire on the public trust portal\n\nShow or hide the Security Questionnaire on the public trust portal in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources, documents, links, and vendor disclosures."
+  },
+  {
     "name": "list-custom-frameworks",
     "description": "List org-authored custom frameworks with their trust portal selection\n\nList org-authored custom frameworks with their trust portal selection in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources, documents, links, and vendor disclosures."
   },
@@ -723,6 +983,10 @@ export const toolNames: Array<{ name: string; description: string }>= [
   {
     "name": "get-public-overview",
     "description": "Get Trust Center overview\n\nRetrieve the published Trust Center overview for an organization, including public security posture messaging."
+  },
+  {
+    "name": "get-public-security-questionnaire",
+    "description": "Get Security Questionnaire visibility for a trust portal\n\nWhether the org offers the AI-assisted Security Questionnaire on its public trust portal. Defaults to enabled when the portal can't be resolved."
   },
   {
     "name": "get-public-custom-links",
@@ -957,6 +1221,10 @@ export const toolNames: Array<{ name: string; description: string }>= [
     "description": "Detect drift against the approved snapshot\n\nDetect drift against the approved snapshot in Comp AI."
   },
   {
+    "name": "get-versions",
+    "description": "List an ISMS document's published version history\n\nList an ISMS document's published version history in Comp AI."
+  },
+  {
     "name": "isms-export-document",
     "description": "Export an ISMS document as PDF or DOCX\n\nExport an ISMS document as PDF or DOCX in Comp AI."
   },
@@ -973,6 +1241,10 @@ export const toolNames: Array<{ name: string; description: string }>= [
     "description": "Delete a row in an ISMS register\n\nDelete a row in an ISMS register in Comp AI."
   },
   {
+    "name": "bulk-create-measurements",
+    "description": "Record measurements for several metrics/periods in one save (Metrics due / backfill)\n\nRecord measurements for several metrics/periods in one save (Metrics due / backfill) in Comp AI."
+  },
+  {
     "name": "save-narrative",
     "description": "Save a singleton document narrative\n\nSave a singleton document narrative in Comp AI."
   },
@@ -987,242 +1259,6 @@ export const toolNames: Array<{ name: string; description: string }>= [
   {
     "name": "generate-all",
     "description": "Ensure and regenerate all ISMS documents\n\nEnsure and regenerate all ISMS documents in Comp AI."
-  },
-  {
-    "name": "list-providers",
-    "description": "List integration providers\n\nList available integration providers that can connect to the organization for automated evidence collection and compliance checks."
-  },
-  {
-    "name": "get-provider",
-    "description": "Get an integration provider by slug\n\nGet an integration provider by slug in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
-  },
-  {
-    "name": "list-connections",
-    "description": "List integration connections\n\nList integration connections in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
-  },
-  {
-    "name": "create-connection",
-    "description": "Create integration connection\n\nCreate an integration connection so Comp AI can collect evidence, run checks, or sync data from a connected provider."
-  },
-  {
-    "name": "get-connection",
-    "description": "Get an integration connection by ID\n\nGet an integration connection by ID in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
-  },
-  {
-    "name": "delete-connection",
-    "description": "Delete an integration connection\n\nDelete an integration connection in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
-  },
-  {
-    "name": "update-connection",
-    "description": "Update an integration connection\n\nUpdate an integration connection in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
-  },
-  {
-    "name": "test-connection",
-    "description": "Test an integration connection\n\nTest an integration connection in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
-  },
-  {
-    "name": "pause-connection",
-    "description": "Pause an integration connection\n\nPause an integration connection in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
-  },
-  {
-    "name": "resume-connection",
-    "description": "Resume an integration connection\n\nResume an integration connection in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
-  },
-  {
-    "name": "disconnect-connection",
-    "description": "Disconnect an integration\n\nDisconnect an integration in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
-  },
-  {
-    "name": "update-connection-services",
-    "description": "Set services enabled on a connection\n\nSet services enabled on a connection in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
-  },
-  {
-    "name": "get-connection-services",
-    "description": "List services enabled on a connection\n\nList services enabled on a connection in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
-  },
-  {
-    "name": "list-provider-checks",
-    "description": "List check definitions for a provider\n\nList check definitions for a provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
-  },
-  {
-    "name": "list-connection-checks",
-    "description": "List checks for a connection\n\nList checks for a connection in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
-  },
-  {
-    "name": "run-connection-checks",
-    "description": "Run integration checks\n\nRun all compliance checks for an integration connection and capture results as automated evidence."
-  },
-  {
-    "name": "run-single-check",
-    "description": "Run a single check on a connection\n\nRun a single check on a connection in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
-  },
-  {
-    "name": "get-provider-variables",
-    "description": "List variable definitions for a provider\n\nList variable definitions for a provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
-  },
-  {
-    "name": "get-connection-variables",
-    "description": "List connection variables\n\nList connection variables in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
-  },
-  {
-    "name": "save-connection-variables",
-    "description": "Update connection variables\n\nUpdate connection variables in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
-  },
-  {
-    "name": "fetch-variable-options",
-    "description": "Get options for a connection variable\n\nGet options for a connection variable in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
-  },
-  {
-    "name": "get-checks-for-task-template",
-    "description": "List checks for a task template\n\nList checks for a task template in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
-  },
-  {
-    "name": "get-checks-for-task",
-    "description": "List checks attached to a task\n\nList checks attached to a task in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
-  },
-  {
-    "name": "run-check-for-task",
-    "description": "Run a check for a task\n\nRun a check for a task in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
-  },
-  {
-    "name": "disconnect-check-from-task",
-    "description": "Disconnect checks from a task\n\nDisconnect checks from a task in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
-  },
-  {
-    "name": "reconnect-check-to-task",
-    "description": "Reconnect checks to a task\n\nReconnect checks to a task in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
-  },
-  {
-    "name": "get-task-check-runs",
-    "description": "List check runs for a task\n\nList check runs for a task in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
-  },
-  {
-    "name": "sync-google-workspace-employees",
-    "description": "Sync Google Workspace employees\n\nSync Google Workspace employees in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
-  },
-  {
-    "name": "get-google-workspace-status",
-    "description": "Get Google Workspace sync status\n\nGet Google Workspace sync status in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
-  },
-  {
-    "name": "sync-rippling-employees",
-    "description": "Sync Rippling employees\n\nSync Rippling employees in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
-  },
-  {
-    "name": "get-rippling-status",
-    "description": "Get Rippling sync status\n\nGet Rippling sync status in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
-  },
-  {
-    "name": "sync-jump-cloud-employees",
-    "description": "Sync JumpCloud employees\n\nSync JumpCloud employees in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
-  },
-  {
-    "name": "get-jump-cloud-status",
-    "description": "Get JumpCloud sync status\n\nGet JumpCloud sync status in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
-  },
-  {
-    "name": "get-employee-sync-provider",
-    "description": "Get the currently configured employee sync provider\n\nGet the currently configured employee sync provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
-  },
-  {
-    "name": "set-employee-sync-provider",
-    "description": "Set the employee sync provider\n\nSet the employee sync provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
-  },
-  {
-    "name": "get-device-sync-provider",
-    "description": "Get the currently configured device sync provider\n\nGet the currently configured device sync provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
-  },
-  {
-    "name": "set-device-sync-provider",
-    "description": "Set the device sync provider\n\nSet the device sync provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
-  },
-  {
-    "name": "get-available-sync-providers",
-    "description": "List sync providers available to the org\n\nList sync providers available to the org in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
-  },
-  {
-    "name": "sync-dynamic-provider-employees",
-    "description": "Sync employees for a dynamic provider\n\nSync employees for a dynamic provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
-  },
-  {
-    "name": "sync-dynamic-provider-devices",
-    "description": "Sync devices for a dynamic provider\n\nSync devices for a dynamic provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
-  },
-  {
-    "name": "get-activity",
-    "description": "List recent cloud security activity\n\nList recent cloud security activity in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work."
-  },
-  {
-    "name": "get-providers",
-    "description": "List supported cloud providers\n\nList supported cloud providers in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work."
-  },
-  {
-    "name": "get-findings",
-    "description": "List cloud security findings\n\nList cloud security findings discovered by scans so teams can prioritize remediation before issues become audit findings."
-  },
-  {
-    "name": "mark-finding-as-exception",
-    "description": "Mark a finding as an exception so it no longer appears in the active Scan Results list\n\nAccepts session, API key, or service token auth. For API key / service token callers without an explicit user attribution, the action is attributed to the org's owner and the audit log description records the calling key/service name."
-  },
-  {
-    "name": "update-aws-scan-mode",
-    "description": "Switch the AWS scan engine for a connection (Comp AI scanners ↔ Security Hub)\n\nAccepts session, API key, or service token auth. For API key / service token callers without an explicit user attribution, the action is attributed to the org's owner."
-  },
-  {
-    "name": "revoke-exception",
-    "description": "Revoke an exception, reopening the finding\n\nAccepts session, API key, or service token auth. For API key / service token callers without an explicit user attribution, the action is attributed to the org's owner."
-  },
-  {
-    "name": "get-history",
-    "description": "List resolution, exception, and regression history for a connection\n\nList resolution, exception, and regression history for a connection in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work."
-  },
-  {
-    "name": "get-check-definition",
-    "description": "Resolve the \"About this check\" description for a finding (AI-cached for AWS; provider-derived for GCP/Azure)\n\nResolve the \"About this check\" description for a finding (AI-cached for AWS; provider-derived for GCP/Azure) in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture."
-  },
-  {
-    "name": "resolve-session",
-    "description": "Resolve short-lived AWS credentials for a connection (internal only)\n\nResolve short-lived AWS credentials for a connection (internal only) in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work."
-  },
-  {
-    "name": "scan",
-    "description": "Run cloud security scan\n\nTrigger a cloud security scan for a connected AWS, Azure, or GCP account and collect findings for compliance remediation."
-  },
-  {
-    "name": "detect-services",
-    "description": "Detect available cloud services for a connection\n\nDetect available cloud services for a connection in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work."
-  },
-  {
-    "name": "detect-gcp-org",
-    "description": "Detect the GCP organization for a connection\n\nDetect the GCP organization for a connection in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work."
-  },
-  {
-    "name": "select-gcp-projects",
-    "description": "Select GCP projects for a connection\n\nSelect GCP projects for a connection in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work."
-  },
-  {
-    "name": "setup-gcp",
-    "description": "Set up GCP for a connection\n\nSet up GCP for a connection in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work."
-  },
-  {
-    "name": "resolve-gcp-setup-step",
-    "description": "Resolve a GCP setup step\n\nResolve a GCP setup step in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work."
-  },
-  {
-    "name": "setup-azure",
-    "description": "Set up Azure for a connection\n\nSet up Azure for a connection in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work."
-  },
-  {
-    "name": "validate-azure",
-    "description": "Validate Azure credentials for a connection\n\nValidate Azure credentials for a connection in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work."
-  },
-  {
-    "name": "trigger-scan",
-    "description": "Trigger a cloud security run for a connection\n\nTrigger a cloud security run for a connection in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work."
-  },
-  {
-    "name": "get-run-status",
-    "description": "Get a cloud security scan run by ID\n\nGet a cloud security scan run by ID in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work."
   },
   {
     "name": "get-task-items-stats",

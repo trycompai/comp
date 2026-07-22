@@ -26,6 +26,10 @@ import {
   applyMitigationPlanFields,
   mirrorActiveDescriptionIntoMap,
 } from '@/lib/strategy-descriptions';
+import {
+  CUSTOM_ONBOARDING_VENDOR_DESCRIPTION,
+  SELECTED_ONBOARDING_VENDOR_DESCRIPTION,
+} from '@/trigger/tasks/auditor/generate-auditor-content-prompts';
 import { buildCitationsHeading } from './build-citations-heading';
 import { RISK_MITIGATION_PROMPT } from './prompts/risk-mitigation';
 import {
@@ -611,9 +615,9 @@ export async function extractVendorsFromContext(
       vendors.push({
         vendor_name: vendorName,
         vendor_website: customUrl || '',
-        vendor_description: isCustom 
-          ? `Custom vendor added during onboarding`
-          : `Vendor selected during onboarding`,
+        vendor_description: isCustom
+          ? CUSTOM_ONBOARDING_VENDOR_DESCRIPTION
+          : SELECTED_ONBOARDING_VENDOR_DESCRIPTION,
         category: VendorCategory.other,
         inherent_probability: Likelihood.possible,
         inherent_impact: Impact.moderate,

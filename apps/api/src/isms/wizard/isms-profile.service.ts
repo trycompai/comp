@@ -31,7 +31,10 @@ const GENERATION_ORDER: Record<IsmsDocumentType, number> = {
   interested_parties_requirements: 2,
   isms_scope: 3,
   leadership_commitment: 4,
-  objectives_plan: 5,
+  roles_and_responsibilities: 5,
+  objectives_plan: 6,
+  monitoring: 7,
+  internal_audit: 8,
 };
 const GENERATION_ORDER_DEFAULT = Object.keys(GENERATION_ORDER).length;
 
@@ -125,7 +128,7 @@ export class IsmsProfileService {
   }
 
   /**
-   * Ensure all six ISMS documents exist, then regenerate each from the latest
+   * Ensure every ISMS document exists, then regenerate each from the latest
    * profile + platform data. Called by the wizard on completion so every document
    * reflects the answers just saved. Returns the regenerated documents.
    */

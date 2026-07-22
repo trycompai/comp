@@ -26,6 +26,7 @@ import { OrganizationId } from '../../auth/auth-context.decorator';
 import {
   getActiveManifests,
   getManifest,
+  isCodeManifest,
   runAllChecks,
 } from '@trycompai/integration-platform';
 import { ConnectionRepository } from '../repositories/connection.repository';
@@ -397,10 +398,21 @@ export class TaskIntegrationsController {
     // as 'inconclusive' — both on each per-account run row (so the customer never
     // sees it and the self-heal agent picks it up) AND excluded from task status
     // below. Mirrors the scheduled path.
-    const isDynamic = !!(await db.dynamicIntegration.findFirst({
-      where: { slug: provider.slug, isActive: true },
-      select: { id: true },
-    }));
+    //
+    // A code-based manifest ALWAYS wins over a dynamic integration of the same
+    // slug (registry precedence), so the check we just resolved is the CODE one —
+    // it must be classified statically, never held as 'inconclusive'. Several
+    // providers (github, vercel, aikido, rippling) have BOTH a code manifest and
+    // an active DynamicIntegration row for their extra DB-backed checks; keying
+    // `isDynamic` off the DB row alone wrongly hid every code-check finding from
+    // the manual run (CS-715). Only a provider with NO code manifest is dynamic —
+    // matching the scheduled and server-run paths.
+    const isDynamic = isCodeManifest(provider.slug)
+      ? false
+      : !!(await db.dynamicIntegration.findFirst({
+          where: { slug: provider.slug, isActive: true },
+          select: { id: true },
+        }));
 
     let totalFindings = 0;
     let totalPassing = 0;
@@ -845,23 +857,33 @@ export class TaskIntegrationsController {
 
         // Tag each sampled result with whether it's excepted (for display);
         // authoritative totals come from the run's summary columns +
-        // exceptedCount above. Cap evidence so one oversized blob can't bloat
-        // the payload that the browser must parse + render.
-        const sample = run.results.map((r) => ({
-          id: r.id,
-          passed: r.passed,
-          resourceType: r.resourceType,
-          resourceId: r.resourceId,
-          title: r.title,
-          description: r.description,
-          severity: r.severity,
-          remediation: r.remediation,
-          evidence: r.evidence,
-          collectedAt: r.collectedAt,
-          excepted:
+        // exceptedCount above. Excepted rows also carry the exception's id
+        // (so the UI can offer revoke) and its documented reason. Cap evidence
+        // so one oversized blob can't bloat the payload that the browser must
+        // parse + render.
+        const sample = run.results.map((r) => {
+          const excepted =
             !r.passed &&
-            exceptions.has(run.connectionId, run.checkId, r.resourceId),
-        }));
+            exceptions.has(run.connectionId, run.checkId, r.resourceId);
+          const exceptionInfo = excepted
+            ? exceptions.infoFor(run.connectionId, run.checkId, r.resourceId)
+            : null;
+          return {
+            id: r.id,
+            passed: r.passed,
+            resourceType: r.resourceType,
+            resourceId: r.resourceId,
+            title: r.title,
+            description: r.description,
+            severity: r.severity,
+            remediation: r.remediation,
+            evidence: r.evidence,
+            collectedAt: r.collectedAt,
+            excepted,
+            exceptionId: exceptionInfo?.id,
+            exceptionReason: exceptionInfo?.reason,
+          };
+        });
         const results = capResultsForList(sample).map((r) => ({
           ...r,
           evidence: capEvidence(r.evidence),
@@ -903,6 +925,15 @@ export class TaskIntegrationsController {
       }),
     );
 
-    return { runs: mappedRuns };
+    // WHEN each (connection, check) last ran, INCLUDING runs held as
+    // 'inconclusive' (which are excluded from `runs`). Timestamps only — held
+    // outcomes stay hidden. Without this the UI's "Last ran" froze at the last
+    // visible run while the daily schedule kept running (CS-753).
+    const lastAttempts =
+      await this.checkRunRepository.findLastAttemptPerConnectionAndCheckByTask(
+        taskId,
+      );
+
+    return { runs: mappedRuns, lastAttempts };
   }
 }

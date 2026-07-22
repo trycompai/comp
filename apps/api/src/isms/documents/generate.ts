@@ -4,6 +4,8 @@ import { deriveContextOfOrganization } from './context';
 import { deriveInterestedParties } from './interested-parties';
 import { deriveRequirements } from './requirements';
 import { deriveObjectives } from './objectives';
+import { seedRolesIfMissing } from './roles';
+import { seedMetricsIfMissing } from './monitoring';
 import { deriveNarrativeForType, isNarrativeType } from './registry';
 import type { IsmsPlatformData } from './types';
 
@@ -174,22 +176,17 @@ async function generateNarrative({
   if (!derived) return;
   const narrative: Prisma.InputJsonValue = JSON.parse(JSON.stringify(derived));
 
-  const latest = await tx.ismsDocumentVersion.findFirst({
-    where: { documentId, isLatest: true },
+  // The draft narrative lives on IsmsDocument (CS-701). Preserve a non-empty
+  // existing draft so a regenerate never clobbers the customer's manual edits
+  // (CS-437 override); seed an absent/empty draft with the derived narrative.
+  const document = await tx.ismsDocument.findUnique({
+    where: { id: documentId },
+    select: { draftNarrative: true },
   });
-  if (latest) {
-    // Preserve a non-empty narrative so a regenerate never clobbers the
-    // customer's manual edits (CS-437 override). An absent or empty ({}) value —
-    // e.g. a snapshot-only version — is still seeded with the derived narrative.
-    if (hasNarrativeContent(latest.narrative)) return;
-    await tx.ismsDocumentVersion.update({
-      where: { id: latest.id },
-      data: { narrative },
-    });
-    return;
-  }
-  await tx.ismsDocumentVersion.create({
-    data: { documentId, version: 1, isLatest: true, narrative },
+  if (document && hasNarrativeContent(document.draftNarrative)) return;
+  await tx.ismsDocument.update({
+    where: { id: documentId },
+    data: { draftNarrative: narrative },
   });
 }
 
@@ -251,6 +248,25 @@ export async function runDerivation({
   }
   if (type === 'objectives_plan') {
     await generateObjectives({ tx, documentId, data });
+    return;
+  }
+  if (type === 'roles_and_responsibilities') {
+    // Idempotent seed only — never a destructive replace, so member assignments
+    // (IsmsRoleAssignment) and customer edits survive every regenerate.
+    await seedRolesIfMissing({ tx, documentId, memberCount: data.memberCount });
+    return;
+  }
+  if (type === 'monitoring') {
+    // Idempotent seed only (same guarantee as roles): a regenerate can never
+    // clobber metric edits, deactivations, or measurement history.
+    await seedMetricsIfMissing({ tx, documentId });
+    return;
+  }
+  if (type === 'internal_audit') {
+    // Only the Programme paragraph is derivable; audit instances are
+    // customer-created (their Controls Tested rows seed at audit creation).
+    // Seed-if-empty, so a regenerate never clobbers an edited programme.
+    await generateNarrative({ tx, documentId, type, data });
     return;
   }
   if (isNarrativeType(type)) {

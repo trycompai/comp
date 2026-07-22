@@ -1,13 +1,14 @@
 import type { Prisma } from '@db';
 
 /**
- * Serialize register-row position allocation for a single document. The Postgres
+ * Serialize concurrent writes for a single ISMS document. The Postgres
  * transaction-scoped advisory lock (keyed on the document id) is held until the
- * surrounding transaction commits, so two concurrent creates can't both read the
- * same max(position) and persist duplicate ordering keys. Call this inside the
- * create transaction, before computing the next position.
+ * surrounding transaction commits, so two transactions touching the same document
+ * run one at a time. Used by register-row creates (so concurrent creates can't
+ * read the same max(position)) and by approve (so concurrent approvals can't both
+ * freeze a published version). Call this first, inside the transaction.
  */
-export async function lockDocumentForPositions(
+export async function lockDocument(
   tx: Prisma.TransactionClient,
   documentId: string,
 ): Promise<void> {

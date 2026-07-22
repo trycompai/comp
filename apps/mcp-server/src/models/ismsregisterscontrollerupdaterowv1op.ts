@@ -23,6 +23,11 @@ export const IsmsRegistersControllerUpdateRowV1Status = {
   OnTrack: "on_track",
   AtRisk: "at_risk",
   Met: "met",
+  Planned: "planned",
+  InProgress: "in_progress",
+  Complete: "complete",
+  Open: "open",
+  Closed: "closed",
 } as const;
 export type IsmsRegistersControllerUpdateRowV1Status = ClosedEnum<
   typeof IsmsRegistersControllerUpdateRowV1Status
@@ -33,6 +38,94 @@ export const IsmsRegistersControllerUpdateRowV1Status$zodSchema = z.enum([
   "on_track",
   "at_risk",
   "met",
+  "planned",
+  "in_progress",
+  "complete",
+  "open",
+  "closed",
+]);
+
+export const IsmsRegistersControllerUpdateRowV1AuditRoute = {
+  InHouse: "in_house",
+  External: "external",
+  TrainingPlanned: "training_planned",
+} as const;
+export type IsmsRegistersControllerUpdateRowV1AuditRoute = ClosedEnum<
+  typeof IsmsRegistersControllerUpdateRowV1AuditRoute
+>;
+
+export const IsmsRegistersControllerUpdateRowV1AuditRoute$zodSchema = z.enum([
+  "in_house",
+  "external",
+  "training_planned",
+]);
+
+export const IsmsRegistersControllerUpdateRowV1BasisOfCompetence = {
+  Education: "education",
+  Training: "training",
+  Experience: "experience",
+  Combination: "combination",
+} as const;
+export type IsmsRegistersControllerUpdateRowV1BasisOfCompetence = ClosedEnum<
+  typeof IsmsRegistersControllerUpdateRowV1BasisOfCompetence
+>;
+
+export const IsmsRegistersControllerUpdateRowV1BasisOfCompetence$zodSchema = z
+  .enum([
+    "education",
+    "training",
+    "experience",
+    "combination",
+  ]);
+
+export const IsmsRegistersControllerUpdateRowV1ConclusionVerdict = {
+  Conform: "conform",
+  SubstantiallyConform: "substantially_conform",
+  NotYetConform: "not_yet_conform",
+} as const;
+export type IsmsRegistersControllerUpdateRowV1ConclusionVerdict = ClosedEnum<
+  typeof IsmsRegistersControllerUpdateRowV1ConclusionVerdict
+>;
+
+export const IsmsRegistersControllerUpdateRowV1ConclusionVerdict$zodSchema = z
+  .enum([
+    "conform",
+    "substantially_conform",
+    "not_yet_conform",
+  ]);
+
+export const IsmsRegistersControllerUpdateRowV1Result = {
+  ConformityConfirmed: "conformity_confirmed",
+  NonconformityRaised: "nonconformity_raised",
+  ObservationRaised: "observation_raised",
+  NotSampled: "not_sampled",
+} as const;
+export type IsmsRegistersControllerUpdateRowV1Result = ClosedEnum<
+  typeof IsmsRegistersControllerUpdateRowV1Result
+>;
+
+export const IsmsRegistersControllerUpdateRowV1Result$zodSchema = z.enum([
+  "conformity_confirmed",
+  "nonconformity_raised",
+  "observation_raised",
+  "not_sampled",
+]);
+
+export const IsmsRegistersControllerUpdateRowV1Type = {
+  NcMajor: "nc_major",
+  NcMinor: "nc_minor",
+  Ofi: "ofi",
+  Observation: "observation",
+} as const;
+export type IsmsRegistersControllerUpdateRowV1Type = ClosedEnum<
+  typeof IsmsRegistersControllerUpdateRowV1Type
+>;
+
+export const IsmsRegistersControllerUpdateRowV1Type$zodSchema = z.enum([
+  "nc_major",
+  "nc_minor",
+  "ofi",
+  "observation",
 ]);
 
 /**
@@ -56,30 +149,146 @@ export type IsmsRegistersControllerUpdateRowV1RequestBody = {
   plan?: string | undefined;
   measurementMethod?: string | undefined;
   status?: IsmsRegistersControllerUpdateRowV1Status | undefined;
+  responsibilities?: string | undefined;
+  authorities?: string | undefined;
+  authorityGrantedBy?: string | undefined;
+  requiredCompetence?: string | undefined;
+  auditRoute?: IsmsRegistersControllerUpdateRowV1AuditRoute | null | undefined;
+  auditRouteMemberId?: string | null | undefined;
+  auditFirmName?: string | null | undefined;
+  auditEvidenceRef?: string | null | undefined;
+  auditCourse?: string | null | undefined;
+  auditDueDate?: string | null | undefined;
+  roleId?: string | undefined;
+  memberId?: string | undefined;
+  basisOfCompetence?:
+    | IsmsRegistersControllerUpdateRowV1BasisOfCompetence
+    | null
+    | undefined;
+  evidenceRetained?: string | null | undefined;
+  gap?: string | null | undefined;
+  remediationAction?: string | null | undefined;
+  remediationDueDate?: string | null | undefined;
+  whatIsMeasured?: string | undefined;
+  method?: string | undefined;
+  monitorMemberId?: string | null | undefined;
+  analyzeMemberId?: string | null | undefined;
+  objectiveId?: string | null | undefined;
+  isActive?: boolean | undefined;
+  metricId?: string | undefined;
+  periodStart?: string | undefined;
+  value?: string | undefined;
+  note?: string | null | undefined;
+  scope?: string | undefined;
+  criteria?: string | undefined;
+  auditorName?: string | null | undefined;
+  plannedStartDate?: string | null | undefined;
+  plannedEndDate?: string | null | undefined;
+  conclusionVerdict?:
+    | IsmsRegistersControllerUpdateRowV1ConclusionVerdict
+    | null
+    | undefined;
+  conclusionNotes?: string | null | undefined;
+  signoffAuditorName?: string | null | undefined;
+  signoffAuditorDate?: string | null | undefined;
+  signoffSpoName?: string | null | undefined;
+  signoffSpoDate?: string | null | undefined;
+  signoffTopMgmtName?: string | null | undefined;
+  signoffTopMgmtDate?: string | null | undefined;
+  auditId?: string | undefined;
+  controlRef?: string | undefined;
+  whatWasTested?: string | undefined;
+  whereToFind?: string | undefined;
+  result?: IsmsRegistersControllerUpdateRowV1Result | null | undefined;
+  notes?: string | null | undefined;
+  type?: IsmsRegistersControllerUpdateRowV1Type | undefined;
+  controlId?: string | null | undefined;
+  clauseOrControl?: string | null | undefined;
+  dueDate?: string | null | undefined;
+  closureEvidence?: string | null | undefined;
   position?: number | undefined;
 };
 
 export const IsmsRegistersControllerUpdateRowV1RequestBody$zodSchema: z.ZodType<
   IsmsRegistersControllerUpdateRowV1RequestBody
 > = z.object({
+  analyzeMemberId: z.string().nullable().optional(),
+  auditCourse: z.string().nullable().optional(),
+  auditDueDate: z.string().nullable().optional(),
+  auditEvidenceRef: z.string().nullable().optional(),
+  auditFirmName: z.string().nullable().optional(),
+  auditId: z.string().optional(),
+  auditRoute: IsmsRegistersControllerUpdateRowV1AuditRoute$zodSchema.nullable()
+    .optional(),
+  auditRouteMemberId: z.string().nullable().optional(),
+  auditorName: z.string().nullable().optional(),
+  authorities: z.string().optional(),
+  authorityGrantedBy: z.string().optional(),
+  basisOfCompetence:
+    IsmsRegistersControllerUpdateRowV1BasisOfCompetence$zodSchema.nullable()
+      .optional(),
   cadence: z.string().optional(),
   category: z.string().optional(),
+  clauseOrControl: z.string().nullable().optional(),
+  closureEvidence: z.string().nullable().optional(),
+  conclusionNotes: z.string().nullable().optional(),
+  conclusionVerdict:
+    IsmsRegistersControllerUpdateRowV1ConclusionVerdict$zodSchema.nullable()
+      .optional(),
+  controlId: z.string().nullable().optional(),
+  controlRef: z.string().optional(),
+  criteria: z.string().optional(),
   description: z.string().optional(),
+  dueDate: z.string().nullable().optional(),
   effect: z.string().optional(),
+  evidenceRetained: z.string().nullable().optional(),
+  gap: z.string().nullable().optional(),
   interestedPartyId: z.string().optional(),
+  isActive: z.boolean().optional(),
   kind: IsmsRegistersControllerUpdateRowV1Kind$zodSchema.optional(),
   measurementMethod: z.string().optional(),
+  memberId: z.string().optional(),
+  method: z.string().optional(),
+  metricId: z.string().optional(),
+  monitorMemberId: z.string().nullable().optional(),
   name: z.string().optional(),
   needsExpectations: z.string().optional(),
+  note: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
   objective: z.string().optional(),
+  objectiveId: z.string().nullable().optional(),
   ownerMemberId: z.string().optional(),
   partyName: z.string().optional(),
+  periodStart: z.string().optional().describe(
+    "First day of the covered period (YYYY-MM-DD), aligned to the metric cadence",
+  ),
   plan: z.string().optional(),
+  plannedEndDate: z.string().nullable().optional(),
+  plannedStartDate: z.string().nullable().optional(),
   position: z.int().optional(),
+  remediationAction: z.string().nullable().optional(),
+  remediationDueDate: z.string().nullable().optional(),
+  requiredCompetence: z.string().optional(),
   requirement: z.string().optional(),
+  responsibilities: z.string().optional(),
+  result: IsmsRegistersControllerUpdateRowV1Result$zodSchema.nullable()
+    .optional(),
+  roleId: z.string().optional(),
+  scope: z.string().optional(),
+  signoffAuditorDate: z.string().nullable().optional(),
+  signoffAuditorName: z.string().nullable().optional(),
+  signoffSpoDate: z.string().nullable().optional(),
+  signoffSpoName: z.string().nullable().optional(),
+  signoffTopMgmtDate: z.string().nullable().optional(),
+  signoffTopMgmtName: z.string().nullable().optional(),
   status: IsmsRegistersControllerUpdateRowV1Status$zodSchema.optional(),
   target: z.string().optional(),
   treatment: z.string().optional(),
+  type: IsmsRegistersControllerUpdateRowV1Type$zodSchema.optional(),
+  value: z.string().optional(),
+  whatIsMeasured: z.string().optional(),
+  whatWasTested: z.string().optional(),
+  whereToFind: z.string().optional(),
 }).describe("Register row fields (per-register; validated at runtime by zod)");
 
 export type IsmsRegistersControllerUpdateRowV1Request = {

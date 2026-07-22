@@ -94,7 +94,7 @@ describe('buildDevicesCsv', () => {
     expect(cells.slice(9, 13)).toEqual(['no', 'no', 'yes', 'yes']); // the four checks
   });
 
-  it('exports imported devices as not_tracked / n/a with the provider as source', () => {
+  it('exports imported devices as not_tracked / unverified with the provider as source', () => {
     const csv = buildDevicesCsv([
       makeDevice({
         source: 'integration',
@@ -111,7 +111,8 @@ describe('buildDevicesCsv', () => {
     ]);
     const cells = stripBom(csv).slice(0, -2).split('\r\n')[1].split(',');
     expect(cells[8]).toBe('not_tracked'); // status
-    expect(cells.slice(9, 13)).toEqual(['n/a', 'n/a', 'n/a', 'n/a']);
+    // Canonical checks unreported by the source export as 'unverified'.
+    expect(cells.slice(9, 13)).toEqual(['unverified', 'unverified', 'unverified', 'unverified']);
     expect(cells[13]).toBe('Kandji'); // source
   });
 

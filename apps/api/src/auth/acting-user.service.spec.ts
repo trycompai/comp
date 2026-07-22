@@ -35,6 +35,7 @@ describe('ActingUserResolver', () => {
     it('returns req.userId without a DB query', async () => {
       const req = makeReq({
         userId: 'usr_session_alice',
+        memberId: 'mem_session_alice',
         authType: 'session',
       });
 
@@ -42,6 +43,7 @@ describe('ActingUserResolver', () => {
 
       expect(result).toEqual({
         userId: 'usr_session_alice',
+        memberId: 'mem_session_alice',
         source: 'session',
       });
       // Critical regression guard — session auth must NEVER hit the DB
@@ -83,6 +85,7 @@ describe('ActingUserResolver', () => {
   describe('API key caller (owner fallback)', () => {
     it('resolves to the org owner and labels the caller for the audit log', async () => {
       mockDb.member.findFirst.mockResolvedValueOnce({
+        id: 'mem_owner_carol',
         userId: 'usr_owner_carol',
       });
 
@@ -97,6 +100,8 @@ describe('ActingUserResolver', () => {
       const result = await resolver.resolve(req, 'org_1');
 
       expect(result.userId).toBe('usr_owner_carol');
+      // The fallback owner's member is surfaced too, for Member-FK sinks.
+      expect(result.memberId).toBe('mem_owner_carol');
       expect(result.source).toBe('org-owner-fallback');
       expect(result.callerLabel).toBe('via API key "CI Pipeline"');
     });
@@ -195,6 +200,65 @@ describe('ActingUserResolver', () => {
       const result = await resolver.resolve(req, 'org_1');
 
       expect(result.callerLabel).toBe('via API key');
+    });
+  });
+
+  describe('API key with a recorded creator', () => {
+    it("attributes to the creating member's user (source api-key-creator)", async () => {
+      // Creator lookup returns an active member of the org.
+      mockDb.member.findFirst.mockResolvedValueOnce({ userId: 'usr_creator_dave' });
+
+      const req = makeReq({
+        userId: undefined,
+        authType: 'api-key',
+        isApiKey: true,
+        apiKeyId: 'apk_1',
+        apiKeyName: 'Mariano CLI',
+        apiKeyCreatedByMemberId: 'mem_creator',
+      });
+
+      const result = await resolver.resolve(req, 'org_1');
+
+      expect(result.userId).toBe('usr_creator_dave');
+      expect(result.memberId).toBe('mem_creator');
+      expect(result.source).toBe('api-key-creator');
+      expect(result.callerLabel).toBe('via API key "Mariano CLI"');
+      // Single lookup: the creator, scoped to the org + active membership.
+      // No owner fallback query is made.
+      expect(mockDb.member.findFirst).toHaveBeenCalledTimes(1);
+      expect(mockDb.member.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            id: 'mem_creator',
+            organizationId: 'org_1',
+            deactivated: false,
+            isActive: true,
+          }),
+        }),
+      );
+    });
+
+    it('falls back to the org owner when the creator is no longer an active member', async () => {
+      // 1st findFirst = creator lookup (null → offboarded/removed),
+      // 2nd findFirst = owner fallback.
+      mockDb.member.findFirst
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ userId: 'usr_owner_carol' });
+
+      const req = makeReq({
+        userId: undefined,
+        authType: 'api-key',
+        isApiKey: true,
+        apiKeyId: 'apk_1',
+        apiKeyName: 'Old Key',
+        apiKeyCreatedByMemberId: 'mem_offboarded',
+      });
+
+      const result = await resolver.resolve(req, 'org_1');
+
+      expect(result.userId).toBe('usr_owner_carol');
+      expect(result.source).toBe('org-owner-fallback');
+      expect(mockDb.member.findFirst).toHaveBeenCalledTimes(2);
     });
   });
 

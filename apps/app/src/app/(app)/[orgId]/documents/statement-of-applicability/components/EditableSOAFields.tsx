@@ -22,7 +22,11 @@ import { useSOADocument } from '../hooks/useSOADocument';
 import { ApplicableReadOnlyDisplay, ApplicableSwatchRow } from './ApplicableSwatch';
 import type { SOAFieldSavePayload } from './soa-field-types';
 
-export type { SOAFieldSavePayload, SOATableAnswerData } from './soa-field-types';
+export type {
+  SOAFieldSavePayload,
+  SOATableAnswerData,
+  SOAProcessedResult,
+} from './soa-field-types';
 
 interface EditableSOAFieldsProps {
   documentId: string;
@@ -30,8 +34,6 @@ interface EditableSOAFieldsProps {
   isApplicable: boolean | null;
   justification: string | null;
   isPendingApproval: boolean;
-  isControl7?: boolean;
-  isFullyRemote?: boolean;
   organizationId: string;
   /** Called after a successful save so the table can override autofill/cache without a full reload. */
   onUpdate?: (payload: SOAFieldSavePayload) => void;
@@ -43,8 +45,6 @@ export function EditableSOAFields({
   isApplicable: initialIsApplicable,
   justification: initialJustification,
   isPendingApproval,
-  isControl7 = false,
-  isFullyRemote = false,
   organizationId,
   onUpdate,
 }: EditableSOAFieldsProps) {
@@ -63,8 +63,11 @@ export function EditableSOAFields({
     setJustification(initialJustification);
   }, [initialIsApplicable, initialJustification]);
 
-  // If control 7.* and fully remote, disable editing
-  const isDisabled = isPendingApproval || (isControl7 && isFullyRemote);
+  // Editing is only locked while the document is pending approval. Physical-
+  // security (7.x) controls on a fully remote org are auto-filled to Not
+  // Applicable but stay editable — the org can move to a physical office at any
+  // time, so answers are never locked.
+  const isDisabled = isPendingApproval;
 
   // Auto-focus justification field when dialog opens
   useEffect(() => {

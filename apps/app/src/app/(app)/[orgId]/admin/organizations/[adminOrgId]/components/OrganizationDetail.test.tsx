@@ -21,6 +21,7 @@ const baseOrg = {
   onboardingCompleted: true,
   members: [],
   backgroundCheckStepEnabled: true,
+  isInternal: false,
 };
 
 describe('OrganizationDetail — background-check toggle', () => {
@@ -89,5 +90,66 @@ describe('OrganizationDetail — background-check toggle', () => {
     await waitFor(() => {
       expect(toggle).toBeChecked();
     });
+  });
+});
+
+describe('OrganizationDetail — internal-organization toggle', () => {
+  beforeEach(() => {
+    patchMock.mockReset();
+    patchMock.mockResolvedValue({ data: { success: true } });
+  });
+
+  it('asks for confirmation before saving (no PATCH on the toggle click)', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <OrganizationDetail org={baseOrg} currentOrgId="org_1" hasAccess={true} />,
+    );
+
+    await user.click(
+      screen.getByRole('switch', { name: /internal organization/i }),
+    );
+
+    expect(await screen.findByRole('alertdialog')).toBeInTheDocument();
+    expect(patchMock).not.toHaveBeenCalled();
+  });
+
+  it('PATCHes isInternal only after the change is confirmed', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <OrganizationDetail org={baseOrg} currentOrgId="org_1" hasAccess={true} />,
+    );
+
+    await user.click(
+      screen.getByRole('switch', { name: /internal organization/i }),
+    );
+    await user.click(
+      await screen.findByRole('button', { name: /mark as internal/i }),
+    );
+
+    await waitFor(() => {
+      expect(patchMock).toHaveBeenCalledWith('/v1/admin/organizations/org_1', {
+        isInternal: true,
+      });
+    });
+  });
+
+  it('does not PATCH when the confirmation is canceled', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <OrganizationDetail org={baseOrg} currentOrgId="org_1" hasAccess={true} />,
+    );
+
+    await user.click(
+      screen.getByRole('switch', { name: /internal organization/i }),
+    );
+    await user.click(await screen.findByRole('button', { name: /cancel/i }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    });
+    expect(patchMock).not.toHaveBeenCalled();
   });
 });

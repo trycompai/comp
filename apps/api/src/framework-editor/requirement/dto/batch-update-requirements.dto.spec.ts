@@ -24,10 +24,10 @@ describe('BatchUpdateRequirementsDto', () => {
     expect(errors).toHaveLength(0);
   });
 
-  // ── nested description length (FRAME-2: limit raised 5,000 → 10,000) ─
-  it('accepts a nested description at the 10,000-char limit', async () => {
+  // ── nested description length (FRAME-2: limit raised 10,000 → 100,000) ─
+  it('accepts a nested description at the 100,000-char limit', async () => {
     const dto = toDto({
-      updates: [{ id: 'frq_1', description: 'x'.repeat(10_000) }],
+      updates: [{ id: 'frq_1', description: 'x'.repeat(100_000) }],
     });
     const errors = await validate(dto, {
       whitelist: true,
@@ -36,9 +36,9 @@ describe('BatchUpdateRequirementsDto', () => {
     expect(errors).toHaveLength(0);
   });
 
-  it('rejects a nested description longer than 10,000 chars', async () => {
+  it('rejects a nested description longer than 100,000 chars', async () => {
     const dto = toDto({
-      updates: [{ id: 'frq_1', description: 'x'.repeat(10_001) }],
+      updates: [{ id: 'frq_1', description: 'x'.repeat(100_001) }],
     });
     const errors = await validate(dto, {
       whitelist: true,

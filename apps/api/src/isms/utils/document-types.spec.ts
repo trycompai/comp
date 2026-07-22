@@ -1,8 +1,8 @@
 import { ISMS_TYPE_DEFINITIONS, matchRequirementId } from './document-types';
 
 describe('ISMS_TYPE_DEFINITIONS', () => {
-  it('defines all six foundational document types with clauses', () => {
-    expect(ISMS_TYPE_DEFINITIONS).toHaveLength(6);
+  it('defines all nine foundational document types with clauses', () => {
+    expect(ISMS_TYPE_DEFINITIONS).toHaveLength(9);
     const types = ISMS_TYPE_DEFINITIONS.map((d) => d.type);
     expect(types).toEqual(
       expect.arrayContaining([
@@ -11,9 +11,26 @@ describe('ISMS_TYPE_DEFINITIONS', () => {
         'interested_parties_requirements',
         'isms_scope',
         'leadership_commitment',
+        'roles_and_responsibilities',
         'objectives_plan',
+        'monitoring',
+        'internal_audit',
       ]),
     );
+  });
+
+  it('maps monitoring to clause 9.1', () => {
+    const monitoring = ISMS_TYPE_DEFINITIONS.find(
+      (d) => d.type === 'monitoring',
+    );
+    expect(monitoring?.clause).toBe('9.1');
+  });
+
+  it('maps internal_audit to clause 9.2', () => {
+    const internalAudit = ISMS_TYPE_DEFINITIONS.find(
+      (d) => d.type === 'internal_audit',
+    );
+    expect(internalAudit?.clause).toBe('9.2');
   });
 
   it('maps 4.2 to both interested-parties documents', () => {

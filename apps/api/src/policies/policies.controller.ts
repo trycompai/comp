@@ -43,7 +43,11 @@ import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission, RequirePermissions } from '../auth/require-permission.decorator';
-import type { AuthContext as AuthContextType } from '../auth/types';
+import { ActingUserResolver } from '../auth/acting-user.service';
+import type {
+  AuthContext as AuthContextType,
+  AuthenticatedRequest,
+} from '../auth/types';
 import { CreatePolicyDto } from './dto/create-policy.dto';
 import { UpdatePolicyDto } from './dto/update-policy.dto';
 import { AISuggestPolicyRequestDto } from './dto/ai-suggest-policy.dto';
@@ -110,7 +114,10 @@ function parsePolicyIdsParam(
   required: false,
 })
 export class PoliciesController {
-  constructor(private readonly policiesService: PoliciesService) {}
+  constructor(
+    private readonly policiesService: PoliciesService,
+    private readonly actingUser: ActingUserResolver,
+  ) {}
 
   @Get()
   @RequirePermission('policy', 'read')
@@ -162,11 +169,17 @@ export class PoliciesController {
   async publishAllPolicies(
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
+    @Req() req: AuthenticatedRequest,
   ) {
+    // Resolve the acting user so per-policy audit rows are attributed correctly.
+    // Session callers have authContext.userId; API-key / service-token callers
+    // resolve to the key creator (else org owner) — without this, the granular
+    // audit rows would be dropped for API-key auth (userId undefined).
+    const acting = await this.actingUser.resolve(req, organizationId);
     const data = await this.policiesService.publishAll(
       organizationId,
-      authContext.userId,
-      authContext.memberId,
+      acting.userId ?? undefined,
+      acting.memberId ?? undefined,
     );
 
     return {

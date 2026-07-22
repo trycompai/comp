@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { db } from '@db';
 import type { Prisma } from '@db';
 import { invalidateApprovalIfNeeded } from './utils/approval';
-import { lockDocumentForPositions } from './utils/document-lock';
+import { lockDocument } from './utils/document-lock';
 import type {
   CreateObjectiveInput,
   UpdateObjectiveInput,
@@ -31,7 +31,7 @@ export class IsmsObjectiveService {
     });
 
     return db.$transaction(async (tx) => {
-      await lockDocumentForPositions(tx, documentId);
+      await lockDocument(tx, documentId);
       const position =
         dto.position ?? (await this.nextPosition({ tx, documentId }));
       await invalidateApprovalIfNeeded({ tx, documentId });
@@ -118,7 +118,7 @@ export class IsmsObjectiveService {
   /**
    * Next position uses max(position)+1 so it survives deletes. Runs on the
    * transaction client; the create first takes a per-document advisory lock
-   * (lockDocumentForPositions) so concurrent creates can't read the same max.
+   * (lockDocument) so concurrent creates can't read the same max.
    */
   private async nextPosition({
     tx,

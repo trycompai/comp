@@ -1,9 +1,9 @@
-speakeasyVersion: 1.785.0
+speakeasyVersion: 1.790.3
 sources:
     Comp AI API:
         sourceNamespace: comp-ai-api
-        sourceRevisionDigest: sha256:7a85bb1b9b3e5f9f1fb02c3aa235925ab56571b89de351675e31af6ae70213a7
-        sourceBlobDigest: sha256:06abc466e0092a7aee845553344879075f2411c5190cc0c03664529990a09350
+        sourceRevisionDigest: sha256:fedd02716c38bd8028e75e7d3369aac40920d78ec1c95905b22b6055266157f0
+        sourceBlobDigest: sha256:f086e59d9dae621c65504efb8e5772f15eec3f050e6af9e02bfbd982d9b4f7dc
         tags:
             - latest
             - "1.0"
@@ -11,8 +11,8 @@ targets:
     comp-ai:
         source: Comp AI API
         sourceNamespace: comp-ai-api
-        sourceRevisionDigest: sha256:7a85bb1b9b3e5f9f1fb02c3aa235925ab56571b89de351675e31af6ae70213a7
-        sourceBlobDigest: sha256:06abc466e0092a7aee845553344879075f2411c5190cc0c03664529990a09350
+        sourceRevisionDigest: sha256:fedd02716c38bd8028e75e7d3369aac40920d78ec1c95905b22b6055266157f0
+        sourceBlobDigest: sha256:f086e59d9dae621c65504efb8e5772f15eec3f050e6af9e02bfbd982d9b4f7dc
 workflow:
     workflowVersion: 1.0.0
     speakeasyVersion: latest

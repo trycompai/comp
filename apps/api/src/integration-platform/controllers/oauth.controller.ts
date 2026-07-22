@@ -39,6 +39,9 @@ interface OAuthCallbackQuery {
   state: string;
   error?: string;
   error_description?: string;
+  // Present when GitHub returns from an App installation (install-time OAuth).
+  // Used only as a loop guard for the install redirect — never persisted.
+  installation_id?: string;
 }
 
 @Controller({ path: 'integrations/oauth', version: '1' })
@@ -287,7 +290,10 @@ export class OAuthController {
     // is the one completing it. The `state` token alone provides CSRF
     // protection, but a session match guards against state-token leakage and
     // ensures the completing user still has an active session for the org.
-    const sessionMismatch = await this.checkSessionMatchesState(req, oauthState);
+    const sessionMismatch = await this.checkSessionMatchesState(
+      req,
+      oauthState,
+    );
     if (sessionMismatch) {
       await this.oauthStateRepository.delete(state);
       this.logger.warn(
@@ -332,6 +338,60 @@ export class OAuthController {
         oauthState.codeVerifier,
       );
 
+      // GitHub App: user *authorization* and app *installation* are separate on
+      // GitHub. A user can complete OAuth without installing the App, producing a
+      // token that can read no repositories. If GitHub definitively reports no
+      // installation, don't finalize a useless connection — send the user to
+      // install the App (choose org + repositories). They return through
+      // install-time OAuth (with an installation_id) and this check then passes.
+      // Fails open on any uncertainty so a valid connection is never blocked by a
+      // transient error.
+      if (
+        oauthState.providerSlug === 'github-app' &&
+        (await this.githubAppInstallationMissing(tokens.access_token))
+      ) {
+        // First pass (came from plain authorize, no installation_id): send the
+        // user to install the App, then they return here via install-time OAuth.
+        if (!query.installation_id && oauthConfig.installUrl) {
+          // Create the install-handoff state BEFORE deleting the original one.
+          // If creation fails, the original state survives so the outer catch can
+          // clean it up and still emit an error redirect — deleting first would
+          // make the catch's delete throw (record gone) and hang the request.
+          const installState = await this.oauthStateRepository.create({
+            providerSlug: oauthState.providerSlug,
+            organizationId: oauthState.organizationId,
+            userId: oauthState.userId,
+            redirectUrl: oauthState.redirectUrl ?? undefined,
+          });
+          await this.oauthStateRepository.delete(state);
+          const installRedirect = new URL(oauthConfig.installUrl);
+          installRedirect.searchParams.set('state', installState.state);
+          this.logger.log(
+            `GitHub App authorized but not installed; redirecting org ${oauthState.organizationId} to install`,
+          );
+          res.redirect(installRedirect.toString());
+          return;
+        }
+
+        // We already came back from an install attempt but still see no
+        // installation — stop rather than loop.
+        await this.oauthStateRepository.delete(state);
+        this.logger.warn(
+          `GitHub App still not installed after install attempt for org ${oauthState.organizationId}`,
+        );
+        const errorUrl = this.buildRedirectUrl(
+          oauthState.redirectUrl,
+          {
+            error: 'github_app_not_installed',
+            error_description:
+              'The GitHub App was not installed on your organization. Please install it (selecting at least one repository) and try again.',
+          },
+          oauthState.organizationId,
+        );
+        res.redirect(errorUrl);
+        return;
+      }
+
       // Get or create provider
       const provider = await this.providerRepository.findBySlug(
         oauthState.providerSlug,
@@ -355,11 +415,15 @@ export class OAuthController {
       }
 
       // Store tokens and mark connection as active
-      await this.credentialVaultService.storeOAuthTokens(connection.id, tokens, {
-        preserveExistingRefreshToken:
-          oauthState.providerSlug === 'gcp' ||
-          oauthState.providerSlug === 'google-workspace',
-      });
+      await this.credentialVaultService.storeOAuthTokens(
+        connection.id,
+        tokens,
+        {
+          preserveExistingRefreshToken:
+            oauthState.providerSlug === 'gcp' ||
+            oauthState.providerSlug === 'google-workspace',
+        },
+      );
 
       // Mark cloud OAuth reconnect completion so reconnect banners clear after successful OAuth.
       if (manifest.category === 'Cloud') {
@@ -376,6 +440,14 @@ export class OAuthController {
           },
         });
       }
+
+      // NOTE: GitHub's App install flow returns an `installation_id` on this
+      // callback, but that value is attacker-spoofable — GitHub's own docs say
+      // not to rely on it — so we intentionally do NOT persist it here, and
+      // nothing reads it today. If/when GitHub App installation-token auth is
+      // added, resolve the installation via `GET /user/installations` with the
+      // user token (which also proves the user owns it) rather than trusting the
+      // value from this callback.
 
       await this.connectionService.activateConnection(connection.id);
 
@@ -587,6 +659,37 @@ export class OAuthController {
   }
 
   /**
+   * Returns true ONLY when GitHub definitively reports that the user has no
+   * installation of the GitHub App. A GitHub App user token can be obtained
+   * without the App being installed (install and user-authorization are separate
+   * steps), and such a token cannot read any repositories. Fails open — on any
+   * non-OK response or error we return false so a valid connection is never
+   * blocked by a transient failure.
+   */
+  private async githubAppInstallationMissing(
+    accessToken: string,
+  ): Promise<boolean> {
+    try {
+      const response = await fetch(
+        'https://api.github.com/user/installations',
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            Accept: 'application/vnd.github+json',
+            'User-Agent': 'CompAI-Integration',
+          },
+        },
+      );
+      if (!response.ok) return false;
+      const data = (await response.json()) as { total_count?: number };
+      return data?.total_count === 0;
+    } catch (error) {
+      this.logger.warn(`Failed to verify GitHub App installation: ${error}`);
+      return false;
+    }
+  }
+
+  /**
    * Mark Rippling app as installed (required by Rippling)
    * See: https://developer.rippling.com/documentation/developer-portal/v2-guides/installation
    */
@@ -643,5 +746,4 @@ export class OAuthController {
     }
     return url.toString();
   }
-
 }

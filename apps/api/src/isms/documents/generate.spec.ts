@@ -40,10 +40,10 @@ function buildTx() {
     ismsInterestedParty: registerTable(),
     ismsInterestedPartyRequirement: registerTable(),
     ismsObjective: registerTable(),
-    ismsDocument: { findFirst: jest.fn().mockResolvedValue(null) },
-    ismsDocumentVersion: {
+    ismsDocument: {
       findFirst: jest.fn().mockResolvedValue(null),
-      create: jest.fn().mockResolvedValue({}),
+      // CS-701: the draft narrative lives on IsmsDocument, not a version row.
+      findUnique: jest.fn().mockResolvedValue(null),
       update: jest.fn().mockResolvedValue({}),
     },
   };
@@ -132,24 +132,45 @@ describe('runDerivation', () => {
     expect(tx.ismsObjective.createMany).toHaveBeenCalled();
   });
 
-  it('creates a version with the derived narrative for isms_scope', async () => {
+  it('writes the derived narrative onto an empty document draft (isms_scope)', async () => {
     const tx = buildTx();
     await runDerivation({ tx: asTx(tx), type: 'isms_scope', ...baseArgs });
-    expect(tx.ismsDocumentVersion.create).toHaveBeenCalled();
-    const created = tx.ismsDocumentVersion.create.mock.calls[0][0].data;
-    expect(created.narrative.certificateScopeSentence).toBeDefined();
+    expect(tx.ismsDocument.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'doc_1' } }),
+    );
+    const updated = tx.ismsDocument.update.mock.calls[0][0].data;
+    expect(updated.draftNarrative.certificateScopeSentence).toBeDefined();
   });
 
-  it('updates the existing version narrative for leadership', async () => {
+  it('preserves a non-empty existing draft narrative (CS-437 override)', async () => {
     const tx = buildTx();
-    tx.ismsDocumentVersion.findFirst.mockResolvedValue({ id: 'ver_1' });
+    tx.ismsDocument.findUnique.mockResolvedValue({
+      draftNarrative: { certificateScopeSentence: 'Manual edit' },
+    });
     await runDerivation({
       tx: asTx(tx),
       type: 'leadership_commitment',
       ...baseArgs,
     });
-    expect(tx.ismsDocumentVersion.update).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 'ver_1' } }),
+    // A regenerate must never clobber the customer's manual narrative.
+    expect(tx.ismsDocument.update).not.toHaveBeenCalled();
+  });
+
+  it('seeds the internal-audit programme onto an empty draft (CS-724)', async () => {
+    const tx = buildTx();
+    await runDerivation({ tx: asTx(tx), type: 'internal_audit', ...baseArgs });
+    const updated = tx.ismsDocument.update.mock.calls[0][0].data;
+    expect(updated.draftNarrative.programme).toContain(
+      'Acme runs an annual internal audit',
     );
+  });
+
+  it('preserves an edited internal-audit programme on regenerate (CS-724)', async () => {
+    const tx = buildTx();
+    tx.ismsDocument.findUnique.mockResolvedValue({
+      draftNarrative: { programme: 'Customer-edited programme.' },
+    });
+    await runDerivation({ tx: asTx(tx), type: 'internal_audit', ...baseArgs });
+    expect(tx.ismsDocument.update).not.toHaveBeenCalled();
   });
 });

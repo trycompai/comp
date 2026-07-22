@@ -16,7 +16,10 @@ enum IsmsDocumentType {
   interested_parties_requirements // 4.2b / 4.2c
   isms_scope // 4.3
   leadership_commitment // 5.1
+  roles_and_responsibilities // 5.3
   objectives_plan // 6.2
+  monitoring // 9.1
+  internal_audit // 9.2
 }
 
 enum IsmsDocumentStatus {
@@ -50,22 +53,42 @@ model IsmsDocument {
   title  String
   status IsmsDocumentStatus @default(draft)
 
-  // Approval / sign-off (mirrors SOADocument).
+  // Approval / sign-off (mirrors SOADocument). These track the WORKING DRAFT's
+  // approval lifecycle; the published version's own approver/date live on the
+  // IsmsDocumentVersion row (publishedBy/publishedAt).
   preparedBy String    @default("Comp AI")
   approverId String?
   approver   Member?   @relation("IsmsDocumentApprover", fields: [approverId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   approvedAt DateTime?
   declinedAt DateTime?
 
+  // Versioning (CS-701): mirrors the Policies model (Policy.currentVersionId +
+  // draftContent). The live register tables + `draftNarrative` are the editable
+  // DRAFT; `versions` holds immutable PUBLISHED snapshots; `currentVersion` is the
+  // one that is live and exportable. Editing an approved document reverts `status`
+  // to draft but never touches `currentVersion`, so v1 stays live while v2 is drafted.
+  currentVersionId String?              @unique
+  currentVersion   IsmsDocumentVersion? @relation("IsmsCurrentVersion", fields: [currentVersionId], references: [id], onDelete: SetNull)
+  // Working-draft narrative for the singleton documents (Scope 4.3, Leadership 5.1).
+  // Register documents keep their draft in their own child tables. Replaces the old
+  // `versions[0].narrative` draft-holder.
+  draftNarrative   Json?
+  // Drift baseline for the current draft: the derived platform inputs captured at
+  // the last generate/approve. Replaces the old `versions[0].sourceSnapshot`.
+  draftSnapshot    Json?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relationships
-  versions                    IsmsDocumentVersion[]
+  versions                    IsmsDocumentVersion[]            @relation("IsmsDocumentVersions")
   contextIssues               IsmsContextIssue[] // 4.1 register
   interestedParties           IsmsInterestedParty[] // 4.2a register
   interestedPartyRequirements IsmsInterestedPartyRequirement[] // 4.2b/c register
   objectives                  IsmsObjective[] // 6.2 register
+  roles                       IsmsRole[] // 5.3 register (governance roles, responsibilities & authorities)
+  metrics                     IsmsMetric[] // 9.1 register (monitoring & measurement framework)
+  audits                      IsmsAudit[] // 9.2 register (internal audit programme, plan and report)
   controlLinks                IsmsDocumentControlLink[] // CS-437: org controls this document maps to
 
   @@unique([organizationId, frameworkId, type]) // one document per type per framework per org
@@ -80,27 +103,40 @@ model IsmsDocument {
 // index, so it lives in the raw SQL migration (isms_version_single_latest); keep it
 // in sync if isLatest semantics change.
 model IsmsDocumentVersion {
-  id         String       @id @default(dbgenerated("generate_prefixed_cuid('isms_ver'::text)"))
-  documentId String
-  document   IsmsDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  id                 String        @id @default(dbgenerated("generate_prefixed_cuid('isms_ver'::text)"))
+  documentId         String
+  document           IsmsDocument  @relation("IsmsDocumentVersions", fields: [documentId], references: [id], onDelete: Cascade)
+  // Back-relation for IsmsDocument.currentVersion: set when this version is the
+  // live/published one for its document.
+  currentForDocument IsmsDocument? @relation("IsmsCurrentVersion")
 
   version  Int     @default(1)
   isLatest Boolean @default(true)
 
-  // Per-section saved narrative + section-level overrides (stored as data, not free
-  // text, so the model is localisation-ready).
-  narrative Json
-  // Snapshot of derived inputs captured at generate / approve. Drift is detected by
-  // comparing this against the current derived data.
-  sourceSnapshot Json?
+  // Frozen published narrative for the singleton documents (Scope, Leadership).
+  // Empty ({}) for register documents, whose frozen content lives in contentSnapshot.
+  narrative       Json
+  // The full, immutable content snapshot of this published version: the rendered
+  // export input (register rows + narrative + org profile) plus the export metadata
+  // captured at publish. Lets a historical version be re-rendered byte-faithfully if
+  // the stored file is ever missing. Null only for legacy/migrated versions.
+  contentSnapshot Json?
+  // Snapshot of derived platform inputs captured at publish, retained for the record
+  // (the live drift baseline lives on IsmsDocument.draftSnapshot).
+  sourceSnapshot  Json?
 
-  // Rendered, branded exports.
+  // Rendered, branded exports retained per published version (S3 keys). Auditors
+  // sampling an old version download exactly what was approved at the time.
   pdfUrl  String?
   docxUrl String?
 
-  // User/member id who published this version (plain id, like SOAAnswer.createdBy).
+  // The member who published (approved) this version, and when. `publishedAt != null`
+  // is the marker of a published version (drafts are not materialized as rows).
   publishedById String?
+  publishedBy   Member?   @relation("IsmsDocumentVersionPublisher", fields: [publishedById], references: [id], onDelete: SetNull)
   publishedAt   DateTime?
+  // Optional free-text note describing what changed in this version.
+  changelog     String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -108,6 +144,7 @@ model IsmsDocumentVersion {
   @@unique([documentId, version])
   @@index([documentId])
   @@index([documentId, isLatest])
+  @@index([documentId, publishedAt])
 }
 
 // --- Register: Context of the Organization (clause 4.1) ---
@@ -248,7 +285,375 @@ model IsmsObjective {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Monitoring metrics (9.1) that use this objective as their target.
+  metrics IsmsMetric[]
+
   @@index([documentId])
+}
+
+// --- Register: ISMS Governance Roles, Responsibilities & Authorities (clause 5.3) ---
+
+// Basis on which an assigned member meets a role's required competence (clause 7.2).
+enum IsmsCompetenceBasis {
+  education
+  training
+  experience
+  combination
+}
+
+// How the organization satisfies the internal-audit function (Internal Auditor role).
+enum IsmsAuditRoute {
+  in_house // an in-house person with ISO 27001 audit competence
+  external // an external independent auditor engaged
+  training_planned // internal auditor competence is being trained
+}
+
+model IsmsRole {
+  id         String       @id @default(dbgenerated("generate_prefixed_cuid('isms_role'::text)"))
+  documentId String
+  document   IsmsDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  // Stable key for the four seeded governance roles
+  // ('top_management' | 'spo' | 'deputy_spo' | 'internal_auditor'); null for
+  // customer-added custom roles. Seeding is idempotent on (documentId, roleKey).
+  roleKey String?
+
+  name               String // role title, e.g. "Security & Privacy Owner (SPO)"
+  description        String // what the role is (pre-filled default, editable)
+  responsibilities   String // the role's responsibilities (5.3)
+  authorities        String // the role's authorities (5.3)
+  authorityGrantedBy String // from whom the authority derives, e.g. "Top Management"
+  requiredCompetence String // competence the role requires (7.2, role-level)
+
+  // Internal Auditor route (only meaningful for the internal_auditor role).
+  auditRoute         IsmsAuditRoute?
+  auditRouteMemberId String? // in-house / training-planned member (plain id, like ownerMemberId)
+  auditFirmName      String? // external: firm / person name
+  auditEvidenceRef   String? // external: evidence reference, e.g. LA certificate
+  auditCourse        String? // training planned: course name
+  auditDueDate       DateTime? // training planned: target date
+
+  source      IsmsContextSource @default(derived)
+  derivedFrom String? // provenance for seeded rows, e.g. "seed:spo"
+
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assignments IsmsRoleAssignment[]
+
+  // Idempotency anchor for seedRolesIfMissing: at most one seeded role per key per
+  // document. Custom roles have roleKey = null; Postgres treats NULLs as distinct,
+  // so multiple custom roles per document remain allowed.
+  @@unique([documentId, roleKey])
+  @@index([documentId])
+}
+
+// A person assigned to an ISMS role, with their competence evidence (clause 7.2).
+model IsmsRoleAssignment {
+  id     String   @id @default(dbgenerated("generate_prefixed_cuid('isms_ra'::text)"))
+  roleId String
+  role   IsmsRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  // Denormalized document id so assignments can be listed org-scoped and mutated
+  // through the generic register CRUD (mirrors IsmsInterestedPartyRequirement.documentId).
+  documentId String
+
+  memberId String // assigned member (plain id, like IsmsObjective.ownerMemberId)
+
+  // Competence evidence (clause 7.2). All optional; the customer fills them in.
+  basisOfCompetence  IsmsCompetenceBasis?
+  evidenceRetained   String?
+  gap                String? // optional competence gap
+  remediationAction  String? // shown only when a gap is set
+  remediationDueDate DateTime?
+
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([roleId, memberId]) // one assignment per member per role
+  @@index([roleId])
+  @@index([documentId])
+}
+
+// --- Register: Monitoring, Measurement, Analysis & Evaluation (clause 9.1) ---
+
+// How often a metric's value is recorded. Each cadence maps to a calendar
+// period ("period covered"): monthly = calendar month, quarterly = calendar
+// quarter. Deliberately small in v1 — extend additively if a customer needs
+// annual or ad-hoc rhythms.
+enum IsmsMetricCadence {
+  monthly
+  quarterly
+}
+
+// A monitored metric (clause 9.1 a-f: what is measured, how, when, by whom,
+// who analyses). Nine defaults are seeded per document (seed-if-missing by
+// metricKey, mirroring IsmsRole.roleKey); customers edit them, deactivate
+// them, or add custom metrics.
+model IsmsMetric {
+  id         String       @id @default(dbgenerated("generate_prefixed_cuid('isms_met'::text)"))
+  documentId String
+  document   IsmsDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  // Stable key for the nine seeded metrics (e.g. 'training_completion');
+  // null for customer-added custom metrics. Seeding is idempotent on
+  // (documentId, metricKey); NULLs stay distinct so many customs are allowed.
+  metricKey String?
+
+  name           String // short title, e.g. "Security awareness training completion"
+  whatIsMeasured String // clause 9.1(a): what is measured (pre-filled, editable)
+  method         String // clause 9.1(b): how the value is derived (pre-filled, editable)
+  // Nullable so a custom metric can be drafted without one; the clause-9.1
+  // submit gate requires a cadence on every ACTIVE metric.
+  cadence        IsmsMetricCadence?
+
+  // Clause 9.1(c)/(e): who monitors and who analyses. Plain member ids (like
+  // IsmsObjective.ownerMemberId — no FK; names are resolved at export time).
+  // Seeded to the SPO for 1-3 person orgs, left unassigned for 4+.
+  monitorMemberId String?
+  analyzeMemberId String?
+
+  // The target the metric is evaluated against: free text and/or a link to an
+  // Objective from the Objectives Plan (6.2), whose own target then applies.
+  target      String?
+  objectiveId String?
+  objective   IsmsObjective? @relation(fields: [objectiveId], references: [id], onDelete: SetNull)
+
+  // Where measurement VALUES come from. Always 'manual' in v1; reserved for
+  // integration identifiers later (schema accepts them without UI change).
+  // Distinct from `source` below, which tracks row provenance (seeded vs
+  // user-authored) like every other ISMS register.
+  dataSource String @default("manual")
+
+  // Deactivating is the honest "remove" for seeded metrics: history is kept,
+  // the seed never resurrects the row, and overdue tracking stops. Custom
+  // metrics may also be hard-deleted.
+  isActive Boolean @default(true)
+
+  source      IsmsContextSource @default(derived)
+  derivedFrom String? // provenance for seeded rows, e.g. "seed:training_completion"
+
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  measurements IsmsMeasurement[]
+
+  @@unique([documentId, metricKey])
+  @@index([documentId])
+}
+
+// One recorded value for a metric. Append-style history, never an overwrite:
+// each period's value is its own timestamped row, and re-entering a period
+// adds a correction row rather than mutating the old one. `recordedAt` and
+// `enteredById` are server-set and immutable — the guardrail that keeps
+// backfill honest (a late entry shows its true recording date).
+model IsmsMeasurement {
+  id       String     @id @default(dbgenerated("generate_prefixed_cuid('isms_msr'::text)"))
+  metricId String
+  metric   IsmsMetric @relation(fields: [metricId], references: [id], onDelete: Cascade)
+
+  // Denormalized document id so measurements can be listed org-scoped and
+  // mutated through the generic register CRUD (mirrors IsmsRoleAssignment).
+  documentId String
+
+  // First day (UTC) of the period the value covers: the 1st of the month for
+  // monthly cadence, the 1st of Jan/Apr/Jul/Oct for quarterly. Distinct from
+  // recordedAt — backfilled rows carry a historical period with today's
+  // recording date.
+  periodStart DateTime @db.Date
+
+  value String // the number or short text the customer entered
+  note  String? // optional context, e.g. explanation of an anomaly
+
+  // Server-set at creation, never updatable (the audit-honesty guardrail).
+  recordedAt  DateTime @default(now())
+  enteredById String? // recording member (plain id, like IsmsObjective.ownerMemberId)
+
+  // 'manual' in v1; reserved for integration identifiers later.
+  source String @default("manual")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([metricId, periodStart])
+  @@index([documentId])
+}
+
+// --- Register: Internal Audit Programme, Plan & Report (clause 9.2) ---
+
+enum IsmsAuditStatus {
+  planned
+  in_progress
+  complete
+}
+
+// The bracketed choice in the audit conclusion template: "...found the ISMS to
+// [conform / substantially conform with the non-conformities recorded below /
+// not yet conform] to ISO/IEC 27001:2022."
+enum IsmsAuditConclusionVerdict {
+  conform
+  substantially_conform
+  not_yet_conform
+}
+
+// The auditor's finding for one sampled control (Controls Tested row).
+enum IsmsAuditControlResult {
+  conformity_confirmed
+  nonconformity_raised
+  observation_raised
+  not_sampled // deliberately scoped out this cycle (still rendered in the doc)
+}
+
+enum IsmsAuditFindingType {
+  nc_major
+  nc_minor
+  ofi // opportunity for improvement
+  observation
+}
+
+enum IsmsAuditFindingStatus {
+  open
+  in_progress
+  closed
+}
+
+// One internal audit instance (clause 9.2). The v1 shape is one annual full
+// audit; every field ships with auditor-defensible template text the customer
+// can accept or edit. All values are typed in by the customer (manual-first);
+// the schema accepts later automation without a UI change.
+model IsmsAudit {
+  id         String       @id @default(dbgenerated("generate_prefixed_cuid('isms_aud'::text)"))
+  documentId String
+  document   IsmsDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  // Server-generated "IA-YYYY-NN" (year of creation, per-document sequence).
+  reference String
+  scope     String
+  criteria  String
+
+  // The auditor as a display string ("Sarah Chen, Assured Compliance Ltd").
+  // Free text, frozen at selection: the UI offers the Internal Auditor holder
+  // from ISMS > Roles (5.3) — a member or an external firm — but the audit
+  // record must keep the name that performed THIS audit even if Roles changes.
+  auditorName String?
+
+  plannedStartDate DateTime?       @db.Date
+  plannedEndDate   DateTime?       @db.Date
+  status           IsmsAuditStatus @default(planned)
+
+  // Conclusion: the customer picks the bracketed verdict and may add narrative.
+  conclusionVerdict IsmsAuditConclusionVerdict?
+  conclusionNotes   String?
+
+  // Sign-off: three signature slots per audit (auditor / SPO / top management).
+  // Names are free text (external auditors are not members); a slot is "signed"
+  // when both its name and date are set. Rendered as the document's sign-off
+  // table and frozen into the version contentSnapshot at publish.
+  signoffAuditorName    String?
+  signoffAuditorDate    DateTime? @db.Date
+  signoffSpoName        String?
+  signoffSpoDate        DateTime? @db.Date
+  signoffTopMgmtName    String?
+  signoffTopMgmtDate    DateTime? @db.Date
+
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  controls IsmsAuditControl[]
+  findings IsmsAuditFinding[]
+
+  // References are generated under the per-document lock, so this never fires
+  // in practice; it keeps concurrent creates honest at the database layer.
+  @@unique([documentId, reference])
+  @@index([documentId])
+}
+
+// One sampled control in an audit's Controls Tested table. Fifteen default
+// rows are seeded per audit (seed-if-missing by controlKey, mirroring
+// IsmsMetric.metricKey); the customer/auditor fills in Result and Notes, and
+// may add, edit, or remove rows freely.
+model IsmsAuditControl {
+  id      String    @id @default(dbgenerated("generate_prefixed_cuid('isms_ac'::text)"))
+  auditId String
+  audit   IsmsAudit @relation(fields: [auditId], references: [id], onDelete: Cascade)
+
+  // Denormalized document id so control rows can be listed org-scoped and
+  // mutated through the generic register CRUD (mirrors IsmsRoleAssignment).
+  documentId String
+
+  // Stable key for the fifteen seeded rows (e.g. 'clause_4_1_context');
+  // null for customer-added rows. Seeding is idempotent on (auditId,
+  // controlKey); NULLs stay distinct so many custom rows are allowed.
+  controlKey String?
+
+  controlRef    String // e.g. "Clause 4.1 Context" / "A.8.13 Backup"
+  whatWasTested String // short description of what the control covers
+  // Pre-filled with a "Comp AI > ..." location; free text so the customer can
+  // point at an external location when evidence lives outside Comp AI.
+  whereToFind   String
+
+  // Null until the auditor records an outcome for the row.
+  result IsmsAuditControlResult?
+  notes  String? // external evidence, dates, or auditor commentary
+
+  source      IsmsContextSource @default(derived)
+  derivedFrom String? // provenance for seeded rows, e.g. "seed:clause_4_1_context"
+
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Findings raised against this control row (link survives row edits; the
+  // finding keeps its own clauseOrControl text as the frozen label).
+  findings IsmsAuditFinding[]
+
+  @@unique([auditId, controlKey])
+  @@index([auditId])
+  @@index([documentId])
+}
+
+// A non-conformity, opportunity for improvement, or observation raised during
+// an audit. Most findings are created from a Controls Tested row (result
+// non-conformity/observation); standalone findings are also allowed.
+model IsmsAuditFinding {
+  id      String    @id @default(dbgenerated("generate_prefixed_cuid('isms_af'::text)"))
+  auditId String
+  audit   IsmsAudit @relation(fields: [auditId], references: [id], onDelete: Cascade)
+
+  // Denormalized document id for org-scoped generic register CRUD.
+  documentId String
+
+  // Server-generated "F-NN" (per-audit sequence).
+  reference String
+
+  type IsmsAuditFindingType
+
+  // Optional link back to the Controls Tested row that raised this finding.
+  controlId String?
+  control   IsmsAuditControl? @relation(fields: [controlId], references: [id], onDelete: SetNull)
+
+  // Free text; pre-fills from the linked control row's reference in the UI.
+  clauseOrControl String?
+  description     String
+
+  ownerMemberId String? // responsible member (plain id, like IsmsObjective.ownerMemberId)
+  dueDate       DateTime? @db.Date
+
+  status          IsmsAuditFindingStatus @default(open)
+  closureEvidence String? // free text or link
+
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([auditId, reference])
+  @@index([auditId])
+  @@index([documentId])
+  @@index([controlId])
 }
 
 // --- Org-level link: an ISMS document maps to individual controls (CS-437) ---

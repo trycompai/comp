@@ -3,6 +3,10 @@ on:
   push:
     branches:
       - main
+
+permissions:
+  contents: read # only needs to check out the repo to build & deploy
+
 jobs:
   deploy:
     runs-on: warp-ubuntu-latest-arm64-4x

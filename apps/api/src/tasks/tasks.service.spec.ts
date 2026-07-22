@@ -217,4 +217,17 @@ describe('TasksService approval gating', () => {
       expect(where.status).toEqual({ not: 'in_review' });
     });
   });
+
+  describe('updateTasksAssignee', () => {
+    it('SECURITY: rejects an assignee that is not a member of the organization', async () => {
+      // A cross-org or non-existent member id makes the org-scoped lookup return
+      // null; the guard must reject it rather than persist a foreign assignee.
+      memberFindFirst.mockResolvedValueOnce(null);
+
+      await expect(
+        service.updateTasksAssignee(ORG_ID, [TASK_ID], 'mem_other_org', USER_ID),
+      ).rejects.toThrow('Assignee is not a member of this organization');
+      expect(taskUpdateMany).not.toHaveBeenCalled();
+    });
+  });
 });

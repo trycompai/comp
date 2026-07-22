@@ -24,7 +24,14 @@ export type IsmsRegister =
   | 'context-issues'
   | 'interested-parties'
   | 'requirements'
-  | 'objectives';
+  | 'objectives'
+  | 'roles'
+  | 'role-assignments'
+  | 'metrics'
+  | 'measurements'
+  | 'audits'
+  | 'audit-controls'
+  | 'audit-findings';
 
 interface IssueInput {
   kind: IsmsContextIssueKind;
@@ -138,6 +145,30 @@ export function useIsmsDocument({
     await mutate();
   };
 
+  // --- Monitoring (9.1): one-save bulk measurement entry ---
+
+  /**
+   * Record several measurements in one transactional save — the "Metrics due"
+   * and backfill views submit every filled row through this.
+   */
+  const bulkCreateMeasurements = async (
+    measurements: Array<{
+      metricId: string;
+      periodStart: string;
+      value: string;
+      note?: string;
+    }>,
+  ): Promise<void> => {
+    if (!documentId) throw new Error('No document ID');
+    await unwrap(
+      api.post(`/v1/isms/documents/${documentId}/measurements/bulk`, {
+        measurements,
+      }),
+      'Failed to record measurements',
+    );
+    await mutate();
+  };
+
   // --- Singleton narrative (scope 4.3, leadership 5.1) ---
 
   const saveNarrative = async (narrative: Record<string, unknown>): Promise<void> => {
@@ -246,6 +277,7 @@ export function useIsmsDocument({
     createRow,
     updateRow,
     deleteRow,
+    bulkCreateMeasurements,
     saveNarrative,
     createIssue,
     updateIssue,

@@ -937,6 +937,293 @@ describe('PolicyPdfRendererService', () => {
       expect(result.length).toBeGreaterThan(0);
     });
 
+    // --- CS-704: heading keep-together (no orphaned headings) ---------------
+
+    // Split an (uncompressed) jsPDF buffer into per-page visible text. jsPDF
+    // writes one content stream per page, so the concatenated (text)Tj tokens
+    // between two `endstream` markers are exactly one page's text. This lets
+    // us assert which page a given string lands on.
+    const pageTextsFrom = (buf: Buffer): string[] =>
+      buf
+        .toString('latin1')
+        .split('endstream')
+        .map((segment) => {
+          const start = segment.lastIndexOf('stream');
+          if (start === -1) return '';
+          const body = segment.slice(start + 'stream'.length);
+          const re = /\((.*?)\)\s*Tj/g;
+          let text = '';
+          let m: RegExpExecArray | null;
+          while ((m = re.exec(body)) !== null) text += m[1];
+          return text;
+        })
+        .filter((t) => t.length > 0);
+
+    const pageIndexContaining = (pages: string[], needle: string): number =>
+      pages.findIndex((t) => t.includes(needle));
+
+    // Like pageTextsFrom but keeps blank pages (in order), so a blank leading
+    // page shifts the index of later content. Drops the trailing xref/trailer
+    // segment that follows the final content stream.
+    const orderedPageTexts = (buf: Buffer): string[] => {
+      const segments = buf.toString('latin1').split('endstream');
+      return segments.slice(0, -1).map((segment) => {
+        const start = segment.lastIndexOf('stream');
+        if (start === -1) return '';
+        const body = segment.slice(start + 'stream'.length);
+        const re = /\((.*?)\)\s*Tj/g;
+        let text = '';
+        let m: RegExpExecArray | null;
+        while ((m = re.exec(body)) !== null) text += m[1];
+        return text;
+      });
+    };
+
+    it('does not orphan a heading at the bottom of a page (CS-704)', () => {
+      // Sweep headings across many vertical offsets by growing the amount of
+      // filler before each one. Without keep-together logic at least one
+      // heading lands at a page bottom with its body flowing to the next page.
+      // With the fix, every heading must share a page with the first line of
+      // its section.
+      const SECTIONS = 30;
+      const nodes: Array<Record<string, unknown>> = [];
+      for (let i = 0; i < SECTIONS; i++) {
+        for (let f = 0; f < i; f++) {
+          nodes.push({
+            type: 'paragraph',
+            content: [
+              {
+                type: 'text',
+                text: `filler ${i}-${f} advancing the cursor down the page`,
+              },
+            ],
+          });
+        }
+        nodes.push({
+          type: 'heading',
+          attrs: { level: 2 },
+          content: [{ type: 'text', text: `HEADINGMARKER${i} Section ${i}` }],
+        });
+        nodes.push({
+          type: 'paragraph',
+          content: [
+            {
+              type: 'text',
+              text: `BODYMARKER${i} first line of the section body content`,
+            },
+          ],
+        });
+      }
+
+      const result = service.renderPoliciesPdfBuffer([
+        { name: 'Keep Together Policy', content: { type: 'doc', content: nodes } },
+      ]);
+
+      const pages = pageTextsFrom(result);
+      expect(pages.length).toBeGreaterThan(1); // multi-page, or the test is moot
+
+      const orphaned: number[] = [];
+      for (let i = 0; i < SECTIONS; i++) {
+        const headingPage = pageIndexContaining(pages, `HEADINGMARKER${i}`);
+        const bodyPage = pageIndexContaining(pages, `BODYMARKER${i}`);
+        expect(headingPage).toBeGreaterThanOrEqual(0);
+        expect(bodyPage).toBeGreaterThanOrEqual(0);
+        if (headingPage !== bodyPage) orphaned.push(i);
+      }
+
+      expect(orphaned).toEqual([]);
+    });
+
+    it('does not push a trailing heading (no following content) to its own page', () => {
+      // The keep-together reserve must only apply when a section actually
+      // follows the heading — a heading that is the last node stays on the
+      // current page rather than being bumped to a fresh one.
+      const result = service.renderPoliciesPdfBuffer([
+        {
+          name: 'Trailing Heading Policy',
+          content: {
+            type: 'doc',
+            content: [
+              {
+                type: 'paragraph',
+                content: [{ type: 'text', text: 'INTROBODY opening paragraph' }],
+              },
+              {
+                type: 'heading',
+                attrs: { level: 2 },
+                content: [{ type: 'text', text: 'TRAILINGHEADING appendix' }],
+              },
+            ],
+          },
+        },
+      ]);
+
+      const pages = pageTextsFrom(result);
+      const introPage = pageIndexContaining(pages, 'INTROBODY');
+      const headingPage = pageIndexContaining(pages, 'TRAILINGHEADING');
+      expect(introPage).toBe(0);
+      expect(headingPage).toBe(0);
+    });
+
+    it('does not bump a heading when only empty nodes follow it', () => {
+      // A heading near the page bottom followed ONLY by empty paragraphs / hard
+      // breaks (common trailing nodes in TipTap docs) must be treated as a
+      // trailing heading — reserving keep-together space for a non-existent
+      // section would bump it to a lonely page.
+      const nodes: Array<Record<string, unknown>> = [];
+      for (let f = 0; f < 23; f++) {
+        nodes.push({
+          type: 'paragraph',
+          content: [
+            { type: 'text', text: `filler line ${f} to consume vertical space` },
+          ],
+        });
+      }
+      nodes.push({
+        type: 'heading',
+        attrs: { level: 2 },
+        content: [{ type: 'text', text: 'EMPTYTRAILHEADING near the bottom' }],
+      });
+      // Empty trailing content that renders nothing visible.
+      nodes.push({ type: 'paragraph' });
+      nodes.push({ type: 'paragraph', content: [{ type: 'hardBreak' }] });
+
+      const result = service.renderPoliciesPdfBuffer([
+        { name: 'Empty Trailing Policy', content: { type: 'doc', content: nodes } },
+      ]);
+
+      const pages = pageTextsFrom(result);
+      // The heading shares the page with the filler above it, rather than being
+      // pushed onto a page of its own.
+      expect(pageIndexContaining(pages, 'filler line 22')).toBe(0);
+      expect(pageIndexContaining(pages, 'EMPTYTRAILHEADING')).toBe(0);
+    });
+
+    it('keeps a heading with a following table that has a tall first row', () => {
+      // A heading immediately followed by a table with a tall first row must
+      // not be orphaned: the reserve has to account for the table's first-row
+      // height, not just a few plain text lines. Sweep offsets so at least one
+      // heading lands where the fixed text-only reserve would have orphaned it.
+      const tallCell = (label: string) => ({
+        type: 'tableCell',
+        content: [
+          {
+            type: 'paragraph',
+            content: [
+              {
+                type: 'text',
+                text: `${label} line one line two line three line four line five line six`,
+              },
+            ],
+          },
+        ],
+      });
+
+      const SECTIONS = 24;
+      const nodes: Array<Record<string, unknown>> = [];
+      for (let i = 0; i < SECTIONS; i++) {
+        for (let f = 0; f < i; f++) {
+          nodes.push({
+            type: 'paragraph',
+            content: [
+              { type: 'text', text: `filler ${i}-${f} advancing the cursor` },
+            ],
+          });
+        }
+        nodes.push({
+          type: 'heading',
+          attrs: { level: 2 },
+          content: [{ type: 'text', text: `TABLEHEADING${i} Section ${i}` }],
+        });
+        nodes.push({
+          type: 'table',
+          content: [
+            {
+              type: 'tableRow',
+              content: [tallCell(`TABLECELL${i}`), tallCell(`meta${i}`)],
+            },
+          ],
+        });
+      }
+
+      const result = service.renderPoliciesPdfBuffer([
+        { name: 'Heading Table Policy', content: { type: 'doc', content: nodes } },
+      ]);
+
+      const pages = pageTextsFrom(result);
+      const orphaned: number[] = [];
+      for (let i = 0; i < SECTIONS; i++) {
+        const headingPage = pageIndexContaining(pages, `TABLEHEADING${i}`);
+        const tablePage = pageIndexContaining(pages, `TABLECELL${i}`);
+        expect(headingPage).toBeGreaterThanOrEqual(0);
+        expect(tablePage).toBeGreaterThanOrEqual(0);
+        if (headingPage !== tablePage) orphaned.push(i);
+      }
+      expect(orphaned).toEqual([]);
+    });
+
+    it('does not emit a blank leading page for an oversized heading', () => {
+      // A nameless policy whose first (and only) node is a heading taller than
+      // the page must start rendering on page 1, not after an empty page. The
+      // reserve is capped at the usable page height so the up-front check can't
+      // add a page while the current one is still empty.
+      const longHeadingText = Array.from(
+        { length: 200 },
+        () => 'BLANKGUARDWORD',
+      ).join(' ');
+
+      const result = service.renderPoliciesPdfBuffer([
+        {
+          name: '',
+          content: {
+            type: 'doc',
+            content: [
+              {
+                type: 'heading',
+                attrs: { level: 1 },
+                content: [{ type: 'text', text: longHeadingText }],
+              },
+            ],
+          },
+        },
+      ]);
+
+      const orderedPages = orderedPageTexts(result);
+      // The very first page carries heading text — no blank page precedes it.
+      expect(orderedPages[0]).toContain('BLANKGUARDWORD');
+    });
+
+    it('paginates a heading longer than a page instead of overflowing', () => {
+      // Pathological guard: a heading that wraps to more lines than fit on one
+      // page must span multiple pages rather than run off the bottom margin.
+      const longHeadingText = Array.from(
+        { length: 200 },
+        () => 'OVERFLOWWORD',
+      ).join(' ');
+
+      const result = service.renderPoliciesPdfBuffer([
+        {
+          name: 'Giant Heading Policy',
+          content: {
+            type: 'doc',
+            content: [
+              {
+                type: 'heading',
+                attrs: { level: 1 },
+                content: [{ type: 'text', text: longHeadingText }],
+              },
+            ],
+          },
+        },
+      ]);
+
+      const pages = pageTextsFrom(result);
+      const pagesWithHeading = pages.filter((t) =>
+        t.includes('OVERFLOWWORD'),
+      ).length;
+      expect(pagesWithHeading).toBeGreaterThan(1);
+    });
+
     it('applies custom primary color', () => {
       const result = service.renderPoliciesPdfBuffer(
         [

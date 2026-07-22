@@ -5,16 +5,28 @@ import type { Request } from 'express';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { PERMISSIONS_KEY } from '../auth/permission.guard';
+import { ActingUserResolver } from '../auth/acting-user.service';
+import type { AuthenticatedRequest } from '../auth/types';
 import { IsmsRegistersController } from './isms-registers.controller';
 import { IsmsContextIssueService } from './isms-context-issue.service';
 import { IsmsInterestedPartyService } from './isms-interested-party.service';
 import { IsmsRequirementService } from './isms-requirement.service';
 import { IsmsObjectiveService } from './isms-objective.service';
+import { IsmsRoleService } from './isms-role.service';
+import { IsmsRoleAssignmentService } from './isms-role-assignment.service';
+import { IsmsMetricService } from './isms-metric.service';
+import { IsmsMeasurementService } from './isms-measurement.service';
+import { IsmsAuditService } from './isms-audit.service';
+import { IsmsAuditControlService } from './isms-audit-control.service';
+import { IsmsAuditFindingService } from './isms-audit-finding.service';
 import { IsmsNarrativeService } from './isms-narrative.service';
 
 jest.mock('../auth/auth.server', () => ({
   auth: { api: { getSession: jest.fn() } },
 }));
+// createRow pulls in ActingUserResolver, which imports @db; mock it so the real
+// Prisma client isn't constructed at load (the resolver is a mocked provider).
+jest.mock('@db', () => ({ db: {} }));
 jest.mock('../auth/hybrid-auth.guard', () => ({
   HybridAuthGuard: class MockHybridAuthGuard {},
 }));
@@ -38,12 +50,33 @@ jest.mock('./isms-requirement.service', () => ({
 jest.mock('./isms-objective.service', () => ({
   IsmsObjectiveService: class {},
 }));
+jest.mock('./isms-role.service', () => ({
+  IsmsRoleService: class {},
+}));
+jest.mock('./isms-role-assignment.service', () => ({
+  IsmsRoleAssignmentService: class {},
+}));
+jest.mock('./isms-metric.service', () => ({
+  IsmsMetricService: class {},
+}));
+jest.mock('./isms-measurement.service', () => ({
+  IsmsMeasurementService: class {},
+}));
+jest.mock('./isms-audit.service', () => ({
+  IsmsAuditService: class {},
+}));
+jest.mock('./isms-audit-control.service', () => ({
+  IsmsAuditControlService: class {},
+}));
+jest.mock('./isms-audit-finding.service', () => ({
+  IsmsAuditFindingService: class {},
+}));
 jest.mock('./isms-narrative.service', () => ({
   IsmsNarrativeService: class {},
 }));
 
 const reqWith = (body: Record<string, unknown>) =>
-  ({ body }) as unknown as Request;
+  ({ body }) as unknown as Request & AuthenticatedRequest;
 
 describe('IsmsRegistersController', () => {
   let controller: IsmsRegistersController;
@@ -68,7 +101,44 @@ describe('IsmsRegistersController', () => {
     update: jest.fn(),
     remove: jest.fn(),
   };
+  const roleService = {
+    create: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
+  };
+  const roleAssignmentService = {
+    create: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
+  };
+  const metricService = {
+    create: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
+  };
+  const measurementService = {
+    create: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
+    bulkCreate: jest.fn(),
+  };
+  const auditService = {
+    create: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
+  };
+  const auditControlService = {
+    create: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
+  };
+  const auditFindingService = {
+    create: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
+  };
   const narrativeService = { save: jest.fn() };
+  const mockActingUser = { resolve: jest.fn() };
 
   const mockGuard = { canActivate: jest.fn().mockReturnValue(true) };
 
@@ -83,7 +153,15 @@ describe('IsmsRegistersController', () => {
         },
         { provide: IsmsRequirementService, useValue: requirementService },
         { provide: IsmsObjectiveService, useValue: objectiveService },
+        { provide: IsmsRoleService, useValue: roleService },
+        { provide: IsmsRoleAssignmentService, useValue: roleAssignmentService },
+        { provide: IsmsMetricService, useValue: metricService },
+        { provide: IsmsMeasurementService, useValue: measurementService },
+        { provide: IsmsAuditService, useValue: auditService },
+        { provide: IsmsAuditControlService, useValue: auditControlService },
+        { provide: IsmsAuditFindingService, useValue: auditFindingService },
         { provide: IsmsNarrativeService, useValue: narrativeService },
+        { provide: ActingUserResolver, useValue: mockActingUser },
       ],
     })
       .overrideGuard(HybridAuthGuard)
@@ -94,6 +172,12 @@ describe('IsmsRegistersController', () => {
 
     controller = module.get<IsmsRegistersController>(IsmsRegistersController);
     jest.clearAllMocks();
+    // Default: no attributable actor resolved (e.g. org with no owner). Tests
+    // that exercise API-key attribution override this with mockResolvedValueOnce.
+    mockActingUser.resolve.mockResolvedValue({
+      userId: null,
+      source: 'org-owner-fallback',
+    });
   });
 
   describe('createRow', () => {
@@ -108,6 +192,7 @@ describe('IsmsRegistersController', () => {
         'interested-parties',
         reqWith(dto),
         'org_1',
+        undefined,
       );
       expect(interestedPartyService.create).toHaveBeenCalledWith({
         documentId: 'doc_1',
@@ -128,6 +213,7 @@ describe('IsmsRegistersController', () => {
         'context-issues',
         reqWith(body),
         'org_1',
+        undefined,
       );
       expect(contextIssueService.create).toHaveBeenCalledWith({
         documentId: 'doc_1',
@@ -143,6 +229,7 @@ describe('IsmsRegistersController', () => {
         'requirements',
         reqWith(body),
         'org_1',
+        undefined,
       );
       expect(requirementService.create).toHaveBeenCalledWith({
         documentId: 'doc_1',
@@ -153,7 +240,13 @@ describe('IsmsRegistersController', () => {
 
     it('dispatches objectives create with parsed dto', async () => {
       const body = { objective: 'o' };
-      await controller.createRow('doc_1', 'objectives', reqWith(body), 'org_1');
+      await controller.createRow(
+        'doc_1',
+        'objectives',
+        reqWith(body),
+        'org_1',
+        undefined,
+      );
       expect(objectiveService.create).toHaveBeenCalledWith({
         documentId: 'doc_1',
         organizationId: 'org_1',
@@ -161,10 +254,230 @@ describe('IsmsRegistersController', () => {
       });
     });
 
+    it('dispatches metrics create without forwarding the member id', async () => {
+      const body = { name: 'Custom metric', cadence: 'monthly' };
+      await controller.createRow(
+        'doc_1',
+        'metrics',
+        reqWith(body),
+        'org_1',
+        'mem_1',
+      );
+      expect(metricService.create).toHaveBeenCalledWith({
+        documentId: 'doc_1',
+        organizationId: 'org_1',
+        dto: body,
+      });
+    });
+
+    it('dispatches measurements create with the caller member id as enteredBy', async () => {
+      const body = { metricId: 'met_1', periodStart: '2026-07-01', value: '5' };
+      await controller.createRow(
+        'doc_1',
+        'measurements',
+        reqWith(body),
+        'org_1',
+        'mem_1',
+      );
+      expect(measurementService.create).toHaveBeenCalledWith({
+        documentId: 'doc_1',
+        organizationId: 'org_1',
+        memberId: 'mem_1',
+        dto: body,
+      });
+    });
+
+    it('passes memberId null when neither a session nor a resolved member exists', async () => {
+      // No session member and the resolver found no actor (default mock:
+      // org-owner-fallback with no member). enteredById is nullable.
+      const body = { metricId: 'met_1', periodStart: '2026-07-01', value: '5' };
+      await controller.createRow(
+        'doc_1',
+        'measurements',
+        reqWith(body),
+        'org_1',
+        undefined,
+      );
+      expect(measurementService.create).toHaveBeenCalledWith(
+        expect.objectContaining({ memberId: null }),
+      );
+    });
+
+    it('attributes enteredBy to the resolved member under API-key auth (no session member)', async () => {
+      // The bug: API-key callers have no req.memberId, so enteredById was
+      // silently null. The resolver now supplies the acting member (key creator
+      // or org-owner fallback), which createRow must forward as enteredById.
+      mockActingUser.resolve.mockResolvedValueOnce({
+        userId: 'usr_owner',
+        memberId: 'mem_resolved',
+        source: 'api-key-creator',
+      });
+      const body = { metricId: 'met_1', periodStart: '2026-07-01', value: '5' };
+      await controller.createRow(
+        'doc_1',
+        'measurements',
+        reqWith(body),
+        'org_1',
+        undefined,
+      );
+      expect(measurementService.create).toHaveBeenCalledWith(
+        expect.objectContaining({ memberId: 'mem_resolved' }),
+      );
+    });
+
+    it('prefers the session member over the resolved actor for attribution', async () => {
+      // Session behavior must be unchanged: the raw session memberId wins even
+      // when the resolver would return a different member.
+      mockActingUser.resolve.mockResolvedValueOnce({
+        userId: 'usr_owner',
+        memberId: 'mem_resolved',
+        source: 'org-owner-fallback',
+      });
+      const body = { metricId: 'met_1', periodStart: '2026-07-01', value: '5' };
+      await controller.createRow(
+        'doc_1',
+        'measurements',
+        reqWith(body),
+        'org_1',
+        'mem_session',
+      );
+      expect(measurementService.create).toHaveBeenCalledWith(
+        expect.objectContaining({ memberId: 'mem_session' }),
+      );
+    });
+
+    it('dispatches audits create with an empty body (defaults server-side)', async () => {
+      await controller.createRow(
+        'doc_1',
+        'audits',
+        reqWith({}),
+        'org_1',
+        'mem_1',
+      );
+      expect(auditService.create).toHaveBeenCalledWith({
+        documentId: 'doc_1',
+        organizationId: 'org_1',
+        dto: {},
+      });
+    });
+
+    it('dispatches audit-controls and audit-findings create with parsed dtos', async () => {
+      const controlBody = { auditId: 'aud_1', controlRef: 'A.8.16' };
+      await controller.createRow(
+        'doc_1',
+        'audit-controls',
+        reqWith(controlBody),
+        'org_1',
+        'mem_1',
+      );
+      expect(auditControlService.create).toHaveBeenCalledWith({
+        documentId: 'doc_1',
+        organizationId: 'org_1',
+        dto: controlBody,
+      });
+
+      const findingBody = {
+        auditId: 'aud_1',
+        type: 'observation',
+        description: 'No restore test evidenced.',
+      };
+      await controller.createRow(
+        'doc_1',
+        'audit-findings',
+        reqWith(findingBody),
+        'org_1',
+        'mem_1',
+      );
+      expect(auditFindingService.create).toHaveBeenCalledWith({
+        documentId: 'doc_1',
+        organizationId: 'org_1',
+        dto: findingBody,
+      });
+    });
+
+    it('rejects an audit-findings create without a description', async () => {
+      await expect(
+        controller.createRow(
+          'doc_1',
+          'audit-findings',
+          reqWith({ auditId: 'aud_1', type: 'ofi' }),
+          'org_1',
+          'mem_1',
+        ),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(auditFindingService.create).not.toHaveBeenCalled();
+    });
+
     it('throws BadRequestException for an unknown register', async () => {
       await expect(
-        controller.createRow('doc_1', 'nope', reqWith({}), 'org_1'),
+        controller.createRow('doc_1', 'nope', reqWith({}), 'org_1', undefined),
       ).rejects.toBeInstanceOf(BadRequestException);
+    });
+  });
+
+  describe('bulkCreateMeasurements', () => {
+    it('parses the body and dispatches to the measurement service', async () => {
+      const measurements = [
+        { metricId: 'met_1', periodStart: '2026-07-01', value: '99.9%' },
+        { metricId: 'met_2', periodStart: '2026-04-01', value: '0', note: 'n' },
+      ];
+      await controller.bulkCreateMeasurements(
+        'doc_1',
+        reqWith({ measurements }),
+        'org_1',
+        'mem_1',
+      );
+      expect(measurementService.bulkCreate).toHaveBeenCalledWith({
+        documentId: 'doc_1',
+        organizationId: 'org_1',
+        memberId: 'mem_1',
+        dto: {
+          measurements: [
+            { metricId: 'met_1', periodStart: '2026-07-01', value: '99.9%' },
+            {
+              metricId: 'met_2',
+              periodStart: '2026-04-01',
+              value: '0',
+              note: 'n',
+            },
+          ],
+        },
+      });
+    });
+
+    it('rejects an empty measurements array', async () => {
+      await expect(
+        controller.bulkCreateMeasurements(
+          'doc_1',
+          reqWith({ measurements: [] }),
+          'org_1',
+          'mem_1',
+        ),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(measurementService.bulkCreate).not.toHaveBeenCalled();
+    });
+
+    it('attributes to the resolved actor when there is no session member (API key)', async () => {
+      mockActingUser.resolve.mockResolvedValueOnce({
+        userId: 'usr_creator',
+        memberId: 'mem_creator',
+        source: 'api-key-creator',
+      });
+
+      await controller.bulkCreateMeasurements(
+        'doc_1',
+        reqWith({
+          measurements: [
+            { metricId: 'met_1', periodStart: '2026-07-01', value: '1' },
+          ],
+        }),
+        'org_1',
+        undefined,
+      );
+
+      expect(measurementService.bulkCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ memberId: 'mem_creator' }),
+      );
     });
   });
 
@@ -253,6 +566,7 @@ describe('IsmsRegistersController', () => {
         'createRow',
         'updateRow',
         'deleteRow',
+        'bulkCreateMeasurements',
         'saveNarrative',
       ] as const) {
         expect(permissionsFor(method)).toEqual([

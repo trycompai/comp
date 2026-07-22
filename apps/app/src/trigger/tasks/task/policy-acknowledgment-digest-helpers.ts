@@ -2,6 +2,7 @@
  * Helper types and pure filter function for the policy acknowledgment digest.
  * Extracted from the scheduled task for testability.
  */
+import { isOrgParticipant } from '@/lib/org-participation-rule';
 import type { PolicyVisibility } from '@db';
 
 // Inlined from @trycompai/auth to avoid pulling that package into the Trigger.dev bundle.
@@ -34,6 +35,7 @@ export async function filterDigestMembersByCompliance<T extends DigestMember>(
   db: ComplianceFilterDb,
   members: T[],
   organizationId: string,
+  orgIsInternal = false,
 ): Promise<T[]> {
   if (members.length === 0) return [];
 
@@ -58,9 +60,7 @@ export async function filterDigestMembersByCompliance<T extends DigestMember>(
     obligationMap = Object.fromEntries(
       dbRoles.map((r) => {
         const obligations =
-          typeof r.obligations === 'string'
-            ? JSON.parse(r.obligations)
-            : r.obligations || {};
+          typeof r.obligations === 'string' ? JSON.parse(r.obligations) : r.obligations || {};
         return [r.name, obligations as { compliance?: boolean }];
       }),
     );
@@ -68,8 +68,9 @@ export async function filterDigestMembersByCompliance<T extends DigestMember>(
 
   return parsed
     .filter(({ member, roleNames }) => {
-      // Platform admins are excluded — matches the @/lib/compliance behavior.
-      if (member.user?.role === 'admin') return false;
+      // Platform admins are excluded — matches the @/lib/compliance behavior —
+      // unless this is an internal (platform-operated) org.
+      if (!isOrgParticipant(member.user?.role, { orgIsInternal })) return false;
       for (const name of roleNames) {
         // DB override wins, but only if `compliance` is explicitly set —
         // otherwise fall back to the hardcoded built-in default.

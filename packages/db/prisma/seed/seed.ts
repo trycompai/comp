@@ -232,11 +232,32 @@ const ISMS_DOCUMENT_TEMPLATES = [
       'Evidence of top management leadership and commitment to the ISMS (ISO 27001 clause 5.1).',
   },
   {
+    documentType: 'roles_and_responsibilities',
+    name: 'Roles, Responsibilities and Authorities',
+    clause: '5.3',
+    description:
+      'The ISMS governance roles, their responsibilities and authorities, and the members who hold them (ISO 27001 clause 5.3).',
+  },
+  {
     documentType: 'objectives_plan',
     name: 'Information Security Objectives and Plan',
     clause: '6.2',
     description:
       'Measurable information security objectives and the plan to achieve them (ISO 27001 clause 6.2).',
+  },
+  {
+    documentType: 'monitoring',
+    name: 'Monitoring, Measurement, Analysis and Evaluation',
+    clause: '9.1',
+    description:
+      'The metrics the organization monitors — what is measured, how, when, by whom, and who analyses the results (ISO 27001 clause 9.1).',
+  },
+  {
+    documentType: 'internal_audit',
+    name: 'Internal Audit',
+    clause: '9.2',
+    description:
+      'The internal audit programme and the plan, controls tested, findings and conclusion of each internal audit of the ISMS (ISO 27001 clause 9.2).',
   },
 ] as const;
 

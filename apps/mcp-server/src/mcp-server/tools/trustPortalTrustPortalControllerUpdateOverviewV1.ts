@@ -3,10 +3,15 @@
  */
 
 import { trustPortalTrustPortalControllerUpdateOverviewV1 } from "../../funcs/trustPortalTrustPortalControllerUpdateOverviewV1.js";
+import { TrustPortalControllerUpdateOverviewV1Request$zodSchema } from "../../models/trustportalcontrollerupdateoverviewv1op.js";
 import { formatResult, ToolDefinition } from "../tools.js";
 
+const args = {
+  request: TrustPortalControllerUpdateOverviewV1Request$zodSchema,
+};
+
 export const tool$trustPortalTrustPortalControllerUpdateOverviewV1:
-  ToolDefinition = {
+  ToolDefinition<typeof args> = {
     name: "update-overview",
     description: `Update Trust Center overview
 
@@ -18,9 +23,11 @@ Update the public Trust Center overview content that explains security posture a
       "openWorldHint": false,
       "readOnlyHint": false,
     },
-    tool: async (client, ctx) => {
+    args,
+    tool: async (client, args, ctx) => {
       const [result] = await trustPortalTrustPortalControllerUpdateOverviewV1(
         client,
+        args.request,
         { fetchOptions: { signal: ctx.signal } },
       ).$inspect();
 

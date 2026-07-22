@@ -1,21 +1,10 @@
+import { loadXlsxWorkbook } from '@/utils/load-xlsx';
 import { logger } from '@/vector-store/logger';
 import { anthropic } from '@ai-sdk/anthropic';
 import { openai } from '@ai-sdk/openai';
 import { generateText } from 'ai';
 import ExcelJS from 'exceljs';
 import mammoth from 'mammoth';
-
-/**
- * Loads an Excel workbook from a Uint8Array/Buffer.
- * ExcelJS type declarations are incompatible with Node 22+ / TS 5.8+ Buffer types,
- * so we use a typed wrapper to avoid the mismatch.
- */
-async function loadWorkbook(data: Uint8Array): Promise<ExcelJS.Workbook> {
-  const workbook = new ExcelJS.Workbook();
-  type LoadFn = (data: Uint8Array) => Promise<ExcelJS.Workbook>;
-  await (workbook.xlsx.load as unknown as LoadFn)(data);
-  return workbook;
-}
 
 const htmlEntityMap = {
   '&nbsp;': ' ',
@@ -67,7 +56,7 @@ export async function extractContentFromFile(
         fileSizeMB,
       });
 
-      const workbook = await loadWorkbook(fileBuffer);
+      const workbook = await loadXlsxWorkbook(fileBuffer);
 
       // Process sheets sequentially
       const sheets: string[] = [];

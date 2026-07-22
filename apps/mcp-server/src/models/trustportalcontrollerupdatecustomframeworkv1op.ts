@@ -21,20 +21,6 @@ export const TrustPortalControllerUpdateCustomFrameworkV1Status2$zodSchema = z
     "compliant",
   ]);
 
-export type TrustPortalControllerUpdateCustomFrameworkV1RequestBody2 = {
-  customFrameworkId: string;
-  enabled?: boolean | undefined;
-  status: TrustPortalControllerUpdateCustomFrameworkV1Status2;
-};
-
-export const TrustPortalControllerUpdateCustomFrameworkV1RequestBody2$zodSchema:
-  z.ZodType<TrustPortalControllerUpdateCustomFrameworkV1RequestBody2> = z
-    .object({
-      customFrameworkId: z.string(),
-      enabled: z.boolean().optional(),
-      status: TrustPortalControllerUpdateCustomFrameworkV1Status2$zodSchema,
-    });
-
 export const TrustPortalControllerUpdateCustomFrameworkV1Status1 = {
   Started: "started",
   InProgress: "in_progress",
@@ -50,6 +36,20 @@ export const TrustPortalControllerUpdateCustomFrameworkV1Status1$zodSchema = z
     "in_progress",
     "compliant",
   ]);
+
+export type TrustPortalControllerUpdateCustomFrameworkV1RequestBody2 = {
+  customFrameworkId: string;
+  enabled?: boolean | undefined;
+  status: TrustPortalControllerUpdateCustomFrameworkV1Status2;
+};
+
+export const TrustPortalControllerUpdateCustomFrameworkV1RequestBody2$zodSchema:
+  z.ZodType<TrustPortalControllerUpdateCustomFrameworkV1RequestBody2> = z
+    .object({
+      customFrameworkId: z.string(),
+      enabled: z.boolean().optional(),
+      status: TrustPortalControllerUpdateCustomFrameworkV1Status2$zodSchema,
+    });
 
 export type TrustPortalControllerUpdateCustomFrameworkV1RequestBody1 = {
   customFrameworkId: string;

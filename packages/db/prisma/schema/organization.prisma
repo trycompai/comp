@@ -9,6 +9,10 @@ model Organization {
   website                     String?
   onboardingCompleted         Boolean     @default(false)
   hasAccess                   Boolean     @default(false)
+  // Internal (platform-operated) organization — e.g. Comp AI's own org.
+  // When true, platform admins are treated as real participants of this org
+  // (assignable, counted in compliance, notified). Off for all customer orgs.
+  isInternal                  Boolean     @default(false)
   advancedModeEnabled         Boolean     @default(false)
   evidenceApprovalEnabled     Boolean     @default(false)
   deviceAgentStepEnabled      Boolean     @default(true)

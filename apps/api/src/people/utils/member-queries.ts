@@ -66,7 +66,7 @@ export class MemberQueries {
     return db.member.findMany({
       where: {
         organizationId,
-        ...(includeDeactivated ? {} : { deactivated: false }),
+        ...(includeDeactivated ? {} : { deactivated: false, isActive: true }),
         ...(filters?.onboardAfter || filters?.onboardBefore
           ? {
               onboardDate: {
@@ -95,12 +95,13 @@ export class MemberQueries {
   static async findByIdInOrganization(
     memberId: string,
     organizationId: string,
+    options?: { includeDeactivated?: boolean },
   ): Promise<PeopleResponseDto | null> {
     return db.member.findFirst({
       where: {
         id: memberId,
         organizationId,
-        deactivated: false,
+        ...(options?.includeDeactivated ? {} : { deactivated: false }),
       },
       select: this.MEMBER_SELECT,
     });

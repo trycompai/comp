@@ -1,5 +1,6 @@
 import { db } from '@db';
 import { IsmsService } from './isms.service';
+import type { IsmsVersionService } from './isms-version.service';
 
 jest.mock('@db', () => ({
   db: {
@@ -19,11 +20,11 @@ jest.mock('./documents/data-source', () => ({
 jest.mock('./documents/generate', () => ({
   runDerivation: jest.fn(),
 }));
-jest.mock('./utils/version-snapshot', () => ({
-  upsertLatestSnapshotVersion: jest.fn(),
-}));
 
 const mockDb = jest.mocked(db);
+
+// ensureSetup never touches the version service; a bare stub satisfies the ctor.
+const versionService = {} as unknown as IsmsVersionService;
 
 /** Convenience accessor for the first createMany call's `data` array. */
 const createManyData = () =>
@@ -37,7 +38,7 @@ describe('IsmsService ensureSetup fallback to ISMS_TYPE_DEFINITIONS (no template
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new IsmsService();
+    service = new IsmsService(versionService);
     (mockDb.control.findMany as jest.Mock).mockResolvedValue([]);
     (mockDb.ismsDocument.createMany as jest.Mock).mockResolvedValue({
       count: 0,
@@ -71,7 +72,7 @@ describe('IsmsService ensureSetup fallback to ISMS_TYPE_DEFINITIONS (no template
     const result = await service.ensureSetup(dto);
 
     expect(mockDb.ismsDocument.createMany).toHaveBeenCalledTimes(1);
-    expect(createManyData()).toHaveLength(5);
+    expect(createManyData()).toHaveLength(8);
     // Definition-derived docs carry no templateId.
     expect(createManyData()[0].templateId).toBeNull();
     expect(result.success).toBe(true);
@@ -95,7 +96,7 @@ describe('IsmsService ensureSetup fallback to ISMS_TYPE_DEFINITIONS (no template
 
     await service.ensureSetup(dto);
 
-    expect(createManyData()).toHaveLength(6);
+    expect(createManyData()).toHaveLength(9);
     expect(createManyData()[0].requirementId).toBeNull();
   });
 });
