@@ -36,6 +36,9 @@ import { IsmsMeasurementService } from './isms-measurement.service';
 import { IsmsAuditService } from './isms-audit.service';
 import { IsmsAuditControlService } from './isms-audit-control.service';
 import { IsmsAuditFindingService } from './isms-audit-finding.service';
+import { IsmsManagementReviewService } from './isms-management-review.service';
+import { IsmsReviewInputService } from './isms-review-input.service';
+import { IsmsReviewActionService } from './isms-review-action.service';
 import { IsmsNarrativeService } from './isms-narrative.service';
 import {
   createRegisterRegistry,
@@ -136,9 +139,18 @@ const REGISTER_ROW_BODY = {
       auditorName: { type: 'string', nullable: true },
       plannedStartDate: { type: 'string', nullable: true },
       plannedEndDate: { type: 'string', nullable: true },
+      // Per-register verdict: audits use the first three values, reviews the
+      // last three.
       conclusionVerdict: {
         type: 'string',
-        enum: ['conform', 'substantially_conform', 'not_yet_conform'],
+        enum: [
+          'conform',
+          'substantially_conform',
+          'not_yet_conform',
+          'suitable',
+          'adequate',
+          'effective',
+        ],
         nullable: true,
       },
       conclusionNotes: { type: 'string', nullable: true },
@@ -171,6 +183,32 @@ const REGISTER_ROW_BODY = {
       clauseOrControl: { type: 'string', nullable: true },
       dueDate: { type: 'string', nullable: true },
       closureEvidence: { type: 'string', nullable: true },
+      // Management review register (9.3): reviews + review-inputs + review-actions
+      meetingDate: { type: 'string', nullable: true },
+      chairName: { type: 'string', nullable: true },
+      attendees: {
+        type: 'array',
+        description:
+          'Attendees frozen at selection (members picked from People)',
+        items: {
+          type: 'object',
+          properties: {
+            memberId: { type: 'string' },
+            name: { type: 'string' },
+          },
+          required: ['memberId', 'name'],
+        },
+      },
+      decisionsText: { type: 'string', nullable: true },
+      changesText: { type: 'string', nullable: true },
+      signoffChairName: { type: 'string', nullable: true },
+      signoffChairDate: { type: 'string', nullable: true },
+      reviewId: { type: 'string' },
+      inputRef: { type: 'string' },
+      // whereToFind is shared with the audit-controls register above.
+      whatItCovers: { type: 'string' },
+      discussionNotes: { type: 'string', nullable: true },
+      discussed: { type: 'boolean' },
       position: { type: 'integer', minimum: 0 },
     },
   },
@@ -242,6 +280,9 @@ export class IsmsRegistersController {
     auditService: IsmsAuditService,
     auditControlService: IsmsAuditControlService,
     auditFindingService: IsmsAuditFindingService,
+    reviewService: IsmsManagementReviewService,
+    reviewInputService: IsmsReviewInputService,
+    reviewActionService: IsmsReviewActionService,
     private readonly measurementService: IsmsMeasurementService,
     private readonly narrativeService: IsmsNarrativeService,
     private readonly actingUser: ActingUserResolver,
@@ -258,6 +299,9 @@ export class IsmsRegistersController {
       audits: auditService,
       auditControls: auditControlService,
       auditFindings: auditFindingService,
+      reviews: reviewService,
+      reviewInputs: reviewInputService,
+      reviewActions: reviewActionService,
     });
   }
 

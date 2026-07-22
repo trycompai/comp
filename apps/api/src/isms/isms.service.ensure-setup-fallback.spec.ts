@@ -1,5 +1,6 @@
 import { db } from '@db';
 import { IsmsService } from './isms.service';
+import { ISMS_TYPE_DEFINITIONS } from './utils/document-types';
 import type { IsmsVersionService } from './isms-version.service';
 
 jest.mock('@db', () => ({
@@ -72,7 +73,7 @@ describe('IsmsService ensureSetup fallback to ISMS_TYPE_DEFINITIONS (no template
     const result = await service.ensureSetup(dto);
 
     expect(mockDb.ismsDocument.createMany).toHaveBeenCalledTimes(1);
-    expect(createManyData()).toHaveLength(8);
+    expect(createManyData()).toHaveLength(ISMS_TYPE_DEFINITIONS.length - 1);
     // Definition-derived docs carry no templateId.
     expect(createManyData()[0].templateId).toBeNull();
     expect(result.success).toBe(true);
@@ -96,7 +97,7 @@ describe('IsmsService ensureSetup fallback to ISMS_TYPE_DEFINITIONS (no template
 
     await service.ensureSetup(dto);
 
-    expect(createManyData()).toHaveLength(9);
+    expect(createManyData()).toHaveLength(ISMS_TYPE_DEFINITIONS.length);
     expect(createManyData()[0].requirementId).toBeNull();
   });
 });

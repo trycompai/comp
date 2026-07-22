@@ -130,7 +130,16 @@ describe('IsmsService ensureSetup', () => {
       (mockDb.ismsDocument.findMany as jest.Mock)
         .mockResolvedValueOnce([]) // existing-types probe
         .mockResolvedValueOnce([{ id: 'doc_ia', type: 'internal_audit' }]) // created lookup
-        .mockResolvedValueOnce([]); // final list
+        .mockResolvedValueOnce([
+          {
+            id: 'doc_ia',
+            type: 'internal_audit',
+            status: 'draft',
+            requirementId: null,
+            currentVersionId: null,
+            draftNarrative: null,
+          },
+        ]); // final list — the seed now works off this, not the created lookup
 
       await service.ensureSetup(dto);
 
@@ -150,6 +159,70 @@ describe('IsmsService ensureSetup', () => {
           draftNarrative: {
             programme: expect.stringContaining(
               'Acme Corp runs an annual internal audit',
+            ),
+          },
+        },
+      });
+    });
+
+    it('heals a PRE-EXISTING Management Review doc whose procedure is still empty', async () => {
+      (
+        mockDb.frameworkEditorFramework.findUnique as jest.Mock
+      ).mockResolvedValue({ id: 'fw_1', requirements: [] });
+      mockTemplates.mockResolvedValue([]);
+      (mockDb.organization.findUnique as jest.Mock).mockResolvedValue({
+        name: 'Acme Corp',
+      });
+      (mockDb.ismsDocument.findMany as jest.Mock)
+        // Every type already exists, so provisioning creates nothing and the
+        // old created-scoped seed would never have run.
+        .mockResolvedValueOnce([
+          { type: 'context_of_organization' },
+          { type: 'interested_parties_register' },
+          { type: 'interested_parties_requirements' },
+          { type: 'isms_scope' },
+          { type: 'leadership_commitment' },
+          { type: 'roles_and_responsibilities' },
+          { type: 'objectives_plan' },
+          { type: 'monitoring' },
+          { type: 'internal_audit' },
+          { type: 'management_review' },
+        ])
+        .mockResolvedValueOnce([
+          {
+            id: 'doc_mr',
+            type: 'management_review',
+            status: 'draft',
+            requirementId: null,
+            currentVersionId: null,
+            draftNarrative: {}, // blank — e.g. a crash between provision and seed
+          },
+          {
+            id: 'doc_ia',
+            type: 'internal_audit',
+            status: 'draft',
+            requirementId: null,
+            currentVersionId: null,
+            draftNarrative: { programme: 'Customer-edited programme.' },
+          },
+        ]); // final list
+
+      await service.ensureSetup(dto);
+
+      // Only the blank document is healed; the populated one is untouched.
+      expect(mockDb.ismsDocument.updateMany).toHaveBeenCalledTimes(1);
+      expect(mockDb.ismsDocument.updateMany).toHaveBeenCalledWith({
+        where: {
+          id: 'doc_mr',
+          OR: [
+            { draftNarrative: { equals: Prisma.AnyNull } },
+            { draftNarrative: { equals: {} } },
+          ],
+        },
+        data: {
+          draftNarrative: {
+            procedure: expect.stringContaining(
+              'Acme Corp holds a management review',
             ),
           },
         },
@@ -261,9 +334,9 @@ describe('IsmsService ensureSetup', () => {
         await service.ensureSetup(dto);
 
         expect(mockDb.ismsDocument.createMany).toHaveBeenCalledTimes(1);
-        // 1 template-driven + 8 definition fallbacks: a type shipped before its
+        // 1 template-driven + 9 definition fallbacks: a type shipped before its
         // template seed re-runs (e.g. monitoring, CS-723) still provisions.
-        expect(createManyData()).toHaveLength(9);
+        expect(createManyData()).toHaveLength(10);
         expect(createManyData()[0]).toMatchObject({
           type: 'context_of_organization',
           title: 'Context of the Organization',
@@ -347,9 +420,9 @@ describe('IsmsService ensureSetup', () => {
 
         await service.ensureSetup(dto);
 
-        // objectives (template) + 7 definition fallbacks; the existing
+        // objectives (template) + 8 definition fallbacks; the existing
         // context_of_organization is skipped.
-        expect(createManyData()).toHaveLength(8);
+        expect(createManyData()).toHaveLength(9);
         expect(createManyData()[0].type).toBe('objectives_plan');
         expect(
           createManyData().map((doc: { type: string }) => doc.type),
@@ -449,6 +522,7 @@ describe('IsmsService ensureSetup', () => {
             { type: 'objectives_plan' },
             { type: 'monitoring' },
             { type: 'internal_audit' },
+            { type: 'management_review' },
           ])
           .mockResolvedValueOnce([]);
 
