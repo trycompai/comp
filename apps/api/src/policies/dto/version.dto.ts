@@ -1,7 +1,13 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiSchema } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsArray, IsBoolean, IsOptional, IsString } from 'class-validator';
 
+// A second class named `CreateVersionDto` exists in tasks/automations with a
+// different, REQUIRED shape (version! + scriptKey!). Without a distinct OpenAPI
+// component name the two collide, and the automations shape overwrites this
+// one — which broke the create-policy-version MCP tool (it demanded fields the
+// policies endpoint's ValidationPipe then rejected with 400). Keep this name.
+@ApiSchema({ name: 'CreatePolicyVersionDto' })
 export class CreateVersionDto {
   @ApiProperty({
     description: 'Optional version ID to base the new version on',

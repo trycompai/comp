@@ -11307,7 +11307,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateVersionDto"
+                "$ref": "#/components/schemas/CreatePolicyVersionDto"
               }
             }
           }
@@ -21375,12 +21375,7 @@
                       "not_started",
                       "on_track",
                       "at_risk",
-                      "met",
-                      "planned",
-                      "in_progress",
-                      "complete",
-                      "open",
-                      "closed"
+                      "met"
                     ]
                   },
                   "responsibilities": {
@@ -21488,112 +21483,6 @@
                     "type": "string"
                   },
                   "note": {
-                    "type": "string",
-                    "nullable": true
-                  },
-                  "scope": {
-                    "type": "string"
-                  },
-                  "criteria": {
-                    "type": "string"
-                  },
-                  "auditorName": {
-                    "type": "string",
-                    "nullable": true
-                  },
-                  "plannedStartDate": {
-                    "type": "string",
-                    "nullable": true
-                  },
-                  "plannedEndDate": {
-                    "type": "string",
-                    "nullable": true
-                  },
-                  "conclusionVerdict": {
-                    "type": "string",
-                    "enum": [
-                      "conform",
-                      "substantially_conform",
-                      "not_yet_conform"
-                    ],
-                    "nullable": true
-                  },
-                  "conclusionNotes": {
-                    "type": "string",
-                    "nullable": true
-                  },
-                  "signoffAuditorName": {
-                    "type": "string",
-                    "nullable": true
-                  },
-                  "signoffAuditorDate": {
-                    "type": "string",
-                    "nullable": true
-                  },
-                  "signoffSpoName": {
-                    "type": "string",
-                    "nullable": true
-                  },
-                  "signoffSpoDate": {
-                    "type": "string",
-                    "nullable": true
-                  },
-                  "signoffTopMgmtName": {
-                    "type": "string",
-                    "nullable": true
-                  },
-                  "signoffTopMgmtDate": {
-                    "type": "string",
-                    "nullable": true
-                  },
-                  "auditId": {
-                    "type": "string"
-                  },
-                  "controlRef": {
-                    "type": "string"
-                  },
-                  "whatWasTested": {
-                    "type": "string"
-                  },
-                  "whereToFind": {
-                    "type": "string"
-                  },
-                  "result": {
-                    "type": "string",
-                    "enum": [
-                      "conformity_confirmed",
-                      "nonconformity_raised",
-                      "observation_raised",
-                      "not_sampled"
-                    ],
-                    "nullable": true
-                  },
-                  "notes": {
-                    "type": "string",
-                    "nullable": true
-                  },
-                  "type": {
-                    "type": "string",
-                    "enum": [
-                      "nc_major",
-                      "nc_minor",
-                      "ofi",
-                      "observation"
-                    ]
-                  },
-                  "controlId": {
-                    "type": "string",
-                    "nullable": true
-                  },
-                  "clauseOrControl": {
-                    "type": "string",
-                    "nullable": true
-                  },
-                  "dueDate": {
-                    "type": "string",
-                    "nullable": true
-                  },
-                  "closureEvidence": {
                     "type": "string",
                     "nullable": true
                   },
@@ -21722,12 +21611,7 @@
                       "not_started",
                       "on_track",
                       "at_risk",
-                      "met",
-                      "planned",
-                      "in_progress",
-                      "complete",
-                      "open",
-                      "closed"
+                      "met"
                     ]
                   },
                   "responsibilities": {
@@ -21835,112 +21719,6 @@
                     "type": "string"
                   },
                   "note": {
-                    "type": "string",
-                    "nullable": true
-                  },
-                  "scope": {
-                    "type": "string"
-                  },
-                  "criteria": {
-                    "type": "string"
-                  },
-                  "auditorName": {
-                    "type": "string",
-                    "nullable": true
-                  },
-                  "plannedStartDate": {
-                    "type": "string",
-                    "nullable": true
-                  },
-                  "plannedEndDate": {
-                    "type": "string",
-                    "nullable": true
-                  },
-                  "conclusionVerdict": {
-                    "type": "string",
-                    "enum": [
-                      "conform",
-                      "substantially_conform",
-                      "not_yet_conform"
-                    ],
-                    "nullable": true
-                  },
-                  "conclusionNotes": {
-                    "type": "string",
-                    "nullable": true
-                  },
-                  "signoffAuditorName": {
-                    "type": "string",
-                    "nullable": true
-                  },
-                  "signoffAuditorDate": {
-                    "type": "string",
-                    "nullable": true
-                  },
-                  "signoffSpoName": {
-                    "type": "string",
-                    "nullable": true
-                  },
-                  "signoffSpoDate": {
-                    "type": "string",
-                    "nullable": true
-                  },
-                  "signoffTopMgmtName": {
-                    "type": "string",
-                    "nullable": true
-                  },
-                  "signoffTopMgmtDate": {
-                    "type": "string",
-                    "nullable": true
-                  },
-                  "auditId": {
-                    "type": "string"
-                  },
-                  "controlRef": {
-                    "type": "string"
-                  },
-                  "whatWasTested": {
-                    "type": "string"
-                  },
-                  "whereToFind": {
-                    "type": "string"
-                  },
-                  "result": {
-                    "type": "string",
-                    "enum": [
-                      "conformity_confirmed",
-                      "nonconformity_raised",
-                      "observation_raised",
-                      "not_sampled"
-                    ],
-                    "nullable": true
-                  },
-                  "notes": {
-                    "type": "string",
-                    "nullable": true
-                  },
-                  "type": {
-                    "type": "string",
-                    "enum": [
-                      "nc_major",
-                      "nc_minor",
-                      "ofi",
-                      "observation"
-                    ]
-                  },
-                  "controlId": {
-                    "type": "string",
-                    "nullable": true
-                  },
-                  "clauseOrControl": {
-                    "type": "string",
-                    "nullable": true
-                  },
-                  "dueDate": {
-                    "type": "string",
-                    "nullable": true
-                  },
-                  "closureEvidence": {
                     "type": "string",
                     "nullable": true
                   },
@@ -25352,6 +25130,14 @@
             }
           },
           {
+            "name": "frameworkInstanceId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "formType",
             "required": true,
             "in": "path",
@@ -25372,14 +25158,6 @@
                 "tabletop_exercise",
                 "account_types"
               ],
-              "type": "string"
-            }
-          },
-          {
-            "name": "frameworkInstanceId",
-            "required": true,
-            "in": "query",
-            "schema": {
               "type": "string"
             }
           }
@@ -29345,28 +29123,20 @@
           }
         }
       },
-      "CreateVersionDto": {
+      "CreatePolicyVersionDto": {
         "type": "object",
         "properties": {
-          "version": {
-            "type": "number",
-            "description": "Version number for this published script",
-            "example": 1
-          },
-          "scriptKey": {
+          "sourceVersionId": {
             "type": "string",
-            "description": "S3 key of the already-generated & published automation script (returned by the publish step).",
-            "example": "org_abc123/tsk_abc123/aut_abc123.v1.js"
+            "description": "Optional version ID to base the new version on",
+            "example": "pv_abc123def456"
           },
           "changelog": {
             "type": "string",
-            "description": "Optional changelog describing this version"
+            "description": "Optional changelog to associate with the new version",
+            "example": "Initial draft for quarterly updates"
           }
-        },
-        "required": [
-          "version",
-          "scriptKey"
-        ]
+        }
       },
       "UpdateVersionContentDto": {
         "type": "object",
@@ -29597,6 +29367,29 @@
             "description": "Automation schedule cadence"
           }
         }
+      },
+      "CreateVersionDto": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "number",
+            "description": "Version number for this published script",
+            "example": 1
+          },
+          "scriptKey": {
+            "type": "string",
+            "description": "S3 key of the already-generated & published automation script (returned by the publish step).",
+            "example": "org_abc123/tsk_abc123/aut_abc123.v1.js"
+          },
+          "changelog": {
+            "type": "string",
+            "description": "Optional changelog describing this version"
+          }
+        },
+        "required": [
+          "version",
+          "scriptKey"
+        ]
       },
       "AuthorResponseDto": {
         "type": "object",
