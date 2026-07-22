@@ -110,6 +110,33 @@ export class RolesService {
   }
 
   /**
+   * Resources/actions present in `after` but not in `before` — what this
+   * request would actually grant that the role didn't already have. Used so
+   * an update only needs privilege-escalation validation for what's newly
+   * granted, not the role's entire resulting permission set: re-checking
+   * everything would fail an obligations-only (or otherwise unrelated)
+   * update against a role that already holds a permission the caller
+   * themselves doesn't have, even though that permission was legitimately
+   * granted earlier and this request isn't touching it.
+   */
+  private diffNewlyGrantedPermissions(
+    before: Record<string, string[]>,
+    after: Record<string, string[]>,
+  ): Record<string, string[]> {
+    const added: Record<string, string[]> = {};
+    for (const [resource, actions] of Object.entries(after)) {
+      const beforeActions = before[resource] ?? [];
+      const newActions = actions.filter(
+        (action) => !beforeActions.includes(action),
+      );
+      if (newActions.length > 0) {
+        added[resource] = newActions;
+      }
+    }
+    return added;
+  }
+
+  /**
    * Check if caller has all the permissions they're trying to grant.
    * Prevents privilege escalation.
    */
@@ -450,32 +477,43 @@ export class RolesService {
     // permissions to merge portal into).
     let permissionsToPersist: Record<string, string[]> | undefined;
     if (dto.permissions !== undefined || dto.obligations !== undefined) {
+      const existingPermissions: Record<string, string[]> =
+        typeof role.permissions === 'string'
+          ? (JSON.parse(role.permissions) as Record<string, string[]>)
+          : role.permissions;
       const effectiveObligations =
         dto.obligations !== undefined
           ? dto.obligations
           : parseObligationsField(role.obligations);
-      const effectivePermissions: Record<string, string[]> =
-        dto.permissions !== undefined
-          ? dto.permissions
-          : typeof role.permissions === 'string'
-            ? (JSON.parse(role.permissions) as Record<string, string[]>)
-            : role.permissions;
+      const effectivePermissions =
+        dto.permissions !== undefined ? dto.permissions : existingPermissions;
       permissionsToPersist = this.withCompliancePortalInvariant(
         effectivePermissions,
         effectiveObligations,
       );
 
-      // Validate against the FINAL permission set that will actually be
-      // written — not just the submitted `dto.permissions`. This also
-      // catches the portal grant the invariant above may have just added
-      // on an obligations-only update (no `dto.permissions` at all), which
-      // would otherwise let a caller without portal access grant it to a
-      // role simply by toggling the compliance obligation.
-      await this.validateNoPrivilegeEscalation(
-        callerRoles,
+      // Validate only what this request would newly grant relative to the
+      // role's current permissions — not the entire resulting set. This
+      // still catches the portal grant the invariant above may have just
+      // added on an obligations-only update (no `dto.permissions` at all),
+      // which would otherwise let a caller without portal access grant it
+      // to a role simply by toggling the compliance obligation. But it
+      // must NOT re-validate permissions the role already legitimately
+      // held before this request — otherwise an obligations-only (or
+      // otherwise unrelated) update fails whenever the role holds some
+      // permission the caller doesn't personally have, even though this
+      // request isn't touching it.
+      const newlyGranted = this.diffNewlyGrantedPermissions(
+        existingPermissions,
         permissionsToPersist,
-        organizationId,
       );
+      if (Object.keys(newlyGranted).length > 0) {
+        await this.validateNoPrivilegeEscalation(
+          callerRoles,
+          newlyGranted,
+          organizationId,
+        );
+      }
     }
 
     // Update the role

@@ -646,6 +646,50 @@ describe('RolesService', () => {
       expect(mockDb.organizationRole.update).not.toHaveBeenCalled();
     });
 
+    it('allows an obligations-only update that grants nothing new, even if the role already holds a permission the caller lacks (P2 regression)', async () => {
+      // Regression (P2): re-validating the ENTIRE resulting permission set
+      // (rather than just what this request newly grants) meant an
+      // obligations-only update could fail against a role that already
+      // legitimately held a permission the caller doesn't personally have
+      // — even though this request isn't touching that permission at all.
+      // The role here already has 'secret' and 'portal' (e.g. granted
+      // earlier by an owner); toggling compliance off doesn't strip either
+      // (one-directional by design) and adds nothing new, so an 'auditor'
+      // caller — who has neither 'secret' nor 'portal' — must still be able
+      // to make this update.
+      const existingRole = {
+        id: roleId,
+        name: 'devops-engineer',
+        permissions: JSON.stringify({
+          secret: ['read'],
+          portal: ['read', 'update'],
+        }),
+        obligations: JSON.stringify({ compliance: true }),
+      };
+
+      (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(
+        existingRole,
+      );
+      (mockDb.organizationRole.update as jest.Mock).mockImplementation(
+        ({ data }) => ({
+          id: roleId,
+          name: existingRole.name,
+          ...data,
+          updatedAt: new Date(),
+        }),
+      );
+
+      await expect(
+        service.updateRole(
+          organizationId,
+          roleId,
+          { obligations: { compliance: false } },
+          ['auditor'],
+        ),
+      ).resolves.toBeDefined();
+      expect(mockDb.organizationRole.update).toHaveBeenCalled();
+    });
+
     it('grants portal:read/update when enabling the compliance obligation on an obligations-only update', async () => {
       // An obligations-only PATCH (no `permissions` in the request) must
       // still merge portal into the role's EXISTING stored permissions —
