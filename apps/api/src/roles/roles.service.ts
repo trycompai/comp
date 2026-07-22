@@ -1,6 +1,7 @@
 import {
   Injectable,
   BadRequestException,
+  ConflictException,
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
@@ -516,9 +517,19 @@ export class RolesService {
       }
     }
 
-    // Update the role
-    const updated = await db.organizationRole.update({
-      where: { id: roleId },
+    // Update the role, guarded by an optimistic-concurrency check on
+    // `updatedAt`. The privilege-escalation validation above ran against
+    // the `role` snapshot read at the top of this function — if another
+    // request changed the row in between (e.g. an owner just revoked a
+    // permission from it), writing unconditionally here could silently
+    // reintroduce that permission on top of the concurrent change, never
+    // validated against the caller who's making THIS request. `updateMany`
+    // (unlike `update`, whose `where` is restricted to unique fields) can
+    // include `updatedAt` in the filter, so the write only applies if the
+    // row still matches the exact version we validated against; `count`
+    // tells us whether it did.
+    const updateResult = await db.organizationRole.updateMany({
+      where: { id: roleId, updatedAt: role.updatedAt },
       data: {
         ...(dto.name && { name: dto.name }),
         ...(permissionsToPersist && {
@@ -528,6 +539,16 @@ export class RolesService {
           obligations: JSON.stringify(dto.obligations),
         }),
       },
+    });
+
+    if (updateResult.count === 0) {
+      throw new ConflictException(
+        `Role '${role.name}' was modified by another request. Please retry.`,
+      );
+    }
+
+    const updated = await db.organizationRole.findUniqueOrThrow({
+      where: { id: roleId },
     });
 
     return {
