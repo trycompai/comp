@@ -339,7 +339,12 @@ export class CloudSecurityController {
           userId: acting.userId,
           connectionId,
           action: 'scan_completed',
-          description: `Ran cloud security scan — ${totalFindings} findings (${failedCount} failed, ${passedCount} passed)`,
+          // Append the caller marker (e.g. 'via API key "CI"') for non-session
+          // callers so an owner-fallback attribution isn't read as a session
+          // action — mirrors the exception / scan-mode endpoints.
+          description: `Ran cloud security scan — ${totalFindings} findings (${failedCount} failed, ${passedCount} passed)${
+            acting.callerLabel ? ` [${acting.callerLabel}]` : ''
+          }`,
           metadata: {
             totalFindings,
             failedCount,

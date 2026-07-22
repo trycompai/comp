@@ -225,6 +225,7 @@ describe('AuditLogInterceptor', () => {
       userId: 'usr_creator',
       memberId: 'mem_creator',
       source: 'api-key-creator',
+      callerLabel: 'via API key "CI Pipeline"',
     });
 
     const context = createMockExecutionContext({
@@ -250,8 +251,14 @@ describe('AuditLogInterceptor', () => {
               memberId: 'mem_creator',
               entityType: 'vendor',
               entityId: 'vnd_new',
+              // Provenance marker recorded so the owner/creator attribution
+              // isn't read as a session action.
+              description: expect.stringContaining('[via API key "CI Pipeline"]'),
             }),
           });
+          // ...and captured structurally in the data JSON.
+          const call = mockCreate.mock.calls[0][0];
+          expect(call.data.data.via).toBe('via API key "CI Pipeline"');
           done();
         }, 50);
       },
