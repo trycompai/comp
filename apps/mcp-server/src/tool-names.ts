@@ -1241,6 +1241,10 @@ export const toolNames: Array<{ name: string; description: string }>= [
     "description": "Delete a row in an ISMS register\n\nDelete a row in an ISMS register in Comp AI."
   },
   {
+    "name": "bulk-create-measurements",
+    "description": "Record measurements for several metrics/periods in one save (Metrics due / backfill)\n\nRecord measurements for several metrics/periods in one save (Metrics due / backfill) in Comp AI."
+  },
+  {
     "name": "save-narrative",
     "description": "Save a singleton document narrative\n\nSave a singleton document narrative in Comp AI."
   },
