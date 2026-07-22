@@ -4,10 +4,11 @@
    <img src="https://assets.trycomp.ai/logo.png" alt="Logo" width="10%">
   </a>
 
+  <h3> Sal's first commit </h3>
   <h3 align="center">Comp AI</h3>
 
   <p align="center">
-    The open-source compliance platform.
+    The open-source compliance platform. 
     <br />
     <a href="https://trycomp.ai"><strong>Learn more »</strong></a>
     <br />
