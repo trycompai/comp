@@ -55,8 +55,8 @@ export const ControlsControllerUnlinkDocumentTypeV1Security$zodSchema:
 
 export type ControlsControllerUnlinkDocumentTypeV1Request = {
   id: string;
-  frameworkInstanceId: string;
   formType: ControlsControllerUnlinkDocumentTypeV1FormType;
+  frameworkInstanceId: string;
 };
 
 export const ControlsControllerUnlinkDocumentTypeV1Request$zodSchema: z.ZodType<

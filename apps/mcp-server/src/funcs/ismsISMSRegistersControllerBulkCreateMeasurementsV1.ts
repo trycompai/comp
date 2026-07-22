@@ -3,7 +3,7 @@
  */
 
 import { CompAiCore } from "../core.js";
-import { encodeJSON } from "../lib/encodings.js";
+import { encodeJSON, encodeSimple } from "../lib/encodings.js";
 import { compactMap } from "../lib/primitives.js";
 import { safeParse } from "../lib/schemas.js";
 import { RequestOptions } from "../lib/sdks.js";
@@ -19,23 +19,23 @@ import {
 } from "../models/errors/httpclienterrors.js";
 import { SDKValidationError } from "../models/errors/sdkvalidationerror.js";
 import {
-  TrustPortalControllerCreateCustomLinkV1Request,
-  TrustPortalControllerCreateCustomLinkV1Request$zodSchema,
-} from "../models/trustportalcontrollercreatecustomlinkv1op.js";
+  IsmsRegistersControllerBulkCreateMeasurementsV1Request,
+  IsmsRegistersControllerBulkCreateMeasurementsV1Request$zodSchema,
+} from "../models/ismsregisterscontrollerbulkcreatemeasurementsv1op.js";
 import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
 
 /**
- * Create a custom link for trust portal
+ * Record measurements for several metrics/periods in one save (Metrics due / backfill)
  *
  * @remarks
- * Create a custom link for trust portal in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources, documents, links, and vendor disclosures.
+ * Record measurements for several metrics/periods in one save (Metrics due / backfill) in Comp AI.
  *
  * If set, this operation will use {@link Security.apikey} from the global security.
  */
-export function trustPortalTrustPortalControllerCreateCustomLinkV1(
+export function ismsISMSRegistersControllerBulkCreateMeasurementsV1(
   client$: CompAiCore,
-  request: TrustPortalControllerCreateCustomLinkV1Request,
+  request: IsmsRegistersControllerBulkCreateMeasurementsV1Request,
   options?: RequestOptions,
 ): APIPromise<
   Result<
@@ -58,7 +58,7 @@ export function trustPortalTrustPortalControllerCreateCustomLinkV1(
 
 async function $do(
   client$: CompAiCore,
-  request: TrustPortalControllerCreateCustomLinkV1Request,
+  request: IsmsRegistersControllerBulkCreateMeasurementsV1Request,
   options?: RequestOptions,
 ): Promise<
   [
@@ -78,15 +78,26 @@ async function $do(
   const parsed$ = safeParse(
     request,
     (value$) =>
-      TrustPortalControllerCreateCustomLinkV1Request$zodSchema.parse(value$),
+      IsmsRegistersControllerBulkCreateMeasurementsV1Request$zodSchema.parse(
+        value$,
+      ),
     "Input validation failed",
   );
   if (!parsed$.ok) {
     return [parsed$, { status: "invalid" }];
   }
   const payload$ = parsed$.value;
-  const body$ = encodeJSON("body", payload$, { explode: true });
-  const path$ = pathToFunc("/v1/trust-portal/custom-links")();
+  const body$ = encodeJSON("body", payload$.body, { explode: true });
+
+  const pathParams$ = {
+    id: encodeSimple("id", payload$.id, {
+      explode: false,
+      charEncoding: "percent",
+    }),
+  };
+  const path$ = pathToFunc("/v1/isms/documents/{id}/measurements/bulk")(
+    pathParams$,
+  );
 
   const headers$ = new Headers(compactMap({
     "Content-Type": "application/json",
@@ -98,7 +109,7 @@ async function $do(
   const context = {
     options: client$._options,
     baseURL: options?.serverURL ?? client$._baseURL ?? "",
-    operationID: "TrustPortalController_createCustomLink_v1",
+    operationID: "IsmsRegistersController_bulkCreateMeasurements_v1",
     oAuth2Scopes: null,
     resolvedSecurity: requestSecurity,
     securitySource: client$._options.security,

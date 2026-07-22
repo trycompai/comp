@@ -3,34 +3,42 @@
  */
 
 import { trustPortalTrustPortalControllerUpdateFaqsV1 } from "../../funcs/trustPortalTrustPortalControllerUpdateFaqsV1.js";
+import { TrustPortalControllerUpdateFaqsV1Request$zodSchema } from "../../models/trustportalcontrollerupdatefaqsv1op.js";
 import { formatResult, ToolDefinition } from "../tools.js";
 
-export const tool$trustPortalTrustPortalControllerUpdateFaqsV1: ToolDefinition =
-  {
-    name: "update-faqs",
-    description: `Update trust portal FAQs
+const args = {
+  request: TrustPortalControllerUpdateFaqsV1Request$zodSchema,
+};
+
+export const tool$trustPortalTrustPortalControllerUpdateFaqsV1: ToolDefinition<
+  typeof args
+> = {
+  name: "update-faqs",
+  description: `Update trust portal FAQs
 
 Update trust portal FAQs in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources, documents, links, and vendor disclosures.`,
-    annotations: {
-      "title": "",
-      "destructiveHint": false,
-      "idempotentHint": false,
-      "openWorldHint": false,
-      "readOnlyHint": false,
-    },
-    tool: async (client, ctx) => {
-      const [result] = await trustPortalTrustPortalControllerUpdateFaqsV1(
-        client,
-        { fetchOptions: { signal: ctx.signal } },
-      ).$inspect();
+  annotations: {
+    "title": "",
+    "destructiveHint": false,
+    "idempotentHint": false,
+    "openWorldHint": false,
+    "readOnlyHint": false,
+  },
+  args,
+  tool: async (client, args, ctx) => {
+    const [result] = await trustPortalTrustPortalControllerUpdateFaqsV1(
+      client,
+      args.request,
+      { fetchOptions: { signal: ctx.signal } },
+    ).$inspect();
 
-      if (!result.ok) {
-        return {
-          content: [{ type: "text", text: result.error.message }],
-          isError: true,
-        };
-      }
+    if (!result.ok) {
+      return {
+        content: [{ type: "text", text: result.error.message }],
+        isError: true,
+      };
+    }
 
-      return formatResult(result.value);
-    },
-  };
+    return formatResult(result.value);
+  },
+};

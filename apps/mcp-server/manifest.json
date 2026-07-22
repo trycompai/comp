@@ -1,7 +1,7 @@
 {
   "manifest_version": "0.3",
   "name": "@trycompai/mcp-server",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "",
   "long_description": "Comp AI API: Compliance automation API for SOC 2, ISO 27001, HIPAA, GDPR, evidence collection, policy workflows, Trust Access, security questionnaires, integrations, cloud checks, and device compliance.",
   "author": {
@@ -1279,6 +1279,10 @@
     {
       "name": "delete-row",
       "description": "Delete a row in an ISMS register\n\nDelete a row in an ISMS register in Comp AI."
+    },
+    {
+      "name": "bulk-create-measurements",
+      "description": "Record measurements for several metrics/periods in one save (Metrics due / backfill)\n\nRecord measurements for several metrics/periods in one save (Metrics due / backfill) in Comp AI."
     },
     {
       "name": "save-narrative",
