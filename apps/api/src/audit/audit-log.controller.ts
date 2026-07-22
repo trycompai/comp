@@ -35,6 +35,11 @@ export class AuditLogController {
     required: false,
     description: 'Number of logs to return (max 100, default 50)',
   })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    description: 'Number of logs to skip (default 0)',
+  })
   async getAuditLogs(
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
@@ -42,6 +47,7 @@ export class AuditLogController {
     @Query('entityId') entityId?: string,
     @Query('pathContains') pathContains?: string,
     @Query('take') take?: string,
+    @Query('offset') offset?: string,
   ) {
     // organizationId comes from auth context (not user input) — ensures tenant isolation
     const where: Record<string, unknown> = { organizationId };
@@ -71,28 +77,37 @@ export class AuditLogController {
     const parsedTake = take
       ? Math.min(100, Math.max(1, parseInt(take, 10) || 50))
       : 50;
+    const parsedOffset = offset ? Math.max(0, parseInt(offset, 10) || 0) : 0;
 
-    const logs = await db.auditLog.findMany({
-      where,
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true,
-            role: true,
+    // `total` drives the client pager (how many pages exist / when to stop
+    // fetching); the stable `id` secondary sort keeps offset paging
+    // deterministic when rows share a timestamp.
+    const [logs, total] = await Promise.all([
+      db.auditLog.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+              role: true,
+            },
           },
+          member: true,
+          organization: true,
         },
-        member: true,
-        organization: true,
-      },
-      orderBy: { timestamp: 'desc' },
-      take: parsedTake,
-    });
+        orderBy: [{ timestamp: 'desc' }, { id: 'desc' }],
+        take: parsedTake,
+        skip: parsedOffset,
+      }),
+      db.auditLog.count({ where }),
+    ]);
 
     return {
       data: logs,
+      total,
       authType: authContext.authType,
       ...(authContext.userId && {
         authenticatedUser: {

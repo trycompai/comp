@@ -16,10 +16,12 @@ jest.mock('@trycompai/auth', () => ({
 }));
 
 const mockFindMany = jest.fn();
+const mockCount = jest.fn();
 jest.mock('@db', () => ({
   db: {
     auditLog: {
       findMany: (...args: unknown[]) => mockFindMany(...args),
+      count: (...args: unknown[]) => mockCount(...args),
     },
   },
   Prisma: {},
@@ -54,17 +56,20 @@ describe('AuditLogController', () => {
     controller = module.get<AuditLogController>(AuditLogController);
 
     jest.clearAllMocks();
+    mockCount.mockResolvedValue(0);
   });
 
   describe('getAuditLogs', () => {
-    it('should return logs with default take of 50', async () => {
+    it('should return logs with default take of 50 and the total count', async () => {
       const mockLogs = [{ id: 'log_1' }, { id: 'log_2' }];
       mockFindMany.mockResolvedValue(mockLogs);
+      mockCount.mockResolvedValue(137);
 
       const result = await controller.getAuditLogs('org_1', mockAuthContext);
 
       expect(result).toEqual({
         data: mockLogs,
+        total: 137,
         authType: 'session',
         authenticatedUser: { id: 'usr_1', email: 'user@example.com' },
       });
@@ -83,8 +88,79 @@ describe('AuditLogController', () => {
           member: true,
           organization: true,
         },
-        orderBy: { timestamp: 'desc' },
+        orderBy: [{ timestamp: 'desc' }, { id: 'desc' }],
         take: 50,
+        skip: 0,
+      });
+      expect(mockCount).toHaveBeenCalledWith({
+        where: { organizationId: 'org_1' },
+      });
+    });
+
+    it('should skip by the offset parameter', async () => {
+      mockFindMany.mockResolvedValue([]);
+
+      await controller.getAuditLogs(
+        'org_1',
+        mockAuthContext,
+        undefined,
+        undefined,
+        undefined,
+        '100',
+        '200',
+      );
+
+      expect(mockFindMany).toHaveBeenCalledWith(
+        expect.objectContaining({ take: 100, skip: 200 }),
+      );
+    });
+
+    it('should clamp a negative offset to 0', async () => {
+      mockFindMany.mockResolvedValue([]);
+
+      await controller.getAuditLogs(
+        'org_1',
+        mockAuthContext,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        '-10',
+      );
+
+      expect(mockFindMany).toHaveBeenCalledWith(
+        expect.objectContaining({ skip: 0 }),
+      );
+    });
+
+    it('should default offset to 0 for invalid values', async () => {
+      mockFindMany.mockResolvedValue([]);
+
+      await controller.getAuditLogs(
+        'org_1',
+        mockAuthContext,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        'invalid',
+      );
+
+      expect(mockFindMany).toHaveBeenCalledWith(
+        expect.objectContaining({ skip: 0 }),
+      );
+    });
+
+    it('should count with the same filters as the query', async () => {
+      mockFindMany.mockResolvedValue([]);
+
+      await controller.getAuditLogs('org_1', mockAuthContext, 'vendor,task');
+
+      expect(mockCount).toHaveBeenCalledWith({
+        where: {
+          organizationId: 'org_1',
+          entityType: { in: ['vendor', 'task'] },
+        },
       });
     });
 
@@ -243,6 +319,7 @@ describe('AuditLogController', () => {
 
       expect(result).toEqual({
         data: [],
+        total: 0,
         authType: 'api-key',
       });
     });
