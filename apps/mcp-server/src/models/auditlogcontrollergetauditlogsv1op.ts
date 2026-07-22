@@ -9,6 +9,7 @@ export type AuditLogControllerGetAuditLogsV1Request = {
   entityId?: string | undefined;
   pathContains?: string | undefined;
   take?: string | undefined;
+  offset?: string | undefined;
 };
 
 export const AuditLogControllerGetAuditLogsV1Request$zodSchema: z.ZodType<
@@ -18,6 +19,7 @@ export const AuditLogControllerGetAuditLogsV1Request$zodSchema: z.ZodType<
   entityType: z.string().describe(
     "Filter by entity type (e.g. policy, task, control)",
   ).optional(),
+  offset: z.string().describe("Number of logs to skip (default 0)").optional(),
   pathContains: z.string().describe(
     "Filter by path substring (e.g. automation ID)",
   ).optional(),
