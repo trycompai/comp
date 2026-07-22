@@ -13,7 +13,8 @@ export type IsmsDocumentType =
   | 'roles_and_responsibilities'
   | 'objectives_plan'
   | 'monitoring'
-  | 'internal_audit';
+  | 'internal_audit'
+  | 'management_review';
 
 export type IsmsDocumentStatus =
   | 'draft'
@@ -45,6 +46,9 @@ export type IsmsAuditControlResult =
   | 'not_sampled';
 export type IsmsAuditFindingType = 'nc_major' | 'nc_minor' | 'ofi' | 'observation';
 export type IsmsAuditFindingStatus = 'open' | 'in_progress' | 'closed';
+export type IsmsReviewStatus = 'planned' | 'in_progress' | 'complete';
+export type IsmsReviewConclusionVerdict = 'suitable' | 'adequate' | 'effective';
+export type IsmsReviewActionStatus = 'open' | 'in_progress' | 'closed';
 
 /**
  * The ISO 27001 clause 4.1 category taxonomy auditors expect, scoped by kind.
@@ -270,6 +274,72 @@ export interface IsmsInternalAuditNarrative {
   programme: string;
 }
 
+/** Narrative shape for the Management Review document: the Procedure paragraph. */
+export interface IsmsManagementReviewNarrative {
+  procedure: string;
+}
+
+/** An attendee frozen at selection (clause 9.3): member id + display name. */
+export interface IsmsReviewAttendee {
+  memberId: string;
+  name: string;
+}
+
+/** One row in a review's Inputs (9.3.2) table — the meeting agenda. */
+export interface IsmsReviewInput {
+  id: string;
+  reviewId: string;
+  /** Stable key for the ten seeded rows; null for custom rows. */
+  inputKey: string | null;
+  inputRef: string;
+  whatItCovers: string;
+  whereToFind: string;
+  discussionNotes: string | null;
+  discussed: boolean;
+  source: IsmsContextSource;
+  derivedFrom: string | null;
+  position: number;
+}
+
+/** An action arising from a management review (9.3.3 outputs). */
+export interface IsmsReviewAction {
+  id: string;
+  reviewId: string;
+  /** Server-generated per-review sequence ("A01"), immutable; displayed as
+   * "MR-YYYY-NN-A01". */
+  reference: string;
+  description: string;
+  ownerMemberId: string | null;
+  dueDate: string | null;
+  status: IsmsReviewActionStatus;
+  position: number;
+}
+
+/** Register: one management review instance (clause 9.3). */
+export interface IsmsManagementReview {
+  id: string;
+  /** Server-generated "MR-YYYY-NN", immutable. */
+  reference: string;
+  /** The date the review was held (backdatable, customer-entered). */
+  meetingDate: string | null;
+  /** Server-set at creation, immutable — the honest-backdating guardrail. */
+  recordedAt: string;
+  chairName: string | null;
+  /** Attendees frozen at selection. Stored as JSON on the API side; consume
+   * via parseAttendees (management-review-constants.ts) to guard stale shapes. */
+  attendees: IsmsReviewAttendee[];
+  status: IsmsReviewStatus;
+  conclusionVerdict: IsmsReviewConclusionVerdict | null;
+  conclusionNotes: string | null;
+  decisionsText: string | null;
+  changesText: string | null;
+  signoffChairName: string | null;
+  signoffChairDate: string | null;
+  position: number;
+  inputs: IsmsReviewInput[];
+  actions: IsmsReviewAction[];
+}
+
 /** Narrative shape for the ISMS Scope singleton (clause 4.3). */
 export interface IsmsScopeNarrative {
   certificateScopeSentence: string;
@@ -362,12 +432,15 @@ export interface IsmsDocument {
   roles: IsmsRole[];
   metrics: IsmsMetric[];
   audits: IsmsAudit[];
+  reviews: IsmsManagementReview[];
   controlLinks: IsmsControlLink[];
-  /** Working-draft narrative (Scope, Leadership, Internal Audit programme). */
+  /** Working-draft narrative (Scope, Leadership, Internal Audit programme,
+   * Management Review procedure). */
   draftNarrative:
     | IsmsScopeNarrative
     | IsmsLeadershipNarrative
     | IsmsInternalAuditNarrative
+    | IsmsManagementReviewNarrative
     | Record<string, unknown>
     | null;
   currentVersionId: string | null;
@@ -457,6 +530,14 @@ export const ISMS_TYPE_META: IsmsTypeMeta[] = [
       'The internal audit programme and the plan, controls tested, findings and conclusion of each audit.',
     detailRouteEnabled: true,
   },
+  {
+    type: 'management_review',
+    clause: '9.3',
+    title: 'Management Review',
+    description:
+      'The management review procedure and the minutes of each review — inputs considered, outputs, actions arising and chair sign-off.',
+    detailRouteEnabled: true,
+  },
 ];
 
 /** Map a URL slug (e.g. "context-of-organization") to the canonical type. */
@@ -470,6 +551,7 @@ export const ISMS_SLUG_TO_TYPE: Record<string, IsmsDocumentType> = {
   objectives: 'objectives_plan',
   monitoring: 'monitoring',
   'internal-audit': 'internal_audit',
+  'management-review': 'management_review',
 };
 
 /** Inverse of ISMS_SLUG_TO_TYPE for fast type -> slug lookup. */
@@ -483,6 +565,7 @@ const ISMS_TYPE_TO_SLUG: Record<IsmsDocumentType, string> = {
   objectives_plan: 'objectives',
   monitoring: 'monitoring',
   internal_audit: 'internal-audit',
+  management_review: 'management-review',
 };
 
 export function slugToType(slug: string): IsmsDocumentType | undefined {
