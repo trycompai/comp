@@ -19,13 +19,17 @@ model OffboardingChecklistTemplate {
 }
 
 model OffboardingChecklistCompletion {
-  id             String   @id @default(dbgenerated("generate_prefixed_cuid('occ'::text)"))
-  organizationId String
-  memberId       String
-  templateItemId String?
-  completedById  String?
-  completedAt    DateTime @default(now())
-  notes          String?
+  id              String   @id @default(dbgenerated("generate_prefixed_cuid('occ'::text)"))
+  organizationId  String
+  memberId        String
+  templateItemId  String?
+  completedById   String?
+  completedAt     DateTime @default(now())
+  notes           String?
+  // When true, the step was resolved as an exception (could not / need not be
+  // done) rather than actually completed. `exceptionReason` explains why.
+  isException     Boolean  @default(false)
+  exceptionReason String?
 
   organization Organization                  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   member       Member                        @relation(fields: [memberId], references: [id], onDelete: Cascade)
