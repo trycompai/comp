@@ -13,12 +13,14 @@ jest.mock('@db', () => {
   const db = {
     ismsDocument: {
       findFirst: jest.fn(),
+      findUnique: jest.fn(),
       update: jest.fn(),
       updateMany: jest.fn(),
     },
     member: { findFirst: jest.fn(), findMany: jest.fn() },
     ismsRole: { findMany: jest.fn() },
     ismsAudit: { findMany: jest.fn() },
+    ismsManagementReview: { findMany: jest.fn() },
     // lockDocument runs $executeRaw; submitForApproval wraps validate+update in a tx.
     $executeRaw: jest.fn(),
     $transaction: jest.fn((cb: (tx: unknown) => unknown) => cb(db)),
@@ -236,6 +238,80 @@ describe('IsmsService document lifecycle', () => {
       });
       (mockDb.ismsAudit.findMany as jest.Mock).mockResolvedValue([
         { reference: 'IA-2026-01', status: 'planned', conclusionVerdict: null },
+      ]);
+      (mockDb.ismsDocument.update as jest.Mock).mockResolvedValue({
+        id: 'doc_1',
+        status: 'needs_review',
+      });
+
+      await service.submitForApproval(args);
+      expect(mockDb.ismsDocument.update).toHaveBeenCalled();
+    });
+
+    it('blocks a Management Review doc with no reviews recorded (clause 9.3)', async () => {
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({ id: 'mem_1' });
+      (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
+        id: 'doc_1',
+        type: 'management_review',
+      });
+      (mockDb.ismsDocument.findUnique as jest.Mock).mockResolvedValue({
+        draftNarrative: { procedure: 'We review annually.' },
+      });
+      (mockDb.ismsManagementReview.findMany as jest.Mock).mockResolvedValue([]);
+
+      await expect(service.submitForApproval(args)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(mockDb.ismsDocument.update).not.toHaveBeenCalled();
+    });
+
+    it('blocks a Management Review doc with an unsigned complete review', async () => {
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({ id: 'mem_1' });
+      (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
+        id: 'doc_1',
+        type: 'management_review',
+      });
+      (mockDb.ismsDocument.findUnique as jest.Mock).mockResolvedValue({
+        draftNarrative: { procedure: 'We review annually.' },
+      });
+      (mockDb.ismsManagementReview.findMany as jest.Mock).mockResolvedValue([
+        {
+          reference: 'MR-2026-01',
+          status: 'complete',
+          meetingDate: new Date('2026-05-01T00:00:00.000Z'),
+          chairName: 'Raoul Plickat',
+          attendees: [{ memberId: 'mem_1', name: 'Raoul Plickat' }],
+          signoffChairName: null,
+          signoffChairDate: null,
+          inputs: [{ discussed: true }],
+        },
+      ]);
+
+      await expect(service.submitForApproval(args)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('allows a Management Review doc with a planned review (agenda pack) on record', async () => {
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({ id: 'mem_1' });
+      (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
+        id: 'doc_1',
+        type: 'management_review',
+      });
+      (mockDb.ismsDocument.findUnique as jest.Mock).mockResolvedValue({
+        draftNarrative: { procedure: 'We review annually.' },
+      });
+      (mockDb.ismsManagementReview.findMany as jest.Mock).mockResolvedValue([
+        {
+          reference: 'MR-2026-01',
+          status: 'planned',
+          meetingDate: null,
+          chairName: null,
+          attendees: [],
+          signoffChairName: null,
+          signoffChairDate: null,
+          inputs: [{ discussed: false }],
+        },
       ]);
       (mockDb.ismsDocument.update as jest.Mock).mockResolvedValue({
         id: 'doc_1',

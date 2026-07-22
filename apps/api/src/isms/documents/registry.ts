@@ -13,6 +13,11 @@ import {
   internalAuditNarrativeSchema,
 } from './internal-audit';
 import {
+  deriveManagementReviewNarrative,
+  managementReviewNarrativeSchema,
+} from './management-review';
+import { buildManagementReviewSections } from './management-review-sections';
+import {
   buildScopeSections,
   deriveScopeNarrative,
   ismsScopeNarrativeSchema,
@@ -41,6 +46,7 @@ const EXPORT_SECTION_BUILDERS: Record<
   roles_and_responsibilities: buildRolesSections,
   monitoring: buildMonitoringSections,
   internal_audit: buildInternalAuditSections,
+  management_review: buildManagementReviewSections,
   isms_scope: buildScopeSections,
   leadership_commitment: buildLeadershipSections,
 };
@@ -57,9 +63,10 @@ export function buildExportSections({
 
 /**
  * Zod schema validating the narrative payload for each document type that
- * stores one. Covers the singleton documents plus the Internal Audit document,
- * whose narrative holds only the Programme paragraph (its audits live in their
- * own registers, so it is NOT a narrative type).
+ * stores one. Covers the singleton documents plus the Internal Audit and
+ * Management Review documents, whose narratives hold only the Programme /
+ * Procedure paragraph (their audits/reviews live in their own registers, so
+ * they are NOT narrative types).
  */
 export function narrativeSchemaForType(
   type: IsmsDocumentType,
@@ -67,6 +74,7 @@ export function narrativeSchemaForType(
   if (type === 'isms_scope') return ismsScopeNarrativeSchema;
   if (type === 'leadership_commitment') return leadershipNarrativeSchema;
   if (type === 'internal_audit') return internalAuditNarrativeSchema;
+  if (type === 'management_review') return managementReviewNarrativeSchema;
   return null;
 }
 
@@ -81,6 +89,7 @@ export function deriveNarrativeForType({
   if (type === 'isms_scope') return deriveScopeNarrative(data);
   if (type === 'leadership_commitment') return deriveLeadershipNarrative(data);
   if (type === 'internal_audit') return deriveInternalAuditNarrative(data);
+  if (type === 'management_review') return deriveManagementReviewNarrative(data);
   return null;
 }
 

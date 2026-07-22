@@ -204,6 +204,64 @@ export interface AuditExportRow {
   signoffs: AuditSignoffExportRow[];
 }
 
+/** The ten seeded Inputs (9.3.2) rows and their pre-filled text (9.3). */
+export interface SeedReviewInputDefinition {
+  inputKey: string;
+  inputRef: string;
+  whatItCovers: string;
+  whereToFind: string;
+}
+
+/** One Inputs (9.3.2) row, resolved for export (discussed humanized). */
+export interface ReviewInputExportRow {
+  inputRef: string;
+  whatItCovers: string;
+  whereToFind: string;
+  discussionNotes: string;
+  /** "Yes" once the input has been covered at the meeting, else "No". */
+  discussed: string;
+}
+
+/** One action arising, resolved for export (owner name frozen at build time). */
+export interface ReviewActionExportRow {
+  /** Full display reference, e.g. "MR-2026-01-A01". */
+  reference: string;
+  description: string;
+  ownerName: string;
+  dueDate: string;
+  /** Humanized status label ("Open"). */
+  status: string;
+}
+
+/** A review instance, resolved for export: fields + child tables + sign-off. */
+export interface ReviewExportRow {
+  reference: string;
+  meetingDate: string | null;
+  /** Server-set recording date ("Recorded on"), never editable. */
+  recordedOn: string;
+  chairName: string;
+  /** Attendee display names, frozen at selection. */
+  attendees: string[];
+  /** Humanized status label ("In progress"). */
+  status: string;
+  /** Assembled conclusion sentence, or null while no verdict is chosen. */
+  conclusion: string | null;
+  conclusionNotes: string | null;
+  decisionsText: string | null;
+  changesText: string | null;
+  /** Single sign-off slot: the chair signs (empty strings while unsigned). */
+  signoffChairName: string;
+  signoffChairDate: string;
+  inputs: ReviewInputExportRow[];
+  actions: ReviewActionExportRow[];
+  /**
+   * Open actions from previous reviews, carried forward automatically to this
+   * review's input (a). Computed from the earlier review instances at build
+   * time — never copied, so their status keeps tracking to closure.
+   */
+  carriedForward: ReviewActionExportRow[];
+}
+
 /**
  * The organization profile that fills the narrative parts of the Context of the
  * Organization document (clause 4.1) — overview table, mission, intended
@@ -257,4 +315,6 @@ export interface DocumentExportInput {
   metrics?: MetricExportRow[];
   /** Audit instances with resolved names — only populated for the Internal Audit document (9.2). */
   audits?: AuditExportRow[];
+  /** Review instances with resolved names — only populated for the Management Review document (9.3). */
+  reviews?: ReviewExportRow[];
 }

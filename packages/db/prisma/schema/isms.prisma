@@ -20,6 +20,7 @@ enum IsmsDocumentType {
   objectives_plan // 6.2
   monitoring // 9.1
   internal_audit // 9.2
+  management_review // 9.3
 }
 
 enum IsmsDocumentStatus {
@@ -89,6 +90,7 @@ model IsmsDocument {
   roles                       IsmsRole[] // 5.3 register (governance roles, responsibilities & authorities)
   metrics                     IsmsMetric[] // 9.1 register (monitoring & measurement framework)
   audits                      IsmsAudit[] // 9.2 register (internal audit programme, plan and report)
+  reviews                     IsmsManagementReview[] // 9.3 register (management review procedure and minutes)
   controlLinks                IsmsDocumentControlLink[] // CS-437: org controls this document maps to
 
   @@unique([organizationId, frameworkId, type]) // one document per type per framework per org
@@ -654,6 +656,161 @@ model IsmsAuditFinding {
   @@index([auditId])
   @@index([documentId])
   @@index([controlId])
+}
+
+// --- Register: Management Review Procedure & Minutes (clause 9.3) ---
+
+enum IsmsReviewStatus {
+  planned
+  in_progress
+  complete
+}
+
+// The bracketed choice in the review conclusion template: "The information
+// security management system was reviewed on [meeting date]. Overall, the ISMS
+// was found to be [suitable / adequate / effective] and no changes are required
+// except those recorded in the outputs section below."
+enum IsmsReviewConclusionVerdict {
+  suitable
+  adequate
+  effective
+}
+
+enum IsmsReviewActionStatus {
+  open
+  in_progress
+  closed
+}
+
+// One management review instance (clause 9.3). Annual plus ad-hoc cadence by
+// default; every text field ships with auditor-defensible template text the
+// customer can accept or edit. Manual-first: all values are typed in by the
+// customer, with the same schema shape as Monitoring so later auto-population
+// of the Inputs table needs no schema change.
+model IsmsManagementReview {
+  id         String       @id @default(dbgenerated("generate_prefixed_cuid('isms_mr'::text)"))
+  documentId String
+  document   IsmsDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  // Server-generated "MR-YYYY-NN" (year of creation, per-document sequence).
+  reference String
+
+  // The date the review was actually held (customer-entered; may be backdated).
+  meetingDate DateTime? @db.Date
+
+  // Server-set at creation, never updatable — the same audit-honesty guardrail
+  // as IsmsMeasurement.recordedAt: a backdated meeting still shows its true
+  // recording date ("Recorded on" in the UI and document).
+  recordedAt DateTime @default(now())
+
+  // The chair as a display string, offered from the ISMS > Roles (5.3) Top
+  // Management holder and frozen at selection (auditorName precedent: the
+  // minutes must keep the name that chaired THIS review even if Roles changes).
+  chairName String?
+
+  // Attendees frozen at selection: array of { memberId, name } objects
+  // (memberId a plain id like IsmsObjective.ownerMemberId). Defaults to
+  // Chair + SPO at creation; for 1-3 person orgs these may be the same person.
+  attendees Json @default("[]")
+
+  status IsmsReviewStatus @default(planned)
+
+  // Conclusion: the customer picks the bracketed verdict and may add narrative.
+  conclusionVerdict IsmsReviewConclusionVerdict?
+  conclusionNotes   String?
+
+  // Outputs (9.3.3): both ship with default template text seeded at creation.
+  decisionsText String?
+  changesText   String?
+
+  // Sign-off: a single signature slot — the chair signs (name free text, same
+  // rationale as chairName). A review is "signed" when both name and date are
+  // set; once signed the instance is locked (actions still track to closure).
+  signoffChairName String?
+  signoffChairDate DateTime? @db.Date
+
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  inputs  IsmsReviewInput[]
+  actions IsmsReviewAction[]
+
+  // References are generated under the per-document lock, so this never fires
+  // in practice; it keeps concurrent creates honest at the database layer.
+  @@unique([documentId, reference])
+  @@index([documentId])
+}
+
+// One row in a review's Inputs (9.3.2) table — the meeting agenda. Ten default
+// rows are seeded per review (seed-if-missing by inputKey, mirroring
+// IsmsAuditControl.controlKey): inputs (a) through (g) with (d) split into its
+// four sub-inputs. The customer adds discussion notes during the meeting and
+// ticks Discussed?; rows may be added, edited, or removed freely.
+model IsmsReviewInput {
+  id       String               @id @default(dbgenerated("generate_prefixed_cuid('isms_mri'::text)"))
+  reviewId String
+  review   IsmsManagementReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  // Denormalized document id so input rows can be listed org-scoped and
+  // mutated through the generic register CRUD (mirrors IsmsAuditControl).
+  documentId String
+
+  // Stable key for the ten seeded rows (e.g. 'a_prior_actions'); null for
+  // customer-added rows. Seeding is idempotent on (reviewId, inputKey);
+  // NULLs stay distinct so many custom rows are allowed.
+  inputKey String?
+
+  inputRef     String // e.g. "(a) Prior actions" / "(d.2) Monitoring results"
+  whatItCovers String // what the ISO-mandated input covers (pre-filled, editable)
+  // Pre-filled with a "Comp AI > ..." location; free text so the customer can
+  // point at an external location when evidence lives outside Comp AI.
+  whereToFind  String
+
+  discussionNotes String? // filled during the meeting — the minutes for this input
+  discussed       Boolean @default(false)
+
+  source      IsmsContextSource @default(derived)
+  derivedFrom String? // provenance for seeded rows, e.g. "seed:a_prior_actions"
+
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([reviewId, inputKey])
+  @@index([reviewId])
+  @@index([documentId])
+}
+
+// An action arising from a management review (9.3.3 outputs). Open actions
+// carry forward automatically to the next review's input (a) — computed from
+// prior reviews at display/export time, never copied. Action tracking stays
+// editable after the review is signed (actions track to closure).
+model IsmsReviewAction {
+  id       String               @id @default(dbgenerated("generate_prefixed_cuid('isms_mra'::text)"))
+  reviewId String
+  review   IsmsManagementReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  // Denormalized document id for org-scoped generic register CRUD.
+  documentId String
+
+  // Server-generated "A01" (per-review sequence); rendered with the review
+  // reference as "MR-YYYY-NN-A01" in the UI and document.
+  reference String
+
+  description   String
+  ownerMemberId String? // responsible member (plain id, like IsmsObjective.ownerMemberId)
+  dueDate       DateTime? @db.Date
+
+  status IsmsReviewActionStatus @default(open)
+
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([reviewId, reference])
+  @@index([reviewId])
+  @@index([documentId])
 }
 
 // --- Org-level link: an ISMS document maps to individual controls (CS-437) ---
