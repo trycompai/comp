@@ -68,10 +68,12 @@ describe('parseAttendees / isReviewSigned / parseProcedure', () => {
     expect(parseAttendees('nope')).toEqual([]);
   });
 
-  it('parses valid attendees and dedupes by member', () => {
+  it('parses valid attendees, trims names, and dedupes by member', () => {
     expect(
       parseAttendees([
-        { memberId: 'm1', name: 'Jane' },
+        // Trimmed like the server's zod `.trim()` transform, so the UI and
+        // the generated minutes show the same name.
+        { memberId: 'm1', name: ' Jane ' },
         { memberId: 'm2', name: 'Ada' },
         { memberId: 'm1', name: 'Jane (dup)' },
       ]),

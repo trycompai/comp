@@ -89,17 +89,20 @@ function isValidAttendee(entry: unknown): entry is IsmsReviewAttendee {
 /**
  * Parse a review's attendees defensively — the exact mirror of the server's
  * parseReviewAttendees (documents/management-review.ts): all-or-nothing (one
- * malformed entry invalidates the list, like the write schema) and deduped by
- * member, so the Submit UI and the server gate always agree.
+ * malformed entry invalidates the list, like the write schema), names trimmed
+ * (zod's `.trim()` transform does this server-side), and deduped by member,
+ * so the UI, the Submit gate, and the generated minutes always agree.
  */
 export function parseAttendees(value: unknown): IsmsReviewAttendee[] {
   if (!Array.isArray(value) || !value.every(isValidAttendee)) return [];
   const seen = new Set<string>();
-  return value.filter((attendee) => {
-    if (seen.has(attendee.memberId)) return false;
-    seen.add(attendee.memberId);
-    return true;
-  });
+  return value
+    .map((attendee) => ({ ...attendee, name: attendee.name.trim() }))
+    .filter((attendee) => {
+      if (seen.has(attendee.memberId)) return false;
+      seen.add(attendee.memberId);
+      return true;
+    });
 }
 
 /** A review is signed (and locked) once the chair's name AND date are set. */
