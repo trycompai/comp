@@ -532,9 +532,11 @@ export class RolesService {
     // `writeTimestamp` is set explicitly (overriding the `@updatedAt`
     // default) rather than left to Prisma/Postgres, so the exact value
     // persisted is known without reading it back.
-    const writeTimestamp = new Date();
+    const writeTimestamp = new Date(
+      Math.max(Date.now(), role.updatedAt.getTime() + 1),
+    );
     const updateResult = await db.organizationRole.updateMany({
-      where: { id: roleId, updatedAt: role.updatedAt },
+      where: { id: roleId, organizationId, updatedAt: role.updatedAt },
       data: {
         ...(dto.name && { name: dto.name }),
         ...(permissionsToPersist && {

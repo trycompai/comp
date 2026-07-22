@@ -775,7 +775,7 @@ describe('RolesService', () => {
       );
 
       expect(mockDb.organizationRole.updateMany).toHaveBeenCalledWith({
-        where: { id: roleId, updatedAt: roleVersion },
+        where: { id: roleId, organizationId, updatedAt: roleVersion },
         data: { name: 'new-name', updatedAt: expect.any(Date) },
       });
       // Response is built from the pre-write role snapshot + this request's
@@ -819,7 +819,7 @@ describe('RolesService', () => {
         ),
       ).rejects.toThrow(ConflictException);
       expect(mockDb.organizationRole.updateMany).toHaveBeenCalledWith({
-        where: { id: roleId, updatedAt: roleVersion },
+        where: { id: roleId, organizationId, updatedAt: roleVersion },
         data: {
           permissions: JSON.stringify({ control: ['read', 'update'] }),
           updatedAt: expect.any(Date),
