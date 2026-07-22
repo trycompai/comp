@@ -528,6 +528,11 @@ export class RolesService {
     // include `updatedAt` in the filter, so the write only applies if the
     // row still matches the exact version we validated against; `count`
     // tells us whether it did.
+    //
+    // `writeTimestamp` is set explicitly (overriding the `@updatedAt`
+    // default) rather than left to Prisma/Postgres, so the exact value
+    // persisted is known without reading it back.
+    const writeTimestamp = new Date();
     const updateResult = await db.organizationRole.updateMany({
       where: { id: roleId, updatedAt: role.updatedAt },
       data: {
@@ -538,6 +543,7 @@ export class RolesService {
         ...(dto.obligations !== undefined && {
           obligations: JSON.stringify(dto.obligations),
         }),
+        updatedAt: writeTimestamp,
       },
     });
 
@@ -547,24 +553,29 @@ export class RolesService {
       );
     }
 
-    const updated = await db.organizationRole.findUniqueOrThrow({
-      where: { id: roleId },
-    });
-
+    // Built from what this request validated and just conditionally wrote —
+    // not from a separate read after the fact. A second read here would
+    // reopen the same race: another request could write in the gap between
+    // our conditional update and that read, and this response would then
+    // reflect that other request's state instead of the version this
+    // request actually validated and persisted.
     return {
-      id: updated.id,
-      name: updated.name,
+      id: role.id,
+      name: dto.name ?? role.name,
       permissions:
-        typeof updated.permissions === 'string'
-          ? JSON.parse(updated.permissions)
-          : updated.permissions,
+        permissionsToPersist ??
+        (typeof role.permissions === 'string'
+          ? JSON.parse(role.permissions)
+          : role.permissions),
       obligations:
-        typeof updated.obligations === 'string'
-          ? JSON.parse(updated.obligations)
-          : updated.obligations || {},
+        dto.obligations !== undefined
+          ? dto.obligations
+          : typeof role.obligations === 'string'
+            ? JSON.parse(role.obligations)
+            : role.obligations || {},
       isBuiltIn: false,
-      createdAt: updated.createdAt,
-      updatedAt: updated.updatedAt,
+      createdAt: role.createdAt,
+      updatedAt: writeTimestamp,
     };
   }
 

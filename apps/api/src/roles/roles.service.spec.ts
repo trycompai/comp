@@ -539,19 +539,11 @@ describe('RolesService', () => {
     const roleId = 'rol_123';
     const roleVersion = new Date('2026-01-01T00:00:00Z');
 
-    /**
-     * Wires the optimistic-concurrency write path for a successful update:
-     * `updateMany` reports one row matched (the version check passed), and
-     * the follow-up `findUniqueOrThrow` returns the row updateRole reads
-     * back to build its response.
-     */
-    function mockSuccessfulWrite(finalRow: Record<string, unknown>) {
+    /** Wires the optimistic-concurrency write path to succeed: `updateMany` reports one row matched (the version check passed). */
+    function mockSuccessfulWrite() {
       (mockDb.organizationRole.updateMany as jest.Mock).mockResolvedValue({
         count: 1,
       });
-      (
-        mockDb.organizationRole.findUniqueOrThrow as jest.Mock
-      ).mockResolvedValue(finalRow);
     }
 
     it('should update role name', async () => {
@@ -567,11 +559,7 @@ describe('RolesService', () => {
         .mockResolvedValueOnce(existingRole) // First call: find role to update
         .mockResolvedValueOnce(null); // Second call: check name uniqueness
 
-      mockSuccessfulWrite({
-        ...existingRole,
-        name: 'new-name',
-        updatedAt: new Date(),
-      });
+      mockSuccessfulWrite();
 
       const result = await service.updateRole(
         organizationId,
@@ -693,7 +681,7 @@ describe('RolesService', () => {
       (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(
         existingRole,
       );
-      mockSuccessfulWrite({ ...existingRole, updatedAt: new Date() });
+      mockSuccessfulWrite();
 
       await expect(
         service.updateRole(
@@ -722,14 +710,7 @@ describe('RolesService', () => {
       (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(
         existingRole,
       );
-      mockSuccessfulWrite({
-        ...existingRole,
-        permissions: JSON.stringify({
-          control: ['read'],
-          portal: ['read', 'update'],
-        }),
-        updatedAt: new Date(),
-      });
+      mockSuccessfulWrite();
 
       const result = await service.updateRole(
         organizationId,
@@ -758,14 +739,7 @@ describe('RolesService', () => {
       (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(
         existingRole,
       );
-      mockSuccessfulWrite({
-        ...existingRole,
-        permissions: JSON.stringify({
-          control: ['read', 'update'],
-          portal: ['read', 'update'],
-        }),
-        updatedAt: new Date(),
-      });
+      mockSuccessfulWrite();
 
       const result = await service.updateRole(
         organizationId,
@@ -791,20 +765,24 @@ describe('RolesService', () => {
       (mockDb.organizationRole.findFirst as jest.Mock)
         .mockResolvedValueOnce(existingRole)
         .mockResolvedValueOnce(null);
-      mockSuccessfulWrite({
-        ...existingRole,
-        name: 'new-name',
-        updatedAt: new Date(),
-      });
+      mockSuccessfulWrite();
 
-      await service.updateRole(organizationId, roleId, { name: 'new-name' }, [
-        'owner',
-      ]);
+      const result = await service.updateRole(
+        organizationId,
+        roleId,
+        { name: 'new-name' },
+        ['owner'],
+      );
 
       expect(mockDb.organizationRole.updateMany).toHaveBeenCalledWith({
         where: { id: roleId, updatedAt: roleVersion },
-        data: { name: 'new-name' },
+        data: { name: 'new-name', updatedAt: expect.any(Date) },
       });
+      // Response is built from the pre-write role snapshot + this request's
+      // own changes, not a second DB read — permissions/obligations are
+      // untouched here, so they must reflect the existing row verbatim.
+      expect(result.permissions).toEqual({ control: ['read'] });
+      expect(result.obligations).toEqual({});
     });
 
     it('rejects with a conflict when the role was modified concurrently since it was read', async () => {
@@ -842,9 +820,49 @@ describe('RolesService', () => {
       ).rejects.toThrow(ConflictException);
       expect(mockDb.organizationRole.updateMany).toHaveBeenCalledWith({
         where: { id: roleId, updatedAt: roleVersion },
-        data: { permissions: JSON.stringify({ control: ['read', 'update'] }) },
+        data: {
+          permissions: JSON.stringify({ control: ['read', 'update'] }),
+          updatedAt: expect.any(Date),
+        },
       });
+    });
+
+    it('returns the exact version this request validated and wrote, built without a second DB read', async () => {
+      // Regression: reading the row back after the conditional write
+      // reopens the same race the write itself was guarding against — a
+      // third request could write in the gap between our update and that
+      // read, and this response would then reflect THAT write instead of
+      // the version this request validated and persisted. The response
+      // must come from local data (the pre-write snapshot + this request's
+      // own changes), not a follow-up query.
+      const existingRole = {
+        id: roleId,
+        name: 'devops-engineer',
+        permissions: JSON.stringify({ control: ['read'] }),
+        obligations: '{}',
+        createdAt: new Date('2025-01-01T00:00:00Z'),
+        updatedAt: roleVersion,
+      };
+
+      (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(
+        existingRole,
+      );
+      mockSuccessfulWrite();
+
+      const result = await service.updateRole(
+        organizationId,
+        roleId,
+        { permissions: { control: ['read', 'update'] } },
+        ['owner'],
+      );
+
       expect(mockDb.organizationRole.findUniqueOrThrow).not.toHaveBeenCalled();
+      expect(result.permissions).toEqual({ control: ['read', 'update'] });
+      expect(result.createdAt).toEqual(existingRole.createdAt);
+      // The written updatedAt must be a freshly captured timestamp, not the
+      // pre-write version this request validated against.
+      expect(result.updatedAt).toBeInstanceOf(Date);
+      expect(result.updatedAt.getTime()).toBeGreaterThan(roleVersion.getTime());
     });
   });
 
