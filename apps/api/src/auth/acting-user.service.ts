@@ -23,6 +23,10 @@ export interface ResolvedActingUser {
    *  available (e.g. an org with zero owner-role members — caller should
    *  surface a 400 with an actionable message). */
   userId: string | null;
+  /** Member (org membership) to attribute the mutation to, when known. Set for
+   *  the api-key-creator path; undefined for session/owner-fallback (the audit
+   *  row's memberId is optional). */
+  memberId?: string;
   source: ActingUserSource;
   /** Short label for audit log descriptions. Only set when source is
    *  'org-owner-fallback' — session and explicit service-token acting
@@ -90,6 +94,7 @@ export class ActingUserResolver {
       if (creator) {
         return {
           userId: creator.userId,
+          memberId: req.apiKeyCreatedByMemberId,
           source: 'api-key-creator',
           callerLabel: this.buildCallerLabel(req),
         };

@@ -10,6 +10,7 @@ import { AuditLogEntityType, db, Prisma } from '@db';
 import { Observable, from, switchMap, tap } from 'rxjs';
 import { PERMISSIONS_KEY, RequiredPermission } from '../auth/permission.guard';
 import { AuthenticatedRequest } from '../auth/types';
+import { ActingUserResolver } from '../auth/acting-user.service';
 import { AUDIT_READ_KEY, SKIP_AUDIT_LOG_KEY } from './skip-audit-log.decorator';
 import {
   MEMBER_REF_FIELDS,
@@ -39,7 +40,10 @@ import {
 export class AuditLogInterceptor implements NestInterceptor {
   private readonly logger = new Logger(AuditLogInterceptor.name);
 
-  constructor(private readonly reflector: Reflector) {}
+  constructor(
+    private readonly reflector: Reflector,
+    private readonly actingUser: ActingUserResolver,
+  ) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
@@ -66,8 +70,8 @@ export class AuditLogInterceptor implements NestInterceptor {
       return next.handle();
     }
 
-    const { organizationId, userId, memberId, impersonatedBy } = request;
-    if (!organizationId || !userId) {
+    const { organizationId, impersonatedBy } = request;
+    if (!organizationId) {
       return next.handle();
     }
 
@@ -114,11 +118,36 @@ export class AuditLogInterceptor implements NestInterceptor {
       };
     });
 
-    return from(safePreFlightPromise).pipe(
-      switchMap(({ previousValues, memberNames, relationMappingResult }) =>
+    // Resolve who to attribute this mutation to. Session / service-token-acting
+    // callers already have req.userId (zero-cost). API-key callers don't — resolve
+    // the responsible user (key creator, else org owner) so the action is still
+    // audited and attributed to a real person instead of being silently dropped.
+    const actorPromise: Promise<{
+      userId: string | null;
+      memberId: string | undefined;
+    }> = request.userId
+      ? Promise.resolve({
+          userId: request.userId,
+          memberId: request.memberId,
+        })
+      : this.actingUser
+          .resolve(request, organizationId)
+          .then((a) => ({ userId: a.userId, memberId: a.memberId }))
+          .catch((err) => {
+            this.logger.error('Audit actor resolution failed', err);
+            return { userId: null, memberId: undefined };
+          });
+
+    return from(Promise.all([safePreFlightPromise, actorPromise])).pipe(
+      switchMap(([{ previousValues, memberNames, relationMappingResult }, actor]) =>
         next.handle().pipe(
           tap({
             next: (responseBody) => {
+              // No attributable user (e.g. an org with zero owner-role members).
+              // Skip logging rather than persist a null userId FK — mirrors the
+              // resolver's soft-failure contract.
+              if (!actor.userId) return;
+
               const commentCtx = extractCommentContext(
                 request.url,
                 method,
@@ -216,8 +245,8 @@ export class AuditLogInterceptor implements NestInterceptor {
 
               void this.persist(
                 organizationId,
-                userId,
-                memberId,
+                actor.userId,
+                actor.memberId,
                 method,
                 request.url,
                 resource,
