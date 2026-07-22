@@ -251,6 +251,7 @@ describe('updatePolicyInDatabase (draft policy regeneration)', () => {
   ];
 
   let txPolicyUpdate: jest.Mock;
+  let txPolicyFind: jest.Mock;
   let txVersionUpdate: jest.Mock;
   let txVersionCreate: jest.Mock;
   let txVersionDeleteMany: jest.Mock;
@@ -277,6 +278,11 @@ describe('updatePolicyInDatabase (draft policy regeneration)', () => {
     });
 
     txPolicyUpdate = jest.fn();
+    // The in-transaction (row-locked) re-read that captures the detached keys.
+    txPolicyFind = jest.fn().mockResolvedValue({
+      pdfUrl: 'org_1/policies/pol_1/uploaded.pdf',
+      currentVersion: { pdfUrl: 'org_1/policies/pol_1/v1.pdf' },
+    });
     txVersionUpdate = jest.fn();
     txVersionCreate = jest.fn(() => ({ id: 'pv_2' }));
     txVersionDeleteMany = jest.fn();
@@ -284,7 +290,8 @@ describe('updatePolicyInDatabase (draft policy regeneration)', () => {
     (db.$transaction as jest.Mock).mockImplementation(
       async (cb: (tx: unknown) => Promise<unknown>) =>
         cb({
-          policy: { update: txPolicyUpdate },
+          $executeRaw: jest.fn(),
+          policy: { update: txPolicyUpdate, findUniqueOrThrow: txPolicyFind },
           policyVersion: {
             update: txVersionUpdate,
             create: txVersionCreate,
@@ -342,20 +349,37 @@ describe('updatePolicyInDatabase (draft policy regeneration)', () => {
   });
 
   describe('detached-PDF S3 cleanup', () => {
-    const ORIGINAL_BUCKET = process.env.APP_AWS_BUCKET_NAME;
+    const ENV_KEYS = [
+      'APP_AWS_BUCKET_NAME',
+      'APP_AWS_ACCESS_KEY_ID',
+      'APP_AWS_SECRET_ACCESS_KEY',
+    ] as const;
+    const ORIGINAL_ENV = Object.fromEntries(
+      ENV_KEYS.map((key) => [key, process.env[key]]),
+    );
+
+    const configureS3Env = () => {
+      process.env.APP_AWS_BUCKET_NAME = 'test-bucket';
+      process.env.APP_AWS_ACCESS_KEY_ID = 'test-key';
+      process.env.APP_AWS_SECRET_ACCESS_KEY = 'test-secret';
+    };
 
     afterEach(() => {
-      if (ORIGINAL_BUCKET === undefined) {
-        delete process.env.APP_AWS_BUCKET_NAME;
-      } else {
-        process.env.APP_AWS_BUCKET_NAME = ORIGINAL_BUCKET;
+      for (const key of ENV_KEYS) {
+        const original = ORIGINAL_ENV[key];
+        if (original === undefined) delete process.env[key];
+        else process.env[key] = original;
       }
     });
 
-    it('deletes the detached PDF objects (deduplicated) after the update commits', async () => {
-      process.env.APP_AWS_BUCKET_NAME = 'test-bucket';
+    it('deletes the PDF keys captured inside the locked transaction', async () => {
+      configureS3Env();
 
       await updatePolicyInDatabase('pol_1', REGEN_CONTENT, 'mem_regen');
+
+      // The keys come from the in-transaction re-read (not the outer snapshot),
+      // so a PDF uploaded concurrently before the row lock is still covered.
+      expect(txPolicyFind).toHaveBeenCalledTimes(1);
 
       const deletedKeys = s3Send.mock.calls.map(
         (call) => (call[0] as { input: { Bucket: string; Key: string } }).input,
@@ -367,11 +391,8 @@ describe('updatePolicyInDatabase (draft policy regeneration)', () => {
     });
 
     it('deduplicates when the policy and its version share one PDF key', async () => {
-      process.env.APP_AWS_BUCKET_NAME = 'test-bucket';
-      (db.policy.findUnique as jest.Mock).mockResolvedValue({
-        id: 'pol_1',
-        status: 'draft',
-        currentVersionId: 'pv_1',
+      configureS3Env();
+      txPolicyFind.mockResolvedValue({
         pdfUrl: 'org_1/policies/pol_1/shared.pdf',
         currentVersion: { pdfUrl: 'org_1/policies/pol_1/shared.pdf' },
       });
@@ -382,7 +403,7 @@ describe('updatePolicyInDatabase (draft policy regeneration)', () => {
     });
 
     it('never fails the regeneration when an S3 delete fails (logged for cleanup)', async () => {
-      process.env.APP_AWS_BUCKET_NAME = 'test-bucket';
+      configureS3Env();
       s3Send.mockRejectedValueOnce(new Error('AccessDenied'));
 
       await expect(
@@ -392,7 +413,8 @@ describe('updatePolicyInDatabase (draft policy regeneration)', () => {
       expect(s3Send).toHaveBeenCalledTimes(2);
     });
 
-    it('skips deletion (with a warning) when no bucket is configured', async () => {
+    it('skips deletion (with a warning) when the S3 configuration is missing', async () => {
+      configureS3Env();
       delete process.env.APP_AWS_BUCKET_NAME;
 
       await updatePolicyInDatabase('pol_1', REGEN_CONTENT, 'mem_regen');
@@ -401,11 +423,8 @@ describe('updatePolicyInDatabase (draft policy regeneration)', () => {
     });
 
     it('does not touch S3 for an editor-mode draft with no PDFs', async () => {
-      process.env.APP_AWS_BUCKET_NAME = 'test-bucket';
-      (db.policy.findUnique as jest.Mock).mockResolvedValue({
-        id: 'pol_1',
-        status: 'draft',
-        currentVersionId: 'pv_1',
+      configureS3Env();
+      txPolicyFind.mockResolvedValue({
         pdfUrl: null,
         currentVersion: { pdfUrl: null },
       });

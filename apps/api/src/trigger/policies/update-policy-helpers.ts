@@ -81,14 +81,25 @@ const POLICY_VERSION_CREATE_RETRIES = 3;
  */
 async function deleteDetachedPdfObjects(keys: string[]): Promise<void> {
   if (keys.length === 0) return;
+  // Same APP_AWS_* configuration as the other trigger tasks (evidence export)
+  // — but non-throwing: cleanup is best-effort and must never fail the
+  // regeneration, so missing configuration is logged and skipped.
   const bucketName = process.env.APP_AWS_BUCKET_NAME;
-  if (!bucketName) {
+  const accessKeyId = process.env.APP_AWS_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.APP_AWS_SECRET_ACCESS_KEY;
+  if (!bucketName || !accessKeyId || !secretAccessKey) {
     logger.warn(
-      `APP_AWS_BUCKET_NAME not configured; skipped deleting detached policy PDFs: ${keys.join(', ')}`,
+      `APP_AWS_* S3 configuration missing; skipped deleting detached policy PDFs: ${keys.join(', ')}`,
     );
     return;
   }
-  const s3 = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
+  const s3 = new S3Client({
+    region: process.env.APP_AWS_REGION || 'us-east-1',
+    credentials: { accessKeyId, secretAccessKey },
+    ...(process.env.APP_AWS_ENDPOINT
+      ? { endpoint: process.env.APP_AWS_ENDPOINT, forcePathStyle: true }
+      : {}),
+  });
   for (const key of keys) {
     try {
       await s3.send(new DeleteObjectCommand({ Bucket: bucketName, Key: key }));
@@ -106,13 +117,7 @@ export async function updatePolicyInDatabase(
   try {
     const policy = await db.policy.findUnique({
       where: { id: policyId },
-      select: {
-        id: true,
-        status: true,
-        currentVersionId: true,
-        pdfUrl: true,
-        currentVersion: { select: { pdfUrl: true } },
-      },
+      select: { id: true, status: true, currentVersionId: true },
     });
 
     if (!policy) throw new Error(`Policy not found: ${policyId}`);
@@ -136,17 +141,18 @@ export async function updatePolicyInDatabase(
     // currentVersion.pdfUrl ?? policy.pdfUrl) keep serving the old uploaded
     // document instead of the regenerated content (CS-766).
     if (policy.status === PolicyStatus.draft) {
-      // The uploaded-PDF keys being detached below. Captured before the
-      // transaction, deleted from S3 only after it commits — otherwise every
-      // regeneration of a PDF-mode draft orphans its old object.
-      const detachedPdfKeys = [
-        ...new Set(
-          [policy.pdfUrl, policy.currentVersion?.pdfUrl].filter(
-            (key): key is string => !!key,
-          ),
-        ),
-      ];
-      await db.$transaction(async (tx) => {
+      // The uploaded-PDF keys this regeneration detaches, captured INSIDE the
+      // transaction under a row lock: a concurrent PDF upload (a plain UPDATE
+      // on the policy row) blocks on the lock, so the captured keys are
+      // exactly the values the updates below clear — nothing committed in
+      // between can slip an untracked orphan past the cleanup. Deleted from
+      // S3 only after the transaction commits.
+      const detachedPdfKeys = await db.$transaction(async (tx) => {
+        await tx.$executeRaw`SELECT id FROM "Policy" WHERE id = ${policyId} FOR UPDATE`;
+        const current = await tx.policy.findUniqueOrThrow({
+          where: { id: policyId },
+          select: { pdfUrl: true, currentVersion: { select: { pdfUrl: true } } },
+        });
         if (policy.currentVersionId) {
           await tx.policyVersion.update({
             where: { id: policy.currentVersionId },
@@ -166,6 +172,13 @@ export async function updatePolicyInDatabase(
             displayFormat: 'EDITOR',
           },
         });
+        return [
+          ...new Set(
+            [current.pdfUrl, current.currentVersion?.pdfUrl].filter(
+              (key): key is string => !!key,
+            ),
+          ),
+        ];
       });
       await deleteDetachedPdfObjects(detachedPdfKeys);
       return;
