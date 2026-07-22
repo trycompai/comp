@@ -19,21 +19,6 @@
           }
         ]
       }
-    ],
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "agent",
-            "if": "Bash(git push:*)",
-            "model": "claude-sonnet-5",
-            "timeout": 300,
-            "statusMessage": "Security-reviewing the push",
-            "prompt": "A `git push` is about to run. Automatically security-review the outgoing changes before it proceeds.\n\n1. Run `git diff --name-only origin/main...HEAD` (if it errors, `git diff --name-only HEAD~10..HEAD`) to list changed files.\n2. For each security-relevant file — any apps/api/src/** (controller, service, guard, auth, trigger job, integration), Next.js route handler (app/api/**, route.ts), Prisma query, upload/webhook handler, or any file containing raw SQL ($queryRaw/$executeRaw), dangerouslySetInnerHTML, child_process/exec/spawn/eval, a signed-URL/S3 put, or a by-id .findUnique/.findFirst/.update/.delete — review it against the checklist in .claude/agents/security-reviewer.md: broken access control, tenant isolation & IDOR, injection, XSS, secrets, SSRF, auth/session, unsafe uploads, mass assignment. Read the code and trace guard->controller->service->DB; verify, do not speculate.\n3. If you find any unaddressed P1 or P2 issue, BLOCK the push and list each as: severity, file:line, the concrete exploit, and the fix. If there are no security-relevant changes or nothing high-severity, ALLOW the push.\n\nBe precise: only block on a confirmed high-severity issue, never on style or speculation."
-          }
-        ]
-      }
     ]
   }
 }
