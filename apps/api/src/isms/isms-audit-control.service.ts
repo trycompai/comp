@@ -99,7 +99,13 @@ export class IsmsAuditControlService {
       await lockDocument(tx, control.documentId);
       await invalidateApprovalIfNeeded({ tx, documentId: control.documentId });
       // Findings linked to this row survive: the FK is SET NULL and each
-      // finding keeps its own clauseOrControl text as the frozen label.
+      // finding keeps its clauseOrControl text as the frozen label. A linked
+      // finding created without one (possible via the API) inherits the row's
+      // reference now, so no finding is left unlabelled by the deletion.
+      await tx.ismsAuditFinding.updateMany({
+        where: { controlId, clauseOrControl: null },
+        data: { clauseOrControl: control.controlRef },
+      });
       await tx.ismsAuditControl.delete({ where: { id: controlId } });
     });
     return { success: true };

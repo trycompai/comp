@@ -129,7 +129,11 @@ export function ProgrammeCard({ narrative, canEdit, onSave }: ProgrammeCardProps
           />
         </Field>
       ) : (
-        <Text size="sm">{programme || 'No programme recorded yet.'}</Text>
+        // whitespace-pre-wrap inherits into the Text span, preserving the
+        // paragraph breaks a multi-line programme was written with.
+        <div className="whitespace-pre-wrap">
+          <Text size="sm">{programme || 'No programme recorded yet.'}</Text>
+        </div>
       )}
     </IsmsRegisterCard>
   );

@@ -98,8 +98,48 @@ describe('IsmsAuditFindingService', () => {
       ).rejects.toThrow(NotFoundException);
       expect(mockDb.ismsAuditControl.findFirst).toHaveBeenCalledWith({
         where: { id: 'ac_other', auditId: 'aud_1' },
+        select: { id: true, controlRef: true },
       });
       expect(mockDb.ismsAuditFinding.create).not.toHaveBeenCalled();
+    });
+
+    it('inherits the clause label from the linked control when none is given', async () => {
+      (mockDb.ismsAuditControl.findFirst as jest.Mock).mockResolvedValue({
+        id: 'ac_1',
+        controlRef: 'Clause 9.1 Monitoring',
+      });
+
+      await service.create({
+        ...args,
+        dto: { ...args.dto, controlId: 'ac_1' },
+      });
+
+      expect(mockDb.ismsAuditFinding.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          controlId: 'ac_1',
+          clauseOrControl: 'Clause 9.1 Monitoring',
+        }),
+      });
+    });
+
+    it('keeps an explicitly provided clause label over the linked control', async () => {
+      (mockDb.ismsAuditControl.findFirst as jest.Mock).mockResolvedValue({
+        id: 'ac_1',
+        controlRef: 'Clause 9.1 Monitoring',
+      });
+
+      await service.create({
+        ...args,
+        dto: {
+          ...args.dto,
+          controlId: 'ac_1',
+          clauseOrControl: 'Clause 9.1(b)',
+        },
+      });
+
+      expect(mockDb.ismsAuditFinding.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ clauseOrControl: 'Clause 9.1(b)' }),
+      });
     });
 
     it('rejects an owner that is not an active org member', async () => {

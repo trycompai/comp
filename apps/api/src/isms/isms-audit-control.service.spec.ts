@@ -15,6 +15,7 @@ jest.mock('@db', () => {
       update: jest.fn(),
       delete: jest.fn(),
     },
+    ismsAuditFinding: { updateMany: jest.fn() },
     $executeRaw: jest.fn(),
     $transaction: jest.fn((cb: (tx: unknown) => unknown) => cb(db)),
   };
@@ -133,6 +134,7 @@ describe('IsmsAuditControlService', () => {
         id: 'ac_1',
         documentId: 'doc_1',
         controlKey: 'clause_4_1_context',
+        controlRef: 'Clause 4.1 Context',
       });
       (mockDb.ismsAuditControl.delete as jest.Mock).mockResolvedValue({});
 
@@ -144,6 +146,23 @@ describe('IsmsAuditControlService', () => {
       expect(result).toEqual({ success: true });
       expect(mockDb.ismsAuditControl.delete).toHaveBeenCalledWith({
         where: { id: 'ac_1' },
+      });
+    });
+
+    it('labels linked label-less findings with the row reference before deleting', async () => {
+      (mockDb.ismsAuditControl.findFirst as jest.Mock).mockResolvedValue({
+        id: 'ac_1',
+        documentId: 'doc_1',
+        controlKey: null,
+        controlRef: 'A.8.13 Backup',
+      });
+      (mockDb.ismsAuditControl.delete as jest.Mock).mockResolvedValue({});
+
+      await service.remove({ controlId: 'ac_1', organizationId: 'org_1' });
+
+      expect(mockDb.ismsAuditFinding.updateMany).toHaveBeenCalledWith({
+        where: { controlId: 'ac_1', clauseOrControl: null },
+        data: { clauseOrControl: 'A.8.13 Backup' },
       });
     });
   });

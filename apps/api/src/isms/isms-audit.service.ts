@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { db } from '@db';
 import type { Prisma } from '@db';
 import { seedAuditControlsIfMissing } from './documents/internal-audit';
@@ -35,6 +39,10 @@ export class IsmsAuditService {
     await this.requireDocument({ documentId, organizationId });
     const plannedStartDate = parseOptionalDate(dto.plannedStartDate);
     const plannedEndDate = parseOptionalDate(dto.plannedEndDate);
+    this.assertDateOrder({
+      start: plannedStartDate ?? null,
+      end: plannedEndDate ?? null,
+    });
 
     return db.$transaction(async (tx) => {
       // The lock also serializes reference generation, so concurrent creates
@@ -71,6 +79,17 @@ export class IsmsAuditService {
     dto: UpdateAuditInput;
   }) {
     const audit = await this.requireAudit({ auditId, organizationId });
+    const plannedStartDate = parseOptionalDate(dto.plannedStartDate);
+    const plannedEndDate = parseOptionalDate(dto.plannedEndDate);
+    // Validate the EFFECTIVE schedule: a field omitted from this update keeps
+    // its stored value, so the check merges dto values over the existing row.
+    this.assertDateOrder({
+      start:
+        plannedStartDate === undefined
+          ? audit.plannedStartDate
+          : plannedStartDate,
+      end: plannedEndDate === undefined ? audit.plannedEndDate : plannedEndDate,
+    });
 
     return db.$transaction(async (tx) => {
       // Same per-document lock submit/approve take, so an edit can't race the
@@ -86,8 +105,8 @@ export class IsmsAuditService {
             dto.auditorName === undefined
               ? undefined
               : dto.auditorName?.trim() || null,
-          plannedStartDate: parseOptionalDate(dto.plannedStartDate),
-          plannedEndDate: parseOptionalDate(dto.plannedEndDate),
+          plannedStartDate,
+          plannedEndDate,
           status: dto.status ?? undefined,
           conclusionVerdict:
             dto.conclusionVerdict === undefined
@@ -132,6 +151,21 @@ export class IsmsAuditService {
   ): string | null | undefined {
     if (value === undefined) return undefined;
     return value?.trim() || null;
+  }
+
+  /** A planned schedule must not end before it starts (client gate mirrored). */
+  private assertDateOrder({
+    start,
+    end,
+  }: {
+    start: Date | null;
+    end: Date | null;
+  }): void {
+    if (start && end && end.getTime() < start.getTime()) {
+      throw new BadRequestException(
+        'Planned end date must be on or after the planned start date',
+      );
+    }
   }
 
   /**
