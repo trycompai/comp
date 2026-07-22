@@ -107,7 +107,7 @@ export function ConnectMethodChooser({
             key={`${option.title}-${index}`}
             type="button"
             onClick={() => onChoose(option.kind)}
-            className="flex items-center justify-between gap-3 rounded-md border border-border bg-background p-3 text-left transition-colors hover:border-primary"
+            className="group flex cursor-pointer items-center justify-between gap-3 rounded-md border border-border bg-background p-3 text-left transition-colors hover:border-primary hover:bg-muted/40 active:bg-muted/60"
           >
             <div className="flex flex-col gap-0.5">
               <div className="flex items-center gap-2">
@@ -120,7 +120,10 @@ export function ConnectMethodChooser({
               </div>
               <span className="text-xs text-muted-foreground">{option.detail}</span>
             </div>
-            <ArrowRight size={16} className="shrink-0 text-muted-foreground" />
+            <ArrowRight
+              size={16}
+              className="shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5"
+            />
           </button>
         ))}
       </div>

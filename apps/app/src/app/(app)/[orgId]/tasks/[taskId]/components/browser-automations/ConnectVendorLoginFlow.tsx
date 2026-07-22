@@ -255,6 +255,9 @@ export function ConnectVendorLoginFlow({
   const handleStartSso = useCallback(async () => {
     endSession();
     setSigninSteps([]);
+    // Switch to the live view immediately so the click gives instant feedback
+    // (it shows "Opening…" until the session handle arrives), then start the run.
+    setStep('signing-in');
     const handle = await startSignin({ url, mode: 'sso' });
     if (!handle) {
       handleStartLiveSignin();
@@ -266,7 +269,6 @@ export function ConnectVendorLoginFlow({
       profileId: handle.profileId,
     });
     setSigninRun({ runId: handle.runId, accessToken: handle.publicAccessToken });
-    setStep('signing-in');
   }, [startSignin, url, handleStartLiveSignin, endSession, setSigninLiveView]);
 
   const handleChoose = useCallback(
