@@ -149,22 +149,7 @@ body {
   background: transparent;
 }
 
-/* AI control ring (design: ai-control-ring.html, "breathing glow"). The glow
-   layer's box-shadow is painted once; only opacity animates, so the streamed
-   live iframe underneath never repaints. */
-@keyframes ai-ring-breathe {
-  0%,
-  100% {
-    opacity: 0.3;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-.ai-ring-halo {
-  animation: ai-ring-breathe 2.8s ease-in-out infinite;
-  will-change: opacity;
-}
+/* "AI is controlling" / "Your turn" status pill — the pulsing dot. */
 @keyframes ai-ring-pip {
   0%,
   100% {
@@ -180,10 +165,6 @@ body {
   animation: ai-ring-pip 1.6s ease-in-out infinite;
 }
 @media (prefers-reduced-motion: reduce) {
-  .ai-ring-halo {
-    animation: none;
-    opacity: 0.7;
-  }
   .ai-ring-pip {
     animation: none;
   }

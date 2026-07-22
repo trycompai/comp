@@ -19,43 +19,22 @@ function StatusPill({ label, bg, dot }: { label: string; bg: string; dot: string
 }
 
 /**
- * Who's-driving indicator over the live browser:
- * - `ai`  → soft green glow that breathes + "AI is controlling".
- * - `you` → an amber "Your turn" pill, no glow (the ring is reserved for the AI,
- *           so the two states read differently at a glance).
- *
- * Only opacity animates (GPU-cheap), so the streamed live iframe never repaints.
- * Overlay-only and click-through, so take-over still works. Adapted for our
- * overflow-hidden container (glow is inset; the pill sits inside at the bottom).
+ * Who's-driving indicator over the live browser: a small status pill only —
+ * `ai` → green "AI is controlling", `you` → amber "Your turn". Overlay-only and
+ * click-through, so take-over still works; fades in with the page.
  */
 export function LiveActivityBorder({ state = 'ai' }: { state?: 'ai' | 'you' }) {
-  if (state === 'you') {
-    return (
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 z-[5] animate-in fade-in-0 duration-700"
-      >
-        <StatusPill label="Your turn" bg="#b45309" dot="#fcd34d" />
-      </div>
-    );
-  }
+  const pill =
+    state === 'you'
+      ? { label: 'Your turn', bg: '#b45309', dot: '#fcd34d' }
+      : { label: 'AI is controlling', bg: '#15803d', dot: '#86efac' };
 
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute inset-0 z-[5] rounded-[inherit] animate-in fade-in-0 duration-700"
+      className="pointer-events-none absolute inset-0 z-[5] animate-in fade-in-0 duration-700"
     >
-      {/* Faint always-on haze so the edge never fully disappears mid-breath. */}
-      <div
-        className="absolute inset-0 rounded-[inherit]"
-        style={{ boxShadow: 'inset 0 0 16px 1px rgba(34,197,94,0.16)' }}
-      />
-      {/* Soft breathing glow only — no border line, just the green bleeding in. */}
-      <div
-        className="ai-ring-halo absolute inset-0 rounded-[inherit]"
-        style={{ boxShadow: 'inset 0 0 32px 7px rgba(34,197,94,0.42)' }}
-      />
-      <StatusPill label="AI is controlling" bg="#15803d" dot="#86efac" />
+      <StatusPill {...pill} />
     </div>
   );
 }

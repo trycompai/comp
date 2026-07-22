@@ -3,24 +3,18 @@ import { describe, expect, it } from 'vitest';
 import { LiveActivityBorder } from './LiveActivityBorder';
 
 describe('LiveActivityBorder', () => {
-  it('renders a green ring with a breathing glow while the AI is acting', () => {
+  it('shows the "AI is controlling" pill while the AI is acting', () => {
     const { container } = render(<LiveActivityBorder />);
     const root = container.firstChild as HTMLElement;
-    // Soft green glow (inline box-shadow, so it shows even if the keyframe CSS
-    // is stale) — assert the green channels are present.
-    expect(root.innerHTML).toContain('34,197,94');
-    // The breathing glow layer drives the animation.
-    expect(root.querySelector('.ai-ring-halo')).not.toBeNull();
-    // The status pill labels who's driving.
     expect(root.textContent).toContain('AI is controlling');
+    // Pill only — no glow ring.
+    expect(root.querySelector('.ai-ring-halo')).toBeNull();
   });
 
-  it('shows an amber "Your turn" pill and no glow on the user’s turn', () => {
+  it('shows an amber "Your turn" pill on the user’s turn', () => {
     const { container } = render(<LiveActivityBorder state="you" />);
     const root = container.firstChild as HTMLElement;
     expect(root.textContent).toContain('Your turn');
-    // No breathing glow on the user's turn — the ring is reserved for the AI.
-    expect(root.querySelector('.ai-ring-halo')).toBeNull();
   });
 
   it('is decorative and click-through (so take-over still works)', () => {
