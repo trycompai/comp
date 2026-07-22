@@ -11307,7 +11307,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateVersionDto"
+                "$ref": "#/components/schemas/CreatePolicyVersionDto"
               }
             }
           }
@@ -16345,6 +16345,39 @@
       "put": {
         "operationId": "TrustPortalController_updateFaqs_v1",
         "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "faqs"
+                ],
+                "properties": {
+                  "faqs": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "question",
+                        "answer"
+                      ],
+                      "properties": {
+                        "question": {
+                          "type": "string"
+                        },
+                        "answer": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": ""
@@ -16738,6 +16771,39 @@
       "post": {
         "operationId": "TrustPortalController_updateOverview_v1",
         "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "organizationId"
+                ],
+                "properties": {
+                  "organizationId": {
+                    "type": "string",
+                    "description": "Organization that owns the trust portal. Must match the authenticated API key's organization.",
+                    "example": "org_6914cd0e16e4c7dccbb54426"
+                  },
+                  "overviewTitle": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "nullable": true
+                  },
+                  "overviewContent": {
+                    "type": "string",
+                    "maxLength": 10000,
+                    "nullable": true
+                  },
+                  "showOverview": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Overview updated successfully"
@@ -16811,6 +16877,43 @@
       "post": {
         "operationId": "TrustPortalController_createCustomLink_v1",
         "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "organizationId",
+                  "title",
+                  "url"
+                ],
+                "properties": {
+                  "organizationId": {
+                    "type": "string",
+                    "description": "Organization that owns the trust portal. Must match the authenticated API key's organization.",
+                    "example": "org_6914cd0e16e4c7dccbb54426"
+                  },
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "nullable": true
+                  },
+                  "url": {
+                    "type": "string",
+                    "format": "uri",
+                    "maxLength": 2000
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": "Custom link created successfully"
@@ -16968,6 +17071,34 @@
       "post": {
         "operationId": "TrustPortalController_reorderCustomLinks_v1",
         "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "organizationId",
+                  "linkIds"
+                ],
+                "properties": {
+                  "organizationId": {
+                    "type": "string",
+                    "description": "Organization that owns the trust portal. Must match the authenticated API key's organization.",
+                    "example": "org_6914cd0e16e4c7dccbb54426"
+                  },
+                  "linkIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Custom link IDs in the desired display order."
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Custom links reordered successfully"
@@ -21320,6 +21451,41 @@
                     "type": "string",
                     "nullable": true
                   },
+                  "whatIsMeasured": {
+                    "type": "string"
+                  },
+                  "method": {
+                    "type": "string"
+                  },
+                  "monitorMemberId": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "analyzeMemberId": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "objectiveId": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "isActive": {
+                    "type": "boolean"
+                  },
+                  "metricId": {
+                    "type": "string"
+                  },
+                  "periodStart": {
+                    "type": "string",
+                    "description": "First day of the covered period (YYYY-MM-DD), aligned to the metric cadence"
+                  },
+                  "value": {
+                    "type": "string"
+                  },
+                  "note": {
+                    "type": "string",
+                    "nullable": true
+                  },
                   "position": {
                     "type": "integer",
                     "minimum": 0
@@ -21521,6 +21687,41 @@
                     "type": "string",
                     "nullable": true
                   },
+                  "whatIsMeasured": {
+                    "type": "string"
+                  },
+                  "method": {
+                    "type": "string"
+                  },
+                  "monitorMemberId": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "analyzeMemberId": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "objectiveId": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "isActive": {
+                    "type": "boolean"
+                  },
+                  "metricId": {
+                    "type": "string"
+                  },
+                  "periodStart": {
+                    "type": "string",
+                    "description": "First day of the covered period (YYYY-MM-DD), aligned to the metric cadence"
+                  },
+                  "value": {
+                    "type": "string"
+                  },
+                  "note": {
+                    "type": "string",
+                    "nullable": true
+                  },
                   "position": {
                     "type": "integer",
                     "minimum": 0
@@ -21604,6 +21805,92 @@
         },
         "x-speakeasy-mcp": {
           "name": "delete-row"
+        }
+      }
+    },
+    "/v1/isms/documents/{id}/measurements/bulk": {
+      "post": {
+        "operationId": "IsmsRegistersController_bulkCreateMeasurements_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Measurements to record in one save (Metrics due / backfill views)",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "measurements": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 200,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "metricId": {
+                          "type": "string"
+                        },
+                        "periodStart": {
+                          "type": "string"
+                        },
+                        "value": {
+                          "type": "string"
+                        },
+                        "note": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "metricId",
+                        "periodStart",
+                        "value"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "measurements"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Measurements recorded"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Record measurements for several metrics/periods in one save (Metrics due / backfill)",
+        "tags": [
+          "ISMS"
+        ],
+        "description": "Record measurements for several metrics/periods in one save (Metrics due / backfill) in Comp AI.",
+        "x-mint": {
+          "metadata": {
+            "title": "Record measurements for several metrics/period | Comp AI API",
+            "sidebarTitle": "Record measurements for several metrics/periods in one save (Metrics due / backfill)",
+            "description": "Record measurements for several metrics/periods in one save (Metrics due / backfill) in Comp AI.",
+            "og:title": "Record measurements for several metrics/period | Comp AI API",
+            "og:description": "Record measurements for several metrics/periods in one save (Metrics due / backfill) in Comp AI."
+          }
+        },
+        "x-speakeasy-mcp": {
+          "name": "bulk-create-measurements"
         }
       }
     },
@@ -28836,28 +29123,20 @@
           }
         }
       },
-      "CreateVersionDto": {
+      "CreatePolicyVersionDto": {
         "type": "object",
         "properties": {
-          "version": {
-            "type": "number",
-            "description": "Version number for this published script",
-            "example": 1
-          },
-          "scriptKey": {
+          "sourceVersionId": {
             "type": "string",
-            "description": "S3 key of the already-generated & published automation script (returned by the publish step).",
-            "example": "org_abc123/tsk_abc123/aut_abc123.v1.js"
+            "description": "Optional version ID to base the new version on",
+            "example": "pv_abc123def456"
           },
           "changelog": {
             "type": "string",
-            "description": "Optional changelog describing this version"
+            "description": "Optional changelog to associate with the new version",
+            "example": "Initial draft for quarterly updates"
           }
-        },
-        "required": [
-          "version",
-          "scriptKey"
-        ]
+        }
       },
       "UpdateVersionContentDto": {
         "type": "object",
@@ -29088,6 +29367,29 @@
             "description": "Automation schedule cadence"
           }
         }
+      },
+      "CreateVersionDto": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "number",
+            "description": "Version number for this published script",
+            "example": 1
+          },
+          "scriptKey": {
+            "type": "string",
+            "description": "S3 key of the already-generated & published automation script (returned by the publish step).",
+            "example": "org_abc123/tsk_abc123/aut_abc123.v1.js"
+          },
+          "changelog": {
+            "type": "string",
+            "description": "Optional changelog describing this version"
+          }
+        },
+        "required": [
+          "version",
+          "scriptKey"
+        ]
       },
       "AuthorResponseDto": {
         "type": "object",
