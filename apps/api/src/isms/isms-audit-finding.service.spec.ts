@@ -187,6 +187,54 @@ describe('IsmsAuditFindingService', () => {
       expect(data.reference).toBeUndefined();
     });
 
+    it('inherits the clause label when linking a control to an unlabelled finding', async () => {
+      (mockDb.ismsAuditFinding.findFirst as jest.Mock).mockResolvedValue({
+        id: 'af_1',
+        auditId: 'aud_1',
+        documentId: 'doc_1',
+        clauseOrControl: null,
+      });
+      (mockDb.ismsAuditControl.findFirst as jest.Mock).mockResolvedValue({
+        id: 'ac_1',
+        controlRef: 'A.5.15 Access control',
+      });
+
+      await service.update({
+        findingId: 'af_1',
+        organizationId: 'org_1',
+        dto: { controlId: 'ac_1' },
+      });
+
+      const { data } = (mockDb.ismsAuditFinding.update as jest.Mock).mock
+        .calls[0][0];
+      expect(data.controlId).toBe('ac_1');
+      expect(data.clauseOrControl).toBe('A.5.15 Access control');
+    });
+
+    it('keeps an existing clause label when relinking (labels are user-owned)', async () => {
+      (mockDb.ismsAuditFinding.findFirst as jest.Mock).mockResolvedValue({
+        id: 'af_1',
+        auditId: 'aud_1',
+        documentId: 'doc_1',
+        clauseOrControl: 'Clause 9.1 (Monitoring)',
+      });
+      (mockDb.ismsAuditControl.findFirst as jest.Mock).mockResolvedValue({
+        id: 'ac_2',
+        controlRef: 'A.8.13 Backup',
+      });
+
+      await service.update({
+        findingId: 'af_1',
+        organizationId: 'org_1',
+        dto: { controlId: 'ac_2' },
+      });
+
+      const { data } = (mockDb.ismsAuditFinding.update as jest.Mock).mock
+        .calls[0][0];
+      expect(data.controlId).toBe('ac_2');
+      expect(data.clauseOrControl).toBe('Clause 9.1 (Monitoring)');
+    });
+
     it('unlinks the related control with null', async () => {
       await service.update({
         findingId: 'af_1',

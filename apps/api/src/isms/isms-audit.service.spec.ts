@@ -15,6 +15,7 @@ jest.mock('@db', () => {
     },
     ismsAudit: {
       findFirst: jest.fn(),
+      findUniqueOrThrow: jest.fn(),
       findMany: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
@@ -163,10 +164,8 @@ describe('IsmsAuditService', () => {
       (mockDb.ismsAudit.update as jest.Mock).mockResolvedValue({});
     });
 
-    it('rejects an end date before the STORED start date (merged schedule)', async () => {
-      (mockDb.ismsAudit.findFirst as jest.Mock).mockResolvedValue({
-        id: 'aud_1',
-        documentId: 'doc_1',
+    it('rejects an end date before the STORED start date (re-read under the document lock)', async () => {
+      (mockDb.ismsAudit.findUniqueOrThrow as jest.Mock).mockResolvedValue({
         plannedStartDate: new Date('2026-05-15T00:00:00.000Z'),
         plannedEndDate: null,
       });
@@ -182,11 +181,9 @@ describe('IsmsAuditService', () => {
     });
 
     it('allows fixing an inverted schedule by moving both dates together', async () => {
-      (mockDb.ismsAudit.findFirst as jest.Mock).mockResolvedValue({
-        id: 'aud_1',
-        documentId: 'doc_1',
-        plannedStartDate: new Date('2026-05-15T00:00:00.000Z'),
-        plannedEndDate: null,
+      (mockDb.ismsAudit.findUniqueOrThrow as jest.Mock).mockResolvedValue({
+        plannedStartDate: new Date('2026-06-10T00:00:00.000Z'),
+        plannedEndDate: new Date('2026-05-01T00:00:00.000Z'),
       });
 
       await service.update({

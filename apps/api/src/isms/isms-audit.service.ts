@@ -81,20 +81,32 @@ export class IsmsAuditService {
     const audit = await this.requireAudit({ auditId, organizationId });
     const plannedStartDate = parseOptionalDate(dto.plannedStartDate);
     const plannedEndDate = parseOptionalDate(dto.plannedEndDate);
-    // Validate the EFFECTIVE schedule: a field omitted from this update keeps
-    // its stored value, so the check merges dto values over the existing row.
-    this.assertDateOrder({
-      start:
-        plannedStartDate === undefined
-          ? audit.plannedStartDate
-          : plannedStartDate,
-      end: plannedEndDate === undefined ? audit.plannedEndDate : plannedEndDate,
-    });
 
     return db.$transaction(async (tx) => {
       // Same per-document lock submit/approve take, so an edit can't race the
       // submission's completeness check.
       await lockDocument(tx, audit.documentId);
+      // Validate the EFFECTIVE schedule (dto values merged over the stored
+      // row) UNDER the lock, re-reading the stored dates: two concurrent
+      // partial updates — one moving the start, one the end — serialize on
+      // the document lock, so the second sees the first's committed value and
+      // an inverted range can never be persisted.
+      if (plannedStartDate !== undefined || plannedEndDate !== undefined) {
+        const current = await tx.ismsAudit.findUniqueOrThrow({
+          where: { id: auditId },
+          select: { plannedStartDate: true, plannedEndDate: true },
+        });
+        this.assertDateOrder({
+          start:
+            plannedStartDate === undefined
+              ? current.plannedStartDate
+              : plannedStartDate,
+          end:
+            plannedEndDate === undefined
+              ? current.plannedEndDate
+              : plannedEndDate,
+        });
+      }
       await invalidateApprovalIfNeeded({ tx, documentId: audit.documentId });
       return tx.ismsAudit.update({
         where: { id: auditId },
