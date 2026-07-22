@@ -6,9 +6,9 @@ describe('LiveActivityBorder', () => {
   it('renders a green ring with a breathing glow while the AI is acting', () => {
     const { container } = render(<LiveActivityBorder />);
     const root = container.firstChild as HTMLElement;
-    // Static green ring (inline, so it shows even if the keyframe CSS is stale).
-    // jsdom normalizes #22c55e -> rgb(34, 197, 94).
-    expect(root.innerHTML).toContain('rgb(34, 197, 94)');
+    // Soft green glow (inline box-shadow, so it shows even if the keyframe CSS
+    // is stale) — assert the green channels are present.
+    expect(root.innerHTML).toContain('34,197,94');
     // The breathing glow layer drives the animation.
     expect(root.querySelector('.ai-ring-halo')).not.toBeNull();
   });
