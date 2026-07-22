@@ -1,3 +1,4 @@
+import { DeleteObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { db, Prisma, PolicyStatus } from '@db';
 import type {
   FrameworkEditorFramework,
@@ -71,6 +72,32 @@ export async function fetchOrganizationAndPolicy(
 // on the [policyId, version] key.
 const POLICY_VERSION_CREATE_RETRIES = 3;
 
+/**
+ * Best-effort removal of the PDF objects a draft regeneration detached
+ * (pdfUrl stores the raw S3 key — same contract as the policies controller).
+ * Runs AFTER the database transaction commits so a failed delete can never
+ * roll back the content update; failures are logged with their keys so the
+ * objects can be cleaned up later instead of orphaning silently.
+ */
+async function deleteDetachedPdfObjects(keys: string[]): Promise<void> {
+  if (keys.length === 0) return;
+  const bucketName = process.env.APP_AWS_BUCKET_NAME;
+  if (!bucketName) {
+    logger.warn(
+      `APP_AWS_BUCKET_NAME not configured; skipped deleting detached policy PDFs: ${keys.join(', ')}`,
+    );
+    return;
+  }
+  const s3 = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
+  for (const key of keys) {
+    try {
+      await s3.send(new DeleteObjectCommand({ Bucket: bucketName, Key: key }));
+    } catch (error) {
+      logger.warn(`Failed to delete detached policy PDF ${key}: ${error}`);
+    }
+  }
+}
+
 export async function updatePolicyInDatabase(
   policyId: string,
   content: Record<string, unknown>[],
@@ -79,7 +106,13 @@ export async function updatePolicyInDatabase(
   try {
     const policy = await db.policy.findUnique({
       where: { id: policyId },
-      select: { id: true, status: true, currentVersionId: true },
+      select: {
+        id: true,
+        status: true,
+        currentVersionId: true,
+        pdfUrl: true,
+        currentVersion: { select: { pdfUrl: true } },
+      },
     });
 
     if (!policy) throw new Error(`Policy not found: ${policyId}`);
@@ -103,6 +136,16 @@ export async function updatePolicyInDatabase(
     // currentVersion.pdfUrl ?? policy.pdfUrl) keep serving the old uploaded
     // document instead of the regenerated content (CS-766).
     if (policy.status === PolicyStatus.draft) {
+      // The uploaded-PDF keys being detached below. Captured before the
+      // transaction, deleted from S3 only after it commits — otherwise every
+      // regeneration of a PDF-mode draft orphans its old object.
+      const detachedPdfKeys = [
+        ...new Set(
+          [policy.pdfUrl, policy.currentVersion?.pdfUrl].filter(
+            (key): key is string => !!key,
+          ),
+        ),
+      ];
       await db.$transaction(async (tx) => {
         if (policy.currentVersionId) {
           await tx.policyVersion.update({
@@ -124,6 +167,7 @@ export async function updatePolicyInDatabase(
           },
         });
       });
+      await deleteDetachedPdfObjects(detachedPdfKeys);
       return;
     }
 
