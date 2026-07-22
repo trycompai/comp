@@ -23,6 +23,8 @@ import { MemberId, OrganizationId } from '@/auth/auth-context.decorator';
 import { HybridAuthGuard } from '@/auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
+import { ActingUserResolver } from '../auth/acting-user.service';
+import type { AuthenticatedRequest } from '../auth/types';
 import { IsmsContextIssueService } from './isms-context-issue.service';
 import { IsmsInterestedPartyService } from './isms-interested-party.service';
 import { IsmsRequirementService } from './isms-requirement.service';
@@ -242,6 +244,7 @@ export class IsmsRegistersController {
     auditFindingService: IsmsAuditFindingService,
     private readonly measurementService: IsmsMeasurementService,
     private readonly narrativeService: IsmsNarrativeService,
+    private readonly actingUser: ActingUserResolver,
   ) {
     this.registry = createRegisterRegistry({
       contextIssues: contextIssueService,
@@ -277,17 +280,23 @@ export class IsmsRegistersController {
     @Param('id') id: string,
     @Param('register') register: string,
     // Read req.body directly: the global ValidationPipe mangles nested JSON.
-    @Req() req: Request,
+    @Req() req: AuthenticatedRequest,
     @OrganizationId() organizationId: string,
     // Session-auth member; undefined under API-key auth. Measurements record
     // it as the immutable enteredById.
     @MemberId() memberId: string | undefined,
   ) {
+    // Resolve the acting member so attribution survives API-key auth, where
+    // req.memberId is undefined. Prefer the raw session member (unchanged
+    // session behavior), else the resolved actor (API-key creator or org owner
+    // fallback), else null — enteredById is nullable.
+    const acting = await this.actingUser.resolve(req, organizationId);
+    const enteredByMemberId = memberId ?? acting.memberId ?? null;
     return this.resolve(register).create({
       documentId: id,
       organizationId,
       data: req.body,
-      memberId: memberId ?? null,
+      memberId: enteredByMemberId,
     });
   }
 
@@ -339,14 +348,19 @@ export class IsmsRegistersController {
   async bulkCreateMeasurements(
     @Param('id') id: string,
     // Read req.body directly: the global ValidationPipe mangles nested JSON.
-    @Req() req: Request,
+    @Req() req: AuthenticatedRequest,
     @OrganizationId() organizationId: string,
     @MemberId() memberId: string | undefined,
   ) {
+    // Same session-first attribution as createRow: prefer the session member,
+    // else the resolved actor (API-key creator / owner fallback), else null —
+    // so bulk saves via API key don't persist a null enteredById.
+    const acting = await this.actingUser.resolve(req, organizationId);
+    const enteredByMemberId = memberId ?? acting.memberId ?? null;
     return this.measurementService.bulkCreate({
       documentId: id,
       organizationId,
-      memberId: memberId ?? null,
+      memberId: enteredByMemberId,
       dto: parseMeasurementBulkBody(req.body),
     });
   }
