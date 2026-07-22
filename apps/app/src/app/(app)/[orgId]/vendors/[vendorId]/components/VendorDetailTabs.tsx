@@ -7,7 +7,7 @@ import { VendorNewsLoadingPlaceholder } from '@/components/vendor-risk-assessmen
 import { parseVendorRiskAssessmentDescription } from '@/components/vendor-risk-assessment/parse-vendor-risk-assessment-description';
 import { Comments } from '@/components/comments/Comments';
 import { RecentAuditLogs } from '@/components/RecentAuditLogs';
-import { useAuditLogs } from '@/hooks/use-audit-logs';
+import { usePaginatedAuditLogs } from '@/hooks/use-audit-logs';
 import { TaskItems } from '@/components/task-items/TaskItems';
 import { useTaskItems, useTaskItemActions } from '@/hooks/use-task-items';
 import { useVendor, useVendorActions, type VendorResponse } from '@/hooks/use-vendors';
@@ -649,6 +649,17 @@ export function VendorDetailTabs({
 function VendorActivitySection({ vendorId, taskItemIds }: { vendorId: string; taskItemIds: string[] }) {
   const entityIds = [vendorId, ...taskItemIds].join(',');
   const entityTypes = taskItemIds.length > 0 ? 'vendor,task' : 'vendor';
-  const { logs } = useAuditLogs({ entityType: entityTypes, entityId: entityIds });
-  return <RecentAuditLogs logs={logs} />;
+  const { logs, total, hasMore, loadMore, isLoadingMore } = usePaginatedAuditLogs({
+    entityType: entityTypes,
+    entityId: entityIds,
+  });
+  return (
+    <RecentAuditLogs
+      logs={logs}
+      total={total}
+      hasMore={hasMore}
+      onLoadMore={loadMore}
+      isLoadingMore={isLoadingMore}
+    />
+  );
 }

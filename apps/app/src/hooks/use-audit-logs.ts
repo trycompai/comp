@@ -1,6 +1,11 @@
 'use client';
 
 import { apiClient } from '@/lib/api-client';
+import {
+  useOffsetAuditLogs,
+  type AuditLogsPage,
+  type OffsetAuditLogsResult,
+} from '@/hooks/use-offset-audit-logs';
 import type { AuditLog, Member, Organization, User } from '@db';
 import { useEffect, useRef } from 'react';
 import useSWR from 'swr';
@@ -66,4 +71,33 @@ export function useAuditLogs({
     error,
     mutate,
   };
+}
+
+/**
+ * Offset-paginated variant of {@link useAuditLogs} for entity-scoped views
+ * (vendor, task, …) that need to page past the endpoint's default window.
+ * Accumulates 100-row batches and reports the server total so callers can wire
+ * the `RecentAuditLogs` pager (load-more + smart next arrow).
+ */
+export function usePaginatedAuditLogs({
+  entityType,
+  entityId,
+  pathContains,
+}: {
+  entityType: string;
+  entityId: string;
+  pathContains?: string;
+}): OffsetAuditLogsResult {
+  return useOffsetAuditLogs({
+    cacheKey: ['/v1/audit-logs', entityType, entityId, pathContains ?? ''],
+    fetchPage: async ({ take, offset }) => {
+      let url = `/v1/audit-logs?entityType=${entityType}&entityId=${entityId}&take=${take}&offset=${offset}`;
+      if (pathContains) url += `&pathContains=${encodeURIComponent(pathContains)}`;
+      const res = await apiClient.get<AuditLogsPage>(url);
+      if (res.error || !res.data) {
+        throw new Error(res.error ?? 'Failed to load audit logs');
+      }
+      return res.data;
+    },
+  });
 }
