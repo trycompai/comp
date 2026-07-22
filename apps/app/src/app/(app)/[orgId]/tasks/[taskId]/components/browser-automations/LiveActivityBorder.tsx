@@ -8,7 +8,9 @@ import type { CSSProperties } from 'react';
  * Purely decorative and never blocks clicks (the user can still take over).
  */
 export function LiveActivityBorder({ state }: { state: 'ai' | 'you' }) {
-  const color = state === 'ai' ? 'var(--primary)' : 'var(--warning)';
+  // A clear, high-contrast green for "AI acting" (var(--primary) is a mid-tone
+  // that disappears on dark pages); amber for "your turn".
+  const color = state === 'ai' ? 'var(--success)' : 'var(--warning)';
   return (
     <div
       aria-hidden

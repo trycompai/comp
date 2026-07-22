@@ -3,10 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { LiveActivityBorder } from './LiveActivityBorder';
 
 describe('LiveActivityBorder', () => {
-  it('glows in the primary color when the AI is acting', () => {
+  it('glows green when the AI is acting', () => {
     const { container } = render(<LiveActivityBorder state="ai" />);
     const el = container.firstChild as HTMLElement;
-    expect(el.getAttribute('style')).toContain('--activity-color: var(--primary)');
+    expect(el.getAttribute('style')).toContain('--activity-color: var(--success)');
     expect(el).toHaveClass('browser-activity-border');
   });
 
