@@ -17,6 +17,11 @@ import {
   mapAudits,
   type InternalAuditExtras,
 } from '../documents/internal-audit-export-data';
+import {
+  loadManagementReviewExtras,
+  mapReviews,
+  type ManagementReviewExtras,
+} from '../documents/management-review-export-data';
 import type {
   DocumentExportInput,
   IsmsOrgProfile,
@@ -73,6 +78,16 @@ export const EXPORT_DOCUMENT_INCLUDE = {
     include: {
       controls: { orderBy: { position: 'asc' } },
       findings: { orderBy: { position: 'asc' } },
+    },
+  },
+  reviews: {
+    // Deterministic tie-breakers: review order drives which actions carry
+    // forward into which review's input (a), so two reviews sharing a
+    // position must order the same on every read.
+    orderBy: [{ position: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
+    include: {
+      inputs: { orderBy: { position: 'asc' } },
+      actions: { orderBy: { position: 'asc' } },
     },
   },
 } satisfies Prisma.IsmsDocumentInclude;
@@ -138,6 +153,18 @@ export async function resolveInternalAuditExtras(
   });
 }
 
+/** The Management Review document (9.3) resolves action-owner names; other types don't. */
+export async function resolveManagementReviewExtras(
+  document: LoadedExportDocument,
+  client?: Prisma.TransactionClient,
+): Promise<ManagementReviewExtras | undefined> {
+  if (document.type !== 'management_review') return undefined;
+  return loadManagementReviewExtras({
+    organizationId: document.organizationId,
+    client,
+  });
+}
+
 function formatDateYmd(date: Date | null): string | null {
   return date ? date.toISOString().slice(0, 10) : null;
 }
@@ -176,12 +203,14 @@ export function buildExportInput({
   rolesExtras,
   monitoringExtras,
   internalAuditExtras,
+  managementReviewExtras,
 }: {
   document: LoadedExportDocument;
   orgProfile?: IsmsOrgProfile;
   rolesExtras?: RolesExtras;
   monitoringExtras?: MonitoringExtras;
   internalAuditExtras?: InternalAuditExtras;
+  managementReviewExtras?: ManagementReviewExtras;
 }): DocumentExportInput {
   return {
     contextIssues: document.contextIssues.map((issue) => ({
@@ -219,6 +248,9 @@ export function buildExportInput({
     audits: internalAuditExtras
       ? mapAudits(document.audits, internalAuditExtras)
       : undefined,
+    reviews: managementReviewExtras
+      ? mapReviews(document.reviews, managementReviewExtras)
+      : undefined,
   };
 }
 
@@ -241,12 +273,15 @@ export async function buildDraftSnapshot(
   const rolesExtras = await resolveRolesExtras(document);
   const monitoringExtras = await resolveMonitoringExtras(document);
   const internalAuditExtras = await resolveInternalAuditExtras(document);
+  const managementReviewExtras =
+    await resolveManagementReviewExtras(document);
   const input = buildExportInput({
     document,
     orgProfile,
     rolesExtras,
     monitoringExtras,
     internalAuditExtras,
+    managementReviewExtras,
   });
   const metadata = buildExportMetadata({
     type: document.type,

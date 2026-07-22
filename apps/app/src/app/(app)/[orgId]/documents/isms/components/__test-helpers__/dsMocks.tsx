@@ -48,6 +48,25 @@ export function ismsDesignSystemMock() {
     DialogHeader: ({ children }: { children: ReactNode }) => <div>{children}</div>,
     DialogTitle: ({ children }: { children: ReactNode }) => <h2>{children}</h2>,
     Input: (props: React.ComponentProps<'input'>) => <input {...props} />,
+    Checkbox: ({
+      checked,
+      onCheckedChange,
+      disabled,
+      'aria-label': ariaLabel,
+    }: {
+      checked?: boolean;
+      onCheckedChange?: (next: boolean) => void;
+      disabled?: boolean;
+      'aria-label'?: string;
+    }) => (
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(event) => onCheckedChange?.(event.target.checked)}
+        disabled={disabled}
+        aria-label={ariaLabel}
+      />
+    ),
     Section: ({ title, children }: { title?: ReactNode; children: ReactNode }) => (
       <section>
         {title ? <h2>{title}</h2> : null}
@@ -118,13 +137,16 @@ export function ismsIconsMock() {
     Analytics: Icon,
     Checkmark: Icon,
     ChevronDown: Icon,
+    Close: Icon,
     CloseOutline: Icon,
     Document: Icon,
     Download: Icon,
     Edit: Icon,
+    Events: Icon,
     Time: Icon,
     Flag: Icon,
     ListChecked: Icon,
+    Locked: Icon,
     MachineLearningModel: Icon,
     Renew: Icon,
     TrashCan: Icon,

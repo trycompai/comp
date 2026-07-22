@@ -1,8 +1,8 @@
 import { ISMS_TYPE_DEFINITIONS, matchRequirementId } from './document-types';
 
 describe('ISMS_TYPE_DEFINITIONS', () => {
-  it('defines all nine foundational document types with clauses', () => {
-    expect(ISMS_TYPE_DEFINITIONS).toHaveLength(9);
+  it('defines all ten foundational document types with clauses', () => {
+    expect(ISMS_TYPE_DEFINITIONS).toHaveLength(10);
     const types = ISMS_TYPE_DEFINITIONS.map((d) => d.type);
     expect(types).toEqual(
       expect.arrayContaining([
@@ -15,6 +15,7 @@ describe('ISMS_TYPE_DEFINITIONS', () => {
         'objectives_plan',
         'monitoring',
         'internal_audit',
+        'management_review',
       ]),
     );
   });
@@ -31,6 +32,13 @@ describe('ISMS_TYPE_DEFINITIONS', () => {
       (d) => d.type === 'internal_audit',
     );
     expect(internalAudit?.clause).toBe('9.2');
+  });
+
+  it('maps management_review to clause 9.3', () => {
+    const managementReview = ISMS_TYPE_DEFINITIONS.find(
+      (d) => d.type === 'management_review',
+    );
+    expect(managementReview?.clause).toBe('9.3');
   });
 
   it('maps 4.2 to both interested-parties documents', () => {

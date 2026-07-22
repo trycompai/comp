@@ -11,6 +11,7 @@ import { InterestedPartiesClient } from '../components/InterestedPartiesClient';
 import { InternalAuditClient } from '../components/InternalAuditClient';
 import type { ApproverOption } from '../components/IsmsApprovalSection';
 import { LeadershipClient } from '../components/LeadershipClient';
+import { ManagementReviewClient } from '../components/ManagementReviewClient';
 import { MonitoringClient } from '../components/MonitoringClient';
 import { ObjectivesClient } from '../components/ObjectivesClient';
 import { RequirementsClient } from '../components/RequirementsClient';
@@ -36,6 +37,8 @@ interface IsmsDetailClientProps {
   memberOptions: ApproverOption[];
   /** Internal Auditor holder(s) from Roles (5.3) — only for the 9.2 document. */
   auditorOptions?: string[];
+  /** Top Management holder(s) from Roles (5.3) — only for the 9.3 document. */
+  chairOptions?: string[];
 }
 
 const ISMS_DETAIL_CLIENTS: Record<
@@ -49,6 +52,7 @@ const ISMS_DETAIL_CLIENTS: Record<
   roles_and_responsibilities: RolesClient,
   monitoring: MonitoringClient,
   internal_audit: InternalAuditClient,
+  management_review: ManagementReviewClient,
   isms_scope: ScopeClient,
   leadership_commitment: LeadershipClient,
 };
@@ -200,6 +204,32 @@ export default async function IsmsDocumentPage({
     }
   }
 
+  // The Management Review chair dropdown is whoever Roles (5.3) says Top
+  // Management is. No defaulting on our part: an empty list means Roles is not
+  // configured yet (the server still resolves creation-time defaults itself).
+  let chairOptions: string[] = [];
+  if (documentType === 'management_review') {
+    const rolesDoc = setupResult.data?.documents?.find(
+      (doc) => doc.type === 'roles_and_responsibilities',
+    );
+    if (rolesDoc) {
+      const rolesResult = await serverApi.get<IsmsDocumentData>(
+        `/v1/isms/documents/${rolesDoc.id}`,
+      );
+      const topMgmtRole = rolesResult.data?.roles?.find(
+        (role) => role.roleKey === 'top_management',
+      );
+      const memberNames = new Map(memberOptions.map((m) => [m.id, m.name]));
+      chairOptions = [
+        ...new Set(
+          (topMgmtRole?.assignments ?? [])
+            .map((assignment) => memberNames.get(assignment.memberId))
+            .filter((name): name is string => !!name),
+        ),
+      ];
+    }
+  }
+
   const DetailClient = ISMS_DETAIL_CLIENTS[documentType];
 
   return (
@@ -213,6 +243,7 @@ export default async function IsmsDocumentPage({
         approverOptions={approverOptions}
         memberOptions={memberOptions}
         auditorOptions={auditorOptions}
+        chairOptions={chairOptions}
       />
     </PageLayout>
   );

@@ -259,6 +259,13 @@ const ISMS_DOCUMENT_TEMPLATES = [
     description:
       'The internal audit programme and the plan, controls tested, findings and conclusion of each internal audit of the ISMS (ISO 27001 clause 9.2).',
   },
+  {
+    documentType: 'management_review',
+    name: 'Management Review',
+    clause: '9.3',
+    description:
+      'The management review procedure and the minutes of each review — inputs considered, outputs, actions arising and chair sign-off (ISO 27001 clause 9.3).',
+  },
 ] as const;
 
 async function seedIsmsDocumentTemplates() {

@@ -156,6 +156,7 @@ function makeDocument(overrides: Partial<IsmsDocument> = {}): IsmsDocument {
     roles: [],
     metrics: [],
     audits: [makeAudit()],
+    reviews: [],
     controlLinks: [],
     draftNarrative: {
       programme: 'Acme runs an annual internal audit of the whole ISMS.',

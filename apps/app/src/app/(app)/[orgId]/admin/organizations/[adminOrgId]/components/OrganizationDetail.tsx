@@ -1,8 +1,8 @@
 'use client';
 
 import { RecentAuditLogs } from '@/components/RecentAuditLogs';
-import type { AuditLogWithRelations } from '@/hooks/use-audit-logs';
 import { apiClient } from '@/lib/api-client';
+import { useAdminAuditLogs } from '../hooks/use-admin-audit-logs';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,7 +21,6 @@ import {
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import useSWR from 'swr';
 
 interface AdminOrgDetail {
   id: string;
@@ -112,15 +111,8 @@ export function OrganizationDetail({
     );
   };
 
-  const { data: logs = [], isLoading } = useSWR(
-    `/v1/admin/organizations/${org.id}/audit-logs`,
-    async (url: string) => {
-      const res = await apiClient.get<{ data: AuditLogWithRelations[] }>(url);
-      if (res.error || !res.data?.data) return [];
-      return res.data.data;
-    },
-    { revalidateOnFocus: true, refreshInterval: 15_000 },
-  );
+  const { logs, total, hasMore, loadMore, isLoadingMore, isLoading } =
+    useAdminAuditLogs(org.id);
 
   return (
     <Stack gap="lg">
@@ -184,7 +176,14 @@ export function OrganizationDetail({
           </div>
         </Section>
       ) : (
-        <RecentAuditLogs logs={logs} title="Recent Activity" />
+        <RecentAuditLogs
+          logs={logs}
+          title="Recent Activity"
+          total={total}
+          hasMore={hasMore}
+          onLoadMore={loadMore}
+          isLoadingMore={isLoadingMore}
+        />
       )}
 
       <AlertDialog
