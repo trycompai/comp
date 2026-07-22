@@ -24833,6 +24833,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "offset",
+            "required": false,
+            "in": "query",
+            "description": "Number of logs to skip (default 0)",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
