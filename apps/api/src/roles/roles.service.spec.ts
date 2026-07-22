@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
@@ -95,9 +96,11 @@ jest.mock('@db', () => ({
     organizationRole: {
       findFirst: jest.fn(),
       findMany: jest.fn(),
+      findUniqueOrThrow: jest.fn(),
       count: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
       upsert: jest.fn(),
       delete: jest.fn(),
     },
@@ -393,6 +396,36 @@ describe('RolesService', () => {
       expect(result.permissions.portal).toBeUndefined();
     });
 
+    it('does not treat a malformed non-boolean compliance value as enabled', async () => {
+      // Regression: `withCompliancePortalInvariant` must use an exact
+      // `=== true` check, not a truthy check — a value like the string
+      // "false" is truthy in JS, so a naive `if (obligations.compliance)`
+      // would incorrectly grant portal. This can happen because obligations
+      // is `unknown` JSON read back from the DB in other code paths
+      // (parseObligationsField casts without validating), even though the
+      // DTO layer now validates `compliance` as a real boolean on input.
+      const dto = {
+        name: 'malformed-compliance-role',
+        permissions: { control: ['read'] },
+        obligations: { compliance: 'false' as unknown as boolean },
+      };
+
+      (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(null);
+      (mockDb.organizationRole.count as jest.Mock).mockResolvedValue(0);
+      (mockDb.organizationRole.create as jest.Mock).mockImplementation(
+        ({ data }) => ({
+          id: 'rol_malformed',
+          ...data,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      );
+
+      const result = await service.createRole(organizationId, dto, ['owner']);
+
+      expect(result.permissions.portal).toBeUndefined();
+    });
+
     it('does not duplicate portal actions already requested alongside the compliance obligation', async () => {
       const dto = {
         name: 'portal-explicit',
@@ -504,6 +537,14 @@ describe('RolesService', () => {
   describe('updateRole', () => {
     const organizationId = 'org_123';
     const roleId = 'rol_123';
+    const roleVersion = new Date('2026-01-01T00:00:00Z');
+
+    /** Wires the optimistic-concurrency write path to succeed: `updateMany` reports one row matched (the version check passed). */
+    function mockSuccessfulWrite() {
+      (mockDb.organizationRole.updateMany as jest.Mock).mockResolvedValue({
+        count: 1,
+      });
+    }
 
     it('should update role name', async () => {
       const existingRole = {
@@ -511,18 +552,14 @@ describe('RolesService', () => {
         name: 'old-name',
         permissions: JSON.stringify({ control: ['read'] }),
         obligations: '{}',
+        updatedAt: roleVersion,
       };
 
       (mockDb.organizationRole.findFirst as jest.Mock)
         .mockResolvedValueOnce(existingRole) // First call: find role to update
         .mockResolvedValueOnce(null); // Second call: check name uniqueness
 
-      (mockDb.organizationRole.update as jest.Mock).mockResolvedValue({
-        ...existingRole,
-        name: 'new-name',
-        obligations: '{}',
-        updatedAt: new Date(),
-      });
+      mockSuccessfulWrite();
 
       const result = await service.updateRole(
         organizationId,
@@ -540,6 +577,7 @@ describe('RolesService', () => {
         name: 'old-name',
         permissions: JSON.stringify({ control: ['read'] }),
         obligations: '{}',
+        updatedAt: roleVersion,
       };
 
       (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(
@@ -569,6 +607,7 @@ describe('RolesService', () => {
         name: 'limited-role',
         permissions: JSON.stringify({ task: ['read'] }),
         obligations: '{}',
+        updatedAt: roleVersion,
       };
 
       (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(
@@ -597,6 +636,7 @@ describe('RolesService', () => {
         name: 'devops-engineer',
         permissions: JSON.stringify({ control: ['read'] }), // 'auditor' has this
         obligations: '{}',
+        updatedAt: roleVersion,
       };
 
       (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(
@@ -613,7 +653,45 @@ describe('RolesService', () => {
           ['auditor'],
         ),
       ).rejects.toThrow(ForbiddenException);
-      expect(mockDb.organizationRole.update).not.toHaveBeenCalled();
+      expect(mockDb.organizationRole.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('allows an obligations-only update that grants nothing new, even if the role already holds a permission the caller lacks (P2 regression)', async () => {
+      // Regression (P2): re-validating the ENTIRE resulting permission set
+      // (rather than just what this request newly grants) meant an
+      // obligations-only update could fail against a role that already
+      // legitimately held a permission the caller doesn't personally have
+      // — even though this request isn't touching that permission at all.
+      // The role here already has 'secret' and 'portal' (e.g. granted
+      // earlier by an owner); toggling compliance off doesn't strip either
+      // (one-directional by design) and adds nothing new, so an 'auditor'
+      // caller — who has neither 'secret' nor 'portal' — must still be able
+      // to make this update.
+      const existingRole = {
+        id: roleId,
+        name: 'devops-engineer',
+        permissions: JSON.stringify({
+          secret: ['read'],
+          portal: ['read', 'update'],
+        }),
+        obligations: JSON.stringify({ compliance: true }),
+        updatedAt: roleVersion,
+      };
+
+      (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(
+        existingRole,
+      );
+      mockSuccessfulWrite();
+
+      await expect(
+        service.updateRole(
+          organizationId,
+          roleId,
+          { obligations: { compliance: false } },
+          ['auditor'],
+        ),
+      ).resolves.toBeDefined();
+      expect(mockDb.organizationRole.updateMany).toHaveBeenCalled();
     });
 
     it('grants portal:read/update when enabling the compliance obligation on an obligations-only update', async () => {
@@ -626,19 +704,13 @@ describe('RolesService', () => {
         name: 'devops-engineer',
         permissions: JSON.stringify({ control: ['read'] }),
         obligations: '{}',
+        updatedAt: roleVersion,
       };
 
       (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(
         existingRole,
       );
-      (mockDb.organizationRole.update as jest.Mock).mockImplementation(
-        ({ data }) => ({
-          id: roleId,
-          name: existingRole.name,
-          ...data,
-          updatedAt: new Date(),
-        }),
-      );
+      mockSuccessfulWrite();
 
       const result = await service.updateRole(
         organizationId,
@@ -661,20 +733,13 @@ describe('RolesService', () => {
         name: 'devops-engineer',
         permissions: JSON.stringify({ control: ['read'] }),
         obligations: JSON.stringify({ compliance: true }),
+        updatedAt: roleVersion,
       };
 
       (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(
         existingRole,
       );
-      (mockDb.organizationRole.update as jest.Mock).mockImplementation(
-        ({ data }) => ({
-          id: roleId,
-          name: existingRole.name,
-          obligations: existingRole.obligations,
-          ...data,
-          updatedAt: new Date(),
-        }),
-      );
+      mockSuccessfulWrite();
 
       const result = await service.updateRole(
         organizationId,
@@ -694,25 +759,110 @@ describe('RolesService', () => {
         name: 'old-name',
         permissions: JSON.stringify({ control: ['read'] }),
         obligations: '{}',
+        updatedAt: roleVersion,
       };
 
       (mockDb.organizationRole.findFirst as jest.Mock)
         .mockResolvedValueOnce(existingRole)
         .mockResolvedValueOnce(null);
-      (mockDb.organizationRole.update as jest.Mock).mockResolvedValue({
-        ...existingRole,
-        name: 'new-name',
-        updatedAt: new Date(),
+      mockSuccessfulWrite();
+
+      const result = await service.updateRole(
+        organizationId,
+        roleId,
+        { name: 'new-name' },
+        ['owner'],
+      );
+
+      expect(mockDb.organizationRole.updateMany).toHaveBeenCalledWith({
+        where: { id: roleId, organizationId, updatedAt: roleVersion },
+        data: { name: 'new-name', updatedAt: expect.any(Date) },
+      });
+      // Response is built from the pre-write role snapshot + this request's
+      // own changes, not a second DB read — permissions/obligations are
+      // untouched here, so they must reflect the existing row verbatim.
+      expect(result.permissions).toEqual({ control: ['read'] });
+      expect(result.obligations).toEqual({});
+    });
+
+    it('rejects with a conflict when the role was modified concurrently since it was read', async () => {
+      // Regression: the privilege-escalation check above ran against a
+      // snapshot of the role read at the top of the function. If another
+      // request changed the row in between, writing unconditionally could
+      // silently reintroduce a permission that request just removed,
+      // without ever validating it against THIS request's caller. The
+      // write must be conditioned on the row still matching the exact
+      // version that was validated — `updateMany` reporting 0 rows matched
+      // means it didn't, and the update must be rejected rather than
+      // silently skipped or retried automatically.
+      const existingRole = {
+        id: roleId,
+        name: 'devops-engineer',
+        permissions: JSON.stringify({ control: ['read'] }),
+        obligations: '{}',
+        updatedAt: roleVersion,
+      };
+
+      (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(
+        existingRole,
+      );
+      (mockDb.organizationRole.updateMany as jest.Mock).mockResolvedValue({
+        count: 0,
       });
 
-      await service.updateRole(organizationId, roleId, { name: 'new-name' }, [
-        'owner',
-      ]);
-
-      expect(mockDb.organizationRole.update).toHaveBeenCalledWith({
-        where: { id: roleId },
-        data: { name: 'new-name' },
+      await expect(
+        service.updateRole(
+          organizationId,
+          roleId,
+          { permissions: { control: ['read', 'update'] } },
+          ['owner'],
+        ),
+      ).rejects.toThrow(ConflictException);
+      expect(mockDb.organizationRole.updateMany).toHaveBeenCalledWith({
+        where: { id: roleId, organizationId, updatedAt: roleVersion },
+        data: {
+          permissions: JSON.stringify({ control: ['read', 'update'] }),
+          updatedAt: expect.any(Date),
+        },
       });
+    });
+
+    it('returns the exact version this request validated and wrote, built without a second DB read', async () => {
+      // Regression: reading the row back after the conditional write
+      // reopens the same race the write itself was guarding against — a
+      // third request could write in the gap between our update and that
+      // read, and this response would then reflect THAT write instead of
+      // the version this request validated and persisted. The response
+      // must come from local data (the pre-write snapshot + this request's
+      // own changes), not a follow-up query.
+      const existingRole = {
+        id: roleId,
+        name: 'devops-engineer',
+        permissions: JSON.stringify({ control: ['read'] }),
+        obligations: '{}',
+        createdAt: new Date('2025-01-01T00:00:00Z'),
+        updatedAt: roleVersion,
+      };
+
+      (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(
+        existingRole,
+      );
+      mockSuccessfulWrite();
+
+      const result = await service.updateRole(
+        organizationId,
+        roleId,
+        { permissions: { control: ['read', 'update'] } },
+        ['owner'],
+      );
+
+      expect(mockDb.organizationRole.findUniqueOrThrow).not.toHaveBeenCalled();
+      expect(result.permissions).toEqual({ control: ['read', 'update'] });
+      expect(result.createdAt).toEqual(existingRole.createdAt);
+      // The written updatedAt must be a freshly captured timestamp, not the
+      // pre-write version this request validated against.
+      expect(result.updatedAt).toBeInstanceOf(Date);
+      expect(result.updatedAt.getTime()).toBeGreaterThan(roleVersion.getTime());
     });
   });
 
