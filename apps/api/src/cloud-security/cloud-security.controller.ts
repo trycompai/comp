@@ -287,7 +287,7 @@ export class CloudSecurityController {
   async scan(
     @Param('connectionId') connectionId: string,
     @OrganizationId() organizationId: string,
-    @Req() req: { userId?: string; authType?: string },
+    @Req() req: AuthenticatedRequest,
   ) {
     this.logger.log(
       `Cloud security scan requested for connection ${connectionId}`,
@@ -325,23 +325,36 @@ export class CloudSecurityController {
     const failedCount = result.findings.filter((f) => !f.passed).length;
     const passedCount = result.findings.filter((f) => f.passed).length;
 
-    // Only write audit log when we have a real userId (session auth).
-    // API key auth has no user context, and auditLog.userId is a FK to User.
-    const scanUserId = req.userId;
-    if (scanUserId)
-      await logCloudSecurityActivity({
-        organizationId,
-        userId: scanUserId,
-        connectionId,
-        action: 'scan_completed',
-        description: `Ran cloud security scan — ${totalFindings} findings (${failedCount} failed, ${passedCount} passed)`,
-        metadata: {
-          totalFindings,
-          failedCount,
-          passedCount,
-          provider: result.provider,
-        },
-      });
+    // Attribute to the acting user. Session callers already have req.userId;
+    // API key / service token callers resolve to the key creator or org owner.
+    // This is best-effort: the scan has already completed, so a transient
+    // resolver/audit failure (or an org with no attributable user) must not turn
+    // it into a failed HTTP request — that would invite the caller to re-run the
+    // scan. Log and move on. (auditLog.userId is a FK to User, so skip on null.)
+    try {
+      const acting = await this.actingUser.resolve(req, organizationId);
+      if (acting.userId)
+        await logCloudSecurityActivity({
+          organizationId,
+          userId: acting.userId,
+          connectionId,
+          action: 'scan_completed',
+          // Append the caller marker (e.g. 'via API key "CI"') for non-session
+          // callers so an owner-fallback attribution isn't read as a session
+          // action — mirrors the exception / scan-mode endpoints.
+          description: `Ran cloud security scan — ${totalFindings} findings (${failedCount} failed, ${passedCount} passed)${
+            acting.callerLabel ? ` [${acting.callerLabel}]` : ''
+          }`,
+          metadata: {
+            totalFindings,
+            failedCount,
+            passedCount,
+            provider: result.provider,
+          },
+        });
+    } catch (err) {
+      this.logger.error('Failed to record cloud security scan activity', err);
+    }
 
     return {
       success: true,

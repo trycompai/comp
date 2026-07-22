@@ -155,4 +155,22 @@ describe('runDerivation', () => {
     // A regenerate must never clobber the customer's manual narrative.
     expect(tx.ismsDocument.update).not.toHaveBeenCalled();
   });
+
+  it('seeds the internal-audit programme onto an empty draft (CS-724)', async () => {
+    const tx = buildTx();
+    await runDerivation({ tx: asTx(tx), type: 'internal_audit', ...baseArgs });
+    const updated = tx.ismsDocument.update.mock.calls[0][0].data;
+    expect(updated.draftNarrative.programme).toContain(
+      'Acme runs an annual internal audit',
+    );
+  });
+
+  it('preserves an edited internal-audit programme on regenerate (CS-724)', async () => {
+    const tx = buildTx();
+    tx.ismsDocument.findUnique.mockResolvedValue({
+      draftNarrative: { programme: 'Customer-edited programme.' },
+    });
+    await runDerivation({ tx: asTx(tx), type: 'internal_audit', ...baseArgs });
+    expect(tx.ismsDocument.update).not.toHaveBeenCalled();
+  });
 });

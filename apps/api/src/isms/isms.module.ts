@@ -13,6 +13,9 @@ import { IsmsRoleService } from './isms-role.service';
 import { IsmsRoleAssignmentService } from './isms-role-assignment.service';
 import { IsmsMetricService } from './isms-metric.service';
 import { IsmsMeasurementService } from './isms-measurement.service';
+import { IsmsAuditService } from './isms-audit.service';
+import { IsmsAuditControlService } from './isms-audit-control.service';
+import { IsmsAuditFindingService } from './isms-audit-finding.service';
 import { IsmsNarrativeService } from './isms-narrative.service';
 import { IsmsProfileController } from './wizard/isms-profile.controller';
 import { IsmsProfileService } from './wizard/isms-profile.service';
@@ -40,6 +43,9 @@ import { AttachmentsModule } from '../attachments/attachments.module';
     IsmsRoleAssignmentService,
     IsmsMetricService,
     IsmsMeasurementService,
+    IsmsAuditService,
+    IsmsAuditControlService,
+    IsmsAuditFindingService,
     IsmsNarrativeService,
     IsmsProfileService,
   ],
@@ -56,6 +62,9 @@ import { AttachmentsModule } from '../attachments/attachments.module';
     IsmsRoleAssignmentService,
     IsmsMetricService,
     IsmsMeasurementService,
+    IsmsAuditService,
+    IsmsAuditControlService,
+    IsmsAuditFindingService,
     IsmsNarrativeService,
     IsmsProfileService,
   ],

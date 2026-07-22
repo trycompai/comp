@@ -89,7 +89,7 @@
         "@upstash/ratelimit": "^2.0.8",
         "@upstash/redis": "^1.34.2",
         "@upstash/vector": "^1.2.2",
-        "adm-zip": "^0.5.16",
+        "adm-zip": "^0.6.0",
         "ai": "^6.0.175",
         "archiver": "^7.0.1",
         "axios": "^1.16.0",

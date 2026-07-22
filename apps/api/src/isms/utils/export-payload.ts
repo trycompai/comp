@@ -12,6 +12,11 @@ import {
   mapMetrics,
   type MonitoringExtras,
 } from '../documents/monitoring-export-data';
+import {
+  loadInternalAuditExtras,
+  mapAudits,
+  type InternalAuditExtras,
+} from '../documents/internal-audit-export-data';
 import type {
   DocumentExportInput,
   IsmsOrgProfile,
@@ -61,6 +66,13 @@ export const EXPORT_DOCUMENT_INCLUDE = {
         orderBy: [{ periodStart: 'desc' }, { recordedAt: 'desc' }],
         take: 1,
       },
+    },
+  },
+  audits: {
+    orderBy: { position: 'asc' },
+    include: {
+      controls: { orderBy: { position: 'asc' } },
+      findings: { orderBy: { position: 'asc' } },
     },
   },
 } satisfies Prisma.IsmsDocumentInclude;
@@ -114,6 +126,18 @@ export async function resolveMonitoringExtras(
   });
 }
 
+/** The Internal Audit document (9.2) resolves finding-owner names; other types don't. */
+export async function resolveInternalAuditExtras(
+  document: LoadedExportDocument,
+  client?: Prisma.TransactionClient,
+): Promise<InternalAuditExtras | undefined> {
+  if (document.type !== 'internal_audit') return undefined;
+  return loadInternalAuditExtras({
+    organizationId: document.organizationId,
+    client,
+  });
+}
+
 function formatDateYmd(date: Date | null): string | null {
   return date ? date.toISOString().slice(0, 10) : null;
 }
@@ -151,11 +175,13 @@ export function buildExportInput({
   orgProfile,
   rolesExtras,
   monitoringExtras,
+  internalAuditExtras,
 }: {
   document: LoadedExportDocument;
   orgProfile?: IsmsOrgProfile;
   rolesExtras?: RolesExtras;
   monitoringExtras?: MonitoringExtras;
+  internalAuditExtras?: InternalAuditExtras;
 }): DocumentExportInput {
   return {
     contextIssues: document.contextIssues.map((issue) => ({
@@ -190,6 +216,9 @@ export function buildExportInput({
     metrics: monitoringExtras
       ? mapMetrics(document.metrics, monitoringExtras)
       : undefined,
+    audits: internalAuditExtras
+      ? mapAudits(document.audits, internalAuditExtras)
+      : undefined,
   };
 }
 
@@ -211,11 +240,13 @@ export async function buildDraftSnapshot(
   const orgProfile = await resolveOrgProfile(document);
   const rolesExtras = await resolveRolesExtras(document);
   const monitoringExtras = await resolveMonitoringExtras(document);
+  const internalAuditExtras = await resolveInternalAuditExtras(document);
   const input = buildExportInput({
     document,
     orgProfile,
     rolesExtras,
     monitoringExtras,
+    internalAuditExtras,
   });
   const metadata = buildExportMetadata({
     type: document.type,

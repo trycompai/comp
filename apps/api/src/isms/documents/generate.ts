@@ -262,6 +262,13 @@ export async function runDerivation({
     await seedMetricsIfMissing({ tx, documentId });
     return;
   }
+  if (type === 'internal_audit') {
+    // Only the Programme paragraph is derivable; audit instances are
+    // customer-created (their Controls Tested rows seed at audit creation).
+    // Seed-if-empty, so a regenerate never clobbers an edited programme.
+    await generateNarrative({ tx, documentId, type, data });
+    return;
+  }
   if (isNarrativeType(type)) {
     await generateNarrative({ tx, documentId, type, data });
     return;
