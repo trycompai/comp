@@ -452,7 +452,7 @@ export class AdminOrganizationsService {
       ? Math.min(MAX_AUDIT_LOG_OFFSET, Math.max(0, parseInt(offset, 10) || 0))
       : 0;
 
-    const [logs, total] = await Promise.all([
+    const [logs, rawTotal] = await Promise.all([
       db.auditLog.findMany({
         where,
         include: {
@@ -474,6 +474,11 @@ export class AdminOrganizationsService {
       }),
       db.auditLog.count({ where }),
     ]);
+
+    // Report only the reachable total (bounded by the offset cap) so the client
+    // pager stops at the accessible boundary instead of looping load-more over
+    // pages past MAX_AUDIT_LOG_OFFSET that can never be filled.
+    const total = Math.min(rawTotal, MAX_AUDIT_LOG_OFFSET);
 
     return { data: logs, total };
   }

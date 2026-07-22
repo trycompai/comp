@@ -169,6 +169,17 @@ describe('AuditLogController', () => {
       );
     });
 
+    it('should cap the reported total at the reachable maximum', async () => {
+      mockFindMany.mockResolvedValue([]);
+      mockCount.mockResolvedValue(500_000);
+
+      const result = await controller.getAuditLogs('org_1', mockAuthContext);
+
+      // Beyond the offset cap the window is unreachable, so total must not
+      // exceed it — otherwise the client pager loops load-more forever.
+      expect(result.total).toBe(100_000);
+    });
+
     it('should count with the same filters as the query', async () => {
       mockFindMany.mockResolvedValue([]);
 

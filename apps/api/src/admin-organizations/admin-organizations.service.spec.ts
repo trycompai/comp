@@ -550,6 +550,16 @@ describe('AdminOrganizationsService', () => {
       );
     });
 
+    it('caps the reported total at the reachable maximum', async () => {
+      (mockDb.auditLog.count as jest.Mock).mockResolvedValue(500_000);
+
+      const result = await service.getAuditLogs({ orgId: 'org_1' });
+
+      // Beyond the offset cap the window is unreachable, so total must not
+      // exceed it — otherwise the client pager loops load-more forever.
+      expect(result.total).toBe(100_000);
+    });
+
     it('builds a single-value entityType filter', async () => {
       await service.getAuditLogs({ orgId: 'org_1', entityType: 'policy' });
 

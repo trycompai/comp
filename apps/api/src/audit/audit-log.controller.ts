@@ -85,7 +85,7 @@ export class AuditLogController {
     // `total` drives the client pager (how many pages exist / when to stop
     // fetching); the stable `id` secondary sort keeps offset paging
     // deterministic when rows share a timestamp.
-    const [logs, total] = await Promise.all([
+    const [logs, rawTotal] = await Promise.all([
       db.auditLog.findMany({
         where,
         include: {
@@ -107,6 +107,12 @@ export class AuditLogController {
       }),
       db.auditLog.count({ where }),
     ]);
+
+    // Report only the reachable total (bounded by the offset cap). Otherwise the
+    // client pager keeps `hasMore` true past MAX_AUDIT_LOG_OFFSET — where the
+    // server clamps every request to the same page — looping load-more forever
+    // and exposing pages that can never be filled.
+    const total = Math.min(rawTotal, MAX_AUDIT_LOG_OFFSET);
 
     return {
       data: logs,
