@@ -97,6 +97,10 @@ const TYPE_DRIFT_SOURCES: Record<IsmsDocumentType, Array<keyof DiffMap>> = {
   // Internal Audit (9.2) renders from its own audits register + the Programme
   // narrative (customer-owned once seeded); it never goes platform-drift stale.
   internal_audit: [],
+  // Management Review (9.3) renders from its own reviews register + the
+  // Procedure narrative (customer-owned once seeded); same as internal_audit,
+  // it never goes platform-drift stale.
+  management_review: [],
   isms_scope: [
     'frameworks',
     'vendors',

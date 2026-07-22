@@ -80,6 +80,13 @@ export const ISMS_TYPE_DEFINITIONS: IsmsTypeDefinition[] = [
     description:
       'The internal audit programme and the plan, controls tested, findings and conclusion of each internal audit of the ISMS (ISO 27001 clause 9.2).',
   },
+  {
+    type: 'management_review',
+    clause: '9.3',
+    title: 'Management Review',
+    description:
+      'The management review procedure and the minutes of each review — inputs considered, outputs, actions arising and chair sign-off (ISO 27001 clause 9.3).',
+  },
 ];
 
 /**

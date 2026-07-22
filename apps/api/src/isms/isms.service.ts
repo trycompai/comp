@@ -16,6 +16,13 @@ import {
 } from './documents/monitoring';
 import { auditValidationMessages } from './documents/internal-audit';
 import { defaultProgrammeText } from './documents/internal-audit-defaults';
+import {
+  isReviewSigned,
+  managementReviewNarrativeSchema,
+  parseReviewAttendees,
+  reviewValidationMessages,
+} from './documents/management-review';
+import { defaultProcedureText } from './documents/management-review-defaults';
 import { updateDraftSnapshot } from './utils/draft-snapshot';
 import { EXPORT_DOCUMENT_INCLUDE } from './utils/export-payload';
 import { lockDocument } from './utils/document-lock';
@@ -216,38 +223,53 @@ export class IsmsService {
       );
     }
 
-    // Same first-load guarantee for Internal Audit (9.2): the Programme
-    // paragraph opens with its default text. The write is conditional on the
-    // narrative still being NULL (its creation state), so it is atomic: under
-    // concurrent setup calls — where the "created" lookup can also match a row
-    // the other call just created — an early customer edit can never be
-    // clobbered (the seed simply matches zero rows).
+    // Same first-load guarantee for Internal Audit (9.2) and Management Review
+    // (9.3): the Programme / Procedure paragraph opens with its default text.
+    // Each write is conditional on the narrative still being NULL (its
+    // creation state), so it is atomic: under concurrent setup calls — where
+    // the "created" lookup can also match a row the other call just created —
+    // an early customer edit can never be clobbered (the seed simply matches
+    // zero rows).
     const internalAuditDoc = created.find(
       (doc) => doc.type === 'internal_audit',
     );
-    if (internalAuditDoc) {
+    const managementReviewDoc = created.find(
+      (doc) => doc.type === 'management_review',
+    );
+    if (internalAuditDoc || managementReviewDoc) {
       const organization = await db.organization.findUnique({
         where: { id: organizationId },
         select: { name: true },
       });
-      await db.ismsDocument.updateMany({
-        where: {
-          id: internalAuditDoc.id,
-          // "Empty" matches generateNarrative's definition: NULL (the
-          // creation state) or an empty object — never a populated draft.
-          OR: [
-            { draftNarrative: { equals: Prisma.AnyNull } },
-            { draftNarrative: { equals: {} } },
-          ],
-        },
-        data: {
-          draftNarrative: {
-            programme: defaultProgrammeText(
-              organization?.name ?? 'The organization',
-            ),
+      const organizationName = organization?.name ?? 'The organization';
+      // "Empty" matches generateNarrative's definition: NULL (the creation
+      // state) or an empty object — never a populated draft.
+      const whileNarrativeEmpty = {
+        OR: [
+          { draftNarrative: { equals: Prisma.AnyNull } },
+          { draftNarrative: { equals: {} } },
+        ],
+      };
+      if (internalAuditDoc) {
+        await db.ismsDocument.updateMany({
+          where: { id: internalAuditDoc.id, ...whileNarrativeEmpty },
+          data: {
+            draftNarrative: {
+              programme: defaultProgrammeText(organizationName),
+            },
           },
-        },
-      });
+        });
+      }
+      if (managementReviewDoc) {
+        await db.ismsDocument.updateMany({
+          where: { id: managementReviewDoc.id, ...whileNarrativeEmpty },
+          data: {
+            draftNarrative: {
+              procedure: defaultProcedureText(organizationName),
+            },
+          },
+        });
+      }
     }
   }
 
@@ -290,6 +312,13 @@ export class IsmsService {
           include: {
             controls: { orderBy: { position: 'asc' } },
             findings: { orderBy: { position: 'asc' } },
+          },
+        },
+        reviews: {
+          orderBy: { position: 'asc' },
+          include: {
+            inputs: { orderBy: { position: 'asc' } },
+            actions: { orderBy: { position: 'asc' } },
           },
         },
         controlLinks: {
@@ -347,6 +376,12 @@ export class IsmsService {
       // completed audit (CS-724).
       if (document.type === 'internal_audit') {
         await this.assertInternalAuditComplete({ tx, documentId });
+      }
+      // Clause 9.3: the Procedure paragraph plus, on every completed review,
+      // a meeting date, chair, at least one attendee, every input discussed,
+      // and the chair's signature (CS-726).
+      if (document.type === 'management_review') {
+        await this.assertManagementReviewComplete({ tx, documentId });
       }
 
       return tx.ismsDocument.update({
@@ -587,6 +622,56 @@ export class IsmsService {
     if (messages.length > 0) {
       throw new BadRequestException(
         `This Clause 9.2 document is not ready to submit. ${messages.join(' ')}`,
+      );
+    }
+  }
+
+  private async assertManagementReviewComplete({
+    tx,
+    documentId,
+  }: {
+    tx: Prisma.TransactionClient;
+    documentId: string;
+  }) {
+    const [document, reviews] = await Promise.all([
+      tx.ismsDocument.findUnique({
+        where: { id: documentId },
+        select: { draftNarrative: true },
+      }),
+      tx.ismsManagementReview.findMany({
+        where: { documentId },
+        select: {
+          reference: true,
+          status: true,
+          meetingDate: true,
+          chairName: true,
+          attendees: true,
+          signoffChairName: true,
+          signoffChairDate: true,
+          inputs: { select: { discussed: true } },
+        },
+      }),
+    ]);
+    const narrative = managementReviewNarrativeSchema.safeParse(
+      document?.draftNarrative,
+    );
+    const messages = reviewValidationMessages({
+      procedure: narrative.success ? narrative.data.procedure : null,
+      reviews: reviews.map((review) => ({
+        reference: review.reference,
+        status: review.status,
+        hasMeetingDate: review.meetingDate != null,
+        hasChair: Boolean(review.chairName?.trim()),
+        attendeeCount: parseReviewAttendees(review.attendees).length,
+        undiscussedInputCount: review.inputs.filter(
+          (input) => !input.discussed,
+        ).length,
+        signed: isReviewSigned(review),
+      })),
+    });
+    if (messages.length > 0) {
+      throw new BadRequestException(
+        `This Clause 9.3 document is not ready to submit. ${messages.join(' ')}`,
       );
     }
   }

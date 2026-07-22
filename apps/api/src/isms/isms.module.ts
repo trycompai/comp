@@ -16,6 +16,9 @@ import { IsmsMeasurementService } from './isms-measurement.service';
 import { IsmsAuditService } from './isms-audit.service';
 import { IsmsAuditControlService } from './isms-audit-control.service';
 import { IsmsAuditFindingService } from './isms-audit-finding.service';
+import { IsmsManagementReviewService } from './isms-management-review.service';
+import { IsmsReviewInputService } from './isms-review-input.service';
+import { IsmsReviewActionService } from './isms-review-action.service';
 import { IsmsNarrativeService } from './isms-narrative.service';
 import { IsmsProfileController } from './wizard/isms-profile.controller';
 import { IsmsProfileService } from './wizard/isms-profile.service';
@@ -46,6 +49,9 @@ import { AttachmentsModule } from '../attachments/attachments.module';
     IsmsAuditService,
     IsmsAuditControlService,
     IsmsAuditFindingService,
+    IsmsManagementReviewService,
+    IsmsReviewInputService,
+    IsmsReviewActionService,
     IsmsNarrativeService,
     IsmsProfileService,
   ],
@@ -65,6 +71,9 @@ import { AttachmentsModule } from '../attachments/attachments.module';
     IsmsAuditService,
     IsmsAuditControlService,
     IsmsAuditFindingService,
+    IsmsManagementReviewService,
+    IsmsReviewInputService,
+    IsmsReviewActionService,
     IsmsNarrativeService,
     IsmsProfileService,
   ],

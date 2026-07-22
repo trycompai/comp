@@ -269,6 +269,13 @@ export async function runDerivation({
     await generateNarrative({ tx, documentId, type, data });
     return;
   }
+  if (type === 'management_review') {
+    // Only the Procedure paragraph is derivable; review instances are
+    // customer-created (their Inputs rows seed at review creation).
+    // Seed-if-empty, so a regenerate never clobbers an edited procedure.
+    await generateNarrative({ tx, documentId, type, data });
+    return;
+  }
   if (isNarrativeType(type)) {
     await generateNarrative({ tx, documentId, type, data });
     return;
