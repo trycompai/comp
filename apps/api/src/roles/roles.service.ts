@@ -96,7 +96,11 @@ export class RolesService {
     permissions: Record<string, string[]>,
     obligations: RoleObligations,
   ): Record<string, string[]> {
-    if (!obligations.compliance) return permissions;
+    // Exact-equality check, not a truthy check: `obligations` can come from
+    // parsed, unvalidated DB JSON (parseObligationsField casts without
+    // validating), so a malformed non-boolean value like the string
+    // "false" must not be treated as enabled just because it's truthy.
+    if (obligations.compliance !== true) return permissions;
 
     const portalActions = new Set([
       ...(permissions.portal ?? []),

@@ -393,6 +393,36 @@ describe('RolesService', () => {
       expect(result.permissions.portal).toBeUndefined();
     });
 
+    it('does not treat a malformed non-boolean compliance value as enabled', async () => {
+      // Regression: `withCompliancePortalInvariant` must use an exact
+      // `=== true` check, not a truthy check — a value like the string
+      // "false" is truthy in JS, so a naive `if (obligations.compliance)`
+      // would incorrectly grant portal. This can happen because obligations
+      // is `unknown` JSON read back from the DB in other code paths
+      // (parseObligationsField casts without validating), even though the
+      // DTO layer now validates `compliance` as a real boolean on input.
+      const dto = {
+        name: 'malformed-compliance-role',
+        permissions: { control: ['read'] },
+        obligations: { compliance: 'false' as unknown as boolean },
+      };
+
+      (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(null);
+      (mockDb.organizationRole.count as jest.Mock).mockResolvedValue(0);
+      (mockDb.organizationRole.create as jest.Mock).mockImplementation(
+        ({ data }) => ({
+          id: 'rol_malformed',
+          ...data,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      );
+
+      const result = await service.createRole(organizationId, dto, ['owner']);
+
+      expect(result.permissions.portal).toBeUndefined();
+    });
+
     it('does not duplicate portal actions already requested alongside the compliance obligation', async () => {
       const dto = {
         name: 'portal-explicit',
