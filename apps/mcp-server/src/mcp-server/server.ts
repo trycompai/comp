@@ -145,6 +145,7 @@ import { tool$ismsISMSControllerSubmitForApprovalV1 } from "./tools/ismsISMSCont
 import { tool$ismsISMSProfileControllerGenerateAllV1 } from "./tools/ismsISMSProfileControllerGenerateAllV1.js";
 import { tool$ismsISMSProfileControllerGetProfileV1 } from "./tools/ismsISMSProfileControllerGetProfileV1.js";
 import { tool$ismsISMSProfileControllerSaveProfileV1 } from "./tools/ismsISMSProfileControllerSaveProfileV1.js";
+import { tool$ismsISMSRegistersControllerBulkCreateMeasurementsV1 } from "./tools/ismsISMSRegistersControllerBulkCreateMeasurementsV1.js";
 import { tool$ismsISMSRegistersControllerCreateRowV1 } from "./tools/ismsISMSRegistersControllerCreateRowV1.js";
 import { tool$ismsISMSRegistersControllerDeleteRowV1 } from "./tools/ismsISMSRegistersControllerDeleteRowV1.js";
 import { tool$ismsISMSRegistersControllerSaveNarrativeV1 } from "./tools/ismsISMSRegistersControllerSaveNarrativeV1.js";
@@ -403,7 +404,7 @@ export function createMCPServer(deps: {
 }) {
   const server = new McpServer({
     name: "CompAi",
-    version: "0.2.3",
+    version: "0.2.4",
   });
 
   const getClient = deps.getSDK || (() =>
@@ -762,6 +763,7 @@ export function createMCPServer(deps: {
   tool(tool$ismsISMSRegistersControllerCreateRowV1);
   tool(tool$ismsISMSRegistersControllerUpdateRowV1);
   tool(tool$ismsISMSRegistersControllerDeleteRowV1);
+  tool(tool$ismsISMSRegistersControllerBulkCreateMeasurementsV1);
   tool(tool$ismsISMSRegistersControllerSaveNarrativeV1);
   tool(tool$ismsISMSProfileControllerGetProfileV1);
   tool(tool$ismsISMSProfileControllerSaveProfileV1);

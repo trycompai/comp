@@ -7660,7 +7660,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateVersionDto"
+              $ref: "#/components/schemas/CreatePolicyVersionDto"
       responses:
         "201":
           description: "Policy version created"
@@ -10983,6 +10983,27 @@ paths:
     put:
       operationId: "TrustPortalController_updateFaqs_v1"
       parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: "object"
+              required:
+                - "faqs"
+              properties:
+                faqs:
+                  type: "array"
+                  items:
+                    type: "object"
+                    required:
+                      - "question"
+                      - "answer"
+                    properties:
+                      question:
+                        type: "string"
+                      answer:
+                        type: "string"
       responses:
         "200":
           description: ""
@@ -11240,6 +11261,29 @@ paths:
     post:
       operationId: "TrustPortalController_updateOverview_v1"
       parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: "object"
+              required:
+                - "organizationId"
+              properties:
+                organizationId:
+                  type: "string"
+                  description: "Organization that owns the trust portal. Must match the authenticated API key's organization."
+                  example: "org_6914cd0e16e4c7dccbb54426"
+                overviewTitle:
+                  type: "string"
+                  maxLength: 200
+                  nullable: true
+                overviewContent:
+                  type: "string"
+                  maxLength: 10000
+                  nullable: true
+                showOverview:
+                  type: "boolean"
       responses:
         "200":
           description: "Overview updated successfully"
@@ -11288,6 +11332,33 @@ paths:
     post:
       operationId: "TrustPortalController_createCustomLink_v1"
       parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: "object"
+              required:
+                - "organizationId"
+                - "title"
+                - "url"
+              properties:
+                organizationId:
+                  type: "string"
+                  description: "Organization that owns the trust portal. Must match the authenticated API key's organization."
+                  example: "org_6914cd0e16e4c7dccbb54426"
+                title:
+                  type: "string"
+                  minLength: 1
+                  maxLength: 100
+                description:
+                  type: "string"
+                  maxLength: 500
+                  nullable: true
+                url:
+                  type: "string"
+                  format: "uri"
+                  maxLength: 2000
       responses:
         "201":
           description: "Custom link created successfully"
@@ -11390,6 +11461,25 @@ paths:
     post:
       operationId: "TrustPortalController_reorderCustomLinks_v1"
       parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: "object"
+              required:
+                - "organizationId"
+                - "linkIds"
+              properties:
+                organizationId:
+                  type: "string"
+                  description: "Organization that owns the trust portal. Must match the authenticated API key's organization."
+                  example: "org_6914cd0e16e4c7dccbb54426"
+                linkIds:
+                  type: "array"
+                  items:
+                    type: "string"
+                  description: "Custom link IDs in the desired display order."
       responses:
         "200":
           description: "Custom links reordered successfully"
@@ -14203,6 +14293,11 @@ paths:
                     - "on_track"
                     - "at_risk"
                     - "met"
+                    - "planned"
+                    - "in_progress"
+                    - "complete"
+                    - "open"
+                    - "closed"
                 responsibilities:
                   type: "string"
                 authorities:
@@ -14255,6 +14350,110 @@ paths:
                   type: "string"
                   nullable: true
                 remediationDueDate:
+                  type: "string"
+                  nullable: true
+                whatIsMeasured:
+                  type: "string"
+                method:
+                  type: "string"
+                monitorMemberId:
+                  type: "string"
+                  nullable: true
+                analyzeMemberId:
+                  type: "string"
+                  nullable: true
+                objectiveId:
+                  type: "string"
+                  nullable: true
+                isActive:
+                  type: "boolean"
+                metricId:
+                  type: "string"
+                periodStart:
+                  type: "string"
+                  description: "First day of the covered period (YYYY-MM-DD), aligned to the metric cadence"
+                value:
+                  type: "string"
+                note:
+                  type: "string"
+                  nullable: true
+                scope:
+                  type: "string"
+                criteria:
+                  type: "string"
+                auditorName:
+                  type: "string"
+                  nullable: true
+                plannedStartDate:
+                  type: "string"
+                  nullable: true
+                plannedEndDate:
+                  type: "string"
+                  nullable: true
+                conclusionVerdict:
+                  type: "string"
+                  enum:
+                    - "conform"
+                    - "substantially_conform"
+                    - "not_yet_conform"
+                  nullable: true
+                conclusionNotes:
+                  type: "string"
+                  nullable: true
+                signoffAuditorName:
+                  type: "string"
+                  nullable: true
+                signoffAuditorDate:
+                  type: "string"
+                  nullable: true
+                signoffSpoName:
+                  type: "string"
+                  nullable: true
+                signoffSpoDate:
+                  type: "string"
+                  nullable: true
+                signoffTopMgmtName:
+                  type: "string"
+                  nullable: true
+                signoffTopMgmtDate:
+                  type: "string"
+                  nullable: true
+                auditId:
+                  type: "string"
+                controlRef:
+                  type: "string"
+                whatWasTested:
+                  type: "string"
+                whereToFind:
+                  type: "string"
+                result:
+                  type: "string"
+                  enum:
+                    - "conformity_confirmed"
+                    - "nonconformity_raised"
+                    - "observation_raised"
+                    - "not_sampled"
+                  nullable: true
+                notes:
+                  type: "string"
+                  nullable: true
+                type:
+                  type: "string"
+                  enum:
+                    - "nc_major"
+                    - "nc_minor"
+                    - "ofi"
+                    - "observation"
+                controlId:
+                  type: "string"
+                  nullable: true
+                clauseOrControl:
+                  type: "string"
+                  nullable: true
+                dueDate:
+                  type: "string"
+                  nullable: true
+                closureEvidence:
                   type: "string"
                   nullable: true
                 position:
@@ -14342,6 +14541,11 @@ paths:
                     - "on_track"
                     - "at_risk"
                     - "met"
+                    - "planned"
+                    - "in_progress"
+                    - "complete"
+                    - "open"
+                    - "closed"
                 responsibilities:
                   type: "string"
                 authorities:
@@ -14396,6 +14600,110 @@ paths:
                 remediationDueDate:
                   type: "string"
                   nullable: true
+                whatIsMeasured:
+                  type: "string"
+                method:
+                  type: "string"
+                monitorMemberId:
+                  type: "string"
+                  nullable: true
+                analyzeMemberId:
+                  type: "string"
+                  nullable: true
+                objectiveId:
+                  type: "string"
+                  nullable: true
+                isActive:
+                  type: "boolean"
+                metricId:
+                  type: "string"
+                periodStart:
+                  type: "string"
+                  description: "First day of the covered period (YYYY-MM-DD), aligned to the metric cadence"
+                value:
+                  type: "string"
+                note:
+                  type: "string"
+                  nullable: true
+                scope:
+                  type: "string"
+                criteria:
+                  type: "string"
+                auditorName:
+                  type: "string"
+                  nullable: true
+                plannedStartDate:
+                  type: "string"
+                  nullable: true
+                plannedEndDate:
+                  type: "string"
+                  nullable: true
+                conclusionVerdict:
+                  type: "string"
+                  enum:
+                    - "conform"
+                    - "substantially_conform"
+                    - "not_yet_conform"
+                  nullable: true
+                conclusionNotes:
+                  type: "string"
+                  nullable: true
+                signoffAuditorName:
+                  type: "string"
+                  nullable: true
+                signoffAuditorDate:
+                  type: "string"
+                  nullable: true
+                signoffSpoName:
+                  type: "string"
+                  nullable: true
+                signoffSpoDate:
+                  type: "string"
+                  nullable: true
+                signoffTopMgmtName:
+                  type: "string"
+                  nullable: true
+                signoffTopMgmtDate:
+                  type: "string"
+                  nullable: true
+                auditId:
+                  type: "string"
+                controlRef:
+                  type: "string"
+                whatWasTested:
+                  type: "string"
+                whereToFind:
+                  type: "string"
+                result:
+                  type: "string"
+                  enum:
+                    - "conformity_confirmed"
+                    - "nonconformity_raised"
+                    - "observation_raised"
+                    - "not_sampled"
+                  nullable: true
+                notes:
+                  type: "string"
+                  nullable: true
+                type:
+                  type: "string"
+                  enum:
+                    - "nc_major"
+                    - "nc_minor"
+                    - "ofi"
+                    - "observation"
+                controlId:
+                  type: "string"
+                  nullable: true
+                clauseOrControl:
+                  type: "string"
+                  nullable: true
+                dueDate:
+                  type: "string"
+                  nullable: true
+                closureEvidence:
+                  type: "string"
+                  nullable: true
                 position:
                   type: "integer"
                   minimum: 0
@@ -14448,6 +14756,63 @@ paths:
           og:description: "Delete a row in an ISMS register in Comp AI."
       x-speakeasy-mcp:
         name: "delete-row"
+  /v1/isms/documents/{id}/measurements/bulk:
+    post:
+      operationId: "IsmsRegistersController_bulkCreateMeasurements_v1"
+      parameters:
+        - name: "id"
+          required: true
+          in: "path"
+          schema:
+            type: "string"
+      requestBody:
+        required: true
+        description: "Measurements to record in one save (Metrics due / backfill views)"
+        content:
+          application/json:
+            schema:
+              type: "object"
+              properties:
+                measurements:
+                  type: "array"
+                  minItems: 1
+                  maxItems: 200
+                  items:
+                    type: "object"
+                    properties:
+                      metricId:
+                        type: "string"
+                      periodStart:
+                        type: "string"
+                      value:
+                        type: "string"
+                      note:
+                        type: "string"
+                        nullable: true
+                    required:
+                      - "metricId"
+                      - "periodStart"
+                      - "value"
+              required:
+                - "measurements"
+      responses:
+        "200":
+          description: "Measurements recorded"
+      security:
+        - apikey: []
+      summary: "Record measurements for several metrics/periods in one save (Metrics due / backfill)"
+      tags:
+        - "ISMS"
+      description: "Record measurements for several metrics/periods in one save (Metrics due / backfill) in Comp AI."
+      x-mint:
+        metadata:
+          title: "Record measurements for several metrics/period | Comp AI API"
+          sidebarTitle: "Record measurements for several metrics/periods in one save (Metrics due / backfill)"
+          description: "Record measurements for several metrics/periods in one save (Metrics due / backfill) in Comp AI."
+          og:title: "Record measurements for several metrics/period | Comp AI API"
+          og:description: "Record measurements for several metrics/periods in one save (Metrics due / backfill) in Comp AI."
+      x-speakeasy-mcp:
+        name: "bulk-create-measurements"
   /v1/isms/documents/{id}/narrative:
     post:
       operationId: "IsmsRegistersController_saveNarrative_v1"
@@ -16556,11 +16921,6 @@ paths:
           schema:
             example: "ctl_abc123def456"
             type: "string"
-        - name: "frameworkInstanceId"
-          required: true
-          in: "query"
-          schema:
-            type: "string"
         - name: "formType"
           required: true
           in: "path"
@@ -16580,6 +16940,11 @@ paths:
               - "network_diagram"
               - "tabletop_exercise"
               - "account_types"
+            type: "string"
+        - name: "frameworkInstanceId"
+          required: true
+          in: "query"
+          schema:
             type: "string"
       responses:
         "200":
@@ -19456,23 +19821,17 @@ components:
             - "EDITOR"
             - "PDF"
           example: "EDITOR"
-    CreateVersionDto:
+    CreatePolicyVersionDto:
       type: "object"
       properties:
-        version:
-          type: "number"
-          description: "Version number for this published script"
-          example: 1
-        scriptKey:
+        sourceVersionId:
           type: "string"
-          description: "S3 key of the already-generated & published automation script (returned by the publish step)."
-          example: "org_abc123/tsk_abc123/aut_abc123.v1.js"
+          description: "Optional version ID to base the new version on"
+          example: "pv_abc123def456"
         changelog:
           type: "string"
-          description: "Optional changelog describing this version"
-      required:
-        - "version"
-        - "scriptKey"
+          description: "Optional changelog to associate with the new version"
+          example: "Initial draft for quarterly updates"
     UpdateVersionContentDto:
       type: "object"
       properties:
@@ -19641,6 +20000,23 @@ components:
             - "quarterly"
             - "yearly"
           description: "Automation schedule cadence"
+    CreateVersionDto:
+      type: "object"
+      properties:
+        version:
+          type: "number"
+          description: "Version number for this published script"
+          example: 1
+        scriptKey:
+          type: "string"
+          description: "S3 key of the already-generated & published automation script (returned by the publish step)."
+          example: "org_abc123/tsk_abc123/aut_abc123.v1.js"
+        changelog:
+          type: "string"
+          description: "Optional changelog describing this version"
+      required:
+        - "version"
+        - "scriptKey"
     AuthorResponseDto:
       type: "object"
       properties:

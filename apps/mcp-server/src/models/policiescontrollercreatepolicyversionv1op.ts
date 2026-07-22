@@ -4,19 +4,19 @@
 
 import * as z from "zod";
 import {
-  CreateVersionDto,
-  CreateVersionDto$zodSchema,
-} from "./createversiondto.js";
+  CreatePolicyVersionDto,
+  CreatePolicyVersionDto$zodSchema,
+} from "./createpolicyversiondto.js";
 
 export type PoliciesControllerCreatePolicyVersionV1Request = {
   xOrganizationId?: string | undefined;
   id: string;
-  body: CreateVersionDto;
+  body: CreatePolicyVersionDto;
 };
 
 export const PoliciesControllerCreatePolicyVersionV1Request$zodSchema:
   z.ZodType<PoliciesControllerCreatePolicyVersionV1Request> = z.object({
-    body: CreateVersionDto$zodSchema.describe(
+    body: CreatePolicyVersionDto$zodSchema.describe(
       "Create a new policy version draft",
     ),
     id: z.string().describe("Policy ID"),
