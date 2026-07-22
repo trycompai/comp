@@ -128,7 +128,15 @@ export class HybridAuthGuard implements CanActivate {
     const actingUserId = request.headers['x-user-id'] as string;
     if (actingUserId) {
       const member = await db.member.findFirst({
-        where: { userId: actingUserId, organizationId },
+        // Only active memberships may act — an offboarded/deactivated user must
+        // not receive new audit / enteredById attribution. Mirrors the filters
+        // ActingUserResolver applies to its creator/owner lookups.
+        where: {
+          userId: actingUserId,
+          organizationId,
+          deactivated: false,
+          isActive: true,
+        },
         select: { id: true, userId: true },
       });
       if (member) {
@@ -139,7 +147,7 @@ export class HybridAuthGuard implements CanActivate {
         request.memberId = member.id;
       } else {
         this.logger.warn(
-          `Service token x-user-id "${actingUserId}" not found in org ${organizationId}`,
+          `Service token x-user-id "${actingUserId}" is not an active member of org ${organizationId}`,
         );
       }
     }
