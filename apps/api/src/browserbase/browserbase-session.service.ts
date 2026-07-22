@@ -233,6 +233,7 @@ export class BrowserbaseSessionService {
 
         try {
           await stagehand.init();
+          await this.calmPageMotion(stagehand);
           return stagehand;
         } catch (error) {
           await this.safeCloseStagehand(stagehand);
@@ -240,6 +241,33 @@ export class BrowserbaseSessionService {
         }
       },
     });
+  }
+
+  /**
+   * Inject "reduce motion" into every page of the session so a vendor's own
+   * looping animations (heavy hero backgrounds, marquees, spinners) don't churn
+   * the live-view stream — that constant repainting is what looks laggy. Also
+   * steadies evidence screenshots. Passed as a string so the browser-side
+   * `document` isn't type-checked in this Node file. Best-effort; a calmer live
+   * view is a nice-to-have, not critical to the run.
+   */
+  private async calmPageMotion(stagehand: Stagehand): Promise<void> {
+    const script = `(() => {
+      const css = '*,*::before,*::after{animation-duration:0.001ms!important;animation-delay:0ms!important;animation-iteration-count:1!important;transition-duration:0.001ms!important;transition-delay:0ms!important;scroll-behavior:auto!important}';
+      const style = document.createElement('style');
+      style.setAttribute('data-comp-reduce-motion', '');
+      style.textContent = css;
+      const attach = () => (document.head || document.documentElement).appendChild(style);
+      if (document.head) attach();
+      else document.addEventListener('DOMContentLoaded', attach, { once: true });
+    })()`;
+    try {
+      await stagehand.context.addInitScript(script);
+    } catch (err) {
+      this.logger.warn('Could not inject reduced-motion styles (ignored)', {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
   }
 
   async safeCloseStagehand(stagehand: Stagehand): Promise<void> {
