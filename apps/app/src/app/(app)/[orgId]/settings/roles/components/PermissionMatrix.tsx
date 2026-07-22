@@ -235,6 +235,21 @@ export function PermissionMatrix({ value, onChange, obligations, onObligationsCh
       delete newObligations[key];
     }
     onObligationsChange(newObligations);
+
+    // The 'compliance' obligation (Employee Compliance) implies portal
+    // self-service access (sign policies, watch training, etc.) — there's
+    // no separate matrix row for the 'portal' resource itself (it's
+    // excluded from RESOURCE_LABELS/RESOURCE_SECTIONS), so keep it in sync
+    // with this toggle instead.
+    if (key === 'compliance') {
+      const newPermissions = { ...value };
+      if (enabled) {
+        newPermissions.portal = [...statement.portal];
+      } else {
+        delete newPermissions.portal;
+      }
+      onChange(newPermissions);
+    }
   };
 
   const handleToggleChange = (resourceKey: string, enabled: boolean) => {

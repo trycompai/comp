@@ -80,6 +80,32 @@ export class RolesService {
   }
 
   /**
+   * Enforces the compliance -> portal permission invariant before a role is
+   * persisted: any role whose obligations require compliance (sign policies,
+   * watch training, etc.) must also carry `portal:read/update`. The
+   * custom-role editor UI keeps this in sync as a callback
+   * (PermissionMatrix.tsx's `handleObligationChange`), but that only covers
+   * the one client — a role created or updated any other way (public API,
+   * MCP, a future UI) could set `obligations.compliance` without `portal`
+   * and end up unable to reach portal-gated endpoints (e.g. training video
+   * completions). Normalizing here, right before every write, closes that
+   * gap regardless of caller. One-directional by design: it never strips an
+   * explicitly granted `portal` permission just because compliance is false.
+   */
+  private withCompliancePortalInvariant(
+    permissions: Record<string, string[]>,
+    obligations: RoleObligations,
+  ): Record<string, string[]> {
+    if (!obligations.compliance) return permissions;
+
+    const portalActions = new Set([
+      ...(permissions.portal ?? []),
+      ...statement.portal,
+    ]);
+    return { ...permissions, portal: [...portalActions] };
+  }
+
+  /**
    * Check if caller has all the permissions they're trying to grant.
    * Prevents privilege escalation.
    */
@@ -206,13 +232,23 @@ export class RolesService {
       );
     }
 
-    // Validate permissions
+    // Validate permission shape (resource/action names) as submitted.
     this.validatePermissions(dto.permissions);
 
-    // Check for privilege escalation
+    // Derive the final permission set (including the compliance -> portal
+    // invariant) before checking privilege escalation, so a caller can't
+    // grant themselves/others portal access merely by setting
+    // obligations.compliance=true without explicitly requesting 'portal'.
+    const obligations = dto.obligations || {};
+    const permissions = this.withCompliancePortalInvariant(
+      dto.permissions,
+      obligations,
+    );
+
+    // Check for privilege escalation against the FINAL permission set.
     await this.validateNoPrivilegeEscalation(
       callerRoles,
-      dto.permissions,
+      permissions,
       organizationId,
     );
 
@@ -245,8 +281,8 @@ export class RolesService {
     const role = await db.organizationRole.create({
       data: {
         name: dto.name,
-        permissions: JSON.stringify(dto.permissions),
-        obligations: JSON.stringify(dto.obligations || {}),
+        permissions: JSON.stringify(permissions),
+        obligations: JSON.stringify(obligations),
         organizationId,
       },
     });
@@ -398,12 +434,42 @@ export class RolesService {
       }
     }
 
-    // Validate and check permissions if provided
+    // Validate permission shape (resource/action names) as submitted.
     if (dto.permissions) {
       this.validatePermissions(dto.permissions);
+    }
+
+    // Re-derive the compliance -> portal invariant whenever either
+    // permissions or obligations change, using the existing row's stored
+    // value for whichever side wasn't part of this request (e.g. an
+    // obligations-only update must still see the role's current
+    // permissions to merge portal into).
+    let permissionsToPersist: Record<string, string[]> | undefined;
+    if (dto.permissions !== undefined || dto.obligations !== undefined) {
+      const effectiveObligations =
+        dto.obligations !== undefined
+          ? dto.obligations
+          : parseObligationsField(role.obligations);
+      const effectivePermissions: Record<string, string[]> =
+        dto.permissions !== undefined
+          ? dto.permissions
+          : typeof role.permissions === 'string'
+            ? (JSON.parse(role.permissions) as Record<string, string[]>)
+            : role.permissions;
+      permissionsToPersist = this.withCompliancePortalInvariant(
+        effectivePermissions,
+        effectiveObligations,
+      );
+
+      // Validate against the FINAL permission set that will actually be
+      // written — not just the submitted `dto.permissions`. This also
+      // catches the portal grant the invariant above may have just added
+      // on an obligations-only update (no `dto.permissions` at all), which
+      // would otherwise let a caller without portal access grant it to a
+      // role simply by toggling the compliance obligation.
       await this.validateNoPrivilegeEscalation(
         callerRoles,
-        dto.permissions,
+        permissionsToPersist,
         organizationId,
       );
     }
@@ -413,8 +479,8 @@ export class RolesService {
       where: { id: roleId },
       data: {
         ...(dto.name && { name: dto.name }),
-        ...(dto.permissions && {
-          permissions: JSON.stringify(dto.permissions),
+        ...(permissionsToPersist && {
+          permissions: JSON.stringify(permissionsToPersist),
         }),
         ...(dto.obligations !== undefined && {
           obligations: JSON.stringify(dto.obligations),

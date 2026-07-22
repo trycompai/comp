@@ -291,6 +291,81 @@ describe('PermissionMatrix', () => {
   });
 });
 
+describe('Employee Compliance obligation implies portal access', () => {
+  function findComplianceSwitch(): HTMLElement {
+    const label = screen.getByText('Employee Compliance');
+    const row = label.closest('[class*="flex"]') as HTMLElement;
+    const switchEl = row.querySelector('[role="switch"]');
+    if (!switchEl) throw new Error('Employee Compliance switch not found');
+    return switchEl as HTMLElement;
+  }
+
+  it('adds portal:read/update permissions when the compliance obligation is enabled', () => {
+    const mockOnChange = vi.fn();
+    const mockOnObligationsChange = vi.fn();
+    render(
+      <PermissionMatrix
+        value={{ control: ['read'] }}
+        onChange={mockOnChange}
+        obligations={{}}
+        onObligationsChange={mockOnObligationsChange}
+      />,
+    );
+
+    fireEvent.click(findComplianceSwitch());
+
+    expect(mockOnObligationsChange).toHaveBeenCalledWith({ compliance: true });
+    expect(mockOnChange).toHaveBeenCalledWith({
+      control: ['read'],
+      portal: ['read', 'update'],
+    });
+  });
+
+  it('removes portal permissions when the compliance obligation is disabled', () => {
+    const mockOnChange = vi.fn();
+    const mockOnObligationsChange = vi.fn();
+    render(
+      <PermissionMatrix
+        value={{ control: ['read'], portal: ['read', 'update'] }}
+        onChange={mockOnChange}
+        obligations={{ compliance: true }}
+        onObligationsChange={mockOnObligationsChange}
+      />,
+    );
+
+    fireEvent.click(findComplianceSwitch());
+
+    expect(mockOnObligationsChange).toHaveBeenCalledWith({});
+    expect(mockOnChange).toHaveBeenCalledWith({ control: ['read'] });
+  });
+
+  it('does not inject portal permissions or touch obligations when an unrelated resource permission changes', () => {
+    // Only the 'compliance' obligation toggle should sync portal — a plain
+    // resource-permission change must not go through the obligation branch.
+    const mockOnChange = vi.fn();
+    const mockOnObligationsChange = vi.fn();
+    render(
+      <PermissionMatrix
+        value={{}}
+        onChange={mockOnChange}
+        obligations={{}}
+        onObligationsChange={mockOnObligationsChange}
+      />,
+    );
+
+    const controlsText = screen.getByText('Controls');
+    const controlsRow = controlsText.closest('[class*="grid"]');
+    const radios = controlsRow?.querySelectorAll('[data-slot="radio-group-item"]');
+    if (radios && radios[1]) {
+      fireEvent.click(radios[1]); // No Access -> Read: a real change
+    }
+
+    expect(mockOnChange).toHaveBeenCalledTimes(1);
+    expect(mockOnChange).toHaveBeenCalledWith({ control: ['read'] });
+    expect(mockOnObligationsChange).not.toHaveBeenCalled();
+  });
+});
+
 describe('Utility Functions', () => {
   describe('getAccessLevel', () => {
     it('returns "none" for empty permissions', () => {
