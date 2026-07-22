@@ -165,9 +165,26 @@ body {
   animation: ai-ring-breathe 2.8s ease-in-out infinite;
   will-change: opacity;
 }
+@keyframes ai-ring-pip {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.7);
+  }
+}
+.ai-ring-pip {
+  animation: ai-ring-pip 1.6s ease-in-out infinite;
+}
 @media (prefers-reduced-motion: reduce) {
   .ai-ring-halo {
     animation: none;
     opacity: 0.7;
+  }
+  .ai-ring-pip {
+    animation: none;
   }
 }

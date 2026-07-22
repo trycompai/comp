@@ -11,6 +11,8 @@ describe('LiveActivityBorder', () => {
     expect(root.innerHTML).toContain('34,197,94');
     // The breathing glow layer drives the animation.
     expect(root.querySelector('.ai-ring-halo')).not.toBeNull();
+    // The status pill labels who's driving.
+    expect(root.textContent).toContain('AI is controlling');
   });
 
   it('is decorative and click-through (so take-over still works)', () => {
