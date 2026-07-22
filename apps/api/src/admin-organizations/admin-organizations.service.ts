@@ -423,8 +423,9 @@ export class AdminOrganizationsService {
     orgId: string;
     entityType?: string;
     take?: string;
+    offset?: string;
   }) {
-    const { orgId, entityType, take } = options;
+    const { orgId, entityType, take, offset } = options;
 
     const where: Record<string, unknown> = { organizationId: orgId };
 
@@ -444,28 +445,33 @@ export class AdminOrganizationsService {
     }
 
     const parsedTake = take
-      ? Math.min(100, Math.max(1, parseInt(take, 10) || 100))
+      ? Math.min(200, Math.max(1, parseInt(take, 10) || 100))
       : 100;
+    const parsedOffset = offset ? Math.max(0, parseInt(offset, 10) || 0) : 0;
 
-    const logs = await db.auditLog.findMany({
-      where,
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true,
-            role: true,
+    const [logs, total] = await Promise.all([
+      db.auditLog.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+              role: true,
+            },
           },
+          member: true,
+          organization: true,
         },
-        member: true,
-        organization: true,
-      },
-      orderBy: { timestamp: 'desc' },
-      take: parsedTake,
-    });
+        orderBy: [{ timestamp: 'desc' }, { id: 'desc' }],
+        take: parsedTake,
+        skip: parsedOffset,
+      }),
+      db.auditLog.count({ where }),
+    ]);
 
-    return { data: logs };
+    return { data: logs, total };
   }
 }
