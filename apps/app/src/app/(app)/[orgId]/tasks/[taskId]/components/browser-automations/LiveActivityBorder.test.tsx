@@ -3,19 +3,20 @@ import { describe, expect, it } from 'vitest';
 import { LiveActivityBorder } from './LiveActivityBorder';
 
 describe('LiveActivityBorder', () => {
-  it('draws a green inline ring while the AI is acting', () => {
+  it('renders a green ring with a breathing glow while the AI is acting', () => {
     const { container } = render(<LiveActivityBorder />);
-    const el = container.firstChild as HTMLElement;
-    // Inline box-shadow (not a global class) so it can't be stripped or go stale.
-    expect(el.getAttribute('style')).toContain('#22c55e');
-    expect(el.getAttribute('style')?.toLowerCase()).toContain('box-shadow');
-    expect(el).toHaveClass('animate-pulse');
+    const root = container.firstChild as HTMLElement;
+    // Static green ring (inline, so it shows even if the keyframe CSS is stale).
+    // jsdom normalizes #22c55e -> rgb(34, 197, 94).
+    expect(root.innerHTML).toContain('rgb(34, 197, 94)');
+    // The breathing glow layer drives the animation.
+    expect(root.querySelector('.ai-ring-halo')).not.toBeNull();
   });
 
-  it('never blocks clicks into the live view (so take-over still works)', () => {
+  it('is decorative and click-through (so take-over still works)', () => {
     const { container } = render(<LiveActivityBorder />);
-    const el = container.firstChild as HTMLElement;
-    expect(el).toHaveClass('pointer-events-none');
-    expect(el).toHaveAttribute('aria-hidden');
+    const root = container.firstChild as HTMLElement;
+    expect(root).toHaveClass('pointer-events-none');
+    expect(root).toHaveAttribute('aria-hidden');
   });
 });
