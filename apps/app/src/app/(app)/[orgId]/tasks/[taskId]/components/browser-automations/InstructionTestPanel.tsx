@@ -124,7 +124,7 @@ export function InstructionTestPanel({
               Starting the browser…
             </div>
           )}
-          <LiveActivityBorder />
+          <LiveActivityBorder state="ai" />
         </div>
 
         {steps.length > 0 && (

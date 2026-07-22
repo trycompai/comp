@@ -1,17 +1,42 @@
 'use client';
 
+/** Small floating status pill at the bottom of the live view. */
+function StatusPill({ label, bg, dot }: { label: string; bg: string; dot: string }) {
+  return (
+    <div
+      className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full px-2.5 py-1"
+      style={{
+        background: bg,
+        color: '#fff',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.25)',
+        letterSpacing: '0.04em',
+      }}
+    >
+      <span className="ai-ring-pip h-1.5 w-1.5 rounded-full" style={{ background: dot }} />
+      <span className="text-[10.5px] font-semibold">{label}</span>
+    </div>
+  );
+}
+
 /**
- * "AI is controlling" indicator over the live browser — a SOFT green glow that
- * breathes at the edges (not a hard line) plus a small status pill. Only opacity
- * animates (GPU-cheap), so the streamed live iframe never repaints. Rendered
- * only while the AI is driving; overlay-only and click-through, so take-over
- * still works.
+ * Who's-driving indicator over the live browser:
+ * - `ai`  → soft green glow that breathes + "AI is controlling".
+ * - `you` → an amber "Your turn" pill, no glow (the ring is reserved for the AI,
+ *           so the two states read differently at a glance).
  *
- * Adapted for our overflow-hidden container: the glow is inset (an outer halo
- * would be clipped), and the pill sits inside at the bottom (the design's top-
- * outside position would be clipped / clash with the browser chrome bar).
+ * Only opacity animates (GPU-cheap), so the streamed live iframe never repaints.
+ * Overlay-only and click-through, so take-over still works. Adapted for our
+ * overflow-hidden container (glow is inset; the pill sits inside at the bottom).
  */
-export function LiveActivityBorder() {
+export function LiveActivityBorder({ state = 'ai' }: { state?: 'ai' | 'you' }) {
+  if (state === 'you') {
+    return (
+      <div aria-hidden className="pointer-events-none absolute inset-0 z-[5]">
+        <StatusPill label="Your turn" bg="#b45309" dot="#fcd34d" />
+      </div>
+    );
+  }
+
   return (
     <div
       aria-hidden
@@ -30,22 +55,7 @@ export function LiveActivityBorder() {
             'inset 0 0 0 1.5px rgba(34,197,94,0.40), inset 0 0 28px 6px rgba(34,197,94,0.38)',
         }}
       />
-      {/* Status pill. */}
-      <div
-        className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full px-2.5 py-1"
-        style={{
-          background: '#15803d',
-          color: '#fff',
-          boxShadow: '0 1px 4px rgba(0,0,0,0.25)',
-          letterSpacing: '0.04em',
-        }}
-      >
-        <span
-          className="ai-ring-pip h-1.5 w-1.5 rounded-full"
-          style={{ background: '#86efac' }}
-        />
-        <span className="text-[10.5px] font-semibold">AI is controlling</span>
-      </div>
+      <StatusPill label="AI is controlling" bg="#15803d" dot="#86efac" />
     </div>
   );
 }

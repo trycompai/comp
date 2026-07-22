@@ -15,6 +15,14 @@ describe('LiveActivityBorder', () => {
     expect(root.textContent).toContain('AI is controlling');
   });
 
+  it('shows an amber "Your turn" pill and no glow on the user’s turn', () => {
+    const { container } = render(<LiveActivityBorder state="you" />);
+    const root = container.firstChild as HTMLElement;
+    expect(root.textContent).toContain('Your turn');
+    // No breathing glow on the user's turn — the ring is reserved for the AI.
+    expect(root.querySelector('.ai-ring-halo')).toBeNull();
+  });
+
   it('is decorative and click-through (so take-over still works)', () => {
     const { container } = render(<LiveActivityBorder />);
     const root = container.firstChild as HTMLElement;

@@ -114,8 +114,11 @@ export function ConnectLiveSignin({
                 Opening {host}…
               </div>
             )}
-            {/* Only while the AI is driving — not on the user's turn. */}
-            {!success && variant === 'ai' && <LiveActivityBorder />}
+            {/* Green glow + pill while the AI drives; an amber "Your turn" pill
+                (no glow) when the user needs to act. */}
+            {!success && (
+              <LiveActivityBorder state={variant === 'ai' ? 'ai' : 'you'} />
+            )}
           </div>
         </div>
 
