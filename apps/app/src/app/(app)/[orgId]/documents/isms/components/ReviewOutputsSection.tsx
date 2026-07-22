@@ -59,6 +59,13 @@ export function ReviewOutputsSection({
     if (!isEditing) reset(toFormValues(review));
   }, [review, isEditing, reset]);
 
+  // If the review becomes signed (or the caller loses edit rights) while the
+  // outputs editor is open, close it — otherwise the textareas would linger
+  // with stale local edits and no Save action.
+  useEffect(() => {
+    if (!canEdit && isEditing) setIsEditing(false);
+  }, [canEdit, isEditing]);
+
   const handleSave = handleSubmit(async (values) => {
     try {
       await onSave(values);
@@ -117,7 +124,7 @@ export function ReviewOutputsSection({
         changed. Actions arising are recorded in the table below.
       </Text>
 
-      {isEditing ? (
+      {isEditing && canEdit ? (
         <Stack gap="3">
           <IsmsFieldLabel label="Decisions on continual improvement">
             <Controller

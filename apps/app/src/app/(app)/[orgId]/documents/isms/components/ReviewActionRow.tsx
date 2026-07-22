@@ -244,8 +244,12 @@ export function ReviewActionRow({
       </TableCell>
       <TableCell>{action.description}</TableCell>
       <TableCell>
+        {/* An empty roster means the people request was unavailable to this
+            user, not that the owner left — stay neutral. */}
         {action.ownerMemberId
-          ? (memberNameById[action.ownerMemberId] ?? 'Former member')
+          ? memberOptions.length === 0
+            ? 'Unknown member'
+            : (memberNameById[action.ownerMemberId] ?? 'Former member')
           : '—'}
       </TableCell>
       <TableCell>{action.dueDate?.slice(0, 10) ?? '—'}</TableCell>

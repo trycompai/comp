@@ -75,19 +75,31 @@ export function fullActionReference(
   return `${reviewReference}-${actionReference}`;
 }
 
-/** Parse a review's attendees defensively (stale/invalid JSON → empty list).
- * Mirrors the server's reviewAttendeeSchema: memberId AND name non-empty. */
-export function parseAttendees(value: unknown): IsmsReviewAttendee[] {
-  if (!Array.isArray(value)) return [];
-  return value.filter(
-    (entry): entry is IsmsReviewAttendee =>
-      !!entry &&
-      typeof entry === 'object' &&
-      typeof (entry as { memberId?: unknown }).memberId === 'string' &&
-      (entry as { memberId: string }).memberId.length > 0 &&
-      typeof (entry as { name?: unknown }).name === 'string' &&
-      (entry as { name: string }).name.trim().length > 0,
+function isValidAttendee(entry: unknown): entry is IsmsReviewAttendee {
+  return (
+    !!entry &&
+    typeof entry === 'object' &&
+    typeof (entry as { memberId?: unknown }).memberId === 'string' &&
+    (entry as { memberId: string }).memberId.length > 0 &&
+    typeof (entry as { name?: unknown }).name === 'string' &&
+    (entry as { name: string }).name.trim().length > 0
   );
+}
+
+/**
+ * Parse a review's attendees defensively — the exact mirror of the server's
+ * parseReviewAttendees (documents/management-review.ts): all-or-nothing (one
+ * malformed entry invalidates the list, like the write schema) and deduped by
+ * member, so the Submit UI and the server gate always agree.
+ */
+export function parseAttendees(value: unknown): IsmsReviewAttendee[] {
+  if (!Array.isArray(value) || !value.every(isValidAttendee)) return [];
+  const seen = new Set<string>();
+  return value.filter((attendee) => {
+    if (seen.has(attendee.memberId)) return false;
+    seen.add(attendee.memberId);
+    return true;
+  });
 }
 
 /** A review is signed (and locked) once the chair's name AND date are set. */

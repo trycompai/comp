@@ -74,8 +74,9 @@ export const SEED_REVIEW_INPUT_DEFINITIONS: SeedReviewInputDefinition[] = [
     inputKey: 'c_interested_party_changes',
     inputRef: '(c) Interested-party changes',
     whatItCovers: 'Changes in needs and expectations of interested parties.',
+    // Canonical document titles so the agenda reference is followable.
     whereToFind:
-      'Comp AI > ISMS > Documents > Interested Parties Register & Requirements',
+      'Comp AI > ISMS > Documents > Interested Parties Register & Interested Parties Requirements',
   },
   {
     inputKey: 'd1_nonconformity_trends',
@@ -100,7 +101,9 @@ export const SEED_REVIEW_INPUT_DEFINITIONS: SeedReviewInputDefinition[] = [
     inputRef: '(d.4) Objectives fulfilment',
     whatItCovers:
       'Extent to which information security objectives have been met.',
-    whereToFind: 'Comp AI > ISMS > Documents > Objectives Plan',
+    // Canonical document title so the agenda reference is followable.
+    whereToFind:
+      'Comp AI > ISMS > Documents > Information Security Objectives and Plan',
   },
   {
     inputKey: 'e_interested_party_feedback',

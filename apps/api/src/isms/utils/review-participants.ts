@@ -40,7 +40,9 @@ export async function resolveReviewParticipantDefaults({
       select: {
         roleKey: true,
         assignments: {
-          orderBy: { position: 'asc' },
+          // Deterministic tie-breaker: two assignments sharing a position must
+          // resolve the same default chair/SPO on every read.
+          orderBy: [{ position: 'asc' }, { id: 'asc' }],
           select: { memberId: true },
         },
       },
