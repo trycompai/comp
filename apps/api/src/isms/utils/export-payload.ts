@@ -81,7 +81,10 @@ export const EXPORT_DOCUMENT_INCLUDE = {
     },
   },
   reviews: {
-    orderBy: { position: 'asc' },
+    // Deterministic tie-breakers: review order drives which actions carry
+    // forward into which review's input (a), so two reviews sharing a
+    // position must order the same on every read.
+    orderBy: [{ position: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
     include: {
       inputs: { orderBy: { position: 'asc' } },
       actions: { orderBy: { position: 'asc' } },

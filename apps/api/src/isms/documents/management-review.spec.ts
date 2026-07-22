@@ -61,6 +61,13 @@ describe('parseReviewAttendees / isReviewSigned', () => {
     expect(parseReviewAttendees(null)).toEqual([]);
     expect(parseReviewAttendees('not-an-array')).toEqual([]);
     expect(parseReviewAttendees([{ memberId: 'mem_1' }])).toEqual([]);
+    // Legacy rows may still carry duplicates — normalized on read.
+    expect(
+      parseReviewAttendees([
+        { memberId: 'mem_1', name: 'Jane' },
+        { memberId: 'mem_1', name: 'Jane (dup)' },
+      ]),
+    ).toEqual([{ memberId: 'mem_1', name: 'Jane' }]);
   });
 
   it('dedupes attendees by member, first occurrence winning', () => {

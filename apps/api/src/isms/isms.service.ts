@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { db, Prisma } from '@db';
+import type { IsmsDocumentType } from '@db';
 import { SubmitIsmsForApprovalDto } from './dto/submit-isms-for-approval.dto';
 import { deriveControlLinks, resolveDocumentPlans } from './utils/ensure-setup-plan';
 import { collectPlatformData } from './documents/data-source';
@@ -78,6 +79,15 @@ export class IsmsService {
     const documents = await db.ismsDocument.findMany({
       where: { organizationId, frameworkId },
     });
+
+    // Heal empty Programme (9.2) / Procedure (9.3) paragraphs on EVERY setup,
+    // not just for documents created this call: a document provisioned before
+    // its narrative seed shipped (or a crash between provision and seed) would
+    // otherwise stay blank forever. Guarded per doc on the narrative still
+    // being empty, so a populated draft is never overwritten.
+    if (canWrite) {
+      await this.seedNarrativeDefaultsIfEmpty({ documents, organizationId });
+    }
 
     const monitoringDoc = documents.find((doc) => doc.type === 'monitoring');
     const overdueMetricCount = monitoringDoc
@@ -223,53 +233,65 @@ export class IsmsService {
       );
     }
 
-    // Same first-load guarantee for Internal Audit (9.2) and Management Review
-    // (9.3): the Programme / Procedure paragraph opens with its default text.
-    // Each write is conditional on the narrative still being NULL (its
-    // creation state), so it is atomic: under concurrent setup calls — where
-    // the "created" lookup can also match a row the other call just created —
-    // an early customer edit can never be clobbered (the seed simply matches
-    // zero rows).
-    const internalAuditDoc = created.find(
-      (doc) => doc.type === 'internal_audit',
+    // The Programme (9.2) / Procedure (9.3) narrative seed happens in
+    // ensureSetup (seedNarrativeDefaultsIfEmpty), AFTER the document list is
+    // fetched — so it covers both the documents this call just created and
+    // any pre-existing document whose narrative is still empty.
+  }
+
+  /**
+   * First-load guarantee for Internal Audit (9.2) and Management Review (9.3):
+   * the Programme / Procedure paragraph opens with its default text. Each
+   * write is conditional on the narrative still being empty — NULL (the
+   * creation state) or {}, generateNarrative's definition — so it is atomic:
+   * under concurrent setup calls, an early customer edit can never be
+   * clobbered (the seed simply matches zero rows).
+   */
+  private async seedNarrativeDefaultsIfEmpty({
+    documents,
+    organizationId,
+  }: {
+    documents: Array<{
+      id: string;
+      type: IsmsDocumentType;
+      draftNarrative: Prisma.JsonValue;
+    }>;
+    organizationId: string;
+  }) {
+    const isEmptyNarrative = (narrative: Prisma.JsonValue): boolean =>
+      narrative == null ||
+      (typeof narrative === 'object' &&
+        !Array.isArray(narrative) &&
+        Object.keys(narrative).length === 0);
+
+    const targets = documents.filter(
+      (doc) =>
+        (doc.type === 'internal_audit' || doc.type === 'management_review') &&
+        isEmptyNarrative(doc.draftNarrative),
     );
-    const managementReviewDoc = created.find(
-      (doc) => doc.type === 'management_review',
-    );
-    if (internalAuditDoc || managementReviewDoc) {
-      const organization = await db.organization.findUnique({
-        where: { id: organizationId },
-        select: { name: true },
+    if (targets.length === 0) return;
+
+    const organization = await db.organization.findUnique({
+      where: { id: organizationId },
+      select: { name: true },
+    });
+    const organizationName = organization?.name ?? 'The organization';
+    const whileNarrativeEmpty = {
+      OR: [
+        { draftNarrative: { equals: Prisma.AnyNull } },
+        { draftNarrative: { equals: {} } },
+      ],
+    };
+    for (const doc of targets) {
+      await db.ismsDocument.updateMany({
+        where: { id: doc.id, ...whileNarrativeEmpty },
+        data: {
+          draftNarrative:
+            doc.type === 'internal_audit'
+              ? { programme: defaultProgrammeText(organizationName) }
+              : { procedure: defaultProcedureText(organizationName) },
+        },
       });
-      const organizationName = organization?.name ?? 'The organization';
-      // "Empty" matches generateNarrative's definition: NULL (the creation
-      // state) or an empty object — never a populated draft.
-      const whileNarrativeEmpty = {
-        OR: [
-          { draftNarrative: { equals: Prisma.AnyNull } },
-          { draftNarrative: { equals: {} } },
-        ],
-      };
-      if (internalAuditDoc) {
-        await db.ismsDocument.updateMany({
-          where: { id: internalAuditDoc.id, ...whileNarrativeEmpty },
-          data: {
-            draftNarrative: {
-              programme: defaultProgrammeText(organizationName),
-            },
-          },
-        });
-      }
-      if (managementReviewDoc) {
-        await db.ismsDocument.updateMany({
-          where: { id: managementReviewDoc.id, ...whileNarrativeEmpty },
-          data: {
-            draftNarrative: {
-              procedure: defaultProcedureText(organizationName),
-            },
-          },
-        });
-      }
     }
   }
 
@@ -315,7 +337,9 @@ export class IsmsService {
           },
         },
         reviews: {
-          orderBy: { position: 'asc' },
+          // Same deterministic ordering as EXPORT_DOCUMENT_INCLUDE: the client
+          // computes the carried-forward lists from this order.
+          orderBy: [{ position: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
           include: {
             inputs: { orderBy: { position: 'asc' } },
             actions: { orderBy: { position: 'asc' } },

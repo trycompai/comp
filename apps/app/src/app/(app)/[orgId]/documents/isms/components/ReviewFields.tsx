@@ -23,6 +23,7 @@ import type { ReviewDetailsFormValues } from './management-review-schema';
 import { IsmsFieldLabel } from './shared';
 
 const NO_VERDICT = 'no-verdict';
+const NO_CHAIR = 'no-chair';
 
 interface ReviewFieldsProps {
   control: Control<ReviewDetailsFormValues>;
@@ -62,11 +63,18 @@ function ChairSelect({
     );
   }
   return (
-    <Select value={value || undefined} onValueChange={(next) => onChange(next ?? '')}>
+    <Select
+      value={value || NO_CHAIR}
+      onValueChange={(next) =>
+        onChange(!next || next === NO_CHAIR ? '' : next)
+      }
+    >
       <SelectTrigger aria-label="Chair">
         <SelectValue placeholder="Select the chair" />
       </SelectTrigger>
       <SelectContent>
+        {/* Explicit clear: a stale chair must be removable, not only replaceable. */}
+        <SelectItem value={NO_CHAIR}>No chair yet</SelectItem>
         {options.map((option) => (
           <SelectItem key={option} value={option}>
             {option}

@@ -44,10 +44,16 @@ export type ReviewAttendee = z.infer<typeof reviewAttendeeSchema>;
 
 export const reviewAttendeesSchema = z.array(reviewAttendeeSchema);
 
-/** Parse a stored attendees JSON value defensively (invalid → empty list). */
+/**
+ * Parse a stored attendees JSON value defensively (invalid → empty list,
+ * all-or-nothing like the write schema) and normalize away duplicate members
+ * a legacy row may still carry. The client mirror (parseAttendees in
+ * management-review-constants.ts) applies the same rules so the Submit UI
+ * and the server gate always agree.
+ */
 export function parseReviewAttendees(value: unknown): ReviewAttendee[] {
   const parsed = reviewAttendeesSchema.safeParse(value);
-  return parsed.success ? parsed.data : [];
+  return parsed.success ? dedupeReviewAttendees(parsed.data) : [];
 }
 
 /** A review is signed once the chair's name and date are both captured. */

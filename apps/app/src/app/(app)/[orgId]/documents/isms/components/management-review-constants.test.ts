@@ -52,20 +52,35 @@ describe('reviewConclusionSentence / fullActionReference', () => {
 });
 
 describe('parseAttendees / isReviewSigned / parseProcedure', () => {
-  it('parses valid attendees and drops malformed entries', () => {
+  it('is all-or-nothing on malformed entries, mirroring the server parse', () => {
+    // One malformed entry invalidates the WHOLE list — exactly like the API's
+    // parseReviewAttendees — so the Submit UI can never look ready while the
+    // server gate counts zero attendees.
     expect(
       parseAttendees([
         { memberId: 'm1', name: 'Jane' },
         { memberId: 'm2' },
-        'garbage',
-        { memberId: 'm3', name: '  ' },
-        // Empty memberId must not count — mirrors the server schema, so the
-        // Submit UI can't look ready while the server rejects the list.
-        { memberId: '', name: 'Ghost' },
       ]),
-    ).toEqual([{ memberId: 'm1', name: 'Jane' }]);
+    ).toEqual([]);
+    expect(parseAttendees([{ memberId: '', name: 'Ghost' }])).toEqual([]);
+    expect(parseAttendees([{ memberId: 'm3', name: '  ' }])).toEqual([]);
     expect(parseAttendees(null)).toEqual([]);
     expect(parseAttendees('nope')).toEqual([]);
+  });
+
+  it('parses valid attendees, trims names, and dedupes by member', () => {
+    expect(
+      parseAttendees([
+        // Trimmed like the server's zod `.trim()` transform, so the UI and
+        // the generated minutes show the same name.
+        { memberId: 'm1', name: ' Jane ' },
+        { memberId: 'm2', name: 'Ada' },
+        { memberId: 'm1', name: 'Jane (dup)' },
+      ]),
+    ).toEqual([
+      { memberId: 'm1', name: 'Jane' },
+      { memberId: 'm2', name: 'Ada' },
+    ]);
   });
 
   it('requires both chair name and date for signed', () => {
