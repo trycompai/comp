@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { BadRequestException } from '@nestjs/common';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { ActingUserResolver } from '../auth/acting-user.service';
@@ -266,26 +267,17 @@ describe('VendorsController', () => {
       );
     });
 
-    it('passes undefined userId when no actor can be resolved', async () => {
+    it('rejects with 400 when no actor can be resolved (no owner)', async () => {
       const dto = { name: 'New Vendor' };
-      mockVendorsService.create.mockResolvedValue({ id: 'vnd_new' });
       mockActingUser.resolve.mockResolvedValueOnce({
         userId: null,
         source: 'org-owner-fallback',
       });
 
-      await controller.createVendor(
-        dto as any,
-        'org_123',
-        apiKeyAuthContext,
-        apiKeyReq,
-      );
-
-      expect(vendorsService.create).toHaveBeenCalledWith(
-        'org_123',
-        dto,
-        undefined,
-      );
+      await expect(
+        controller.createVendor(dto as any, 'org_123', apiKeyAuthContext, apiKeyReq),
+      ).rejects.toThrow(BadRequestException);
+      expect(vendorsService.create).not.toHaveBeenCalled();
     });
   });
 
@@ -373,22 +365,16 @@ describe('VendorsController', () => {
       );
     });
 
-    it('passes undefined userId when no actor can be resolved', async () => {
-      mockVendorsService.triggerAssessment.mockResolvedValue({
-        status: 'pending',
-      });
+    it('rejects with 400 when no actor can be resolved (no owner)', async () => {
       mockActingUser.resolve.mockResolvedValueOnce({
         userId: null,
         source: 'org-owner-fallback',
       });
 
-      await controller.triggerAssessment('vnd_1', 'org_123', apiKeyReq);
-
-      expect(vendorsService.triggerAssessment).toHaveBeenCalledWith(
-        'vnd_1',
-        'org_123',
-        undefined,
-      );
+      await expect(
+        controller.triggerAssessment('vnd_1', 'org_123', apiKeyReq),
+      ).rejects.toThrow(BadRequestException);
+      expect(vendorsService.triggerAssessment).not.toHaveBeenCalled();
     });
   });
 

@@ -348,14 +348,19 @@ export class IsmsRegistersController {
   async bulkCreateMeasurements(
     @Param('id') id: string,
     // Read req.body directly: the global ValidationPipe mangles nested JSON.
-    @Req() req: Request,
+    @Req() req: AuthenticatedRequest,
     @OrganizationId() organizationId: string,
     @MemberId() memberId: string | undefined,
   ) {
+    // Same session-first attribution as createRow: prefer the session member,
+    // else the resolved actor (API-key creator / owner fallback), else null —
+    // so bulk saves via API key don't persist a null enteredById.
+    const acting = await this.actingUser.resolve(req, organizationId);
+    const enteredByMemberId = memberId ?? acting.memberId ?? null;
     return this.measurementService.bulkCreate({
       documentId: id,
       organizationId,
-      memberId: memberId ?? null,
+      memberId: enteredByMemberId,
       dto: parseMeasurementBulkBody(req.body),
     });
   }

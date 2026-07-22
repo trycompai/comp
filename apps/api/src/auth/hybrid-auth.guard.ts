@@ -129,10 +129,14 @@ export class HybridAuthGuard implements CanActivate {
     if (actingUserId) {
       const member = await db.member.findFirst({
         where: { userId: actingUserId, organizationId },
-        select: { userId: true },
+        select: { id: true, userId: true },
       });
       if (member) {
         request.userId = actingUserId;
+        // Set the acting membership too, so Member-FK sinks (audit rows,
+        // enteredById, etc.) can attribute to the acting member and not just
+        // the user.
+        request.memberId = member.id;
       } else {
         this.logger.warn(
           `Service token x-user-id "${actingUserId}" not found in org ${organizationId}`,

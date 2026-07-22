@@ -327,23 +327,29 @@ export class CloudSecurityController {
 
     // Attribute to the acting user. Session callers already have req.userId;
     // API key / service token callers resolve to the key creator or org owner.
-    // Skip the audit entry (rather than fail the completed scan) only when no
-    // user can be attributed — auditLog.userId is a FK to User.
-    const acting = await this.actingUser.resolve(req, organizationId);
-    if (acting.userId)
-      await logCloudSecurityActivity({
-        organizationId,
-        userId: acting.userId,
-        connectionId,
-        action: 'scan_completed',
-        description: `Ran cloud security scan — ${totalFindings} findings (${failedCount} failed, ${passedCount} passed)`,
-        metadata: {
-          totalFindings,
-          failedCount,
-          passedCount,
-          provider: result.provider,
-        },
-      });
+    // This is best-effort: the scan has already completed, so a transient
+    // resolver/audit failure (or an org with no attributable user) must not turn
+    // it into a failed HTTP request — that would invite the caller to re-run the
+    // scan. Log and move on. (auditLog.userId is a FK to User, so skip on null.)
+    try {
+      const acting = await this.actingUser.resolve(req, organizationId);
+      if (acting.userId)
+        await logCloudSecurityActivity({
+          organizationId,
+          userId: acting.userId,
+          connectionId,
+          action: 'scan_completed',
+          description: `Ran cloud security scan — ${totalFindings} findings (${failedCount} failed, ${passedCount} passed)`,
+          metadata: {
+            totalFindings,
+            failedCount,
+            passedCount,
+            provider: result.provider,
+          },
+        });
+    } catch (err) {
+      this.logger.error('Failed to record cloud security scan activity', err);
+    }
 
     return {
       success: true,

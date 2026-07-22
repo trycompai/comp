@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   Get,
   Post,
@@ -138,10 +139,18 @@ export class VendorsController {
     // callers resolve to the key creator (else org owner) so the "created this
     // task" activity credits a real person, not the org owner by default.
     const acting = await this.actingUser.resolve(req, organizationId);
+    if (!acting.userId) {
+      // No attributable user (org has no active owner). Reject with an
+      // actionable message rather than create a vendor whose assessment task
+      // has no acting user — matches ActingUserResolver's contract.
+      throw new BadRequestException(
+        'Cannot attribute this action — your organization must have at least one active user with the "owner" role.',
+      );
+    }
     const vendor = await this.vendorsService.create(
       organizationId,
       createVendorDto,
-      acting.userId ?? undefined, // Pass user ID for task assignment
+      acting.userId, // Pass user ID for task assignment
     );
 
     return {
@@ -202,10 +211,15 @@ export class VendorsController {
     @Req() req: AuthenticatedRequest,
   ) {
     const acting = await this.actingUser.resolve(req, organizationId);
+    if (!acting.userId) {
+      throw new BadRequestException(
+        'Cannot attribute this action — your organization must have at least one active user with the "owner" role.',
+      );
+    }
     const result = await this.vendorsService.triggerAssessment(
       vendorId,
       organizationId,
-      acting.userId ?? undefined,
+      acting.userId,
     );
 
     return {

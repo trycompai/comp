@@ -456,6 +456,29 @@ describe('IsmsRegistersController', () => {
       ).rejects.toBeInstanceOf(BadRequestException);
       expect(measurementService.bulkCreate).not.toHaveBeenCalled();
     });
+
+    it('attributes to the resolved actor when there is no session member (API key)', async () => {
+      mockActingUser.resolve.mockResolvedValueOnce({
+        userId: 'usr_creator',
+        memberId: 'mem_creator',
+        source: 'api-key-creator',
+      });
+
+      await controller.bulkCreateMeasurements(
+        'doc_1',
+        reqWith({
+          measurements: [
+            { metricId: 'met_1', periodStart: '2026-07-01', value: '1' },
+          ],
+        }),
+        'org_1',
+        undefined,
+      );
+
+      expect(measurementService.bulkCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ memberId: 'mem_creator' }),
+      );
+    });
   });
 
   describe('updateRow', () => {
