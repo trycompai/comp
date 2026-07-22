@@ -31,7 +31,10 @@ function StatusPill({ label, bg, dot }: { label: string; bg: string; dot: string
 export function LiveActivityBorder({ state = 'ai' }: { state?: 'ai' | 'you' }) {
   if (state === 'you') {
     return (
-      <div aria-hidden className="pointer-events-none absolute inset-0 z-[5]">
+      <div
+        aria-hidden
+        className="ai-ring-in pointer-events-none absolute inset-0 z-[5]"
+      >
         <StatusPill label="Your turn" bg="#b45309" dot="#fcd34d" />
       </div>
     );
@@ -40,7 +43,7 @@ export function LiveActivityBorder({ state = 'ai' }: { state?: 'ai' | 'you' }) {
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute inset-0 z-[5] rounded-[inherit]"
+      className="ai-ring-in pointer-events-none absolute inset-0 z-[5] rounded-[inherit]"
     >
       {/* Faint always-on haze so the edge never fully disappears mid-breath. */}
       <div
