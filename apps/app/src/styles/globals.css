@@ -148,31 +148,3 @@ body {
 [data-slot='table-scroll']::-webkit-scrollbar-track {
   background: transparent;
 }
-
-/* Live browser activity border — signals who's driving the live view: a green
-   glow when the AI is acting, amber when it's the user's turn. The ring is a
-   STATIC box-shadow (always visible); only opacity pulses. Animating opacity
-   instead of box-shadow avoids a full repaint every frame over the busy live
-   iframe (that caused visible lag). Inset so the overflow-hidden container never
-   clips it. Color is set per-element via --activity-color. */
-@keyframes browser-activity-pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-.browser-activity-border {
-  box-shadow:
-    inset 0 0 0 3px var(--activity-color),
-    inset 0 0 22px 3px color-mix(in oklab, var(--activity-color) 42%, transparent);
-  animation: browser-activity-pulse 1.8s ease-in-out infinite;
-  will-change: opacity;
-}
-@media (prefers-reduced-motion: reduce) {
-  .browser-activity-border {
-    animation: none;
-  }
-}
