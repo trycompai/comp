@@ -346,6 +346,32 @@ export class VerifyAuthProfileResponseDto {
 
 // ===== Browser Automation DTOs =====
 
+export class BrowserAutomationStepDto {
+  @ApiPropertyOptional({
+    description: 'Connection (browser auth profile) this step runs on',
+  })
+  @IsString()
+  @IsOptional()
+  profileId?: string;
+
+  @ApiProperty({ description: 'Starting URL for this step' })
+  @IsUrl({}, { message: 'url must be a valid URL' })
+  @IsSafeUrl({ message: 'The provided URL is not allowed.' })
+  @IsString()
+  @IsNotEmpty()
+  targetUrl: string;
+
+  @ApiProperty({ description: 'Natural language instruction for this step' })
+  @IsString()
+  @IsNotEmpty()
+  instruction: string;
+
+  @ApiPropertyOptional({ description: 'Optional pass/fail criterion for this step' })
+  @IsString()
+  @IsOptional()
+  evaluationCriteria?: string;
+}
+
 export class CreateBrowserAutomationDto {
   @ApiProperty({ description: 'Task ID this automation belongs to' })
   @IsString()
@@ -381,6 +407,17 @@ export class CreateBrowserAutomationDto {
   @IsString()
   @IsOptional()
   evaluationCriteria?: string;
+
+  @ApiPropertyOptional({
+    type: [BrowserAutomationStepDto],
+    description:
+      'Ordered steps for a multi-vendor automation. When provided, these define the run; the top-level targetUrl/instruction are taken from the first step.',
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => BrowserAutomationStepDto)
+  @IsOptional()
+  steps?: BrowserAutomationStepDto[];
 
   @ApiPropertyOptional({
     enum: TaskFrequency,
@@ -426,6 +463,17 @@ export class UpdateBrowserAutomationDto {
   @IsBoolean()
   @IsOptional()
   isEnabled?: boolean;
+
+  @ApiPropertyOptional({
+    type: [BrowserAutomationStepDto],
+    description:
+      'Ordered steps for a multi-vendor automation. When provided, they replace the automation’s existing steps.',
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => BrowserAutomationStepDto)
+  @IsOptional()
+  steps?: BrowserAutomationStepDto[];
 
   @ApiPropertyOptional({
     enum: TaskFrequency,

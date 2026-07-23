@@ -8,6 +8,45 @@ const normalizeCriteria = (value: string | null | undefined): string | null => {
   return trimmed.length === 0 ? null : trimmed;
 };
 
+/** One step of a (possibly multi-vendor) automation. */
+export interface BrowserAutomationStepInput {
+  profileId?: string | null;
+  targetUrl: string;
+  instruction: string;
+  evaluationCriteria?: string | null;
+}
+
+/**
+ * Every automation is stored as an ordered list of steps. When only the legacy
+ * single instruction is supplied, treat it as a one-step automation.
+ */
+function resolveSteps(data: {
+  targetUrl?: string;
+  instruction?: string;
+  evaluationCriteria?: string | null;
+  steps?: BrowserAutomationStepInput[];
+}): BrowserAutomationStepInput[] {
+  if (data.steps && data.steps.length > 0) return data.steps;
+  return [
+    {
+      targetUrl: data.targetUrl ?? '',
+      instruction: data.instruction ?? '',
+      evaluationCriteria: data.evaluationCriteria,
+    },
+  ];
+}
+
+const toStepCreate = (steps: BrowserAutomationStepInput[]) =>
+  steps.map((step, index) => ({
+    order: index,
+    profileId: step.profileId ?? null,
+    targetUrl: step.targetUrl,
+    instruction: step.instruction,
+    evaluationCriteria: normalizeCriteria(step.evaluationCriteria),
+  }));
+
+const STEP_INCLUDE = { steps: { orderBy: { order: 'asc' as const } } };
+
 @Injectable()
 export class BrowserAutomationCrudService {
   constructor(
@@ -22,6 +61,7 @@ export class BrowserAutomationCrudService {
       targetUrl: string;
       instruction: string;
       evaluationCriteria?: string;
+      steps?: BrowserAutomationStepInput[];
       scheduleFrequency?: TaskFrequency;
     },
     organizationId?: string,
@@ -30,19 +70,26 @@ export class BrowserAutomationCrudService {
       await this.requireTaskInOrg({ taskId: data.taskId, organizationId });
     }
 
+    const steps = resolveSteps(data);
+    const first = steps[0];
+
     return db.browserAutomation.create({
       data: {
         taskId: data.taskId,
         name: data.name,
         description: data.description,
-        targetUrl: data.targetUrl,
-        instruction: data.instruction,
-        evaluationCriteria: normalizeCriteria(data.evaluationCriteria),
+        // Keep the legacy single fields in sync with the first step until the
+        // engine reads steps directly (then these columns get dropped).
+        targetUrl: first.targetUrl,
+        instruction: first.instruction,
+        evaluationCriteria: normalizeCriteria(first.evaluationCriteria),
         isEnabled: true,
         ...(data.scheduleFrequency !== undefined
           ? { scheduleFrequency: data.scheduleFrequency }
           : {}),
+        steps: { create: toStepCreate(steps) },
       },
+      include: STEP_INCLUDE,
     });
   }
 
@@ -52,6 +99,7 @@ export class BrowserAutomationCrudService {
       include: {
         task: { select: { organizationId: true } },
         runs: { orderBy: { createdAt: 'desc' }, take: 10 },
+        ...STEP_INCLUDE,
       },
     });
     return this.hideCrossOrgAutomation({ automation, organizationId });
@@ -66,6 +114,7 @@ export class BrowserAutomationCrudService {
       where: { taskId },
       include: {
         runs: { orderBy: { createdAt: 'desc' }, take: 1 },
+        ...STEP_INCLUDE,
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -80,6 +129,7 @@ export class BrowserAutomationCrudService {
       instruction?: string;
       evaluationCriteria?: string;
       isEnabled?: boolean;
+      steps?: BrowserAutomationStepInput[];
       scheduleFrequency?: TaskFrequency;
     },
     organizationId?: string,
@@ -88,16 +138,58 @@ export class BrowserAutomationCrudService {
       await this.requireAutomationInOrg({ automationId, organizationId });
     }
 
-    const { evaluationCriteria, scheduleFrequency, ...rest } = data;
-    return db.browserAutomation.update({
-      where: { id: automationId },
-      data: {
-        ...rest,
-        ...(evaluationCriteria !== undefined
-          ? { evaluationCriteria: normalizeCriteria(evaluationCriteria) }
-          : {}),
-        ...(scheduleFrequency !== undefined ? { scheduleFrequency } : {}),
-      },
+    const { evaluationCriteria, scheduleFrequency, steps, ...rest } = data;
+
+    // Steps supplied → replace the whole sequence and sync the legacy columns
+    // from the first step (atomic so a run never sees a half-updated list).
+    if (steps && steps.length > 0) {
+      const first = steps[0];
+      return db.$transaction(async (tx) => {
+        await tx.browserAutomationStep.deleteMany({ where: { automationId } });
+        return tx.browserAutomation.update({
+          where: { id: automationId },
+          data: {
+            ...rest,
+            targetUrl: first.targetUrl,
+            instruction: first.instruction,
+            evaluationCriteria: normalizeCriteria(first.evaluationCriteria),
+            ...(scheduleFrequency !== undefined ? { scheduleFrequency } : {}),
+            steps: { create: toStepCreate(steps) },
+          },
+          include: STEP_INCLUDE,
+        });
+      });
+    }
+
+    // Legacy single-field edit → update the automation and mirror it onto the
+    // first step so the two representations stay consistent.
+    const stepPatch = {
+      ...(rest.targetUrl !== undefined ? { targetUrl: rest.targetUrl } : {}),
+      ...(rest.instruction !== undefined ? { instruction: rest.instruction } : {}),
+      ...(evaluationCriteria !== undefined
+        ? { evaluationCriteria: normalizeCriteria(evaluationCriteria) }
+        : {}),
+    };
+
+    return db.$transaction(async (tx) => {
+      const updated = await tx.browserAutomation.update({
+        where: { id: automationId },
+        data: {
+          ...rest,
+          ...(evaluationCriteria !== undefined
+            ? { evaluationCriteria: normalizeCriteria(evaluationCriteria) }
+            : {}),
+          ...(scheduleFrequency !== undefined ? { scheduleFrequency } : {}),
+        },
+        include: STEP_INCLUDE,
+      });
+      if (Object.keys(stepPatch).length > 0) {
+        await tx.browserAutomationStep.updateMany({
+          where: { automationId, order: 0 },
+          data: stepPatch,
+        });
+      }
+      return updated;
     });
   }
 

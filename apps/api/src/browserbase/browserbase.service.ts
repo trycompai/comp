@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { TaskFrequency } from '@db';
 import { tasks } from '@trigger.dev/sdk';
-import { BrowserAutomationCrudService } from './browser-automation-crud.service';
+import {
+  BrowserAutomationCrudService,
+  type BrowserAutomationStepInput,
+} from './browser-automation-crud.service';
 import { BrowserAutomationExecutionService } from './browser-automation-execution.service';
 import { BrowserAuthProfileService } from './browser-auth-profile.service';
 import { BrowserCredentialStorageService } from './browser-credential-storage.service';
@@ -225,6 +228,7 @@ export class BrowserbaseService {
       targetUrl: string;
       instruction: string;
       evaluationCriteria?: string;
+      steps?: BrowserAutomationStepInput[];
       scheduleFrequency?: TaskFrequency;
     },
     organizationId?: string,
@@ -255,6 +259,7 @@ export class BrowserbaseService {
       instruction?: string;
       evaluationCriteria?: string;
       isEnabled?: boolean;
+      steps?: BrowserAutomationStepInput[];
       scheduleFrequency?: TaskFrequency;
     },
     organizationId?: string,
