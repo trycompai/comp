@@ -61,7 +61,8 @@ describe('ResidualAcceptanceCard', () => {
 
     expect(screen.getByText('Awaiting acceptance')).toBeInTheDocument();
     expect(
-      screen.getByText(/No acceptance recorded yet\. The current residual level is Low\./),
+      // unlikely x minor = raw 4 -> score 2 -> Very low (score bands)
+      screen.getByText(/No acceptance recorded yet\. The current residual level is Very low\./),
     ).toBeInTheDocument();
   });
 
@@ -76,7 +77,11 @@ describe('ResidualAcceptanceCard', () => {
   });
 
   it('flags a stale acceptance and asks for a re-record', () => {
-    mockAcceptances = [{ ...acceptedEvent, stale: true }];
+    // Stale is client-derived: the frozen rating differs from the live
+    // residual props (unlikely/minor), regardless of the cached server flag.
+    mockAcceptances = [
+      { ...acceptedEvent, residualLikelihood: 'possible', residualImpact: 'moderate' },
+    ];
     renderCard();
 
     expect(screen.getByText('Stale')).toBeInTheDocument();

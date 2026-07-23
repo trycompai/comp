@@ -10,7 +10,7 @@ import {
   type AcceptanceSubjectKind,
   type RiskAcceptanceEvent,
 } from '@/hooks/use-risk-acceptances';
-import { getRiskScore, LEVEL_LABEL } from '@/lib/risk-score';
+import { getRiskLevelFromScore, getRiskScore, LEVEL_LABEL } from '@/lib/risk-score';
 import { RecordAcceptanceDialog, type AcceptorOption } from './RecordAcceptanceDialog';
 
 interface ResidualAcceptanceCardProps {
@@ -30,7 +30,7 @@ interface ResidualAcceptanceCardProps {
 const formatDate = (value: string) =>
   new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value));
 
-function AcceptanceHistoryRow({ event }: { event: RiskAcceptanceEvent }) {
+function AcceptanceHistoryRow({ event, stale }: { event: RiskAcceptanceEvent; stale: boolean }) {
   return (
     <li className="flex flex-col gap-0.5 border-t py-2 first:border-t-0">
       <span className="flex flex-wrap items-center gap-2 text-sm">
@@ -38,7 +38,7 @@ function AcceptanceHistoryRow({ event }: { event: RiskAcceptanceEvent }) {
         <span className="text-muted-foreground">
           accepted at {event.levelLabel} on {formatDate(event.createdAt)}
         </span>
-        {event.stale && <Badge variant="destructive">Stale</Badge>}
+        {stale && <Badge variant="destructive">Stale</Badge>}
       </span>
       {event.notes && <span className="text-xs text-muted-foreground">{event.notes}</span>}
     </li>
@@ -63,8 +63,19 @@ export function ResidualAcceptanceCard({
   const { acceptances, latest, isLoading, recordAcceptance } = useAcceptances(kind, subjectId);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const currentLevelLabel = LEVEL_LABEL[getRiskScore(residualLikelihood, residualImpact).level];
+  const currentLevelLabel =
+    LEVEL_LABEL[
+      getRiskLevelFromScore(getRiskScore(residualLikelihood, residualImpact).score)
+    ];
   const subjectLabel = kind === 'risk' ? 'risk' : "vendor's risk";
+  // Stale is derived CLIENT-side from the frozen rating on each event vs the
+  // live residual props (which the risk/vendor SWR keeps fresh) — the cached
+  // acceptance list can't go stale-blind when the residual changes while the
+  // page is open. The server computes the same flag for other consumers.
+  const isEventStale = (event: RiskAcceptanceEvent) =>
+    event.residualLikelihood !== residualLikelihood ||
+    event.residualImpact !== residualImpact;
+  const latestStale = latest ? isEventStale(latest) : false;
 
   const handleRecord = async (input: Parameters<typeof recordAcceptance>[0]) => {
     try {
@@ -82,8 +93,8 @@ export function ResidualAcceptanceCard({
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
             <h3 className="text-lg font-normal tracking-[-0.01em]">Residual risk acceptance</h3>
-            {latest && !latest.stale && <Badge variant="accent">Accepted</Badge>}
-            {latest?.stale && <Badge variant="destructive">Stale</Badge>}
+            {latest && !latestStale && <Badge variant="accent">Accepted</Badge>}
+            {latest && latestStale && <Badge variant="destructive">Stale</Badge>}
             {!latest && !isLoading && <Badge variant="secondary">Awaiting acceptance</Badge>}
           </div>
           <div className="text-xs text-muted-foreground">
@@ -113,7 +124,7 @@ export function ResidualAcceptanceCard({
             Residual risk accepted by {latest.acceptedByName} on {formatDate(latest.createdAt)} at{' '}
             {latest.levelLabel}.
           </Text>
-          {latest.stale && (
+          {latestStale && (
             <Text variant="muted">
               The residual level has changed to {currentLevelLabel} since this acceptance — record
               a fresh acceptance. Previous acceptances are kept in the history below.
@@ -133,7 +144,7 @@ export function ResidualAcceptanceCard({
           </Text>
           <ul className="flex flex-col">
             {acceptances.slice(1).map((event) => (
-              <AcceptanceHistoryRow key={event.id} event={event} />
+              <AcceptanceHistoryRow key={event.id} event={event} stale={isEventStale(event)} />
             ))}
           </ul>
         </div>

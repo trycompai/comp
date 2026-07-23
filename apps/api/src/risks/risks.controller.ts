@@ -27,11 +27,9 @@ import {
   buildRiskAssignmentFilter,
   hasRiskAccess,
 } from '../utils/assignment-filter';
-import { CreateRiskAcceptanceDto } from './dto/create-risk-acceptance.dto';
 import { CreateRiskDto } from './dto/create-risk.dto';
 import { GetRisksQueryDto } from './dto/get-risks-query.dto';
 import { UpdateRiskDto } from './dto/update-risk.dto';
-import { RiskAcceptancesService } from './risk-acceptances.service';
 import { RisksService } from './risks.service';
 import { RISK_OPERATIONS } from './schemas/risk-operations';
 import { RISK_PARAMS } from './schemas/risk-params';
@@ -41,20 +39,13 @@ import { GET_RISK_BY_ID_RESPONSES } from './schemas/get-risk-by-id.responses';
 import { CREATE_RISK_RESPONSES } from './schemas/create-risk.responses';
 import { UPDATE_RISK_RESPONSES } from './schemas/update-risk.responses';
 import { DELETE_RISK_RESPONSES } from './schemas/delete-risk.responses';
-import {
-  LIST_RISK_ACCEPTANCES_RESPONSES,
-  RECORD_RISK_ACCEPTANCE_RESPONSES,
-} from './schemas/risk-acceptances.responses';
 
 @ApiTags('Risks')
 @Controller({ path: 'risks', version: '1' })
 @UseGuards(HybridAuthGuard)
 @ApiSecurity('apikey')
 export class RisksController {
-  constructor(
-    private readonly risksService: RisksService,
-    private readonly riskAcceptancesService: RiskAcceptancesService,
-  ) {}
+  constructor(private readonly risksService: RisksService) {}
 
   @Get()
   @UseGuards(PermissionGuard)
@@ -238,81 +229,6 @@ export class RisksController {
 
     return {
       ...updatedRisk,
-      authType: authContext.authType,
-      ...(authContext.userId &&
-        authContext.userEmail && {
-          authenticatedUser: {
-            id: authContext.userId,
-            email: authContext.userEmail,
-          },
-        }),
-    };
-  }
-
-  @Get(':id/acceptances')
-  @UseGuards(PermissionGuard)
-  @RequirePermission('risk', 'read')
-  @ApiOperation(RISK_OPERATIONS.listRiskAcceptances)
-  @ApiParam(RISK_PARAMS.riskId)
-  @ApiResponse(LIST_RISK_ACCEPTANCES_RESPONSES[200])
-  @ApiResponse(LIST_RISK_ACCEPTANCES_RESPONSES[401])
-  @ApiResponse(LIST_RISK_ACCEPTANCES_RESPONSES[404])
-  async listRiskAcceptances(
-    @Param('id') riskId: string,
-    @OrganizationId() organizationId: string,
-    @AuthContext() authContext: AuthContextType,
-  ) {
-    const { risk, acceptances } = await this.riskAcceptancesService.listForRisk(
-      riskId,
-      organizationId,
-    );
-
-    // Same assignment-access rule as GET /risks/:id for restricted roles.
-    if (
-      !hasRiskAccess(risk, authContext.memberId, authContext.userRoles, {
-        isApiKey: authContext.isApiKey,
-      })
-    ) {
-      throw new ForbiddenException('You do not have access to this risk');
-    }
-
-    return {
-      data: acceptances,
-      authType: authContext.authType,
-      ...(authContext.userId &&
-        authContext.userEmail && {
-          authenticatedUser: {
-            id: authContext.userId,
-            email: authContext.userEmail,
-          },
-        }),
-    };
-  }
-
-  @Post(':id/acceptances')
-  @UseGuards(PermissionGuard)
-  @RequirePermission('risk', 'update')
-  @ApiOperation(RISK_OPERATIONS.recordRiskAcceptance)
-  @ApiParam(RISK_PARAMS.riskId)
-  @ApiBody(RISK_BODIES.recordRiskAcceptance)
-  @ApiResponse(RECORD_RISK_ACCEPTANCE_RESPONSES[201])
-  @ApiResponse(RECORD_RISK_ACCEPTANCE_RESPONSES[400])
-  @ApiResponse(RECORD_RISK_ACCEPTANCE_RESPONSES[401])
-  @ApiResponse(RECORD_RISK_ACCEPTANCE_RESPONSES[404])
-  async recordRiskAcceptance(
-    @Param('id') riskId: string,
-    @Body() dto: CreateRiskAcceptanceDto,
-    @OrganizationId() organizationId: string,
-    @AuthContext() authContext: AuthContextType,
-  ) {
-    const acceptance = await this.riskAcceptancesService.createForRisk(
-      riskId,
-      organizationId,
-      dto,
-    );
-
-    return {
-      ...acceptance,
       authType: authContext.authType,
       ...(authContext.userId &&
         authContext.userEmail && {

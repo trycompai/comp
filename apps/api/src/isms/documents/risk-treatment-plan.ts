@@ -63,25 +63,14 @@ function acceptanceSummary(rows: Array<{ acceptanceState: string }>): string {
   return parts.join(', ');
 }
 
-/** "10 open, 2 closed" — register status mix, keeping the tables at 9 columns. */
-function statusSummary(rows: Array<{ status: string }>): string {
-  const counts = new Map<string, number>();
-  for (const row of rows) {
-    counts.set(row.status, (counts.get(row.status) ?? 0) + 1);
-  }
-  return Array.from(counts.entries())
-    .map(([status, count]) => `${count} ${status.toLowerCase()}`)
-    .join(', ');
-}
-
 function organisationalRisksIntro(risks: RiskTreatmentExportRow[]): string {
   const plural = risks.length === 1 ? 'risk is' : 'risks are';
-  return `${risks.length} organisational ${plural} recorded in the Risk Register (${statusSummary(risks)}): ${acceptanceSummary(risks)}.`;
+  return `${risks.length} organisational ${plural} recorded in the Risk Register: ${acceptanceSummary(risks)}.`;
 }
 
 function supplierRisksIntro(vendors: VendorTreatmentExportRow[]): string {
   const plural = vendors.length === 1 ? 'supplier is' : 'suppliers are';
-  return `${vendors.length} ${plural} recorded in the Vendors module (${statusSummary(vendors)}): ${acceptanceSummary(vendors)}.`;
+  return `${vendors.length} ${plural} recorded in the Vendors module: ${acceptanceSummary(vendors)}.`;
 }
 
 /** Bullet lines for every row whose acceptance is outstanding (awaiting/stale). */
@@ -126,8 +115,9 @@ function outstandingBullets({
  * cross-reference + cell key), Organisational risks table, Supplier risks
  * table, Outstanding acceptances, Sign-off. The tables render from
  * input.riskTreatment (loaded live from the Risk Register + Vendors by
- * loadRiskTreatmentExtras); register status is summarized in each intro so the
- * tables keep the reference document's column set.
+ * loadRiskTreatmentExtras). Headers use the reference document's
+ * abbreviations (Cat./Inh/Treat./Res, defined in the cell key) so the
+ * ticket's full column set — including per-row Status — fits the page.
  */
 export function buildRiskTreatmentPlanSections(
   input: DocumentExportInput,
@@ -155,7 +145,7 @@ export function buildRiskTreatmentPlanSections(
           text: 'The scales, risk level matrix, treatment options, and acceptance thresholds used in this plan are defined in the Risk Assessment Methodology (Clause 6.1.2) document.',
         },
         {
-          text: 'Cell key: Inherent = risk level before treatment; Residual = risk level after treatment. The Acceptance column shows the recorded owner acceptance with its date, "Awaiting acceptance" when none is recorded, or "Stale" when the residual level has changed since the last acceptance (re-acceptance required).',
+          text: 'Cell key: Cat. = category; Inh = risk level before treatment (inherent); Treat. = treatment option; Res = risk level after treatment (residual). The Acceptance column shows the recorded owner acceptance with its date, "Awaiting acceptance" when none is recorded, or "Stale" when the residual level has changed since the last acceptance (re-acceptance required). Status is the register status of the row.',
         },
       ],
     },
@@ -167,13 +157,14 @@ export function buildRiskTreatmentPlanSections(
         headers: [
           'Ref',
           'Description',
-          'Category',
-          'Inherent',
-          'Treatment',
+          'Cat.',
+          'Inh',
+          'Treat.',
           'Controls / actions',
           'Owner',
-          'Residual',
+          'Res',
           'Acceptance',
+          'Status',
         ],
         rows: risks.map((risk) => [
           risk.reference,
@@ -185,6 +176,7 @@ export function buildRiskTreatmentPlanSections(
           risk.ownerName,
           risk.residualLevel,
           risk.acceptance,
+          risk.status,
         ]),
       },
     },
@@ -195,13 +187,14 @@ export function buildRiskTreatmentPlanSections(
       table: {
         headers: [
           'Vendor',
-          'Category',
-          'Inherent',
-          'Treatment',
+          'Cat.',
+          'Inh',
+          'Treat.',
           'Controls / actions',
           'Owner',
-          'Residual',
+          'Res',
           'Acceptance',
+          'Status',
         ],
         rows: vendors.map((vendor) => [
           vendor.name,
@@ -212,6 +205,7 @@ export function buildRiskTreatmentPlanSections(
           vendor.ownerName,
           vendor.residualLevel,
           vendor.acceptance,
+          vendor.status,
         ]),
       },
     },

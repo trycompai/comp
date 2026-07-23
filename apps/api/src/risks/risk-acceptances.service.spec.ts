@@ -62,7 +62,9 @@ describe('RiskAcceptancesService', () => {
         },
       });
       expect(view.stale).toBe(false);
-      expect(view.levelLabel).toBe('Low'); // unlikely(2) x minor(2) = 4 -> low
+      // unlikely(2) x minor(2) = raw 4 -> score 2 -> very-low (score bands,
+      // matching RiskScoreBadge / TreatmentHero)
+      expect(view.levelLabel).toBe('Very low');
     });
 
     it('defaults the acceptor to the risk owner (assignee)', async () => {
@@ -170,7 +172,7 @@ describe('RiskAcceptancesService', () => {
       expect(acceptances.map((a) => a.stale)).toEqual([false, true]);
       expect(mockDb.riskAcceptance.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { riskId: 'rsk_1' },
+          where: { riskId: 'rsk_1', organizationId: ORG },
           orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         }),
       );
@@ -208,7 +210,7 @@ describe('RiskAcceptancesService', () => {
           residualImpact: 'major',
         }),
       });
-      expect(view.levelLabel).toBe('High'); // likely(4) x major(4) = 16 -> high
+      expect(view.levelLabel).toBe('High'); // likely(4) x major(4) = raw 16 -> score 7 -> high
     });
 
     it('lists vendor acceptances by vendorId', async () => {
@@ -224,7 +226,9 @@ describe('RiskAcceptancesService', () => {
       expect(acceptances).toHaveLength(1);
       expect(acceptances[0].stale).toBe(false);
       expect(mockDb.riskAcceptance.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { vendorId: 'vnd_1' } }),
+        expect.objectContaining({
+          where: { vendorId: 'vnd_1', organizationId: ORG },
+        }),
       );
     });
   });

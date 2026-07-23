@@ -26,7 +26,8 @@ interface RiskTreatmentPlanClientProps {
  */
 export function RiskTreatmentPlanClient(props: RiskTreatmentPlanClientProps) {
   const { organizationId, documentId } = props;
-  const { riskTreatment, error, isLoading } = useIsmsRiskTreatment(documentId);
+  const { riskTreatment, error, isLoading, mutateRiskTreatment } =
+    useIsmsRiskTreatment(documentId);
 
   const blockedReason =
     riskTreatment && riskTreatment.validationMessages.length > 0
@@ -43,6 +44,7 @@ export function RiskTreatmentPlanClient(props: RiskTreatmentPlanClientProps) {
       sectionDescription="Exactly what the exported document renders, from the current registers."
       generateSuccessMessage="Refreshed the plan from the current registers"
       getSubmitBlockedReason={() => blockedReason}
+      onGenerated={() => mutateRiskTreatment()}
     >
       {() => (
         <Stack gap="6">

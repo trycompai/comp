@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { db, type Impact, type Likelihood, type RiskAcceptance } from '@db';
 import { CreateRiskAcceptanceDto } from './dto/create-risk-acceptance.dto';
-import { getRiskScore, LEVEL_LABEL, type RiskLevel } from './risk-level';
+import { LEVEL_LABEL, ratingLevel, type RiskLevel } from './risk-level';
 
 // Residual-risk acceptance events (ISO 27001 Clause 6.1.3(f), CS-727).
 //
@@ -51,7 +51,11 @@ export class RiskAcceptancesService {
       );
     }
 
-    const acceptances = await this.listBySubject({ riskId }, risk);
+    const acceptances = await this.listBySubject(
+      { riskId },
+      organizationId,
+      risk,
+    );
     return { risk, acceptances };
   }
 
@@ -59,6 +63,12 @@ export class RiskAcceptancesService {
     riskId: string,
     organizationId: string,
     dto: CreateRiskAcceptanceDto,
+    /**
+     * Caller-supplied access gate (e.g. hasRiskAccess for restricted roles),
+     * run against the loaded risk BEFORE anything is written. Throwing here
+     * aborts the create.
+     */
+    assertAccess?: (risk: { assigneeId: string | null }) => void,
   ): Promise<RiskAcceptanceView> {
     const risk = await db.risk.findFirst({
       where: { id: riskId, organizationId },
@@ -73,6 +83,7 @@ export class RiskAcceptancesService {
         `Risk with ID ${riskId} not found in organization ${organizationId}`,
       );
     }
+    assertAccess?.(risk);
 
     return this.createAcceptance({
       organizationId,
@@ -85,7 +96,11 @@ export class RiskAcceptancesService {
 
   async listForVendor(vendorId: string, organizationId: string) {
     const vendor = await this.findVendorRating(vendorId, organizationId);
-    const acceptances = await this.listBySubject({ vendorId }, vendor.rating);
+    const acceptances = await this.listBySubject(
+      { vendorId },
+      organizationId,
+      vendor.rating,
+    );
     return { vendor, acceptances };
   }
 
@@ -132,10 +147,13 @@ export class RiskAcceptancesService {
 
   private async listBySubject(
     subject: { riskId: string } | { vendorId: string },
+    organizationId: string,
     current: ResidualRating,
   ): Promise<RiskAcceptanceView[]> {
     const rows = await db.riskAcceptance.findMany({
-      where: subject,
+      // The subject is already resolved org-scoped; organizationId is
+      // defense-in-depth so a malformed row could never cross tenants.
+      where: { ...subject, organizationId },
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     });
     return rows.map((row) => this.toView(row, current));
@@ -193,7 +211,7 @@ export class RiskAcceptancesService {
   }
 
   private toView(row: RiskAcceptance, current: ResidualRating) {
-    const { level } = getRiskScore(row.residualLikelihood, row.residualImpact);
+    const level = ratingLevel(row.residualLikelihood, row.residualImpact);
     return {
       id: row.id,
       acceptedById: row.acceptedById,

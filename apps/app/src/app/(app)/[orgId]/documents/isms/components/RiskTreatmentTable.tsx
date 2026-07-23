@@ -68,20 +68,21 @@ export function RiskTreatmentTable({
             <TableHead>{keyHeader}</TableHead>
             {showTitle && <TableHead>Description</TableHead>}
             <TableHead>Category</TableHead>
-            <TableHead>Status</TableHead>
             <TableHead>Inherent</TableHead>
             <TableHead>Treatment</TableHead>
             <TableHead>Controls / actions</TableHead>
             <TableHead>Owner</TableHead>
             <TableHead>Residual</TableHead>
             <TableHead>Acceptance</TableHead>
+            <TableHead>Status</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {rows.map((row) => {
+          {rows.map((row, index) => {
             const badge = ACCEPTANCE_BADGE[row.acceptanceState];
             return (
-              <TableRow key={row.key}>
+              // Index-suffixed: two vendors can share a display name.
+              <TableRow key={`${row.key}-${index}`}>
                 <TableCell>
                   <span className="font-medium">{row.key}</span>
                 </TableCell>
@@ -91,7 +92,6 @@ export function RiskTreatmentTable({
                   </TableCell>
                 )}
                 <TableCell>{row.category}</TableCell>
-                <TableCell>{row.status}</TableCell>
                 <TableCell>{row.inherentLevel}</TableCell>
                 <TableCell>{row.treatment}</TableCell>
                 <TableCell>
@@ -111,6 +111,7 @@ export function RiskTreatmentTable({
                     )}
                   </span>
                 </TableCell>
+                <TableCell>{row.status}</TableCell>
               </TableRow>
             );
           })}

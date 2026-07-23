@@ -117,13 +117,24 @@ describe('buildRiskTreatmentPlanSections', () => {
     ]);
   });
 
-  it('renders one 9-column row per risk with the acceptance cell', () => {
+  it('renders one 10-column row per risk with acceptance and status cells', () => {
     const sections = buildRiskTreatmentPlanSections(input);
     const risks = sections.find(
       (section) => section.heading === 'Organisational risks',
     );
 
-    expect(risks?.table?.headers).toHaveLength(9);
+    expect(risks?.table?.headers).toEqual([
+      'Ref',
+      'Description',
+      'Cat.',
+      'Inh',
+      'Treat.',
+      'Controls / actions',
+      'Owner',
+      'Res',
+      'Acceptance',
+      'Status',
+    ]);
     expect(risks?.table?.rows).toHaveLength(2);
     expect(risks?.table?.rows?.[0]).toEqual([
       'R-01',
@@ -135,10 +146,19 @@ describe('buildRiskTreatmentPlanSections', () => {
       'Jane Doe',
       'Low',
       'Accepted 2026-04-15 (Jane Doe)',
+      'Open',
     ]);
-    // Register status is summarized in the intro (keeps the reference layout).
     expect(risks?.intro).toContain('2 organisational risks are recorded');
-    expect(risks?.intro).toContain('2 open');
+  });
+
+  it('renders per-row Status in the supplier table too', () => {
+    const sections = buildRiskTreatmentPlanSections(input);
+    const suppliers = sections.find(
+      (section) => section.heading === 'Supplier risks',
+    );
+
+    expect(suppliers?.table?.headers?.slice(-1)).toEqual(['Status']);
+    expect(suppliers?.table?.rows?.[0]?.slice(-1)).toEqual(['Assessed']);
   });
 
   it('lists awaiting and stale rows under Outstanding acceptances', () => {

@@ -15,6 +15,8 @@ interface MethodologyLabelledListProps<T extends FieldValues> {
   canEdit: boolean;
   /** Current values (watched) for the read-only rendering. */
   values: string[];
+  /** Per-row validation messages (aligned with labels), shown under each row. */
+  rowErrors?: (string | undefined)[];
 }
 
 /**
@@ -31,6 +33,7 @@ export function MethodologyLabelledList<T extends FieldValues>({
   control,
   canEdit,
   values,
+  rowErrors,
 }: MethodologyLabelledListProps<T>) {
   return (
     <div className="flex flex-col gap-2">
@@ -46,13 +49,18 @@ export function MethodologyLabelledList<T extends FieldValues>({
           >
             <span className="pt-2 text-sm font-medium">{label}</span>
             {canEdit ? (
-              <Controller
-                control={control}
-                name={`${name}.${index}` as Path<T>}
-                render={({ field: { ref: _ref, ...field } }) => (
-                  <Textarea {...field} rows={2} aria-label={`${title}: ${label}`} />
+              <div className="flex flex-col gap-1">
+                <Controller
+                  control={control}
+                  name={`${name}.${index}` as Path<T>}
+                  render={({ field: { ref: _ref, ...field } }) => (
+                    <Textarea {...field} rows={2} aria-label={`${title}: ${label}`} />
+                  )}
+                />
+                {rowErrors?.[index] && (
+                  <span className="text-xs text-destructive">{rowErrors[index]}</span>
                 )}
-              />
+              </div>
             ) : (
               <p className="whitespace-pre-wrap pt-2 text-sm">{values[index] || '—'}</p>
             )}

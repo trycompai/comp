@@ -90,11 +90,14 @@ describe('buildRiskMethodologySections', () => {
       'Impact 5',
     ]);
     expect(matrix?.table?.rows).toHaveLength(5);
-    // Rows run likelihood 5 -> 1 (reference-document orientation).
+    // Rows run likelihood 5 -> 1; banding = score bands (matches
+    // RiskScoreBadge / TreatmentHero, not the raw getRiskLevel bands).
     expect(matrix?.table?.rows?.[0]?.[0]).toBe('Likelihood 5');
-    expect(matrix?.table?.rows?.[0]?.[5]).toBe('Very high'); // 5x5 = 25
-    expect(matrix?.table?.rows?.[4]?.[1]).toBe('Very low'); // 1x1 = 1
-    expect(matrix?.table?.rows?.[2]?.[3]).toBe('Medium'); // 3x3 = 9
+    expect(matrix?.table?.rows?.[0]?.[5]).toBe('Very high'); // 25 -> score 10
+    expect(matrix?.table?.rows?.[4]?.[1]).toBe('Very low'); // 1 -> score 1
+    expect(matrix?.table?.rows?.[2]?.[3]).toBe('Low'); // 9 -> score 4
+    expect(matrix?.table?.rows?.[1]?.[3]).toBe('Medium'); // 12 -> score 5
+    expect(matrix?.table?.rows?.[0]?.[4]).toBe('High'); // 20 -> score 8
     // cellFills align with rows; the label column carries no fill.
     expect(matrix?.table?.cellFills).toHaveLength(5);
     expect(matrix?.table?.cellFills?.[0]?.[0]).toBeNull();

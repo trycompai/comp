@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import {
-  getRiskLevel,
+  getRiskLevelFromScore,
   LEVEL_LABEL,
   type RiskLevel,
 } from '../../risks/risk-level';
@@ -86,9 +86,10 @@ export const LEVEL_FILL_HEX: Record<RiskLevel, string> = {
 };
 
 /**
- * The 5x5 risk level matrix, computed from the SAME banding the platform uses
- * (risk-level.ts getRiskLevel over likelihood x impact). Rows run likelihood
- * 5 -> 1 (reference-document orientation); the first column is the row label.
+ * The 5x5 risk level matrix, computed from the SAME banding the product's
+ * badges and treatment-plan hero use (risk-level.ts getRiskLevelFromScore over
+ * the normalized 1-10 score). Rows run likelihood 5 -> 1 (reference-document
+ * orientation); the first column is the row label.
  */
 function riskMatrixTable(): NonNullable<IsmsExportSection['table']> {
   const headers = [
@@ -101,7 +102,9 @@ function riskMatrixTable(): NonNullable<IsmsExportSection['table']> {
     const row: string[] = [`Likelihood ${likelihood}`];
     const fills: (string | null)[] = [null];
     for (let impact = 1; impact <= 5; impact += 1) {
-      const level = getRiskLevel(likelihood * impact);
+      const level = getRiskLevelFromScore(
+        Math.max(1, Math.ceil((likelihood * impact) / 2.5)),
+      );
       row.push(LEVEL_LABEL[level]);
       fills.push(LEVEL_FILL_HEX[level]);
     }
@@ -165,7 +168,7 @@ export function buildRiskMethodologySections(
     {
       heading: 'Risk level matrix',
       intro:
-        'The risk level is derived from the product of likelihood and impact (1-25), mapped to five bands: Very low (1), Low (2-4), Medium (5-9), High (10-16), and Very high (17-25). Each risk in the register carries its calculated level for both its inherent and residual states.',
+        'The risk level is derived from the product of likelihood and impact (1-25), normalized to a 1-10 score and mapped to five bands: Very low (1-5), Low (6-10), Medium (11-15), High (16-20), and Very high (21-25). Each risk in the register carries its calculated level for both its inherent and residual states.',
       table: riskMatrixTable(),
     },
     {

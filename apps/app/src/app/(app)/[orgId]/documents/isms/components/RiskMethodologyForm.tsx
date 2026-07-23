@@ -14,17 +14,19 @@ import {
 } from './risk-methodology-constants';
 import { RiskLevelMatrixPreview } from './RiskLevelMatrixPreview';
 
+// .trim() runs before .min(), so whitespace-only input fails "required" and
+// saved values are stored trimmed.
 const methodologySchema = z.object({
-  purpose: z.string().min(1, 'Purpose is required'),
-  scope: z.string().min(1, 'Scope is required'),
-  approach: z.string().min(1, 'Approach is required'),
-  likelihoodDescriptions: z.array(z.string().min(1, 'Required')).length(5),
-  impactDescriptions: z.array(z.string().min(1, 'Required')).length(5),
-  acceptanceThresholds: z.array(z.string().min(1, 'Required')).length(5),
-  treatmentOptions: z.array(z.string().min(1, 'Required')).length(4),
-  responsibilities: z.string().min(1, 'Responsibilities are required'),
-  frequency: z.string().min(1, 'Frequency is required'),
-  documentation: z.string().min(1, 'Documentation approach is required'),
+  purpose: z.string().trim().min(1, 'Purpose is required'),
+  scope: z.string().trim().min(1, 'Scope is required'),
+  approach: z.string().trim().min(1, 'Approach is required'),
+  likelihoodDescriptions: z.array(z.string().trim().min(1, 'Required')).length(5),
+  impactDescriptions: z.array(z.string().trim().min(1, 'Required')).length(5),
+  acceptanceThresholds: z.array(z.string().trim().min(1, 'Required')).length(5),
+  treatmentOptions: z.array(z.string().trim().min(1, 'Required')).length(4),
+  responsibilities: z.string().trim().min(1, 'Responsibilities are required'),
+  frequency: z.string().trim().min(1, 'Frequency is required'),
+  documentation: z.string().trim().min(1, 'Documentation approach is required'),
 });
 
 export type RiskMethodologyValues = z.infer<typeof methodologySchema>;
@@ -157,6 +159,7 @@ export function RiskMethodologyForm({ narrative, canEdit, onSave }: RiskMethodol
         control={control}
         canEdit={canEdit}
         values={watch('likelihoodDescriptions')}
+        rowErrors={errors.likelihoodDescriptions?.map?.((e) => e?.message)}
       />
 
       <MethodologyLabelledList<RiskMethodologyValues>
@@ -167,6 +170,7 @@ export function RiskMethodologyForm({ narrative, canEdit, onSave }: RiskMethodol
         control={control}
         canEdit={canEdit}
         values={watch('impactDescriptions')}
+        rowErrors={errors.impactDescriptions?.map?.((e) => e?.message)}
       />
 
       <div className="flex flex-col gap-2">
@@ -182,6 +186,7 @@ export function RiskMethodologyForm({ narrative, canEdit, onSave }: RiskMethodol
         control={control}
         canEdit={canEdit}
         values={watch('acceptanceThresholds')}
+        rowErrors={errors.acceptanceThresholds?.map?.((e) => e?.message)}
       />
 
       <MethodologyLabelledList<RiskMethodologyValues>
@@ -192,6 +197,7 @@ export function RiskMethodologyForm({ narrative, canEdit, onSave }: RiskMethodol
         control={control}
         canEdit={canEdit}
         values={watch('treatmentOptions')}
+        rowErrors={errors.treatmentOptions?.map?.((e) => e?.message)}
       />
 
       {CLOSING_FIELDS.map(proseField)}

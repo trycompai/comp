@@ -58,6 +58,7 @@ export async function collectPlatformData({
         treatmentStrategy: true,
         treatmentStrategyDescription: true,
         assigneeId: true,
+        assignee: { select: { user: { select: { name: true, email: true } } } },
       },
     }),
     db.member.count({ where: { organizationId, deactivated: false } }),
@@ -82,6 +83,7 @@ export async function collectPlatformData({
         treatmentStrategy: true,
         treatmentStrategyDescription: true,
         assigneeId: true,
+        assignee: { select: { user: { select: { name: true, email: true } } } },
       },
     }),
     db.employeeTrainingVideoCompletion.count({
@@ -189,8 +191,11 @@ function fingerprintParties(
  * acceptance events (append-only, so their ids alone capture "a new acceptance
  * was recorded"). Same canonicalization as fingerprintParties: JSON-encoded
  * rows, sorted, so field boundaries can't collide and row order is irrelevant.
- * Archived risks leave the plan, so archiving changes the row set (= drift)
- * while later edits to an archived risk stay invisible.
+ * Two subtleties: (1) archived risks leave the plan, so archiving changes the
+ * row set (= drift) while later edits to an archived risk stay invisible —
+ * acceptance rows are filtered to the RENDERED subjects for the same reason;
+ * (2) the fingerprint carries the rendered owner DISPLAY value (not the id),
+ * so a member rename that changes the exported owner cell also drifts.
  */
 function fingerprintRiskTreatment({
   risks,
@@ -209,6 +214,7 @@ function fingerprintRiskTreatment({
     treatmentStrategy: string;
     treatmentStrategyDescription: string | null;
     assigneeId: string | null;
+    assignee: { user: { name: string | null; email: string } } | null;
   }>;
   vendors: Array<{
     id: string;
@@ -222,6 +228,7 @@ function fingerprintRiskTreatment({
     treatmentStrategy: string;
     treatmentStrategyDescription: string | null;
     assigneeId: string | null;
+    assignee: { user: { name: string | null; email: string } } | null;
   }>;
   acceptances: Array<{
     id: string;
@@ -229,25 +236,32 @@ function fingerprintRiskTreatment({
     vendorId: string | null;
   }>;
 }): string {
+  const ownerDisplay = (
+    assignee: { user: { name: string | null; email: string } } | null,
+  ): string => (assignee ? assignee.user.name?.trim() || assignee.user.email : '');
+  const renderedRisks = risks.filter((risk) => risk.status !== 'archived');
+  const renderedSubjectIds = new Set([
+    ...renderedRisks.map((risk) => risk.id),
+    ...vendors.map((vendor) => vendor.id),
+  ]);
   const rows = [
-    ...risks
-      .filter((risk) => risk.status !== 'archived')
-      .map((risk) =>
-        JSON.stringify([
-          'risk',
-          risk.id,
-          risk.title,
-          risk.category,
-          risk.status,
-          risk.likelihood,
-          risk.impact,
-          risk.residualLikelihood,
-          risk.residualImpact,
-          risk.treatmentStrategy,
-          risk.treatmentStrategyDescription ?? '',
-          risk.assigneeId ?? '',
-        ]),
-      ),
+    ...renderedRisks.map((risk) =>
+      JSON.stringify([
+        'risk',
+        risk.id,
+        risk.title,
+        risk.category,
+        risk.status,
+        risk.likelihood,
+        risk.impact,
+        risk.residualLikelihood,
+        risk.residualImpact,
+        risk.treatmentStrategy,
+        risk.treatmentStrategyDescription ?? '',
+        risk.assigneeId ?? '',
+        ownerDisplay(risk.assignee),
+      ]),
+    ),
     ...vendors.map((vendor) =>
       JSON.stringify([
         'vendor',
@@ -262,16 +276,21 @@ function fingerprintRiskTreatment({
         vendor.treatmentStrategy,
         vendor.treatmentStrategyDescription ?? '',
         vendor.assigneeId ?? '',
+        ownerDisplay(vendor.assignee),
       ]),
     ),
-    ...acceptances.map((acceptance) =>
-      JSON.stringify([
-        'acceptance',
-        acceptance.id,
-        acceptance.riskId ?? '',
-        acceptance.vendorId ?? '',
-      ]),
-    ),
+    ...acceptances
+      .filter((acceptance) =>
+        renderedSubjectIds.has(acceptance.riskId ?? acceptance.vendorId ?? ''),
+      )
+      .map((acceptance) =>
+        JSON.stringify([
+          'acceptance',
+          acceptance.id,
+          acceptance.riskId ?? '',
+          acceptance.vendorId ?? '',
+        ]),
+      ),
   ];
   if (rows.length === 0) return '';
   return createHash('sha256').update(rows.sort().join('')).digest('hex');

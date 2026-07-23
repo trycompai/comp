@@ -61,19 +61,19 @@ describe('loadRiskTreatmentExtras', () => {
       reference: 'R-01',
       title: 'Cloud misconfiguration',
       category: 'Technology',
-      inherentLevel: 'High', // possible(3) x major(4) = 12
+      inherentLevel: 'Medium', // possible(3) x major(4) = raw 12 -> score 5
       treatment: 'Mitigate',
       controls: 'IaC review; drift detection.',
       ownerName: 'Jane Doe',
-      residualLevel: 'Low', // unlikely(2) x minor(2) = 4
+      residualLevel: 'Very low', // unlikely(2) x minor(2) = raw 4 -> score 2
       acceptance: 'Awaiting acceptance',
       acceptanceState: 'awaiting',
       status: 'Open',
     });
     expect(extras.vendors[0]).toMatchObject({
       name: 'AWS',
-      inherentLevel: 'High', // likely(4) x major(4) = 16
-      residualLevel: 'Medium', // possible(3) x moderate(3) = 9
+      inherentLevel: 'High', // likely(4) x major(4) = raw 16 -> score 7
+      residualLevel: 'Low', // possible(3) x moderate(3) = raw 9 -> score 4
       ownerName: '—',
       status: 'Assessed',
     });

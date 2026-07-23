@@ -1,6 +1,6 @@
 import { db } from '@db';
 import type { Impact, Likelihood, Prisma } from '@db';
-import { getRiskScore, LEVEL_LABEL } from '../../risks/risk-level';
+import { LEVEL_LABEL, ratingLevel } from '../../risks/risk-level';
 import { formatExportDate } from '../utils/export-shared';
 import type {
   AcceptanceExportState,
@@ -34,7 +34,7 @@ function humanizeEnum(value: string): string {
 }
 
 function levelLabel(likelihood: Likelihood, impact: Impact): string {
-  return LEVEL_LABEL[getRiskScore(likelihood, impact).level];
+  return LEVEL_LABEL[ratingLevel(likelihood, impact)];
 }
 
 function ownerName(

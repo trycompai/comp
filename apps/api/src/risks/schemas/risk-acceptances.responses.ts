@@ -83,14 +83,32 @@ const NOT_FOUND = (entity: string): ApiResponseOptions => ({
 
 const UNAUTHORIZED: ApiResponseOptions = {
   status: 401,
-  description:
-    'Unauthorized - Invalid authentication or insufficient permissions',
+  description: 'Unauthorized - Invalid authentication',
   content: {
     'application/json': {
       schema: {
         type: 'object',
         properties: {
           message: { type: 'string', example: 'Invalid or expired API key' },
+        },
+      },
+    },
+  },
+};
+
+const FORBIDDEN: ApiResponseOptions = {
+  status: 403,
+  description:
+    'Forbidden - User does not have permission to access this risk',
+  content: {
+    'application/json': {
+      schema: {
+        type: 'object',
+        properties: {
+          message: {
+            type: 'string',
+            example: 'You do not have access to this risk',
+          },
         },
       },
     },
@@ -116,6 +134,7 @@ export const LIST_RISK_ACCEPTANCES_RESPONSES: Record<
     },
   },
   401: UNAUTHORIZED,
+  403: FORBIDDEN,
   404: NOT_FOUND('Risk'),
 };
 
@@ -147,5 +166,6 @@ export const RECORD_RISK_ACCEPTANCE_RESPONSES: Record<
     },
   },
   401: UNAUTHORIZED,
+  403: FORBIDDEN,
   404: NOT_FOUND('Risk'),
 };
