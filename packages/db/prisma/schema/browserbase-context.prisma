@@ -41,7 +41,8 @@ model BrowserAuthProfile {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  runs BrowserAutomationRun[]
+  runs           BrowserAutomationRun[]
+  automationSteps BrowserAutomationStep[]
 
   @@unique([organizationId, hostname, loginIdentity])
   @@index([organizationId])
@@ -78,7 +79,8 @@ model BrowserAutomation {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  runs BrowserAutomationRun[]
+  runs  BrowserAutomationRun[]
+  steps BrowserAutomationStep[]
 
   @@index([taskId])
 }
@@ -129,11 +131,78 @@ model BrowserAutomationRun {
 
   createdAt DateTime @default(now())
 
+  stepRuns BrowserAutomationStepRun[]
+
   @@index([automationId])
   @@index([profileId])
   @@index([status])
   @@index([failureCode])
   @@index([createdAt])
+}
+
+/// One step of a (possibly multi-vendor) automation. Steps run in `order`, each
+/// on its own connection's saved session, so a single automation can span
+/// several vendors without re-logging in.
+model BrowserAutomationStep {
+  id String @id @default(dbgenerated("generate_prefixed_cuid('bas'::text)"))
+
+  automationId String
+  automation   BrowserAutomation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+
+  /// Position in the sequence (0-based).
+  order Int
+
+  /// Connection this step runs on. Nullable so removing a connection leaves the
+  /// step in place (needing a re-bind) instead of deleting it.
+  profileId String?
+  profile   BrowserAuthProfile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
+
+  /// Starting URL for this step.
+  targetUrl String
+
+  /// Natural-language instruction for the AI agent on this step.
+  instruction String
+
+  /// Optional pass/fail criterion for this step. Null = capture only.
+  evaluationCriteria String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  stepRuns BrowserAutomationStepRun[]
+
+  @@index([automationId])
+  @@index([profileId])
+}
+
+/// Per-step result within one automation run (evidence + verdict per step).
+model BrowserAutomationStepRun {
+  id String @id @default(dbgenerated("generate_prefixed_cuid('basr'::text)"))
+
+  runId String
+  run   BrowserAutomationRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  /// Step this result belongs to. Nullable so editing/removing a step doesn't
+  /// delete historical run evidence.
+  stepId String?
+  step   BrowserAutomationStep? @relation(fields: [stepId], references: [id], onDelete: SetNull)
+
+  order Int
+
+  status BrowserAutomationRunStatus @default(pending)
+
+  screenshotUrl    String?
+  evaluationStatus BrowserAutomationEvaluationStatus?
+  evaluationReason String?
+  error            String?
+
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([runId])
+  @@index([stepId])
 }
 
 enum BrowserAuthProfileStatus {
