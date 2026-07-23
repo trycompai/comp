@@ -102,36 +102,26 @@ export function AutomationItem({
               ))}
             </div>
           )}
-          {latestRun ? (
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Last ran {formatDistanceToNow(new Date(latestRun.createdAt), { addSuffix: true })}
-            </p>
-          ) : (
-            <p className="text-xs text-muted-foreground mt-0.5">Never run</p>
-          )}
-          {automation.scheduleFrequency && (
-            <div className="mt-1.5 flex flex-col gap-1">
-              {readOnly ? (
+          {/* One compact meta line: last run + schedule summary. The editable
+              cadence picker lives in the actions row, not stacked here. */}
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
+            <span>
+              {latestRun
+                ? `Last ran ${formatDistanceToNow(new Date(latestRun.createdAt), {
+                    addSuffix: true,
+                  })}`
+                : 'Never run'}
+            </span>
+            {automation.scheduleFrequency && (
+              <>
+                <span aria-hidden>·</span>
                 <ScheduleSummary
                   scheduleFrequency={automation.scheduleFrequency}
                   lastRunAt={automation.lastRunAt ?? null}
                 />
-              ) : (
-                <>
-                  <div className="w-40">
-                    <SchedulePicker
-                      value={automation.scheduleFrequency}
-                      onChange={onChangeSchedule}
-                    />
-                  </div>
-                  <ScheduleSummary
-                    scheduleFrequency={automation.scheduleFrequency}
-                    lastRunAt={automation.lastRunAt ?? null}
-                  />
-                </>
-              )}
-            </div>
-          )}
+              </>
+            )}
+          </div>
           {latestRun?.failureCode && (
             <p className="mt-1 text-xs text-destructive">
               {latestRun.blockedReason ||
@@ -141,7 +131,15 @@ export function AutomationItem({
           )}
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-none items-center gap-1.5">
+          {!readOnly && automation.scheduleFrequency && (
+            <div className="w-28">
+              <SchedulePicker
+                value={automation.scheduleFrequency}
+                onChange={onChangeSchedule}
+              />
+            </div>
+          )}
           {!readOnly && (
             <Button
               variant="ghost"
