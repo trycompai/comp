@@ -82,7 +82,7 @@ const baseProps = {
 };
 
 describe('AutomationItem — schedule control', () => {
-  it('renders a compact "Change schedule" control next to Edit', () => {
+  it('renders a "Change schedule" control (in the Run split button) and Edit', () => {
     render(<AutomationItem {...baseProps} />);
     expect(screen.getByLabelText('Change schedule')).toBeInTheDocument();
     expect(screen.getByLabelText('Edit automation')).toBeInTheDocument();

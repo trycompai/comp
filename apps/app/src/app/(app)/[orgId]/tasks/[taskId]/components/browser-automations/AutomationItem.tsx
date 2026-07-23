@@ -151,37 +151,8 @@ export function AutomationItem({
               onClick={() => onToggleEnabled(!automation.isEnabled)}
               aria-label={automation.isEnabled ? 'Pause automation' : 'Enable automation'}
             >
-              <Power
-                size={14}
-                className={automation.isEnabled ? 'text-primary' : 'text-muted-foreground'}
-              />
+              <Power size={14} className="text-muted-foreground" />
             </Button>
-          )}
-
-          {!readOnly && automation.scheduleFrequency && (
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <Button variant="ghost" size="icon-sm" aria-label="Change schedule" />
-                }
-              >
-                <Calendar size={14} />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuRadioGroup
-                  value={automation.scheduleFrequency}
-                  onValueChange={(value) => {
-                    if (value) onChangeSchedule(value as TaskFrequency);
-                  }}
-                >
-                  {(Object.keys(FREQUENCY_LABELS) as TaskFrequency[]).map((freq) => (
-                    <DropdownMenuRadioItem key={freq} value={freq}>
-                      {FREQUENCY_LABELS[freq]}
-                    </DropdownMenuRadioItem>
-                  ))}
-                </DropdownMenuRadioGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
           )}
 
           {!readOnly && (
@@ -225,17 +196,51 @@ export function AutomationItem({
             )
           )}
 
+          {/* Split control: Run on the left half, the schedule (cadence) menu
+              on the right half — folding the standalone calendar button in so
+              the row carries one fewer control. The unified outline comes from
+              the wrapper; the inner ghost buttons drop their own border/radius. */}
           {!readOnly && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onRun}
-              disabled={isRunning || isDisabled}
-              loading={isRunning}
-              iconLeft={!isRunning ? <Play size={12} /> : undefined}
-            >
-              {isRunning ? 'Running...' : 'Run'}
-            </Button>
+            <div className="flex flex-none items-center overflow-hidden rounded-md border border-border [&_button]:rounded-none [&_button]:border-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onRun}
+                disabled={isRunning || isDisabled}
+                loading={isRunning}
+                iconLeft={!isRunning ? <Play size={12} /> : undefined}
+              >
+                {isRunning ? 'Running...' : 'Run'}
+              </Button>
+              {automation.scheduleFrequency && (
+                <>
+                  <div className="w-px self-stretch bg-border" />
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      render={
+                        <Button variant="ghost" size="icon-sm" aria-label="Change schedule" />
+                      }
+                    >
+                      <Calendar size={14} />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuRadioGroup
+                        value={automation.scheduleFrequency}
+                        onValueChange={(value) => {
+                          if (value) onChangeSchedule(value as TaskFrequency);
+                        }}
+                      >
+                        {(Object.keys(FREQUENCY_LABELS) as TaskFrequency[]).map((freq) => (
+                          <DropdownMenuRadioItem key={freq} value={freq}>
+                            {FREQUENCY_LABELS[freq]}
+                          </DropdownMenuRadioItem>
+                        ))}
+                      </DropdownMenuRadioGroup>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </>
+              )}
+            </div>
           )}
 
           {runs.length > 0 && (
