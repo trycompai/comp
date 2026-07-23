@@ -3,7 +3,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 
 const globalForPrisma = global as unknown as { prisma?: PrismaClient };
 
-const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1']);
+const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1', 'comp-postgres']);
 
 function stripSslMode(connectionString: string): string {
   const url = new URL(connectionString);
@@ -37,7 +37,7 @@ function createPrismaClient(): PrismaClient {
         : { checkServerIdentity: () => undefined };
 
   const url = ssl !== undefined ? stripSslMode(rawUrl) : rawUrl;
-  const adapter = new PrismaPg({ connectionString: url, ssl });
+  const adapter = new PrismaPg({ connectionString: url, ssl: ssl ?? false });
   return new PrismaClient({
     adapter,
     transactionOptions: {
