@@ -2,38 +2,24 @@
 
 Branch: `tofik/cs-727-feature-risks-module-updates` · Worktree: `.worktrees/cs-727-risks-module` · DB: `compdev_cs_727_risks_module`
 
-## Plan
+## Plan — all done
 
-### Schema (one migration)
-- [ ] `RiskAcceptance` append-only model (prefix `rska`): exactly one of riskId/vendorId, acceptedById → Member (SetNull) + frozen `acceptedByName`, optional notes, frozen `residualLikelihood`+`residualImpact` at acceptance, `createdAt` server-set. Stale = frozen residual ≠ current residual (computed, never mutated).
-- [ ] `IsmsDocumentType` enum += `risk_assessment_methodology`, `risk_treatment_plan` (ALTER TYPE ADD VALUE — don't use new values in same migration).
+- [x] `RiskAcceptance` append-only model (risk XOR vendor, frozen residual + acceptor name, CHECK constraint) + `IsmsDocumentType` += `risk_assessment_methodology`, `risk_treatment_plan` (migration `20260723195431`)
+- [x] Acceptance endpoints: GET/POST `/v1/risks/:id/acceptances` + `/v1/vendors/:id/acceptances`; server risk-level mirror of `apps/app/src/lib/risk-score.ts`; stale computed on read
+- [x] 11th ISMS type `risk_assessment_methodology`: fully templated editable narrative, fixed scale labels, computed color-coded 5x5 matrix (renderers gained optional `cellFills`), seeded via ensure-setup heal, drift `[]`
+- [x] 12th ISMS type `risk_treatment_plan`: renders live from Risk Register + vendors (extras threaded at BOTH snapshot sites), drift via `riskTreatmentFingerprint`, owner submit gate, `GET /v1/isms/documents/:id/risk-treatment` page payload
+- [x] Frontend: acceptance card + record dialog on risk & vendor treatment-plan tabs; RiskMethodologyClient/Form; RiskTreatmentPlanClient preview; all 5 exhaustive maps wired
+- [x] Tests: acceptance service/controller, methodology + RTP builders, export-data loader, drift; app: acceptance card + RTP table
+- [x] Verify: API+app typecheck (only documented pre-existing errors), scoped jest 598 ISMS + 45 risks green, app build (Vercel gate) green, PDF/DOCX samples rendered from the reference dataset and reviewed
 
-### Tweak 3 — acceptance API
-- [ ] POST/GET `/v1/risks/:id/acceptances` (risk:update / risk:read) + same for vendors (vendor:*). No PATCH/DELETE (immutable).
-- [ ] Server-side risk-level util mirroring `apps/app/src/lib/risk-score.ts` LITERALLY (CS-726 mirror lesson).
-- [ ] Latest acceptance + stale flag computed in GET risk/vendor responses (or acceptance list endpoint).
+## Review notes
 
-### Tweak 1 — `risk_assessment_methodology` (11th type)
-- [ ] Fully templated narrative doc: 12 sections per reference DOCX, adapted to the platform's REAL 5-band scale (very-low…very-high) + real treatment enum (mitigate/avoid/transfer/accept with ISO names Modify/Avoid/Share/Retain). Divergence from ticket text — flag in PR.
-- [ ] Wire ALL exhaustive maps: EXPORT_SECTION_BUILDERS, TYPE_DRIFT_SOURCES, GENERATION_ORDER (wizard — easy to miss), seed templates, type definitions/meta.
-
-### Tweak 2 — `risk_treatment_plan` (12th type)
-- [ ] Data-driven doc from Risk register + vendor risks: preamble + org-risks table + supplier-risks table + outstanding acceptances + sign-off.
-- [ ] "Critical vendor" = derived risk level (no stored flag) — decide threshold, flag in PR.
-- [ ] Drift signal via TYPE_DRIFT_SOURCES (risks/vendors/acceptances fingerprint).
-- [ ] Submit/generation gate: every risk + in-scope vendor has owner; residual set (NB: enum defaults mean "always set" — interpret + flag); acceptance NOT blocking → "Awaiting acceptance" rows.
-
-### Frontend
-- [ ] Risk detail: "Record risk-owner acceptance" action (RiskActions dropdown + treatment-plan tab display), modal (acceptor defaults to owner, changeable; notes), "Residual risk accepted by X on DATE at LEVEL", stale badge, history list.
-- [ ] Vendor detail: same on VendorActions / treatment-plan tab.
-- [ ] ISMS pages for both new types ([type] client components, submit gates mirrored).
-
-### Tests + verify
-- [ ] API jest: acceptance service/controller (immutability, stale, RBAC admin vs read-only), doc derivation/export, submit gates.
-- [ ] App vitest: acceptance UI (permission-gated), ISMS clients.
-- [ ] typecheck both; scoped suites green; `bun run --filter '@trycompai/app' build` (Vercel gate); real PDF+DOCX samples.
-
-### Ship
-- [ ] Push, adopt auto-PR via `gh pr edit`, PR body w/ design calls + divergences, Linear CS-727 → In Review.
-
-## Review notes (fill at end)
+- Failing suites in the touched areas were baselined against origin/main components: identical failures (nuqs adapter env issue etc.) — none caused by this change. `update-vendor.dto.spec` fails to LOAD in this environment (prisma client TLS check at import); its import chain contains no changed file.
+- Deliberate divergences from the ticket (flagged in the PR + Linear):
+  1. Risk levels use the platform's real 5-band scale (Very low…Very high), not the ticket's Low/Medium/High/Critical.
+  2. Treatment options = platform strategies labeled with their ISO 27001 names (Mitigate=Modify, Transfer=Share, Accept=Retain).
+  3. No stored "critical vendor" flag exists → the supplier table includes ALL vendors.
+  4. RTP tables follow the attached reference sample (9 columns; register status summarized in each intro) rather than the ticket's 10-column sketch.
+  5. Residual likelihood/impact always carry a value (schema defaults) → "residual set" gates are inherently satisfied; the submit gate = ≥1 risk + owner on every risk/vendor.
+  6. Archived risks are excluded from the plan.
+- OpenAPI json not regenerated (CS-698/701/723/726 precedent; spec pipeline reads main).
