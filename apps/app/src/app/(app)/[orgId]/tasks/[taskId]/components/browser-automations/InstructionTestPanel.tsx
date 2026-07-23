@@ -169,7 +169,7 @@ export function InstructionTestPanel({
           <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
             Evidence — close-up
           </span>
-          <div className="overflow-hidden rounded-md border border-border bg-white">
+          <div className="max-h-[360px] overflow-auto rounded-md border border-border bg-white">
             <Image
               src={result.focusScreenshotUrl}
               alt="Evidence close-up"
@@ -188,7 +188,7 @@ export function InstructionTestPanel({
               Full page
             </span>
           )}
-          <div className="overflow-hidden rounded-md border border-border bg-white">
+          <div className="max-h-[360px] overflow-auto rounded-md border border-border bg-white">
             <Image
               src={result.screenshotUrl}
               alt="Full page capture"

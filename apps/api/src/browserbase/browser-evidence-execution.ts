@@ -1,4 +1,5 @@
 import { Logger } from '@nestjs/common';
+import sharp from 'sharp';
 import { z } from 'zod';
 import { renderOverlay } from './screenshot-overlay';
 import type { BrowserbaseSessionService } from './browserbase-session.service';
@@ -247,13 +248,27 @@ export async function executeBrowserEvidence({
       instruction: input.instruction,
       finalUrl,
     });
-    const focusScreenshot = await renderScreenshot({
-      logger,
-      logs,
-      rawScreenshot: rawFocus,
-      instruction: input.instruction,
-      finalUrl,
-    });
+    // Only keep the close-up when it actually differs — i.e. the page is taller
+    // than one screen. If the page fits in the viewport, the two shots are the
+    // same, so we'd just show a duplicate.
+    let focusScreenshot: string | undefined;
+    try {
+      const [fullMeta, focusMeta] = await Promise.all([
+        sharp(rawScreenshot).metadata(),
+        sharp(rawFocus).metadata(),
+      ]);
+      if ((fullMeta.height ?? 0) > (focusMeta.height ?? 0) * 1.15) {
+        focusScreenshot = await renderScreenshot({
+          logger,
+          logs,
+          rawScreenshot: rawFocus,
+          instruction: input.instruction,
+          finalUrl,
+        });
+      }
+    } catch {
+      // If we can't measure, skip the close-up rather than risk a duplicate.
+    }
     currentStage = 'evaluation';
     await bringEvidencePageToFront(page);
     const evaluation = await evaluateIfNeeded({

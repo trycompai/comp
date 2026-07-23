@@ -35,7 +35,7 @@ const draft: BrowserAutomationDraft = {
 describe('DraftsStrip', () => {
   it('renders nothing when there are no drafts', () => {
     const { container } = render(
-      <DraftsStrip drafts={[]} onContinue={vi.fn()} onDelete={vi.fn()} />,
+      <DraftsStrip drafts={[]} profiles={[]} onContinue={vi.fn()} onDelete={vi.fn()} />,
     );
     expect(container).toBeEmptyDOMElement();
   });
@@ -43,7 +43,14 @@ describe('DraftsStrip', () => {
   it('shows a draft with its name and step count, and fires Continue/Delete', () => {
     const onContinue = vi.fn();
     const onDelete = vi.fn();
-    render(<DraftsStrip drafts={[draft]} onContinue={onContinue} onDelete={onDelete} />);
+    render(
+      <DraftsStrip
+        drafts={[draft]}
+        profiles={[]}
+        onContinue={onContinue}
+        onDelete={onDelete}
+      />,
+    );
 
     expect(screen.getByText('2FA enforcement')).toBeInTheDocument();
     expect(screen.getByText('2 steps')).toBeInTheDocument();

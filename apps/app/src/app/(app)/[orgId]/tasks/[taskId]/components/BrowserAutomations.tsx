@@ -398,6 +398,7 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
       <>
         <DraftsStrip
           drafts={drafts}
+          profiles={profiles}
           onContinue={handleContinueDraft}
           onDelete={handleDeleteDraft}
         />
@@ -413,6 +414,7 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
     <>
       <DraftsStrip
         drafts={drafts}
+        profiles={profiles}
         onContinue={handleContinueDraft}
         onDelete={handleDeleteDraft}
       />
