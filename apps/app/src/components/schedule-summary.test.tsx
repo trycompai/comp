@@ -8,6 +8,15 @@ describe('ScheduleSummary', () => {
     expect(screen.getByText(/Weekly/)).toBeInTheDocument();
   });
 
+  it('labels a never-run automation "first run" (cadence starts after it runs)', () => {
+    // A never-run automation is due on the next tick for any cadence, so the
+    // date is today regardless of daily/weekly — labelled "first run", not
+    // "next", so "Runs Weekly · <today>" isn't confusing.
+    render(<ScheduleSummary scheduleFrequency="weekly" lastRunAt={null} />);
+    expect(screen.getByText(/first run:/)).toBeInTheDocument();
+    expect(screen.queryByText(/next:/)).not.toBeInTheDocument();
+  });
+
   it('renders a deterministic YYYY-MM-DD next-run date', () => {
     render(
       <ScheduleSummary

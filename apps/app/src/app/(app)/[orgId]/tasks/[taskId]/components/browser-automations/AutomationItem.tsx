@@ -216,32 +216,29 @@ export function AutomationItem({
                   {isRunning ? 'Running...' : 'Run'}
                 </Button>
                 {automation.scheduleFrequency && (
-                  <>
-                    <div className="w-px self-stretch bg-primary-foreground/25" />
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        render={
-                          <Button variant="default" size="icon-sm" aria-label="Change schedule" />
-                        }
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      render={
+                        <Button variant="outline" size="icon-sm" aria-label="Change schedule" />
+                      }
+                    >
+                      <Calendar size={14} className="text-muted-foreground" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuRadioGroup
+                        value={automation.scheduleFrequency}
+                        onValueChange={(value) => {
+                          if (value) onChangeSchedule(value as TaskFrequency);
+                        }}
                       >
-                        <Calendar size={14} />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuRadioGroup
-                          value={automation.scheduleFrequency}
-                          onValueChange={(value) => {
-                            if (value) onChangeSchedule(value as TaskFrequency);
-                          }}
-                        >
-                          {(Object.keys(FREQUENCY_LABELS) as TaskFrequency[]).map((freq) => (
-                            <DropdownMenuRadioItem key={freq} value={freq}>
-                              {FREQUENCY_LABELS[freq]}
-                            </DropdownMenuRadioItem>
-                          ))}
-                        </DropdownMenuRadioGroup>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </>
+                        {(Object.keys(FREQUENCY_LABELS) as TaskFrequency[]).map((freq) => (
+                          <DropdownMenuRadioItem key={freq} value={freq}>
+                            {FREQUENCY_LABELS[freq]}
+                          </DropdownMenuRadioItem>
+                        ))}
+                      </DropdownMenuRadioGroup>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 )}
               </div>
             )}

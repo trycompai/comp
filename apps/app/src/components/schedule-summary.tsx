@@ -52,9 +52,15 @@ export function ScheduleSummary({
   const nowUtc = new Date();
   nowUtc.setUTCHours(0, 0, 0, 0);
   const next = computeNextRun(scheduleFrequency, last, nowUtc);
+  // Before the first run the orchestrator picks the automation up on its very
+  // next tick regardless of cadence (see server isDueToday: null lastRunAt is
+  // always due), so the date is "today" for daily OR weekly. Label it "first
+  // run" so a weekly automation showing today reads correctly; only after it
+  // has run does the date become lastRun + period.
+  const label = last === null ? 'first run' : 'next';
   return (
     <span className="text-xs text-muted-foreground">
-      Runs {LABELS[scheduleFrequency]} · next: {formatYmdUtc(next)}
+      Runs {LABELS[scheduleFrequency]} · {label}: {formatYmdUtc(next)}
     </span>
   );
 }
