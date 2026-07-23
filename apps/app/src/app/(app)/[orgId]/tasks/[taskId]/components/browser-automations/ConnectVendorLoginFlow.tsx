@@ -1,16 +1,6 @@
 'use client';
 
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@trycompai/design-system';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import type { LoginAnalysis } from '../../hooks/types';
@@ -72,10 +62,12 @@ export function ConnectVendorLoginFlow({
   const [analysis, setAnalysis] = useState<LoginAnalysis | null>(
     persisted?.analysis ?? null,
   );
+  // Never resumed — a live analysis-run token is dead after a reload, so a
+  // refresh restarts analysis from the (persisted) URL instead.
   const [analyzeRun, setAnalyzeRun] = useState<{
     runId: string;
     accessToken: string;
-  } | null>(persisted?.analyzeRun ?? null);
+  } | null>(null);
   const [signinRun, setSigninRun] = useState<{
     runId: string;
     accessToken: string;
@@ -87,9 +79,6 @@ export function ConnectVendorLoginFlow({
   // The authenticated page the sign-in landed on — used as the connection's URL
   // so future runs open the app directly and reuse the session.
   const [connectedUrl, setConnectedUrl] = useState<string | null>(null);
-  // Guard against a stray click on the close button discarding an in-progress
-  // live sign-in (the user is typing a 2FA code / finishing a login).
-  const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
 
   const context = useBrowserContext();
   const { startAnalysis, isStarting } = useLoginAnalysis();
@@ -190,16 +179,27 @@ export function ConnectVendorLoginFlow({
     if (steps) setSigninSteps(steps);
   }, [signinRunState]);
 
-  // Persist the analysis phase so a page unmount can resume; never persist creds.
+  // Persist enough to resume on refresh/navigation without ever storing creds or
+  // a live session: keep the URL from the moment it's entered, and the analysis
+  // once we have it. A live sign-in can't survive a reload, so it falls back to
+  // the method chooser (analysis kept) or the URL step — never to zero.
   useEffect(() => {
-    if (step === 'checking' && analyzeRun) {
-      saveConnectState(taskId, { step, url, analyzeRun, analysis });
-    } else if (step === 'choose' && analysis) {
-      saveConnectState(taskId, { step, url, analyzeRun, analysis });
-    } else {
-      clearConnectState(taskId);
+    const liveStep =
+      step === 'signing-in' || step === 'takeover' || step === 'signin';
+
+    if ((step === 'choose' || liveStep) && analysis) {
+      saveConnectState(taskId, { step: 'choose', url, analysis });
+      return;
     }
-  }, [taskId, step, url, analyzeRun, analysis]);
+    if (step === 'enter-url' || step === 'checking' || liveStep) {
+      const target = url || (urlInput.trim() ? normalizeUrl(urlInput) : '');
+      if (target) {
+        saveConnectState(taskId, { step: 'enter-url', url: target, analysis: null });
+        return;
+      }
+    }
+    clearConnectState(taskId);
+  }, [taskId, step, url, urlInput, analysis]);
 
   // Manual/SSO live sign-in verified → success beat.
   useEffect(() => {
@@ -338,22 +338,6 @@ export function ConnectVendorLoginFlow({
     onCancel();
   }, [endSession, context, onCancel]);
 
-  // Closing during a live sign-in tears down the session — confirm first so a
-  // misclick doesn't wipe the user's progress. Outside a live session there's
-  // nothing to lose, so cancel immediately.
-  const requestCancel = useCallback(() => {
-    if (step === 'signing-in' || step === 'takeover' || step === 'signin') {
-      setConfirmCancelOpen(true);
-      return;
-    }
-    handleCancel();
-  }, [step, handleCancel]);
-
-  const confirmCancel = useCallback(() => {
-    setConfirmCancelOpen(false);
-    handleCancel();
-  }, [handleCancel]);
-
   const host = hostnameOf(url || urlInput);
 
   // Live sign-in steps use the full-width activity card (design 1b); the
@@ -369,45 +353,26 @@ export function ConnectVendorLoginFlow({
     const variant: LiveSigninVariant =
       step === 'signing-in' ? 'ai' : step === 'signin' ? 'finish' : takeoverVariant;
     return (
-      <>
-        <ConnectLiveSignin
-          host={host}
-          liveViewUrl={
-            isManual
-              ? context.liveViewUrl
-              : (signinLiveView?.liveViewUrl ?? context.liveViewUrl)
-          }
-          variant={variant}
-          success={success}
-          steps={signinSteps}
-          onConfirm={
-            step === 'signing-in' || success
-              ? undefined
-              : isManual
-                ? () => context.checkAuth(url)
-                : handleTakeoverVerify
-          }
-          isConfirming={isManual ? context.status === 'checking' : isVerifying}
-          onCancel={requestCancel}
-        />
-        <AlertDialog open={confirmCancelOpen} onOpenChange={setConfirmCancelOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Discard this sign-in?</AlertDialogTitle>
-              <AlertDialogDescription>
-                You&apos;re in the middle of signing in. Closing now ends the live
-                browser session and you&apos;ll have to start over.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Keep signing in</AlertDialogCancel>
-              <AlertDialogAction variant="destructive" onClick={confirmCancel}>
-                Discard
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </>
+      <ConnectLiveSignin
+        host={host}
+        liveViewUrl={
+          isManual
+            ? context.liveViewUrl
+            : (signinLiveView?.liveViewUrl ?? context.liveViewUrl)
+        }
+        variant={variant}
+        success={success}
+        steps={signinSteps}
+        onConfirm={
+          step === 'signing-in' || success
+            ? undefined
+            : isManual
+              ? () => context.checkAuth(url)
+              : handleTakeoverVerify
+        }
+        isConfirming={isManual ? context.status === 'checking' : isVerifying}
+        onCancel={handleCancel}
+      />
     );
   }
 

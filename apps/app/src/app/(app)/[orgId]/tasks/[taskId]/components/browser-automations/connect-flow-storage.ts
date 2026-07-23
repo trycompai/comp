@@ -1,26 +1,25 @@
 import type { LoginAnalysis } from '../../hooks/types';
 
-// Only the analysis phase is resumable — a live browser sign-in session can't
-// survive a page unmount, and credentials are never persisted, so we only ever
-// store these two steps.
-export type PersistedStep = 'checking' | 'choose';
+// What a refresh can resume to. We never persist a live analysis-run token or a
+// live sign-in session (both die on reload); instead we always keep the URL
+// (resume at `enter-url`) and, once analysed, the result (resume at `choose`).
+// Live sign-in steps fall back to `choose` so nothing is lost but the session.
+export type PersistedStep = 'enter-url' | 'choose';
 
 export interface PersistedConnectState {
   step: PersistedStep;
   url: string;
-  analyzeRun: { runId: string; accessToken: string } | null;
   analysis: LoginAnalysis | null;
   savedAt: number;
 }
 
-// Past this window the Trigger.dev run and its public access token are almost
-// certainly expired, so resuming would just error — start fresh instead.
-const MAX_AGE_MS = 15 * 60 * 1000;
+// Credentials/sessions are never here, so this is just a "stale draft" guard.
+const MAX_AGE_MS = 60 * 60 * 1000;
 
 const storageKey = (taskId: string) => `browser-connect-flow:${taskId}`;
 
 function isPersistedStep(value: unknown): value is PersistedStep {
-  return value === 'checking' || value === 'choose';
+  return value === 'enter-url' || value === 'choose';
 }
 
 /**
@@ -39,11 +38,10 @@ export function loadConnectState(taskId: string): PersistedConnectState | null {
       typeof parsed?.savedAt === 'number' &&
       Date.now() - parsed.savedAt <= MAX_AGE_MS;
 
-    // Reject anything we couldn't actually resume from: a stale entry, a
-    // 'checking' step with no run handle to re-subscribe to, or a 'choose' step
-    // with no result to show.
+    // Reject anything we couldn't resume from: a stale entry, an 'enter-url'
+    // with no URL, or a 'choose' with no analysis to show.
     const resumable =
-      (parsed?.step === 'checking' && !!parsed.analyzeRun) ||
+      (parsed?.step === 'enter-url' && !!parsed.url) ||
       (parsed?.step === 'choose' && !!parsed.analysis);
 
     if (!isPersistedStep(parsed?.step) || !fresh || !resumable) {
@@ -54,7 +52,6 @@ export function loadConnectState(taskId: string): PersistedConnectState | null {
     return {
       step: parsed.step,
       url: parsed.url ?? '',
-      analyzeRun: parsed.analyzeRun ?? null,
       analysis: parsed.analysis ?? null,
       savedAt: parsed.savedAt as number,
     };
