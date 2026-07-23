@@ -1,5 +1,6 @@
 'use client';
 
+import { VendorLogo } from '@/components/VendorLogo';
 import { Button } from '@trycompai/design-system';
 import { Play, TrashCan } from '@trycompai/design-system/icons';
 import type { BrowserAuthProfile, BrowserAutomationDraft } from '../../hooks/types';
@@ -45,16 +46,11 @@ export function DraftsStrip({ drafts, profiles, onContinue, onDelete }: DraftsSt
               {chain.length > 0 && (
                 <span className="flex flex-none items-center gap-1">
                   {chain.map((host, index) => (
-                    <span key={host} className="flex items-center gap-1">
+                    <span key={host} className="flex items-center gap-1" title={host}>
                       {index > 0 && (
                         <span className="text-[10px] text-muted-foreground/50">→</span>
                       )}
-                      <span
-                        title={host}
-                        className="grid h-5 w-5 place-items-center rounded-full bg-muted text-[9px] font-bold uppercase text-foreground"
-                      >
-                        {host.charAt(0)}
-                      </span>
+                      <VendorLogo hostname={host} size={20} />
                     </span>
                   ))}
                 </span>

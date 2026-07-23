@@ -1,15 +1,10 @@
 'use client';
 
+import { VendorLogo } from '@/components/VendorLogo';
 import { Button } from '@trycompai/design-system';
 import { Renew, Settings } from '@trycompai/design-system/icons';
 import { formatDistanceToNow } from 'date-fns';
-import {
-  hueFor,
-  methodOf,
-  monogram,
-  statusMeta,
-  type Connection,
-} from './connection-format';
+import { methodOf, statusMeta, type Connection } from './connection-format';
 
 interface ConnectionsTableProps {
   connections: Connection[];
@@ -27,17 +22,6 @@ function StatusPill({ status }: { status: Connection['status'] }) {
     >
       <span className="h-1.5 w-1.5 rounded-full" style={{ background: meta.color }} />
       {meta.label}
-    </span>
-  );
-}
-
-function Monogram({ hostname }: { hostname: string }) {
-  return (
-    <span
-      className="grid h-8 w-8 flex-none place-items-center rounded-md text-[11px] font-bold text-white"
-      style={{ background: hueFor(hostname) }}
-    >
-      {monogram(hostname)}
     </span>
   );
 }
@@ -85,7 +69,7 @@ export function ConnectionsTable({
               >
                 <td className={CELL}>
                   <div className="flex items-center gap-3">
-                    <Monogram hostname={connection.hostname} />
+                    <VendorLogo hostname={connection.hostname} size={32} />
                     <div className="min-w-0">
                       <div className="truncate font-medium text-foreground">
                         {connection.displayName || connection.hostname}

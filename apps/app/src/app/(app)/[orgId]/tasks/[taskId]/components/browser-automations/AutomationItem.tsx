@@ -1,5 +1,6 @@
 'use client';
 
+import { VendorLogo } from '@/components/VendorLogo';
 import { cn } from '@/lib/utils';
 import { Button } from '@trycompai/design-system';
 import {
@@ -88,16 +89,11 @@ export function AutomationItem({
           {vendorChain && vendorChain.length > 0 && (
             <div className="mt-1 flex items-center gap-1">
               {vendorChain.map((host, index) => (
-                <span key={`${host}-${index}`} className="flex items-center gap-1">
+                <span key={`${host}-${index}`} className="flex items-center gap-1" title={host}>
                   {index > 0 && (
                     <span className="text-[10px] text-muted-foreground/50">→</span>
                   )}
-                  <span
-                    title={host}
-                    className="grid h-4 w-4 place-items-center rounded-full bg-muted text-[8px] font-bold uppercase text-foreground"
-                  >
-                    {host.charAt(0)}
-                  </span>
+                  <VendorLogo hostname={host} size={16} />
                 </span>
               ))}
             </div>
