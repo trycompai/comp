@@ -21,8 +21,10 @@ vi.mock('@trycompai/design-system', async () => {
         </button>
       ),
     DropdownMenu: ({ children }: any) => <div>{children}</div>,
-    DropdownMenuTrigger: ({ children, render: renderEl }: any) => (
-      <button aria-label={renderEl?.props?.['aria-label']}>{children}</button>
+    DropdownMenuTrigger: ({ children, render: renderEl, ...props }: any) => (
+      <button aria-label={props['aria-label'] ?? renderEl?.props?.['aria-label']}>
+        {children}
+      </button>
     ),
     DropdownMenuContent: ({ children }: any) => <div>{children}</div>,
     DropdownMenuRadioGroup: ({ children, value, onValueChange }: any) => (

@@ -217,10 +217,11 @@ export function AutomationItem({
                 </Button>
                 {automation.scheduleFrequency && (
                   <DropdownMenu>
+                    {/* Caret half: same primary as Run but a shade darker, so the
+                        cadence zone is distinct without a white seam. */}
                     <DropdownMenuTrigger
-                      render={
-                        <Button variant="default" size="icon-sm" aria-label="Change schedule" />
-                      }
+                      aria-label="Change schedule"
+                      className="grid h-6 w-7 cursor-pointer place-items-center border-0 bg-primary p-0 text-primary-foreground outline-none brightness-90 transition hover:brightness-75 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/60"
                     >
                       <ChevronDown size={12} />
                     </DropdownMenuTrigger>
