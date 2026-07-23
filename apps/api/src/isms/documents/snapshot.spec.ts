@@ -17,6 +17,7 @@ const base: IsmsPlatformData = {
   hasTrainingProgram: true,
   wizardAnswers: {},
   partiesFingerprint: 'fp-base',
+  riskTreatmentFingerprint: 'rtfp-base',
 };
 
 describe('diffPlatformSnapshots', () => {

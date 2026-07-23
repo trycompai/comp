@@ -24,6 +24,9 @@ import {
   reviewValidationMessages,
 } from './documents/management-review';
 import { defaultProcedureText } from './documents/management-review-defaults';
+import { defaultRiskMethodologyNarrative } from './documents/risk-methodology';
+import { loadRiskTreatmentExtras } from './documents/risk-treatment-export-data';
+import { riskTreatmentValidationMessages } from './documents/risk-treatment-plan';
 import { updateDraftSnapshot } from './utils/draft-snapshot';
 import { EXPORT_DOCUMENT_INCLUDE } from './utils/export-payload';
 import { lockDocument } from './utils/document-lock';
@@ -266,7 +269,9 @@ export class IsmsService {
 
     const targets = documents.filter(
       (doc) =>
-        (doc.type === 'internal_audit' || doc.type === 'management_review') &&
+        (doc.type === 'internal_audit' ||
+          doc.type === 'management_review' ||
+          doc.type === 'risk_assessment_methodology') &&
         isEmptyNarrative(doc.draftNarrative),
     );
     if (targets.length === 0) return;
@@ -282,15 +287,22 @@ export class IsmsService {
         { draftNarrative: { equals: {} } },
       ],
     };
+    const defaultNarrativeFor = (
+      type: IsmsDocumentType,
+    ): Prisma.InputJsonObject => {
+      if (type === 'internal_audit') {
+        return { programme: defaultProgrammeText(organizationName) };
+      }
+      if (type === 'management_review') {
+        return { procedure: defaultProcedureText(organizationName) };
+      }
+      // risk_assessment_methodology (6.1.2): the fully templated default text.
+      return { ...defaultRiskMethodologyNarrative(organizationName) };
+    };
     for (const doc of targets) {
       await db.ismsDocument.updateMany({
         where: { id: doc.id, ...whileNarrativeEmpty },
-        data: {
-          draftNarrative:
-            doc.type === 'internal_audit'
-              ? { programme: defaultProgrammeText(organizationName) }
-              : { procedure: defaultProcedureText(organizationName) },
-        },
+        data: { draftNarrative: defaultNarrativeFor(doc.type) },
       });
     }
   }
@@ -406,6 +418,11 @@ export class IsmsService {
       // and the chair's signature (CS-726).
       if (document.type === 'management_review') {
         await this.assertManagementReviewComplete({ tx, documentId });
+      }
+      // Clause 6.1.3: at least one risk recorded and an owner on every risk
+      // and vendor; per-risk acceptance is recommended, never blocking (CS-727).
+      if (document.type === 'risk_treatment_plan') {
+        await this.assertRiskTreatmentPlanComplete({ tx, organizationId });
       }
 
       return tx.ismsDocument.update({
@@ -698,6 +715,82 @@ export class IsmsService {
         `This Clause 9.3 document is not ready to submit. ${messages.join(' ')}`,
       );
     }
+  }
+
+  /**
+   * Clause-6.1.3 readiness: the RTP renders from the platform Risk Register +
+   * Vendors (org-scoped), not from register rows of its own — so readiness
+   * reads those tables. Archived risks are out of the plan (see
+   * loadRiskTreatmentExtras). Shared by the submit gate and the page payload.
+   */
+  private async riskTreatmentReadinessMessages({
+    organizationId,
+    client,
+  }: {
+    organizationId: string;
+    client?: Prisma.TransactionClient;
+  }): Promise<string[]> {
+    const dbc = client ?? db;
+    const [risks, vendors] = await Promise.all([
+      dbc.risk.findMany({
+        where: { organizationId, status: { not: 'archived' } },
+        select: { assigneeId: true },
+      }),
+      dbc.vendor.findMany({
+        where: { organizationId },
+        select: { assigneeId: true },
+      }),
+    ]);
+    return riskTreatmentValidationMessages({
+      riskCount: risks.length,
+      risksWithoutOwner: risks.filter((risk) => !risk.assigneeId).length,
+      vendorsWithoutOwner: vendors.filter((vendor) => !vendor.assigneeId)
+        .length,
+    });
+  }
+
+  private async assertRiskTreatmentPlanComplete({
+    tx,
+    organizationId,
+  }: {
+    tx: Prisma.TransactionClient;
+    organizationId: string;
+  }) {
+    const messages = await this.riskTreatmentReadinessMessages({
+      organizationId,
+      client: tx,
+    });
+    if (messages.length > 0) {
+      throw new BadRequestException(
+        `This Clause 6.1.3 document is not ready to submit. ${messages.join(' ')}`,
+      );
+    }
+  }
+
+  /**
+   * The Risk Treatment Plan page payload: the same rows the export renders
+   * (from the Risk Register + Vendors) plus the submit-readiness messages.
+   * Gated at evidence:read — consistent with every other ISMS read — so the
+   * preview never depends on the viewer holding risk/vendor permissions.
+   */
+  async getRiskTreatmentData({
+    documentId,
+    organizationId,
+  }: {
+    documentId: string;
+    organizationId: string;
+  }) {
+    const document = await this.requireDocument({ documentId, organizationId });
+    if (document.type !== 'risk_treatment_plan') {
+      throw new BadRequestException(
+        'This document is not a Risk Treatment Plan',
+      );
+    }
+    const [extras, validationMessages] = await Promise.all([
+      loadRiskTreatmentExtras({ organizationId }),
+      this.riskTreatmentReadinessMessages({ organizationId }),
+    ]);
+    return { ...extras, validationMessages };
   }
 
   private async requireDocument({

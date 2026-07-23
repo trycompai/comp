@@ -42,6 +42,7 @@ jest.mock('@db', () => {
 });
 
 import { VendorsController } from './vendors.controller';
+import { RiskAcceptancesService } from '../risks/risk-acceptances.service';
 import { VendorsService } from './vendors.service';
 
 describe('VendorsController', () => {
@@ -59,6 +60,11 @@ describe('VendorsController', () => {
   };
 
   const mockActingUser = { resolve: jest.fn() };
+
+  const mockRiskAcceptances = {
+    listForVendor: jest.fn(),
+    createForVendor: jest.fn(),
+  };
 
   const mockGuard = { canActivate: jest.fn().mockReturnValue(true) };
 
@@ -91,6 +97,7 @@ describe('VendorsController', () => {
       providers: [
         { provide: VendorsService, useValue: mockVendorsService },
         { provide: ActingUserResolver, useValue: mockActingUser },
+        { provide: RiskAcceptancesService, useValue: mockRiskAcceptances },
       ],
     })
       .overrideGuard(HybridAuthGuard)

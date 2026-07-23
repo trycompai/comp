@@ -1,0 +1,40 @@
+// Risk-owner residual-risk acceptance events (ISO 27001 Clause 6.1.3(f), CS-727).
+//
+// Append-only: an acceptance is recorded once and never edited or deleted — the
+// API exposes no update/delete. "Stale" is never stored; it is computed by
+// comparing the residual rating frozen here against the parent's live residual
+// rating (an acceptance goes stale the moment the residual score changes).
+// Re-accepting appends a new row; older rows remain as the audit trail.
+model RiskAcceptance {
+  id String @id @default(dbgenerated("generate_prefixed_cuid('rska'::text)"))
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Exactly one of riskId / vendorId is set — enforced by a CHECK constraint
+  // ("risk_acceptance_single_subject") in the raw SQL migration; Prisma cannot
+  // express it. Risks and critical-vendor risks share the same acceptance flow.
+  riskId   String?
+  risk     Risk?   @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  vendorId String?
+  vendor   Vendor? @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  // Who accepted. The display name is frozen at acceptance so the historical
+  // record survives member removal or renaming (ISMS frozen-name precedent).
+  acceptedById   String?
+  acceptedBy     Member? @relation(fields: [acceptedById], references: [id], onDelete: SetNull)
+  acceptedByName String
+
+  notes String?
+
+  // Residual rating frozen at the moment of acceptance — the staleness baseline.
+  residualLikelihood Likelihood
+  residualImpact     Impact
+
+  // Server-set, immutable.
+  createdAt DateTime @default(now())
+
+  @@index([organizationId])
+  @@index([riskId])
+  @@index([vendorId])
+}

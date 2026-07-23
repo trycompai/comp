@@ -29,6 +29,8 @@ import type {
   AuthContext as AuthContextType,
   AuthenticatedRequest,
 } from '../auth/types';
+import { CreateRiskAcceptanceDto } from '../risks/dto/create-risk-acceptance.dto';
+import { RiskAcceptancesService } from '../risks/risk-acceptances.service';
 import { CreateVendorDto } from './dto/create-vendor.dto';
 import { UpdateVendorDto } from './dto/update-vendor.dto';
 import { VendorsService } from './vendors.service';
@@ -40,6 +42,10 @@ import { GET_VENDOR_BY_ID_RESPONSES } from './schemas/get-vendor-by-id.responses
 import { CREATE_VENDOR_RESPONSES } from './schemas/create-vendor.responses';
 import { UPDATE_VENDOR_RESPONSES } from './schemas/update-vendor.responses';
 import { DELETE_VENDOR_RESPONSES } from './schemas/delete-vendor.responses';
+import {
+  LIST_VENDOR_ACCEPTANCES_RESPONSES,
+  RECORD_VENDOR_ACCEPTANCE_RESPONSES,
+} from './schemas/vendor-acceptances.responses';
 
 @ApiTags('Vendors')
 @Controller({ path: 'vendors', version: '1' })
@@ -49,6 +55,7 @@ export class VendorsController {
   constructor(
     private readonly vendorsService: VendorsService,
     private readonly actingUser: ActingUserResolver,
+    private readonly riskAcceptancesService: RiskAcceptancesService,
   ) {}
 
   @Get('global/search')
@@ -225,6 +232,70 @@ export class VendorsController {
     return {
       success: true,
       ...result,
+    };
+  }
+
+  @Get(':id/acceptances')
+  @RequirePermission('vendor', 'read')
+  @ApiOperation(VENDOR_OPERATIONS.listVendorAcceptances)
+  @ApiParam(VENDOR_PARAMS.vendorId)
+  @ApiResponse(LIST_VENDOR_ACCEPTANCES_RESPONSES[200])
+  @ApiResponse(LIST_VENDOR_ACCEPTANCES_RESPONSES[401])
+  @ApiResponse(LIST_VENDOR_ACCEPTANCES_RESPONSES[404])
+  async listVendorAcceptances(
+    @Param('id') vendorId: string,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const { acceptances } = await this.riskAcceptancesService.listForVendor(
+      vendorId,
+      organizationId,
+    );
+
+    return {
+      data: acceptances,
+      authType: authContext.authType,
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
+    };
+  }
+
+  @Post(':id/acceptances')
+  @RequirePermission('vendor', 'update')
+  @ApiOperation(VENDOR_OPERATIONS.recordVendorAcceptance)
+  @ApiParam(VENDOR_PARAMS.vendorId)
+  @ApiBody(VENDOR_BODIES.recordVendorAcceptance)
+  @ApiResponse(RECORD_VENDOR_ACCEPTANCE_RESPONSES[201])
+  @ApiResponse(RECORD_VENDOR_ACCEPTANCE_RESPONSES[400])
+  @ApiResponse(RECORD_VENDOR_ACCEPTANCE_RESPONSES[401])
+  @ApiResponse(RECORD_VENDOR_ACCEPTANCE_RESPONSES[404])
+  async recordVendorAcceptance(
+    @Param('id') vendorId: string,
+    @Body() dto: CreateRiskAcceptanceDto,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const acceptance = await this.riskAcceptancesService.createForVendor(
+      vendorId,
+      organizationId,
+      dto,
+    );
+
+    return {
+      ...acceptance,
+      authType: authContext.authType,
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
     };
   }
 

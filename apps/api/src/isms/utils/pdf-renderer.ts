@@ -113,6 +113,7 @@ export function renderIsmsPdf({
 
   const renderTable = (table: IsmsExportTable) => {
     const threeCol = table.headers.length === 3;
+    const cellFills = table.cellFills;
     autoTable(pdf, {
       startY: y,
       margin: { left: margin, right: margin, bottom: 16 },
@@ -141,6 +142,15 @@ export function renderIsmsPdf({
             2: { cellWidth: contentWidth - 88 },
           }
         : {},
+      // Per-cell background fills (the 6.1.2 risk level matrix). Fills are
+      // light pastels, so the default ink text stays legible.
+      didParseCell: cellFills
+        ? (data) => {
+            if (data.section !== 'body') return;
+            const fill = cellFills[data.row.index]?.[data.column.index];
+            if (fill) data.cell.styles.fillColor = accentColor(fill);
+          }
+        : undefined,
     });
     y = finalY() + 4;
   };

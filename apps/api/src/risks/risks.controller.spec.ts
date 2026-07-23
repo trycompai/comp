@@ -4,6 +4,7 @@ import type { AuthContext } from '../auth/types';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RisksController } from './risks.controller';
+import { RiskAcceptancesService } from './risk-acceptances.service';
 import { RisksService } from './risks.service';
 
 // Mock auth.server to avoid importing better-auth ESM in Jest
@@ -107,9 +108,17 @@ describe('RisksController', () => {
       getStatsByDepartment: jest.fn(),
     };
 
+    const mockAcceptances = {
+      listForRisk: jest.fn(),
+      createForRisk: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [RisksController],
-      providers: [{ provide: RisksService, useValue: mockService }],
+      providers: [
+        { provide: RisksService, useValue: mockService },
+        { provide: RiskAcceptancesService, useValue: mockAcceptances },
+      ],
     })
       .overrideGuard(HybridAuthGuard)
       .useValue({ canActivate: () => true })
