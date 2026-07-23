@@ -107,7 +107,7 @@ function initialSteps(
 export function InstructionComposer({
   taskId,
   connection,
-  connections,
+  connections = [],
   mode,
   initialValues,
   isSaving,
@@ -131,10 +131,15 @@ export function InstructionComposer({
 
   const { startTest, closeTestSession, isStarting } = useInstructionTest();
 
+  // Always offer at least the primary connection, so the picker is never empty.
+  const availableConnections = useMemo(
+    () => (connections.length > 0 ? connections : [connection]),
+    [connections, connection],
+  );
   const connectionOf = useCallback(
     (profileId: string) =>
-      connections.find((item) => item.profileId === profileId) ?? connection,
-    [connections, connection],
+      availableConnections.find((item) => item.profileId === profileId) ?? connection,
+    [availableConnections, connection],
   );
 
   const activeStep = steps[activeIndex] ?? steps[0];
@@ -362,7 +367,7 @@ export function InstructionComposer({
                 index={index}
                 total={steps.length}
                 isActive={index === activeIndex}
-                connections={connections}
+                connections={availableConnections}
                 connection={connectionOf(step.profileId)}
                 onActivate={() => handleActivate(index)}
                 onChange={(patch) => patchStep(index, patch)}
