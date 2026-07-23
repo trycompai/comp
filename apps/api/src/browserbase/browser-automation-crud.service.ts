@@ -47,6 +47,14 @@ const toStepCreate = (steps: BrowserAutomationStepInput[]) =>
 
 const STEP_INCLUDE = { steps: { orderBy: { order: 'asc' as const } } };
 
+/** Per-step evidence for a run — one screenshot + verdict per step, in order. */
+const RUN_STEP_RUNS_INCLUDE = {
+  stepRuns: {
+    orderBy: { order: 'asc' as const },
+    include: { step: { select: { targetUrl: true } } },
+  },
+};
+
 @Injectable()
 export class BrowserAutomationCrudService {
   constructor(
@@ -98,7 +106,11 @@ export class BrowserAutomationCrudService {
       where: { id: automationId },
       include: {
         task: { select: { organizationId: true } },
-        runs: { orderBy: { createdAt: 'desc' }, take: 10 },
+        runs: {
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+          include: RUN_STEP_RUNS_INCLUDE,
+        },
         ...STEP_INCLUDE,
       },
     });
@@ -113,7 +125,11 @@ export class BrowserAutomationCrudService {
     return db.browserAutomation.findMany({
       where: { taskId },
       include: {
-        runs: { orderBy: { createdAt: 'desc' }, take: 1 },
+        runs: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          include: RUN_STEP_RUNS_INCLUDE,
+        },
         ...STEP_INCLUDE,
       },
       orderBy: { createdAt: 'desc' },
@@ -200,37 +216,51 @@ export class BrowserAutomationCrudService {
     return db.browserAutomation.delete({ where: { id: automationId } });
   }
 
+  /** Presign a run's own screenshot and each of its per-step screenshots. */
+  private async presignRun<
+    T extends {
+      screenshotUrl: string | null;
+      stepRuns?: Array<{ screenshotUrl: string | null }>;
+    },
+  >(run: T): Promise<T> {
+    const presign = (key: string | null): Promise<string | null> =>
+      key ? this.screenshots.getPresignedUrl({ key }) : Promise.resolve(key);
+    const [screenshotUrl, stepRuns] = await Promise.all([
+      presign(run.screenshotUrl),
+      run.stepRuns
+        ? Promise.all(
+            run.stepRuns.map(async (stepRun) => ({
+              ...stepRun,
+              screenshotUrl: await presign(stepRun.screenshotUrl),
+            })),
+          )
+        : Promise.resolve(run.stepRuns),
+    ]);
+    return { ...run, screenshotUrl, stepRuns } as T;
+  }
+
   async getRunWithPresignedUrl(runId: string, organizationId?: string) {
     const run = await db.browserAutomationRun.findUnique({
       where: { id: runId },
-      include: { automation: { include: { task: true } } },
+      include: {
+        automation: { include: { task: true } },
+        ...RUN_STEP_RUNS_INCLUDE,
+      },
     });
     if (!run) return null;
     if (organizationId && run.automation.task.organizationId !== organizationId) {
       return null;
     }
-    if (!run.screenshotUrl) return run;
-    const screenshotUrl = await this.screenshots.getPresignedUrl({
-      key: run.screenshotUrl,
-    });
-    return { ...run, screenshotUrl };
+    return this.presignRun(run);
   }
 
   async getAutomationsWithPresignedUrls(taskId: string, organizationId?: string) {
     const automations = await this.getBrowserAutomationsForTask(taskId, organizationId);
     return Promise.all(
-      automations.map(async (automation) => {
-        const runsWithUrls = await Promise.all(
-          automation.runs.map(async (run) => {
-            if (!run.screenshotUrl) return run;
-            const screenshotUrl = await this.screenshots.getPresignedUrl({
-              key: run.screenshotUrl,
-            });
-            return { ...run, screenshotUrl };
-          }),
-        );
-        return { ...automation, runs: runsWithUrls };
-      }),
+      automations.map(async (automation) => ({
+        ...automation,
+        runs: await Promise.all(automation.runs.map((run) => this.presignRun(run))),
+      })),
     );
   }
 

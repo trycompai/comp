@@ -49,6 +49,45 @@ describe('RunDetailOverlay', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it('shows one screenshot per step for a multi-step run', () => {
+    render(
+      <RunDetailOverlay
+        selected={summary({
+          status: 'completed',
+          evaluationStatus: null,
+          evaluationReason: null,
+          stepRuns: [
+            {
+              id: 'sr1',
+              order: 0,
+              status: 'completed',
+              evaluationStatus: 'pass',
+              screenshotUrl: 'https://s3.example.com/step1.png',
+              step: { targetUrl: 'https://github.com/acme' },
+            },
+            {
+              id: 'sr2',
+              order: 1,
+              status: 'failed',
+              error: 'Login session expired',
+              screenshotUrl: null,
+              step: { targetUrl: 'https://aws.amazon.com/console' },
+            },
+          ],
+        })}
+        onClose={vi.fn()}
+      />,
+    );
+    // Each step is labelled with its vendor host and its own verdict.
+    expect(screen.getByText(/github\.com/)).toBeInTheDocument();
+    expect(screen.getByText(/aws\.amazon\.com/)).toBeInTheDocument();
+    expect(screen.getByText('Pass')).toBeInTheDocument();
+    expect(screen.getByText('Failed')).toBeInTheDocument();
+    // Step 1's screenshot renders; step 2 (no shot) surfaces why it failed.
+    expect(screen.getByAltText('Step 1 screenshot')).toBeInTheDocument();
+    expect(screen.getByText(/login session expired/i)).toBeInTheDocument();
+  });
+
   it('surfaces the failure reason for a blocked run', () => {
     render(
       <RunDetailOverlay

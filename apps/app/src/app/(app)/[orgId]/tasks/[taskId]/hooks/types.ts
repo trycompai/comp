@@ -1,5 +1,19 @@
 import type { TaskFrequency } from '@db';
 
+/** Per-step evidence within a run — one screenshot + verdict for each step. */
+export interface BrowserAutomationStepRun {
+  id: string;
+  stepId?: string | null;
+  order: number;
+  status: string;
+  screenshotUrl?: string | null;
+  evaluationStatus?: 'pass' | 'fail' | null;
+  evaluationReason?: string | null;
+  error?: string | null;
+  /** The step this ran, if it still exists — used to label the vendor/host. */
+  step?: { targetUrl: string } | null;
+}
+
 export interface BrowserAutomationRun {
   id: string;
   profileId?: string | null;
@@ -15,6 +29,8 @@ export interface BrowserAutomationRun {
   blockedReason?: string | null;
   finalUrl?: string | null;
   attemptCount?: number;
+  /** Per-step evidence for multi-step (multi-vendor) automations. */
+  stepRuns?: BrowserAutomationStepRun[];
 }
 
 /** One step of a (possibly multi-vendor) automation, as returned by the API. */
