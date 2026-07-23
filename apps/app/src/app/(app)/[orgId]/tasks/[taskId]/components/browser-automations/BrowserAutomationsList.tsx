@@ -4,16 +4,12 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { Add, Renew } from '@trycompai/design-system/icons';
 import type { TaskFrequency } from '@db';
 import { useMemo, useState } from 'react';
-import type {
-  BrowserAuthProfile,
-  BrowserAuthProfileStatus,
-  BrowserAutomation,
-} from '../../hooks/types';
+import type { BrowserAuthProfile, BrowserAutomation } from '../../hooks/types';
 import { AutomationItem } from './AutomationItem';
-import { ConnectionManageMenu } from './ConnectionManageMenu';
-import type { ConnectionRef } from './InstructionComposer';
 import { RunDetailOverlay } from './RunDetailOverlay';
 import { RunHistoryStrip, type RunSummary } from './RunHistoryStrip';
+
+const PAGE_SIZE = 8;
 
 function hostnameFromUrl(url: string): string {
   try {
@@ -23,256 +19,193 @@ function hostnameFromUrl(url: string): string {
   }
 }
 
-const STATUS_PILL: Record<BrowserAuthProfileStatus, { label: string; bg: string; fg: string }> = {
-  verified: {
-    label: 'Connected',
-    bg: 'color-mix(in oklab, var(--success) 15%, transparent)',
-    fg: 'oklch(0.45 0.14 145)',
-  },
-  needs_reauth: { label: 'Needs reconnect', bg: 'var(--muted)', fg: 'var(--foreground)' },
-  blocked: {
-    label: 'Needs your action',
-    bg: 'color-mix(in oklab, var(--warning) 20%, transparent)',
-    fg: 'oklch(0.5 0.14 85)',
-  },
-  unverified: { label: 'Not connected', bg: 'var(--muted)', fg: 'var(--muted-foreground)' },
-};
-
-interface ConnectionGroup {
-  hostname: string;
-  url: string;
-  profile?: BrowserAuthProfile;
-  automations: BrowserAutomation[];
-}
-
 interface BrowserAutomationsListProps {
   automations: BrowserAutomation[];
   profiles: BrowserAuthProfile[];
   runningAutomationId: string | null;
   onRun: (automationId: string) => void;
   onReconnect: (url: string) => void;
-  /** Add an instruction to a specific connection. Omitted for read-only tasks. */
-  onAddInstruction?: (connection: ConnectionRef) => void;
-  /** Connect a new vendor (a new connection). Omitted for read-only tasks. */
+  /** Create a new automation. Omitted for read-only tasks. */
+  onCreate?: () => void;
+  /** Connect a new vendor. Omitted for read-only tasks. */
   onConnectAnother?: () => void;
   onEditClick: (automation: BrowserAutomation) => void;
   onDelete: (automationId: string) => void;
   onToggleEnabled: (automationId: string, enabled: boolean) => void;
   onChangeSchedule: (automationId: string, frequency: TaskFrequency) => void;
-  /** Called after a connection is edited or removed, to refresh the list. */
-  onConnectionChanged?: () => void;
 }
 
+/**
+ * Automation-centric list (design 4a). Each row is one automation — which can
+ * span several vendors — showing its ordered vendor chain, schedule, last-run
+ * verdict, and actions. Connection health/management lives on the Connections
+ * page; here a row only flags when one of its connections needs reconnecting.
+ */
 export function BrowserAutomationsList({
   automations,
   profiles,
   runningAutomationId,
   onRun,
   onReconnect,
-  onAddInstruction,
+  onCreate,
   onConnectAnother,
   onEditClick,
   onDelete,
   onToggleEnabled,
   onChangeSchedule,
-  onConnectionChanged,
 }: BrowserAutomationsListProps) {
+  const { hasPermission } = usePermissions();
+  const canCreate = hasPermission('integration', 'create');
+  const canUpdate = hasPermission('integration', 'update');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [selectedRun, setSelectedRun] = useState<RunSummary | null>(null);
-  const { hasPermission } = usePermissions();
-  const canCreateIntegration = hasPermission('integration', 'create');
-  const canUpdateIntegration = hasPermission('integration', 'update');
+  const [visible, setVisible] = useState(PAGE_SIZE);
 
-  const groups = useMemo<ConnectionGroup[]>(() => {
-    const byHost = new Map<string, ConnectionGroup>();
-    for (const automation of automations) {
-      const hostname = hostnameFromUrl(automation.targetUrl);
-      const existing = byHost.get(hostname);
-      if (existing) {
-        existing.automations.push(automation);
-      } else {
-        byHost.set(hostname, {
-          hostname,
-          url: automation.targetUrl,
-          profile: profiles.find((p) => p.hostname === hostname),
-          automations: [automation],
-        });
-      }
-    }
-    return [...byHost.values()];
-  }, [automations, profiles]);
+  const profileById = useMemo(() => {
+    const map = new Map<string, BrowserAuthProfile>();
+    for (const profile of profiles) map.set(profile.id, profile);
+    return map;
+  }, [profiles]);
+  const profileByHost = useMemo(() => {
+    const map = new Map<string, BrowserAuthProfile>();
+    for (const profile of profiles) map.set(profile.hostname, profile);
+    return map;
+  }, [profiles]);
+
+  const rows = useMemo(() => {
+    return automations.map((automation) => {
+      const steps =
+        automation.steps && automation.steps.length > 0
+          ? automation.steps
+          : [{ profileId: null, targetUrl: automation.targetUrl }];
+      const conns = steps.map((step) =>
+        step.profileId
+          ? profileById.get(step.profileId)
+          : profileByHost.get(hostnameFromUrl(step.targetUrl ?? '')),
+      );
+      const chain = steps.map(
+        (step, index) => conns[index]?.hostname ?? hostnameFromUrl(step.targetUrl ?? ''),
+      );
+      const needing = conns.find(
+        (conn) => conn && (conn.status === 'needs_reauth' || conn.status === 'blocked'),
+      );
+      return {
+        automation,
+        chain,
+        reconnectUrl: needing ? `https://${needing.hostname}` : undefined,
+      };
+    });
+  }, [automations, profileById, profileByHost]);
+
+  const allRuns: RunSummary[] = useMemo(
+    () =>
+      automations
+        .flatMap((automation) =>
+          (automation.runs ?? []).map((run) => ({
+            run,
+            automationId: automation.id,
+            automationName: automation.name,
+          })),
+        )
+        .sort(
+          (a, b) => new Date(b.run.createdAt).getTime() - new Date(a.run.createdAt).getTime(),
+        ),
+    [automations],
+  );
 
   return (
     <>
-    <div className="overflow-hidden rounded-lg border border-border bg-card">
-      <div className="flex items-center justify-between border-b border-border px-5 py-4">
-        <div>
-          <div className="flex items-center gap-2.5">
+      <div className="overflow-hidden rounded-lg border border-border bg-card">
+        <div className="flex items-center justify-between border-b border-border px-5 py-4">
+          <div>
             <h3 className="text-base font-medium tracking-tight text-foreground">
               Browser evidence
             </h3>
-            <span
-              className="inline-flex items-center gap-1.5 rounded-sm px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em]"
-              style={{
-                backgroundColor: 'color-mix(in oklab, var(--success) 15%, transparent)',
-                color: 'var(--success)',
-              }}
-            >
-              <span className="h-1.5 w-1.5 rounded-full bg-current" />
-              Active
-            </span>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {automations.length} {automations.length === 1 ? 'automation' : 'automations'} · run
+              in order, unattended.
+            </p>
           </div>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            Comp signs in to your vendors and captures screenshots as evidence — on a
-            schedule, unattended.
-          </p>
+          <div className="flex items-center gap-2">
+            {onConnectAnother && canCreate && (
+              <button
+                onClick={onConnectAnother}
+                className="rounded-md border border-border bg-background px-3 py-1.5 text-xs text-foreground transition-colors hover:bg-muted/40"
+              >
+                Connect another vendor
+              </button>
+            )}
+            {onCreate && canCreate && (
+              <button
+                onClick={onCreate}
+                className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground"
+              >
+                <Add size={14} />
+                New evidence
+              </button>
+            )}
+          </div>
         </div>
-        {onConnectAnother && canCreateIntegration && (
-          <button
-            onClick={onConnectAnother}
-            className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground"
-          >
-            <Add size={14} />
-            Connect another vendor
-          </button>
-        )}
-      </div>
 
-      <div className="flex flex-col gap-5 p-5">
-        {groups.map((group) => {
-          const pill = STATUS_PILL[group.profile?.status ?? 'unverified'];
-          const needsReconnect =
-            group.profile?.status === 'needs_reauth' || group.profile?.status === 'blocked';
-          const connectionRef: ConnectionRef | null = group.profile
-            ? {
-                profileId: group.profile.id,
-                hostname: group.hostname,
-                displayName: group.profile.displayName || group.hostname,
-                url: group.url,
-                status: group.profile.status,
-              }
-            : null;
-          const groupRuns: RunSummary[] = group.automations
-            .flatMap((automation) =>
-              (automation.runs ?? []).map((run) => ({
-                run,
-                automationId: automation.id,
-                automationName: automation.name,
-              })),
-            )
-            .sort(
-              (a, b) =>
-                new Date(b.run.createdAt).getTime() - new Date(a.run.createdAt).getTime(),
-            );
-          return (
-            <div key={group.hostname} className="flex flex-col gap-4">
-              {/* Connection */}
-              <div>
-                <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                  Connection
-                </div>
-                <div className="flex items-center gap-3 rounded-md border border-border p-3">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-sm bg-muted text-[11px] font-bold uppercase text-foreground">
-                    {group.hostname.charAt(0)}
+        <div className="flex flex-col gap-2 p-4">
+          {rows.slice(0, visible).map(({ automation, chain, reconnectUrl }) => (
+            <div key={automation.id} className="flex flex-col gap-1.5">
+              <AutomationItem
+                automation={automation}
+                vendorChain={chain}
+                isRunning={runningAutomationId === automation.id}
+                isExpanded={expandedId === automation.id}
+                readOnly={!canUpdate}
+                onToggleExpand={() =>
+                  setExpandedId(expandedId === automation.id ? null : automation.id)
+                }
+                onRun={() => onRun(automation.id)}
+                onEdit={() => onEditClick(automation)}
+                onDelete={() => onDelete(automation.id)}
+                onToggleEnabled={(enabled) => onToggleEnabled(automation.id, enabled)}
+                onChangeSchedule={(frequency) => onChangeSchedule(automation.id, frequency)}
+              />
+              {reconnectUrl && canUpdate && (
+                <div
+                  className="flex items-center justify-between gap-2 rounded-md px-3 py-1.5 text-[11.5px]"
+                  style={{
+                    border: '1px solid color-mix(in oklab, var(--warning) 45%, transparent)',
+                    background: 'color-mix(in oklab, var(--warning) 10%, transparent)',
+                  }}
+                >
+                  <span className="text-foreground">
+                    A connection this automation uses needs to be reconnected.
                   </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm text-foreground">
-                      {group.profile?.displayName ?? group.hostname}
-                    </div>
-                    <div className="truncate font-mono text-[10px] text-muted-foreground">
-                      {group.hostname}
-                    </div>
-                  </div>
-                  <span
-                    className="inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em]"
-                    style={{ backgroundColor: pill.bg, color: pill.fg }}
+                  <button
+                    onClick={() => onReconnect(reconnectUrl)}
+                    className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs text-foreground"
                   >
-                    <span
-                      className="h-1.5 w-1.5 rounded-full"
-                      style={{ backgroundColor: 'currentColor' }}
-                    />
-                    {pill.label}
-                  </span>
-                  {needsReconnect && canUpdateIntegration && (
-                    <button
-                      onClick={() => onReconnect(group.url)}
-                      className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs text-foreground"
-                    >
-                      <Renew size={11} />
-                      {group.profile?.status === 'blocked' ? 'Sign in once' : 'Reconnect'}
-                    </button>
-                  )}
-                  {group.profile && canUpdateIntegration && (
-                    <ConnectionManageMenu
-                      profile={group.profile}
-                      onChanged={onConnectionChanged}
-                    />
-                  )}
+                    <Renew size={11} />
+                    Reconnect
+                  </button>
                 </div>
-              </div>
-
-              {/* Instructions */}
-              <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                    Instructions
-                  </span>
-                  {onAddInstruction && canCreateIntegration && connectionRef && (
-                    <button
-                      onClick={() => onAddInstruction(connectionRef)}
-                      className="flex items-center gap-1 text-[11px] text-primary hover:underline"
-                    >
-                      <Add size={12} />
-                      Add instruction
-                    </button>
-                  )}
-                </div>
-                <div className="flex flex-col gap-2 rounded-md border border-border/60 p-2">
-                  {group.automations.map((automation) => (
-                    <AutomationItem
-                      key={automation.id}
-                      automation={automation}
-                      isRunning={runningAutomationId === automation.id}
-                      isExpanded={expandedId === automation.id}
-                      readOnly={!canUpdateIntegration}
-                      onToggleExpand={() =>
-                        setExpandedId(expandedId === automation.id ? null : automation.id)
-                      }
-                      onRun={() => onRun(automation.id)}
-                      onEdit={() => onEditClick(automation)}
-                      onDelete={() => onDelete(automation.id)}
-                      onToggleEnabled={(enabled) => onToggleEnabled(automation.id, enabled)}
-                      onChangeSchedule={(frequency) => onChangeSchedule(automation.id, frequency)}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Run history */}
-              {groupRuns.length > 0 && (
-                <RunHistoryStrip runs={groupRuns} onSelect={setSelectedRun} />
               )}
             </div>
-          );
-        })}
+          ))}
 
-        {onConnectAnother && canCreateIntegration && (
-          <button
-            onClick={onConnectAnother}
-            className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border/60 py-2.5 text-xs text-muted-foreground transition-colors hover:border-border hover:bg-muted/30 hover:text-foreground"
-          >
-            <Add size={14} />
-            Connect another vendor
-          </button>
-        )}
+          {rows.length > visible && (
+            <button
+              onClick={() => setVisible((current) => current + PAGE_SIZE)}
+              className="mt-1 w-full rounded-md border border-dashed border-border py-2 text-xs text-muted-foreground transition-colors hover:bg-muted/30 hover:text-foreground"
+            >
+              Load more ({rows.length - visible} more)
+            </button>
+          )}
+
+          {allRuns.length > 0 && <RunHistoryStrip runs={allRuns} onSelect={setSelectedRun} />}
+        </div>
       </div>
-    </div>
 
-    <RunDetailOverlay
-      selected={selectedRun}
-      onClose={() => setSelectedRun(null)}
-      onRerun={canUpdateIntegration ? onRun : undefined}
-    />
+      <RunDetailOverlay
+        selected={selectedRun}
+        onClose={() => setSelectedRun(null)}
+        onRerun={canUpdate ? onRun : undefined}
+      />
     </>
   );
 }

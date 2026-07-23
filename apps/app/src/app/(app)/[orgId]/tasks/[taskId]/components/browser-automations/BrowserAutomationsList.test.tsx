@@ -8,10 +8,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/hooks/use-permissions', () => ({
-  usePermissions: () => ({
-    permissions: {},
-    hasPermission: mockHasPermission,
-  }),
+  usePermissions: () => ({ permissions: {}, hasPermission: mockHasPermission }),
 }));
 
 vi.mock('@trycompai/design-system/icons', () => ({
@@ -31,10 +28,6 @@ vi.mock('./AutomationItem', () => ({
       {automation.name}
     </div>
   ),
-}));
-
-vi.mock('./ConnectionManageMenu', () => ({
-  ConnectionManageMenu: () => <div data-testid="connection-manage-menu" />,
 }));
 
 import type { BrowserAuthProfile, BrowserAutomation } from '../../hooks/types';
@@ -68,7 +61,7 @@ const defaultProps = {
   runningAutomationId: null,
   onRun: vi.fn(),
   onReconnect: vi.fn(),
-  onAddInstruction: vi.fn(),
+  onCreate: vi.fn(),
   onConnectAnother: vi.fn(),
   onEditClick: vi.fn(),
   onDelete: vi.fn(),
@@ -87,60 +80,40 @@ describe('BrowserAutomationsList', () => {
     expect(screen.getByText('Browser evidence')).toBeInTheDocument();
   });
 
-  it('shows "Connect another vendor" for admin with integration:create', () => {
+  it('shows create actions for admin with integration:create', () => {
     setMockPermissions(ADMIN_PERMISSIONS);
     render(<BrowserAutomationsList {...defaultProps} />);
-    expect(screen.getAllByText('Connect another vendor').length).toBeGreaterThan(0);
+    expect(screen.getByText('New evidence')).toBeInTheDocument();
+    expect(screen.getByText('Connect another vendor')).toBeInTheDocument();
   });
 
-  it('hides connect/add actions for auditor without integration:create', () => {
+  it('hides create actions for an auditor without integration:create', () => {
     setMockPermissions(AUDITOR_PERMISSIONS);
-    render(<BrowserAutomationsList {...defaultProps} profiles={[profile('verified')]} />);
-    expect(screen.queryByText('Connect another vendor')).not.toBeInTheDocument();
-    expect(screen.queryByText('Add instruction')).not.toBeInTheDocument();
-  });
-
-  it('hides connect actions when onConnectAnother is not provided (manual task)', () => {
-    setMockPermissions(ADMIN_PERMISSIONS);
-    render(<BrowserAutomationsList {...defaultProps} onConnectAnother={undefined} />);
+    render(<BrowserAutomationsList {...defaultProps} />);
+    expect(screen.queryByText('New evidence')).not.toBeInTheDocument();
     expect(screen.queryByText('Connect another vendor')).not.toBeInTheDocument();
   });
 
-  it('adds an instruction to the specific connection it belongs to', () => {
+  it('hides each action when its callback is not provided (manual task)', () => {
     setMockPermissions(ADMIN_PERMISSIONS);
-    const onAddInstruction = vi.fn();
     render(
-      <BrowserAutomationsList
-        {...defaultProps}
-        profiles={[profile('verified')]}
-        onAddInstruction={onAddInstruction}
-      />,
+      <BrowserAutomationsList {...defaultProps} onCreate={undefined} onConnectAnother={undefined} />,
     );
-    fireEvent.click(screen.getByText('Add instruction'));
-    expect(onAddInstruction).toHaveBeenCalledWith(
-      expect.objectContaining({ profileId: 'bap_1', hostname: 'example.com' }),
-    );
+    expect(screen.queryByText('New evidence')).not.toBeInTheDocument();
+    expect(screen.queryByText('Connect another vendor')).not.toBeInTheDocument();
   });
 
-  it('passes readOnly=false to AutomationItem for admin with integration:update', () => {
+  it('passes readOnly to AutomationItem based on integration:update', () => {
     setMockPermissions(ADMIN_PERMISSIONS);
-    render(<BrowserAutomationsList {...defaultProps} />);
+    const { rerender } = render(<BrowserAutomationsList {...defaultProps} />);
     expect(screen.getByTestId('automation-item-auto_1')).toHaveAttribute('data-readonly', 'false');
-  });
 
-  it('passes readOnly=true to AutomationItem for auditor without integration:update', () => {
     setMockPermissions(AUDITOR_PERMISSIONS);
-    render(<BrowserAutomationsList {...defaultProps} />);
+    rerender(<BrowserAutomationsList {...defaultProps} />);
     expect(screen.getByTestId('automation-item-auto_1')).toHaveAttribute('data-readonly', 'true');
   });
 
-  it('shows a Connected pill for a matching verified profile', () => {
-    setMockPermissions(ADMIN_PERMISSIONS);
-    render(<BrowserAutomationsList {...defaultProps} profiles={[profile('verified')]} />);
-    expect(screen.getByText('Connected')).toBeInTheDocument();
-  });
-
-  it('offers Reconnect for a needs_reauth connection and calls onReconnect', () => {
+  it('flags a row whose connection needs reconnect and calls onReconnect', () => {
     setMockPermissions(ADMIN_PERMISSIONS);
     const onReconnect = vi.fn();
     render(

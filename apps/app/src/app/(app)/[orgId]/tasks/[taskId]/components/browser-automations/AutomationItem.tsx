@@ -19,6 +19,8 @@ import { RunHistory } from './RunHistory';
 
 interface AutomationItemProps {
   automation: BrowserAutomation;
+  /** Ordered vendor hostnames the automation's steps run on (GH → AWS → OK). */
+  vendorChain?: string[];
   isRunning: boolean;
   isExpanded: boolean;
   readOnly?: boolean;
@@ -32,6 +34,7 @@ interface AutomationItemProps {
 
 export function AutomationItem({
   automation,
+  vendorChain,
   isRunning,
   isExpanded,
   readOnly,
@@ -82,6 +85,23 @@ export function AutomationItem({
               </span>
             )}
           </div>
+          {vendorChain && vendorChain.length > 0 && (
+            <div className="mt-1 flex items-center gap-1">
+              {vendorChain.map((host, index) => (
+                <span key={`${host}-${index}`} className="flex items-center gap-1">
+                  {index > 0 && (
+                    <span className="text-[10px] text-muted-foreground/50">→</span>
+                  )}
+                  <span
+                    title={host}
+                    className="grid h-4 w-4 place-items-center rounded-full bg-muted text-[8px] font-bold uppercase text-foreground"
+                  >
+                    {host.charAt(0)}
+                  </span>
+                </span>
+              ))}
+            </div>
+          )}
           {latestRun ? (
             <p className="text-xs text-muted-foreground mt-0.5">
               Last ran {formatDistanceToNow(new Date(latestRun.createdAt), { addSuffix: true })}

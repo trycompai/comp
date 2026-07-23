@@ -422,20 +422,12 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
       runningAutomationId={execution.runningAutomationId}
       onRun={execution.runAutomation}
       onReconnect={handleReconnect}
-      onAddInstruction={
-        isManualTask
-          ? undefined
-          : (connection) => setComposer({ open: true, mode: 'create', connection })
-      }
+      onCreate={isManualTask ? undefined : () => setComposer({ open: true, mode: 'create' })}
       onConnectAnother={isManualTask ? undefined : handleConnectAnother}
       onEditClick={(automation) => setComposer({ open: true, mode: 'edit', automation })}
       onDelete={automations.deleteAutomation}
       onToggleEnabled={automations.toggleAutomation}
       onChangeSchedule={automations.setSchedule}
-      onConnectionChanged={() => {
-        fetchProfiles();
-        automations.fetchAutomations();
-      }}
       />
     </>
   );
