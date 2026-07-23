@@ -216,17 +216,15 @@ export function AutomationItem({
                   Run
                 </Button>
                 {automation.scheduleFrequency && (
-                  <>
-                    <div className="w-px self-stretch bg-primary-foreground/25" />
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        render={
-                          <Button variant="default" size="icon-sm" aria-label="Change schedule" />
-                        }
-                      >
-                        <ChevronDown size={12} />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      render={
+                        <Button variant="default" size="icon-sm" aria-label="Change schedule" />
+                      }
+                    >
+                      <ChevronDown size={12} />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
                       <DropdownMenuRadioGroup
                         value={automation.scheduleFrequency}
                         onValueChange={(value) => {
@@ -240,8 +238,7 @@ export function AutomationItem({
                         ))}
                       </DropdownMenuRadioGroup>
                     </DropdownMenuContent>
-                    </DropdownMenu>
-                  </>
+                  </DropdownMenu>
                 )}
               </div>
             )}
