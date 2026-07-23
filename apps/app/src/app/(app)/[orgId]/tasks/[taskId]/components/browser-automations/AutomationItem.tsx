@@ -88,8 +88,10 @@ export function AutomationItem({
           : 'border-border/50 hover:border-border hover:shadow-sm',
       )}
     >
-      <div className="flex items-center gap-3 px-4 py-3">
-        <div className={cn('h-2.5 w-2.5 rounded-full shrink-0', dotColor)} />
+      {/* Mobile: the full-width actions bar wraps onto its own line below the
+          content (flex-wrap + w-full). Desktop: everything sits on one row. */}
+      <div className="flex flex-wrap items-start gap-3 px-4 py-3 sm:items-center">
+        <div className={cn('mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full sm:mt-0', dotColor)} />
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
@@ -143,10 +145,10 @@ export function AutomationItem({
           )}
         </div>
 
-        <div className="flex flex-none items-center gap-1.5">
+        <div className="flex w-full items-center gap-1.5 sm:w-auto sm:flex-none">
           {!readOnly && (
             <Button
-              variant="ghost"
+              variant="outline"
               size="icon-sm"
               onClick={() => onToggleEnabled(!automation.isEnabled)}
               aria-label={automation.isEnabled ? 'Pause automation' : 'Enable automation'}
@@ -157,12 +159,12 @@ export function AutomationItem({
 
           {!readOnly && (
             <Button
-              variant="ghost"
+              variant="outline"
               size="icon-sm"
               onClick={onEdit}
               aria-label="Edit automation"
             >
-              <Edit size={14} />
+              <Edit size={14} className="text-muted-foreground" />
             </Button>
           )}
 
@@ -186,7 +188,7 @@ export function AutomationItem({
               </div>
             ) : (
               <Button
-                variant="ghost"
+                variant="outline"
                 size="icon-sm"
                 onClick={() => setConfirmDelete(true)}
                 aria-label="Delete automation"
@@ -196,64 +198,66 @@ export function AutomationItem({
             )
           )}
 
-          {/* Split control: Run on the left half, the schedule (cadence) menu
-              on the right half — folding the standalone calendar button in so
-              the row carries one fewer control. The unified outline comes from
-              the wrapper; the inner ghost buttons drop their own border/radius. */}
-          {!readOnly && (
-            <div className="flex flex-none items-center overflow-hidden rounded-md border border-border [&_button]:rounded-none [&_button]:border-0">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onRun}
-                disabled={isRunning || isDisabled}
-                loading={isRunning}
-                iconLeft={!isRunning ? <Play size={12} /> : undefined}
-              >
-                {isRunning ? 'Running...' : 'Run'}
-              </Button>
-              {automation.scheduleFrequency && (
-                <>
-                  <div className="w-px self-stretch bg-border" />
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      render={
-                        <Button variant="ghost" size="icon-sm" aria-label="Change schedule" />
-                      }
-                    >
-                      <Calendar size={14} />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuRadioGroup
-                        value={automation.scheduleFrequency}
-                        onValueChange={(value) => {
-                          if (value) onChangeSchedule(value as TaskFrequency);
-                        }}
+          {/* Run + schedule as one solid entity, pushed to the right on mobile.
+              Run on the left half, the cadence menu on the calendar half — the
+              standalone schedule button folded in so the row has one fewer
+              control. Both halves are solid primary, split by a hairline. */}
+          <div className="ml-auto flex items-center gap-1.5 sm:ml-0">
+            {!readOnly && (
+              <div className="flex flex-none items-center overflow-hidden rounded-md [&_button]:rounded-none">
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={onRun}
+                  disabled={isRunning || isDisabled}
+                  loading={isRunning}
+                  iconLeft={!isRunning ? <Play size={12} /> : undefined}
+                >
+                  {isRunning ? 'Running...' : 'Run'}
+                </Button>
+                {automation.scheduleFrequency && (
+                  <>
+                    <div className="w-px self-stretch bg-primary-foreground/25" />
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        render={
+                          <Button variant="default" size="icon-sm" aria-label="Change schedule" />
+                        }
                       >
-                        {(Object.keys(FREQUENCY_LABELS) as TaskFrequency[]).map((freq) => (
-                          <DropdownMenuRadioItem key={freq} value={freq}>
-                            {FREQUENCY_LABELS[freq]}
-                          </DropdownMenuRadioItem>
-                        ))}
-                      </DropdownMenuRadioGroup>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </>
-              )}
-            </div>
-          )}
-
-          {runs.length > 0 && (
-            <Button size="icon-sm" variant="ghost" onClick={onToggleExpand}>
-              <ChevronDown
-                size={14}
-                className={cn(
-                  'transition-transform duration-300',
-                  isExpanded && 'rotate-180',
+                        <Calendar size={14} />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuRadioGroup
+                          value={automation.scheduleFrequency}
+                          onValueChange={(value) => {
+                            if (value) onChangeSchedule(value as TaskFrequency);
+                          }}
+                        >
+                          {(Object.keys(FREQUENCY_LABELS) as TaskFrequency[]).map((freq) => (
+                            <DropdownMenuRadioItem key={freq} value={freq}>
+                              {FREQUENCY_LABELS[freq]}
+                            </DropdownMenuRadioItem>
+                          ))}
+                        </DropdownMenuRadioGroup>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </>
                 )}
-              />
-            </Button>
-          )}
+              </div>
+            )}
+
+            {runs.length > 0 && (
+              <Button size="icon-sm" variant="ghost" onClick={onToggleExpand}>
+                <ChevronDown
+                  size={14}
+                  className={cn(
+                    'transition-transform duration-300',
+                    isExpanded && 'rotate-180',
+                  )}
+                />
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
