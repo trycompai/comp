@@ -131,11 +131,14 @@ export function InstructionComposer({
 
   const { startTest, closeTestSession, isStarting } = useInstructionTest();
 
-  // Always offer at least the primary connection, so the picker is never empty.
-  const availableConnections = useMemo(
-    () => (connections.length > 0 ? connections : [connection]),
-    [connections, connection],
-  );
+  // Always include the primary connection (deduped) so every step's connection
+  // has a matching option — otherwise the picker shows the raw profile id.
+  const availableConnections = useMemo(() => {
+    const byId = new Map<string, ConnectionRef>();
+    for (const item of connections) byId.set(item.profileId, item);
+    if (!byId.has(connection.profileId)) byId.set(connection.profileId, connection);
+    return [...byId.values()];
+  }, [connections, connection]);
   const connectionOf = useCallback(
     (profileId: string) =>
       availableConnections.find((item) => item.profileId === profileId) ?? connection,

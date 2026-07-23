@@ -32,7 +32,12 @@ export function ConnectionPicker({ connections, value, onChange }: ConnectionPic
       }}
     >
       <SelectTrigger>
-        <SelectValue placeholder="Pick a connection" />
+        <SelectValue placeholder="Pick a connection">
+          {(selectedValue: string | null) =>
+            connections.find((item) => item.profileId === selectedValue)?.hostname ??
+            'Pick a connection'
+          }
+        </SelectValue>
       </SelectTrigger>
       <SelectContent>
         {connections.map((connection) => (

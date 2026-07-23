@@ -75,37 +75,40 @@ export function StepCard({
   return (
     <div className="flex flex-col gap-3 rounded-md border border-primary/40 bg-background p-3.5">
       <div className="flex items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
           <StepNumber n={index + 1} />
-          <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+          <span className="shrink-0 whitespace-nowrap text-[10px] font-bold uppercase tracking-[0.06em] text-muted-foreground">
             Runs on
           </span>
-          <ConnectionPicker
-            connections={connections}
-            value={step.profileId}
-            onChange={(profileId) => onChange({ profileId })}
-          />
+          <div className="min-w-0 flex-1">
+            <ConnectionPicker
+              connections={connections}
+              value={step.profileId}
+              onChange={(profileId) => onChange({ profileId })}
+            />
+          </div>
         </div>
-        <div className="flex flex-none items-center gap-0.5">
-          <button
-            type="button"
-            aria-label="Move up"
-            disabled={index === 0}
-            onClick={() => onMove(-1)}
-            className="grid h-6 w-6 cursor-pointer place-items-center rounded-sm text-muted-foreground hover:text-foreground disabled:cursor-default disabled:opacity-30"
-          >
-            <ChevronUp size={14} />
-          </button>
-          <button
-            type="button"
-            aria-label="Move down"
-            disabled={index === total - 1}
-            onClick={() => onMove(1)}
-            className="grid h-6 w-6 cursor-pointer place-items-center rounded-sm text-muted-foreground hover:text-foreground disabled:cursor-default disabled:opacity-30"
-          >
-            <ChevronDown size={14} />
-          </button>
-          {total > 1 && (
+        {/* Reorder / remove only make sense with more than one step. */}
+        {total > 1 && (
+          <div className="flex flex-none items-center gap-0.5">
+            <button
+              type="button"
+              aria-label="Move up"
+              disabled={index === 0}
+              onClick={() => onMove(-1)}
+              className="grid h-6 w-6 cursor-pointer place-items-center rounded-sm text-muted-foreground hover:text-foreground disabled:cursor-default disabled:opacity-30"
+            >
+              <ChevronUp size={14} />
+            </button>
+            <button
+              type="button"
+              aria-label="Move down"
+              disabled={index === total - 1}
+              onClick={() => onMove(1)}
+              className="grid h-6 w-6 cursor-pointer place-items-center rounded-sm text-muted-foreground hover:text-foreground disabled:cursor-default disabled:opacity-30"
+            >
+              <ChevronDown size={14} />
+            </button>
             <button
               type="button"
               aria-label="Remove step"
@@ -114,8 +117,8 @@ export function StepCard({
             >
               <TrashCan size={13} />
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {needsFix && connection && (
