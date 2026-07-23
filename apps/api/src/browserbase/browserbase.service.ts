@@ -282,6 +282,18 @@ export class BrowserbaseService {
     );
   }
 
+  async setTaskSchedule(
+    taskId: string,
+    scheduleFrequency: TaskFrequency,
+    organizationId?: string,
+  ) {
+    return this.automationCrud.setTaskSchedule(
+      taskId,
+      scheduleFrequency,
+      organizationId,
+    );
+  }
+
   // ===== Drafts (in-progress, unsaved automations) =====
 
   listAutomationDrafts(taskId: string, organizationId: string) {

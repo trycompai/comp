@@ -24,6 +24,8 @@ jest.mock('@db', () => {
     browserAutomation: {
       create: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
+      findFirst: jest.fn(),
     },
     browserAutomationStep: {
       deleteMany: jest.fn(),
@@ -268,6 +270,42 @@ describe('BrowserbaseService schedule frequency passthrough', () => {
 
     const call = (db.browserAutomation.update as jest.Mock).mock.calls[0][0];
     expect(call.data).not.toHaveProperty('scheduleFrequency');
+  });
+
+  it('inherits the task cadence for a new automation when none is given', async () => {
+    (db.browserAutomation.findFirst as jest.Mock).mockResolvedValue({
+      scheduleFrequency: TaskFrequency.weekly,
+    });
+    (db.browserAutomation.create as jest.Mock).mockResolvedValue({ id: 'bau_2' });
+
+    await service.createBrowserAutomation({
+      taskId: 'tsk_1',
+      name: 'name',
+      targetUrl: 'https://example.com',
+      instruction: 'click',
+    });
+
+    expect(db.browserAutomation.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ scheduleFrequency: 'weekly' }),
+      }),
+    );
+  });
+
+  it('sets one schedule for every automation on the task', async () => {
+    (db.browserAutomation.updateMany as jest.Mock).mockResolvedValue({ count: 3 });
+
+    const result = await service.setTaskSchedule('tsk_1', TaskFrequency.monthly);
+
+    expect(db.browserAutomation.updateMany).toHaveBeenCalledWith({
+      where: { taskId: 'tsk_1' },
+      data: { scheduleFrequency: 'monthly' },
+    });
+    expect(result).toEqual({
+      success: true,
+      scheduleFrequency: 'monthly',
+      updated: 3,
+    });
   });
 
   it('stores explicit steps and mirrors the first onto the legacy columns', async () => {

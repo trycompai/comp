@@ -2,14 +2,7 @@
 
 import { VendorLogo } from '@/components/VendorLogo';
 import { cn } from '@/lib/utils';
-import {
-  Button,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from '@trycompai/design-system';
+import { Button } from '@trycompai/design-system';
 import {
   ChevronDown,
   Edit,
@@ -18,19 +11,9 @@ import {
   TrashCan,
 } from '@trycompai/design-system/icons';
 import { useState } from 'react';
-import type { TaskFrequency } from '@db';
 import type { BrowserAutomation, BrowserAutomationRun } from '../../hooks/types';
 import { AutomationMetaLine } from './AutomationMetaLine';
 import { RunHistory } from './RunHistory';
-
-/** Cadence options for the per-automation schedule menu (matches TaskFrequency). */
-const FREQUENCY_LABELS: Record<TaskFrequency, string> = {
-  daily: 'Daily',
-  weekly: 'Weekly',
-  monthly: 'Monthly',
-  quarterly: 'Quarterly',
-  yearly: 'Yearly',
-};
 
 interface AutomationItemProps {
   automation: BrowserAutomation;
@@ -44,7 +27,6 @@ interface AutomationItemProps {
   onEdit: () => void;
   onDelete: () => void;
   onToggleEnabled: (enabled: boolean) => void;
-  onChangeSchedule: (frequency: TaskFrequency) => void;
 }
 
 export function AutomationItem({
@@ -58,7 +40,6 @@ export function AutomationItem({
   onEdit,
   onDelete,
   onToggleEnabled,
-  onChangeSchedule,
 }: AutomationItemProps) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const runs: BrowserAutomationRun[] = automation.runs || [];
@@ -185,63 +166,33 @@ export function AutomationItem({
             )
           )}
 
-          {/* Run + schedule as one solid entity, pushed to the right on mobile.
-              Run on the left half, the cadence menu on the calendar half — the
-              standalone schedule button folded in so the row has one fewer
-              control. Both halves are solid primary, split by a hairline. */}
+          {/* Run + the run-history toggle, pushed right on mobile. The schedule
+              lives once in the section header (task-wide), so it's not here. */}
           <div className="ml-auto flex items-center gap-1.5 sm:ml-0">
             {!readOnly && (
-              <div className="flex flex-none items-center overflow-hidden rounded-md [&_button]:rounded-none">
-                <Button
-                  variant="default"
-                  size="sm"
-                  aria-busy={isRunning}
-                  disabled={isDisabled}
-                  onClick={() => {
-                    if (!isRunning && !isDisabled) onRun();
-                  }}
-                  iconLeft={
-                    isRunning ? (
-                      // Same 14px footprint as the Play icon, so swapping to the
-                      // spinner keeps the button's width fixed — no layout shift.
-                      <span
-                        aria-hidden
-                        className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent"
-                      />
-                    ) : (
-                      <Play size={14} />
-                    )
-                  }
-                >
-                  Run
-                </Button>
-                {automation.scheduleFrequency && (
-                  <DropdownMenu>
-                    {/* Caret half: same primary as Run but a shade darker, so the
-                        cadence zone is distinct without a white seam. */}
-                    <DropdownMenuTrigger
-                      aria-label="Change schedule"
-                      className="grid h-6 w-7 cursor-pointer place-items-center border-0 bg-primary p-0 text-primary-foreground outline-none brightness-90 transition hover:brightness-75 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/60"
-                    >
-                      <ChevronDown size={14} />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuRadioGroup
-                        value={automation.scheduleFrequency}
-                        onValueChange={(value) => {
-                          if (value) onChangeSchedule(value as TaskFrequency);
-                        }}
-                      >
-                        {(Object.keys(FREQUENCY_LABELS) as TaskFrequency[]).map((freq) => (
-                          <DropdownMenuRadioItem key={freq} value={freq}>
-                            {FREQUENCY_LABELS[freq]}
-                          </DropdownMenuRadioItem>
-                        ))}
-                      </DropdownMenuRadioGroup>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
-              </div>
+              <Button
+                variant="default"
+                size="sm"
+                aria-busy={isRunning}
+                disabled={isDisabled}
+                onClick={() => {
+                  if (!isRunning && !isDisabled) onRun();
+                }}
+                iconLeft={
+                  isRunning ? (
+                    // Same 14px footprint as the Play icon, so swapping to the
+                    // spinner keeps the button's width fixed — no layout shift.
+                    <span
+                      aria-hidden
+                      className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent"
+                    />
+                  ) : (
+                    <Play size={14} />
+                  )
+                }
+              >
+                Run
+              </Button>
             )}
 
             {runs.length > 0 && (

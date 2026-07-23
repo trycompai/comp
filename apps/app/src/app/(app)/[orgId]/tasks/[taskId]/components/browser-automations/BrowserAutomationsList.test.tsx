@@ -14,6 +14,8 @@ vi.mock('@/hooks/use-permissions', () => ({
 vi.mock('@trycompai/design-system/icons', () => ({
   Add: () => <span data-testid="icon-add" />,
   Renew: () => <span data-testid="icon-renew" />,
+  Calendar: () => <span data-testid="icon-calendar" />,
+  ChevronDown: () => <span data-testid="icon-chevron" />,
 }));
 
 vi.mock('./AutomationItem', () => ({
@@ -66,7 +68,7 @@ const defaultProps = {
   onEditClick: vi.fn(),
   onDelete: vi.fn(),
   onToggleEnabled: vi.fn(),
-  onChangeSchedule: vi.fn(),
+  onSetTaskSchedule: vi.fn(),
 };
 
 describe('BrowserAutomationsList', () => {

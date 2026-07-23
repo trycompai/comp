@@ -428,6 +428,15 @@ export class CreateBrowserAutomationDto {
   scheduleFrequency?: TaskFrequency;
 }
 
+export class SetTaskScheduleDto {
+  @ApiProperty({
+    enum: TaskFrequency,
+    description: 'Cadence applied to every browser automation on the task',
+  })
+  @IsEnum(TaskFrequency)
+  scheduleFrequency: TaskFrequency;
+}
+
 export class UpdateBrowserAutomationDto {
   @ApiPropertyOptional({ description: 'Automation name' })
   @IsString()

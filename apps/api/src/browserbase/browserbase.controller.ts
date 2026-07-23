@@ -40,11 +40,13 @@ import {
   NavigateToUrlDto,
   RunAutomationResponseDto,
   SessionResponseDto,
+  SetTaskScheduleDto,
   TestInstructionDto,
   TestInstructionResponseDto,
   UpdateBrowserAutomationDraftDto,
   UpdateBrowserAutomationDto,
 } from './dto/browserbase.dto';
+import { TaskFrequency } from '@db';
 
 @ApiTags('Browserbase')
 @Controller({ path: 'browserbase', version: '1' })
@@ -291,6 +293,26 @@ export class BrowserbaseController {
       dto,
       organizationId,
     )) as BrowserAutomationResponseDto;
+  }
+
+  @Patch('automations/task/:taskId/schedule')
+  @RequirePermission('task', 'update')
+  @ApiOperation({
+    summary: 'Set the schedule for every browser automation on a task',
+  })
+  @ApiParam({ name: 'taskId', description: 'Task ID' })
+  @ApiResponse({ status: 200, description: 'Task schedule updated' })
+  async setTaskSchedule(
+    @Param('taskId') taskId: string,
+    @OrganizationId() organizationId: string,
+    @Body() dto: SetTaskScheduleDto,
+  ): Promise<{ success: boolean; scheduleFrequency: TaskFrequency }> {
+    const result = await this.browserbaseService.setTaskSchedule(
+      taskId,
+      dto.scheduleFrequency,
+      organizationId,
+    );
+    return { success: true, scheduleFrequency: result.scheduleFrequency };
   }
 
   @Delete('automations/:automationId')

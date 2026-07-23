@@ -106,11 +106,13 @@ export function useBrowserAutomations({ taskId }: UseBrowserAutomationsOptions) 
     [fetchAutomations],
   );
 
-  const setSchedule = useCallback(
-    async (automationId: string, scheduleFrequency: TaskFrequency) => {
+  // Browser evidence shares one cadence per task, set from the section header,
+  // so this updates every automation on the task together.
+  const setTaskSchedule = useCallback(
+    async (scheduleFrequency: TaskFrequency) => {
       try {
-        const res = await apiClient.patch<BrowserAutomation>(
-          `/v1/browserbase/automations/${automationId}`,
+        const res = await apiClient.patch(
+          `/v1/browserbase/automations/task/${taskId}/schedule`,
           { scheduleFrequency },
         );
         if (res.error) throw new Error(res.error);
@@ -120,7 +122,7 @@ export function useBrowserAutomations({ taskId }: UseBrowserAutomationsOptions) 
         toast.error(err instanceof Error ? err.message : 'Failed to update schedule');
       }
     },
-    [fetchAutomations],
+    [taskId, fetchAutomations],
   );
 
   const toggleAutomation = useCallback(
@@ -149,6 +151,6 @@ export function useBrowserAutomations({ taskId }: UseBrowserAutomationsOptions) 
     updateAutomation,
     deleteAutomation,
     toggleAutomation,
-    setSchedule,
+    setTaskSchedule,
   };
 }

@@ -1,50 +1,15 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-// Base UI menus don't lay out in jsdom, so mirror the repo pattern
-// (SecretsTable.test) of replacing the DS dropdown with simple pass-throughs.
-// The radio options then render inline and their selection wiring is assertable.
-vi.mock('@trycompai/design-system', async () => {
-  const React = await vi.importActual<typeof import('react')>('react');
-  const RadioCtx = React.createContext<(value: string) => void>(() => {});
-  return {
-    Button: ({ children, onClick, render: renderEl, ...props }: any) =>
-      renderEl ? (
-        // Mirror Base UI trigger composition: `render` supplies the element,
-        // children are injected into it.
-        <button onClick={onClick} aria-label={renderEl.props['aria-label']}>
-          {children}
-        </button>
-      ) : (
-        <button onClick={onClick} aria-label={props['aria-label']}>
-          {children}
-        </button>
-      ),
-    DropdownMenu: ({ children }: any) => <div>{children}</div>,
-    DropdownMenuTrigger: ({ children, render: renderEl, ...props }: any) => (
-      <button aria-label={props['aria-label'] ?? renderEl?.props?.['aria-label']}>
-        {children}
-      </button>
-    ),
-    DropdownMenuContent: ({ children }: any) => <div>{children}</div>,
-    DropdownMenuRadioGroup: ({ children, value, onValueChange }: any) => (
-      <RadioCtx.Provider value={onValueChange}>
-        <div data-testid="schedule-group" data-value={value}>
-          {children}
-        </div>
-      </RadioCtx.Provider>
-    ),
-    DropdownMenuRadioItem: ({ children, value }: any) => {
-      const onValueChange = React.useContext(RadioCtx);
-      return (
-        <button role="menuitemradio" onClick={() => onValueChange(value)}>
-          {children}
-        </button>
-      );
-    },
-  };
-});
-
+// AutomationItem only uses the DS Button now (the schedule moved to the section
+// header), so a simple Button stub is enough.
+vi.mock('@trycompai/design-system', () => ({
+  Button: ({ children, onClick, disabled, ...props }: any) => (
+    <button onClick={onClick} disabled={disabled} aria-label={props['aria-label']}>
+      {children}
+    </button>
+  ),
+}));
 vi.mock('@/components/VendorLogo', () => ({
   VendorLogo: () => <span data-testid="vendor-logo" />,
 }));
@@ -80,34 +45,13 @@ const baseProps = {
   onEdit: vi.fn(),
   onDelete: vi.fn(),
   onToggleEnabled: vi.fn(),
-  onChangeSchedule: vi.fn(),
 };
 
-describe('AutomationItem — schedule control', () => {
-  it('renders a "Change schedule" control (in the Run split button) and Edit', () => {
+describe('AutomationItem', () => {
+  it('renders Run and Edit for an editor', () => {
     render(<AutomationItem {...baseProps} />);
-    expect(screen.getByLabelText('Change schedule')).toBeInTheDocument();
+    expect(screen.getByText('Run')).toBeInTheDocument();
     expect(screen.getByLabelText('Edit automation')).toBeInTheDocument();
-  });
-
-  it('offers every cadence and reflects the current one', () => {
-    render(
-      <AutomationItem
-        {...baseProps}
-        automation={automation({ scheduleFrequency: 'weekly' })}
-      />,
-    );
-    ['Daily', 'Weekly', 'Monthly', 'Quarterly', 'Yearly'].forEach((label) =>
-      expect(screen.getByText(label)).toBeInTheDocument(),
-    );
-    expect(screen.getByTestId('schedule-group')).toHaveAttribute('data-value', 'weekly');
-  });
-
-  it('changes the schedule when a new cadence is picked', () => {
-    const onChangeSchedule = vi.fn();
-    render(<AutomationItem {...baseProps} onChangeSchedule={onChangeSchedule} />);
-    fireEvent.click(screen.getByText('Monthly'));
-    expect(onChangeSchedule).toHaveBeenCalledWith('monthly');
   });
 
   it('keeps the "Run" label while running so the button width does not shift', () => {
@@ -118,9 +62,9 @@ describe('AutomationItem — schedule control', () => {
     expect(screen.queryByText(/running/i)).not.toBeInTheDocument();
   });
 
-  it('hides the schedule control in read-only mode', () => {
+  it('hides editor actions in read-only mode', () => {
     render(<AutomationItem {...baseProps} readOnly />);
-    expect(screen.queryByLabelText('Change schedule')).not.toBeInTheDocument();
+    expect(screen.queryByText('Run')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Edit automation')).not.toBeInTheDocument();
   });
 });

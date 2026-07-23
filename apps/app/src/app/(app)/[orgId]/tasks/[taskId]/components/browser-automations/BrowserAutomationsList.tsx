@@ -1,8 +1,15 @@
 'use client';
 
 import { usePermissions } from '@/hooks/use-permissions';
-import { Add, Renew } from '@trycompai/design-system/icons';
-import type { TaskFrequency } from '@db';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from '@trycompai/design-system';
+import { Add, Calendar, ChevronDown, Renew } from '@trycompai/design-system/icons';
+import { TaskFrequency } from '@db';
 import { useMemo, useState } from 'react';
 import type { BrowserAuthProfile, BrowserAutomation } from '../../hooks/types';
 import { AutomationItem } from './AutomationItem';
@@ -10,6 +17,16 @@ import { RunDetailOverlay } from './RunDetailOverlay';
 import { RunHistoryStrip, type RunSummary } from './RunHistoryStrip';
 
 const PAGE_SIZE = 8;
+
+/** Cadence options for the task-wide schedule control (matches TaskFrequency). */
+const FREQUENCY_LABELS: Record<TaskFrequency, string> = {
+  daily: 'Daily',
+  weekly: 'Weekly',
+  monthly: 'Monthly',
+  quarterly: 'Quarterly',
+  yearly: 'Yearly',
+};
+const FREQUENCIES = Object.keys(FREQUENCY_LABELS) as TaskFrequency[];
 
 function hostnameFromUrl(url: string): string {
   try {
@@ -32,7 +49,8 @@ interface BrowserAutomationsListProps {
   onEditClick: (automation: BrowserAutomation) => void;
   onDelete: (automationId: string) => void;
   onToggleEnabled: (automationId: string, enabled: boolean) => void;
-  onChangeSchedule: (automationId: string, frequency: TaskFrequency) => void;
+  /** Set one cadence for all browser evidence on this task (section header). */
+  onSetTaskSchedule: (frequency: TaskFrequency) => void;
 }
 
 /**
@@ -52,12 +70,15 @@ export function BrowserAutomationsList({
   onEditClick,
   onDelete,
   onToggleEnabled,
-  onChangeSchedule,
+  onSetTaskSchedule,
 }: BrowserAutomationsListProps) {
   const { hasPermission } = usePermissions();
   const canCreate = hasPermission('integration', 'create');
   const canUpdate = hasPermission('integration', 'update');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  // Browser evidence shares one cadence per task; the automations are kept in
+  // sync, so any one of them reflects the task's current schedule.
+  const currentCadence: TaskFrequency = automations[0]?.scheduleFrequency ?? 'daily';
   const [selectedRun, setSelectedRun] = useState<RunSummary | null>(null);
   const [visible, setVisible] = useState(PAGE_SIZE);
 
@@ -127,6 +148,33 @@ export function BrowserAutomationsList({
             </p>
           </div>
           <div className="flex items-center gap-2">
+            {canUpdate && automations.length > 0 && (
+              <DropdownMenu>
+                {/* One schedule for all of this task's browser evidence. */}
+                <DropdownMenuTrigger
+                  aria-label="Change schedule for all browser evidence"
+                  className="flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs text-foreground transition-colors hover:bg-muted/40"
+                >
+                  <Calendar size={14} className="text-muted-foreground" />
+                  {FREQUENCY_LABELS[currentCadence]}
+                  <ChevronDown size={12} className="text-muted-foreground" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuRadioGroup
+                    value={currentCadence}
+                    onValueChange={(value) => {
+                      if (value) onSetTaskSchedule(value as TaskFrequency);
+                    }}
+                  >
+                    {FREQUENCIES.map((freq) => (
+                      <DropdownMenuRadioItem key={freq} value={freq}>
+                        {FREQUENCY_LABELS[freq]}
+                      </DropdownMenuRadioItem>
+                    ))}
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             {onConnectAnother && canCreate && (
               <button
                 onClick={onConnectAnother}
@@ -163,7 +211,6 @@ export function BrowserAutomationsList({
                 onEdit={() => onEditClick(automation)}
                 onDelete={() => onDelete(automation.id)}
                 onToggleEnabled={(enabled) => onToggleEnabled(automation.id, enabled)}
-                onChangeSchedule={(frequency) => onChangeSchedule(automation.id, frequency)}
               />
               {reconnectUrl && canUpdate && (
                 <div

@@ -81,6 +81,19 @@ export class BrowserAutomationCrudService {
     const steps = resolveSteps(data);
     const first = steps[0];
 
+    // A task's browser evidence shares one cadence (set from the section
+    // header), so a new automation inherits the task's current schedule rather
+    // than silently defaulting to daily.
+    const scheduleFrequency =
+      data.scheduleFrequency ??
+      (
+        await db.browserAutomation.findFirst({
+          where: { taskId: data.taskId },
+          orderBy: { createdAt: 'asc' },
+          select: { scheduleFrequency: true },
+        })
+      )?.scheduleFrequency;
+
     return db.browserAutomation.create({
       data: {
         taskId: data.taskId,
@@ -92,9 +105,7 @@ export class BrowserAutomationCrudService {
         instruction: first.instruction,
         evaluationCriteria: normalizeCriteria(first.evaluationCriteria),
         isEnabled: true,
-        ...(data.scheduleFrequency !== undefined
-          ? { scheduleFrequency: data.scheduleFrequency }
-          : {}),
+        ...(scheduleFrequency !== undefined ? { scheduleFrequency } : {}),
         steps: { create: toStepCreate(steps) },
       },
       include: STEP_INCLUDE,
@@ -214,6 +225,26 @@ export class BrowserAutomationCrudService {
       await this.requireAutomationInOrg({ automationId, organizationId });
     }
     return db.browserAutomation.delete({ where: { id: automationId } });
+  }
+
+  /**
+   * Set one cadence for every browser automation on a task. Browser evidence
+   * shares a task-level schedule (there's no need to run different vendors in
+   * one task on different days), so this bulk-updates them together.
+   */
+  async setTaskSchedule(
+    taskId: string,
+    scheduleFrequency: TaskFrequency,
+    organizationId?: string,
+  ) {
+    if (organizationId) {
+      await this.requireTaskInOrg({ taskId, organizationId });
+    }
+    const { count } = await db.browserAutomation.updateMany({
+      where: { taskId },
+      data: { scheduleFrequency },
+    });
+    return { success: true, scheduleFrequency, updated: count };
   }
 
   /** Presign a run's own screenshot and each of its per-step screenshots. */
