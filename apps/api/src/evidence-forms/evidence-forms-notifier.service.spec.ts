@@ -72,7 +72,7 @@ describe('EvidenceFormsNotifierService', () => {
     );
     expect(recipients.sort()).toEqual(['admin@acme.com', 'owner@acme.com']);
     expect(mockDb.member.findMany).toHaveBeenCalledWith({
-      where: { organizationId: 'org_1', deactivated: false },
+      where: { organizationId: 'org_1', deactivated: false, isActive: true },
       select: {
         role: true,
         user: { select: { id: true, email: true, name: true } },
@@ -102,6 +102,70 @@ describe('EvidenceFormsNotifierService', () => {
 
     expect(triggerEmail).not.toHaveBeenCalled();
     expect(mockDb.organization.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('excludes deactivated and inactive members from the recipient query', async () => {
+    mockDb.organization.findUnique.mockResolvedValue({ name: 'Acme' });
+
+    const allMembers = [
+      {
+        role: 'admin',
+        deactivated: false,
+        isActive: true,
+        user: { id: 'usr_admin', email: 'admin@acme.com', name: 'Admin' },
+      },
+      {
+        role: 'owner',
+        deactivated: false,
+        isActive: false,
+        user: {
+          id: 'usr_inactive_owner',
+          email: 'inactive-owner@acme.com',
+          name: 'Inactive Owner',
+        },
+      },
+      {
+        role: 'admin',
+        deactivated: true,
+        isActive: true,
+        user: {
+          id: 'usr_deactivated_admin',
+          email: 'deactivated-admin@acme.com',
+          name: 'Deactivated Admin',
+        },
+      },
+    ];
+
+    mockDb.member.findMany.mockImplementation(
+      (args: { where: { deactivated: boolean; isActive: boolean } }) =>
+        Promise.resolve(
+          allMembers.filter(
+            (m) =>
+              m.deactivated === args.where.deactivated &&
+              m.isActive === args.where.isActive,
+          ),
+        ),
+    );
+
+    await service.notifyAccessRequestSubmitted({
+      organizationId: 'org_1',
+      submitterUserId: 'usr_other',
+      submitterName: 'Requester',
+      submissionId: 'sub_1',
+      data: {},
+    });
+
+    expect(mockDb.member.findMany).toHaveBeenCalledWith({
+      where: { organizationId: 'org_1', deactivated: false, isActive: true },
+      select: {
+        role: true,
+        user: { select: { id: true, email: true, name: true } },
+      },
+    });
+    expect(triggerEmail).toHaveBeenCalledTimes(1);
+    expect((triggerEmail as jest.Mock).mock.calls[0][0].to).toBe(
+      'admin@acme.com',
+    );
   });
 
   it('excludes admins who unsubscribed from emails', async () => {
