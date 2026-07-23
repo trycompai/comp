@@ -23,6 +23,7 @@ import {
 } from './evidence-forms.definitions';
 import { checkAutoCompletePhases } from '../frameworks/frameworks-timeline.helper';
 import { TimelinesService } from '../timelines/timelines.service';
+import { EvidenceFormsNotifierService } from './evidence-forms-notifier.service';
 
 const listQuerySchema = z.object({
   search: z.string().trim().optional(),
@@ -140,6 +141,7 @@ export class EvidenceFormsService {
   constructor(
     private readonly attachmentsService: AttachmentsService,
     private readonly timelinesService: TimelinesService,
+    private readonly evidenceFormsNotifier: EvidenceFormsNotifierService,
   ) {}
 
   private requireJwtUser(authContext: AuthContext): string {
@@ -593,6 +595,23 @@ export class EvidenceFormsService {
     }).catch((err) => {
       this.logger.warn('timeline auto-complete check failed', err);
     });
+
+    if (parsedType.data === 'access-request') {
+      this.evidenceFormsNotifier
+        .notifyAccessRequestSubmitted({
+          organizationId: params.organizationId,
+          submitterUserId: params.authContext.userId,
+          submitterName:
+            submission.submittedBy?.name ??
+            submission.submittedBy?.email ??
+            'A user',
+          submissionId: submission.id,
+          data: parsedPayload.data,
+        })
+        .catch((err) => {
+          this.logger.warn('access request notification failed', err);
+        });
+    }
 
     return submission;
   }
