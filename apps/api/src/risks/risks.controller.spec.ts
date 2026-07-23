@@ -59,6 +59,7 @@ const mockHasRiskAccess = hasRiskAccess as jest.MockedFunction<
 describe('RisksController', () => {
   let controller: RisksController;
   let risksService: jest.Mocked<RisksService>;
+  let acceptancesService: { listForRisk: jest.Mock; createForRisk: jest.Mock };
 
   const orgId = 'org_test123';
 
@@ -108,7 +109,7 @@ describe('RisksController', () => {
       getStatsByDepartment: jest.fn(),
     };
 
-    const mockAcceptances = {
+    acceptancesService = {
       listForRisk: jest.fn(),
       createForRisk: jest.fn(),
     };
@@ -117,7 +118,7 @@ describe('RisksController', () => {
       controllers: [RisksController],
       providers: [
         { provide: RisksService, useValue: mockService },
-        { provide: RiskAcceptancesService, useValue: mockAcceptances },
+        { provide: RiskAcceptancesService, useValue: acceptancesService },
       ],
     })
       .overrideGuard(HybridAuthGuard)
@@ -508,6 +509,76 @@ describe('RisksController', () => {
       );
 
       expect(result).not.toHaveProperty('authenticatedUser');
+    });
+  });
+
+  describe('acceptances', () => {
+    const acceptanceView = {
+      id: 'rska_1',
+      acceptedById: 'mem_123',
+      acceptedByName: 'Jane Doe',
+      notes: null,
+      residualLikelihood: 'unlikely',
+      residualImpact: 'minor',
+      level: 'low',
+      levelLabel: 'Low',
+      stale: false,
+      createdAt: new Date('2026-04-15T00:00:00Z'),
+    };
+
+    beforeEach(() => {
+      mockHasRiskAccess.mockReturnValue(true);
+    });
+
+    it('lists acceptance events with auth info', async () => {
+      acceptancesService.listForRisk.mockResolvedValue({
+        risk: { id: 'risk_1', assigneeId: 'mem_123' },
+        acceptances: [acceptanceView],
+      });
+
+      const result = await controller.listRiskAcceptances(
+        'risk_1',
+        orgId,
+        authContext,
+      );
+
+      expect(acceptancesService.listForRisk).toHaveBeenCalledWith(
+        'risk_1',
+        orgId,
+      );
+      expect(result.data).toEqual([acceptanceView]);
+      expect(result.authType).toBe('session');
+    });
+
+    it('denies the list to restricted roles without assignment access', async () => {
+      acceptancesService.listForRisk.mockResolvedValue({
+        risk: { id: 'risk_1', assigneeId: 'mem_other' },
+        acceptances: [],
+      });
+      mockHasRiskAccess.mockReturnValue(false);
+
+      await expect(
+        controller.listRiskAcceptances('risk_1', orgId, authContext),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('records an acceptance and returns the created event', async () => {
+      acceptancesService.createForRisk.mockResolvedValue(acceptanceView);
+
+      const result = await controller.recordRiskAcceptance(
+        'risk_1',
+        { notes: 'Reviewed at Q2' },
+        orgId,
+        authContext,
+      );
+
+      expect(acceptancesService.createForRisk).toHaveBeenCalledWith(
+        'risk_1',
+        orgId,
+        { notes: 'Reviewed at Q2' },
+      );
+      expect(result.id).toBe('rska_1');
+      expect(result.authType).toBe('session');
     });
   });
 });

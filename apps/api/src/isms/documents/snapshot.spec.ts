@@ -165,6 +165,39 @@ describe('diffPlatformSnapshots', () => {
     expect(result.changedSources).not.toContain('parties');
   });
 
+  it('flags RTP drift when the risk treatment fingerprint changes', () => {
+    const result = diffPlatformSnapshots({
+      type: 'risk_treatment_plan',
+      previous: base,
+      current: { ...base, riskTreatmentFingerprint: 'rtfp-edited' },
+    });
+    expect(result.isStale).toBe(true);
+    expect(result.changedSources).toEqual(['riskTreatment']);
+  });
+
+  it('the RTP ignores every other platform signal', () => {
+    const result = diffPlatformSnapshots({
+      type: 'risk_treatment_plan',
+      previous: base,
+      current: { ...base, vendorCount: 99, memberCount: 42 },
+    });
+    expect(result.isStale).toBe(false);
+  });
+
+  it('the methodology (6.1.2) never goes platform-drift stale', () => {
+    const result = diffPlatformSnapshots({
+      type: 'risk_assessment_methodology',
+      previous: base,
+      current: {
+        ...base,
+        organizationName: 'Renamed Corp',
+        riskTreatmentFingerprint: 'rtfp-edited',
+        vendorCount: 99,
+      },
+    });
+    expect(result.isStale).toBe(false);
+  });
+
   it('only the requirements doc treats parties edits as drift', () => {
     for (const type of [
       'context_of_organization',
