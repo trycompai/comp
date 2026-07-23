@@ -2,8 +2,16 @@
 
 import { VendorLogo } from '@/components/VendorLogo';
 import { cn } from '@/lib/utils';
-import { Button } from '@trycompai/design-system';
 import {
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from '@trycompai/design-system';
+import {
+  Calendar,
   ChevronDown,
   Edit,
   Play,
@@ -14,9 +22,17 @@ import { formatDistanceToNow } from 'date-fns';
 import { useState } from 'react';
 import type { TaskFrequency } from '@db';
 import { ScheduleSummary } from '@/components/schedule-summary';
-import { SchedulePicker } from '@/components/schedule-picker';
 import type { BrowserAutomation, BrowserAutomationRun } from '../../hooks/types';
 import { RunHistory } from './RunHistory';
+
+/** Cadence options for the per-automation schedule menu (matches TaskFrequency). */
+const FREQUENCY_LABELS: Record<TaskFrequency, string> = {
+  daily: 'Daily',
+  weekly: 'Weekly',
+  monthly: 'Monthly',
+  quarterly: 'Quarterly',
+  yearly: 'Yearly',
+};
 
 interface AutomationItemProps {
   automation: BrowserAutomation;
@@ -128,14 +144,6 @@ export function AutomationItem({
         </div>
 
         <div className="flex flex-none items-center gap-1.5">
-          {!readOnly && automation.scheduleFrequency && (
-            <div className="w-24 [&_button]:h-6 [&_button]:px-2 [&_button]:text-xs">
-              <SchedulePicker
-                value={automation.scheduleFrequency}
-                onChange={onChangeSchedule}
-              />
-            </div>
-          )}
           {!readOnly && (
             <Button
               variant="ghost"
@@ -148,6 +156,32 @@ export function AutomationItem({
                 className={automation.isEnabled ? 'text-primary' : 'text-muted-foreground'}
               />
             </Button>
+          )}
+
+          {!readOnly && automation.scheduleFrequency && (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button variant="ghost" size="icon-sm" aria-label="Change schedule" />
+                }
+              >
+                <Calendar size={14} />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuRadioGroup
+                  value={automation.scheduleFrequency}
+                  onValueChange={(value) => {
+                    if (value) onChangeSchedule(value as TaskFrequency);
+                  }}
+                >
+                  {(Object.keys(FREQUENCY_LABELS) as TaskFrequency[]).map((freq) => (
+                    <DropdownMenuRadioItem key={freq} value={freq}>
+                      {FREQUENCY_LABELS[freq]}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
 
           {!readOnly && (
