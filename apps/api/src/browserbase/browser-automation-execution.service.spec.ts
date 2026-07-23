@@ -9,6 +9,7 @@ jest.mock('@db', () => ({
     $transaction: jest.fn(),
     browserAutomation: { findUnique: jest.fn() },
     browserAutomationRun: { updateMany: jest.fn(), findUnique: jest.fn() },
+    browserAutomationStepRun: { create: jest.fn(), update: jest.fn() },
   },
   Prisma: {
     TransactionIsolationLevel: { Serializable: 'Serializable' },
@@ -42,6 +43,9 @@ describe('BrowserAutomationExecutionService', () => {
     });
     (db.browserAutomationRun.updateMany as jest.Mock).mockResolvedValue({
       count: 1,
+    });
+    (db.browserAutomationStepRun.create as jest.Mock).mockResolvedValue({
+      id: 'basr_1',
     });
   });
 

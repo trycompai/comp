@@ -74,6 +74,39 @@ export class BrowserAutomationRunStoreService {
     }
   }
 
+  async createStepRun(input: {
+    runId: string;
+    stepId: string | null;
+    order: number;
+  }) {
+    return db.browserAutomationStepRun.create({
+      data: {
+        runId: input.runId,
+        stepId: input.stepId,
+        order: input.order,
+        status: 'running',
+        startedAt: new Date(),
+      },
+    });
+  }
+
+  async finishStepRun(input: {
+    stepRunId: string;
+    result: BrowserEvidenceRunResult;
+  }): Promise<void> {
+    await db.browserAutomationStepRun.update({
+      where: { id: input.stepRunId },
+      data: {
+        status: input.result.status,
+        completedAt: new Date(),
+        screenshotUrl: input.result.screenshotKey ?? null,
+        evaluationStatus: input.result.evaluationStatus ?? null,
+        evaluationReason: input.result.evaluationReason ?? null,
+        error: input.result.error ?? null,
+      },
+    });
+  }
+
   async getActiveRun(input: { runId: string; automationId: string }) {
     const run = await db.browserAutomationRun.findUnique({
       where: { id: input.runId },
