@@ -17,6 +17,24 @@ export interface BrowserAutomationRun {
   attemptCount?: number;
 }
 
+/** One step of a (possibly multi-vendor) automation, as returned by the API. */
+export interface BrowserAutomationStep {
+  id: string;
+  order: number;
+  profileId?: string | null;
+  targetUrl: string;
+  instruction: string;
+  evaluationCriteria?: string | null;
+}
+
+/** A step as sent to the API on create/update (no id/order — order is positional). */
+export interface BrowserAutomationStepInput {
+  profileId?: string | null;
+  targetUrl: string;
+  instruction: string;
+  evaluationCriteria?: string | null;
+}
+
 export interface BrowserAutomation {
   id: string;
   name: string;
@@ -24,6 +42,7 @@ export interface BrowserAutomation {
   targetUrl: string;
   instruction: string;
   evaluationCriteria?: string | null;
+  steps?: BrowserAutomationStep[];
   isEnabled: boolean;
   schedule?: string;
   scheduleFrequency?: TaskFrequency;

@@ -4,7 +4,7 @@ import { apiClient } from '@/lib/api-client';
 import type { TaskFrequency } from '@db';
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
-import type { BrowserAutomation } from './types';
+import type { BrowserAutomation, BrowserAutomationStepInput } from './types';
 
 interface UseBrowserAutomationsOptions {
   taskId: string;
@@ -15,6 +15,8 @@ interface AutomationConfigInput {
   targetUrl: string;
   instruction: string;
   evaluationCriteria?: string;
+  /** Ordered steps for a multi-vendor automation (sent through to the API). */
+  steps?: BrowserAutomationStepInput[];
   scheduleFrequency?: TaskFrequency;
 }
 
