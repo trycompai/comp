@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Label, Textarea } from '@trycompai/design-system';
+import { Button, Textarea } from '@trycompai/design-system';
 import { ChevronDown, ChevronUp, Renew, TrashCan } from '@trycompai/design-system/icons';
 import type { BrowserAuthProfileStatus } from '../../hooks/types';
 import { ConnectionPicker } from './ConnectionPicker';
@@ -144,30 +144,44 @@ export function StepCard({
       )}
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor={`step-instruction-${step.key}`}>What should the AI capture?</Label>
-        <Textarea
-          id={`step-instruction-${step.key}`}
-          value={step.instruction}
-          onChange={(event) => onChange({ instruction: event.target.value })}
-          placeholder="Go to Settings → Security and screenshot the two-factor authentication policy."
-          rows={3}
-        />
+        <label
+          htmlFor={`step-instruction-${step.key}`}
+          className="text-[13px] font-medium text-foreground"
+        >
+          What should the AI capture?
+        </label>
+        <div className="[&_textarea]:text-[13px] [&_textarea]:leading-relaxed">
+          <Textarea
+            id={`step-instruction-${step.key}`}
+            value={step.instruction}
+            onChange={(event) => onChange({ instruction: event.target.value })}
+            placeholder="Go to Settings → Security and screenshot the two-factor authentication policy."
+            rows={3}
+          />
+        </div>
       </div>
 
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center gap-1.5">
-          <Label htmlFor={`step-check-${step.key}`}>Pass / fail check</Label>
+          <label
+            htmlFor={`step-check-${step.key}`}
+            className="text-[13px] font-medium text-foreground"
+          >
+            Pass / fail check
+          </label>
           <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
             optional
           </span>
         </div>
-        <Textarea
-          id={`step-check-${step.key}`}
-          value={step.criteria}
-          onChange={(event) => onChange({ criteria: event.target.value })}
-          placeholder="Two-factor authentication is enforced for all members."
-          rows={2}
-        />
+        <div className="[&_textarea]:text-[13px] [&_textarea]:leading-relaxed">
+          <Textarea
+            id={`step-check-${step.key}`}
+            value={step.criteria}
+            onChange={(event) => onChange({ criteria: event.target.value })}
+            placeholder="Two-factor authentication is enforced for all members."
+            rows={2}
+          />
+        </div>
       </div>
     </div>
   );
