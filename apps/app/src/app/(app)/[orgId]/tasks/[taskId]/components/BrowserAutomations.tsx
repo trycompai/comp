@@ -1,7 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { BrowserAutomation } from '../hooks/types';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { BrowserAutomation, BrowserAutomationDraft } from '../hooks/types';
+import { useBrowserAutomationDrafts } from '../hooks/useBrowserAutomationDrafts';
 import { useBrowserAutomations } from '../hooks/useBrowserAutomations';
 import { useBrowserContext } from '../hooks/useBrowserContext';
 import { useBrowserExecution } from '../hooks/useBrowserExecution';
@@ -15,6 +16,7 @@ import {
   type ConnectionRef,
 } from './browser-automations';
 import { BrowserEvidenceEmptyState } from './browser-automations/BrowserEvidenceEmptyState';
+import { DraftsStrip } from './browser-automations/DraftsStrip';
 import {
   clearConnectState,
   loadConnectState,
@@ -41,6 +43,8 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
     automation?: BrowserAutomation;
     /** When set, the composer targets this specific connection (add to a vendor). */
     connection?: ConnectionRef;
+    /** When set, the composer resumes this saved draft. */
+    draft?: BrowserAutomationDraft;
   }>({ open: false, mode: 'create' });
   const [authUrl, setAuthUrl] = useState('https://github.com');
   const [connectOpen, setConnectOpen] = useState(false);
@@ -59,6 +63,50 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
   const context = useBrowserContext();
   const automations = useBrowserAutomations({ taskId });
   const { profiles, fetchProfiles } = useBrowserProfiles();
+  const {
+    drafts,
+    fetchDrafts,
+    createDraft,
+    updateDraft,
+    deleteDraft,
+  } = useBrowserAutomationDrafts({ taskId });
+
+  // The draft currently being autosaved (created on first edit, reused after).
+  const draftIdRef = useRef<string | null>(null);
+  const creatingDraftRef = useRef(false);
+
+  // Debounced autosave from the composer — create the draft on first content,
+  // then keep updating the same row.
+  const handleAutosave = useCallback(
+    async (payload: { name: string; steps: BrowserAutomationDraft['steps'] }) => {
+      if (draftIdRef.current) {
+        await updateDraft(draftIdRef.current, payload);
+        return;
+      }
+      if (creatingDraftRef.current) return; // avoid a double-create race
+      creatingDraftRef.current = true;
+      const created = await createDraft(payload);
+      creatingDraftRef.current = false;
+      if (created) {
+        draftIdRef.current = created.id;
+        void fetchDrafts();
+      }
+    },
+    [createDraft, updateDraft, fetchDrafts],
+  );
+
+  const handleContinueDraft = useCallback((draft: BrowserAutomationDraft) => {
+    draftIdRef.current = draft.id;
+    setComposer({ open: true, mode: 'create', draft });
+  }, []);
+
+  const handleDeleteDraft = useCallback(
+    (draft: BrowserAutomationDraft) => {
+      if (draftIdRef.current === draft.id) draftIdRef.current = null;
+      void deleteDraft(draft.id);
+    },
+    [deleteDraft],
+  );
 
   const handleReconnect = useCallback(
     (url: string) => {
@@ -172,11 +220,21 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
     [profiles, authHostname, authUrl, automations.automations],
   );
 
-  const closeComposer = useCallback(() => setComposer({ open: false, mode: 'create' }), []);
+  const closeComposer = useCallback(() => {
+    // Keep the draft on the server (resumable); just detach and surface it.
+    draftIdRef.current = null;
+    setComposer({ open: false, mode: 'create' });
+    void fetchDrafts();
+  }, [fetchDrafts]);
+
   const handleComposerSaved = useCallback(() => {
-    closeComposer();
+    // Saved for real → discard the draft it came from.
+    const finalizedDraftId = draftIdRef.current;
+    draftIdRef.current = null;
+    if (finalizedDraftId) void deleteDraft(finalizedDraftId);
+    setComposer({ open: false, mode: 'create' });
     automations.fetchAutomations();
-  }, [closeComposer, automations]);
+  }, [automations, deleteDraft]);
 
   // If a background analysis was in flight when the user navigated away, reopen
   // the connect flow on return so it can resume instead of forcing a restart.
@@ -195,13 +253,32 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
     automations.fetchAutomations();
   }, [context.checkContextStatus, automations.fetchAutomations]);
 
-  const composerConnection = useMemo(
-    () =>
-      composer.open
-        ? (composer.connection ?? buildConnectionRef(composer.automation))
-        : null,
-    [composer.open, composer.connection, composer.automation, buildConnectionRef],
-  );
+  const composerConnection = useMemo(() => {
+    if (!composer.open) return null;
+    if (composer.connection) return composer.connection;
+    // Resuming a draft — anchor to its first step's connection.
+    const firstProfileId = composer.draft?.steps?.[0]?.profileId ?? undefined;
+    const profile = firstProfileId
+      ? profiles.find((item) => item.id === firstProfileId)
+      : undefined;
+    if (profile) {
+      return {
+        profileId: profile.id,
+        hostname: profile.hostname,
+        displayName: profile.displayName || profile.hostname,
+        url: `https://${profile.hostname}`,
+        status: profile.status,
+      };
+    }
+    return buildConnectionRef(composer.automation);
+  }, [
+    composer.open,
+    composer.connection,
+    composer.draft,
+    composer.automation,
+    profiles,
+    buildConnectionRef,
+  ]);
 
   // Every connection the org has — each step in the composer can pick its own.
   const allConnections = useMemo<ConnectionRef[]>(
@@ -283,6 +360,8 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
         onUpdate={automations.updateAutomation}
         onSaved={handleComposerSaved}
         onReconnect={(conn) => handleReconnect(conn.url)}
+        draftSteps={composer.draft?.steps}
+        onAutosave={handleAutosave}
       />
     );
   }
@@ -297,7 +376,13 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
   // connects here, `justConnected` advances to the "add your first automation"
   // state. Connections are org-level and reused, so connecting an already-connected
   // vendor simply reuses the saved session.
-  if (!isManualTask && automations.automations.length === 0 && !justConnected) {
+  // A pending draft means the task is mid-setup — don't drop back to first-run.
+  if (
+    !isManualTask &&
+    automations.automations.length === 0 &&
+    !justConnected &&
+    drafts.length === 0
+  ) {
     return (
       <BrowserEvidenceEmptyState
         isStartingAuth={context.isStartingAuth}
@@ -306,18 +391,32 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
     );
   }
 
-  // Just connected here, but no automations yet — prompt to create the first one.
+  // No saved automations yet, but a connection and/or a draft exists — prompt to
+  // create the first one, with any drafts pinned above to resume.
   if (!isManualTask && automations.automations.length === 0) {
     return (
-      <EmptyWithContextState
-        onCreateClick={() => setComposer({ open: true, mode: 'create' })}
-      />
+      <>
+        <DraftsStrip
+          drafts={drafts}
+          onContinue={handleContinueDraft}
+          onDelete={handleDeleteDraft}
+        />
+        <EmptyWithContextState
+          onCreateClick={() => setComposer({ open: true, mode: 'create' })}
+        />
+      </>
     );
   }
 
   // List of automations (disable creation for manual tasks, but allow editing)
   return (
-    <BrowserAutomationsList
+    <>
+      <DraftsStrip
+        drafts={drafts}
+        onContinue={handleContinueDraft}
+        onDelete={handleDeleteDraft}
+      />
+      <BrowserAutomationsList
       automations={automations.automations}
       profiles={profiles}
       runningAutomationId={execution.runningAutomationId}
@@ -337,6 +436,7 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
         fetchProfiles();
         automations.fetchAutomations();
       }}
-    />
+      />
+    </>
   );
 }

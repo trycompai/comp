@@ -35,6 +35,24 @@ export interface BrowserAutomationStepInput {
   evaluationCriteria?: string | null;
 }
 
+/** A step inside a draft — everything optional, since a draft can be half-written. */
+export interface DraftStep {
+  profileId?: string | null;
+  targetUrl?: string | null;
+  instruction?: string | null;
+  evaluationCriteria?: string | null;
+}
+
+/** An in-progress (unsaved) automation, persisted server-side so it resumes. */
+export interface BrowserAutomationDraft {
+  id: string;
+  taskId: string;
+  name?: string | null;
+  steps: DraftStep[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface BrowserAutomation {
   id: string;
   name: string;

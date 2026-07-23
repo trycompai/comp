@@ -9,6 +9,7 @@ import type {
   BrowserAuthProfileStatus,
   BrowserAutomation,
   BrowserAutomationStepInput,
+  DraftStep,
   InstructionTestResult,
 } from '../../hooks/types';
 import { useInstructionTest } from '../../hooks/useInstructionTest';
@@ -57,6 +58,10 @@ interface InstructionComposerProps {
   onUpdate: (args: { automationId: string; input: InstructionInput }) => Promise<boolean>;
   onSaved: () => void;
   onReconnect?: (connection: ConnectionRef) => void;
+  /** Resume: seed the composer from a saved draft's steps. */
+  draftSteps?: DraftStep[];
+  /** Autosave the in-progress draft (create mode only); parent owns the draft id. */
+  onAutosave?: (payload: { name: string; steps: DraftStep[] }) => void;
 }
 
 /** An instruction has no separate name field; derive one from its first line. */
@@ -77,7 +82,16 @@ const newStep = (profileId: string): EditableStep => ({
 function initialSteps(
   initialValues: InstructionComposerProps['initialValues'],
   fallbackProfileId: string,
+  draftSteps?: DraftStep[],
 ): EditableStep[] {
+  if (draftSteps && draftSteps.length > 0) {
+    return draftSteps.map((step) => ({
+      key: `step-${(stepKeySeq += 1)}`,
+      profileId: step.profileId ?? fallbackProfileId,
+      instruction: step.instruction ?? '',
+      criteria: step.evaluationCriteria ?? '',
+    }));
+  }
   if (initialValues?.steps && initialValues.steps.length > 0) {
     return initialValues.steps.map((step) => ({
       key: `step-${(stepKeySeq += 1)}`,
@@ -116,9 +130,11 @@ export function InstructionComposer({
   onUpdate,
   onSaved,
   onReconnect,
+  draftSteps,
+  onAutosave,
 }: InstructionComposerProps) {
   const [steps, setSteps] = useState<EditableStep[]>(() =>
-    initialSteps(initialValues, connection.profileId),
+    initialSteps(initialValues, connection.profileId, draftSteps),
   );
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -209,6 +225,24 @@ export function InstructionComposer({
       if (sessionId) void closeTestSession(sessionId);
     };
   }, [sessionId, closeTestSession]);
+
+  // Autosave the draft as the user edits (create mode only). Debounced; only
+  // once there's real content, so merely opening the composer doesn't persist.
+  useEffect(() => {
+    if (mode !== 'create' || !onAutosave) return;
+    if (!steps.some((step) => step.instruction.trim())) return;
+    const timer = setTimeout(() => {
+      onAutosave({
+        name: deriveName(steps[0].instruction),
+        steps: steps.map((step) => ({
+          profileId: step.profileId,
+          instruction: step.instruction,
+          evaluationCriteria: step.criteria.trim() ? step.criteria.trim() : undefined,
+        })),
+      });
+    }, 900);
+    return () => clearTimeout(timer);
+  }, [steps, mode, onAutosave]);
 
   const resetTest = useCallback(() => {
     setPhase('idle');
