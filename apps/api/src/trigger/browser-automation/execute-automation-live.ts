@@ -23,7 +23,9 @@ export const executeAutomationLive = task({
     sessionId: string;
     organizationId: string;
   }) => {
-    return browserbaseService.executeAutomationOnSession(
+    // Runs EVERY step (all vendors), not just the first — step 0 on the live
+    // session, later vendors in their own sessions.
+    return browserbaseService.executeAutomationLive(
       payload.automationId,
       payload.runId,
       payload.sessionId,

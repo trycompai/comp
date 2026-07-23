@@ -150,6 +150,46 @@ export class BrowserAutomationExecutionService {
     return this.toRunResponse({ runId, result });
   }
 
+  /**
+   * The interactive "Run" — executes the FULL step sequence (every vendor), with
+   * step 0 running on the pre-opened live session (so it's watchable) and later
+   * vendors each in their own session. Streams a combined step timeline. This is
+   * what start-live + execute-live drives, so clicking Run no longer stops after
+   * the first vendor.
+   */
+  async executeAutomationLive(
+    automationId: string,
+    runId: string,
+    sessionId: string,
+    organizationId: string,
+    onSteps?: (steps: EvidenceTimelineStep[]) => void,
+  ) {
+    const automation = await this.getRunnableAutomation({
+      automationId,
+      organizationId,
+    });
+    const run = await this.runs.getActiveRun({ runId, automationId });
+    const steps = stepsForRun(automation);
+    const firstProfile = await this.stepRunner.resolveStepProfile({
+      organizationId,
+      step: steps[0],
+    });
+
+    const result = await this.stepRunner.runSteps({
+      organizationId,
+      taskId: automation.taskId,
+      automationId,
+      runId,
+      steps,
+      firstProfile,
+      firstSessionId: sessionId,
+      onSteps,
+    });
+
+    await this.runs.finishRun({ runId, startedAt: run.startedAt, result });
+    return this.toRunResponse({ runId, result });
+  }
+
   async runBrowserAutomation(automationId: string, organizationId: string) {
     const automation = await this.getRunnableAutomation({
       automationId,

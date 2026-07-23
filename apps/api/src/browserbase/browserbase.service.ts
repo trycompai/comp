@@ -346,6 +346,23 @@ export class BrowserbaseService {
     );
   }
 
+  /** Runs the FULL step sequence on a live session, streaming the timeline. */
+  async executeAutomationLive(
+    automationId: string,
+    runId: string,
+    sessionId: string,
+    organizationId: string,
+    onSteps?: (steps: EvidenceTimelineStep[]) => void,
+  ) {
+    return this.automationExecution.executeAutomationLive(
+      automationId,
+      runId,
+      sessionId,
+      organizationId,
+      onSteps,
+    );
+  }
+
   /**
    * Kick off the interactive Run as a background task so the live view can
    * stream the AI's steps (same realtime mechanism as the Test flow). Returns a

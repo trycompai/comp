@@ -8,11 +8,25 @@ import {
   rollUpStepResults,
   type StepForRun,
 } from './browser-automation-step-results';
+import type { BrowserEvidenceLog } from './browser-evidence-execution';
+import {
+  createEvidenceTimeline,
+  type EvidenceTimelineStep,
+} from './browser-evidence-step-timeline';
 import {
   BrowserEvidenceRunnerService,
   type BrowserEvidenceRunResult,
 } from './browser-evidence-runner.service';
 import { BrowserbaseSessionService } from './browserbase-session.service';
+
+/** " · github.com" for a step's label, or "" when the URL can't be parsed. */
+function hostSuffix(targetUrl: string): string {
+  try {
+    return ` · ${new URL(targetUrl).hostname.replace(/^www\./, '')}`;
+  } catch {
+    return '';
+  }
+}
 
 type ResolvedProfile = Awaited<
   ReturnType<BrowserAuthProfileService['getProfile']>
@@ -67,7 +81,13 @@ export class BrowserAutomationStepRunnerService {
     runId: string;
     steps: StepForRun[];
     firstProfile: ResolvedProfile;
+    /** When set, step 0 runs on this already-open (live) session, not a new one. */
+    firstSessionId?: string;
+    /** Live activity timeline, streamed to the Run view via realtime. */
+    onSteps?: (steps: EvidenceTimelineStep[]) => void;
   }): Promise<BrowserEvidenceRunResult> {
+    const multiStep = input.steps.length > 1;
+    const timeline = createEvidenceTimeline(input.onSteps);
     const results: BrowserEvidenceRunResult[] = [];
     for (let index = 0; index < input.steps.length; index += 1) {
       const profile =
@@ -77,6 +97,10 @@ export class BrowserAutomationStepRunnerService {
               organizationId: input.organizationId,
               step: input.steps[index],
             });
+      // Mark each vendor boundary so the combined timeline reads GH → AWS → …
+      if (multiStep) {
+        timeline.step(`Step ${index + 1}${hostSuffix(input.steps[index].targetUrl)}`);
+      }
       results.push(
         await this.runStep({
           organizationId: input.organizationId,
@@ -86,10 +110,18 @@ export class BrowserAutomationStepRunnerService {
           step: input.steps[index],
           index,
           profile,
+          // Step 0 runs on the pre-opened live session (so it's watchable);
+          // later vendors each get their own session inside runEvidence.
+          sessionId: index === 0 ? input.firstSessionId : undefined,
+          onLog: (entry) => timeline.step(entry.message),
         }),
       );
     }
-    return rollUpStepResults(results);
+    const rolled = rollUpStepResults(results);
+    timeline.finish(
+      rolled.success ? 'done' : rolled.status === 'blocked' ? 'warn' : 'fail',
+    );
+    return rolled;
   }
 
   private async runStep(input: {
@@ -100,6 +132,10 @@ export class BrowserAutomationStepRunnerService {
     step: StepForRun;
     index: number;
     profile: ResolvedProfile;
+    /** Run this step on an existing (live) session instead of a fresh one. */
+    sessionId?: string;
+    /** Per-stage progress, streamed into the run timeline. */
+    onLog?: (log: BrowserEvidenceLog) => void;
   }): Promise<BrowserEvidenceRunResult> {
     const stepRun = await this.runs.createStepRun({
       runId: input.runId,
@@ -118,7 +154,7 @@ export class BrowserAutomationStepRunnerService {
         result = profileBlockedResult(profile.status);
       } else {
         try {
-          result = await this.runner.runEvidence({
+          const runInput = {
             organizationId: input.organizationId,
             taskId: input.taskId,
             automationId: input.automationId,
@@ -135,7 +171,14 @@ export class BrowserAutomationStepRunnerService {
               vaultExternalItemRef: profile.vaultExternalItemRef,
               vaultConnectionId: profile.vaultConnectionId,
             },
-          });
+            onLog: input.onLog,
+          };
+          result = input.sessionId
+            ? await this.runner.executeEvidenceOnSession({
+                ...runInput,
+                sessionId: input.sessionId,
+              })
+            : await this.runner.runEvidence(runInput);
         } catch (error) {
           this.logger.error('Browser evidence runner failed', error);
           result = failedBrowserEvidenceRunResult(error);
