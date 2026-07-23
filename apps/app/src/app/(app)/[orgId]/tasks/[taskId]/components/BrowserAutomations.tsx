@@ -203,6 +203,19 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
     [composer.open, composer.connection, composer.automation, buildConnectionRef],
   );
 
+  // Every connection the org has — each step in the composer can pick its own.
+  const allConnections = useMemo<ConnectionRef[]>(
+    () =>
+      profiles.map((profile) => ({
+        profileId: profile.id,
+        hostname: profile.hostname,
+        displayName: profile.displayName || profile.hostname,
+        url: `https://${profile.hostname}`,
+        status: profile.status,
+      })),
+    [profiles],
+  );
+
   // Loading state
   if (automations.isLoading) {
     return null;
@@ -261,6 +274,7 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
       <InstructionComposer
         taskId={taskId}
         connection={composerConnection}
+        connections={allConnections}
         mode={composer.mode}
         initialValues={composer.automation}
         isSaving={automations.isSaving}
@@ -268,6 +282,7 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
         onCreate={automations.createAutomation}
         onUpdate={automations.updateAutomation}
         onSaved={handleComposerSaved}
+        onReconnect={(conn) => handleReconnect(conn.url)}
       />
     );
   }

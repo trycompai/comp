@@ -1,21 +1,23 @@
 'use client';
 
-import { Close } from '@trycompai/design-system/icons';
+import { Button } from '@trycompai/design-system';
+import { Add, Close, Play } from '@trycompai/design-system/icons';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import type {
   BrowserAuthProfileStatus,
   BrowserAutomation,
+  BrowserAutomationStepInput,
   InstructionTestResult,
 } from '../../hooks/types';
 import { useInstructionTest } from '../../hooks/useInstructionTest';
 import { FAILED_RUN_STATUSES, hostnameOf } from './connect-flow-constants';
-import { InstructionComposerForm } from './InstructionComposerForm';
 import { InstructionTestPanel, type TestPhase } from './InstructionTestPanel';
+import { StepCard } from './StepCard';
 import type { SignInStep } from './StepList';
 
-/** The connection a composed instruction runs under. */
+/** The connection a composed step runs under. */
 export interface ConnectionRef {
   profileId: string;
   hostname: string;
@@ -24,11 +26,12 @@ export interface ConnectionRef {
   status: BrowserAuthProfileStatus;
 }
 
-/** Dot color for the connection chip — reflects the real profile status. */
-function statusDotColor(status: BrowserAuthProfileStatus): string {
-  if (status === 'verified') return 'var(--success)';
-  if (status === 'needs_reauth' || status === 'blocked') return 'var(--warning)';
-  return 'var(--muted-foreground)';
+/** A step being edited locally (before save). */
+export interface EditableStep {
+  key: string;
+  profileId: string;
+  instruction: string;
+  criteria: string;
 }
 
 type InstructionInput = {
@@ -36,21 +39,24 @@ type InstructionInput = {
   targetUrl: string;
   instruction: string;
   evaluationCriteria?: string;
+  steps: BrowserAutomationStepInput[];
 };
 
 interface InstructionComposerProps {
   taskId: string;
   connection: ConnectionRef;
+  connections: ConnectionRef[];
   mode: 'create' | 'edit';
   initialValues?: Pick<
     BrowserAutomation,
-    'id' | 'instruction' | 'evaluationCriteria' | 'targetUrl'
+    'id' | 'instruction' | 'evaluationCriteria' | 'targetUrl' | 'steps'
   >;
   isSaving: boolean;
   onCancel: () => void;
   onCreate: (data: InstructionInput) => Promise<boolean>;
   onUpdate: (args: { automationId: string; input: InstructionInput }) => Promise<boolean>;
   onSaved: () => void;
+  onReconnect?: (connection: ConnectionRef) => void;
 }
 
 /** An instruction has no separate name field; derive one from its first line. */
@@ -60,14 +66,48 @@ function deriveName(instruction: string): string {
   return firstLine.length > 60 ? `${firstLine.slice(0, 57)}…` : firstLine;
 }
 
+let stepKeySeq = 0;
+const newStep = (profileId: string): EditableStep => ({
+  key: `step-${(stepKeySeq += 1)}`,
+  profileId,
+  instruction: '',
+  criteria: '',
+});
+
+function initialSteps(
+  initialValues: InstructionComposerProps['initialValues'],
+  fallbackProfileId: string,
+): EditableStep[] {
+  if (initialValues?.steps && initialValues.steps.length > 0) {
+    return initialValues.steps.map((step) => ({
+      key: `step-${(stepKeySeq += 1)}`,
+      profileId: step.profileId ?? fallbackProfileId,
+      instruction: step.instruction,
+      criteria: step.evaluationCriteria ?? '',
+    }));
+  }
+  if (initialValues?.instruction) {
+    return [
+      {
+        key: `step-${(stepKeySeq += 1)}`,
+        profileId: fallbackProfileId,
+        instruction: initialValues.instruction,
+        criteria: initialValues.evaluationCriteria ?? '',
+      },
+    ];
+  }
+  return [newStep(fallbackProfileId)];
+}
+
 /**
- * Split composer (design 1i): write the instruction on the left, watch the AI
- * attempt it live on the right, then save once it works. Schedule and starting
- * page live elsewhere — the connection supplies the default URL.
+ * Multi-step composer (design: Stacked step-cards). Build an ordered list of
+ * steps — each on its own connection — then test the active step and save.
+ * Steps run in sequence, reusing each connection's saved session (no re-login).
  */
 export function InstructionComposer({
   taskId,
   connection,
+  connections,
   mode,
   initialValues,
   isSaving,
@@ -75,39 +115,50 @@ export function InstructionComposer({
   onCreate,
   onUpdate,
   onSaved,
+  onReconnect,
 }: InstructionComposerProps) {
-  const [instruction, setInstruction] = useState(initialValues?.instruction ?? '');
-  const [criteria, setCriteria] = useState(initialValues?.evaluationCriteria ?? '');
+  const [steps, setSteps] = useState<EditableStep[]>(() =>
+    initialSteps(initialValues, connection.profileId),
+  );
+  const [activeIndex, setActiveIndex] = useState(0);
 
   const [phase, setPhase] = useState<TestPhase>('idle');
   const [testRun, setTestRun] = useState<{ runId: string; accessToken: string } | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [liveViewUrl, setLiveViewUrl] = useState<string | null>(null);
-  const [steps, setSteps] = useState<SignInStep[]>([]);
+  const [timeline, setTimeline] = useState<SignInStep[]>([]);
   const [result, setResult] = useState<InstructionTestResult | null>(null);
 
   const { startTest, closeTestSession, isStarting } = useInstructionTest();
 
-  // The AI starts from the connection and finds its own way — no manual start URL.
-  const targetUrl = initialValues?.targetUrl?.trim() || connection.url;
-  const host = useMemo(() => hostnameOf(targetUrl), [targetUrl]);
+  const connectionOf = useCallback(
+    (profileId: string) =>
+      connections.find((item) => item.profileId === profileId) ?? connection,
+    [connections, connection],
+  );
+
+  const activeStep = steps[activeIndex] ?? steps[0];
+  const activeConnection = connectionOf(activeStep.profileId);
+  const host = useMemo(() => hostnameOf(activeConnection.url), [activeConnection.url]);
+
+  const blockedStepIndex = steps.findIndex((step) => {
+    const status = connectionOf(step.profileId).status;
+    return status !== 'verified';
+  });
+  const canSave = steps.every((step) => step.instruction.trim());
 
   const { run: runState, error: runError } = useRealtimeRun(testRun?.runId ?? '', {
     accessToken: testRun?.accessToken,
     enabled: !!testRun,
   });
 
-  // Mirror the live activity timeline as it streams in.
   useEffect(() => {
     const streamed = runState?.metadata?.testSteps as SignInStep[] | undefined;
-    if (streamed) setSteps(streamed);
+    if (streamed) setTimeline(streamed);
   }, [runState]);
 
-  // Resolve the test when the run finishes, and release the live session.
   useEffect(() => {
     if (!testRun) return;
-    // Ignore a stale emission from a previous run before the subscription
-    // catches up to the current one.
     if (runState && runState.id !== testRun.runId) return;
 
     const finalize = (r: InstructionTestResult) => {
@@ -134,12 +185,12 @@ export function InstructionComposer({
         },
       );
     } else if (FAILED_RUN_STATUSES.has(runState.status)) {
-      const timedOut = runState.status === 'TIMED_OUT';
       finalize({
         success: false,
-        error: timedOut
-          ? 'The AI ran out of time before finishing. Try a more specific instruction, or use “Advanced — start from a specific page” to begin closer to what you need.'
-          : 'The test run could not complete.',
+        error:
+          runState.status === 'TIMED_OUT'
+            ? 'The AI ran out of time before finishing. Try a more specific instruction.'
+            : 'The test run could not complete.',
       });
     }
   }, [testRun, runState, runError, closeTestSession]);
@@ -151,23 +202,82 @@ export function InstructionComposer({
     };
   }, [sessionId, closeTestSession]);
 
+  const resetTest = useCallback(() => {
+    setPhase('idle');
+    setResult(null);
+    setTimeline([]);
+    setSessionId((current) => {
+      if (current) void closeTestSession(current);
+      return null;
+    });
+    setLiveViewUrl(null);
+    setTestRun(null);
+  }, [closeTestSession]);
+
+  const patchStep = useCallback(
+    (index: number, patch: Partial<EditableStep>) => {
+      setSteps((current) =>
+        current.map((step, i) => (i === index ? { ...step, ...patch } : step)),
+      );
+    },
+    [],
+  );
+
+  const handleActivate = useCallback(
+    (index: number) => {
+      if (index === activeIndex) return;
+      resetTest();
+      setActiveIndex(index);
+    },
+    [activeIndex, resetTest],
+  );
+
+  const handleAddStep = useCallback(() => {
+    resetTest();
+    setSteps((current) => [...current, newStep(connection.profileId)]);
+    setActiveIndex(steps.length);
+  }, [connection.profileId, steps.length, resetTest]);
+
+  const handleRemoveStep = useCallback(
+    (index: number) => {
+      resetTest();
+      setSteps((current) => current.filter((_, i) => i !== index));
+      setActiveIndex((current) => Math.max(0, current > index ? current - 1 : current === index ? Math.min(current, steps.length - 2) : current));
+    },
+    [resetTest, steps.length],
+  );
+
+  const handleMove = useCallback(
+    (index: number, direction: -1 | 1) => {
+      const target = index + direction;
+      if (target < 0 || target >= steps.length) return;
+      setSteps((current) => {
+        const next = [...current];
+        [next[index], next[target]] = [next[target], next[index]];
+        return next;
+      });
+      setActiveIndex(target);
+    },
+    [steps.length],
+  );
+
   const handleTest = useCallback(async () => {
-    if (!instruction.trim()) {
-      toast.error('Add an instruction first.');
+    if (!activeStep.instruction.trim()) {
+      toast.error('Add an instruction for this step first.');
       return;
     }
     if (sessionId) void closeTestSession(sessionId);
-    setSteps([]);
+    setTimeline([]);
     setResult(null);
     setSessionId(null);
     setLiveViewUrl(null);
     setPhase('testing');
 
     const handle = await startTest({
-      profileId: connection.profileId,
-      targetUrl,
-      instruction: instruction.trim(),
-      evaluationCriteria: criteria.trim() ? criteria.trim() : undefined,
+      profileId: activeStep.profileId,
+      targetUrl: activeConnection.url,
+      instruction: activeStep.instruction.trim(),
+      evaluationCriteria: activeStep.criteria.trim() ? activeStep.criteria.trim() : undefined,
       taskId,
     });
     if (!handle) {
@@ -177,33 +287,31 @@ export function InstructionComposer({
     setSessionId(handle.sessionId);
     setLiveViewUrl(handle.liveViewUrl);
     setTestRun({ runId: handle.runId, accessToken: handle.publicAccessToken });
-  }, [
-    instruction,
-    sessionId,
-    closeTestSession,
-    startTest,
-    connection.profileId,
-    targetUrl,
-    criteria,
-    taskId,
-  ]);
+  }, [activeStep, activeConnection.url, sessionId, closeTestSession, startTest, taskId]);
 
   const handleSave = useCallback(async () => {
-    if (!instruction.trim()) {
-      toast.error('Add an instruction first.');
+    if (!canSave) {
+      toast.error('Every step needs an instruction.');
       return;
     }
+    const stepInputs: BrowserAutomationStepInput[] = steps.map((step) => ({
+      profileId: step.profileId,
+      targetUrl: connectionOf(step.profileId).url,
+      instruction: step.instruction.trim(),
+      evaluationCriteria: step.criteria.trim() ? step.criteria.trim() : undefined,
+    }));
     const input: InstructionInput = {
-      name: deriveName(instruction),
-      targetUrl,
-      instruction: instruction.trim(),
-      evaluationCriteria: criteria.trim() ? criteria.trim() : undefined,
+      name: deriveName(steps[0].instruction),
+      targetUrl: stepInputs[0].targetUrl,
+      instruction: stepInputs[0].instruction,
+      evaluationCriteria: stepInputs[0].evaluationCriteria ?? undefined,
+      steps: stepInputs,
     };
     const ok = initialValues?.id
       ? await onUpdate({ automationId: initialValues.id, input })
       : await onCreate(input);
     if (ok) onSaved();
-  }, [instruction, targetUrl, criteria, initialValues?.id, onCreate, onUpdate, onSaved]);
+  }, [canSave, steps, connectionOf, initialValues?.id, onCreate, onUpdate, onSaved]);
 
   const handleCancel = useCallback(() => {
     if (sessionId) void closeTestSession(sessionId);
@@ -211,65 +319,97 @@ export function InstructionComposer({
   }, [sessionId, closeTestSession, onCancel]);
 
   const testing = phase === 'testing';
-  const canSave = mode === 'edit' || phase === 'result';
+  const checkCount = steps.filter((step) => step.criteria.trim()).length;
 
   return (
     <div className="overflow-hidden rounded-lg border border-border bg-card">
-      {/* Header */}
       <div className="flex items-start justify-between gap-3 border-b border-border px-6 py-4">
         <div>
           <div className="text-base text-foreground">
-            {mode === 'edit' ? 'Edit instruction' : 'New instruction'}
+            {mode === 'edit' ? 'Edit automation' : 'New automation'}
+            <span className="ml-2 text-xs text-muted-foreground">
+              {steps.length} {steps.length === 1 ? 'step' : 'steps'}
+              {checkCount > 0 && ` · ${checkCount} ${checkCount === 1 ? 'check' : 'checks'}`}
+            </span>
           </div>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Tell the AI what to capture. It runs unattended on this task&apos;s schedule
-            once saved.
+            Steps run in order, unattended. Saved sessions are reused — no re-login
+            between vendors.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-border py-1 pl-1.5 pr-2.5 text-[11.5px] text-foreground">
-            <span className="grid h-4 w-4 place-items-center rounded-full bg-muted text-[8px] font-bold uppercase">
-              {connection.hostname.charAt(0)}
-            </span>
-            {connection.hostname}
-            <span
-              className="h-1.5 w-1.5 rounded-full"
-              style={{ background: statusDotColor(connection.status) }}
-            />
-          </span>
-          <button
-            onClick={handleCancel}
-            aria-label="Close"
-            className="grid h-6 w-6 place-items-center rounded-sm text-muted-foreground hover:text-foreground"
-          >
-            <Close size={12} />
-          </button>
-        </div>
+        <button
+          onClick={handleCancel}
+          aria-label="Close"
+          className="grid h-6 w-6 cursor-pointer place-items-center rounded-sm text-muted-foreground hover:text-foreground"
+        >
+          <Close size={12} />
+        </button>
       </div>
 
-      {/* Body */}
       <div className="flex min-h-[430px] flex-col md:flex-row">
-        <InstructionComposerForm
-          instruction={instruction}
-          onInstructionChange={setInstruction}
-          criteria={criteria}
-          onCriteriaChange={setCriteria}
-          testing={testing}
-          canSave={canSave}
-          hasResult={!!result}
-          isSaving={isSaving}
-          isStarting={isStarting}
-          onTest={handleTest}
-          onSave={handleSave}
-        />
+        {/* Left — the step list */}
+        <div className="flex flex-col gap-2 border-b border-border p-6 md:w-[420px] md:flex-none md:border-b-0 md:border-r">
+          {steps.map((step, index) => (
+            <div key={step.key} className="flex flex-col gap-2">
+              {index > 0 && (
+                <div className="flex items-center gap-2 pl-2 text-[10.5px] text-muted-foreground">
+                  <span className="h-3 w-px bg-border" />
+                  session reused — no sign-in
+                </div>
+              )}
+              <StepCard
+                step={step}
+                index={index}
+                total={steps.length}
+                isActive={index === activeIndex}
+                connections={connections}
+                connection={connectionOf(step.profileId)}
+                onActivate={() => handleActivate(index)}
+                onChange={(patch) => patchStep(index, patch)}
+                onRemove={() => handleRemoveStep(index)}
+                onMove={(direction) => handleMove(index, direction)}
+                onReconnect={(conn) => onReconnect?.(conn)}
+              />
+            </div>
+          ))}
 
-        {/* Right test panel */}
+          <div className="pt-1">
+            <Button variant="outline" onClick={handleAddStep} iconLeft={<Add size={13} />}>
+              Add step — another vendor, same run
+            </Button>
+          </div>
+
+          <div className="mt-2 flex flex-col gap-2">
+            <Button
+              width="full"
+              variant="outline"
+              onClick={handleTest}
+              disabled={isStarting || testing}
+              loading={testing}
+              iconLeft={!testing ? <Play size={11} /> : undefined}
+            >
+              {testing ? 'Testing…' : 'Test this step'}
+            </Button>
+            <Button
+              width="full"
+              onClick={handleSave}
+              loading={isSaving}
+              disabled={isSaving || !canSave || blockedStepIndex !== -1}
+            >
+              {blockedStepIndex !== -1
+                ? `Fix step ${blockedStepIndex + 1} to save`
+                : 'Save automation'}
+            </Button>
+          </div>
+        </div>
+
+        {/* Right — test the active step */}
         <div className="flex flex-1 flex-col p-6" style={{ background: 'var(--muted)' }}>
           <InstructionTestPanel
             phase={phase}
             host={host}
             liveViewUrl={liveViewUrl}
-            steps={steps}
+            steps={timeline}
             result={result}
           />
         </div>

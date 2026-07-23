@@ -27,6 +27,7 @@ const connection: ConnectionRef = {
 const baseProps = {
   taskId: 'task_1',
   connection,
+  connections: [connection],
   isSaving: false,
   onCancel: vi.fn(),
   onCreate: vi.fn().mockResolvedValue(true),
@@ -45,18 +46,19 @@ describe('InstructionComposer', () => {
     });
   });
 
-  it('renders the connection chip (hostname) and create heading', () => {
+  it('renders the create heading and multi-step actions', () => {
     render(<InstructionComposer {...baseProps} mode="create" />);
-    expect(screen.getByText('New instruction')).toBeInTheDocument();
-    expect(screen.getByText('app.example.com')).toBeInTheDocument();
+    expect(screen.getByText('New automation')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /save automation/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /add step/i })).toBeInTheDocument();
   });
 
-  it('tests the instruction against the connection URL', async () => {
+  it('tests the active step against its connection URL', async () => {
     render(<InstructionComposer {...baseProps} mode="create" />);
     fireEvent.change(screen.getByPlaceholderText(/screenshot the two-factor/i), {
       target: { value: 'Screenshot the MFA policy' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /test instruction/i }));
+    fireEvent.click(screen.getByRole('button', { name: /test this step/i }));
 
     await waitFor(() => expect(startTest).toHaveBeenCalledTimes(1));
     expect(startTest).toHaveBeenCalledWith({
@@ -73,36 +75,23 @@ describe('InstructionComposer', () => {
     fireEvent.change(screen.getByPlaceholderText(/screenshot the two-factor/i), {
       target: { value: 'Capture security page' },
     });
-    // The check field is always visible now (no opt-in toggle).
     fireEvent.change(screen.getByPlaceholderText(/two-factor authentication is enforced/i), {
       target: { value: 'MFA is on' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /test instruction/i }));
+    fireEvent.click(screen.getByRole('button', { name: /test this step/i }));
 
     await waitFor(() => expect(startTest).toHaveBeenCalledTimes(1));
     expect(startTest.mock.calls[0][0].evaluationCriteria).toBe('MFA is on');
   });
 
-  it('leaves the check off (capture-only) when the criteria field is empty', async () => {
+  it('adds another step', () => {
     render(<InstructionComposer {...baseProps} mode="create" />);
-    fireEvent.change(screen.getByPlaceholderText(/screenshot the two-factor/i), {
-      target: { value: 'Capture security page' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: /test instruction/i }));
-
-    await waitFor(() => expect(startTest).toHaveBeenCalledTimes(1));
-    expect(startTest.mock.calls[0][0].evaluationCriteria).toBeUndefined();
+    expect(screen.getByText('1 step')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /add step/i }));
+    expect(screen.getByText('2 steps')).toBeInTheDocument();
   });
 
-  it('fills a field from an example chip', async () => {
-    render(<InstructionComposer {...baseProps} mode="create" />);
-    fireEvent.click(screen.getByRole('button', { name: 'MFA enforced' }));
-    expect(
-      screen.getByDisplayValue('Two-factor authentication is enforced for all members.'),
-    ).toBeInTheDocument();
-  });
-
-  it('saves an edited instruction with a derived name', async () => {
+  it('saves as a one-step automation with a derived name and steps[]', async () => {
     const onUpdate = vi.fn().mockResolvedValue(true);
     render(
       <InstructionComposer
@@ -117,7 +106,7 @@ describe('InstructionComposer', () => {
         }}
       />,
     );
-    fireEvent.click(screen.getByRole('button', { name: /save instruction/i }));
+    fireEvent.click(screen.getByRole('button', { name: /save automation/i }));
 
     await waitFor(() => expect(onUpdate).toHaveBeenCalledTimes(1));
     expect(onUpdate).toHaveBeenCalledWith({
@@ -127,6 +116,14 @@ describe('InstructionComposer', () => {
         targetUrl: 'https://app.example.com',
         instruction: 'Screenshot the billing page',
         evaluationCriteria: undefined,
+        steps: [
+          {
+            profileId: 'prof_1',
+            targetUrl: 'https://app.example.com',
+            instruction: 'Screenshot the billing page',
+            evaluationCriteria: undefined,
+          },
+        ],
       },
     });
   });
