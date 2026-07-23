@@ -80,7 +80,7 @@ export function StepCard({
           <span className="shrink-0 whitespace-nowrap text-[10px] font-bold uppercase tracking-[0.06em] text-muted-foreground">
             Runs on
           </span>
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 [&_button]:h-8 [&_button]:text-[13px]">
             <ConnectionPicker
               connections={connections}
               value={step.profileId}
