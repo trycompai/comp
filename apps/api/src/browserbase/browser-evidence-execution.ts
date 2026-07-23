@@ -88,6 +88,8 @@ export interface BrowserEvidenceLog {
 export interface BrowserEvidenceExecutionResult {
   success: boolean;
   screenshot?: string;
+  /** A close-up: the agent's final viewport (where it left the evidence). */
+  focusScreenshot?: string;
   finalUrl?: string;
   evaluationStatus?: 'pass' | 'fail';
   evaluationReason?: string;
@@ -229,11 +231,26 @@ export async function executeBrowserEvidence({
       quality: 80,
       fullPage: true,
     });
+    // The current viewport — the agent stops with the evidence on screen, so this
+    // is a naturally focused close-up (one screen, no scroll noise) to sit
+    // alongside the full-page shot as evidence.
+    const rawFocus = await page.screenshot({
+      type: 'jpeg',
+      quality: 80,
+      fullPage: false,
+    });
 
     const screenshot = await renderScreenshot({
       logger,
       logs,
       rawScreenshot,
+      instruction: input.instruction,
+      finalUrl,
+    });
+    const focusScreenshot = await renderScreenshot({
+      logger,
+      logs,
+      rawScreenshot: rawFocus,
       instruction: input.instruction,
       finalUrl,
     });
@@ -250,6 +267,7 @@ export async function executeBrowserEvidence({
       return {
         success: false,
         screenshot,
+        focusScreenshot,
         finalUrl,
         evaluationStatus: evaluation.evaluationStatus,
         evaluationReason: evaluation.evaluationReason,
@@ -263,6 +281,7 @@ export async function executeBrowserEvidence({
     return {
       success: true,
       screenshot,
+      focusScreenshot,
       finalUrl,
       evaluationStatus: evaluation.evaluationStatus,
       evaluationReason: evaluation.evaluationReason,

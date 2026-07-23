@@ -164,15 +164,39 @@ export function InstructionTestPanel({
         </span>
       </TestRunHeader>
 
+      {result.focusScreenshotUrl && (
+        <div className="flex flex-col gap-1">
+          <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+            Evidence — close-up
+          </span>
+          <div className="overflow-hidden rounded-md border border-border bg-white">
+            <Image
+              src={result.focusScreenshotUrl}
+              alt="Evidence close-up"
+              width={800}
+              height={450}
+              className="h-auto w-full object-contain"
+            />
+          </div>
+        </div>
+      )}
+
       {result.screenshotUrl && (
-        <div className="overflow-hidden rounded-md border border-border bg-white">
-          <Image
-            src={result.screenshotUrl}
-            alt="Test capture"
-            width={800}
-            height={450}
-            className="h-auto w-full object-contain"
-          />
+        <div className="flex flex-col gap-1">
+          {result.focusScreenshotUrl && (
+            <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+              Full page
+            </span>
+          )}
+          <div className="overflow-hidden rounded-md border border-border bg-white">
+            <Image
+              src={result.screenshotUrl}
+              alt="Full page capture"
+              width={800}
+              height={450}
+              className="h-auto w-full object-contain"
+            />
+          </div>
         </div>
       )}
 

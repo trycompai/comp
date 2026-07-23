@@ -16,6 +16,8 @@ export interface InstructionTestStep {
 export interface InstructionTestResult {
   success: boolean;
   screenshotUrl?: string;
+  /** A focused close-up (the agent's final viewport) shown beside the full page. */
+  focusScreenshotUrl?: string;
   finalUrl?: string;
   evaluationStatus?: 'pass' | 'fail';
   evaluationReason?: string;
@@ -122,6 +124,7 @@ export class BrowserInstructionTestService {
     return {
       success: result.success,
       screenshotUrl: result.screenshotUrl,
+      focusScreenshotUrl: result.focusScreenshotUrl,
       finalUrl: result.finalUrl,
       evaluationStatus: result.evaluationStatus,
       evaluationReason: result.evaluationReason,

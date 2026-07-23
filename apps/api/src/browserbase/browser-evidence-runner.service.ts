@@ -48,6 +48,9 @@ export interface BrowserEvidenceRunResult {
   status: 'completed' | 'failed' | 'blocked';
   screenshotKey?: string;
   screenshotUrl?: string;
+  /** A focused close-up (the agent's final viewport) shown beside the full page. */
+  focusScreenshotKey?: string;
+  focusScreenshotUrl?: string;
   finalUrl?: string;
   evaluationStatus?: 'pass' | 'fail';
   evaluationReason?: string;
@@ -124,8 +127,12 @@ export class BrowserEvidenceRunnerService {
       vault: this.vault,
       onLog: input.onLog,
     });
-    let uploaded: { screenshotKey: string; screenshotUrl: string } | null =
-      null;
+    let uploaded: {
+      screenshotKey?: string;
+      screenshotUrl?: string;
+      focusScreenshotKey?: string;
+      focusScreenshotUrl?: string;
+    } | null = null;
     try {
       uploaded = await this.uploadCapturedScreenshot({ input, execution });
     } catch (err) {
@@ -149,6 +156,8 @@ export class BrowserEvidenceRunnerService {
         status: this.blockedStatusForCode(execution.failureCode),
         screenshotKey: uploaded?.screenshotKey,
         screenshotUrl: uploaded?.screenshotUrl,
+        focusScreenshotKey: uploaded?.focusScreenshotKey,
+        focusScreenshotUrl: uploaded?.focusScreenshotUrl,
         finalUrl: execution.finalUrl,
         evaluationStatus: execution.evaluationStatus,
         evaluationReason: execution.evaluationReason,
@@ -166,11 +175,30 @@ export class BrowserEvidenceRunnerService {
       status: 'completed',
       screenshotKey: uploaded?.screenshotKey,
       screenshotUrl: uploaded?.screenshotUrl,
+      focusScreenshotKey: uploaded?.focusScreenshotKey,
+      focusScreenshotUrl: uploaded?.focusScreenshotUrl,
       finalUrl: execution.finalUrl,
       evaluationStatus: execution.evaluationStatus,
       evaluationReason: execution.evaluationReason,
       logs: toJsonLogs(execution.logs),
     };
+  }
+
+  private async uploadOne(
+    input: BrowserEvidenceRunnerInput,
+    base64: string,
+    variant?: string,
+  ): Promise<{ key: string; url: string }> {
+    // A variant keys to a distinct object (…/runId-focus.jpg) so it doesn't
+    // overwrite the full-page shot.
+    const key = await this.screenshots.uploadScreenshot({
+      organizationId: input.organizationId,
+      automationId: input.automationId,
+      runId: variant ? `${input.runId}-${variant}` : input.runId,
+      base64Screenshot: base64,
+    });
+    const url = await this.screenshots.getPresignedUrl({ key });
+    return { key, url };
   }
 
   private async uploadCapturedScreenshot({
@@ -179,20 +207,27 @@ export class BrowserEvidenceRunnerService {
   }: {
     input: BrowserEvidenceRunnerInput;
     execution: BrowserEvidenceExecutionResult;
-  }): Promise<{ screenshotKey: string; screenshotUrl: string } | null> {
+  }): Promise<{
+    screenshotKey?: string;
+    screenshotUrl?: string;
+    focusScreenshotKey?: string;
+    focusScreenshotUrl?: string;
+  } | null> {
     if (!execution.screenshot) return null;
 
-    const screenshotKey = await this.screenshots.uploadScreenshot({
-      organizationId: input.organizationId,
-      automationId: input.automationId,
-      runId: input.runId,
-      base64Screenshot: execution.screenshot,
-    });
-    const screenshotUrl = await this.screenshots.getPresignedUrl({
-      key: screenshotKey,
-    });
+    const [full, focus] = await Promise.all([
+      this.uploadOne(input, execution.screenshot),
+      execution.focusScreenshot
+        ? this.uploadOne(input, execution.focusScreenshot, 'focus')
+        : Promise.resolve(null),
+    ]);
 
-    return { screenshotKey, screenshotUrl };
+    return {
+      screenshotKey: full.key,
+      screenshotUrl: full.url,
+      focusScreenshotKey: focus?.key,
+      focusScreenshotUrl: focus?.url,
+    };
   }
 
   private async closeSession(sessionId: string): Promise<void> {

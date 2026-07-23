@@ -56,7 +56,7 @@ export async function evaluateIfNeeded({
         'Decide whether the page clearly satisfies this criteria for the intended target.',
         'Only return pass=true if the evidence is unambiguously present and visible for that target.',
         'If it is ambiguous, missing, applies only to a different item, or is contradicted, return pass=false.',
-        'Always provide a short reason (max 220 characters).',
+        'Always provide a short reason (max 220 characters) that names the specific value and WHERE on the page it appears, so a reviewer can find it (e.g. "commit count 8,142, in the repository header").',
         '',
         `Criteria: ${normalizedCriteria}`,
       ]

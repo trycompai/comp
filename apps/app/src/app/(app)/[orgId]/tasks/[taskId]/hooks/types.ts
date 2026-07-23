@@ -155,6 +155,8 @@ export type BrowserContextStatus = 'loading' | 'no-context' | 'has-context' | 'c
 export interface InstructionTestResult {
   success: boolean;
   screenshotUrl?: string;
+  /** A focused close-up (the agent's final viewport) shown beside the full page. */
+  focusScreenshotUrl?: string;
   finalUrl?: string;
   evaluationStatus?: 'pass' | 'fail';
   evaluationReason?: string;
