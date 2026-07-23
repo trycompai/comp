@@ -14,6 +14,8 @@ import {
   classifyBrowserAutomationError,
 } from './browser-automation-errors';
 import type { BrowserEvidenceSessionInput } from './browser-evidence-runner.service';
+import type { BrowserCredentialVaultAdapter } from './credential-vault';
+import { reloginWithStoredCredentials } from './browser-credential-login';
 
 type Stagehand = import('@browserbasehq/stagehand').Stagehand;
 
@@ -44,10 +46,12 @@ export async function executeBrowserEvidence({
   input,
   sessions,
   logger,
+  vault,
 }: {
   input: BrowserEvidenceSessionInput;
   sessions: BrowserbaseSessionService;
   logger: Logger;
+  vault: BrowserCredentialVaultAdapter;
 }): Promise<BrowserEvidenceExecutionResult> {
   const logs: BrowserEvidenceLog[] = [];
   const log = (stage: string, message: string) => {
@@ -59,6 +63,9 @@ export async function executeBrowserEvidence({
   try {
     log('session', 'Initializing Stagehand session.');
     stagehand = await sessions.createStagehand(input.sessionId);
+    // Stable non-null handle for use inside async closures below, where the
+    // `let stagehand` binding would otherwise widen back to `Stagehand | null`.
+    const activeStagehand = stagehand;
     const initialPage = await sessions.ensureActivePage(stagehand);
     let page = initialPage;
 
@@ -74,12 +81,38 @@ export async function executeBrowserEvidence({
     const authCheck = await checkAuth(stagehand);
 
     if (!authCheck.isLoggedIn) {
-      const classified = classifyBrowserAutomationError(
-        new Error('Session expired. User is not logged in.'),
+      log(
         'auth',
+        'Session expired; attempting sign-in with stored credentials.',
       );
-      log('auth', classified.userFacing);
-      return toExecutionFailure({ classified, logs });
+      const relogin = await reloginWithStoredCredentials({
+        stagehand: activeStagehand,
+        sessions,
+        vault,
+        input,
+        verifyLoggedIn: async () =>
+          (await checkAuth(activeStagehand)).isLoggedIn,
+        log: (message) => log('auth', message),
+      });
+      page = relogin.page ?? page;
+
+      if (!relogin.isLoggedIn) {
+        // Classify our own known outcome directly rather than relying on string
+        // matching: auto sign-in couldn't establish a session, so the profile
+        // needs a human to reconnect (e.g. SMS/email/push/SSO login).
+        const classified: ClassifiedBrowserAutomationError = {
+          code: 'needs_reauth',
+          stage: 'auth',
+          userFacing:
+            relogin.reason ??
+            'Authentication is no longer valid. Reconnect this browser profile.',
+          needsReauth: true,
+          blockedReason: 'Automated sign-in could not establish a session.',
+        };
+        log('auth', classified.userFacing);
+        return toExecutionFailure({ classified, logs });
+      }
+      log('auth', 'Re-authenticated with stored credentials.');
     }
 
     currentStage = 'action';

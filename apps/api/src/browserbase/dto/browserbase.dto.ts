@@ -121,6 +121,26 @@ export class MarkAuthProfileNeedsReauthDto {
   reason?: string;
 }
 
+export class StoreAuthProfileCredentialsDto {
+  @ApiProperty({ description: 'Username or email for the vendor login' })
+  @IsString()
+  @IsNotEmpty()
+  username: string;
+
+  @ApiProperty({ description: 'Password for the vendor login' })
+  @IsString()
+  @IsNotEmpty()
+  password: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Authenticator app setup key (TOTP secret or otpauth:// URI). When provided, one-time codes are generated for automated sign-in.',
+  })
+  @IsString()
+  @IsOptional()
+  totpSeed?: string;
+}
+
 export class BrowserAuthProfileResponseDto {
   @ApiProperty()
   id: string;

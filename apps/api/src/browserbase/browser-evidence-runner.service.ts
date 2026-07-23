@@ -1,7 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@db';
 import { BrowserbaseSessionService } from './browserbase-session.service';
 import { BrowserbaseScreenshotService } from './browserbase-screenshot.service';
+import {
+  BROWSER_CREDENTIAL_VAULT_ADAPTER,
+  type BrowserCredentialVaultAdapter,
+} from './credential-vault';
+import { resolveBrowserCredentialVaultAdapter } from './browser-credential-vault.factory';
 import {
   type BrowserAutomationFailureCode,
   type BrowserAutomationFailureStage,
@@ -68,6 +73,8 @@ export class BrowserEvidenceRunnerService {
   constructor(
     private readonly sessions: BrowserbaseSessionService = new BrowserbaseSessionService(),
     private readonly screenshots: BrowserbaseScreenshotService = new BrowserbaseScreenshotService(),
+    @Inject(BROWSER_CREDENTIAL_VAULT_ADAPTER)
+    private readonly vault: BrowserCredentialVaultAdapter = resolveBrowserCredentialVaultAdapter(),
   ) {}
 
   async runEvidence(
@@ -112,6 +119,7 @@ export class BrowserEvidenceRunnerService {
       input,
       sessions: this.sessions,
       logger: this.logger,
+      vault: this.vault,
     });
     let uploaded: { screenshotKey: string; screenshotUrl: string } | null =
       null;

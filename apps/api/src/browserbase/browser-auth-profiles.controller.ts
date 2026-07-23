@@ -18,6 +18,7 @@ import {
   ResolveAuthProfileDto,
   ResolveAuthProfileResponseDto,
   SessionResponseDto,
+  StoreAuthProfileCredentialsDto,
   VerifyAuthProfileResponseDto,
   VerifyAuthProfileSessionDto,
 } from './dto/browserbase.dto';
@@ -110,6 +111,30 @@ export class BrowserAuthProfilesController {
       sessionId: dto.sessionId,
       url: dto.url,
     })) as VerifyAuthProfileResponseDto;
+  }
+
+  @Post('profiles/:profileId/credentials')
+  @RequirePermission('integration', 'update')
+  @ApiOperation({
+    summary: 'Store browser auth profile credentials',
+    description:
+      'Store the login (username, password, optional authenticator setup key) for a browser auth profile in the organization vault so scheduled and manual runs can sign in automatically when a session expires.',
+  })
+  @ApiParam({ name: 'profileId', description: 'Browser auth profile ID' })
+  @ApiBody({ type: StoreAuthProfileCredentialsDto })
+  @ApiResponse({ status: 200, type: BrowserAuthProfileResponseDto })
+  async storeProfileCredentials(
+    @OrganizationId() organizationId: string,
+    @Param('profileId') profileId: string,
+    @Body() dto: StoreAuthProfileCredentialsDto,
+  ): Promise<BrowserAuthProfileResponseDto> {
+    return (await this.browserbaseService.storeAuthProfileCredentials({
+      organizationId,
+      profileId,
+      username: dto.username,
+      password: dto.password,
+      totpSeed: dto.totpSeed,
+    })) as BrowserAuthProfileResponseDto;
   }
 
   @Post('profiles/:profileId/needs-reauth')

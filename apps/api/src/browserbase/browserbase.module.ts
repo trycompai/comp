@@ -11,6 +11,9 @@ import { BrowserbaseOrgContextService } from './browserbase-org-context.service'
 import { BrowserbaseScreenshotService } from './browserbase-screenshot.service';
 import { BrowserbaseSessionService } from './browserbase-session.service';
 import { BrowserbaseService } from './browserbase.service';
+import { BrowserCredentialStorageService } from './browser-credential-storage.service';
+import { BROWSER_CREDENTIAL_VAULT_ADAPTER } from './credential-vault';
+import { resolveBrowserCredentialVaultAdapter } from './browser-credential-vault.factory';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
@@ -27,6 +30,11 @@ import { AuthModule } from '../auth/auth.module';
     BrowserbaseOrgContextService,
     BrowserbaseScreenshotService,
     BrowserEvidenceRunnerService,
+    BrowserCredentialStorageService,
+    {
+      provide: BROWSER_CREDENTIAL_VAULT_ADAPTER,
+      useFactory: resolveBrowserCredentialVaultAdapter,
+    },
   ],
   exports: [BrowserbaseService],
 })
