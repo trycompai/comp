@@ -129,7 +129,7 @@ export function AutomationItem({
 
         <div className="flex flex-none items-center gap-1.5">
           {!readOnly && automation.scheduleFrequency && (
-            <div className="w-28">
+            <div className="w-24 [&_button]:h-6 [&_button]:px-2 [&_button]:text-xs">
               <SchedulePicker
                 value={automation.scheduleFrequency}
                 onChange={onChangeSchedule}
@@ -139,7 +139,7 @@ export function AutomationItem({
           {!readOnly && (
             <Button
               variant="ghost"
-              size="icon-lg"
+              size="icon-sm"
               onClick={() => onToggleEnabled(!automation.isEnabled)}
               aria-label={automation.isEnabled ? 'Pause automation' : 'Enable automation'}
             >
@@ -153,7 +153,7 @@ export function AutomationItem({
           {!readOnly && (
             <Button
               variant="ghost"
-              size="icon-lg"
+              size="icon-sm"
               onClick={onEdit}
               aria-label="Edit automation"
             >
@@ -182,7 +182,7 @@ export function AutomationItem({
             ) : (
               <Button
                 variant="ghost"
-                size="icon-lg"
+                size="icon-sm"
                 onClick={() => setConfirmDelete(true)}
                 aria-label="Delete automation"
               >
@@ -205,9 +205,9 @@ export function AutomationItem({
           )}
 
           {runs.length > 0 && (
-            <Button size="icon-lg" variant="ghost" onClick={onToggleExpand}>
+            <Button size="icon-sm" variant="ghost" onClick={onToggleExpand}>
               <ChevronDown
-                size={16}
+                size={14}
                 className={cn(
                   'transition-transform duration-300',
                   isExpanded && 'rotate-180',
