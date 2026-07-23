@@ -46,8 +46,8 @@ vi.mock('@trycompai/design-system', async () => {
 vi.mock('@/components/VendorLogo', () => ({
   VendorLogo: () => <span data-testid="vendor-logo" />,
 }));
-vi.mock('@/components/schedule-summary', () => ({
-  ScheduleSummary: () => <span data-testid="schedule-summary" />,
+vi.mock('./AutomationMetaLine', () => ({
+  AutomationMetaLine: () => <div data-testid="meta-line" />,
 }));
 vi.mock('./RunHistory', () => ({
   RunHistory: () => <div data-testid="run-history" />,
@@ -106,6 +106,14 @@ describe('AutomationItem — schedule control', () => {
     render(<AutomationItem {...baseProps} onChangeSchedule={onChangeSchedule} />);
     fireEvent.click(screen.getByText('Monthly'));
     expect(onChangeSchedule).toHaveBeenCalledWith('monthly');
+  });
+
+  it('keeps the "Run" label while running so the button width does not shift', () => {
+    render(<AutomationItem {...baseProps} isRunning />);
+    // The running state swaps the play icon for a spinner but keeps the label,
+    // so nothing after the button moves (the reported UI shift).
+    expect(screen.getByText('Run')).toBeInTheDocument();
+    expect(screen.queryByText(/running/i)).not.toBeInTheDocument();
   });
 
   it('hides the schedule control in read-only mode', () => {

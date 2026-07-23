@@ -11,18 +11,16 @@ import {
   DropdownMenuTrigger,
 } from '@trycompai/design-system';
 import {
-  Calendar,
   ChevronDown,
   Edit,
   Play,
   Power,
   TrashCan,
 } from '@trycompai/design-system/icons';
-import { formatDistanceToNow } from 'date-fns';
 import { useState } from 'react';
 import type { TaskFrequency } from '@db';
-import { ScheduleSummary } from '@/components/schedule-summary';
 import type { BrowserAutomation, BrowserAutomationRun } from '../../hooks/types';
+import { AutomationMetaLine } from './AutomationMetaLine';
 import { RunHistory } from './RunHistory';
 
 /** Cadence options for the per-automation schedule menu (matches TaskFrequency). */
@@ -116,26 +114,15 @@ export function AutomationItem({
               ))}
             </div>
           )}
-          {/* One compact meta line: last run + schedule summary. The editable
-              cadence picker lives in the actions row, not stacked here. */}
-          <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
-            <span>
-              {latestRun
-                ? `Last ran ${formatDistanceToNow(new Date(latestRun.createdAt), {
-                    addSuffix: true,
-                  })}`
-                : 'Never run'}
-            </span>
-            {automation.scheduleFrequency && (
-              <>
-                <span aria-hidden>·</span>
-                <ScheduleSummary
-                  scheduleFrequency={automation.scheduleFrequency}
-                  lastRunAt={automation.lastRunAt ?? null}
-                />
-              </>
-            )}
-          </div>
+          {/* One muted meta line, one fact per clause, tuned per state
+              (never-run / ran-ok / failed / paused). Cadence is editable via
+              the Run split's ▾ caret, so it is read-only here. */}
+          <AutomationMetaLine
+            scheduleFrequency={automation.scheduleFrequency}
+            lastRunAt={automation.lastRunAt ?? null}
+            latestRun={latestRun}
+            isPaused={isDisabled}
+          />
           {latestRun?.failureCode && (
             <p className="mt-1 text-xs text-destructive">
               {latestRun.blockedReason ||
@@ -208,23 +195,38 @@ export function AutomationItem({
                 <Button
                   variant="default"
                   size="sm"
-                  onClick={onRun}
-                  disabled={isRunning || isDisabled}
-                  loading={isRunning}
-                  iconLeft={!isRunning ? <Play size={12} /> : undefined}
+                  aria-busy={isRunning}
+                  disabled={isDisabled}
+                  onClick={() => {
+                    if (!isRunning && !isDisabled) onRun();
+                  }}
+                  iconLeft={
+                    isRunning ? (
+                      // Same 12px footprint as the Play icon, so swapping to the
+                      // spinner keeps the button's width fixed — no layout shift.
+                      <span
+                        aria-hidden
+                        className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent"
+                      />
+                    ) : (
+                      <Play size={12} />
+                    )
+                  }
                 >
-                  {isRunning ? 'Running...' : 'Run'}
+                  Run
                 </Button>
                 {automation.scheduleFrequency && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      render={
-                        <Button variant="outline" size="icon-sm" aria-label="Change schedule" />
-                      }
-                    >
-                      <Calendar size={14} className="text-muted-foreground" />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                  <>
+                    <div className="w-px self-stretch bg-primary-foreground/25" />
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        render={
+                          <Button variant="default" size="icon-sm" aria-label="Change schedule" />
+                        }
+                      >
+                        <ChevronDown size={12} />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
                       <DropdownMenuRadioGroup
                         value={automation.scheduleFrequency}
                         onValueChange={(value) => {
@@ -238,7 +240,8 @@ export function AutomationItem({
                         ))}
                       </DropdownMenuRadioGroup>
                     </DropdownMenuContent>
-                  </DropdownMenu>
+                    </DropdownMenu>
+                  </>
                 )}
               </div>
             )}

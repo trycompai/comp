@@ -1,6 +1,7 @@
 'use client';
 
 import { TaskFrequency } from '@db';
+import { nextRunAfter } from './schedule-utils';
 
 const LABELS: Record<TaskFrequency, string> = {
   daily: 'Daily',
@@ -10,23 +11,14 @@ const LABELS: Record<TaskFrequency, string> = {
   yearly: 'Yearly',
 };
 
-const PERIOD_DAYS: Record<TaskFrequency, number> = {
-  daily: 1,
-  weekly: 7,
-  monthly: 30,
-  quarterly: 91,
-  yearly: 365,
-};
-
-// Approximate next-run (months ≈ 30 days). The server's isDueToday helper is the
-// real authority; this is only a UX hint shown on automation cards.
+// The server's isDueToday helper is the real authority; this is only a UX hint.
 //
 // When `lastRunAt` is null the orchestrator picks the automation up on its
 // next tick, so we show "now" rather than now + period (which would over-
 // project a full period into the future).
 function computeNextRun(frequency: TaskFrequency, lastRunAt: Date | null, now: Date): Date {
   if (lastRunAt === null) return now;
-  return new Date(lastRunAt.getTime() + PERIOD_DAYS[frequency] * 24 * 60 * 60 * 1000);
+  return nextRunAfter(frequency, lastRunAt);
 }
 
 // Locale-agnostic YYYY-MM-DD so the rendered string is byte-identical on
