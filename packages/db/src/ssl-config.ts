@@ -3,7 +3,7 @@ export type SslConfig =
   | { checkServerIdentity: () => undefined }
   | { rejectUnauthorized: false };
 
-const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1']);
+const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1', 'comp-postgres']);
 
 function isLocalhostUrl(connectionString: string): boolean {
   try {

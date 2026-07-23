@@ -115,6 +115,8 @@
         "react-dom": "^19.1.0",
         "reflect-metadata": "^0.2.2",
         "resend": "^6.4.2",
+"nodemailer": "^6.10.1",
+"@types/nodemailer": "^6.4.17",
         "rxjs": "^7.8.1",
         "safe-stable-stringify": "^2.5.0",
         "stripe": "^20.4.0",
