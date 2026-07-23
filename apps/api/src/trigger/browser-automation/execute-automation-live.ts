@@ -38,6 +38,8 @@ export const executeAutomationLive = task({
           'runSteps',
           steps as unknown as Parameters<typeof metadata.set>[1],
         ),
+      // Each vendor's live view, so the Run iframe follows the run across vendors.
+      (liveViewUrl) => metadata.set('liveViewUrl', liveViewUrl),
     );
   },
 });

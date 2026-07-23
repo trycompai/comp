@@ -85,6 +85,8 @@ export class BrowserAutomationStepRunnerService {
     firstSessionId?: string;
     /** Live activity timeline, streamed to the Run view via realtime. */
     onSteps?: (steps: EvidenceTimelineStep[]) => void;
+    /** Follow each vendor's live view as the run advances to it. */
+    onLiveView?: (url: string) => void;
   }): Promise<BrowserEvidenceRunResult> {
     const multiStep = input.steps.length > 1;
     const timeline = createEvidenceTimeline(input.onSteps);
@@ -114,6 +116,7 @@ export class BrowserAutomationStepRunnerService {
           // later vendors each get their own session inside runEvidence.
           sessionId: index === 0 ? input.firstSessionId : undefined,
           onLog: (entry) => timeline.step(entry.message),
+          onLiveView: input.onLiveView,
         }),
       );
     }
@@ -136,6 +139,8 @@ export class BrowserAutomationStepRunnerService {
     sessionId?: string;
     /** Per-stage progress, streamed into the run timeline. */
     onLog?: (log: BrowserEvidenceLog) => void;
+    /** This step's live view once its session opens (fresh-session steps only). */
+    onLiveView?: (url: string) => void;
   }): Promise<BrowserEvidenceRunResult> {
     const stepRun = await this.runs.createStepRun({
       runId: input.runId,
@@ -178,7 +183,12 @@ export class BrowserAutomationStepRunnerService {
                 ...runInput,
                 sessionId: input.sessionId,
               })
-            : await this.runner.runEvidence(runInput);
+            : await this.runner.runEvidence({
+                ...runInput,
+                onSession: input.onLiveView
+                  ? (info) => input.onLiveView?.(info.liveViewUrl)
+                  : undefined,
+              });
         } catch (error) {
           this.logger.error('Browser evidence runner failed', error);
           result = failedBrowserEvidenceRunResult(error);

@@ -163,6 +163,7 @@ export class BrowserAutomationExecutionService {
     sessionId: string,
     organizationId: string,
     onSteps?: (steps: EvidenceTimelineStep[]) => void,
+    onLiveView?: (url: string) => void,
   ) {
     const automation = await this.getRunnableAutomation({
       automationId,
@@ -184,6 +185,7 @@ export class BrowserAutomationExecutionService {
       firstProfile,
       firstSessionId: sessionId,
       onSteps,
+      onLiveView,
     });
 
     await this.runs.finishRun({ runId, startedAt: run.startedAt, result });

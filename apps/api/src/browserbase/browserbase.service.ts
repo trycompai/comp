@@ -353,6 +353,7 @@ export class BrowserbaseService {
     sessionId: string,
     organizationId: string,
     onSteps?: (steps: EvidenceTimelineStep[]) => void,
+    onLiveView?: (url: string) => void,
   ) {
     return this.automationExecution.executeAutomationLive(
       automationId,
@@ -360,6 +361,7 @@ export class BrowserbaseService {
       sessionId,
       organizationId,
       onSteps,
+      onLiveView,
     );
   }
 

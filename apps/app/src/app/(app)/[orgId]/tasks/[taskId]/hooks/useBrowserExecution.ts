@@ -35,6 +35,14 @@ export function useBrowserExecution({ onNeedsReauth, onComplete }: UseBrowserExe
 
   const steps = (runState?.metadata?.runSteps as SignInStep[] | undefined) ?? [];
 
+  // Follow each vendor's live view: the task streams the current step's live
+  // URL, so the iframe moves from vendor to vendor instead of showing only the
+  // first. (start-live seeds the initial view; this swaps it as steps advance.)
+  const streamedLiveView = runState?.metadata?.liveViewUrl as string | undefined;
+  useEffect(() => {
+    if (streamedLiveView) setLiveViewUrl(streamedLiveView);
+  }, [streamedLiveView]);
+
   const closeSession = useCallback(async (id: string) => {
     try {
       await apiClient.post('/v1/browserbase/session/close', { sessionId: id });

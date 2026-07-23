@@ -37,6 +37,8 @@ export interface BrowserEvidenceRunnerInput {
   beforeExecution?: () => Promise<void>;
   /** Live per-stage progress callback (used to stream a test run's activity). */
   onLog?: (log: BrowserEvidenceLog) => void;
+  /** Fired once this step's live session opens, so the Run view can follow it. */
+  onSession?: (info: { sessionId: string; liveViewUrl: string }) => void;
 }
 
 export interface BrowserEvidenceSessionInput extends BrowserEvidenceRunnerInput {
@@ -89,9 +91,10 @@ export class BrowserEvidenceRunnerService {
       profileId: input.profile.id,
       hostname: input.profile.hostname,
       run: async () => {
-        const { sessionId } = await this.sessions.createSessionWithContext(
-          input.profile.contextId,
-        );
+        const { sessionId, liveViewUrl } =
+          await this.sessions.createSessionWithContext(input.profile.contextId);
+        // Surface this step's live view so a watched run can follow each vendor.
+        input.onSession?.({ sessionId, liveViewUrl });
 
         try {
           return await this.executeEvidenceOnSessionUnlocked({
