@@ -3,15 +3,13 @@ import { BrowserbaseSessionService } from './browserbase-session.service';
 import { BrowserAuthProfileService } from './browser-auth-profile.service';
 import { BrowserEvidenceRunnerService } from './browser-evidence-runner.service';
 import type { BrowserEvidenceLog } from './browser-evidence-execution';
+import {
+  createEvidenceTimeline,
+  type EvidenceTimelineStep,
+} from './browser-evidence-step-timeline';
 
 /** A single line in the live test-run activity timeline (mirrors the sign-in flow). */
-export interface InstructionTestStep {
-  /** Step label. */
-  l: string;
-  /** Clock timestamp, e.g. "06:02:14". */
-  t: string;
-  state: 'done' | 'active' | 'pending' | 'warn' | 'fail';
-}
+export type InstructionTestStep = EvidenceTimelineStep;
 
 export interface InstructionTestResult {
   success: boolean;
@@ -26,14 +24,6 @@ export interface InstructionTestResult {
   failureCode?: string;
   blockedReason?: string;
 }
-
-const clock = () =>
-  new Date().toLocaleTimeString('en-US', {
-    hour12: false,
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  });
 
 /**
  * Runs an instruction the user hasn't saved yet against the connection's live
@@ -69,21 +59,7 @@ export class BrowserInstructionTestService {
     /** Live activity timeline, surfaced to the composer's test panel. */
     onSteps?: (steps: InstructionTestStep[]) => void;
   }): Promise<InstructionTestResult> {
-    const steps: InstructionTestStep[] = [];
-    const emit = () => input.onSteps?.(steps.map((s) => ({ ...s })));
-    // Each engine stage advances the timeline: the prior active step becomes
-    // done and a new active step is appended.
-    const step = (label: string) => {
-      const last = steps[steps.length - 1];
-      if (last?.state === 'active') last.state = 'done';
-      steps.push({ l: label, t: clock(), state: 'active' });
-      emit();
-    };
-    const finish = (state: InstructionTestStep['state']) => {
-      const last = steps[steps.length - 1];
-      if (last) last.state = state;
-      emit();
-    };
+    const timeline = createEvidenceTimeline(input.onSteps);
 
     const profile = await this.profiles.resolveProfileForTarget({
       organizationId: input.organizationId,
@@ -110,10 +86,10 @@ export class BrowserInstructionTestService {
         vaultExternalItemRef: profile.vaultExternalItemRef,
         vaultConnectionId: profile.vaultConnectionId,
       },
-      onLog: (entry: BrowserEvidenceLog) => step(entry.message),
+      onLog: (entry: BrowserEvidenceLog) => timeline.step(entry.message),
     });
 
-    finish(
+    timeline.finish(
       result.success
         ? 'done'
         : result.status === 'blocked' || result.needsReauth

@@ -9,6 +9,7 @@ import { BrowserAutomationDraftService } from './browser-automation-draft.servic
 import { BrowserAutomationExecutionService } from './browser-automation-execution.service';
 import { BrowserAuthProfileService } from './browser-auth-profile.service';
 import { BrowserCredentialStorageService } from './browser-credential-storage.service';
+import type { EvidenceTimelineStep } from './browser-evidence-step-timeline';
 import { BrowserEvidenceRunnerService } from './browser-evidence-runner.service';
 import { BrowserbaseScreenshotService } from './browserbase-screenshot.service';
 import { BrowserbaseSessionService } from './browserbase-session.service';
@@ -334,13 +335,30 @@ export class BrowserbaseService {
     runId: string,
     sessionId: string,
     organizationId: string,
+    onSteps?: (steps: EvidenceTimelineStep[]) => void,
   ) {
     return this.automationExecution.executeAutomationOnSession(
       automationId,
       runId,
       sessionId,
       organizationId,
+      onSteps,
     );
+  }
+
+  /**
+   * Kick off the interactive Run as a background task so the live view can
+   * stream the AI's steps (same realtime mechanism as the Test flow). Returns a
+   * handle the composer subscribes to for `runSteps` + the final result.
+   */
+  async startLiveAutomationExecution(input: {
+    automationId: string;
+    runId: string;
+    sessionId: string;
+    organizationId: string;
+  }): Promise<{ runId: string; publicAccessToken: string }> {
+    const handle = await tasks.trigger('execute-automation-live', input);
+    return { runId: handle.id, publicAccessToken: handle.publicAccessToken };
   }
 
   async runBrowserAutomation(automationId: string, organizationId: string) {

@@ -11,6 +11,10 @@ import { BrowserAutomationRunStoreService } from './browser-automation-run-store
 import { stepsForRun } from './browser-automation-step-results';
 import { BrowserAutomationStepRunnerService } from './browser-automation-step-runner.service';
 import {
+  createEvidenceTimeline,
+  type EvidenceTimelineStep,
+} from './browser-evidence-step-timeline';
+import {
   BrowserEvidenceRunnerService,
   type BrowserEvidenceRunResult,
 } from './browser-evidence-runner.service';
@@ -82,6 +86,8 @@ export class BrowserAutomationExecutionService {
     runId: string,
     sessionId: string,
     organizationId: string,
+    /** Live activity timeline, surfaced to the Run live view via realtime. */
+    onSteps?: (steps: EvidenceTimelineStep[]) => void,
   ) {
     const automation = await this.getRunnableAutomation({
       automationId,
@@ -97,6 +103,7 @@ export class BrowserAutomationExecutionService {
       targetUrl: automation.targetUrl,
       profileId: run.profileId ?? undefined,
     });
+    const timeline = createEvidenceTimeline(onSteps);
     let result: BrowserEvidenceRunResult;
     try {
       result = await this.runner.executeEvidenceOnSession({
@@ -116,6 +123,7 @@ export class BrowserAutomationExecutionService {
           vaultExternalItemRef: profile.vaultExternalItemRef,
           vaultConnectionId: profile.vaultConnectionId,
         },
+        onLog: (entry) => timeline.step(entry.message),
         beforeExecution: () =>
           this.runs.assertRunIsStillActive({ runId, automationId }),
       });
@@ -124,6 +132,14 @@ export class BrowserAutomationExecutionService {
       this.logger.error('Browser evidence runner failed', error);
       result = failedBrowserEvidenceRunResult(error);
     }
+
+    timeline.finish(
+      result.success
+        ? 'done'
+        : result.status === 'blocked' || result.needsReauth
+          ? 'warn'
+          : 'fail',
+    );
 
     await this.runs.finishRun({ runId, startedAt: run.startedAt, result });
     await this.stepRunner.applyProfileResult({

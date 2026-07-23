@@ -445,6 +445,30 @@ export class BrowserbaseController {
     );
   }
 
+  @Post('automations/:automationId/execute-live')
+  @RequirePermission('task', 'update')
+  @ApiOperation({
+    summary: 'Execute automation on a session with live step streaming',
+    description:
+      'Runs the automation on a pre-created session as a background task so the ' +
+      'live view can stream the AI’s steps. Returns a run handle to subscribe to.',
+  })
+  @ApiParam({ name: 'automationId', description: 'Automation ID' })
+  @ApiBody({ type: ExecuteAutomationSessionDto })
+  @ApiResponse({ status: 200, description: 'Run handle for realtime steps' })
+  async executeAutomationLive(
+    @Param('automationId') automationId: string,
+    @Body() body: ExecuteAutomationSessionDto,
+    @OrganizationId() organizationId: string,
+  ): Promise<{ runId: string; publicAccessToken: string }> {
+    return await this.browserbaseService.startLiveAutomationExecution({
+      automationId,
+      runId: body.runId,
+      sessionId: body.sessionId,
+      organizationId,
+    });
+  }
+
   @Post('automations/:automationId/run')
   @RequirePermission('task', 'update')
   @ApiOperation({

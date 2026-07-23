@@ -309,6 +309,7 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
         subtitle="Watching AI navigate and capture screenshot..."
         liveViewUrl={execution.liveViewUrl}
         variant="execution"
+        steps={execution.steps}
         onCancel={execution.cancelExecution}
       />
     );

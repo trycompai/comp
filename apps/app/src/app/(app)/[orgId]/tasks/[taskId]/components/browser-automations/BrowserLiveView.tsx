@@ -4,6 +4,7 @@ import { Button, Spinner } from '@trycompai/design-system';
 import { Play, Renew, Screen } from '@trycompai/design-system/icons';
 import { useEffect, useState } from 'react';
 import { LiveActivityBorder } from './LiveActivityBorder';
+import { StepList, type SignInStep } from './StepList';
 
 interface BrowserLiveViewProps {
   title: string;
@@ -11,6 +12,8 @@ interface BrowserLiveViewProps {
   liveViewUrl: string;
   variant: 'auth' | 'execution';
   isChecking?: boolean;
+  /** Live AI step timeline, shown beside the browser during a run. */
+  steps?: SignInStep[];
   onSave?: () => void;
   onCancel: () => void;
 }
@@ -21,6 +24,7 @@ export function BrowserLiveView({
   liveViewUrl,
   variant,
   isChecking,
+  steps,
   onSave,
   onCancel,
 }: BrowserLiveViewProps) {
@@ -71,18 +75,31 @@ export function BrowserLiveView({
         </div>
       </div>
       <div className="p-4">
-        <div className="relative overflow-hidden rounded-lg border">
-          <iframe
-            src={liveViewUrl}
-            className="block h-[500px] w-full"
-            sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
-            allow="clipboard-read; clipboard-write"
-            onLoad={() => setLoaded(true)}
-          />
-          {/* Show once the browser has rendered so it fades in with the page.
-              AI glow while it runs; amber "Your turn" pill on manual auth. */}
-          {loaded && (
-            <LiveActivityBorder state={variant === 'execution' ? 'ai' : 'you'} />
+        <div className="flex flex-col gap-4 lg:flex-row">
+          <div className="relative min-w-0 flex-1 overflow-hidden rounded-lg border">
+            <iframe
+              src={liveViewUrl}
+              className="block h-[500px] w-full"
+              sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+              allow="clipboard-read; clipboard-write"
+              onLoad={() => setLoaded(true)}
+            />
+            {/* Show once the browser has rendered so it fades in with the page.
+                AI glow while it runs; amber "Your turn" pill on manual auth. */}
+            {loaded && (
+              <LiveActivityBorder state={variant === 'execution' ? 'ai' : 'you'} />
+            )}
+          </div>
+          {/* The AI's live step timeline — same list the setup/Test screen shows. */}
+          {variant === 'execution' && steps && steps.length > 0 && (
+            <div className="w-full shrink-0 lg:w-72">
+              <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                Steps
+              </div>
+              <div className="max-h-[500px] overflow-y-auto rounded-lg border border-border bg-muted/20 p-3">
+                <StepList steps={steps} />
+              </div>
+            </div>
           )}
         </div>
       </div>

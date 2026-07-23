@@ -1,8 +1,11 @@
 'use client';
 
 import { apiClient } from '@/lib/api-client';
-import { useCallback, useState } from 'react';
+import { useRealtimeRun } from '@trigger.dev/react-hooks';
+import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { FAILED_RUN_STATUSES } from '../components/browser-automations/connect-flow-constants';
+import type { SignInStep } from '../components/browser-automations/StepList';
 import type { ExecuteResponse, StartLiveResponse } from './types';
 
 interface UseBrowserExecutionOptions {
@@ -10,20 +13,50 @@ interface UseBrowserExecutionOptions {
   onComplete: () => void;
 }
 
+/** Realtime handle for the background run the live view subscribes to. */
+interface LiveHandle {
+  runId: string;
+  accessToken: string;
+}
+
 export function useBrowserExecution({ onNeedsReauth, onComplete }: UseBrowserExecutionOptions) {
   const [runningAutomationId, setRunningAutomationId] = useState<string | null>(null);
   const [liveViewUrl, setLiveViewUrl] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [runId, setRunId] = useState<string | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
+  const [liveHandle, setLiveHandle] = useState<LiveHandle | null>(null);
+
+  // Same realtime mechanism the composer's Test panel uses: the background run
+  // publishes its step timeline to `runSteps`, which we surface to the live view.
+  const { run: runState, error: runError } = useRealtimeRun(liveHandle?.runId ?? '', {
+    accessToken: liveHandle?.accessToken,
+    enabled: !!liveHandle,
+  });
+
+  const steps = (runState?.metadata?.runSteps as SignInStep[] | undefined) ?? [];
+
+  const closeSession = useCallback(async (id: string) => {
+    try {
+      await apiClient.post('/v1/browserbase/session/close', { sessionId: id });
+    } catch {
+      // Ignore cleanup errors (don't block the UI).
+    }
+  }, []);
+
+  const reset = useCallback(() => {
+    setLiveViewUrl(null);
+    setSessionId(null);
+    setIsExecuting(false);
+    setRunningAutomationId(null);
+    setLiveHandle(null);
+  }, []);
 
   const runAutomation = useCallback(
     async (automationId: string) => {
       setRunningAutomationId(automationId);
       let startedSessionId: string | null = null;
-
       try {
-        // Step 1: Start automation with live view
+        // Step 1: start a live session (creates the run + live view URL).
         const startRes = await apiClient.post<StartLiveResponse>(
           `/v1/browserbase/automations/${automationId}/start-live`,
           {},
@@ -32,81 +65,85 @@ export function useBrowserExecution({ onNeedsReauth, onComplete }: UseBrowserExe
         if (startRes.data?.needsReauth) {
           toast.error('Session expired. Please re-authenticate below.');
           onNeedsReauth(automationId);
+          setRunningAutomationId(null);
           return;
         }
-
         if (startRes.error || !startRes.data?.sessionId) {
           throw new Error(startRes.error || startRes.data?.error || 'Failed to start automation');
         }
 
         startedSessionId = startRes.data.sessionId;
-
-        // Show the live view
-        setRunId(startRes.data.runId);
         setSessionId(startedSessionId);
         setLiveViewUrl(startRes.data.liveViewUrl);
         setIsExecuting(true);
 
-        // Step 2: Execute the automation (runs in background while user watches)
-        const execRes = await apiClient.post<ExecuteResponse>(
-          `/v1/browserbase/automations/${automationId}/execute`,
-          {
-            runId: startRes.data.runId,
-            sessionId: startedSessionId,
-          },
+        // Step 2: kick off the run as a background task and subscribe to it for
+        // live steps + the final result (instead of blocking on one response).
+        const execRes = await apiClient.post<{ runId: string; publicAccessToken: string }>(
+          `/v1/browserbase/automations/${automationId}/execute-live`,
+          { runId: startRes.data.runId, sessionId: startedSessionId },
         );
-
-        if (execRes.data?.success) {
-          toast.success('Automation completed successfully');
-        } else {
-          toast.error(execRes.data?.error || 'Automation failed');
+        if (execRes.error || !execRes.data?.runId) {
+          throw new Error(execRes.error || 'Failed to start the run');
         }
+        setLiveHandle({
+          runId: execRes.data.runId,
+          accessToken: execRes.data.publicAccessToken,
+        });
       } catch (err) {
         toast.error(err instanceof Error ? err.message : 'Failed to run automation');
-      } finally {
-        // Clear execution state immediately (UI), then best-effort close the session to avoid leaks
-        setLiveViewUrl(null);
-        setSessionId(null);
-        setRunId(null);
-        setIsExecuting(false);
-        setRunningAutomationId(null);
-
-        if (startedSessionId) {
-          try {
-            await apiClient.post('/v1/browserbase/session/close', { sessionId: startedSessionId });
-          } catch {
-            // Ignore cleanup errors (don't block UI / don't mask original error)
-          }
-        }
-
-        // Always refresh after any run attempt (success/failure/exception) so the UI doesn't
-        // get stuck showing the old "running" run until a full page refresh.
+        reset();
+        if (startedSessionId) void closeSession(startedSessionId);
         onComplete();
       }
     },
-    [onNeedsReauth, onComplete],
+    [onNeedsReauth, onComplete, reset, closeSession],
   );
 
-  const cancelExecution = useCallback(async () => {
-    if (sessionId) {
-      try {
-        await apiClient.post('/v1/browserbase/session/close', { sessionId });
-      } catch {
-        // Ignore
-      }
+  // Finalize when the background run reaches a terminal state (realtime has no
+  // onError/onComplete — watch run.status + error, per the composer pattern).
+  useEffect(() => {
+    if (!liveHandle) return;
+    if (runState && runState.id !== liveHandle.runId) return;
+
+    const finalize = (ok: boolean, message?: string) => {
+      if (ok) toast.success('Automation completed successfully');
+      else toast.error(message || 'Automation failed');
+      if (sessionId) void closeSession(sessionId);
+      reset();
+      onComplete();
+    };
+
+    if (runError) {
+      finalize(false, 'The run could not complete.');
+      return;
     }
-    setLiveViewUrl(null);
-    setSessionId(null);
-    setRunId(null);
-    setIsExecuting(false);
-    setRunningAutomationId(null);
+    if (!runState) return;
+
+    if (runState.status === 'COMPLETED') {
+      const output = runState.output as ExecuteResponse | undefined;
+      finalize(output?.success ?? false, output?.error);
+    } else if (FAILED_RUN_STATUSES.has(runState.status)) {
+      finalize(
+        false,
+        runState.status === 'TIMED_OUT'
+          ? 'The AI ran out of time before finishing.'
+          : 'The run could not complete.',
+      );
+    }
+  }, [liveHandle, runState, runError, sessionId, closeSession, reset, onComplete]);
+
+  const cancelExecution = useCallback(async () => {
+    if (sessionId) void closeSession(sessionId);
+    reset();
     onComplete();
-  }, [sessionId, onComplete]);
+  }, [sessionId, closeSession, reset, onComplete]);
 
   return {
     runningAutomationId,
     liveViewUrl,
     isExecuting,
+    steps,
     runAutomation,
     cancelExecution,
   };
