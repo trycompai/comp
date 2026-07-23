@@ -30,6 +30,7 @@ model Task {
   risks                 Risk[]
   evidenceAutomations   EvidenceAutomation[]
   browserAutomations    BrowserAutomation[]
+  browserAutomationDrafts BrowserAutomationDraft[]
 
   evidenceAutomationRuns EvidenceAutomationRun[]
   integrationCheckRuns   IntegrationCheckRun[]

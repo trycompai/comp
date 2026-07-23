@@ -140,6 +140,31 @@ model BrowserAutomationRun {
   @@index([createdAt])
 }
 
+/// An in-progress (unsaved) automation the user is composing. Persisted
+/// server-side so a draft survives refreshes and follows the user across
+/// devices; it becomes a BrowserAutomation on save and is deleted then.
+model BrowserAutomationDraft {
+  id String @id @default(dbgenerated("generate_prefixed_cuid('bad'::text)"))
+
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  /// Member who last edited the draft (attribution / "your drafts").
+  createdById String?
+
+  /// Preview name, derived from the first step's instruction.
+  name String?
+
+  /// The composer state: an ordered array of
+  /// { profileId, targetUrl, instruction, evaluationCriteria }.
+  steps Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([taskId])
+}
+
 /// One step of a (possibly multi-vendor) automation. Steps run in `order`, each
 /// on its own connection's saved session, so a single automation can span
 /// several vendors without re-logging in.
