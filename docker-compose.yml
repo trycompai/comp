@@ -21,7 +21,7 @@ services:
       target: migrator
     env_file:
       - packages/db/.env
-    command: sh -lc "bunx prisma generate --schema=node_modules/@trycompai/db/dist/schema.prisma && bun packages/db/prisma/seed/seed.js"
+    command: sh -lc "tsx packages/db/prisma/seed/seed.ts"
     logging: *default-logging
   app:
     build:
@@ -30,17 +30,43 @@ services:
       target: app
       args:
         NEXT_PUBLIC_BETTER_AUTH_URL: ${BETTER_AUTH_URL}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     ports:
-      - '3000:3000'
+      - '3001:3000'
     env_file:
       - apps/app/.env
+    environment:
+      PGSSLMODE: disable
+      DATABASE_URL: postgresql://comp:comp@comp-postgres:5432/comp?sslmode=disable
     restart: unless-stopped
     healthcheck:
-      test: ['CMD-SHELL', 'curl -f http://localhost:3000/api/health || exit 1']
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:3000/api/health || exit 1']
       interval: 30s
       timeout: 10s
       retries: 3
-    command: sh -lc "node apps/app/server.js"
+    command: sh -lc "node --max-old-space-size=8192 apps/app/server.js"
+    logging: *default-logging
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile.multistage
+      target: production
+    ports:
+      - '3333:3333'
+    env_file:
+      - apps/api/.env
+    environment:
+      PGSSLMODE: disable
+      NODE_EXTRA_CA_CERTS: ""
+      DATABASE_URL: postgresql://comp:comp@comp-postgres:5432/comp?sslmode=disable
+    volumes:
+      - ./apps/api/.env:/app/.env:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:3333/v1/health || exit 1']
+      interval: 30s
+      timeout: 10s
+      retries: 3
     logging: *default-logging
   portal:
     build:
@@ -49,14 +75,30 @@ services:
       target: portal
       args:
         NEXT_PUBLIC_BETTER_AUTH_URL: ${BETTER_AUTH_URL_PORTAL}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL_PORTAL}
     ports:
       - '3002:3000'
     env_file:
       - apps/portal/.env
+    environment:
+      PGSSLMODE: disable
+      DATABASE_URL: postgresql://comp:comp@comp-postgres:5432/comp?sslmode=disable
+      MOCK_REDIS: "true"
+      FLEET_AGENT_BUCKET_NAME: comp
+      DEVICE_AGENT_S3_ENV: production
+      APP_AWS_ACCESS_KEY_ID: minioadmin
+      APP_AWS_SECRET_ACCESS_KEY: minioadmin
+      APP_AWS_BUCKET_NAME: comp
+      APP_AWS_REGION: us-east-1
+      APP_AWS_ENDPOINT: http://minio:9000
     restart: unless-stopped
     healthcheck:
-      test: ['CMD-SHELL', 'curl -f http://localhost:3000/ || exit 1']
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:3000/ || exit 1']
       interval: 30s
       timeout: 10s
       retries: 3
     logging: *default-logging
+networks:
+  default:
+    name: comp_network
+    external: true
