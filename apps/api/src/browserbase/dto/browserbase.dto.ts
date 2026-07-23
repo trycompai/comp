@@ -484,6 +484,61 @@ export class UpdateBrowserAutomationDto {
   scheduleFrequency?: TaskFrequency;
 }
 
+/** A draft step — everything optional, since a draft can be half-written. */
+export class DraftStepDto {
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  profileId?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  targetUrl?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  instruction?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  evaluationCriteria?: string;
+}
+
+export class CreateBrowserAutomationDraftDto {
+  @ApiProperty({ description: 'Task the draft belongs to' })
+  @IsString()
+  @IsNotEmpty()
+  taskId: string;
+
+  @ApiPropertyOptional({ description: 'Preview name, derived from the first step' })
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @ApiProperty({ type: [DraftStepDto], description: 'The composer step state' })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => DraftStepDto)
+  steps: DraftStepDto[];
+}
+
+export class UpdateBrowserAutomationDraftDto {
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @ApiPropertyOptional({ type: [DraftStepDto] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => DraftStepDto)
+  @IsOptional()
+  steps?: DraftStepDto[];
+}
+
 export class ExecuteAutomationSessionDto {
   @ApiProperty({ description: 'Browser automation run ID' })
   @IsString()

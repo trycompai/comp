@@ -5,6 +5,7 @@ import {
   BrowserAutomationCrudService,
   type BrowserAutomationStepInput,
 } from './browser-automation-crud.service';
+import { BrowserAutomationDraftService } from './browser-automation-draft.service';
 import { BrowserAutomationExecutionService } from './browser-automation-execution.service';
 import { BrowserAuthProfileService } from './browser-auth-profile.service';
 import { BrowserCredentialStorageService } from './browser-credential-storage.service';
@@ -35,6 +36,9 @@ export class BrowserbaseService {
     ),
     private readonly credentialStorage: BrowserCredentialStorageService = new BrowserCredentialStorageService(),
   ) {}
+
+  // Drafts have no dependencies; a field avoids Nest trying to DI-resolve it.
+  private readonly automationDrafts = new BrowserAutomationDraftService();
 
   /**
    * Kicks off login analysis as a background Trigger.dev run (browser + AI, which
@@ -276,6 +280,31 @@ export class BrowserbaseService {
       automationId,
       organizationId,
     );
+  }
+
+  // ===== Drafts (in-progress, unsaved automations) =====
+
+  listAutomationDrafts(taskId: string, organizationId: string) {
+    return this.automationDrafts.listDraftsForTask(taskId, organizationId);
+  }
+
+  createAutomationDraft(
+    data: { taskId: string; name?: string; steps: unknown; createdById?: string | null },
+    organizationId: string,
+  ) {
+    return this.automationDrafts.createDraft(data, organizationId);
+  }
+
+  updateAutomationDraft(
+    draftId: string,
+    data: { name?: string; steps?: unknown },
+    organizationId: string,
+  ) {
+    return this.automationDrafts.updateDraft(draftId, data, organizationId);
+  }
+
+  deleteAutomationDraft(draftId: string, organizationId: string) {
+    return this.automationDrafts.deleteDraft(draftId, organizationId);
   }
 
   async startAutomationWithLiveView(

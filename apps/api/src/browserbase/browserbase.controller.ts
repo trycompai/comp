@@ -33,6 +33,7 @@ import {
   CheckAuthDto,
   CloseSessionDto,
   ContextResponseDto,
+  CreateBrowserAutomationDraftDto,
   CreateBrowserAutomationDto,
   CreateSessionDto,
   ExecuteAutomationSessionDto,
@@ -41,6 +42,7 @@ import {
   SessionResponseDto,
   TestInstructionDto,
   TestInstructionResponseDto,
+  UpdateBrowserAutomationDraftDto,
   UpdateBrowserAutomationDto,
 } from './dto/browserbase.dto';
 
@@ -309,6 +311,55 @@ export class BrowserbaseController {
       automationId,
       organizationId,
     );
+    return { success: true };
+  }
+
+  // ===== Automation Drafts (in-progress, unsaved) =====
+
+  @Get('automations/task/:taskId/drafts')
+  @RequirePermission('task', 'read')
+  @ApiOperation({ summary: 'List in-progress automation drafts for a task' })
+  @ApiParam({ name: 'taskId', description: 'Task ID' })
+  async listDrafts(
+    @OrganizationId() organizationId: string,
+    @Param('taskId') taskId: string,
+  ) {
+    return this.browserbaseService.listAutomationDrafts(taskId, organizationId);
+  }
+
+  @Post('automation-drafts')
+  @RequirePermission('task', 'create')
+  @ApiOperation({ summary: 'Create an in-progress automation draft' })
+  @ApiBody({ type: CreateBrowserAutomationDraftDto })
+  async createDraft(
+    @OrganizationId() organizationId: string,
+    @Body() dto: CreateBrowserAutomationDraftDto,
+  ) {
+    return this.browserbaseService.createAutomationDraft(dto, organizationId);
+  }
+
+  @Patch('automation-drafts/:draftId')
+  @RequirePermission('task', 'update')
+  @ApiOperation({ summary: 'Autosave an in-progress automation draft' })
+  @ApiParam({ name: 'draftId', description: 'Draft ID' })
+  @ApiBody({ type: UpdateBrowserAutomationDraftDto })
+  async updateDraft(
+    @OrganizationId() organizationId: string,
+    @Param('draftId') draftId: string,
+    @Body() dto: UpdateBrowserAutomationDraftDto,
+  ) {
+    return this.browserbaseService.updateAutomationDraft(draftId, dto, organizationId);
+  }
+
+  @Delete('automation-drafts/:draftId')
+  @RequirePermission('task', 'delete')
+  @ApiOperation({ summary: 'Discard an in-progress automation draft' })
+  @ApiParam({ name: 'draftId', description: 'Draft ID' })
+  async deleteDraft(
+    @OrganizationId() organizationId: string,
+    @Param('draftId') draftId: string,
+  ): Promise<{ success: boolean }> {
+    await this.browserbaseService.deleteAutomationDraft(draftId, organizationId);
     return { success: true };
   }
 
