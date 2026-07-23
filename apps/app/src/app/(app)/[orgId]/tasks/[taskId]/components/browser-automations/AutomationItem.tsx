@@ -202,14 +202,14 @@ export function AutomationItem({
                   }}
                   iconLeft={
                     isRunning ? (
-                      // Same 12px footprint as the Play icon, so swapping to the
+                      // Same 14px footprint as the Play icon, so swapping to the
                       // spinner keeps the button's width fixed — no layout shift.
                       <span
                         aria-hidden
-                        className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent"
+                        className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent"
                       />
                     ) : (
-                      <Play size={12} />
+                      <Play size={14} />
                     )
                   }
                 >
@@ -223,7 +223,7 @@ export function AutomationItem({
                       aria-label="Change schedule"
                       className="grid h-6 w-7 cursor-pointer place-items-center border-0 bg-primary p-0 text-primary-foreground outline-none brightness-90 transition hover:brightness-75 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/60"
                     >
-                      <ChevronDown size={12} />
+                      <ChevronDown size={14} />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuRadioGroup
