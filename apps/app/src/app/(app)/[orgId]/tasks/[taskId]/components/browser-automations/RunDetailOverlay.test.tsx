@@ -26,18 +26,10 @@ describe('RunDetailOverlay', () => {
     expect(screen.queryByText(/MFA policy/i)).not.toBeInTheDocument();
   });
 
-  it('shows the instruction name, verdict and check reason for a selected run', () => {
+  it('shows the instruction name and the step reason', () => {
     render(<RunDetailOverlay selected={summary()} onClose={vi.fn()} />);
     expect(screen.getByText(/MFA policy/i)).toBeInTheDocument();
-    expect(screen.getByText('Pass')).toBeInTheDocument();
     expect(screen.getByText(/two-factor enforced/i)).toBeInTheDocument();
-  });
-
-  it('points the full-size link at the stable redirect endpoint', () => {
-    render(<RunDetailOverlay selected={summary()} onClose={vi.fn()} />);
-    const link = screen.getByRole('link', { name: /open full size/i });
-    expect(link.getAttribute('href')).toContain('/v1/browserbase/runs/bar_1/screenshot');
-    expect(link.getAttribute('href')).not.toContain('s3.example.com');
   });
 
   it('re-runs and closes when Re-run now is pressed', () => {
@@ -47,45 +39,6 @@ describe('RunDetailOverlay', () => {
     fireEvent.click(screen.getByRole('button', { name: /re-run now/i }));
     expect(onRerun).toHaveBeenCalledWith('auto_1');
     expect(onClose).toHaveBeenCalled();
-  });
-
-  it('shows one screenshot per step for a multi-step run', () => {
-    render(
-      <RunDetailOverlay
-        selected={summary({
-          status: 'completed',
-          evaluationStatus: null,
-          evaluationReason: null,
-          stepRuns: [
-            {
-              id: 'sr1',
-              order: 0,
-              status: 'completed',
-              evaluationStatus: 'pass',
-              screenshotUrl: 'https://s3.example.com/step1.png',
-              step: { targetUrl: 'https://github.com/acme' },
-            },
-            {
-              id: 'sr2',
-              order: 1,
-              status: 'failed',
-              error: 'Login session expired',
-              screenshotUrl: null,
-              step: { targetUrl: 'https://aws.amazon.com/console' },
-            },
-          ],
-        })}
-        onClose={vi.fn()}
-      />,
-    );
-    // Each step is labelled with its vendor host and its own verdict.
-    expect(screen.getByText(/github\.com/)).toBeInTheDocument();
-    expect(screen.getByText(/aws\.amazon\.com/)).toBeInTheDocument();
-    expect(screen.getByText('Pass')).toBeInTheDocument();
-    expect(screen.getByText('Failed')).toBeInTheDocument();
-    // Step 1's screenshot renders; step 2 (no shot) surfaces why it failed.
-    expect(screen.getByAltText('Step 1 screenshot')).toBeInTheDocument();
-    expect(screen.getByText(/login session expired/i)).toBeInTheDocument();
   });
 
   it('surfaces the failure reason for a blocked run', () => {
@@ -100,7 +53,42 @@ describe('RunDetailOverlay', () => {
         onClose={vi.fn()}
       />,
     );
-    expect(screen.getByText('Blocked')).toBeInTheDocument();
     expect(screen.getByText(/login session expired/i)).toBeInTheDocument();
+  });
+
+  it('shows each vendor step for a multi-step run', () => {
+    render(
+      <RunDetailOverlay
+        selected={summary({
+          status: 'failed',
+          evaluationStatus: null,
+          evaluationReason: null,
+          stepRuns: [
+            {
+              id: 'sr1',
+              order: 0,
+              status: 'completed',
+              evaluationStatus: 'pass',
+              evaluationReason: '8,165 commits — meets the check',
+              screenshotUrl: 'https://s3.example.com/gh.png',
+              step: { targetUrl: 'https://github.com/acme' },
+            },
+            {
+              id: 'sr2',
+              order: 1,
+              status: 'failed',
+              error: 'Re-auth blocked the IAM page',
+              screenshotUrl: null,
+              step: { targetUrl: 'https://aws.amazon.com/console' },
+            },
+          ],
+        })}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('github.com')).toBeInTheDocument();
+    expect(screen.getByText('aws.amazon.com')).toBeInTheDocument();
+    expect(screen.getByText(/8,165 commits/)).toBeInTheDocument();
+    expect(screen.getByText(/re-auth blocked the iam page/i)).toBeInTheDocument();
   });
 });

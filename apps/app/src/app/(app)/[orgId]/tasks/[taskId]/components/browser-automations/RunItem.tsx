@@ -3,15 +3,10 @@
 import { cn } from '@/lib/utils';
 import { Badge } from '@trycompai/design-system';
 import { formatDistanceToNow } from 'date-fns';
-import {
-  ChevronDown,
-  Download,
-  Image as ImageIcon,
-  Launch as ExternalLink,
-} from '@trycompai/design-system/icons';
-import Image from 'next/image';
+import { ChevronDown, Image as ImageIcon } from '@trycompai/design-system/icons';
 import { useState } from 'react';
 import type { BrowserAutomationRun } from '../../hooks/types';
+import { RunStepLedger } from './RunStepLedger';
 
 interface RunItemProps {
   run: BrowserAutomationRun;
@@ -20,7 +15,6 @@ interface RunItemProps {
 
 export function RunItem({ run, isLatest }: RunItemProps) {
   const [expanded, setExpanded] = useState(isLatest);
-  const [imageError, setImageError] = useState(false);
 
   const timeAgo = formatDistanceToNow(new Date(run.createdAt), { addSuffix: true });
   const hasFailed = run.status === 'failed';
@@ -29,10 +23,6 @@ export function RunItem({ run, isLatest }: RunItemProps) {
   const hasScreenshot = !!run.screenshotUrl;
   const evaluationPassed = run.evaluationStatus === 'pass';
   const evaluationFailed = run.evaluationStatus === 'fail';
-
-  const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
-  const fullSizeHref = `${apiBase}/v1/browserbase/runs/${run.id}/screenshot`;
-  const downloadHref = `${fullSizeHref}?download=true`;
 
   // Determine overall status: failed run, or completed but evaluation failed
   const hasIssue = hasFailed || isBlocked || evaluationFailed;
@@ -115,103 +105,9 @@ export function RunItem({ run, isLatest }: RunItemProps) {
       >
         <div className="overflow-hidden">
           <div className="px-3 pb-3 pt-1 space-y-3 border-t border-border/30">
-            {/* Evaluation Result — only shown when a verdict was produced */}
-            {(evaluationPassed || evaluationFailed) && run.evaluationReason && (
-              <div
-                className={cn(
-                  'p-2 rounded-md border',
-                  evaluationPassed
-                    ? 'bg-primary/5 border-primary/20'
-                    : 'bg-destructive/5 border-destructive/20',
-                )}
-              >
-                <p className="text-xs font-medium mb-1">
-                  {evaluationPassed ? 'Evaluation Passed' : 'Evaluation Failed'}
-                </p>
-                <p
-                  className={cn(
-                    'text-xs',
-                    evaluationPassed ? 'text-foreground' : 'text-destructive',
-                  )}
-                >
-                  {run.evaluationReason}
-                </p>
-              </div>
-            )}
-
-            {/* Error */}
-            {(run.error || run.blockedReason || run.failureCode) && (
-              <div className="p-2 rounded-md bg-destructive/10 border border-destructive/20">
-                {run.failureCode && (
-                  <p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-destructive">
-                    {run.failureCode.replaceAll('_', ' ')}
-                  </p>
-                )}
-                <p className="text-xs text-destructive">
-                  {run.blockedReason || run.error || 'Automation did not complete.'}
-                </p>
-              </div>
-            )}
-
-            {/* Screenshot */}
-            {hasScreenshot && !imageError && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium text-muted-foreground">Screenshot</p>
-                  <div className="flex items-center gap-3">
-                    <a
-                      href={downloadHref}
-                      rel="noopener noreferrer"
-                      className="text-xs text-primary hover:underline flex items-center gap-1"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      Download
-                      <Download size={12} />
-                    </a>
-                    <a
-                      href={fullSizeHref}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-primary hover:underline flex items-center gap-1"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      Open full size
-                      <ExternalLink size={12} />
-                    </a>
-                  </div>
-                </div>
-                {/* Full-page shots are tall — cap the preview and let it scroll;
-                    "Open full size" opens the real thing. */}
-                <div className="relative max-h-80 overflow-auto rounded-md border border-border/50 bg-muted/30">
-                  <Image
-                    src={run.screenshotUrl!}
-                    alt="Automation screenshot"
-                    width={800}
-                    height={450}
-                    className="w-full h-auto object-contain"
-                    onError={() => setImageError(true)}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Image load error fallback */}
-            {hasScreenshot && imageError && (
-              <div className="p-3 rounded-md bg-muted/50 border border-border/30 text-center">
-                <ImageIcon size={32} className="text-muted-foreground mx-auto mb-2" />
-                <p className="text-xs text-muted-foreground">Screenshot unavailable</p>
-                <a
-                  href={fullSizeHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-primary hover:underline mt-1 inline-flex items-center gap-1"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  Try direct link
-                  <ExternalLink size={12} />
-                </a>
-              </div>
-            )}
+            {/* Per-step evidence ledger (designer option C3): each step's
+                verdict + reason + close-up "proof" and full-page context. */}
+            <RunStepLedger run={run} />
 
             {/* Completion time */}
             {run.completedAt && (

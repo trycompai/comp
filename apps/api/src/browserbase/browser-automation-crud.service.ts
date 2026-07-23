@@ -247,27 +247,35 @@ export class BrowserAutomationCrudService {
     return { success: true, scheduleFrequency, updated: count };
   }
 
-  /** Presign a run's own screenshot and each of its per-step screenshots. */
+  /** Presign a run's screenshots (full page + close-up) and each step's. */
   private async presignRun<
     T extends {
       screenshotUrl: string | null;
-      stepRuns?: Array<{ screenshotUrl: string | null }>;
+      focusScreenshotUrl?: string | null;
+      stepRuns?: Array<{
+        screenshotUrl: string | null;
+        focusScreenshotUrl?: string | null;
+      }>;
     },
   >(run: T): Promise<T> {
-    const presign = (key: string | null): Promise<string | null> =>
+    const presign = (
+      key: string | null | undefined,
+    ): Promise<string | null | undefined> =>
       key ? this.screenshots.getPresignedUrl({ key }) : Promise.resolve(key);
-    const [screenshotUrl, stepRuns] = await Promise.all([
+    const [screenshotUrl, focusScreenshotUrl, stepRuns] = await Promise.all([
       presign(run.screenshotUrl),
+      presign(run.focusScreenshotUrl),
       run.stepRuns
         ? Promise.all(
             run.stepRuns.map(async (stepRun) => ({
               ...stepRun,
               screenshotUrl: await presign(stepRun.screenshotUrl),
+              focusScreenshotUrl: await presign(stepRun.focusScreenshotUrl),
             })),
           )
         : Promise.resolve(run.stepRuns),
     ]);
-    return { ...run, screenshotUrl, stepRuns } as T;
+    return { ...run, screenshotUrl, focusScreenshotUrl, stepRuns } as T;
   }
 
   async getRunWithPresignedUrl(runId: string, organizationId?: string) {

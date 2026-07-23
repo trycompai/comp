@@ -107,8 +107,11 @@ model BrowserAutomationRun {
   /// Duration in milliseconds
   durationMs Int?
 
-  /// Screenshot URL in S3 (if successful)
+  /// Screenshot URL in S3 (if successful) — the full page
   screenshotUrl String?
+
+  /// A focused close-up (the agent's final viewport) shown as the "proof"
+  focusScreenshotUrl String?
 
   /// Evaluation result - whether the automation fulfilled the task requirements
   evaluationStatus BrowserAutomationEvaluationStatus?
@@ -216,10 +219,11 @@ model BrowserAutomationStepRun {
 
   status BrowserAutomationRunStatus @default(pending)
 
-  screenshotUrl    String?
-  evaluationStatus BrowserAutomationEvaluationStatus?
-  evaluationReason String?
-  error            String?
+  screenshotUrl      String?
+  focusScreenshotUrl String?
+  evaluationStatus   BrowserAutomationEvaluationStatus?
+  evaluationReason   String?
+  error              String?
 
   startedAt   DateTime?
   completedAt DateTime?

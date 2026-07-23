@@ -1,8 +1,7 @@
-// apps/app/src/app/(app)/[orgId]/tasks/[taskId]/components/browser-automations/RunItem.test.tsx
-import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
-import { RunItem } from './RunItem';
+import { render, screen } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
 import type { BrowserAutomationRun } from '../../hooks/types';
+import { RunItem } from './RunItem';
 
 const baseRun: BrowserAutomationRun = {
   id: 'bar_123',
@@ -12,53 +11,39 @@ const baseRun: BrowserAutomationRun = {
   screenshotUrl: 'https://s3.example.com/signed?sig=abc',
   evaluationStatus: 'pass',
   evaluationReason: 'All good',
-  error: null,
+  error: undefined,
 } as unknown as BrowserAutomationRun;
 
 describe('RunItem', () => {
-  it('Open full size anchor points at the stable redirect endpoint, not the signed URL', () => {
+  it('shows the step ledger (reason + screenshot) when expanded', () => {
     render(<RunItem run={baseRun} isLatest={true} />);
-    const link = screen.getByRole('link', { name: /open full size/i });
-    expect(link.getAttribute('href')).toContain(
-      '/v1/browserbase/runs/bar_123/screenshot',
-    );
-    expect(link.getAttribute('href')).not.toContain('s3.example.com');
-  });
-
-  it('Try direct link fallback also points at the stable redirect endpoint', () => {
-    render(<RunItem run={baseRun} isLatest={true} />);
-    const img = screen.getByAltText('Automation screenshot');
-    fireEvent.error(img);
-    const fallback = screen.getByRole('link', { name: /try direct link/i });
-    expect(fallback.getAttribute('href')).toContain(
-      '/v1/browserbase/runs/bar_123/screenshot',
-    );
-  });
-
-  it('renders the inline thumbnail using the presigned URL from the run payload', () => {
-    render(<RunItem run={baseRun} isLatest={true} />);
-    const img = screen.getByAltText('Automation screenshot') as HTMLImageElement;
+    // Single-step runs auto-expand — the reason and the proof image show.
+    expect(screen.getByText('All good')).toBeInTheDocument();
+    const img = screen.getByAltText('Close-up · Proof') as HTMLImageElement;
     expect(img.src).toContain('s3.example.com');
   });
 
-  it('Download anchor points at the redirect endpoint with ?download=true', () => {
-    render(<RunItem run={baseRun} isLatest={true} />);
-    const link = screen.getByRole('link', { name: /download/i });
-    expect(link.getAttribute('href')).toContain(
-      '/v1/browserbase/runs/bar_123/screenshot?download=true',
-    );
+  it('shows both the close-up and the full page when a close-up is present', () => {
+    const run = {
+      ...baseRun,
+      focusScreenshotUrl: 'https://s3.example.com/focus?sig=xyz',
+    } as unknown as BrowserAutomationRun;
+    render(<RunItem run={run} isLatest={true} />);
+    expect(screen.getByAltText('Close-up · Proof')).toBeInTheDocument();
+    expect(screen.getByAltText('Full page · Context — scrolls')).toBeInTheDocument();
   });
 
-  it('does not render the evaluation block when evaluationStatus is null', () => {
-    const unevaluatedRun = {
-      ...baseRun,
+  it('surfaces a failed step reason with no screenshots', () => {
+    const run = {
+      id: 'bar_9',
+      status: 'failed',
+      createdAt: new Date().toISOString(),
+      blockedReason: 'Re-auth blocked the IAM page',
+      screenshotUrl: undefined,
       evaluationStatus: null,
-      evaluationReason: 'Navigation completed. Screenshot captured.',
     } as unknown as BrowserAutomationRun;
-
-    render(<RunItem run={unevaluatedRun} isLatest={true} />);
-    expect(screen.queryByText(/evaluation failed/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/evaluation passed/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/issues found/i)).not.toBeInTheDocument();
+    render(<RunItem run={run} isLatest={true} />);
+    expect(screen.getByText(/re-auth blocked the iam page/i)).toBeInTheDocument();
+    expect(screen.getByText(/0 screenshots/i)).toBeInTheDocument();
   });
 });

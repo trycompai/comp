@@ -58,6 +58,7 @@ export class BrowserAutomationRunStoreService {
           ? Date.now() - input.startedAt.getTime()
           : 0,
         screenshotUrl: input.result.screenshotKey,
+        focusScreenshotUrl: input.result.focusScreenshotKey ?? null,
         evaluationStatus: input.result.evaluationStatus ?? null,
         evaluationReason: input.result.evaluationReason ?? null,
         error: input.result.error,
@@ -100,6 +101,7 @@ export class BrowserAutomationRunStoreService {
         status: input.result.status,
         completedAt: new Date(),
         screenshotUrl: input.result.screenshotKey ?? null,
+        focusScreenshotUrl: input.result.focusScreenshotKey ?? null,
         evaluationStatus: input.result.evaluationStatus ?? null,
         evaluationReason: input.result.evaluationReason ?? null,
         error: input.result.error ?? null,

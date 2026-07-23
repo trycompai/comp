@@ -7,6 +7,8 @@ export interface BrowserAutomationStepRun {
   order: number;
   status: string;
   screenshotUrl?: string | null;
+  /** Focused close-up (the "proof") shown beside the full page. */
+  focusScreenshotUrl?: string | null;
   evaluationStatus?: 'pass' | 'fail' | null;
   evaluationReason?: string | null;
   error?: string | null;
@@ -21,6 +23,7 @@ export interface BrowserAutomationRun {
   createdAt: string;
   completedAt?: string;
   screenshotUrl?: string;
+  focusScreenshotUrl?: string | null;
   evaluationStatus?: 'pass' | 'fail' | null;
   evaluationReason?: string | null;
   error?: string;
