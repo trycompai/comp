@@ -180,7 +180,9 @@ export function RunItem({ run, isLatest }: RunItemProps) {
                     </a>
                   </div>
                 </div>
-                <div className="relative rounded-md overflow-hidden border border-border/50 bg-muted/30">
+                {/* Full-page shots are tall — cap the preview and let it scroll;
+                    "Open full size" opens the real thing. */}
+                <div className="relative max-h-80 overflow-auto rounded-md border border-border/50 bg-muted/30">
                   <Image
                     src={run.screenshotUrl!}
                     alt="Automation screenshot"
