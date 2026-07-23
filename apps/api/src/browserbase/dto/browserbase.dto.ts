@@ -321,6 +321,11 @@ export class BrowserAuthProfileResponseDto {
 
   @ApiProperty()
   updatedAt: Date;
+
+  @ApiPropertyOptional({
+    description: 'Number of browser automations in the org that run on this connection',
+  })
+  automationCount?: number;
 }
 
 export class ResolveAuthProfileResponseDto {

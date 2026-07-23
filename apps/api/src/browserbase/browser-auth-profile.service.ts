@@ -44,10 +44,33 @@ export class BrowserAuthProfileService {
   ) {}
 
   async listProfiles(organizationId: string) {
-    return db.browserAuthProfile.findMany({
-      where: { organizationId },
-      orderBy: [{ hostname: 'asc' }, { updatedAt: 'desc' }],
-    });
+    const [profiles, automations] = await Promise.all([
+      db.browserAuthProfile.findMany({
+        where: { organizationId },
+        orderBy: [{ hostname: 'asc' }, { updatedAt: 'desc' }],
+      }),
+      db.browserAutomation.findMany({
+        where: { task: { organizationId } },
+        select: { targetUrl: true },
+      }),
+    ]);
+
+    // Automations bind to a connection by hostname (not a FK), so tally per host.
+    const countByHost = new Map<string, number>();
+    for (const { targetUrl } of automations) {
+      let host: string;
+      try {
+        host = normalizeHostnameFromUrl(targetUrl);
+      } catch {
+        continue; // skip malformed targetUrls rather than fail the whole list
+      }
+      countByHost.set(host, (countByHost.get(host) ?? 0) + 1);
+    }
+
+    return profiles.map((profile) => ({
+      ...profile,
+      automationCount: countByHost.get(profile.hostname) ?? 0,
+    }));
   }
 
   async getProfile({

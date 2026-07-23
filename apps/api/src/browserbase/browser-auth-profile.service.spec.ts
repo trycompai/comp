@@ -20,6 +20,9 @@ jest.mock('@db', () => ({
       updateMany: jest.fn(),
       deleteMany: jest.fn(),
     },
+    browserAutomation: {
+      findMany: jest.fn(),
+    },
   },
 }));
 
@@ -187,6 +190,32 @@ describe('BrowserAuthProfileService', () => {
     );
     expect(db.browserbaseContext.deleteMany).toHaveBeenCalledWith({
       where: { organizationId: 'org_1', contextId: '__PENDING__' },
+    });
+  });
+
+  describe('listProfiles', () => {
+    it('attaches an automation count per connection by hostname', async () => {
+      (db.browserAuthProfile.findMany as jest.Mock).mockResolvedValue([
+        { id: 'bap_gh', organizationId: 'org_1', hostname: 'github.com' },
+        { id: 'bap_aws', organizationId: 'org_1', hostname: 'aws.amazon.com' },
+        { id: 'bap_dd', organizationId: 'org_1', hostname: 'datadoghq.com' },
+      ]);
+      (db.browserAutomation.findMany as jest.Mock).mockResolvedValue([
+        { targetUrl: 'https://github.com/acme/repo' },
+        { targetUrl: 'https://github.com/acme/other' },
+        { targetUrl: 'https://aws.amazon.com/console' },
+        { targetUrl: 'not-a-url' }, // malformed -> skipped, not fatal
+      ]);
+
+      const result = await service.listProfiles('org_1');
+
+      expect(db.browserAutomation.findMany).toHaveBeenCalledWith({
+        where: { task: { organizationId: 'org_1' } },
+        select: { targetUrl: true },
+      });
+      expect(result.find((p) => p.id === 'bap_gh')?.automationCount).toBe(2);
+      expect(result.find((p) => p.id === 'bap_aws')?.automationCount).toBe(1);
+      expect(result.find((p) => p.id === 'bap_dd')?.automationCount).toBe(0);
     });
   });
 

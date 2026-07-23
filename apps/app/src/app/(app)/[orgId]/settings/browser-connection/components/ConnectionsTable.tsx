@@ -69,6 +69,7 @@ export function ConnectionsTable({
             <th className={HEAD}>Method</th>
             <th className={HEAD}>Connected as</th>
             <th className={HEAD}>Status</th>
+            <th className={HEAD}>Automations</th>
             <th className={HEAD}>Last verified</th>
             <th className={`${HEAD} text-right`}>Actions</th>
           </tr>
@@ -107,6 +108,19 @@ export function ConnectionsTable({
                 </td>
                 <td className={CELL}>
                   <StatusPill status={connection.status} />
+                </td>
+                <td className={CELL}>
+                  <span
+                    className="text-[12.5px]"
+                    style={{
+                      color:
+                        connection.automationCount && connection.automationCount > 0
+                          ? 'var(--foreground)'
+                          : 'var(--muted-foreground)',
+                    }}
+                  >
+                    {connection.automationCount ?? 0}
+                  </span>
                 </td>
                 <td className={CELL}>
                   <span className="whitespace-nowrap text-[12.5px] text-muted-foreground">

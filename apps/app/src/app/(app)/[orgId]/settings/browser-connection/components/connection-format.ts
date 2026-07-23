@@ -12,6 +12,8 @@ export interface Connection {
   blockedReason?: string | null;
   vaultProvider?: string | null;
   vaultExternalItemRef?: string | null;
+  /** How many automations in the org run on this connection. */
+  automationCount?: number;
 }
 
 export type SignInMethod = 'password' | 'sso';

@@ -87,6 +87,7 @@ export function ManageConnectionSheet({
             <div className="rounded-lg border border-border px-4 py-2">
               <MetaRow label="Method">{method === 'password' ? 'Password' : 'SSO'}</MetaRow>
               <MetaRow label="Connected as">{connection.loginIdentity || '—'}</MetaRow>
+              <MetaRow label="Automations">{connection.automationCount ?? 0}</MetaRow>
               <MetaRow label="Status">
                 <span style={{ color: meta.color }}>{meta.label}</span>
               </MetaRow>
@@ -213,8 +214,11 @@ export function ManageConnectionSheet({
                   ) : (
                     <div className="flex flex-col gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3">
                       <p className="text-[12.5px] text-foreground">
-                        Remove this connection? Automations that rely on it stop running
-                        until it&apos;s reconnected.
+                        {connection.automationCount && connection.automationCount > 0
+                          ? `Remove this connection? ${connection.automationCount} automation${
+                              connection.automationCount === 1 ? '' : 's'
+                            } that rely on it stop running until it's reconnected.`
+                          : "Remove this connection? Anything that relies on it stops working until it's reconnected."}
                       </p>
                       <div className="flex gap-2">
                         <Button
