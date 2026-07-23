@@ -91,33 +91,40 @@ function shotCount(step: LedgerStep): number {
 /** A labelled screenshot pane (close-up = proof, full page = context, scrolls). */
 function ShotPane({ label, src, scroll }: { label: string; src: string; scroll?: boolean }) {
   const [error, setError] = useState(false);
+  // Both panes share one fixed height so they align: the close-up is contained
+  // and centered; the full page scrolls inside the box.
   return (
     <div className="min-w-0 flex-1">
       <div className="mb-1 text-[8.5px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
         {label}
       </div>
-      <div
-        className={`rounded-md border border-border bg-white ${
-          scroll ? 'max-h-[280px] overflow-y-auto' : ''
-        }`}
-      >
-        {!error ? (
-          <a href={src} target="_blank" rel="noopener noreferrer" className="block">
-            <NextImage
-              src={src}
-              alt={label}
-              width={800}
-              height={450}
-              className="h-auto w-full object-contain"
-              onError={() => setError(true)}
-            />
-          </a>
-        ) : (
-          <div className="grid h-24 place-items-center text-xs text-muted-foreground">
-            Screenshot unavailable
-          </div>
-        )}
-      </div>
+      {!error ? (
+        <a
+          href={src}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`block h-64 rounded-md border border-border bg-white ${
+            scroll ? 'overflow-y-auto' : 'grid place-items-center overflow-hidden'
+          }`}
+        >
+          <NextImage
+            src={src}
+            alt={label}
+            width={800}
+            height={450}
+            className={
+              scroll
+                ? 'h-auto w-full object-contain'
+                : 'max-h-full w-auto max-w-full object-contain'
+            }
+            onError={() => setError(true)}
+          />
+        </a>
+      ) : (
+        <div className="grid h-64 place-items-center rounded-md border border-border bg-white text-xs text-muted-foreground">
+          Screenshot unavailable
+        </div>
+      )}
     </div>
   );
 }
