@@ -17,7 +17,7 @@ function createPrismaClient(): PrismaClient {
   const rawUrl = process.env.DATABASE_URL!;
   const ssl = resolveSslConfig(rawUrl);
   const url = ssl !== undefined ? stripSslMode(rawUrl) : rawUrl;
-  const adapter = new PrismaPg({ connectionString: url, ssl });
+  const adapter = new PrismaPg({ connectionString: url, ssl: ssl ?? false });
   return new PrismaClient({
     adapter,
     transactionOptions: { timeout: 60000 },

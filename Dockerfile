@@ -9,6 +9,11 @@ WORKDIR /app
 COPY package.json bun.lock ./
 
 # Copy package.json files for all packages (exclude local db; use published @trycompai/db)
+COPY packages/auth/package.json ./packages/auth/
+COPY packages/billing/package.json ./packages/billing/
+COPY packages/company/package.json ./packages/company/
+COPY packages/db/package.json ./packages/db/
+
 COPY packages/kv/package.json ./packages/kv/
 COPY packages/ui/package.json ./packages/ui/
 COPY packages/email/package.json ./packages/email/
@@ -26,28 +31,29 @@ COPY apps/portal/package.json ./apps/portal/
 RUN PRISMA_SKIP_POSTINSTALL_GENERATE=true bun install --ignore-scripts
 
 # =============================================================================
-# STAGE 2: Ultra-Minimal Migrator - Only Prisma
+# STAGE 2: Migrator - built from local db source (not published npm package)
 # =============================================================================
-FROM oven/bun:1.2.8 AS migrator
+FROM deps AS migrator
 
 WORKDIR /app
 
-# Copy local Prisma schema and migrations from workspace
-COPY packages/db/prisma ./packages/db/prisma
+# Copy full local db package source (schema, scripts, seed data, prisma files)
+COPY packages/db ./packages/db
 
-# Create minimal package.json for Prisma runtime (also used by seeder)
-RUN echo '{"name":"migrator","type":"module","dependencies":{"prisma":"^6.14.0","@prisma/client":"^6.14.0","@trycompai/db":"^1.3.4","zod":"^3.25.7"}}' > package.json
+# Build local db package: generates Prisma Client from local schema files
+# AND builds the combined dist/schema.prisma - both from source, not npm
+RUN cd packages/db && bun run build
 
-# Install ONLY Prisma dependencies
-RUN bun install
+# Install Node.js (Bun's WASM engine has a known crash bug with Prisma 7's
+# query compiler - see https://github.com/prisma/prisma/issues/28805 and
+# https://github.com/oven-sh/bun/issues/17146). Run seed under Node instead.
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates \
+    && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/* \
+    && npm install -g tsx
 
-# Ensure Prisma can find migrations relative to the published schema path
-# We copy the local migrations into the published package's dist directory
-RUN cp -R packages/db/prisma/migrations node_modules/@trycompai/db/dist/
-
-# Run migrations against the combined schema published by @trycompai/db
-RUN echo "Running migrations against @trycompai/db combined schema"
-CMD ["bunx", "prisma", "migrate", "deploy", "--schema=node_modules/@trycompai/db/dist/schema.prisma"]
+CMD ["sh", "-lc", "cd packages/db && bunx prisma migrate deploy"]
 
 # =============================================================================
 # STAGE 3: App Builder
@@ -68,8 +74,13 @@ COPY --from=deps /app/node_modules ./node_modules
 # `--ignore-scripts` so packages/db's postinstall was skipped; we run
 # it explicitly here so `next build` can resolve the generated runtime
 # + types when it imports @prisma/client.
-RUN cd packages/db && node scripts/combine-schemas.js \
-                   && node scripts/generate-prisma-client-js.js
+# Build local workspace packages in dependency order (db first, others depend on it)
+RUN cd packages/db && bun run build
+RUN cd packages/auth && bun run build
+RUN cd packages/company && bun run build
+RUN cd packages/billing && bun run build
+
+RUN cd apps/app && bun run db:getschema
 
 # Ensure Next build has required public env at build-time
 ARG NEXT_PUBLIC_BETTER_AUTH_URL
@@ -104,7 +115,7 @@ COPY --from=app-builder /app/apps/app/.next/static ./apps/app/.next/static
 COPY --from=app-builder /app/apps/app/public ./apps/app/public
 
 EXPOSE 3000
-CMD ["node", "apps/app/server.js"]
+CMD ["node", "--max-old-space-size=8192", "apps/app/server.js"]
 
 # =============================================================================
 # STAGE 5: Portal Builder
@@ -119,14 +130,21 @@ COPY apps/portal ./apps/portal
 
 # Bring in node_modules for build and prisma prebuild
 COPY --from=deps /app/node_modules ./node_modules
+# Build local workspace packages in dependency order (db first, others depend on it)
+RUN cd packages/db && bun run build
+
+RUN cd packages/auth && bun run build
+RUN cd packages/company && bun run build
+RUN cd packages/billing && bun run build
 
 # Pre-combine schemas for portal build
-RUN cd packages/db && node scripts/combine-schemas.js
-RUN cp packages/db/dist/schema.prisma apps/portal/prisma/schema.prisma
+RUN cd apps/portal && bun run db:getschema
 
 # Ensure Next build has required public env at build-time
 ARG NEXT_PUBLIC_BETTER_AUTH_URL
+ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_BETTER_AUTH_URL=$NEXT_PUBLIC_BETTER_AUTH_URL \
+    NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
     NEXT_TELEMETRY_DISABLED=1 NODE_ENV=production \
     NEXT_OUTPUT_STANDALONE=true \
     NODE_OPTIONS=--max_old_space_size=6144
@@ -147,6 +165,6 @@ COPY --from=portal-builder /app/apps/portal/.next/static ./apps/portal/.next/sta
 COPY --from=portal-builder /app/apps/portal/public ./apps/portal/public
 
 EXPOSE 3000
-CMD ["node", "apps/portal/server.js"]
+CMD ["node", "--max-old-space-size=8192", "apps/portal/server.js"]
 
 # (Trigger.dev hosted; no local runner stage)
