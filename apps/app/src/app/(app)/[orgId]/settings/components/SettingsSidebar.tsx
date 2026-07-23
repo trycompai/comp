@@ -17,7 +17,7 @@ type SettingsNavItem = {
   hidden?: boolean;
 };
 
-export function SettingsSidebar({ orgId, showBillingTab }: SettingsSidebarProps) {
+export function SettingsSidebar({ orgId, showBrowserTab, showBillingTab }: SettingsSidebarProps) {
   const pathname = usePathname() ?? '';
 
   const items: SettingsNavItem[] = [
@@ -36,9 +36,9 @@ export function SettingsSidebar({ orgId, showBillingTab }: SettingsSidebarProps)
     { id: 'notifications', label: 'Notifications', path: `/${orgId}/settings/notifications` },
     {
       id: 'browser',
-      label: 'Browser',
+      label: 'Connections',
       path: `/${orgId}/settings/browser-connection`,
-      hidden: true,
+      hidden: !showBrowserTab,
     },
     { id: 'user', label: 'User Settings', path: `/${orgId}/settings/user` },
   ];

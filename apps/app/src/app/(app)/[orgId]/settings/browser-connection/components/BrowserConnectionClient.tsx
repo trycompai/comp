@@ -2,283 +2,346 @@
 
 import { usePermissions } from '@/hooks/use-permissions';
 import { apiClient } from '@/lib/api-client';
-import {
-  Badge,
-  Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  Input,
-  Label,
-  Spinner,
-} from '@trycompai/design-system';
-import { Globe, Screen } from '@trycompai/design-system/icons';
+import { Button, Input, Spinner } from '@trycompai/design-system';
+import { Add } from '@trycompai/design-system/icons';
 import { useCallback, useEffect, useState } from 'react';
-import { BrowserConnectionInstructions } from './BrowserConnectionInstructions';
+import { toast } from 'sonner';
 import { BrowserConnectionLiveView } from './BrowserConnectionLiveView';
-import {
-  BrowserConnectionProfileList,
-  type BrowserConnectionProfile,
-} from './BrowserConnectionProfileList';
+import { summarize, type Connection } from './connection-format';
+import { ConnectionsTable } from './ConnectionsTable';
+import { ManageConnectionSheet } from './ManageConnectionSheet';
 
-interface ResolveProfileResponse {
-  profile: BrowserConnectionProfile & { contextId: string };
+interface ResolveResponse {
+  profile: Connection & { contextId: string };
   isNew: boolean;
 }
-
 interface SessionResponse {
   sessionId: string;
   liveViewUrl: string;
 }
 
-interface AuthStatusResponse {
-  isLoggedIn: boolean;
-  username?: string;
-}
-
-interface VerifyProfileResponse {
-  profile: BrowserConnectionProfile;
-  auth: AuthStatusResponse;
-}
-
-type Status = 'idle' | 'loading' | 'session-active' | 'checking';
-
 interface BrowserConnectionClientProps {
   organizationId: string;
+  initialProfiles?: Connection[];
 }
 
-export function BrowserConnectionClient({ organizationId }: BrowserConnectionClientProps) {
+function normalizeUrl(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return trimmed;
+  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+}
+
+/**
+ * Org-level browser connections manager (design 2a, dense table). Lists every
+ * vendor login the org has, with health, and wires the existing profile API for
+ * connect / reconnect / rename / change-login / remove.
+ */
+export function BrowserConnectionClient({
+  organizationId: _organizationId,
+  initialProfiles = [],
+}: BrowserConnectionClientProps) {
   const { hasPermission } = usePermissions();
-  const canManageBrowser = hasPermission('integration', 'create');
-  const [status, setStatus] = useState<Status>('idle');
-  const [profileId, setProfileId] = useState<string | null>(null);
-  const [profiles, setProfiles] = useState<BrowserConnectionProfile[]>([]);
+  const canConnect = hasPermission('integration', 'create');
+  const canUpdate = hasPermission('integration', 'update');
+  const canDelete = hasPermission('integration', 'delete');
+
+  const [profiles, setProfiles] = useState<Connection[]>(initialProfiles);
+  const [mode, setMode] = useState<'list' | 'session'>('list');
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [liveViewUrl, setLiveViewUrl] = useState<string | null>(null);
-  const [urlToCheck, setUrlToCheck] = useState('https://github.com');
-  const [authStatus, setAuthStatus] = useState<AuthStatusResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const hasContext = profiles.some((profile) => profile.status === 'verified');
+  const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
+  const [activeUrl, setActiveUrl] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [starting, setStarting] = useState(false);
+  const [busy, setBusy] = useState(false);
 
-  const checkContextStatus = useCallback(async () => {
-    try {
-      const res = await apiClient.get<BrowserConnectionProfile[]>('/v1/browserbase/profiles');
-      if (res.data) {
-        setProfiles(res.data);
-        const verifiedProfile = res.data.find((profile) => profile.status === 'verified');
-        const firstProfile = verifiedProfile ?? res.data[0];
-        setProfileId(firstProfile?.id ?? null);
-      }
-    } catch {
-      // Ignore
-    }
+  const [connectOpen, setConnectOpen] = useState(false);
+  const [connectUrl, setConnectUrl] = useState('');
+
+  const [manageConnection, setManageConnection] = useState<Connection | null>(null);
+  const [manageOpen, setManageOpen] = useState(false);
+
+  const fetchProfiles = useCallback(async () => {
+    const res = await apiClient.get<Connection[]>('/v1/browserbase/profiles');
+    setProfiles(Array.isArray(res.data) ? res.data : []);
   }, []);
 
   useEffect(() => {
-    checkContextStatus();
-  }, [checkContextStatus]);
+    void fetchProfiles();
+  }, [fetchProfiles]);
 
-  const handleStartSession = async () => {
-    let startedSessionId: string | null = null;
+  const openSession = useCallback(async (profileId: string, url: string) => {
+    const sessionRes = await apiClient.post<SessionResponse>(
+      `/v1/browserbase/profiles/${profileId}/session`,
+      {},
+    );
+    if (sessionRes.error || !sessionRes.data) {
+      throw new Error(sessionRes.error || 'Could not open a browser session.');
+    }
+    setSessionId(sessionRes.data.sessionId);
+    setLiveViewUrl(sessionRes.data.liveViewUrl);
+    setActiveProfileId(profileId);
+    setActiveUrl(url);
+    await apiClient.post('/v1/browserbase/navigate', {
+      sessionId: sessionRes.data.sessionId,
+      url,
+    });
+    setMode('session');
+  }, []);
+
+  const handleConnect = useCallback(async () => {
+    const url = normalizeUrl(connectUrl);
+    if (!url) return;
+    setStarting(true);
     try {
-      setError(null);
-      setStatus('loading');
-
-      const profileRes = await apiClient.post<ResolveProfileResponse>(
+      const resolveRes = await apiClient.post<ResolveResponse>(
         '/v1/browserbase/profiles/resolve',
-        { url: urlToCheck },
+        { url },
       );
-      if (profileRes.error || !profileRes.data) {
-        throw new Error(profileRes.error || 'Failed to create auth profile');
+      if (resolveRes.error || !resolveRes.data) {
+        throw new Error(resolveRes.error || 'Could not start the connection.');
       }
-      setProfileId(profileRes.data.profile.id);
-      setProfiles((currentProfiles) => {
-        const rest = currentProfiles.filter(
-          (profile) => profile.id !== profileRes.data?.profile.id,
+      await openSession(resolveRes.data.profile.id, url);
+      setConnectOpen(false);
+      setConnectUrl('');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not start the connection.');
+    } finally {
+      setStarting(false);
+    }
+  }, [connectUrl, openSession]);
+
+  const handleReconnect = useCallback(
+    async (connection: Connection) => {
+      setManageOpen(false);
+      setStarting(true);
+      try {
+        await openSession(
+          connection.id,
+          connection.lastAuthCheckUrl || `https://${connection.hostname}`,
         );
-        return profileRes.data ? [profileRes.data.profile, ...rest] : currentProfiles;
-      });
-
-      const sessionRes = await apiClient.post<SessionResponse>(
-        `/v1/browserbase/profiles/${profileRes.data.profile.id}/session`,
-        {},
-      );
-      if (sessionRes.error || !sessionRes.data) {
-        throw new Error(sessionRes.error || 'Failed to create session');
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Could not reconnect.');
+      } finally {
+        setStarting(false);
       }
-      startedSessionId = sessionRes.data.sessionId;
-      setSessionId(startedSessionId);
-      setLiveViewUrl(sessionRes.data.liveViewUrl);
+    },
+    [openSession],
+  );
 
-      // Navigate to the URL
-      await apiClient.post('/v1/browserbase/navigate', {
-        sessionId: startedSessionId,
-        url: urlToCheck,
-      });
-
-      setStatus('session-active');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to start session');
-      setSessionId(null);
-      setLiveViewUrl(null);
-      setStatus('idle');
-
-      // If we created a session but navigation failed, close it to avoid orphaned sessions
-      if (startedSessionId) {
-        try {
-          await apiClient.post('/v1/browserbase/session/close', { sessionId: startedSessionId });
-        } catch {
-          // Ignore cleanup errors (don't mask original error)
-        }
-      }
-    }
-  };
-
-  const handleCheckAuth = async () => {
-    if (!sessionId || !profileId) return;
-
+  const handleVerify = useCallback(async () => {
+    if (!sessionId || !activeProfileId) return;
+    setIsVerifying(true);
     try {
-      setError(null);
-      setStatus('checking');
-
-      const res = await apiClient.post<VerifyProfileResponse>(
-        `/v1/browserbase/profiles/${profileId}/verify`,
-        { sessionId, url: urlToCheck },
-      );
-      if (res.error || !res.data) {
-        throw new Error(res.error || 'Failed to check auth');
-      }
-
-      setAuthStatus(res.data.auth);
-      setProfiles((currentProfiles) => {
-        const rest = currentProfiles.filter((profile) => profile.id !== res.data?.profile.id);
-        return res.data ? [res.data.profile, ...rest] : currentProfiles;
+      await apiClient.post(`/v1/browserbase/profiles/${activeProfileId}/verify`, {
+        sessionId,
+        url: activeUrl,
       });
-
-      // Close the session after checking
       await apiClient.post('/v1/browserbase/session/close', { sessionId });
+      await fetchProfiles();
+      setMode('list');
       setSessionId(null);
       setLiveViewUrl(null);
-      setProfileId(null);
-      setStatus('idle');
+      setActiveProfileId(null);
+      toast.success('Connection saved.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to check auth');
-      setStatus('session-active');
+      toast.error(err instanceof Error ? err.message : 'Could not verify the session.');
+    } finally {
+      setIsVerifying(false);
     }
-  };
+  }, [sessionId, activeProfileId, activeUrl, fetchProfiles]);
 
-  const handleCloseSession = async () => {
+  const handleCloseSession = useCallback(async () => {
     if (sessionId) {
       try {
         await apiClient.post('/v1/browserbase/session/close', { sessionId });
       } catch {
-        // Ignore
+        // ignore — closing best-effort
       }
     }
+    setMode('list');
     setSessionId(null);
     setLiveViewUrl(null);
-    setProfileId(null);
-    setStatus('idle');
-  };
+    setActiveProfileId(null);
+  }, [sessionId]);
+
+  const handleManage = useCallback((connection: Connection) => {
+    setManageConnection(connection);
+    setManageOpen(true);
+  }, []);
+
+  const handleRename = useCallback(
+    async (connection: Connection, name: string) => {
+      setBusy(true);
+      try {
+        await apiClient.patch(`/v1/browserbase/profiles/${connection.id}`, {
+          displayName: name,
+        });
+        await fetchProfiles();
+        setManageOpen(false);
+        toast.success('Connection renamed.');
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Could not rename.');
+      } finally {
+        setBusy(false);
+      }
+    },
+    [fetchProfiles],
+  );
+
+  const handleChangeLogin = useCallback(
+    async (connection: Connection, creds: { username: string; password: string }) => {
+      setBusy(true);
+      try {
+        await apiClient.post(`/v1/browserbase/profiles/${connection.id}/credentials`, creds);
+        await fetchProfiles();
+        setManageOpen(false);
+        toast.success('Login updated. Reconnect to verify it works.');
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Could not update the login.');
+      } finally {
+        setBusy(false);
+      }
+    },
+    [fetchProfiles],
+  );
+
+  const handleRemove = useCallback(
+    async (connection: Connection) => {
+      setBusy(true);
+      try {
+        await apiClient.delete(`/v1/browserbase/profiles/${connection.id}`);
+        await fetchProfiles();
+        setManageOpen(false);
+        toast.success('Connection removed.');
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Could not remove.');
+      } finally {
+        setBusy(false);
+      }
+    },
+    [fetchProfiles],
+  );
+
+  if (mode === 'session' && liveViewUrl) {
+    return (
+      <BrowserConnectionLiveView
+        liveViewUrl={liveViewUrl}
+        isChecking={isVerifying}
+        canManageBrowser={canUpdate || canConnect}
+        onCheckAuth={handleVerify}
+        onClose={handleCloseSession}
+      />
+    );
+  }
+
+  const summary = summarize(profiles);
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Status Card */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-muted p-2">
-                <Screen className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <div>
-                <CardTitle>Browser Session</CardTitle>
-                <CardDescription>
-                  {hasContext
-                    ? 'At least one browser auth profile is verified'
-                    : 'No verified browser auth profile yet'}
-                </CardDescription>
-              </div>
-            </div>
-            <Badge variant={hasContext ? 'default' : 'secondary'}>
-              {hasContext ? 'Connected' : 'Not Connected'}
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {error && <p className="mb-4 text-sm text-destructive">{error}</p>}
-
-          {status === 'idle' && (
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="url">Website URL</Label>
-                <div className="flex gap-2">
-                  <div className="flex-1">
-                    <Input
-                      id="url"
-                      placeholder="https://github.com"
-                      value={urlToCheck}
-                      onChange={(e) => setUrlToCheck(e.target.value)}
-                    />
-                  </div>
-                  {canManageBrowser && (
-                    <Button
-                      onClick={handleStartSession}
-                      disabled={!urlToCheck}
-                      iconLeft={<Globe size={16} />}
-                    >
-                      {hasContext ? 'Open Browser' : 'Connect Browser'}
-                    </Button>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Open a browser session to authenticate with websites. Your login session will be
-                  saved and used for browser automations.
-                </p>
-              </div>
-
-              {authStatus && (
-                <div className="rounded-lg border bg-muted/50 p-4">
-                  <div className="flex items-center gap-2">
-                    <div
-                      className={`h-2 w-2 rounded-full ${
-                        authStatus.isLoggedIn ? 'bg-green-500' : 'bg-yellow-500'
-                      }`}
-                    />
-                    <span className="text-sm font-medium">
-                      {authStatus.isLoggedIn
-                        ? `Logged in${authStatus.username ? ` as ${authStatus.username}` : ''}`
-                        : 'Not logged in'}
-                    </span>
-                  </div>
-                </div>
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="text-[13px] text-muted-foreground">
+          Vendor logins Comp uses to sign in and capture evidence on a schedule.
+          {profiles.length > 0 && (
+            <span className="ml-2 text-foreground">
+              {summary.total} {summary.total === 1 ? 'connection' : 'connections'}
+              {' · '}
+              <span style={{ color: 'var(--success)' }}>{summary.active} active</span>
+              {summary.needAttention > 0 && (
+                <>
+                  {' · '}
+                  <span style={{ color: 'oklch(0.5 0.14 85)' }}>
+                    {summary.needAttention} need attention
+                  </span>
+                </>
               )}
-            </div>
+            </span>
           )}
+        </div>
+        {canConnect && !connectOpen && (
+          <div>
+            <Button
+              onClick={() => setConnectOpen(true)}
+              iconLeft={<Add size={14} />}
+              disabled={starting}
+            >
+              Connect a vendor
+            </Button>
+          </div>
+        )}
+      </div>
 
-          {status === 'loading' && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Spinner />
-              Starting browser session...
+      {connectOpen && (
+        <div className="flex flex-col gap-2 rounded-lg border border-border bg-card p-4">
+          <label htmlFor="connect-url" className="text-[13px] font-medium text-foreground">
+            Vendor sign-in URL
+          </label>
+          <div className="flex flex-wrap gap-2">
+            <div className="min-w-[220px] flex-1">
+              <Input
+                id="connect-url"
+                value={connectUrl}
+                onChange={(event) => setConnectUrl(event.target.value)}
+                placeholder="https://github.com/login"
+              />
             </div>
-          )}
-        </CardContent>
-      </Card>
+            <Button onClick={handleConnect} loading={starting} disabled={!connectUrl.trim() || starting}>
+              Open browser
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setConnectOpen(false);
+                setConnectUrl('');
+              }}
+            >
+              Cancel
+            </Button>
+          </div>
+          <p className="text-[12px] text-muted-foreground">
+            A live browser opens — sign in once, then Comp saves the session and re-logs
+            in automatically.
+          </p>
+        </div>
+      )}
 
-      {(status === 'session-active' || status === 'checking') && liveViewUrl && (
-        <BrowserConnectionLiveView
-          liveViewUrl={liveViewUrl}
-          isChecking={status === 'checking'}
-          canManageBrowser={canManageBrowser}
-          onCheckAuth={handleCheckAuth}
-          onClose={handleCloseSession}
+      {starting && !connectOpen && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Spinner /> Opening browser…
+        </div>
+      )}
+
+      {profiles.length === 0 ? (
+        <div className="grid place-items-center rounded-lg border border-dashed border-border py-16 text-center">
+          <div className="max-w-[320px]">
+            <div className="text-sm text-foreground">No connections yet</div>
+            <p className="mt-1 text-[12.5px] text-muted-foreground">
+              Connect a vendor login so Comp can sign in and capture evidence for your
+              browser automations.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <ConnectionsTable
+          connections={profiles}
+          canManage={canUpdate}
+          onReconnect={handleReconnect}
+          onManage={handleManage}
         />
       )}
 
-      <BrowserConnectionProfileList profiles={profiles} />
-      <BrowserConnectionInstructions />
+      <ManageConnectionSheet
+        connection={manageConnection}
+        open={manageOpen}
+        onOpenChange={setManageOpen}
+        canManage={canUpdate}
+        canRemove={canDelete}
+        busy={busy}
+        onReconnect={handleReconnect}
+        onRename={handleRename}
+        onChangeLogin={handleChangeLogin}
+        onRemove={handleRemove}
+      />
     </div>
   );
 }
