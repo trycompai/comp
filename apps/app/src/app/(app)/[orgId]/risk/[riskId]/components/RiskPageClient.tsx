@@ -2,6 +2,7 @@
 
 import { Comments } from '@/components/comments/Comments';
 import { RecentAuditLogs } from '@/components/RecentAuditLogs';
+import { ResidualAcceptanceCard } from '@/components/risks/acceptance/ResidualAcceptanceCard';
 import { InherentRiskChart } from '@/components/risks/charts/InherentRiskChart';
 import { ResidualRiskChart } from '@/components/risks/charts/ResidualRiskChart';
 import { RiskOverview } from '@/components/risks/risk-overview';
@@ -377,6 +378,20 @@ export function RiskPageClient({
                   regenRun={regenRun}
                   onRegenSettled={handleRegenSettled}
                 />
+                <div className="mt-6">
+                  <ResidualAcceptanceCard
+                    kind="risk"
+                    subjectId={risk.id}
+                    residualLikelihood={risk.residualLikelihood}
+                    residualImpact={risk.residualImpact}
+                    ownerId={risk.assigneeId}
+                    acceptorOptions={assignees.map((member) => ({
+                      id: member.id,
+                      name: member.user?.name ?? member.user?.email ?? 'Unknown',
+                    }))}
+                    canUpdate={canUpdate}
+                  />
+                </div>
               </TabsContent>
             )}
 
