@@ -1,0 +1,135 @@
+---
+title: 'Browser Automations'
+description: 'Let Comp AI sign in to your vendors'' web apps on a schedule — including two-factor authentication — and capture audit evidence automatically.'
+---
+
+Browser Automations let Comp AI sign in to a vendor's web app the way a person would — in a real browser — and capture the exact page you need as audit evidence, on a schedule. It reaches logins that API integrations can't, including ones protected by two-factor authentication (2FA), and keeps evidence fresh without anyone redoing it each cycle.
+
+## What you can do
+
+- Collect evidence from web apps that have no API or integration.
+- Sign in on a schedule, **including 2FA** — Comp AI generates the one-time code for you.
+- Watch a run live and **take over in the browser** if a step needs a human.
+- Get an audit-ready screenshot stamped with the source and timestamp, plus an optional pass/fail check.
+- Manage every vendor login in one place under **Settings → Browser connections**.
+
+## How it works
+
+There are three parts:
+
+1. **Connections** — the vendor logins Comp AI signs in with (**Settings → Browser connections**).
+2. **Browser evidence** — the automations that use those logins, created inside an evidence task.
+3. **Schedule** — Comp AI signs in, captures the page, and re-signs in on its own when a session expires.
+
+<Note>
+  You set up an automation inside a task, but the logins it uses are shared across your
+  organization — connect a vendor once and any task can use it.
+</Note>
+
+## Prerequisites
+
+Before you start, make sure:
+
+1. Your organization has the feature enabled.
+2. You have access to **Settings** and to the evidence task.
+3. You have the vendor login you want Comp AI to use — ideally a **dedicated service account** rather than a personal one.
+
+## Connect a vendor
+
+You can connect from a task's **Browser evidence** section, or from **Settings → Browser connections → Connect a vendor**.
+
+1. Enter the vendor's **sign-in URL**.
+2. Comp AI reads the sign-in page and shows the **exact fields it asks for** — it detects whether the login uses an email, a username, or extra fields like a workspace.
+3. Choose how Comp AI signs in: with a **stored login**, or via **single sign-on (SSO)**, where you finish at your identity provider.
+4. Enter the login. Comp AI signs in for you in a live browser. If a step needs you — a 2FA prompt, an email code — you can **take over in the same browser** and hand it back.
+
+<Note>
+  Credentials are stored **encrypted in a secure vault**. Comp AI keeps only a reference to
+  them — never the raw password in plain text.
+</Note>
+
+## Unattended 2FA
+
+This is what makes scheduled runs truly hands-off. If your login uses an authenticator app, give Comp AI the **setup key** once, and it generates the rotating 6-digit codes itself — so scheduled runs never wait on your phone.
+
+- **Enter the setup key**, not the code. The setup key is the long, one-time key shown when you add an authenticator app (the "can't scan? enter this code" option) — not the rotating 6-digit code your app displays.
+- **Not sure where to find it?** Select **"How do I find this key?"** next to the field. Comp AI shows the steps for your specific vendor, checked against its current help docs.
+- You can also turn this on **later** — open the connection under **Settings → Browser connections** and add the authenticator key without re-entering your password.
+
+<Tip>
+  Use a **dedicated authenticator (MFA) device** for the automation — many vendors let you add
+  more than one. It's revocable on its own and never touches your personal authenticator.
+</Tip>
+
+<Note>
+  Comp AI never stores the rotating 6-digit code — only the setup key, encrypted — and generates a
+  fresh code at run time.
+</Note>
+
+## Create a browser evidence automation
+
+Inside an evidence task, open the **Browser evidence** section:
+
+1. **Describe what to capture** in plain English — for example, *"Open the organization's security settings and show that two-factor authentication is required for all members."*
+2. *(Optional)* Add a **pass/fail check** — for example, *"Two-factor authentication is required for everyone."* Without one, the run captures a screenshot only.
+3. **Test it.** Watch the automation run live, then review the screenshot and result before you commit.
+4. **Save.** It now runs on the task's schedule and keeps the evidence current.
+
+<Note>
+  One task can hold several automations — even across different vendors — each producing its own
+  screenshot and verdict.
+</Note>
+
+## What happens on a schedule
+
+- Comp AI signs in, navigates to the page you described, and captures a screenshot stamped with the **requirement, source URL, and capture time**. If you added a check, it records a **pass or fail** with a short reason.
+- If the saved session has **expired**, Comp AI **re-signs in on its own** — using the stored login and a freshly generated 2FA code. You don't have to do anything.
+- If it hits something only a person can clear — a captcha, a "verify it's you" prompt, or an SSO/passkey step — the run pauses and the connection is flagged **Needs reconnect**, with a one-click **Reconnect**.
+
+## Manage your connections
+
+Under **Settings → Browser connections** you can:
+
+- See every connection with its status: **Active**, **Needs reconnect**, or **Blocked**.
+- **Search** and page through them when you have many.
+- **Reconnect**, **rename**, or **change the login**.
+- Turn **Automatic 2FA** on or off, or replace the authenticator key.
+- **Remove** a connection you no longer need.
+
+## Best practices
+
+1. Use a **dedicated service account** and a **dedicated MFA device** for each automation.
+2. Point each automation at the **specific page or setting** so the screenshot shows just that, not a long list.
+3. Prefer a **direct sign-in or settings URL** — runs are faster and steadier when they start close to the target.
+4. Keep automations meaningful: pair each with a pass/fail check where the requirement is clear.
+
+## Troubleshooting
+
+<Accordion title="A connection says “Needs reconnect”" description="The saved session expired or a login step needs a human" icon="rotate">
+  Click **Reconnect**, sign in again, and enter the 2FA code once in the live browser. To avoid
+  this every time a session expires, add the **authenticator setup key** so Comp AI can re-sign in
+  on its own.
+</Accordion>
+
+<Accordion title="The steps for finding my authenticator key look generic" description="Vendor-specific vs. general guidance" icon="circle-question">
+  For well-known vendors, Comp AI shows steps checked against their current help docs. For others it
+  shows the universal steps — the exact menu names may differ, so double-check in your account's
+  security settings as you go.
+</Accordion>
+
+<Accordion title="The run paused for a captcha or “verify it's you”" description="Challenges that require a person" icon="shield">
+  Some challenges (captcha, device approval, passkeys) can only be completed by a human. Open the
+  connection and **Reconnect** in a live browser to clear it, then future runs continue normally.
+</Accordion>
+
+<Accordion title="I don't see Browser connections in Settings" description="Feature access and visibility" icon="warning">
+  Your organization may not have the feature enabled, or your user may not have access to Settings.
+  Check with an admin.
+</Accordion>
+
+## Support
+
+If you need help with Browser Automations:
+
+1. Contact support at [support@trycomp.ai](mailto:support@trycomp.ai)
+2. Join our [Discord community](https://discord.gg/compai)
