@@ -45,6 +45,7 @@ export class VendorAcceptancesController {
   @ApiResponse(LIST_VENDOR_ACCEPTANCES_RESPONSES[401])
   @ApiResponse(LIST_VENDOR_ACCEPTANCES_RESPONSES[403])
   @ApiResponse(LIST_VENDOR_ACCEPTANCES_RESPONSES[404])
+  @ApiResponse(LIST_VENDOR_ACCEPTANCES_RESPONSES[500])
   async listVendorAcceptances(
     @Param('id') vendorId: string,
     @OrganizationId() organizationId: string,
@@ -72,6 +73,7 @@ export class VendorAcceptancesController {
   @ApiResponse(RECORD_VENDOR_ACCEPTANCE_RESPONSES[401])
   @ApiResponse(RECORD_VENDOR_ACCEPTANCE_RESPONSES[403])
   @ApiResponse(RECORD_VENDOR_ACCEPTANCE_RESPONSES[404])
+  @ApiResponse(RECORD_VENDOR_ACCEPTANCE_RESPONSES[500])
   async recordVendorAcceptance(
     @Param('id') vendorId: string,
     @Body() dto: CreateRiskAcceptanceDto,

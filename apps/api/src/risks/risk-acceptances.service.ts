@@ -80,7 +80,9 @@ export class RiskAcceptancesService {
     // concurrent residual PATCH blocks until this commits, so the frozen
     // rating is always the rating at acceptance time (never instantly stale).
     return db.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM "Risk" WHERE id = ${riskId} FOR UPDATE`;
+      // Org-scoped so a foreign-tenant id can never acquire (even briefly)
+      // another organization's row lock.
+      await tx.$queryRaw`SELECT id FROM "Risk" WHERE id = ${riskId} AND "organizationId" = ${organizationId} FOR UPDATE`;
       const risk = await tx.risk.findFirst({
         where: { id: riskId, organizationId },
         select: {
@@ -124,7 +126,9 @@ export class RiskAcceptancesService {
   ): Promise<RiskAcceptanceView> {
     // Same row-lock rationale as createForRisk.
     return db.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM "Vendor" WHERE id = ${vendorId} FOR UPDATE`;
+      // Org-scoped so a foreign-tenant id can never acquire (even briefly)
+      // another organization's row lock.
+      await tx.$queryRaw`SELECT id FROM "Vendor" WHERE id = ${vendorId} AND "organizationId" = ${organizationId} FOR UPDATE`;
       const vendor = await this.findVendorRating(vendorId, organizationId, tx);
 
       return this.createAcceptance({

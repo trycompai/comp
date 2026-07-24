@@ -455,15 +455,17 @@ export class IsmsService {
     // Freeze the draft into a new immutable published version and promote it to
     // currentVersion. Editing afterwards reverts status to draft but leaves this
     // published version live and exportable (CS-701).
-    const published = await db.$transaction(async (tx) => {
+    const publish = async (tx: Prisma.TransactionClient) => {
       // Serialize concurrent approvals (and register-row creates, which take the
       // same lock) on this document so they can't interleave and double-publish.
       await lockDocument(tx, documentId);
 
       // Collect the drift baseline INSIDE the transaction so it reads the same
-      // point in time as the rows frozen into the published version below — a
-      // concurrent platform edit can no longer make a just-approved document
-      // immediately stale.
+      // point in time as the rows frozen into the published version below.
+      // The transaction runs REPEATABLE READ (one MVCC snapshot for every
+      // statement), so this baseline and the rows loaded further down can
+      // never observe different data — a concurrent platform edit commits
+      // entirely before or entirely after this approval.
       const snapshot = await collectPlatformData({
         organizationId,
         frameworkId: document.frameworkId,
@@ -518,6 +520,24 @@ export class IsmsService {
         data: { currentVersionId: result.versionId },
       });
       return result;
+    };
+
+    // REPEATABLE READ can abort with a write conflict (P2034) when a racing
+    // lifecycle write commits between our snapshot and our claim update —
+    // retry once; the rerun takes a fresh snapshot and either wins cleanly or
+    // fails the conditional claim with the friendly BadRequestException.
+    const runPublish = () =>
+      db.$transaction(publish, {
+        isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
+      });
+    const published = await runPublish().catch((error: unknown) => {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2034'
+      ) {
+        return runPublish();
+      }
+      throw error;
     });
 
     // Render + upload the frozen exports outside the transaction (Policies

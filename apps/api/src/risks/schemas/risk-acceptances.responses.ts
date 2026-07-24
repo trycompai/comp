@@ -86,7 +86,7 @@ const NOT_FOUND = (entity: string): ApiResponseOptions => ({
 const AUTH_RESPONSE_PROPERTIES = {
   authType: {
     type: 'string',
-    enum: ['api-key', 'session'],
+    enum: ['api-key', 'session', 'service'],
     description: 'How the request was authenticated',
   },
   authenticatedUser: {

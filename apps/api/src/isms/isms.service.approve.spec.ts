@@ -16,6 +16,16 @@ jest.mock('@db', () => ({
     member: { findFirst: jest.fn() },
     $transaction: jest.fn(),
   },
+  Prisma: {
+    TransactionIsolationLevel: { RepeatableRead: 'RepeatableRead' },
+    PrismaClientKnownRequestError: class PrismaClientKnownRequestError extends Error {
+      code: string;
+      constructor(message: string, { code }: { code: string }) {
+        super(message);
+        this.code = code;
+      }
+    },
+  },
 }));
 jest.mock('./documents/data-source', () => ({
   collectPlatformData: jest.fn(),
