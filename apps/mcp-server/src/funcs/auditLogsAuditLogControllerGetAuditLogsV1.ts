@@ -92,6 +92,7 @@ async function $do(
   const query$ = encodeFormQuery({
     "entityId": payload$?.entityId,
     "entityType": payload$?.entityType,
+    "offset": payload$?.offset,
     "pathContains": payload$?.pathContains,
     "take": payload$?.take,
   });
