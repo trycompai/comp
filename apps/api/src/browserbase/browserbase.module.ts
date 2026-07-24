@@ -15,6 +15,7 @@ import { BrowserbaseService } from './browserbase.service';
 import { BrowserCredentialSigninService } from './browser-credential-signin.service';
 import { BrowserCredentialStorageService } from './browser-credential-storage.service';
 import { BrowserLoginAnalyzerService } from './browser-login-analyzer.service';
+import { BrowserMfaInstructionsService } from './browser-mfa-instructions.service';
 import { BROWSER_CREDENTIAL_VAULT_ADAPTER } from './credential-vault';
 import { resolveBrowserCredentialVaultAdapter } from './browser-credential-vault.factory';
 import { AuthModule } from '../auth/auth.module';
@@ -37,6 +38,7 @@ import { AuthModule } from '../auth/auth.module';
     BrowserCredentialSigninService,
     BrowserCredentialStorageService,
     BrowserLoginAnalyzerService,
+    BrowserMfaInstructionsService,
     {
       provide: BROWSER_CREDENTIAL_VAULT_ADAPTER,
       useFactory: resolveBrowserCredentialVaultAdapter,

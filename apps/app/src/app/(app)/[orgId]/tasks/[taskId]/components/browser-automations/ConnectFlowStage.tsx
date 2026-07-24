@@ -105,6 +105,7 @@ export function ConnectFlowStage({
           isSubmitting={isStartingSignin}
           onSubmit={onCapture}
           analysis={analysis}
+          hostname={host}
           submitLabel="Sign in for me"
         />
       )}

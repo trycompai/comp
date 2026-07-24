@@ -105,7 +105,10 @@ export function BrowserConnectionClient({
   );
 
   const handleChangeLogin = useCallback(
-    async (connection: Connection, creds: { username: string; password: string }) => {
+    async (
+      connection: Connection,
+      creds: { username: string; password: string; totpSeed?: string },
+    ) => {
       setBusy(true);
       try {
         await apiClient.post(`/v1/browserbase/profiles/${connection.id}/credentials`, creds);

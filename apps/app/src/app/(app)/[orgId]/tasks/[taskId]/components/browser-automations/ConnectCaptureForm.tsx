@@ -8,6 +8,7 @@ import { useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import type { LoginAnalysis } from '../../hooks/types';
 import { deriveCaptureFields } from './connect-capture-fields';
+import { MfaSetupHelp } from './MfaSetupHelp';
 
 // Internal form shape — a flat list of the fields the vendor's page needs. It's
 // mapped back to the sign-in contract (username/password/extraFields) on submit,
@@ -41,6 +42,8 @@ interface ConnectCaptureFormProps {
   onSubmit: (data: ConnectCaptureFormData) => void;
   /** Detection for this vendor's login — drives which fields we render (1A). */
   analysis?: LoginAnalysis | null;
+  /** Vendor host, used to generate per-vendor 2FA setup-key guidance. */
+  hostname?: string;
   submitLabel?: string;
 }
 
@@ -53,6 +56,7 @@ export function ConnectCaptureForm({
   isSubmitting,
   onSubmit,
   analysis,
+  hostname,
   submitLabel = 'Sign in for me',
 }: ConnectCaptureFormProps) {
   const derived = useMemo(() => deriveCaptureFields(analysis), [analysis]);
@@ -206,6 +210,7 @@ export function ConnectCaptureForm({
             rotating 6-digit code. We use it to generate codes at run time so scheduled
             runs don&apos;t need you.
           </p>
+          <MfaSetupHelp hostname={hostname} />
         </div>
       )}
 

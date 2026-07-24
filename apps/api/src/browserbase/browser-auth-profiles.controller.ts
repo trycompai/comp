@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -6,12 +7,14 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
   ApiBody,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiResponse,
   ApiSecurity,
   ApiTags,
@@ -20,6 +23,10 @@ import { OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
+import {
+  BrowserMfaInstructionsService,
+  type MfaInstructions,
+} from './browser-mfa-instructions.service';
 import { BrowserbaseService } from './browserbase.service';
 import {
   BrowserAuthProfileResponseDto,
@@ -40,7 +47,31 @@ import {
 @UseGuards(HybridAuthGuard, PermissionGuard)
 @ApiSecurity('apikey')
 export class BrowserAuthProfilesController {
-  constructor(private readonly browserbaseService: BrowserbaseService) {}
+  constructor(
+    private readonly browserbaseService: BrowserbaseService,
+    private readonly mfaInstructionsService: BrowserMfaInstructionsService,
+  ) {}
+
+  @Get('mfa-instructions')
+  @RequirePermission('integration', 'read')
+  @ApiOperation({
+    summary: 'Get authenticator (2FA) setup instructions for a vendor',
+    description:
+      'Returns per-vendor, human-readable steps for finding the authenticator "setup key" (TOTP seed) so a user can enable unattended 2FA. Steps are AI-generated (no per-vendor hardcode), confidence-gated to a universal fallback, and cached per hostname.',
+  })
+  @ApiQuery({
+    name: 'host',
+    description: 'The vendor sign-in URL or hostname (e.g. github.com).',
+  })
+  @ApiResponse({ status: 200 })
+  async getMfaInstructions(
+    @Query('host') host?: string,
+  ): Promise<MfaInstructions> {
+    if (!host?.trim()) {
+      throw new BadRequestException('host query parameter is required');
+    }
+    return this.mfaInstructionsService.getInstructions(host.trim());
+  }
 
   @Get('profiles')
   @RequirePermission('integration', 'read')

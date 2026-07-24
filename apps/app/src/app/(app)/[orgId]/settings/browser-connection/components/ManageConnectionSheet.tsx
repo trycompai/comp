@@ -14,6 +14,7 @@ import {
 } from '@trycompai/design-system';
 import { Close, Locked } from '@trycompai/design-system/icons';
 import { useEffect, useState } from 'react';
+import { MfaSetupHelp } from '../../../tasks/[taskId]/components/browser-automations/MfaSetupHelp';
 import { methodOf, statusMeta, type Connection } from './connection-format';
 
 interface ManageConnectionSheetProps {
@@ -27,7 +28,7 @@ interface ManageConnectionSheetProps {
   onRename: (connection: Connection, name: string) => Promise<void> | void;
   onChangeLogin: (
     connection: Connection,
-    creds: { username: string; password: string },
+    creds: { username: string; password: string; totpSeed?: string },
   ) => Promise<void> | void;
   onRemove: (connection: Connection) => Promise<void> | void;
 }
@@ -65,6 +66,8 @@ export function ManageConnectionSheet({
   const [showCredForm, setShowCredForm] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [use2fa, setUse2fa] = useState(false);
+  const [totpSeed, setTotpSeed] = useState('');
   const [confirmingRemove, setConfirmingRemove] = useState(false);
 
   // Reset the form each time a different connection is opened.
@@ -73,6 +76,8 @@ export function ManageConnectionSheet({
     setShowCredForm(false);
     setUsername('');
     setPassword('');
+    setUse2fa(false);
+    setTotpSeed('');
     setConfirmingRemove(false);
   }, [connection]);
 
@@ -202,7 +207,8 @@ export function ManageConnectionSheet({
                             </Button>
                           </div>
                           <p className="text-[10.5px] leading-relaxed text-muted-foreground">
-                            Rotated the account? Store the new email and password here.
+                            Rotated the account, or want unattended 2FA? Re-enter the
+                            login and, optionally, an authenticator setup key here.
                           </p>
                         </>
                       ) : (
@@ -220,13 +226,52 @@ export function ManageConnectionSheet({
                             placeholder="New password"
                             autoComplete="new-password"
                           />
+
+                          {/* Optional: add unattended 2FA by storing the TOTP seed. */}
+                          <label className="flex cursor-pointer items-center gap-2 text-[12px] text-foreground">
+                            <input
+                              type="checkbox"
+                              checked={use2fa}
+                              onChange={(event) => setUse2fa(event.target.checked)}
+                              className="h-3.5 w-3.5 accent-primary"
+                            />
+                            This login uses an authenticator app (2FA)
+                          </label>
+
+                          {use2fa && (
+                            <div className="flex flex-col gap-2">
+                              <Input
+                                value={totpSeed}
+                                onChange={(event) => setTotpSeed(event.target.value)}
+                                placeholder="Authenticator setup key (e.g. JBSW Y3DP EHPK 3PXP)"
+                                autoComplete="off"
+                              />
+                              <p className="text-[10.5px] leading-relaxed text-muted-foreground">
+                                The long setup key shown once when you add the
+                                authenticator — not the rotating 6-digit code. Comp AI
+                                generates codes from it so scheduled runs don&apos;t need
+                                you.
+                              </p>
+                              <MfaSetupHelp hostname={connection.hostname} />
+                            </div>
+                          )}
+
                           <div className="flex gap-2">
                             <Button
-                              disabled={!username.trim() || !password || busy}
+                              disabled={
+                                !username.trim() ||
+                                !password ||
+                                (use2fa && !totpSeed.trim()) ||
+                                busy
+                              }
                               onClick={() =>
                                 onChangeLogin(connection, {
                                   username: username.trim(),
                                   password,
+                                  totpSeed:
+                                    use2fa && totpSeed.trim()
+                                      ? totpSeed.trim()
+                                      : undefined,
                                 })
                               }
                             >
