@@ -5,6 +5,10 @@ description: 'Let Comp AI sign in to your vendors'' web apps on a schedule — i
 
 Browser Automations let Comp AI sign in to a vendor's web app the way a person would — in a real browser — and capture the exact page you need as audit evidence, on a schedule. It reaches logins that API integrations can't, including ones protected by two-factor authentication (2FA), and keeps evidence fresh without anyone redoing it each cycle.
 
+<Frame caption="Every run produces an audit-ready screenshot, stamped with the requirement, source, and timestamp.">
+  <img src="/images/browser-evidence-example.jpg" alt="Automated browser evidence — a captured page with a Comp AI audit banner" />
+</Frame>
+
 ## Why it's powerful
 
 - **It reaches evidence nothing else can.** Plenty of tools have no API or integration — Browser Automations sign in and screenshot the page directly, so you can prove a control that would otherwise be a manual screenshot.
@@ -61,6 +65,10 @@ You can connect from a task's **Browser evidence** section, or from **Settings �
 
 This is what makes scheduled runs truly hands-off. If your login uses an authenticator app, give Comp AI the **setup key** once, and it generates the rotating 6-digit codes itself — so scheduled runs never wait on your phone.
 
+<Frame caption="The setup-key field, with per-vendor steps — 'How do I find this key?' — generated from the vendor's current help docs.">
+  <img src="/images/browser-2fa-setup-key.png" alt="Entering the authenticator setup key, with per-vendor guidance" />
+</Frame>
+
 - **Enter the setup key**, not the code. The setup key is the long, one-time key shown when you add an authenticator app (the "can't scan? enter this code" option) — not the rotating 6-digit code your app displays.
 - **Not sure where to find it?** Select **"How do I find this key?"** next to the field. Comp AI shows the steps for your specific vendor, checked against its current help docs.
 - You can also turn this on **later** — open the connection under **Settings → Browser connections** and add the authenticator key without re-entering your password.
@@ -84,6 +92,10 @@ Inside an evidence task, open the **Browser evidence** section:
 3. **Test it.** Watch the automation run live, then review the screenshot and result before you commit.
 4. **Save.** It now runs on the task's schedule and keeps the evidence current.
 
+<Frame caption="Testing an instruction — watch the AI drive a real browser live, then review the screenshot and verdict before saving.">
+  <img src="/images/browser-test-run.png" alt="Live test run — the AI controlling a browser to capture evidence" />
+</Frame>
+
 <Note>
   One task can hold several automations — even across different vendors — each producing its own
   screenshot and verdict.
@@ -96,6 +108,10 @@ Inside an evidence task, open the **Browser evidence** section:
 - If it hits something only a person can clear — a captcha, a "verify it's you" prompt, or an SSO/passkey step — the run pauses and the connection is flagged **Needs reconnect**, with a one-click **Reconnect**.
 
 ## Manage your connections
+
+<Frame caption="Every vendor login in one place — with health status, search, and per-connection actions.">
+  <img src="/images/browser-connections.png" alt="The Browser connections settings page" />
+</Frame>
 
 Under **Settings → Browser connections** you can:
 
