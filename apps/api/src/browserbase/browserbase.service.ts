@@ -231,6 +231,59 @@ export class BrowserbaseService {
     return this.sessions.checkLoginStatus(sessionId, url);
   }
 
+  // ─── Tenant-safe wrappers for the raw session/context endpoints ────────────
+  // Every raw session/context operation must confirm the target belongs to the
+  // caller's org before acting on it (the persisted context holds the org's
+  // authenticated vendor cookies) — otherwise it's a cross-tenant IDOR.
+
+  async createSessionForOrg(organizationId: string, contextId: string) {
+    await this.profiles.assertContextOwnedByOrg({ organizationId, contextId });
+    return this.sessions.createSessionWithContext(contextId);
+  }
+
+  async closeSessionForOrg(
+    organizationId: string,
+    sessionId: string,
+  ): Promise<void> {
+    // Tolerant: a session that can no longer be resolved is already gone, so
+    // closing is a no-op. A resolvable session that isn't the org's is rejected.
+    let contextId: string | undefined;
+    try {
+      contextId = await this.sessions.getSessionContextId(sessionId);
+    } catch {
+      return;
+    }
+    if (!contextId) return;
+    await this.profiles.assertContextOwnedByOrg({ organizationId, contextId });
+    await this.sessions.closeSession(sessionId);
+  }
+
+  async navigateToUrlForOrg(
+    organizationId: string,
+    sessionId: string,
+    url: string,
+  ) {
+    await this.profiles.assertSessionOwnedByOrg({ organizationId, sessionId });
+    return this.sessions.navigateToUrl(sessionId, url);
+  }
+
+  async checkLoginStatusForOrg(
+    organizationId: string,
+    sessionId: string,
+    url: string,
+  ) {
+    await this.profiles.assertSessionOwnedByOrg({ organizationId, sessionId });
+    return this.sessions.checkLoginStatus(sessionId, url);
+  }
+
+  /** Confirms a client-supplied session belongs to the caller's org. */
+  async assertSessionOwnedByOrg(
+    organizationId: string,
+    sessionId: string,
+  ): Promise<void> {
+    await this.profiles.assertSessionOwnedByOrg({ organizationId, sessionId });
+  }
+
   async createBrowserAutomation(
     data: {
       taskId: string;

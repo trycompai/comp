@@ -1,3 +1,4 @@
+import { ForbiddenException } from '@nestjs/common';
 import { BrowserbaseSessionService } from './browserbase-session.service';
 import { BrowserAuthProfileService } from './browser-auth-profile.service';
 
@@ -15,6 +16,7 @@ jest.mock('@db', () => ({
     },
     browserbaseContext: {
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
       updateMany: jest.fn(),
@@ -39,6 +41,57 @@ describe('BrowserAuthProfileService', () => {
       .spyOn(sessions, 'createBrowserbaseContext')
       .mockResolvedValue('ctx_new');
     service = new BrowserAuthProfileService(sessions);
+  });
+
+  describe('tenant guards (cross-org IDOR)', () => {
+    it('assertContextOwnedByOrg passes when a profile in the org owns the context', async () => {
+      (db.browserAuthProfile.findFirst as jest.Mock).mockResolvedValue({ id: 'bap_1' });
+      (db.browserbaseContext.findFirst as jest.Mock).mockResolvedValue(null);
+      await expect(
+        service.assertContextOwnedByOrg({ organizationId: 'org_1', contextId: 'ctx_1' }),
+      ).resolves.toBeUndefined();
+    });
+
+    it('assertContextOwnedByOrg passes when the org-level context row owns it', async () => {
+      (db.browserAuthProfile.findFirst as jest.Mock).mockResolvedValue(null);
+      (db.browserbaseContext.findFirst as jest.Mock).mockResolvedValue({ id: 'bbc_1' });
+      await expect(
+        service.assertContextOwnedByOrg({ organizationId: 'org_1', contextId: 'ctx_1' }),
+      ).resolves.toBeUndefined();
+    });
+
+    it('assertContextOwnedByOrg rejects a context that belongs to another org', async () => {
+      (db.browserAuthProfile.findFirst as jest.Mock).mockResolvedValue(null);
+      (db.browserbaseContext.findFirst as jest.Mock).mockResolvedValue(null);
+      await expect(
+        service.assertContextOwnedByOrg({ organizationId: 'org_1', contextId: 'ctx_other' }),
+      ).rejects.toBeInstanceOf(ForbiddenException);
+    });
+
+    it('assertSessionOwnedByOrg returns the contextId when the org owns the session', async () => {
+      jest.spyOn(sessions, 'getSessionContextId').mockResolvedValue('ctx_1');
+      (db.browserAuthProfile.findFirst as jest.Mock).mockResolvedValue({ id: 'bap_1' });
+      (db.browserbaseContext.findFirst as jest.Mock).mockResolvedValue(null);
+      await expect(
+        service.assertSessionOwnedByOrg({ organizationId: 'org_1', sessionId: 'sess_1' }),
+      ).resolves.toBe('ctx_1');
+    });
+
+    it('assertSessionOwnedByOrg rejects a session whose context is another org', async () => {
+      jest.spyOn(sessions, 'getSessionContextId').mockResolvedValue('ctx_other');
+      (db.browserAuthProfile.findFirst as jest.Mock).mockResolvedValue(null);
+      (db.browserbaseContext.findFirst as jest.Mock).mockResolvedValue(null);
+      await expect(
+        service.assertSessionOwnedByOrg({ organizationId: 'org_1', sessionId: 'sess_x' }),
+      ).rejects.toBeInstanceOf(ForbiddenException);
+    });
+
+    it('assertSessionOwnedByOrg rejects when the session context cannot be resolved', async () => {
+      jest.spyOn(sessions, 'getSessionContextId').mockResolvedValue(undefined);
+      await expect(
+        service.assertSessionOwnedByOrg({ organizationId: 'org_1', sessionId: 'gone' }),
+      ).rejects.toBeInstanceOf(ForbiddenException);
+    });
   });
 
   it('normalizes hostname and login identity when creating a profile', async () => {

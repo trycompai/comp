@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -367,6 +368,57 @@ export class BrowserAuthProfileService {
         'Verification URL must match the browser auth profile hostname.',
       );
     }
+  }
+
+  /**
+   * Tenant guard: a Browserbase context belongs to an org only if a profile (or
+   * the legacy org-level context row) for that org points at it. Blocks acting on
+   * another org's context via a raw session/context endpoint (cross-tenant IDOR).
+   */
+  async assertContextOwnedByOrg(input: {
+    organizationId: string;
+    contextId: string;
+  }): Promise<void> {
+    const [profile, orgContext] = await Promise.all([
+      db.browserAuthProfile.findFirst({
+        where: {
+          organizationId: input.organizationId,
+          contextId: input.contextId,
+        },
+        select: { id: true },
+      }),
+      db.browserbaseContext.findFirst({
+        where: {
+          organizationId: input.organizationId,
+          contextId: input.contextId,
+        },
+        select: { id: true },
+      }),
+    ]);
+    if (!profile && !orgContext) {
+      throw new ForbiddenException(
+        'This browser context does not belong to your organization.',
+      );
+    }
+  }
+
+  /**
+   * Tenant guard for a live session: resolve the session's context and confirm
+   * that context belongs to the caller's org. Returns the resolved contextId.
+   */
+  async assertSessionOwnedByOrg(input: {
+    organizationId: string;
+    sessionId: string;
+  }): Promise<string> {
+    const contextId = await this.sessions.getSessionContextId(input.sessionId);
+    if (!contextId) {
+      throw new ForbiddenException('Could not verify the browser session.');
+    }
+    await this.assertContextOwnedByOrg({
+      organizationId: input.organizationId,
+      contextId,
+    });
+    return contextId;
   }
 
   private async assertSessionMatchesProfile(input: {

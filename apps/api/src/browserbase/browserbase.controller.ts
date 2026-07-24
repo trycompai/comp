@@ -126,9 +126,11 @@ export class BrowserbaseController {
     type: SessionResponseDto,
   })
   async createSession(
+    @OrganizationId() organizationId: string,
     @Body() dto: CreateSessionDto,
   ): Promise<SessionResponseDto> {
-    return await this.browserbaseService.createSessionWithContext(
+    return await this.browserbaseService.createSessionForOrg(
+      organizationId,
       dto.contextId,
     );
   }
@@ -143,9 +145,13 @@ export class BrowserbaseController {
     description: 'Session closed',
   })
   async closeSession(
+    @OrganizationId() organizationId: string,
     @Body() dto: CloseSessionDto,
   ): Promise<{ success: boolean }> {
-    await this.browserbaseService.closeSession(dto.sessionId);
+    await this.browserbaseService.closeSessionForOrg(
+      organizationId,
+      dto.sessionId,
+    );
     return { success: true };
   }
 
@@ -162,9 +168,14 @@ export class BrowserbaseController {
     description: 'Navigation result',
   })
   async navigateToUrl(
+    @OrganizationId() organizationId: string,
     @Body() dto: NavigateToUrlDto,
   ): Promise<{ success: boolean; error?: string }> {
-    return await this.browserbaseService.navigateToUrl(dto.sessionId, dto.url);
+    return await this.browserbaseService.navigateToUrlForOrg(
+      organizationId,
+      dto.sessionId,
+      dto.url,
+    );
   }
 
   @Post('check-auth')
@@ -178,8 +189,12 @@ export class BrowserbaseController {
     description: 'Auth status',
     type: AuthStatusResponseDto,
   })
-  async checkAuth(@Body() dto: CheckAuthDto): Promise<AuthStatusResponseDto> {
-    return await this.browserbaseService.checkLoginStatus(
+  async checkAuth(
+    @OrganizationId() organizationId: string,
+    @Body() dto: CheckAuthDto,
+  ): Promise<AuthStatusResponseDto> {
+    return await this.browserbaseService.checkLoginStatusForOrg(
+      organizationId,
       dto.sessionId,
       dto.url,
     );
@@ -437,6 +452,12 @@ export class BrowserbaseController {
     error?: string;
     needsReauth?: boolean;
   }> {
+    // The session is client-supplied — confirm it belongs to this org before we
+    // drive an automation on it (cross-tenant IDOR guard).
+    await this.browserbaseService.assertSessionOwnedByOrg(
+      organizationId,
+      body.sessionId,
+    );
     return await this.browserbaseService.executeAutomationOnSession(
       automationId,
       body.runId,
@@ -461,6 +482,11 @@ export class BrowserbaseController {
     @Body() body: ExecuteAutomationSessionDto,
     @OrganizationId() organizationId: string,
   ): Promise<{ runId: string; publicAccessToken: string }> {
+    // The session is client-supplied — confirm it belongs to this org first.
+    await this.browserbaseService.assertSessionOwnedByOrg(
+      organizationId,
+      body.sessionId,
+    );
     return await this.browserbaseService.startLiveAutomationExecution({
       automationId,
       runId: body.runId,
