@@ -11,39 +11,31 @@ const baseRun: BrowserAutomationRun = {
   screenshotUrl: 'https://s3.example.com/signed?sig=abc',
   evaluationStatus: 'pass',
   evaluationReason: 'All good',
-  error: undefined,
 } as unknown as BrowserAutomationRun;
 
 describe('RunItem', () => {
-  it('shows the step ledger (reason + screenshot) when expanded', () => {
+  it('renders a collapsed run row with verdict + screenshot count, no images', () => {
+    render(<RunItem run={baseRun} isLatest={false} />);
+    expect(screen.getByText('Pass')).toBeInTheDocument();
+    expect(screen.getByText(/1 screenshot/i)).toBeInTheDocument();
+    // Collapsed → the step ledger (and its images) is not rendered.
+    expect(screen.queryByAltText('Close-up · Proof')).not.toBeInTheDocument();
+  });
+
+  it('expands into the step ledger', () => {
     render(<RunItem run={baseRun} isLatest={true} />);
-    // Single-step runs auto-expand — the reason and the proof image show.
-    expect(screen.getByText('All good')).toBeInTheDocument();
-    const img = screen.getByAltText('Close-up · Proof') as HTMLImageElement;
-    expect(img.src).toContain('s3.example.com');
-  });
-
-  it('shows both the close-up and the full page when a close-up is present', () => {
-    const run = {
-      ...baseRun,
-      focusScreenshotUrl: 'https://s3.example.com/focus?sig=xyz',
-    } as unknown as BrowserAutomationRun;
-    render(<RunItem run={run} isLatest={true} />);
+    // Latest run auto-expands → the step ledger shows the proof screenshot.
     expect(screen.getByAltText('Close-up · Proof')).toBeInTheDocument();
-    expect(screen.getByAltText('Full page · Context — scrolls')).toBeInTheDocument();
+    expect(screen.getByText('All good')).toBeInTheDocument();
   });
 
-  it('surfaces a failed step reason with no screenshots', () => {
-    const run = {
-      id: 'bar_9',
-      status: 'failed',
-      createdAt: new Date().toISOString(),
-      blockedReason: 'Re-auth blocked the IAM page',
-      screenshotUrl: undefined,
-      evaluationStatus: null,
-    } as unknown as BrowserAutomationRun;
-    render(<RunItem run={run} isLatest={true} />);
-    expect(screen.getByText(/re-auth blocked the iam page/i)).toBeInTheDocument();
-    expect(screen.getByText(/0 screenshots/i)).toBeInTheDocument();
+  it('counts both screenshots when a close-up is present', () => {
+    render(
+      <RunItem
+        run={{ ...baseRun, focusScreenshotUrl: 'https://s3.example.com/f.png' } as BrowserAutomationRun}
+        isLatest={false}
+      />,
+    );
+    expect(screen.getByText(/2 screenshots/i)).toBeInTheDocument();
   });
 });

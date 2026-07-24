@@ -3,13 +3,7 @@
 import { VendorLogo } from '@/components/VendorLogo';
 import { cn } from '@/lib/utils';
 import { Button } from '@trycompai/design-system';
-import {
-  ChevronDown,
-  Edit,
-  Play,
-  Power,
-  TrashCan,
-} from '@trycompai/design-system/icons';
+import { ChevronDown, Edit, Play, TrashCan } from '@trycompai/design-system/icons';
 import { useState } from 'react';
 import type { BrowserAutomation, BrowserAutomationRun } from '../../hooks/types';
 import { AutomationMetaLine } from './AutomationMetaLine';
@@ -73,12 +67,17 @@ export function AutomationItem({
         <div className={cn('mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full sm:mt-0', dotColor)} />
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="font-semibold text-foreground text-sm tracking-tight">
+          <div className="flex min-w-0 items-center gap-2">
+            {/* Names/instructions can be long — keep the row one line; the full
+                text is on hover (title). */}
+            <p
+              className="truncate font-semibold text-foreground text-sm tracking-tight"
+              title={automation.name}
+            >
               {automation.name}
             </p>
             {isDisabled && (
-              <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+              <span className="flex-none text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                 Paused
               </span>
             )}
@@ -115,14 +114,27 @@ export function AutomationItem({
 
         <div className="flex w-full items-center gap-1.5 sm:w-auto sm:flex-none">
           {!readOnly && (
-            <Button
-              variant="outline"
-              size="icon-sm"
+            // A real on/off switch so the paused state is visible at a glance
+            // (teal = scheduled runs on, gray = paused).
+            <button
+              type="button"
+              role="switch"
+              aria-checked={automation.isEnabled}
+              aria-label={automation.isEnabled ? 'Pause runs' : 'Resume runs'}
+              title={automation.isEnabled ? 'Pause runs' : 'Resume runs'}
               onClick={() => onToggleEnabled(!automation.isEnabled)}
-              aria-label={automation.isEnabled ? 'Pause automation' : 'Enable automation'}
+              className={cn(
+                'relative inline-block h-[18px] w-8 flex-none cursor-pointer rounded-full border-0 p-0 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/60',
+                automation.isEnabled ? 'bg-primary' : 'bg-border',
+              )}
             >
-              <Power size={14} className="text-muted-foreground" />
-            </Button>
+              <span
+                className={cn(
+                  'absolute top-0.5 h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-all',
+                  automation.isEnabled ? 'right-0.5' : 'left-0.5',
+                )}
+              />
+            </button>
           )}
 
           {!readOnly && (

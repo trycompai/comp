@@ -1,8 +1,6 @@
 'use client';
 
-import { cn } from '@/lib/utils';
-import { Badge } from '@trycompai/design-system';
-import { formatDistanceToNow } from 'date-fns';
+import { VendorLogo } from '@/components/VendorLogo';
 import { ChevronDown, Image as ImageIcon } from '@trycompai/design-system/icons';
 import { useState } from 'react';
 import type { BrowserAutomationRun } from '../../hooks/types';
@@ -13,119 +11,141 @@ interface RunItemProps {
   isLatest: boolean;
 }
 
+function verdict(run: BrowserAutomationRun): { label: string; bg: string; fg: string } {
+  if (run.status === 'blocked') {
+    return {
+      label: 'Blocked',
+      bg: 'color-mix(in oklab, var(--warning) 20%, transparent)',
+      fg: 'oklch(0.5 0.14 85)',
+    };
+  }
+  if (run.status === 'failed' || run.evaluationStatus === 'fail') {
+    return {
+      label: run.evaluationStatus === 'fail' ? 'Fail' : 'Failed',
+      bg: 'color-mix(in oklab, var(--destructive) 12%, transparent)',
+      fg: 'var(--destructive)',
+    };
+  }
+  if (run.evaluationStatus === 'pass') {
+    return {
+      label: 'Pass',
+      bg: 'color-mix(in oklab, var(--success) 15%, transparent)',
+      fg: 'var(--success)',
+    };
+  }
+  return { label: 'Completed', bg: 'var(--muted)', fg: 'var(--foreground)' };
+}
+
+function hostLabel(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return url;
+  }
+}
+
+/** Distinct vendor hosts a run touched, in step order. */
+function vendorChain(run: BrowserAutomationRun): string[] {
+  const hosts: string[] = [];
+  for (const sr of run.stepRuns ?? []) {
+    const host = sr.step?.targetUrl ? hostLabel(sr.step.targetUrl) : null;
+    if (host && !hosts.includes(host)) hosts.push(host);
+  }
+  return hosts;
+}
+
+function screenshotCount(run: BrowserAutomationRun): number {
+  const steps = run.stepRuns ?? [];
+  if (steps.length > 0) {
+    return steps.reduce(
+      (n, s) => n + (s.screenshotUrl ? 1 : 0) + (s.focusScreenshotUrl ? 1 : 0),
+      0,
+    );
+  }
+  return (run.screenshotUrl ? 1 : 0) + (run.focusScreenshotUrl ? 1 : 0);
+}
+
+function formatDateTime(iso: string): string {
+  return new Date(iso).toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
+function formatDuration(run: BrowserAutomationRun): string | null {
+  if (!run.completedAt) return null;
+  const ms = new Date(run.completedAt).getTime() - new Date(run.createdAt).getTime();
+  if (!Number.isFinite(ms) || ms < 0) return null;
+  const secs = Math.round(ms / 1000);
+  if (secs < 60) return `${secs}s`;
+  return `${Math.floor(secs / 60)}m ${String(secs % 60).padStart(2, '0')}s`;
+}
+
+/**
+ * One run as a text ledger row (designer option 1A): date · vendor chain ·
+ * verdict · screenshot count · duration. Expanding drops into the per-step
+ * ledger — imagery lives there, not in this row.
+ */
 export function RunItem({ run, isLatest }: RunItemProps) {
   const [expanded, setExpanded] = useState(isLatest);
-
-  const timeAgo = formatDistanceToNow(new Date(run.createdAt), { addSuffix: true });
-  const hasFailed = run.status === 'failed';
-  const isBlocked = run.status === 'blocked';
-  const isCompleted = run.status === 'completed';
-  const hasScreenshot = !!run.screenshotUrl;
-  const evaluationPassed = run.evaluationStatus === 'pass';
-  const evaluationFailed = run.evaluationStatus === 'fail';
-
-  // Determine overall status: failed run, or completed but evaluation failed
-  const hasIssue = hasFailed || isBlocked || evaluationFailed;
-  const statusColor = hasIssue
-    ? 'text-destructive'
-    : isCompleted
-      ? 'text-primary'
-      : 'text-muted-foreground';
-  const statusText = isBlocked
-    ? 'Blocked'
-    : hasFailed
-      ? 'Failed'
-      : evaluationFailed
-      ? 'Issues Found'
-      : evaluationPassed
-        ? 'Passed'
-        : isCompleted
-          ? 'Completed'
-          : run.status;
+  const badge = verdict(run);
+  const chain = vendorChain(run);
+  const stepCount = run.stepRuns?.length ?? 0;
+  const shots = screenshotCount(run);
+  const duration = formatDuration(run);
 
   return (
-    <div
-      className={cn(
-        'rounded-md border transition-all',
-        isLatest ? 'border-primary/20 bg-primary/2' : 'border-border/30 bg-muted/20',
-      )}
-    >
+    <div className="border-b border-border last:border-b-0">
       <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full text-left px-3 py-2.5 flex items-center gap-3"
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-muted/40"
       >
-        <div
-          className={cn(
-            'h-1.5 w-1.5 rounded-full shrink-0',
-            hasIssue ? 'bg-destructive' : isCompleted ? 'bg-primary' : 'bg-muted-foreground',
-          )}
-        />
-
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 text-xs">
-            <span className={cn('font-medium', statusColor)}>{statusText}</span>
-            {run.evaluationStatus && (
-              <>
-                <span className="text-muted-foreground">•</span>
-                <Badge
-                  variant={evaluationPassed ? 'default' : 'destructive'}
-                >
-                  {evaluationPassed ? 'Pass' : 'Fail'}
-                </Badge>
-              </>
-            )}
-            <span className="text-muted-foreground">•</span>
-            <span className="text-muted-foreground">{timeAgo}</span>
-            {hasScreenshot && (
-              <>
-                <span className="text-muted-foreground">•</span>
-                <span className="text-primary flex items-center gap-1">
-                  <ImageIcon size={12} />
-                  Screenshot
-                </span>
-              </>
-            )}
-          </div>
-        </div>
-
+        <span className="w-28 flex-none font-mono text-[11px] text-muted-foreground">
+          {formatDateTime(run.createdAt)}
+        </span>
+        {chain.length > 0 && (
+          <span className="flex flex-none items-center gap-1">
+            {chain.map((host, i) => (
+              <span key={`${host}-${i}`} className="flex items-center gap-1" title={host}>
+                {i > 0 && <span className="text-[10px] text-muted-foreground/50">→</span>}
+                <VendorLogo hostname={host} size={16} />
+              </span>
+            ))}
+          </span>
+        )}
+        <span
+          className="flex-none rounded-sm px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em]"
+          style={{ backgroundColor: badge.bg, color: badge.fg }}
+        >
+          {badge.label}
+        </span>
+        <span className="min-w-0 flex-1 truncate text-[10.5px] text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+            <ImageIcon size={11} className={shots === 0 ? 'opacity-50' : undefined} />
+            {stepCount > 1 ? `${stepCount} steps · ` : ''}
+            {shots} {shots === 1 ? 'screenshot' : 'screenshots'}
+          </span>
+        </span>
+        {duration && (
+          <span className="flex-none font-mono text-[10px] text-muted-foreground">
+            {duration}
+          </span>
+        )}
         <ChevronDown
-          size={14}
-          className={cn(
-            'text-muted-foreground transition-transform duration-300',
-            expanded && 'rotate-180',
-          )}
+          size={12}
+          className={`flex-none text-muted-foreground transition-transform ${
+            expanded ? 'rotate-180' : ''
+          }`}
         />
       </button>
-
-      <div
-        className={cn(
-          'grid transition-all duration-300 ease-in-out',
-          expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
-        )}
-      >
-        <div className="overflow-hidden">
-          <div className="px-3 pb-3 pt-1 space-y-3 border-t border-border/30">
-            {/* Per-step evidence ledger (designer option C3): each step's
-                verdict + reason + close-up "proof" and full-page context. */}
-            <RunStepLedger run={run} />
-
-            {/* Completion time */}
-            {run.completedAt && (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span>Completed:</span>
-                <span>
-                  {new Date(run.completedAt).toLocaleString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    hour: 'numeric',
-                    minute: '2-digit',
-                  })}
-                </span>
-              </div>
-            )}
-          </div>
+      {expanded && (
+        <div className="bg-muted/20 px-3 pb-3 pt-1">
+          <RunStepLedger run={run} />
         </div>
-      </div>
+      )}
     </div>
   );
 }

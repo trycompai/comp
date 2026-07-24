@@ -13,8 +13,6 @@ import { TaskFrequency } from '@db';
 import { useMemo, useState } from 'react';
 import type { BrowserAuthProfile, BrowserAutomation } from '../../hooks/types';
 import { AutomationItem } from './AutomationItem';
-import { RunDetailOverlay } from './RunDetailOverlay';
-import { RunHistoryStrip, type RunSummary } from './RunHistoryStrip';
 
 const PAGE_SIZE = 8;
 
@@ -79,7 +77,6 @@ export function BrowserAutomationsList({
   // Browser evidence shares one cadence per task; the automations are kept in
   // sync, so any one of them reflects the task's current schedule.
   const currentCadence: TaskFrequency = automations[0]?.scheduleFrequency ?? 'daily';
-  const [selectedRun, setSelectedRun] = useState<RunSummary | null>(null);
   const [visible, setVisible] = useState(PAGE_SIZE);
 
   const profileById = useMemo(() => {
@@ -118,25 +115,8 @@ export function BrowserAutomationsList({
     });
   }, [automations, profileById, profileByHost]);
 
-  const allRuns: RunSummary[] = useMemo(
-    () =>
-      automations
-        .flatMap((automation) =>
-          (automation.runs ?? []).map((run) => ({
-            run,
-            automationId: automation.id,
-            automationName: automation.name,
-          })),
-        )
-        .sort(
-          (a, b) => new Date(b.run.createdAt).getTime() - new Date(a.run.createdAt).getTime(),
-        ),
-    [automations],
-  );
-
   return (
-    <>
-      <div className="overflow-hidden rounded-lg border border-border bg-card">
+    <div className="overflow-hidden rounded-lg border border-border bg-card">
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <div>
             <h3 className="text-base font-medium tracking-tight text-foreground">
@@ -243,16 +223,7 @@ export function BrowserAutomationsList({
               Load more ({rows.length - visible} more)
             </button>
           )}
-
-          {allRuns.length > 0 && <RunHistoryStrip runs={allRuns} onSelect={setSelectedRun} />}
         </div>
       </div>
-
-      <RunDetailOverlay
-        selected={selectedRun}
-        onClose={() => setSelectedRun(null)}
-        onRerun={canUpdate ? onRun : undefined}
-      />
-    </>
   );
 }
