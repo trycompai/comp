@@ -2,7 +2,7 @@
 
 import { apiClient } from '@/lib/api-client';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { FAILED_RUN_STATUSES } from '../components/browser-automations/connect-flow-constants';
 import type { SignInStep } from '../components/browser-automations/StepList';
@@ -10,7 +10,7 @@ import type { BrowserRunLivePhase, ExecuteResponse, StartLiveResponse } from './
 
 interface UseBrowserExecutionOptions {
   onNeedsReauth: (automationId: string) => void;
-  onComplete: () => void;
+  onComplete: () => void | Promise<void>;
 }
 
 /** Realtime handle for the background run the live view subscribes to. */
@@ -25,6 +25,11 @@ export function useBrowserExecution({ onNeedsReauth, onComplete }: UseBrowserExe
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
   const [liveHandle, setLiveHandle] = useState<LiveHandle | null>(null);
+  // The automation currently running (ref = stable for the finalize closure),
+  // and the last one that finished — so the list can auto-expand its results.
+  // A fresh object each time means re-running the same automation still fires.
+  const runningAutomationIdRef = useRef<string | null>(null);
+  const [lastCompleted, setLastCompleted] = useState<{ id: string } | null>(null);
 
   // Same realtime mechanism the composer's Test panel uses: the background run
   // publishes its step timeline to `runSteps`, which we surface to the live view.
@@ -62,12 +67,14 @@ export function useBrowserExecution({ onNeedsReauth, onComplete }: UseBrowserExe
     setSessionId(null);
     setIsExecuting(false);
     setRunningAutomationId(null);
+    runningAutomationIdRef.current = null;
     setLiveHandle(null);
   }, []);
 
   const runAutomation = useCallback(
     async (automationId: string) => {
       setRunningAutomationId(automationId);
+      runningAutomationIdRef.current = automationId;
       let startedSessionId: string | null = null;
       try {
         // Step 1: start a live session (creates the run + live view URL).
@@ -124,8 +131,15 @@ export function useBrowserExecution({ onNeedsReauth, onComplete }: UseBrowserExe
       if (ok) toast.success('Automation completed successfully');
       else toast.error(message || 'Automation failed');
       if (sessionId) void closeSession(sessionId);
+      // Capture which automation ran before reset clears it, then auto-expand it
+      // once its fresh run is refetched — so a manual Run shows its results
+      // (screenshots + verdict) without the user clicking the row again.
+      const completedId = runningAutomationIdRef.current;
       reset();
-      onComplete();
+      void (async () => {
+        await onComplete();
+        if (completedId) setLastCompleted({ id: completedId });
+      })();
     };
 
     if (runError) {
@@ -159,6 +173,7 @@ export function useBrowserExecution({ onNeedsReauth, onComplete }: UseBrowserExe
     isExecuting,
     steps,
     livePhase,
+    lastCompleted,
     runAutomation,
     cancelExecution,
   };

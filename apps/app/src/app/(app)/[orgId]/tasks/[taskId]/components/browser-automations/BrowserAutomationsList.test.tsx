@@ -22,11 +22,17 @@ vi.mock('./AutomationItem', () => ({
   AutomationItem: ({
     automation,
     readOnly,
+    isExpanded,
   }: {
     automation: { id: string; name: string };
     readOnly?: boolean;
+    isExpanded?: boolean;
   }) => (
-    <div data-testid={`automation-item-${automation.id}`} data-readonly={String(readOnly)}>
+    <div
+      data-testid={`automation-item-${automation.id}`}
+      data-readonly={String(readOnly)}
+      data-expanded={String(isExpanded)}
+    >
       {automation.name}
     </div>
   ),
@@ -113,6 +119,22 @@ describe('BrowserAutomationsList', () => {
     setMockPermissions(AUDITOR_PERMISSIONS);
     rerender(<BrowserAutomationsList {...defaultProps} />);
     expect(screen.getByTestId('automation-item-auto_1')).toHaveAttribute('data-readonly', 'true');
+  });
+
+  it('auto-expands the row of a just-finished manual run', () => {
+    setMockPermissions(ADMIN_PERMISSIONS);
+    const { rerender } = render(<BrowserAutomationsList {...defaultProps} />);
+    expect(screen.getByTestId('automation-item-auto_1')).toHaveAttribute(
+      'data-expanded',
+      'false',
+    );
+
+    // The hook hands down a fresh { id } when a run finishes → row expands.
+    rerender(<BrowserAutomationsList {...defaultProps} autoExpand={{ id: 'auto_1' }} />);
+    expect(screen.getByTestId('automation-item-auto_1')).toHaveAttribute(
+      'data-expanded',
+      'true',
+    );
   });
 
   it('flags a row whose connection needs reconnect and calls onReconnect', () => {

@@ -424,6 +424,7 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
       automations={automations.automations}
       profiles={profiles}
       runningAutomationId={execution.runningAutomationId}
+      autoExpand={execution.lastCompleted}
       onRun={execution.runAutomation}
       onReconnect={handleReconnect}
       onCreate={isManualTask ? undefined : () => setComposer({ open: true, mode: 'create' })}

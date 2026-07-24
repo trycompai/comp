@@ -10,7 +10,7 @@ import {
 } from '@trycompai/design-system';
 import { Add, Calendar, ChevronDown, Renew } from '@trycompai/design-system/icons';
 import { TaskFrequency } from '@db';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { BrowserAuthProfile, BrowserAutomation } from '../../hooks/types';
 import { AutomationItem } from './AutomationItem';
 
@@ -38,6 +38,8 @@ interface BrowserAutomationsListProps {
   automations: BrowserAutomation[];
   profiles: BrowserAuthProfile[];
   runningAutomationId: string | null;
+  /** A just-finished manual run to auto-expand, so its results show at once. */
+  autoExpand?: { id: string } | null;
   onRun: (automationId: string) => void;
   onReconnect: (url: string) => void;
   /** Create a new automation. Omitted for read-only tasks. */
@@ -61,6 +63,7 @@ export function BrowserAutomationsList({
   automations,
   profiles,
   runningAutomationId,
+  autoExpand,
   onRun,
   onReconnect,
   onCreate,
@@ -74,6 +77,12 @@ export function BrowserAutomationsList({
   const canCreate = hasPermission('integration', 'create');
   const canUpdate = hasPermission('integration', 'update');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  // Auto-expand a just-finished manual run so its results (screenshots +
+  // verdict) show without a second click. `autoExpand` is a fresh object per
+  // completion, so re-running the same automation re-expands it too.
+  useEffect(() => {
+    if (autoExpand?.id) setExpandedId(autoExpand.id);
+  }, [autoExpand]);
   // Browser evidence shares one cadence per task; the automations are kept in
   // sync, so any one of them reflects the task's current schedule.
   const currentCadence: TaskFrequency = automations[0]?.scheduleFrequency ?? 'daily';
