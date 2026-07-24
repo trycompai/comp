@@ -154,7 +154,7 @@ export function BrowserConnectionClient({
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="text-[13px] text-muted-foreground">
-          Vendor logins Comp uses to sign in and capture evidence on a schedule.
+          Vendor logins Comp AI uses to sign in and capture evidence on a schedule.
           {profiles.length > 0 && (
             <span className="ml-2 text-foreground">
               {summary.total} {summary.total === 1 ? 'connection' : 'connections'}
@@ -185,7 +185,7 @@ export function BrowserConnectionClient({
           <div className="max-w-[320px]">
             <div className="text-sm text-foreground">No connections yet</div>
             <p className="mt-1 text-[12.5px] text-muted-foreground">
-              Connect a vendor login so Comp can sign in and capture evidence for your
+              Connect a vendor login so Comp AI can sign in and capture evidence for your
               browser automations.
             </p>
             {canConnect && (

@@ -18,6 +18,13 @@ interface MethodOption {
   recommended?: boolean;
 }
 
+// Name the credentials method after what the vendor actually asks for, so we
+// don't say "Email" when the site signs in with a username (e.g. AWS IAM).
+function passwordCardTitle(identifierType?: string): string {
+  if (identifierType === 'username') return 'Username & password';
+  return 'Email & password';
+}
+
 // Only methods we can actually drive. Passkey is deliberately never an option —
 // passkeys are device-bound (WebAuthn) and can't be completed from a remote
 // cloud browser; we call that out plainly instead of offering a dead end.
@@ -27,7 +34,7 @@ function optionsFor(analysis: LoginAnalysis): MethodOption[] {
   if (methods.includes('password')) {
     options.push({
       kind: 'password',
-      title: 'Email & password',
+      title: passwordCardTitle(analysis.identifierType),
       detail: 'We sign in for you — runs unattended.',
       recommended: true,
     });
@@ -73,8 +80,8 @@ export function ConnectMethodChooser({ analysis, onChoose, onCancel }: ConnectMe
           </span>
           <div className="text-[13px] text-foreground">This site only supports passkey sign-in</div>
           <p className="max-w-[320px] text-[11.5px] leading-relaxed text-muted-foreground">
-            Passkeys are bound to your device, so Comp&apos;s cloud browser can&apos;t sign in
-            unattended. Ask the vendor to enable a password or SSO login — or capture this
+            Passkeys are bound to your device, so Comp AI&apos;s cloud browser can&apos;t sign
+            in unattended. Ask the vendor to enable a password or SSO login — or capture this
             evidence manually.
           </p>
         </div>
@@ -172,8 +179,8 @@ export function ConnectMethodChooser({ analysis, onChoose, onCancel }: ConnectMe
           </span>
           <span>
             This site also offers passkey / security key sign-in. Passkeys are tied to your
-            device, so they won&apos;t work in Comp&apos;s browser — use email &amp; password, or
-            finish the SSO login when prompted.
+            device, so they won&apos;t work in Comp AI&apos;s browser — use email &amp; password,
+            or finish the SSO login when prompted.
           </span>
         </div>
       )}

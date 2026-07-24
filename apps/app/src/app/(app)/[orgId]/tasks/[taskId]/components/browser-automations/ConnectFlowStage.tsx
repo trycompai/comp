@@ -113,7 +113,7 @@ export function ConnectFlowStage({
         <div className="flex w-full max-w-md flex-col gap-3 text-center animate-in fade-in-0 duration-500">
           <div className="text-base text-foreground">{host} is connected</div>
           <div className="text-sm text-muted-foreground leading-relaxed">
-            We saved the session — Comp will sign in on its own for scheduled runs.
+            We saved the session — Comp AI will sign in on its own for scheduled runs.
             Next, tell it what to capture as evidence.
           </div>
           <div className="mt-1 flex justify-center">

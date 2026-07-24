@@ -36,7 +36,7 @@ describe('ConnectMethodChooser', () => {
     expect(screen.getByText('Single sign-on (SSO)')).toBeInTheDocument();
     expect(screen.getByText('Recommended')).toBeInTheDocument();
     // Passkey is never a selectable option, but we warn it's present + won't work.
-    expect(screen.getByText(/won.t work in Comp.s browser/i)).toBeInTheDocument();
+    expect(screen.getByText(/won.t work in Comp AI/i)).toBeInTheDocument();
   });
 
   it('continues with the selected method (password default)', () => {
@@ -74,7 +74,7 @@ describe('ConnectMethodChooser', () => {
         onCancel={vi.fn()}
       />,
     );
-    expect(screen.queryByText(/won.t work in Comp.s browser/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/won.t work in Comp AI/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/can.t run fully unattended/i)).not.toBeInTheDocument();
   });
 
