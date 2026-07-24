@@ -148,3 +148,24 @@ body {
 [data-slot='table-scroll']::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* "AI is controlling" / "Your turn" status pill — the pulsing dot. */
+@keyframes ai-ring-pip {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.7);
+  }
+}
+.ai-ring-pip {
+  animation: ai-ring-pip 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ai-ring-pip {
+    animation: none;
+  }
+}

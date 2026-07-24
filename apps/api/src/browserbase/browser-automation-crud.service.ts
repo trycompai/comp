@@ -8,6 +8,53 @@ const normalizeCriteria = (value: string | null | undefined): string | null => {
   return trimmed.length === 0 ? null : trimmed;
 };
 
+/** One step of a (possibly multi-vendor) automation. */
+export interface BrowserAutomationStepInput {
+  profileId?: string | null;
+  targetUrl: string;
+  instruction: string;
+  evaluationCriteria?: string | null;
+}
+
+/**
+ * Every automation is stored as an ordered list of steps. When only the legacy
+ * single instruction is supplied, treat it as a one-step automation.
+ */
+function resolveSteps(data: {
+  targetUrl?: string;
+  instruction?: string;
+  evaluationCriteria?: string | null;
+  steps?: BrowserAutomationStepInput[];
+}): BrowserAutomationStepInput[] {
+  if (data.steps && data.steps.length > 0) return data.steps;
+  return [
+    {
+      targetUrl: data.targetUrl ?? '',
+      instruction: data.instruction ?? '',
+      evaluationCriteria: data.evaluationCriteria,
+    },
+  ];
+}
+
+const toStepCreate = (steps: BrowserAutomationStepInput[]) =>
+  steps.map((step, index) => ({
+    order: index,
+    profileId: step.profileId ?? null,
+    targetUrl: step.targetUrl,
+    instruction: step.instruction,
+    evaluationCriteria: normalizeCriteria(step.evaluationCriteria),
+  }));
+
+const STEP_INCLUDE = { steps: { orderBy: { order: 'asc' as const } } };
+
+/** Per-step evidence for a run — one screenshot + verdict per step, in order. */
+const RUN_STEP_RUNS_INCLUDE = {
+  stepRuns: {
+    orderBy: { order: 'asc' as const },
+    include: { step: { select: { targetUrl: true } } },
+  },
+};
+
 @Injectable()
 export class BrowserAutomationCrudService {
   constructor(
@@ -22,6 +69,7 @@ export class BrowserAutomationCrudService {
       targetUrl: string;
       instruction: string;
       evaluationCriteria?: string;
+      steps?: BrowserAutomationStepInput[];
       scheduleFrequency?: TaskFrequency;
     },
     organizationId?: string,
@@ -30,19 +78,37 @@ export class BrowserAutomationCrudService {
       await this.requireTaskInOrg({ taskId: data.taskId, organizationId });
     }
 
+    const steps = resolveSteps(data);
+    const first = steps[0];
+
+    // A task's browser evidence shares one cadence (set from the section
+    // header), so a new automation inherits the task's current schedule rather
+    // than silently defaulting to daily.
+    const scheduleFrequency =
+      data.scheduleFrequency ??
+      (
+        await db.browserAutomation.findFirst({
+          where: { taskId: data.taskId },
+          orderBy: { createdAt: 'asc' },
+          select: { scheduleFrequency: true },
+        })
+      )?.scheduleFrequency;
+
     return db.browserAutomation.create({
       data: {
         taskId: data.taskId,
         name: data.name,
         description: data.description,
-        targetUrl: data.targetUrl,
-        instruction: data.instruction,
-        evaluationCriteria: normalizeCriteria(data.evaluationCriteria),
+        // Keep the legacy single fields in sync with the first step until the
+        // engine reads steps directly (then these columns get dropped).
+        targetUrl: first.targetUrl,
+        instruction: first.instruction,
+        evaluationCriteria: normalizeCriteria(first.evaluationCriteria),
         isEnabled: true,
-        ...(data.scheduleFrequency !== undefined
-          ? { scheduleFrequency: data.scheduleFrequency }
-          : {}),
+        ...(scheduleFrequency !== undefined ? { scheduleFrequency } : {}),
+        steps: { create: toStepCreate(steps) },
       },
+      include: STEP_INCLUDE,
     });
   }
 
@@ -51,7 +117,12 @@ export class BrowserAutomationCrudService {
       where: { id: automationId },
       include: {
         task: { select: { organizationId: true } },
-        runs: { orderBy: { createdAt: 'desc' }, take: 10 },
+        runs: {
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+          include: RUN_STEP_RUNS_INCLUDE,
+        },
+        ...STEP_INCLUDE,
       },
     });
     return this.hideCrossOrgAutomation({ automation, organizationId });
@@ -65,7 +136,12 @@ export class BrowserAutomationCrudService {
     return db.browserAutomation.findMany({
       where: { taskId },
       include: {
-        runs: { orderBy: { createdAt: 'desc' }, take: 1 },
+        runs: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          include: RUN_STEP_RUNS_INCLUDE,
+        },
+        ...STEP_INCLUDE,
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -80,6 +156,7 @@ export class BrowserAutomationCrudService {
       instruction?: string;
       evaluationCriteria?: string;
       isEnabled?: boolean;
+      steps?: BrowserAutomationStepInput[];
       scheduleFrequency?: TaskFrequency;
     },
     organizationId?: string,
@@ -88,16 +165,58 @@ export class BrowserAutomationCrudService {
       await this.requireAutomationInOrg({ automationId, organizationId });
     }
 
-    const { evaluationCriteria, scheduleFrequency, ...rest } = data;
-    return db.browserAutomation.update({
-      where: { id: automationId },
-      data: {
-        ...rest,
-        ...(evaluationCriteria !== undefined
-          ? { evaluationCriteria: normalizeCriteria(evaluationCriteria) }
-          : {}),
-        ...(scheduleFrequency !== undefined ? { scheduleFrequency } : {}),
-      },
+    const { evaluationCriteria, scheduleFrequency, steps, ...rest } = data;
+
+    // Steps supplied → replace the whole sequence and sync the legacy columns
+    // from the first step (atomic so a run never sees a half-updated list).
+    if (steps && steps.length > 0) {
+      const first = steps[0];
+      return db.$transaction(async (tx) => {
+        await tx.browserAutomationStep.deleteMany({ where: { automationId } });
+        return tx.browserAutomation.update({
+          where: { id: automationId },
+          data: {
+            ...rest,
+            targetUrl: first.targetUrl,
+            instruction: first.instruction,
+            evaluationCriteria: normalizeCriteria(first.evaluationCriteria),
+            ...(scheduleFrequency !== undefined ? { scheduleFrequency } : {}),
+            steps: { create: toStepCreate(steps) },
+          },
+          include: STEP_INCLUDE,
+        });
+      });
+    }
+
+    // Legacy single-field edit → update the automation and mirror it onto the
+    // first step so the two representations stay consistent.
+    const stepPatch = {
+      ...(rest.targetUrl !== undefined ? { targetUrl: rest.targetUrl } : {}),
+      ...(rest.instruction !== undefined ? { instruction: rest.instruction } : {}),
+      ...(evaluationCriteria !== undefined
+        ? { evaluationCriteria: normalizeCriteria(evaluationCriteria) }
+        : {}),
+    };
+
+    return db.$transaction(async (tx) => {
+      const updated = await tx.browserAutomation.update({
+        where: { id: automationId },
+        data: {
+          ...rest,
+          ...(evaluationCriteria !== undefined
+            ? { evaluationCriteria: normalizeCriteria(evaluationCriteria) }
+            : {}),
+          ...(scheduleFrequency !== undefined ? { scheduleFrequency } : {}),
+        },
+        include: STEP_INCLUDE,
+      });
+      if (Object.keys(stepPatch).length > 0) {
+        await tx.browserAutomationStep.updateMany({
+          where: { automationId, order: 0 },
+          data: stepPatch,
+        });
+      }
+      return updated;
     });
   }
 
@@ -108,37 +227,79 @@ export class BrowserAutomationCrudService {
     return db.browserAutomation.delete({ where: { id: automationId } });
   }
 
+  /**
+   * Set one cadence for every browser automation on a task. Browser evidence
+   * shares a task-level schedule (there's no need to run different vendors in
+   * one task on different days), so this bulk-updates them together.
+   */
+  async setTaskSchedule(
+    taskId: string,
+    scheduleFrequency: TaskFrequency,
+    organizationId?: string,
+  ) {
+    if (organizationId) {
+      await this.requireTaskInOrg({ taskId, organizationId });
+    }
+    const { count } = await db.browserAutomation.updateMany({
+      where: { taskId },
+      data: { scheduleFrequency },
+    });
+    return { success: true, scheduleFrequency, updated: count };
+  }
+
+  /** Presign a run's screenshots (full page + close-up) and each step's. */
+  private async presignRun<
+    T extends {
+      screenshotUrl: string | null;
+      focusScreenshotUrl?: string | null;
+      stepRuns?: Array<{
+        screenshotUrl: string | null;
+        focusScreenshotUrl?: string | null;
+      }>;
+    },
+  >(run: T): Promise<T> {
+    const presign = (
+      key: string | null | undefined,
+    ): Promise<string | null | undefined> =>
+      key ? this.screenshots.getPresignedUrl({ key }) : Promise.resolve(key);
+    const [screenshotUrl, focusScreenshotUrl, stepRuns] = await Promise.all([
+      presign(run.screenshotUrl),
+      presign(run.focusScreenshotUrl),
+      run.stepRuns
+        ? Promise.all(
+            run.stepRuns.map(async (stepRun) => ({
+              ...stepRun,
+              screenshotUrl: await presign(stepRun.screenshotUrl),
+              focusScreenshotUrl: await presign(stepRun.focusScreenshotUrl),
+            })),
+          )
+        : Promise.resolve(run.stepRuns),
+    ]);
+    return { ...run, screenshotUrl, focusScreenshotUrl, stepRuns } as T;
+  }
+
   async getRunWithPresignedUrl(runId: string, organizationId?: string) {
     const run = await db.browserAutomationRun.findUnique({
       where: { id: runId },
-      include: { automation: { include: { task: true } } },
+      include: {
+        automation: { include: { task: true } },
+        ...RUN_STEP_RUNS_INCLUDE,
+      },
     });
     if (!run) return null;
     if (organizationId && run.automation.task.organizationId !== organizationId) {
       return null;
     }
-    if (!run.screenshotUrl) return run;
-    const screenshotUrl = await this.screenshots.getPresignedUrl({
-      key: run.screenshotUrl,
-    });
-    return { ...run, screenshotUrl };
+    return this.presignRun(run);
   }
 
   async getAutomationsWithPresignedUrls(taskId: string, organizationId?: string) {
     const automations = await this.getBrowserAutomationsForTask(taskId, organizationId);
     return Promise.all(
-      automations.map(async (automation) => {
-        const runsWithUrls = await Promise.all(
-          automation.runs.map(async (run) => {
-            if (!run.screenshotUrl) return run;
-            const screenshotUrl = await this.screenshots.getPresignedUrl({
-              key: run.screenshotUrl,
-            });
-            return { ...run, screenshotUrl };
-          }),
-        );
-        return { ...automation, runs: runsWithUrls };
-      }),
+      automations.map(async (automation) => ({
+        ...automation,
+        runs: await Promise.all(automation.runs.map((run) => this.presignRun(run))),
+      })),
     );
   }
 

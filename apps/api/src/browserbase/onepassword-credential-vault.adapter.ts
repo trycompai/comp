@@ -12,8 +12,20 @@ import {
   buildFieldReference,
   buildTotpReference,
   PASSWORD_FIELD_TITLE,
+  TOTP_FIELD_TITLE,
   USERNAME_FIELD_TITLE,
 } from './onepassword-credential-item';
+
+const RESERVED_FIELD_TITLES = new Set<string>([
+  USERNAME_FIELD_TITLE,
+  PASSWORD_FIELD_TITLE,
+  TOTP_FIELD_TITLE,
+]);
+
+function parseItemRef(itemRef: string): { vaultId?: string; itemId?: string } {
+  const [vaultId, itemId] = itemRef.replace(/^op:\/\//, '').split('/');
+  return { vaultId, itemId };
+}
 
 /**
  * Resolves a browser auth profile's stored login (username, password, live TOTP)
@@ -51,14 +63,41 @@ export class OnePasswordCredentialVaultAdapter implements BrowserCredentialVault
       client,
       buildTotpReference(itemRef),
     );
+    const extraFields = await this.resolveExtraFields(client, itemRef);
 
-    if (!username && !password && !totpCode) return null;
+    if (!username && !password && !totpCode && extraFields.length === 0) {
+      return null;
+    }
 
     return {
       username: username ?? undefined,
       password: password ?? undefined,
       totpCode: totpCode ?? undefined,
+      extraFields: extraFields.length > 0 ? extraFields : undefined,
     };
+  }
+
+  // Reads any site-specific custom fields (workspace, subdomain, …) the customer
+  // added. Best-effort: a vault without custom fields (or an older SDK) just
+  // yields none, and never blocks the standard username/password/TOTP path.
+  private async resolveExtraFields(
+    client: OnePasswordClient,
+    itemRef: string,
+  ): Promise<{ label: string; value: string }[]> {
+    try {
+      const { vaultId, itemId } = parseItemRef(itemRef);
+      if (!vaultId || !itemId) return [];
+      const item = await client.items.get(vaultId, itemId);
+      return item.fields
+        .filter(
+          (field) =>
+            !RESERVED_FIELD_TITLES.has(field.title) &&
+            Boolean(field.value?.trim()),
+        )
+        .map((field) => ({ label: field.title, value: field.value }));
+    } catch {
+      return [];
+    }
   }
 
   private async resolveField(

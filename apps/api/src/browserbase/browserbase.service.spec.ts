@@ -7,6 +7,7 @@ import { BrowserAutomationRunStoreService } from './browser-automation-run-store
 import { BrowserAuthProfileContextService } from './browser-auth-profile-context.service';
 import { BrowserAuthProfileService } from './browser-auth-profile.service';
 import { BrowserCredentialStorageService } from './browser-credential-storage.service';
+import { BrowserLoginAnalyzerService } from './browser-login-analyzer.service';
 import { BrowserEvidenceRunnerService } from './browser-evidence-runner.service';
 import { BrowserbaseOrgContextService } from './browserbase-org-context.service';
 import { BrowserbaseScreenshotService } from './browserbase-screenshot.service';
@@ -15,24 +16,36 @@ import { BrowserbaseService } from './browserbase.service';
 import { BROWSER_CREDENTIAL_VAULT_ADAPTER } from './credential-vault';
 import { resolveBrowserCredentialVaultAdapter } from './browser-credential-vault.factory';
 
-jest.mock('@db', () => ({
-  db: {
+jest.mock('@db', () => {
+  const db = {
     browserAutomationRun: {
       findUnique: jest.fn(),
     },
     browserAutomation: {
       create: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
+      findFirst: jest.fn(),
     },
-  },
-  TaskFrequency: {
-    daily: 'daily',
-    weekly: 'weekly',
-    monthly: 'monthly',
-    quarterly: 'quarterly',
-    yearly: 'yearly',
-  },
-}));
+    browserAutomationStep: {
+      deleteMany: jest.fn(),
+      updateMany: jest.fn(),
+      create: jest.fn(),
+    },
+    // Steps updates run in a transaction; pass the same mock through as `tx`.
+    $transaction: jest.fn((fn: (tx: unknown) => unknown) => fn(db)),
+  };
+  return {
+    db,
+    TaskFrequency: {
+      daily: 'daily',
+      weekly: 'weekly',
+      monthly: 'monthly',
+      quarterly: 'quarterly',
+      yearly: 'yearly',
+    },
+  };
+});
 
 jest.mock('@/app/s3', () => ({
   getSignedUrl: jest.fn().mockResolvedValue('https://s3.example.com/signed'),
@@ -61,6 +74,7 @@ describe('BrowserbaseService.getScreenshotRedirectUrl', () => {
         BrowserbaseScreenshotService,
         BrowserEvidenceRunnerService,
         BrowserCredentialStorageService,
+        BrowserLoginAnalyzerService,
         {
           provide: BROWSER_CREDENTIAL_VAULT_ADAPTER,
           useFactory: resolveBrowserCredentialVaultAdapter,
@@ -184,6 +198,7 @@ describe('BrowserbaseService schedule frequency passthrough', () => {
         BrowserbaseScreenshotService,
         BrowserEvidenceRunnerService,
         BrowserCredentialStorageService,
+        BrowserLoginAnalyzerService,
         {
           provide: BROWSER_CREDENTIAL_VAULT_ADAPTER,
           useFactory: resolveBrowserCredentialVaultAdapter,
@@ -255,5 +270,106 @@ describe('BrowserbaseService schedule frequency passthrough', () => {
 
     const call = (db.browserAutomation.update as jest.Mock).mock.calls[0][0];
     expect(call.data).not.toHaveProperty('scheduleFrequency');
+  });
+
+  it('inherits the task cadence for a new automation when none is given', async () => {
+    (db.browserAutomation.findFirst as jest.Mock).mockResolvedValue({
+      scheduleFrequency: TaskFrequency.weekly,
+    });
+    (db.browserAutomation.create as jest.Mock).mockResolvedValue({ id: 'bau_2' });
+
+    await service.createBrowserAutomation({
+      taskId: 'tsk_1',
+      name: 'name',
+      targetUrl: 'https://example.com',
+      instruction: 'click',
+    });
+
+    expect(db.browserAutomation.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ scheduleFrequency: 'weekly' }),
+      }),
+    );
+  });
+
+  it('sets one schedule for every automation on the task', async () => {
+    (db.browserAutomation.updateMany as jest.Mock).mockResolvedValue({ count: 3 });
+
+    const result = await service.setTaskSchedule('tsk_1', TaskFrequency.monthly);
+
+    expect(db.browserAutomation.updateMany).toHaveBeenCalledWith({
+      where: { taskId: 'tsk_1' },
+      data: { scheduleFrequency: 'monthly' },
+    });
+    expect(result).toEqual({
+      success: true,
+      scheduleFrequency: 'monthly',
+      updated: 3,
+    });
+  });
+
+  it('stores explicit steps and mirrors the first onto the legacy columns', async () => {
+    (db.browserAutomation.create as jest.Mock).mockResolvedValue({ id: 'bau_1' });
+
+    await service.createBrowserAutomation({
+      taskId: 't1',
+      name: 'A',
+      targetUrl: 'https://ignored.com',
+      instruction: 'ignored',
+      steps: [
+        {
+          profileId: 'p1',
+          targetUrl: 'https://github.com',
+          instruction: 'screenshot 2fa',
+          evaluationCriteria: '2fa enforced',
+        },
+        { targetUrl: 'https://aws.amazon.com', instruction: 'capture policy' },
+      ],
+    });
+
+    const data = (db.browserAutomation.create as jest.Mock).mock.calls[0][0].data;
+    expect(data.targetUrl).toBe('https://github.com'); // mirrored from step 0
+    expect(data.instruction).toBe('screenshot 2fa');
+    expect(data.steps.create).toHaveLength(2);
+    expect(data.steps.create[0]).toMatchObject({
+      order: 0,
+      profileId: 'p1',
+      targetUrl: 'https://github.com',
+    });
+    expect(data.steps.create[1]).toMatchObject({ order: 1, profileId: null });
+  });
+
+  it('wraps a single inline instruction as one step', async () => {
+    (db.browserAutomation.create as jest.Mock).mockResolvedValue({ id: 'bau_1' });
+
+    await service.createBrowserAutomation({
+      taskId: 't1',
+      name: 'A',
+      targetUrl: 'https://x.com',
+      instruction: 'do it',
+    });
+
+    const data = (db.browserAutomation.create as jest.Mock).mock.calls[0][0].data;
+    expect(data.steps.create).toHaveLength(1);
+    expect(data.steps.create[0]).toMatchObject({
+      order: 0,
+      targetUrl: 'https://x.com',
+      instruction: 'do it',
+    });
+  });
+
+  it('replaces the step list when steps are supplied on update', async () => {
+    (db.browserAutomation.update as jest.Mock).mockResolvedValue({ id: 'bau_1' });
+
+    await service.updateBrowserAutomation('bau_1', {
+      steps: [{ targetUrl: 'https://okta.com', instruction: 'sso' }],
+    });
+
+    expect(db.browserAutomationStep.deleteMany).toHaveBeenCalledWith({
+      where: { automationId: 'bau_1' },
+    });
+    const data = (db.browserAutomation.update as jest.Mock).mock.calls[0][0].data;
+    expect(data.targetUrl).toBe('https://okta.com');
+    expect(data.steps.create).toHaveLength(1);
   });
 });

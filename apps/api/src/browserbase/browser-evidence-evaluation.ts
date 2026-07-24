@@ -16,10 +16,13 @@ export interface BrowserEvidenceEvaluator {
 export async function evaluateIfNeeded({
   stagehand,
   criteria,
+  instruction,
   logs,
 }: {
   stagehand: BrowserEvidenceEvaluator;
   criteria?: string | null;
+  /** What the automation was capturing — anchors the check to the intended target. */
+  instruction?: string | null;
   logs: BrowserEvidenceLog[];
 }): Promise<{
   success: boolean;
@@ -43,16 +46,22 @@ export async function evaluateIfNeeded({
       pass: z.boolean(),
       reason: z.string(),
     });
+    const target = instruction?.trim();
     const evaluation = await stagehand.extract(
       [
         'You are an auditor reviewing the current page after an automation has finished navigating.',
-        'Decide whether the page clearly satisfies this criteria.',
-        'Only return pass=true if the evidence is unambiguously present and visible.',
-        'If it is ambiguous, missing, or contradicted, return pass=false.',
-        'Always provide a short reason (max 220 characters).',
+        target
+          ? `The automation was asked to: "${target}". Judge the criteria about THAT specific target — ignore unrelated items that merely happen to appear on the page (e.g. a matching value belonging to a different item does not count).`
+          : '',
+        'Decide whether the page clearly satisfies this criteria for the intended target.',
+        'Only return pass=true if the evidence is unambiguously present and visible for that target.',
+        'If it is ambiguous, missing, applies only to a different item, or is contradicted, return pass=false.',
+        'Always provide a short reason (max 220 characters) that names the specific value and WHERE on the page it appears, so a reviewer can find it (e.g. "commit count 8,142, in the repository header").',
         '',
         `Criteria: ${normalizedCriteria}`,
-      ].join('\n'),
+      ]
+        .filter(Boolean)
+        .join('\n'),
       evalSchema,
     );
 

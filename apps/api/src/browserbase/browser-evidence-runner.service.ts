@@ -35,6 +35,17 @@ export interface BrowserEvidenceRunnerInput {
     vaultConnectionId?: string | null;
   };
   beforeExecution?: () => Promise<void>;
+  /** Live per-stage progress callback (used to stream a test run's activity). */
+  onLog?: (log: BrowserEvidenceLog) => void;
+  /** Fired as the agent switches tabs, so a watched run's live view follows it. */
+  onLiveView?: (url: string) => void;
+  /** Fired once this step's live session opens, so the Run view can follow it. */
+  onSession?: (info: { sessionId: string; liveViewUrl: string }) => void;
+  /**
+   * Fired right before this step's session is torn down, so the Run view can
+   * cover the (about-to-disconnect) live iframe with a transition state.
+   */
+  onSessionClosing?: () => void;
 }
 
 export interface BrowserEvidenceSessionInput extends BrowserEvidenceRunnerInput {
@@ -46,6 +57,9 @@ export interface BrowserEvidenceRunResult {
   status: 'completed' | 'failed' | 'blocked';
   screenshotKey?: string;
   screenshotUrl?: string;
+  /** A focused close-up (the agent's final viewport) shown beside the full page. */
+  focusScreenshotKey?: string;
+  focusScreenshotUrl?: string;
   finalUrl?: string;
   evaluationStatus?: 'pass' | 'fail';
   evaluationReason?: string;
@@ -84,9 +98,10 @@ export class BrowserEvidenceRunnerService {
       profileId: input.profile.id,
       hostname: input.profile.hostname,
       run: async () => {
-        const { sessionId } = await this.sessions.createSessionWithContext(
-          input.profile.contextId,
-        );
+        const { sessionId, liveViewUrl } =
+          await this.sessions.createSessionWithContext(input.profile.contextId);
+        // Surface this step's live view so a watched run can follow each vendor.
+        input.onSession?.({ sessionId, liveViewUrl });
 
         try {
           return await this.executeEvidenceOnSessionUnlocked({
@@ -94,6 +109,9 @@ export class BrowserEvidenceRunnerService {
             sessionId,
           });
         } finally {
+          // Signal the imminent teardown before we actually close, so the UI can
+          // cover the live view before Browserbase's iframe shows "disconnected".
+          input.onSessionClosing?.();
           await this.closeSession(sessionId);
         }
       },
@@ -120,9 +138,15 @@ export class BrowserEvidenceRunnerService {
       sessions: this.sessions,
       logger: this.logger,
       vault: this.vault,
+      onLog: input.onLog,
+      onLiveView: input.onLiveView,
     });
-    let uploaded: { screenshotKey: string; screenshotUrl: string } | null =
-      null;
+    let uploaded: {
+      screenshotKey?: string;
+      screenshotUrl?: string;
+      focusScreenshotKey?: string;
+      focusScreenshotUrl?: string;
+    } | null = null;
     try {
       uploaded = await this.uploadCapturedScreenshot({ input, execution });
     } catch (err) {
@@ -146,6 +170,8 @@ export class BrowserEvidenceRunnerService {
         status: this.blockedStatusForCode(execution.failureCode),
         screenshotKey: uploaded?.screenshotKey,
         screenshotUrl: uploaded?.screenshotUrl,
+        focusScreenshotKey: uploaded?.focusScreenshotKey,
+        focusScreenshotUrl: uploaded?.focusScreenshotUrl,
         finalUrl: execution.finalUrl,
         evaluationStatus: execution.evaluationStatus,
         evaluationReason: execution.evaluationReason,
@@ -163,11 +189,30 @@ export class BrowserEvidenceRunnerService {
       status: 'completed',
       screenshotKey: uploaded?.screenshotKey,
       screenshotUrl: uploaded?.screenshotUrl,
+      focusScreenshotKey: uploaded?.focusScreenshotKey,
+      focusScreenshotUrl: uploaded?.focusScreenshotUrl,
       finalUrl: execution.finalUrl,
       evaluationStatus: execution.evaluationStatus,
       evaluationReason: execution.evaluationReason,
       logs: toJsonLogs(execution.logs),
     };
+  }
+
+  private async uploadOne(
+    input: BrowserEvidenceRunnerInput,
+    base64: string,
+    variant?: string,
+  ): Promise<{ key: string; url: string }> {
+    // A variant keys to a distinct object (…/runId-focus.jpg) so it doesn't
+    // overwrite the full-page shot.
+    const key = await this.screenshots.uploadScreenshot({
+      organizationId: input.organizationId,
+      automationId: input.automationId,
+      runId: variant ? `${input.runId}-${variant}` : input.runId,
+      base64Screenshot: base64,
+    });
+    const url = await this.screenshots.getPresignedUrl({ key });
+    return { key, url };
   }
 
   private async uploadCapturedScreenshot({
@@ -176,20 +221,27 @@ export class BrowserEvidenceRunnerService {
   }: {
     input: BrowserEvidenceRunnerInput;
     execution: BrowserEvidenceExecutionResult;
-  }): Promise<{ screenshotKey: string; screenshotUrl: string } | null> {
+  }): Promise<{
+    screenshotKey?: string;
+    screenshotUrl?: string;
+    focusScreenshotKey?: string;
+    focusScreenshotUrl?: string;
+  } | null> {
     if (!execution.screenshot) return null;
 
-    const screenshotKey = await this.screenshots.uploadScreenshot({
-      organizationId: input.organizationId,
-      automationId: input.automationId,
-      runId: input.runId,
-      base64Screenshot: execution.screenshot,
-    });
-    const screenshotUrl = await this.screenshots.getPresignedUrl({
-      key: screenshotKey,
-    });
+    const [full, focus] = await Promise.all([
+      this.uploadOne(input, execution.screenshot),
+      execution.focusScreenshot
+        ? this.uploadOne(input, execution.focusScreenshot, 'focus')
+        : Promise.resolve(null),
+    ]);
 
-    return { screenshotKey, screenshotUrl };
+    return {
+      screenshotKey: full.key,
+      screenshotUrl: full.url,
+      focusScreenshotKey: focus?.key,
+      focusScreenshotUrl: focus?.url,
+    };
   }
 
   private async closeSession(sessionId: string): Promise<void> {

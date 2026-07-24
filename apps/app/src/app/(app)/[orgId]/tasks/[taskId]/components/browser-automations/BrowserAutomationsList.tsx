@@ -1,128 +1,191 @@
 'use client';
 
-import { Badge } from '@trycompai/design-system';
-import { formatDistanceToNow } from 'date-fns';
-import { Add, Globe } from '@trycompai/design-system/icons';
-import { useState } from 'react';
-import type { BrowserAutomation } from '../../hooks/types';
-import { AutomationItem } from './AutomationItem';
 import { usePermissions } from '@/hooks/use-permissions';
+import { Renew } from '@trycompai/design-system/icons';
+import { TaskFrequency } from '@db';
+import { useEffect, useMemo, useState } from 'react';
+import type {
+  BrowserAuthProfile,
+  BrowserAutomation,
+  BrowserAutomationDraft,
+} from '../../hooks/types';
+import { AutomationItem } from './AutomationItem';
+import { BrowserEvidenceHeader } from './BrowserEvidenceHeader';
+import { DraftsStrip } from './DraftsStrip';
 
-// Calculate next scheduled run (daily at 5:00 AM UTC)
-const getNextScheduledRun = (): Date => {
-  const now = new Date();
+const PAGE_SIZE = 8;
 
-  // Create a Date representing 5:00 AM UTC today (not local time).
-  const nextRunUtc = new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 5, 0, 0, 0),
-  );
-
-  // If we're past 5:00 AM UTC today, schedule for tomorrow at 5:00 AM UTC.
-  if (nextRunUtc.getTime() <= now.getTime()) {
-    return new Date(nextRunUtc.getTime() + 24 * 60 * 60 * 1000);
+function hostnameFromUrl(url: string): string {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return url;
   }
-
-  return nextRunUtc;
-};
+}
 
 interface BrowserAutomationsListProps {
   automations: BrowserAutomation[];
-  hasContext: boolean;
+  profiles: BrowserAuthProfile[];
   runningAutomationId: string | null;
+  /** A just-finished manual run to auto-expand, so its results show at once. */
+  autoExpand?: { id: string } | null;
   onRun: (automationId: string) => void;
-  /** When undefined, the create button is hidden (e.g., for manual tasks) */
-  onCreateClick?: () => void;
+  onReconnect: (url: string) => void;
+  /** Create a new automation. Omitted for read-only tasks. */
+  onCreate?: () => void;
+  /** Connect a new vendor. Omitted for read-only tasks. */
+  onConnectAnother?: () => void;
   onEditClick: (automation: BrowserAutomation) => void;
   onDelete: (automationId: string) => void;
   onToggleEnabled: (automationId: string, enabled: boolean) => void;
+  /** Set one cadence for all browser evidence on this task (section header). */
+  onSetTaskSchedule: (frequency: TaskFrequency) => void;
+  /** Unsaved drafts, shown as a band inside this section (under the header). */
+  drafts?: BrowserAutomationDraft[];
+  onContinueDraft?: (draft: BrowserAutomationDraft) => void;
+  onDeleteDraft?: (draft: BrowserAutomationDraft) => void;
 }
 
+/**
+ * Automation-centric list (design 4a). Each row is one automation — which can
+ * span several vendors — showing its ordered vendor chain, schedule, last-run
+ * verdict, and actions. Connection health/management lives on the Connections
+ * page; here a row only flags when one of its connections needs reconnecting.
+ */
 export function BrowserAutomationsList({
   automations,
-  hasContext,
+  profiles,
   runningAutomationId,
+  autoExpand,
   onRun,
-  onCreateClick,
+  onReconnect,
+  onCreate,
+  onConnectAnother,
   onEditClick,
   onDelete,
   onToggleEnabled,
+  onSetTaskSchedule,
+  drafts = [],
+  onContinueDraft,
+  onDeleteDraft,
 }: BrowserAutomationsListProps) {
-  const [expandedId, setExpandedId] = useState<string | null>(null);
   const { hasPermission } = usePermissions();
-  const canCreateIntegration = hasPermission('integration', 'create');
-  const canUpdateIntegration = hasPermission('integration', 'update');
+  const canCreate = hasPermission('integration', 'create');
+  const canUpdate = hasPermission('integration', 'update');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  // Auto-expand a just-finished manual run so its results (screenshots +
+  // verdict) show without a second click. `autoExpand` is a fresh object per
+  // completion, so re-running the same automation re-expands it too.
+  useEffect(() => {
+    if (autoExpand?.id) setExpandedId(autoExpand.id);
+  }, [autoExpand]);
+  // Browser evidence shares one cadence per task; the automations are kept in
+  // sync, so any one of them reflects the task's current schedule.
+  const currentCadence: TaskFrequency = automations[0]?.scheduleFrequency ?? 'daily';
+  const [visible, setVisible] = useState(PAGE_SIZE);
 
-  const hasEnabledAutomations = automations.some((a) => a.isEnabled);
-  const nextRun = hasEnabledAutomations ? getNextScheduledRun() : null;
+  const profileById = useMemo(() => {
+    const map = new Map<string, BrowserAuthProfile>();
+    for (const profile of profiles) map.set(profile.id, profile);
+    return map;
+  }, [profiles]);
+  const profileByHost = useMemo(() => {
+    const map = new Map<string, BrowserAuthProfile>();
+    for (const profile of profiles) map.set(profile.hostname, profile);
+    return map;
+  }, [profiles]);
+
+  const rows = useMemo(() => {
+    return automations.map((automation) => {
+      const steps =
+        automation.steps && automation.steps.length > 0
+          ? automation.steps
+          : [{ profileId: null, targetUrl: automation.targetUrl }];
+      const conns = steps.map((step) =>
+        step.profileId
+          ? profileById.get(step.profileId)
+          : profileByHost.get(hostnameFromUrl(step.targetUrl ?? '')),
+      );
+      const needing = conns.find(
+        (conn) => conn && (conn.status === 'needs_reauth' || conn.status === 'blocked'),
+      );
+      return {
+        automation,
+        reconnectUrl: needing ? `https://${needing.hostname}` : undefined,
+      };
+    });
+  }, [automations, profileById, profileByHost]);
 
   return (
-    <div className="rounded-lg border border-border bg-card overflow-hidden">
-      <div className="px-5 py-4 border-b border-border">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="p-1.5 rounded-md bg-muted">
-              <Globe className="h-4 w-4 text-primary" />
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-foreground">Browser Automations</h3>
-              <p className="text-xs text-muted-foreground">
-                Capture screenshots from authenticated web pages
-              </p>
-            </div>
-          </div>
+    <div className="overflow-hidden rounded-lg border border-border bg-card">
+        <BrowserEvidenceHeader
+          automations={automations}
+          currentCadence={currentCadence}
+          canUpdate={canUpdate}
+          canCreate={canCreate}
+          onSetTaskSchedule={onSetTaskSchedule}
+          onConnectAnother={onConnectAnother}
+          onCreate={onCreate}
+        />
 
-          <div className="flex items-center gap-3">
-            {nextRun && (
-              <div className="text-right">
-                <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                  Next run
-                </div>
-                <div className="text-sm font-medium text-foreground">
-                  {formatDistanceToNow(nextRun, { addSuffix: true })}
-                </div>
-              </div>
-            )}
-
-            {hasContext && (
-              <Badge variant="outline">
-                <div className="w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5" />
-                Connected
-              </Badge>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="p-5">
-        <div className="space-y-2">
-          {automations.map((automation) => (
-            <AutomationItem
-              key={automation.id}
-              automation={automation}
-              isRunning={runningAutomationId === automation.id}
-              isExpanded={expandedId === automation.id}
-              readOnly={!canUpdateIntegration}
-              onToggleExpand={() =>
-                setExpandedId(expandedId === automation.id ? null : automation.id)
-              }
-              onRun={() => onRun(automation.id)}
-              onEdit={() => onEditClick(automation)}
-              onDelete={() => onDelete(automation.id)}
-              onToggleEnabled={(enabled) => onToggleEnabled(automation.id, enabled)}
-            />
-          ))}
-        </div>
-
-        {onCreateClick && canCreateIntegration && (
-          <button
-            onClick={onCreateClick}
-            className="w-full flex items-center justify-center gap-2 py-2.5 mt-3 rounded-lg border border-dashed border-border/60 hover:border-border hover:bg-muted/30 transition-all text-xs text-muted-foreground hover:text-foreground"
-          >
-            <Add className="w-3.5 h-3.5" />
-            Create Another
-          </button>
+        {drafts.length > 0 && onContinueDraft && onDeleteDraft && (
+          <DraftsStrip
+            nested
+            drafts={drafts}
+            profiles={profiles}
+            onContinue={onContinueDraft}
+            onDelete={onDeleteDraft}
+          />
         )}
+
+        <div className="flex flex-col gap-2 p-4">
+          {rows.slice(0, visible).map(({ automation, reconnectUrl }) => (
+            <div key={automation.id} className="flex flex-col gap-1.5">
+              <AutomationItem
+                automation={automation}
+                isRunning={runningAutomationId === automation.id}
+                isExpanded={expandedId === automation.id}
+                readOnly={!canUpdate}
+                onToggleExpand={() =>
+                  setExpandedId(expandedId === automation.id ? null : automation.id)
+                }
+                onRun={() => onRun(automation.id)}
+                onEdit={() => onEditClick(automation)}
+                onDelete={() => onDelete(automation.id)}
+                onToggleEnabled={(enabled) => onToggleEnabled(automation.id, enabled)}
+              />
+              {reconnectUrl && canUpdate && (
+                <div
+                  className="flex items-center justify-between gap-2 rounded-md px-3 py-1.5 text-[11.5px]"
+                  style={{
+                    border: '1px solid color-mix(in oklab, var(--warning) 45%, transparent)',
+                    background: 'color-mix(in oklab, var(--warning) 10%, transparent)',
+                  }}
+                >
+                  <span className="text-foreground">
+                    A connection this automation uses needs to be reconnected.
+                  </span>
+                  <button
+                    onClick={() => onReconnect(reconnectUrl)}
+                    className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs text-foreground"
+                  >
+                    <Renew size={11} />
+                    Reconnect
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+
+          {rows.length > visible && (
+            <button
+              onClick={() => setVisible((current) => current + PAGE_SIZE)}
+              className="mt-1 w-full rounded-md border border-dashed border-border py-2 text-xs text-muted-foreground transition-colors hover:bg-muted/30 hover:text-foreground"
+            >
+              Load more ({rows.length - visible} more)
+            </button>
+          )}
+        </div>
       </div>
-    </div>
   );
 }

@@ -1,11 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
+  IsArray,
   IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
   IsBoolean,
   IsUrl,
+  ValidateNested,
 } from 'class-validator';
 import { TaskFrequency } from '@db';
 import { IsSafeUrl } from '../validators/url-safety.validator';
@@ -17,6 +20,16 @@ export class CreateSessionDto {
   @IsString()
   @IsNotEmpty()
   contextId: string;
+}
+
+export class SetAuthProfileTotpDto {
+  @ApiProperty({
+    description:
+      "The authenticator setup key (TOTP seed) shown once during the vendor's authenticator-app setup — not the rotating 6-digit code.",
+  })
+  @IsString()
+  @IsNotEmpty()
+  totpSeed: string;
 }
 
 export class NavigateToUrlDto {
@@ -62,10 +75,61 @@ export class AuthStatusResponseDto {
   username?: string;
 }
 
+// ===== Login analysis DTOs =====
+
+export class AnalyzeLoginDto {
+  @ApiProperty({ description: 'Vendor sign-in URL to analyze' })
+  @IsUrl({}, { message: 'url must be a valid URL' })
+  @IsSafeUrl({ message: 'The provided URL is not allowed.' })
+  @IsString()
+  @IsNotEmpty()
+  url: string;
+}
+
+export class LoginRecommendationDto {
+  @ApiProperty({ enum: ['ready', 'works_with_checkins', 'manual'] })
+  category: string;
+
+  @ApiProperty()
+  headline: string;
+
+  @ApiProperty()
+  detail: string;
+}
+
+export class AnalyzeLoginResponseDto {
+  @ApiProperty({
+    description: 'Trigger.dev run id for the background analysis',
+  })
+  runId: string;
+
+  @ApiProperty({ description: 'Public access token to subscribe to the run' })
+  publicAccessToken: string;
+}
+
+export class LoginAnalysisResponseDto {
+  @ApiProperty()
+  reachable: boolean;
+
+  @ApiProperty({ type: [String] })
+  detectedMethods: string[];
+
+  @ApiProperty({ enum: ['email', 'username', 'either', 'unknown'] })
+  identifierType: string;
+
+  @ApiProperty({ type: [Object] })
+  extraFields: { label: string }[];
+
+  @ApiProperty({ type: () => LoginRecommendationDto })
+  recommendation: LoginRecommendationDto;
+}
+
 // ===== Auth Profile DTOs =====
 
 export class ResolveAuthProfileDto {
-  @ApiProperty({ description: 'Website URL to normalize into an auth profile hostname' })
+  @ApiProperty({
+    description: 'Website URL to normalize into an auth profile hostname',
+  })
   @IsUrl({}, { message: 'url must be a valid URL' })
   @IsSafeUrl({ message: 'The provided URL is not allowed.' })
   @IsString()
@@ -114,11 +178,90 @@ export class VerifyAuthProfileSessionDto {
   url: string;
 }
 
+export class UpdateAuthProfileDto {
+  @ApiPropertyOptional({ description: 'Display name for the connection' })
+  @IsString()
+  @IsOptional()
+  displayName?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Sign-in URL. Changing to a different hostname signs the connection out.',
+  })
+  @IsUrl({}, { message: 'url must be a valid URL' })
+  @IsSafeUrl({ message: 'The provided URL is not allowed.' })
+  @IsString()
+  @IsOptional()
+  url?: string;
+}
+
 export class MarkAuthProfileNeedsReauthDto {
-  @ApiPropertyOptional({ description: 'Reason the profile needs re-authentication' })
+  @ApiPropertyOptional({
+    description: 'Reason the profile needs re-authentication',
+  })
   @IsString()
   @IsOptional()
   reason?: string;
+}
+
+export class SignInAuthProfileDto {
+  @ApiProperty({
+    description: 'Vendor URL to sign in to (the profile hostname).',
+  })
+  @IsUrl({}, { message: 'url must be a valid URL' })
+  @IsSafeUrl({ message: 'The provided URL is not allowed.' })
+  @IsString()
+  @IsNotEmpty()
+  url: string;
+
+  @ApiPropertyOptional({
+    enum: ['password', 'sso'],
+    description:
+      "'password' fills stored credentials; 'sso' has the AI open the identity provider for the user to finish.",
+  })
+  @IsEnum({ password: 'password', sso: 'sso' })
+  @IsOptional()
+  mode?: 'password' | 'sso';
+
+  @ApiPropertyOptional({
+    description:
+      "The vendor's detected identifier-field label (e.g. 'IAM username'), shown in the live sign-in steps instead of a generic 'username'.",
+  })
+  @IsString()
+  @IsOptional()
+  usernameLabel?: string;
+}
+
+export class SignInAuthProfileResponseDto {
+  @ApiProperty({
+    description: 'Trigger.dev run id for the background automated sign-in',
+  })
+  runId: string;
+
+  @ApiProperty({ description: 'Public access token to subscribe to the run' })
+  publicAccessToken: string;
+
+  @ApiProperty({
+    description: 'Browserbase session id the sign-in runs on (for take-over)',
+  })
+  sessionId: string;
+
+  @ApiProperty({
+    description: 'Live view URL so the user can watch and take over the sign-in',
+  })
+  liveViewUrl: string;
+}
+
+export class CredentialExtraFieldDto {
+  @ApiProperty({ description: 'Field label as shown on the vendor login' })
+  @IsString()
+  @IsNotEmpty()
+  label: string;
+
+  @ApiProperty({ description: 'Field value' })
+  @IsString()
+  @IsNotEmpty()
+  value: string;
 }
 
 export class StoreAuthProfileCredentialsDto {
@@ -139,6 +282,24 @@ export class StoreAuthProfileCredentialsDto {
   @IsString()
   @IsOptional()
   totpSeed?: string;
+
+  @ApiPropertyOptional({
+    type: [CredentialExtraFieldDto],
+    description: 'Extra site-specific fields (e.g. workspace, subdomain).',
+  })
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => CredentialExtraFieldDto)
+  extraFields?: CredentialExtraFieldDto[];
+
+  @ApiPropertyOptional({
+    description:
+      "The vendor's own label for the identifier field (e.g. \"IAM username\"), stored so sign-in steps and reconnects show the real field name.",
+  })
+  @IsString()
+  @IsOptional()
+  usernameLabel?: string;
 }
 
 export class BrowserAuthProfileResponseDto {
@@ -186,6 +347,11 @@ export class BrowserAuthProfileResponseDto {
 
   @ApiProperty()
   updatedAt: Date;
+
+  @ApiPropertyOptional({
+    description: 'Number of browser automations in the org that run on this connection',
+  })
+  automationCount?: number;
 }
 
 export class ResolveAuthProfileResponseDto {
@@ -205,6 +371,32 @@ export class VerifyAuthProfileResponseDto {
 }
 
 // ===== Browser Automation DTOs =====
+
+export class BrowserAutomationStepDto {
+  @ApiPropertyOptional({
+    description: 'Connection (browser auth profile) this step runs on',
+  })
+  @IsString()
+  @IsOptional()
+  profileId?: string;
+
+  @ApiProperty({ description: 'Starting URL for this step' })
+  @IsUrl({}, { message: 'url must be a valid URL' })
+  @IsSafeUrl({ message: 'The provided URL is not allowed.' })
+  @IsString()
+  @IsNotEmpty()
+  targetUrl: string;
+
+  @ApiProperty({ description: 'Natural language instruction for this step' })
+  @IsString()
+  @IsNotEmpty()
+  instruction: string;
+
+  @ApiPropertyOptional({ description: 'Optional pass/fail criterion for this step' })
+  @IsString()
+  @IsOptional()
+  evaluationCriteria?: string;
+}
 
 export class CreateBrowserAutomationDto {
   @ApiProperty({ description: 'Task ID this automation belongs to' })
@@ -243,12 +435,32 @@ export class CreateBrowserAutomationDto {
   evaluationCriteria?: string;
 
   @ApiPropertyOptional({
+    type: [BrowserAutomationStepDto],
+    description:
+      'Ordered steps for a multi-vendor automation. When provided, these define the run; the top-level targetUrl/instruction are taken from the first step.',
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => BrowserAutomationStepDto)
+  @IsOptional()
+  steps?: BrowserAutomationStepDto[];
+
+  @ApiPropertyOptional({
     enum: TaskFrequency,
     description: 'Automation schedule cadence',
   })
   @IsEnum(TaskFrequency)
   @IsOptional()
   scheduleFrequency?: TaskFrequency;
+}
+
+export class SetTaskScheduleDto {
+  @ApiProperty({
+    enum: TaskFrequency,
+    description: 'Cadence applied to every browser automation on the task',
+  })
+  @IsEnum(TaskFrequency)
+  scheduleFrequency: TaskFrequency;
 }
 
 export class UpdateBrowserAutomationDto {
@@ -288,12 +500,78 @@ export class UpdateBrowserAutomationDto {
   isEnabled?: boolean;
 
   @ApiPropertyOptional({
+    type: [BrowserAutomationStepDto],
+    description:
+      'Ordered steps for a multi-vendor automation. When provided, they replace the automation’s existing steps.',
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => BrowserAutomationStepDto)
+  @IsOptional()
+  steps?: BrowserAutomationStepDto[];
+
+  @ApiPropertyOptional({
     enum: TaskFrequency,
     description: 'Automation schedule cadence',
   })
   @IsEnum(TaskFrequency)
   @IsOptional()
   scheduleFrequency?: TaskFrequency;
+}
+
+/** A draft step — everything optional, since a draft can be half-written. */
+export class DraftStepDto {
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  profileId?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  targetUrl?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  instruction?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  evaluationCriteria?: string;
+}
+
+export class CreateBrowserAutomationDraftDto {
+  @ApiProperty({ description: 'Task the draft belongs to' })
+  @IsString()
+  @IsNotEmpty()
+  taskId: string;
+
+  @ApiPropertyOptional({ description: 'Preview name, derived from the first step' })
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @ApiProperty({ type: [DraftStepDto], description: 'The composer step state' })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => DraftStepDto)
+  steps: DraftStepDto[];
+}
+
+export class UpdateBrowserAutomationDraftDto {
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @ApiPropertyOptional({ type: [DraftStepDto] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => DraftStepDto)
+  @IsOptional()
+  steps?: DraftStepDto[];
 }
 
 export class ExecuteAutomationSessionDto {
@@ -432,4 +710,52 @@ export class RunAutomationResponseDto {
 
   @ApiPropertyOptional()
   blockedReason?: string;
+}
+
+// ===== Instruction Test (coach loop) DTOs =====
+
+export class TestInstructionDto {
+  @ApiProperty({ description: 'URL the AI should start from' })
+  @IsUrl({}, { message: 'targetUrl must be a valid URL' })
+  @IsSafeUrl({ message: 'The provided URL is not allowed.' })
+  @IsString()
+  @IsNotEmpty()
+  targetUrl: string;
+
+  @ApiProperty({ description: 'Natural language instruction to test' })
+  @IsString()
+  @IsNotEmpty()
+  instruction: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Optional pass/fail criteria. When set, the test run gets a verdict.',
+  })
+  @IsString()
+  @IsOptional()
+  evaluationCriteria?: string;
+
+  @ApiPropertyOptional({ description: 'Connection (browser auth profile) to run under' })
+  @IsString()
+  @IsOptional()
+  profileId?: string;
+
+  @ApiPropertyOptional({ description: 'Task the instruction belongs to' })
+  @IsString()
+  @IsOptional()
+  taskId?: string;
+}
+
+export class TestInstructionResponseDto {
+  @ApiProperty({ description: 'Trigger.dev run id to subscribe to' })
+  runId: string;
+
+  @ApiProperty({ description: 'Public token for realtime subscription' })
+  publicAccessToken: string;
+
+  @ApiProperty({ description: 'Browserbase session id backing the live view' })
+  sessionId: string;
+
+  @ApiProperty({ description: 'Live view URL for watching the test run' })
+  liveViewUrl: string;
 }

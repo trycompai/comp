@@ -1,15 +1,19 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { db } from '@db';
+import { db, Prisma } from '@db';
 import {
   defaultProfileDisplayName,
   normalizeHostnameFromUrl,
   normalizeLoginIdentity,
 } from './browserbase-url';
-import { BrowserbaseSessionService } from './browserbase-session.service';
+import {
+  BrowserbaseSessionService,
+  INTERACTIVE_VIEWPORT,
+} from './browserbase-session.service';
 import { BrowserAuthProfileContextService } from './browser-auth-profile-context.service';
 import {
   BrowserbaseOrgContextService,
@@ -41,10 +45,33 @@ export class BrowserAuthProfileService {
   ) {}
 
   async listProfiles(organizationId: string) {
-    return db.browserAuthProfile.findMany({
-      where: { organizationId },
-      orderBy: [{ hostname: 'asc' }, { updatedAt: 'desc' }],
-    });
+    const [profiles, automations] = await Promise.all([
+      db.browserAuthProfile.findMany({
+        where: { organizationId },
+        orderBy: [{ hostname: 'asc' }, { updatedAt: 'desc' }],
+      }),
+      db.browserAutomation.findMany({
+        where: { task: { organizationId } },
+        select: { targetUrl: true },
+      }),
+    ]);
+
+    // Automations bind to a connection by hostname (not a FK), so tally per host.
+    const countByHost = new Map<string, number>();
+    for (const { targetUrl } of automations) {
+      let host: string;
+      try {
+        host = normalizeHostnameFromUrl(targetUrl);
+      } catch {
+        continue; // skip malformed targetUrls rather than fail the whole list
+      }
+      countByHost.set(host, (countByHost.get(host) ?? 0) + 1);
+    }
+
+    return profiles.map((profile) => ({
+      ...profile,
+      automationCount: countByHost.get(profile.hostname) ?? 0,
+    }));
   }
 
   async getProfile({
@@ -163,7 +190,12 @@ export class BrowserAuthProfileService {
       throw new NotFoundException('Browser auth profile not found');
     }
     const readyProfile = await this.profileContexts.ready(profile);
-    return this.sessions.createSessionWithContext(readyProfile.contextId);
+    // Human-facing session — use the smaller viewport so the sign-in page reads
+    // larger in the live view.
+    return this.sessions.createSessionWithContext(
+      readyProfile.contextId,
+      INTERACTIVE_VIEWPORT,
+    );
   }
 
   async verifyProfileSession(input: {
@@ -222,6 +254,52 @@ export class BrowserAuthProfileService {
         blockedReason: null,
       },
     });
+  }
+
+  async updateProfile(input: {
+    organizationId: string;
+    profileId: string;
+    displayName?: string;
+    url?: string;
+  }) {
+    const profile = await this.getProfile(input);
+    if (!profile) {
+      throw new NotFoundException('Browser auth profile not found');
+    }
+
+    const data: Prisma.BrowserAuthProfileUpdateInput = {};
+
+    const name = input.displayName?.trim();
+    if (name) data.displayName = name;
+
+    if (input.url !== undefined) {
+      data.lastAuthCheckUrl = input.url;
+      // A different hostname means the saved session no longer applies — the
+      // connection must be re-established. (Hostname is the connection identity,
+      // so we don't reassign it here.)
+      try {
+        if (normalizeHostnameFromUrl(input.url) !== profile.hostname) {
+          data.status = 'needs_reauth';
+          data.blockedReason = 'Sign-in URL changed — reconnect required.';
+        }
+      } catch {
+        // Ignore an unparseable URL — leave status untouched.
+      }
+    }
+
+    return db.browserAuthProfile.update({
+      where: { id: profile.id },
+      data,
+    });
+  }
+
+  async deleteProfile(input: { organizationId: string; profileId: string }) {
+    const profile = await this.getProfile(input);
+    if (!profile) {
+      throw new NotFoundException('Browser auth profile not found');
+    }
+    await db.browserAuthProfile.delete({ where: { id: profile.id } });
+    return { success: true, profile };
   }
 
   async markNeedsReauth(input: {
@@ -290,6 +368,57 @@ export class BrowserAuthProfileService {
         'Verification URL must match the browser auth profile hostname.',
       );
     }
+  }
+
+  /**
+   * Tenant guard: a Browserbase context belongs to an org only if a profile (or
+   * the legacy org-level context row) for that org points at it. Blocks acting on
+   * another org's context via a raw session/context endpoint (cross-tenant IDOR).
+   */
+  async assertContextOwnedByOrg(input: {
+    organizationId: string;
+    contextId: string;
+  }): Promise<void> {
+    const [profile, orgContext] = await Promise.all([
+      db.browserAuthProfile.findFirst({
+        where: {
+          organizationId: input.organizationId,
+          contextId: input.contextId,
+        },
+        select: { id: true },
+      }),
+      db.browserbaseContext.findFirst({
+        where: {
+          organizationId: input.organizationId,
+          contextId: input.contextId,
+        },
+        select: { id: true },
+      }),
+    ]);
+    if (!profile && !orgContext) {
+      throw new ForbiddenException(
+        'This browser context does not belong to your organization.',
+      );
+    }
+  }
+
+  /**
+   * Tenant guard for a live session: resolve the session's context and confirm
+   * that context belongs to the caller's org. Returns the resolved contextId.
+   */
+  async assertSessionOwnedByOrg(input: {
+    organizationId: string;
+    sessionId: string;
+  }): Promise<string> {
+    const contextId = await this.sessions.getSessionContextId(input.sessionId);
+    if (!contextId) {
+      throw new ForbiddenException('Could not verify the browser session.');
+    }
+    await this.assertContextOwnedByOrg({
+      organizationId: input.organizationId,
+      contextId,
+    });
+    return contextId;
   }
 
   private async assertSessionMatchesProfile(input: {

@@ -1,4 +1,5 @@
 import { Logger } from '@nestjs/common';
+import sharp from 'sharp';
 import { z } from 'zod';
 import { renderOverlay } from './screenshot-overlay';
 import type { BrowserbaseSessionService } from './browserbase-session.service';
@@ -19,7 +20,111 @@ import { reloginWithStoredCredentials } from './browser-credential-login';
 
 type Stagehand = import('@browserbasehq/stagehand').Stagehand;
 
-const STAGEHAND_CUA_MODEL = 'anthropic/claude-sonnet-4-6';
+// Screenshot-based navigation model. GPT-5.6 Terra is the balanced tier of
+// OpenAI's newest family — strong browser-automation accuracy at roughly half
+// Sol's cost — a good fit for a multi-step agent. Configurable via env for A/B
+// tests (e.g. openai/gpt-5.6-sol for max accuracy), with no per-site tuning.
+const DEFAULT_CUA_MODEL = 'openai/gpt-5.6-terra';
+// Claude fallback used when the primary model is unavailable (missing OpenAI key,
+// preview access, rate limits, upstream errors). Must be a computer-use-capable
+// model Stagehand supports — claude-sonnet-5 is NOT one; the proven Claude CUA
+// options are claude-opus-4-8 / claude-sonnet-4-6 / claude-haiku-4-5.
+const FALLBACK_CUA_MODEL = 'anthropic/claude-sonnet-4-6';
+// How many screenshot→action steps the agent may take. Generous so it can
+// recover from a wrong turn on a complex site rather than giving up.
+const CUA_MAX_STEPS = 30;
+
+// A `type` (not `interface`) so it stays assignable to Stagehand's model config,
+// which intersects with Record<string, unknown>.
+type CuaModel = {
+  modelName: string;
+  apiKey?: string;
+};
+
+function resolveCuaModel(logger: Logger): CuaModel {
+  const requested = process.env.BROWSERBASE_CUA_MODEL || DEFAULT_CUA_MODEL;
+  if (requested.startsWith('openai/') && !process.env.OPENAI_API_KEY) {
+    logger.warn(
+      `OPENAI_API_KEY not set; falling back from ${requested} to ${FALLBACK_CUA_MODEL} for navigation.`,
+    );
+    return {
+      modelName: FALLBACK_CUA_MODEL,
+      apiKey: process.env.ANTHROPIC_API_KEY,
+    };
+  }
+  return {
+    modelName: requested,
+    apiKey: requested.startsWith('openai/')
+      ? process.env.OPENAI_API_KEY
+      : process.env.ANTHROPIC_API_KEY,
+  };
+}
+
+function claudeFallbackModel(): CuaModel {
+  return { modelName: FALLBACK_CUA_MODEL, apiKey: process.env.ANTHROPIC_API_KEY };
+}
+
+async function runCuaNavigation({
+  stagehand,
+  instruction,
+  model,
+}: {
+  stagehand: Stagehand;
+  instruction: string;
+  model: CuaModel;
+}): Promise<void> {
+  await stagehand
+    .agent({ mode: 'cua', model })
+    .execute({ instruction, maxSteps: CUA_MAX_STEPS });
+}
+
+/**
+ * The agent's `.execute()` is a single opaque call, but it opens/switches tabs
+ * mid-run (e.g. a sign-in or console tab). Poll the newest tab's URL and, when it
+ * changes, push its live-view URL so a watched run follows the active tab instead
+ * of showing the stale initial one. Best-effort: never lets live-view following
+ * disturb the run. Returns a stop function.
+ */
+function startLiveViewFollower({
+  stagehand,
+  sessions,
+  sessionId,
+  onLiveView,
+}: {
+  stagehand: Stagehand;
+  sessions: BrowserbaseSessionService;
+  sessionId: string;
+  onLiveView: (url: string) => void;
+}): () => void {
+  let lastUrl = '';
+  let stopped = false;
+  let inFlight = false;
+
+  const tick = async () => {
+    if (stopped || inFlight) return;
+    inFlight = true;
+    try {
+      const pages = stagehand.context?.pages?.() ?? [];
+      const url = pages.at(-1)?.url?.() ?? '';
+      if (url && url !== lastUrl) {
+        lastUrl = url;
+        const liveUrl = await sessions.getActivePageLiveViewUrl(sessionId, url);
+        if (liveUrl && !stopped) onLiveView(liveUrl);
+      }
+    } catch {
+      // Best-effort — following the tab must never affect the run.
+    } finally {
+      inFlight = false;
+    }
+  };
+
+  const interval = setInterval(() => void tick(), 2500);
+  return () => {
+    stopped = true;
+    clearInterval(interval);
+  };
+}
+
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export interface BrowserEvidenceLog {
@@ -31,6 +136,8 @@ export interface BrowserEvidenceLog {
 export interface BrowserEvidenceExecutionResult {
   success: boolean;
   screenshot?: string;
+  /** A close-up: the agent's final viewport (where it left the evidence). */
+  focusScreenshot?: string;
   finalUrl?: string;
   evaluationStatus?: 'pass' | 'fail';
   evaluationReason?: string;
@@ -47,15 +154,27 @@ export async function executeBrowserEvidence({
   sessions,
   logger,
   vault,
+  onLog,
+  onLiveView,
 }: {
   input: BrowserEvidenceSessionInput;
   sessions: BrowserbaseSessionService;
   logger: Logger;
   vault: BrowserCredentialVaultAdapter;
+  /** Called as each stage begins, so a live test run can stream its progress. */
+  onLog?: (log: BrowserEvidenceLog) => void;
+  /** Called with the active tab's live-view URL so a watched run follows tabs. */
+  onLiveView?: (url: string) => void;
 }): Promise<BrowserEvidenceExecutionResult> {
   const logs: BrowserEvidenceLog[] = [];
   const log = (stage: string, message: string) => {
-    logs.push({ timestamp: new Date().toISOString(), stage, message });
+    const entry: BrowserEvidenceLog = {
+      timestamp: new Date().toISOString(),
+      stage,
+      message,
+    };
+    logs.push(entry);
+    onLog?.(entry);
   };
   let stagehand: Stagehand | null = null;
   let currentStage: BrowserAutomationFailureStage = 'session';
@@ -77,13 +196,22 @@ export async function executeBrowserEvidence({
     });
     await delay(1000);
 
+    // Point a watched run's live view at the current tab up front, so it's
+    // correct before the agent starts opening/switching tabs.
+    if (onLiveView) {
+      const initialLiveView = await sessions
+        .getActivePageLiveViewUrl(input.sessionId, page.url())
+        .catch(() => null);
+      if (initialLiveView) onLiveView(initialLiveView);
+    }
+
     currentStage = 'auth';
     const authCheck = await checkAuth(stagehand);
 
     if (!authCheck.isLoggedIn) {
       log(
         'auth',
-        'Session expired; attempting sign-in with stored credentials.',
+        'Not signed in on this page — signing in with stored credentials.',
       );
       const relogin = await reloginWithStoredCredentials({
         stagehand: activeStagehand,
@@ -117,16 +245,46 @@ export async function executeBrowserEvidence({
 
     currentStage = 'action';
     log('action', 'Running navigation instruction.');
-    const instruction = `${input.instruction}. After completing all navigation steps, stop and wait.`;
-    await stagehand
-      .agent({
-        cua: true,
-        model: {
-          modelName: STAGEHAND_CUA_MODEL,
-          apiKey: process.env.ANTHROPIC_API_KEY,
-        },
-      })
-      .execute({ instruction, maxSteps: 20 });
+    // Find its own way (no exact directions needed), self-correct a wrong turn,
+    // and read what's already on screen instead of over-navigating.
+    const instruction = `${input.instruction}. Work out the path yourself — you don't need exact directions. If the instruction names a specific item or page, open it so the final screenshot clearly shows just that item, not a long list of many. Before finishing, verify the page matches what was asked and correct it if you opened the wrong thing. Don't take unnecessary detours. When the right thing is clearly shown, stop and wait.`;
+    const primaryModel = resolveCuaModel(logger);
+    // Follow the agent across tabs while it works (test/watched runs only).
+    const stopFollowing = onLiveView
+      ? startLiveViewFollower({
+          stagehand: activeStagehand,
+          sessions,
+          sessionId: input.sessionId,
+          onLiveView,
+        })
+      : () => {};
+    try {
+      try {
+        await runCuaNavigation({
+          stagehand: activeStagehand,
+          instruction,
+          model: primaryModel,
+        });
+      } catch (navError) {
+        // The navigation model can be unavailable at runtime (preview access, rate
+        // limits, upstream errors). Fall back to Claude once — unless we were
+        // already on it — rather than failing the whole run.
+        if (primaryModel.modelName === FALLBACK_CUA_MODEL) throw navError;
+        logger.warn(
+          `Navigation with ${primaryModel.modelName} failed; retrying with ${FALLBACK_CUA_MODEL}. ${
+            navError instanceof Error ? navError.message : String(navError)
+          }`,
+        );
+        log('action', 'Primary navigation model unavailable — retrying with a backup model.');
+        await runCuaNavigation({
+          stagehand: activeStagehand,
+          instruction,
+          model: claudeFallbackModel(),
+        });
+      }
+    } finally {
+      stopFollowing();
+    }
 
     await delay(2000);
     page = await resolveEvidencePage({
@@ -138,7 +296,18 @@ export async function executeBrowserEvidence({
 
     currentStage = 'screenshot';
     log('screenshot', 'Capturing screenshot.');
+    // Full page, not the viewport: a short page would otherwise leave a tall
+    // band of empty viewport below the content (a wide gap above our overlay),
+    // and the full page is more complete evidence.
     const rawScreenshot = await page.screenshot({
+      type: 'jpeg',
+      quality: 80,
+      fullPage: true,
+    });
+    // The current viewport — the agent stops with the evidence on screen, so this
+    // is a naturally focused close-up (one screen, no scroll noise) to sit
+    // alongside the full-page shot as evidence.
+    const rawFocus = await page.screenshot({
       type: 'jpeg',
       quality: 80,
       fullPage: false,
@@ -151,11 +320,33 @@ export async function executeBrowserEvidence({
       instruction: input.instruction,
       finalUrl,
     });
+    // Only keep the close-up when it actually differs — i.e. the page is taller
+    // than one screen. If the page fits in the viewport, the two shots are the
+    // same, so we'd just show a duplicate.
+    let focusScreenshot: string | undefined;
+    try {
+      const [fullMeta, focusMeta] = await Promise.all([
+        sharp(rawScreenshot).metadata(),
+        sharp(rawFocus).metadata(),
+      ]);
+      if ((fullMeta.height ?? 0) > (focusMeta.height ?? 0) * 1.15) {
+        focusScreenshot = await renderScreenshot({
+          logger,
+          logs,
+          rawScreenshot: rawFocus,
+          instruction: input.instruction,
+          finalUrl,
+        });
+      }
+    } catch {
+      // If we can't measure, skip the close-up rather than risk a duplicate.
+    }
     currentStage = 'evaluation';
     await bringEvidencePageToFront(page);
     const evaluation = await evaluateIfNeeded({
       stagehand,
       criteria: input.evaluationCriteria,
+      instruction: input.instruction,
       logs,
     });
 
@@ -163,6 +354,7 @@ export async function executeBrowserEvidence({
       return {
         success: false,
         screenshot,
+        focusScreenshot,
         finalUrl,
         evaluationStatus: evaluation.evaluationStatus,
         evaluationReason: evaluation.evaluationReason,
@@ -176,6 +368,7 @@ export async function executeBrowserEvidence({
     return {
       success: true,
       screenshot,
+      focusScreenshot,
       finalUrl,
       evaluationStatus: evaluation.evaluationStatus,
       evaluationReason: evaluation.evaluationReason,
@@ -232,8 +425,12 @@ async function checkAuth(
   stagehand: Stagehand,
 ): Promise<{ isLoggedIn: boolean }> {
   const loginSchema = z.object({ isLoggedIn: z.boolean() });
+  // Detect the sign-in state by the presence of a login prompt rather than by
+  // an avatar/profile menu: many apps have no obvious "logged-in" marker, so
+  // requiring one produced false negatives (and needless re-logins). Treat the
+  // page as logged in unless a sign-in prompt is clearly the ask.
   return stagehand.extract(
-    'Check if the user is logged in to this website. Look for a user avatar, profile menu, account dropdown, or login/sign-in buttons. Return true if logged in, false if you see login buttons or a login form.',
+    'Is this page asking the user to sign in? Look for a visible login prompt: a password field, username/email + password fields, an SSO/"Continue with" screen, or a page whose main call to action is Sign in / Log in. Return isLoggedIn=false ONLY if such a sign-in prompt is clearly present. For any ordinary application or content page with no sign-in prompt, return isLoggedIn=true.',
     loginSchema,
   );
 }

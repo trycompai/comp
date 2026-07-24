@@ -1,49 +1,49 @@
-import { render, screen } from '@testing-library/react';
-import type { HTMLAttributes } from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  setMockPermissions,
-  mockHasPermission,
   ADMIN_PERMISSIONS,
   AUDITOR_PERMISSIONS,
+  mockHasPermission,
+  setMockPermissions,
 } from '@/test-utils/mocks/permissions';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Mock usePermissions
 vi.mock('@/hooks/use-permissions', () => ({
-  usePermissions: () => ({
-    permissions: {},
-    hasPermission: mockHasPermission,
-  }),
+  usePermissions: () => ({ permissions: {}, hasPermission: mockHasPermission }),
 }));
 
-vi.mock('@trycompai/design-system', () => ({
-  Badge: ({ children, ...props }: HTMLAttributes<HTMLSpanElement>) => (
-    <span {...props}>{children}</span>
-  ),
+vi.mock('@trycompai/design-system/icons', () => ({
+  Add: () => <span data-testid="icon-add" />,
+  Renew: () => <span data-testid="icon-renew" />,
+  Calendar: () => <span data-testid="icon-calendar" />,
+  ChevronDown: () => <span data-testid="icon-chevron" />,
+  OverflowMenuVertical: () => <span data-testid="icon-overflow" />,
+}));
+vi.mock('@/components/VendorLogo', () => ({
+  VendorLogo: () => <span data-testid="vendor-logo" />,
 }));
 
-// Mock date-fns
-vi.mock('date-fns', () => ({
-  formatDistanceToNow: () => 'in 5 hours',
-}));
-
-// Mock AutomationItem
 vi.mock('./AutomationItem', () => ({
   AutomationItem: ({
     automation,
     readOnly,
+    isExpanded,
   }: {
     automation: { id: string; name: string };
     readOnly?: boolean;
+    isExpanded?: boolean;
   }) => (
-    <div data-testid={`automation-item-${automation.id}`} data-readonly={String(readOnly)}>
+    <div
+      data-testid={`automation-item-${automation.id}`}
+      data-readonly={String(readOnly)}
+      data-expanded={String(isExpanded)}
+    >
       {automation.name}
     </div>
   ),
 }));
 
+import type { BrowserAuthProfile, BrowserAutomation } from '../../hooks/types';
 import { BrowserAutomationsList } from './BrowserAutomationsList';
-import type { BrowserAutomation } from '../../hooks/types';
 
 const mockAutomations: BrowserAutomation[] = [
   {
@@ -56,95 +56,102 @@ const mockAutomations: BrowserAutomation[] = [
   },
 ];
 
+function profile(status: BrowserAuthProfile['status']): BrowserAuthProfile {
+  return {
+    id: 'bap_1',
+    hostname: 'example.com',
+    loginIdentity: '',
+    displayName: 'example.com',
+    contextId: 'ctx_1',
+    status,
+  };
+}
+
 const defaultProps = {
   automations: mockAutomations,
-  hasContext: true,
+  profiles: [] as BrowserAuthProfile[],
   runningAutomationId: null,
   onRun: vi.fn(),
-  onCreateClick: vi.fn(),
+  onReconnect: vi.fn(),
+  onCreate: vi.fn(),
+  onConnectAnother: vi.fn(),
   onEditClick: vi.fn(),
   onDelete: vi.fn(),
   onToggleEnabled: vi.fn(),
+  onSetTaskSchedule: vi.fn(),
 };
 
-describe('BrowserAutomationsList permission gating', () => {
+describe('BrowserAutomationsList', () => {
   beforeEach(() => {
     setMockPermissions({});
     vi.clearAllMocks();
   });
 
-  it('renders the automations list heading regardless of permissions', () => {
-    setMockPermissions({});
-
+  it('renders the heading', () => {
     render(<BrowserAutomationsList {...defaultProps} />);
-
-    expect(screen.getByText('Browser Automations')).toBeInTheDocument();
+    expect(screen.getByText('Browser evidence')).toBeInTheDocument();
   });
 
-  it('shows "Create Another" button for admin with integration:create', () => {
+  it('shows create actions for admin with integration:create', () => {
     setMockPermissions(ADMIN_PERMISSIONS);
-
     render(<BrowserAutomationsList {...defaultProps} />);
-
-    expect(screen.getByText('Create Another')).toBeInTheDocument();
+    expect(screen.getByText('New evidence')).toBeInTheDocument();
+    expect(screen.getByText('Connect another vendor')).toBeInTheDocument();
   });
 
-  it('hides "Create Another" button for auditor without integration:create', () => {
+  it('hides create actions for an auditor without integration:create', () => {
     setMockPermissions(AUDITOR_PERMISSIONS);
-
     render(<BrowserAutomationsList {...defaultProps} />);
-
-    expect(screen.queryByText('Create Another')).not.toBeInTheDocument();
+    expect(screen.queryByText('New evidence')).not.toBeInTheDocument();
+    expect(screen.queryByText('Connect another vendor')).not.toBeInTheDocument();
   });
 
-  it('hides "Create Another" button when user has no permissions', () => {
-    setMockPermissions({});
-
-    render(<BrowserAutomationsList {...defaultProps} />);
-
-    expect(screen.queryByText('Create Another')).not.toBeInTheDocument();
-  });
-
-  it('hides "Create Another" when onCreateClick is not provided (manual task)', () => {
+  it('hides each action when its callback is not provided (manual task)', () => {
     setMockPermissions(ADMIN_PERMISSIONS);
-
-    render(<BrowserAutomationsList {...defaultProps} onCreateClick={undefined} />);
-
-    expect(screen.queryByText('Create Another')).not.toBeInTheDocument();
+    render(
+      <BrowserAutomationsList {...defaultProps} onCreate={undefined} onConnectAnother={undefined} />,
+    );
+    expect(screen.queryByText('New evidence')).not.toBeInTheDocument();
+    expect(screen.queryByText('Connect another vendor')).not.toBeInTheDocument();
   });
 
-  it('passes readOnly=false to AutomationItem for admin with integration:update', () => {
+  it('passes readOnly to AutomationItem based on integration:update', () => {
     setMockPermissions(ADMIN_PERMISSIONS);
+    const { rerender } = render(<BrowserAutomationsList {...defaultProps} />);
+    expect(screen.getByTestId('automation-item-auto_1')).toHaveAttribute('data-readonly', 'false');
 
-    render(<BrowserAutomationsList {...defaultProps} />);
-
-    const item = screen.getByTestId('automation-item-auto_1');
-    expect(item).toHaveAttribute('data-readonly', 'false');
-  });
-
-  it('passes readOnly=true to AutomationItem for auditor without integration:update', () => {
     setMockPermissions(AUDITOR_PERMISSIONS);
-
-    render(<BrowserAutomationsList {...defaultProps} />);
-
-    const item = screen.getByTestId('automation-item-auto_1');
-    expect(item).toHaveAttribute('data-readonly', 'true');
+    rerender(<BrowserAutomationsList {...defaultProps} />);
+    expect(screen.getByTestId('automation-item-auto_1')).toHaveAttribute('data-readonly', 'true');
   });
 
-  it('passes readOnly=true to AutomationItem when user has no permissions', () => {
-    setMockPermissions({});
+  it('auto-expands the row of a just-finished manual run', () => {
+    setMockPermissions(ADMIN_PERMISSIONS);
+    const { rerender } = render(<BrowserAutomationsList {...defaultProps} />);
+    expect(screen.getByTestId('automation-item-auto_1')).toHaveAttribute(
+      'data-expanded',
+      'false',
+    );
 
-    render(<BrowserAutomationsList {...defaultProps} />);
-
-    const item = screen.getByTestId('automation-item-auto_1');
-    expect(item).toHaveAttribute('data-readonly', 'true');
+    // The hook hands down a fresh { id } when a run finishes → row expands.
+    rerender(<BrowserAutomationsList {...defaultProps} autoExpand={{ id: 'auto_1' }} />);
+    expect(screen.getByTestId('automation-item-auto_1')).toHaveAttribute(
+      'data-expanded',
+      'true',
+    );
   });
 
-  it('shows "Connected" badge when hasContext is true regardless of permissions', () => {
-    setMockPermissions({});
-
-    render(<BrowserAutomationsList {...defaultProps} />);
-
-    expect(screen.getByText('Connected')).toBeInTheDocument();
+  it('flags a row whose connection needs reconnect and calls onReconnect', () => {
+    setMockPermissions(ADMIN_PERMISSIONS);
+    const onReconnect = vi.fn();
+    render(
+      <BrowserAutomationsList
+        {...defaultProps}
+        profiles={[profile('needs_reauth')]}
+        onReconnect={onReconnect}
+      />,
+    );
+    fireEvent.click(screen.getByText('Reconnect'));
+    expect(onReconnect).toHaveBeenCalledWith('https://example.com');
   });
 });

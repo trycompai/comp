@@ -35,7 +35,7 @@ describe('performCredentialLogin', () => {
   beforeEach(() => jest.useFakeTimers());
   afterEach(() => jest.useRealTimers());
 
-  it('passes secrets through act variables and never in the prompt text', async () => {
+  it('fills each field in its own action with secrets passed via variables', async () => {
     const stagehand = makeStagehand();
     const password = 'sup3r-s3cret-passphrase';
 
@@ -47,21 +47,24 @@ describe('performCredentialLogin', () => {
     await jest.runAllTimersAsync();
     await promise;
 
-    expect(stagehand.act).toHaveBeenNthCalledWith(
-      1,
-      expect.stringContaining('%username%'),
-      { variables: { username: 'alice', password } },
-    );
-    expect(stagehand.act).toHaveBeenNthCalledWith(
-      2,
-      expect.stringContaining('%code%'),
-      { variables: { code: '424242' } },
-    );
+    // act() does one thing per call, so username, password and the code are
+    // each their own step (a single combined instruction would only fill one).
+    const calls = stagehand.act.mock.calls as [string, unknown?][];
+    const findCall = (needle: string) =>
+      calls.find(([instruction]) => instruction.includes(needle));
 
-    // The actual secret values must not appear in the instruction sent to the LLM.
-    const credentialInstruction = stagehand.act.mock.calls[0][0] as string;
-    expect(credentialInstruction).not.toContain(password);
-    expect(credentialInstruction).not.toContain('alice');
+    expect(findCall('%username%')?.[1]).toEqual({
+      variables: { username: 'alice' },
+    });
+    expect(findCall('%password%')?.[1]).toEqual({ variables: { password } });
+    expect(findCall('%code%')?.[1]).toEqual({ variables: { code: '424242' } });
+
+    // No raw secret value may appear in any instruction sent to the LLM.
+    for (const [instruction] of calls) {
+      expect(instruction).not.toContain(password);
+      expect(instruction).not.toContain('alice');
+      expect(instruction).not.toContain('424242');
+    }
   });
 });
 
@@ -106,7 +109,7 @@ describe('reloginWithStoredCredentials', () => {
     expect(stagehand.act).not.toHaveBeenCalled();
   });
 
-  it('signs in and returns to the target URL when verification passes', async () => {
+  it('signs in and verifies on the landing page without forcing a return to the URL', async () => {
     const stagehand = makeStagehand();
     const page = makePage();
     const vault: BrowserCredentialVaultAdapter = {
@@ -123,11 +126,10 @@ describe('reloginWithStoredCredentials', () => {
     });
 
     expect(result.isLoggedIn).toBe(true);
-    expect(stagehand.act).toHaveBeenCalledTimes(1);
-    expect(page.goto).toHaveBeenCalledWith(
-      baseInput.targetUrl,
-      expect.objectContaining({ waitUntil: 'domcontentloaded' }),
-    );
+    expect(stagehand.act).toHaveBeenCalled();
+    // We stay on the post-login landing page and verify there — navigating back
+    // to the entered URL can return to a login page and read as a failed sign-in.
+    expect(page.goto).not.toHaveBeenCalled();
   });
 
   it('retries once with a freshly resolved TOTP code', async () => {
@@ -159,9 +161,8 @@ describe('reloginWithStoredCredentials', () => {
     });
 
     expect(result.isLoggedIn).toBe(true);
+    // Resolving twice proves the second attempt used a freshly generated code.
     expect(resolveCredentialReference).toHaveBeenCalledTimes(2);
-    // Two login attempts: each enters credentials + a TOTP code (2 acts each).
-    expect(stagehand.act).toHaveBeenCalledTimes(4);
   });
 
   it('gives up (user action required) when sign-in never authenticates', async () => {
