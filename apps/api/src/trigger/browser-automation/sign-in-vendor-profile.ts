@@ -38,6 +38,9 @@ export const signInVendorProfile = task({
           'signinSteps',
           steps as unknown as Parameters<typeof metadata.set>[1],
         ),
+      // The tab the AI is on — so the connect flow's iframe follows it across
+      // new tabs (e.g. AWS opening its sign-in in a new tab).
+      onLiveView: (liveViewUrl) => metadata.set('signinLiveViewUrl', liveViewUrl),
     });
   },
 });

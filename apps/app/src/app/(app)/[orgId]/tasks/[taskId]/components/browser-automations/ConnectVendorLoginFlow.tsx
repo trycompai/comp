@@ -179,6 +179,21 @@ export function ConnectVendorLoginFlow({
     if (steps) setSigninSteps(steps);
   }, [signinRunState]);
 
+  // Follow the AI's tab: when the run reports the live-view moved to another tab
+  // (e.g. AWS opened its sign-in in a new one), re-point the iframe there so the
+  // user watches — and can complete a 2FA take-over on — the right page.
+  const streamedSigninLiveView = signinRunState?.metadata?.signinLiveViewUrl as
+    | string
+    | undefined;
+  useEffect(() => {
+    if (!streamedSigninLiveView) return;
+    setSigninLiveView((current) =>
+      current && current.liveViewUrl !== streamedSigninLiveView
+        ? { ...current, liveViewUrl: streamedSigninLiveView }
+        : current,
+    );
+  }, [streamedSigninLiveView, setSigninLiveView]);
+
   // Persist enough to resume on refresh/navigation without ever storing creds or
   // a live session: keep the URL from the moment it's entered, and the analysis
   // once we have it. A live sign-in can't survive a reload, so it falls back to

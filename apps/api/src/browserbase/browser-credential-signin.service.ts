@@ -75,6 +75,27 @@ export class BrowserCredentialSigninService {
     ),
   ) {}
 
+  /**
+   * Emit the live-view URL of the tab the AI is currently on, so the connect
+   * flow's iframe follows it across new tabs. Best-effort — a failure just
+   * leaves the live view on its current tab.
+   */
+  private async streamActiveLiveView(
+    stagehand: Stagehand,
+    sessionId: string,
+    onLiveView?: (url: string) => void,
+  ): Promise<void> {
+    if (!onLiveView) return;
+    try {
+      const pages = stagehand.context?.pages?.() ?? [];
+      const activeUrl = pages[pages.length - 1]?.url();
+      const url = await this.sessions.getActivePageLiveViewUrl(sessionId, activeUrl);
+      if (url) onLiveView(url);
+    } catch {
+      // Best-effort — keep the current live view.
+    }
+  }
+
   async signInWithStoredCredentials(input: {
     organizationId: string;
     profileId: string;
@@ -87,6 +108,9 @@ export class BrowserCredentialSigninService {
     usernameLabel?: string;
     /** Live activity timeline, surfaced to the connect flow's activity panel. */
     onSteps?: (steps: SignInStep[]) => void;
+    /** Follow the AI's tab: emit the live-view URL of the page it's actually on
+     *  (a vendor may open sign-in in a new tab) so the UI iframe can follow it. */
+    onLiveView?: (url: string) => void;
   }): Promise<AutoSignInResult> {
     const mode = input.mode ?? 'password';
     const steps: SignInStep[] = [];
@@ -141,6 +165,10 @@ export class BrowserCredentialSigninService {
       // homepage or dashboard rather than the login page.
       step('Finding the sign-in form');
       await navigateToSignIn(activeStagehand);
+      // The sign-in may have opened in a new tab — point the live view at
+      // wherever the AI actually is, so the user watches (and can complete a
+      // 2FA take-over on) the right page.
+      await this.streamActiveLiveView(activeStagehand, input.sessionId, input.onLiveView);
 
       // SSO: we can't hold the customer's identity-provider credentials, so the
       // AI only clicks through to the provider, then hands the live browser to
@@ -156,6 +184,8 @@ export class BrowserCredentialSigninService {
           // the live browser during take-over.
         }
         await delay(2500);
+        // The identity provider often opens in a new tab — follow it.
+        await this.streamActiveLiveView(activeStagehand, input.sessionId, input.onLiveView);
         step('Finish signing in with your provider');
         finish('warn');
         return { isLoggedIn: false, failure: 'sso_handoff' };

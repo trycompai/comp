@@ -36,6 +36,45 @@ const BROWSERBASE_DEFAULT_HEADERS = { 'accept-encoding': 'identity' };
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/** Hostname of a URL, or null if it can't be parsed (used to match live tabs). */
+function hostnameOrNull(url: string): string | null {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return null;
+  }
+}
+
+/** A live-view page as returned by Browserbase `sessions.debug()`. */
+interface LiveViewPage {
+  url: string;
+  debuggerFullscreenUrl: string;
+}
+
+/**
+ * Pick the live-view URL to show: the tab matching `matchUrl` (the page the AI
+ * is on) by exact URL, else by hostname, else the newest tab, else the
+ * session-level view. Pure so the tab-selection can be unit-tested.
+ */
+export function selectLiveViewUrl(
+  debug: { debuggerFullscreenUrl?: string; pages?: LiveViewPage[] },
+  matchUrl?: string,
+): string | null {
+  const pages = debug.pages ?? [];
+  if (pages.length === 0) return debug.debuggerFullscreenUrl ?? null;
+
+  if (matchUrl) {
+    const exact = pages.find((page) => page.url === matchUrl);
+    if (exact) return exact.debuggerFullscreenUrl;
+    const host = hostnameOrNull(matchUrl);
+    const byHost =
+      host !== null ? pages.find((page) => hostnameOrNull(page.url) === host) : undefined;
+    if (byHost) return byHost.debuggerFullscreenUrl;
+  }
+  // Newest tab is usually the just-opened sign-in.
+  return pages[pages.length - 1]?.debuggerFullscreenUrl ?? debug.debuggerFullscreenUrl ?? null;
+}
+
 @Injectable()
 export class BrowserbaseSessionService {
   private readonly logger = new Logger(BrowserbaseSessionService.name);
@@ -111,6 +150,23 @@ export class BrowserbaseSessionService {
       }
       throw error;
     }
+  }
+
+  /**
+   * Live-view URL for a specific tab, so the UI can follow the AI when a vendor
+   * opens its sign-in in a new tab (e.g. AWS from its homepage). Prefers the tab
+   * matching `matchUrl` (the page the AI is on), falls back to the newest tab,
+   * then the session-level view. Returns null if the session has no pages.
+   */
+  async getActivePageLiveViewUrl(
+    sessionId: string,
+    matchUrl?: string,
+  ): Promise<string | null> {
+    const debug = await this.withBrowserbaseRetry({
+      operationName: 'session live view lookup',
+      operation: () => this.getBrowserbase().sessions.debug(sessionId),
+    });
+    return selectLiveViewUrl(debug, matchUrl);
   }
 
   async closeSession(sessionId: string): Promise<void> {
