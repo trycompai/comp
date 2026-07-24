@@ -74,7 +74,7 @@ async function runCuaNavigation({
   model: CuaModel;
 }): Promise<void> {
   await stagehand
-    .agent({ cua: true, model })
+    .agent({ mode: 'cua', model })
     .execute({ instruction, maxSteps: CUA_MAX_STEPS });
 }
 
