@@ -22,6 +22,16 @@ export class CreateSessionDto {
   contextId: string;
 }
 
+export class SetAuthProfileTotpDto {
+  @ApiProperty({
+    description:
+      "The authenticator setup key (TOTP seed) shown once during the vendor's authenticator-app setup — not the rotating 6-digit code.",
+  })
+  @IsString()
+  @IsNotEmpty()
+  totpSeed: string;
+}
+
 export class NavigateToUrlDto {
   @ApiProperty({ description: 'Browserbase session ID' })
   @IsString()

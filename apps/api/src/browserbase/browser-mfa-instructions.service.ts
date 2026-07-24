@@ -57,6 +57,8 @@ export interface MfaInstructions {
   confident: boolean;
   /** Whether the steps were grounded in the vendor's current help docs. */
   grounded: boolean;
+  /** ISO timestamp the steps were produced — powers the "checked on" trust line. */
+  checkedAt: string;
   source: 'generated' | 'fallback';
 }
 
@@ -179,6 +181,7 @@ export class BrowserMfaInstructionsService {
       tips: UNIVERSAL_TIPS,
       confident: true,
       grounded,
+      checkedAt: new Date().toISOString(),
       source: 'generated',
     };
   }
@@ -190,6 +193,7 @@ export class BrowserMfaInstructionsService {
       tips: UNIVERSAL_TIPS,
       confident: false,
       grounded: false,
+      checkedAt: new Date().toISOString(),
       source: 'fallback',
     };
   }

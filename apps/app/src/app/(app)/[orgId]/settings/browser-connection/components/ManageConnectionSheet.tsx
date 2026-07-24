@@ -15,6 +15,7 @@ import {
 import { Close, Locked } from '@trycompai/design-system/icons';
 import { useEffect, useState } from 'react';
 import { MfaSetupHelp } from '../../../tasks/[taskId]/components/browser-automations/MfaSetupHelp';
+import { useTotpStatus } from '../../../tasks/[taskId]/hooks/useTotpStatus';
 import { methodOf, statusMeta, type Connection } from './connection-format';
 
 interface ManageConnectionSheetProps {
@@ -28,8 +29,10 @@ interface ManageConnectionSheetProps {
   onRename: (connection: Connection, name: string) => Promise<void> | void;
   onChangeLogin: (
     connection: Connection,
-    creds: { username: string; password: string; totpSeed?: string },
+    creds: { username: string; password: string },
   ) => Promise<void> | void;
+  onSetTotp: (connection: Connection, totpSeed: string) => Promise<void> | void;
+  onClearTotp: (connection: Connection) => Promise<void> | void;
   onRemove: (connection: Connection) => Promise<void> | void;
 }
 
@@ -60,30 +63,51 @@ export function ManageConnectionSheet({
   onReconnect,
   onRename,
   onChangeLogin,
+  onSetTotp,
+  onClearTotp,
   onRemove,
 }: ManageConnectionSheetProps) {
   const [name, setName] = useState('');
   const [showCredForm, setShowCredForm] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [use2fa, setUse2fa] = useState(false);
+  const [totpAdding, setTotpAdding] = useState(false);
   const [totpSeed, setTotpSeed] = useState('');
   const [confirmingRemove, setConfirmingRemove] = useState(false);
 
-  // Reset the form each time a different connection is opened.
+  const method = connection ? methodOf(connection) : 'sso';
+  // Read 2FA status live from the vault, only while the panel is open for a
+  // password login (SSO connections have no stored credentials to attach to).
+  const {
+    configured: totpConfigured,
+    isLoading: totpLoading,
+    mutate: mutateTotp,
+  } = useTotpStatus(connection?.id, open && method === 'password');
+
+  // Reset the forms each time a different connection is opened.
   useEffect(() => {
     setName(connection?.displayName ?? '');
     setShowCredForm(false);
     setUsername('');
     setPassword('');
-    setUse2fa(false);
+    setTotpAdding(false);
     setTotpSeed('');
     setConfirmingRemove(false);
   }, [connection]);
 
   if (!connection) return null;
 
-  const method = methodOf(connection);
+  const handleSaveTotp = async () => {
+    await onSetTotp(connection, totpSeed.trim());
+    await mutateTotp();
+    setTotpAdding(false);
+    setTotpSeed('');
+  };
+
+  const handleTurnOffTotp = async () => {
+    await onClearTotp(connection);
+    await mutateTotp();
+  };
   const meta = statusMeta(connection.status);
   const nameChanged = name.trim() && name.trim() !== connection.displayName;
   const secured = Boolean(connection.vaultProvider || connection.vaultExternalItemRef);
@@ -207,8 +231,7 @@ export function ManageConnectionSheet({
                             </Button>
                           </div>
                           <p className="text-[10.5px] leading-relaxed text-muted-foreground">
-                            Rotated the account, or want unattended 2FA? Re-enter the
-                            login and, optionally, an authenticator setup key here.
+                            Rotated the account? Store the new email and password here.
                           </p>
                         </>
                       ) : (
@@ -226,58 +249,111 @@ export function ManageConnectionSheet({
                             placeholder="New password"
                             autoComplete="new-password"
                           />
-
-                          {/* Optional: add unattended 2FA by storing the TOTP seed. */}
-                          <label className="flex cursor-pointer items-center gap-2 text-[12px] text-foreground">
-                            <input
-                              type="checkbox"
-                              checked={use2fa}
-                              onChange={(event) => setUse2fa(event.target.checked)}
-                              className="h-3.5 w-3.5 accent-primary"
-                            />
-                            This login uses an authenticator app (2FA)
-                          </label>
-
-                          {use2fa && (
-                            <div className="flex flex-col gap-2">
-                              <Input
-                                value={totpSeed}
-                                onChange={(event) => setTotpSeed(event.target.value)}
-                                placeholder="Authenticator setup key (e.g. JBSW Y3DP EHPK 3PXP)"
-                                autoComplete="off"
-                              />
-                              <p className="text-[10.5px] leading-relaxed text-muted-foreground">
-                                The long setup key shown once when you add the
-                                authenticator — not the rotating 6-digit code. Comp AI
-                                generates codes from it so scheduled runs don&apos;t need
-                                you.
-                              </p>
-                              <MfaSetupHelp hostname={connection.hostname} />
-                            </div>
-                          )}
-
                           <div className="flex gap-2">
                             <Button
-                              disabled={
-                                !username.trim() ||
-                                !password ||
-                                (use2fa && !totpSeed.trim()) ||
-                                busy
-                              }
+                              disabled={!username.trim() || !password || busy}
                               onClick={() =>
                                 onChangeLogin(connection, {
                                   username: username.trim(),
                                   password,
-                                  totpSeed:
-                                    use2fa && totpSeed.trim()
-                                      ? totpSeed.trim()
-                                      : undefined,
                                 })
                               }
                             >
                               Save login
                             </Button>
                             <Button variant="ghost" onClick={() => setShowCredForm(false)}>
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Automatic 2FA — password connections only; the setup key lets
+                      Comp AI generate codes so scheduled runs stay unattended. */}
+                  {method === 'password' && (
+                    <div className="flex flex-col gap-2 border-t border-border pt-3">
+                      <div className="flex items-start justify-between gap-2.5">
+                        <div className="min-w-0">
+                          <div className="text-[12px] text-foreground">Automatic 2FA</div>
+                          <div className="mt-px text-[10.5px] leading-relaxed text-muted-foreground">
+                            {totpConfigured
+                              ? 'On — codes are generated at each run.'
+                              : `Not set up — a run pauses if ${connection.hostname} asks for a code.`}
+                          </div>
+                        </div>
+                        {totpLoading ? (
+                          <span className="flex-none rounded-sm bg-muted px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                            …
+                          </span>
+                        ) : totpConfigured ? (
+                          <span
+                            className="flex-none rounded-sm px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em]"
+                            style={{
+                              background: 'color-mix(in oklab, var(--success) 12%, transparent)',
+                              color: 'var(--success)',
+                            }}
+                          >
+                            On
+                          </span>
+                        ) : (
+                          <span className="flex-none rounded-sm bg-muted px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                            Not set up
+                          </span>
+                        )}
+                      </div>
+
+                      {!totpAdding && !totpConfigured && !totpLoading && (
+                        <div>
+                          <Button variant="outline" onClick={() => setTotpAdding(true)}>
+                            Add authenticator key
+                          </Button>
+                        </div>
+                      )}
+
+                      {!totpAdding && totpConfigured && (
+                        <div className="flex items-center gap-3">
+                          <Button variant="outline" onClick={() => setTotpAdding(true)}>
+                            Replace key
+                          </Button>
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={handleTurnOffTotp}
+                            className="text-[11px] text-destructive hover:underline disabled:opacity-50"
+                          >
+                            Turn off
+                          </button>
+                        </div>
+                      )}
+
+                      {totpAdding && (
+                        <div className="flex flex-col gap-2 rounded-md border border-border p-3">
+                          <Input
+                            value={totpSeed}
+                            onChange={(event) => setTotpSeed(event.target.value)}
+                            placeholder="Authenticator setup key (e.g. JBSW Y3DP EHPK 3PXP)"
+                            autoComplete="off"
+                          />
+                          <p className="text-[10.5px] leading-relaxed text-muted-foreground">
+                            The long one-time setup key — not the rotating 6-digit code.
+                          </p>
+                          <MfaSetupHelp hostname={connection.hostname} />
+                          <div className="flex gap-2">
+                            <Button
+                              disabled={!totpSeed.trim() || busy}
+                              onClick={handleSaveTotp}
+                            >
+                              Save key
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              onClick={() => {
+                                setTotpAdding(false);
+                                setTotpSeed('');
+                              }}
+                            >
                               Cancel
                             </Button>
                           </div>

@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Stub the DS Sheet family + controls to simple pass-throughs (render when open).
 vi.mock('@trycompai/design-system', () => ({
@@ -25,6 +25,19 @@ vi.mock('@trycompai/design-system/icons', () => ({
 }));
 vi.mock('@/components/VendorLogo', () => ({
   VendorLogo: () => <span data-testid="vendor-logo" />,
+}));
+
+// Controllable 2FA status + a stubbed helper (its own data-fetching is tested elsewhere).
+const totp = vi.hoisted(() => ({ configured: false, isLoading: false, mutate: vi.fn() }));
+vi.mock('../../../tasks/[taskId]/hooks/useTotpStatus', () => ({
+  useTotpStatus: () => ({
+    configured: totp.configured,
+    isLoading: totp.isLoading,
+    mutate: totp.mutate,
+  }),
+}));
+vi.mock('../../../tasks/[taskId]/components/browser-automations/MfaSetupHelp', () => ({
+  MfaSetupHelp: () => <div data-testid="mfa-help" />,
 }));
 
 import type { Connection } from './connection-format';
@@ -53,10 +66,19 @@ const base = {
   onReconnect: vi.fn(),
   onRename: vi.fn(),
   onChangeLogin: vi.fn(),
+  onSetTotp: vi.fn(),
+  onClearTotp: vi.fn(),
   onRemove: vi.fn(),
 };
 
 describe('ManageConnectionSheet', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    totp.configured = false;
+    totp.isLoading = false;
+    totp.mutate = vi.fn().mockResolvedValue(undefined);
+  });
+
   it('renders a password connection with its credentials and manage actions', () => {
     render(<ManageConnectionSheet {...base} connection={connection()} />);
     expect(screen.getByText('Password')).toBeInTheDocument();
@@ -76,6 +98,8 @@ describe('ManageConnectionSheet', () => {
     expect(screen.getByText('SSO')).toBeInTheDocument();
     expect(screen.queryByText('Secured by 1Password')).not.toBeInTheDocument();
     expect(screen.queryByText('Change login')).not.toBeInTheDocument();
+    // No stored login → no Automatic 2FA row.
+    expect(screen.queryByText('Automatic 2FA')).not.toBeInTheDocument();
   });
 
   it('shows a view-only note and no actions when the user cannot manage', () => {
@@ -100,5 +124,29 @@ describe('ManageConnectionSheet', () => {
       />,
     );
     expect(screen.getByText('Verification required')).toBeInTheDocument();
+  });
+
+  it('shows Automatic 2FA as not set up and saves an added key', () => {
+    render(<ManageConnectionSheet {...base} connection={connection()} />);
+    expect(screen.getByText('Automatic 2FA')).toBeInTheDocument();
+    expect(screen.getByText('Not set up')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Add authenticator key'));
+    const input = screen.getByPlaceholderText(/authenticator setup key/i);
+    fireEvent.change(input, { target: { value: '  SEED VALUE  ' } });
+    fireEvent.click(screen.getByText('Save key'));
+
+    expect(base.onSetTotp).toHaveBeenCalledWith(expect.objectContaining({ id: 'bap_1' }), 'SEED VALUE');
+  });
+
+  it('offers Replace / Turn off when Automatic 2FA is on', () => {
+    totp.configured = true;
+    render(<ManageConnectionSheet {...base} connection={connection()} />);
+
+    expect(screen.getByText(/codes are generated at each run/i)).toBeInTheDocument();
+    expect(screen.getByText('Replace key')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Turn off'));
+    expect(base.onClearTotp).toHaveBeenCalledWith(expect.objectContaining({ id: 'bap_1' }));
   });
 });

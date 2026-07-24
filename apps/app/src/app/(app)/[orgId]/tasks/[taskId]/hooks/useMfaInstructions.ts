@@ -10,6 +10,8 @@ export interface MfaInstructions {
   confident: boolean;
   /** Whether the steps were grounded in the vendor's current help docs. */
   grounded: boolean;
+  /** ISO timestamp the steps were produced — powers the "checked on" trust line. */
+  checkedAt: string;
   source: 'generated' | 'fallback';
 }
 
@@ -22,7 +24,7 @@ export function useMfaInstructions(host: string | undefined, enabled: boolean) {
   const trimmed = host?.trim();
   const key = enabled && trimmed ? (['mfa-instructions', trimmed] as const) : null;
 
-  const { data, error, isLoading } = useSWR<MfaInstructions>(
+  const { data, error, isLoading, mutate } = useSWR<MfaInstructions>(
     key,
     async () => {
       const res = await apiClient.get<MfaInstructions>(
@@ -40,5 +42,5 @@ export function useMfaInstructions(host: string | undefined, enabled: boolean) {
     },
   );
 
-  return { instructions: data, isLoading, error };
+  return { instructions: data, isLoading, error, retry: () => mutate() };
 }

@@ -105,10 +105,7 @@ export function BrowserConnectionClient({
   );
 
   const handleChangeLogin = useCallback(
-    async (
-      connection: Connection,
-      creds: { username: string; password: string; totpSeed?: string },
-    ) => {
+    async (connection: Connection, creds: { username: string; password: string }) => {
       setBusy(true);
       try {
         await apiClient.post(`/v1/browserbase/profiles/${connection.id}/credentials`, creds);
@@ -123,6 +120,30 @@ export function BrowserConnectionClient({
     },
     [fetchProfiles],
   );
+
+  const handleSetTotp = useCallback(async (connection: Connection, totpSeed: string) => {
+    setBusy(true);
+    try {
+      await apiClient.post(`/v1/browserbase/profiles/${connection.id}/totp`, { totpSeed });
+      toast.success('Automatic 2FA is on. Scheduled runs generate the code for you.');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not save the authenticator key.');
+    } finally {
+      setBusy(false);
+    }
+  }, []);
+
+  const handleClearTotp = useCallback(async (connection: Connection) => {
+    setBusy(true);
+    try {
+      await apiClient.delete(`/v1/browserbase/profiles/${connection.id}/totp`);
+      toast.success('Automatic 2FA turned off.');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not turn off automatic 2FA.');
+    } finally {
+      setBusy(false);
+    }
+  }, []);
 
   const handleRemove = useCallback(
     async (connection: Connection) => {
@@ -232,6 +253,8 @@ export function BrowserConnectionClient({
         onReconnect={handleReconnect}
         onRename={handleRename}
         onChangeLogin={handleChangeLogin}
+        onSetTotp={handleSetTotp}
+        onClearTotp={handleClearTotp}
         onRemove={handleRemove}
       />
     </div>

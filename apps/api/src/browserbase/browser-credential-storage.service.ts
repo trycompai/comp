@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   Logger,
   NotFoundException,
@@ -89,6 +90,127 @@ export class BrowserCredentialStorageService {
         vaultConnectionId: vaultId,
       },
     });
+  }
+
+  /**
+   * Whether an authenticator setup key (TOTP seed) is stored for this connection
+   * — the source of truth for the "Automatic 2FA" status, read live from the
+   * vault so no DB flag can drift. Returns false (never throws) when storage
+   * isn't configured or the item can't be read.
+   */
+  async getProfileTotpStatus(input: {
+    organizationId: string;
+    profileId: string;
+  }): Promise<{ configured: boolean }> {
+    if (!isOnePasswordConfigured()) return { configured: false };
+
+    const profile = await this.findProfile(input);
+    const ref = profile.vaultExternalItemRef;
+    if (!ref) return { configured: false };
+    const { vaultId, itemId } = parseItemReference(ref);
+    if (!vaultId || !itemId) return { configured: false };
+
+    try {
+      const client = await getOnePasswordClient();
+      const item = await client.items.get(vaultId, itemId);
+      const configured = item.fields.some(
+        (field) => field.title === TOTP_FIELD_TITLE && field.value.trim().length > 0,
+      );
+      return { configured };
+    } catch (error) {
+      this.logger.warn('Failed to read TOTP status from 1Password', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return { configured: false };
+    }
+  }
+
+  /**
+   * Attach or replace the authenticator setup key on a connection's existing
+   * login item — WITHOUT re-collecting the username/password. Requires the
+   * connection to already have a stored login.
+   */
+  async setProfileTotp(input: {
+    organizationId: string;
+    profileId: string;
+    totpSeed: string;
+  }): Promise<{ configured: boolean }> {
+    if (!isOnePasswordConfigured()) {
+      throw new ServiceUnavailableException(
+        'Credential storage is not configured for this environment.',
+      );
+    }
+    const seed = input.totpSeed.trim();
+    if (!seed) {
+      throw new BadRequestException('An authenticator setup key is required.');
+    }
+
+    const profile = await this.findProfile(input);
+    const ref = profile.vaultExternalItemRef;
+    const parsed = ref ? parseItemReference(ref) : { vaultId: '', itemId: '' };
+    if (!parsed.vaultId || !parsed.itemId) {
+      throw new BadRequestException(
+        'Store a login for this connection before adding an authenticator key.',
+      );
+    }
+
+    const client = await getOnePasswordClient();
+    const { ItemFieldType } = await loadOnePasswordModule();
+    const item = await client.items.get(parsed.vaultId, parsed.itemId);
+    item.fields = [
+      ...item.fields.filter((field) => field.title !== TOTP_FIELD_TITLE),
+      {
+        id: TOTP_FIELD_TITLE,
+        title: TOTP_FIELD_TITLE,
+        fieldType: ItemFieldType.Totp,
+        value: seed,
+      },
+    ];
+    await client.items.put(item);
+    this.logger.log(`Set authenticator key for profile ${profile.id}.`);
+    return { configured: true };
+  }
+
+  /**
+   * Remove the stored authenticator setup key from a connection's login item
+   * ("turn off" automatic 2FA). Idempotent — a no-op when nothing is stored.
+   */
+  async clearProfileTotp(input: {
+    organizationId: string;
+    profileId: string;
+  }): Promise<{ configured: boolean }> {
+    if (!isOnePasswordConfigured()) return { configured: false };
+
+    const profile = await this.findProfile(input);
+    const ref = profile.vaultExternalItemRef;
+    if (!ref) return { configured: false };
+    const { vaultId, itemId } = parseItemReference(ref);
+    if (!vaultId || !itemId) return { configured: false };
+
+    const client = await getOnePasswordClient();
+    const item = await client.items.get(vaultId, itemId);
+    const remaining = item.fields.filter(
+      (field) => field.title !== TOTP_FIELD_TITLE,
+    );
+    if (remaining.length !== item.fields.length) {
+      item.fields = remaining;
+      await client.items.put(item);
+      this.logger.log(`Removed authenticator key for profile ${profile.id}.`);
+    }
+    return { configured: false };
+  }
+
+  private async findProfile(input: {
+    organizationId: string;
+    profileId: string;
+  }) {
+    const profile = await db.browserAuthProfile.findFirst({
+      where: { id: input.profileId, organizationId: input.organizationId },
+    });
+    if (!profile) {
+      throw new NotFoundException('Browser auth profile not found');
+    }
+    return profile;
   }
 
   /**
