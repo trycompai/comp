@@ -365,8 +365,8 @@ export function InstructionComposer({
 
   return (
     <div className="overflow-hidden rounded-lg border border-border bg-card">
-      <div className="flex items-start justify-between gap-3 border-b border-border px-6 py-4">
-        <div>
+      <div className="border-b border-border px-6 py-4">
+        <div className="flex items-center justify-between gap-3">
           <div className="text-base text-foreground">
             {mode === 'edit' ? 'Edit automation' : 'New automation'}
             <span className="ml-2 text-xs text-muted-foreground">
@@ -374,18 +374,20 @@ export function InstructionComposer({
               {checkCount > 0 && ` · ${checkCount} ${checkCount === 1 ? 'check' : 'checks'}`}
             </span>
           </div>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            Steps run in order, unattended. Saved sessions are reused — no re-login
-            between vendors.
-          </p>
+          {/* Sits on the title's line (not the top of the two-line block) and is
+              sized to match it, so it reads as part of the header. */}
+          <button
+            onClick={handleCancel}
+            aria-label="Close"
+            className="-mr-1.5 grid h-7 w-7 flex-none cursor-pointer place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <Close size={16} />
+          </button>
         </div>
-        <button
-          onClick={handleCancel}
-          aria-label="Close"
-          className="grid h-6 w-6 cursor-pointer place-items-center rounded-sm text-muted-foreground hover:text-foreground"
-        >
-          <Close size={12} />
-        </button>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          Steps run in order, unattended. Saved sessions are reused — no re-login
+          between vendors.
+        </p>
       </div>
 
       <div className="flex min-h-[430px] flex-col md:flex-row">
