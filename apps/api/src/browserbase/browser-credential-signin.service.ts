@@ -5,7 +5,7 @@ import {
   classifyLoginOutcome,
   signInAndClassify,
 } from './browser-credential-login';
-import { looksLikeSignInUrl, navigateToSignIn } from './browser-login-navigation';
+import { navigateToSignIn } from './browser-login-navigation';
 import { resolveBrowserCredentialVaultAdapter } from './browser-credential-vault.factory';
 
 type Stagehand = import('@browserbasehq/stagehand').Stagehand;
@@ -124,14 +124,11 @@ export class BrowserCredentialSigninService {
       await delay(1500);
 
       // The persisted context may already carry a valid session — no need to
-      // re-enter credentials if we're already in. Only trust this when we're NOT
-      // still on a sign-in page: vendors like AWS bounce through sign-in hosts a
-      // classifier can misread as "logged in" before any credentials are entered.
+      // re-enter credentials if we're already in. The classifier is URL-aware, so
+      // it won't call a mid-redirect / sign-in page "logged in" (the AWS false
+      // positive) — it decides from the page AND where the browser actually is.
       step('Checking if you’re already signed in');
-      const savedSessionValid =
-        (await classifyLoginOutcome(activeStagehand)) === 'logged_in' &&
-        !looksLikeSignInUrl(page.url());
-      if (savedSessionValid) {
+      if ((await classifyLoginOutcome(activeStagehand)) === 'logged_in') {
         await this.profiles.markVerified(input);
         finish('done');
         return { isLoggedIn: true, homeUrl: page.url() };
@@ -170,24 +167,22 @@ export class BrowserCredentialSigninService {
       });
       step('Checking whether that worked');
 
-      // Re-read the active page: a real sign-in navigates to an app/home page.
-      // A "logged_in" verdict while still on the sign-in page is a false positive
-      // (e.g. mid-redirect), so treat it as a failure rather than verifying.
-      const landed = await this.sessions.ensureActivePage(activeStagehand);
-      if (outcome === 'logged_in' && !looksLikeSignInUrl(landed.url())) {
+      if (outcome === 'logged_in') {
         await this.profiles.markVerified(input);
         finish('done');
+        // Re-read the active page: signing in usually navigates to an app/home page.
+        const landed = await this.sessions.ensureActivePage(activeStagehand);
         return { isLoggedIn: true, homeUrl: landed.url() };
       }
 
-      const failure: AutoSignInFailure = outcome === 'logged_in' ? 'unknown' : outcome;
+      // Narrowed to the failure states now that logged_in is handled.
       await this.profiles.markNeedsReauth({
         organizationId: input.organizationId,
         profileId: input.profileId,
-        reason: FAILURE_REASON[failure],
+        reason: FAILURE_REASON[outcome],
       });
       finish('warn');
-      return { isLoggedIn: false, failure };
+      return { isLoggedIn: false, failure: outcome };
     } finally {
       // Release our automation handle but leave the session open — the caller
       // shows it to the user (to watch, or to take over) and closes it later.

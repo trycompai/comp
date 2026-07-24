@@ -217,13 +217,26 @@ export async function classifyLoginOutcome(
   stagehand: Stagehand,
 ): Promise<SignInOutcome> {
   try {
+    // Give the model where the browser actually is, so it can judge for itself
+    // whether we're on the real app or still on a sign-in / identity-provider
+    // page (it knows hosts like signin.aws.amazon.com or login.microsoftonline.com
+    // without us hardcoding URL patterns). A hint only — falls back to content.
+    let currentUrl = '';
+    try {
+      const pages = stagehand.context?.pages?.() ?? [];
+      currentUrl = pages[pages.length - 1]?.url() ?? '';
+    } catch {
+      // URL unavailable — classify from page content alone.
+    }
     const { state } = await stagehand.extract(
-      'Classify this page after a sign-in attempt. Return exactly one value: ' +
-        '"logged_in" — there is clear, visible evidence the user is already signed in, ' +
-        'such as an app dashboard, an account/avatar menu, or a "Sign out" control, AND ' +
-        'no sign-in form is shown. Do NOT answer logged_in for a blank, loading, or ' +
-        'redirecting page, or any page still showing a sign-in form or a "Sign in" / ' +
-        '"Log in" button; ' +
+      (currentUrl ? `The browser is currently at this URL: ${currentUrl}\n\n` : '') +
+        'Classify this page after a sign-in attempt, using BOTH the page content AND the URL. ' +
+        'Return exactly one value: ' +
+        '"logged_in" — there is clear evidence the user is signed in to the actual application ' +
+        '(a dashboard, an account/avatar menu, or a "Sign out" control) AND the browser is on the ' +
+        'application itself. If the URL is a sign-in, login, SSO, or identity-provider page, or the ' +
+        'page is blank, loading, redirecting, or still shows a sign-in form or a "Sign in" / ' +
+        '"Log in" button, it is NOT logged_in; ' +
         '"invalid_credentials" — it shows an incorrect username/email/password error; ' +
         '"needs_2fa" — it asks for a two-factor, one-time, authenticator, or verification code; ' +
         '"challenge" — it shows a CAPTCHA, a "verify it\'s you", a device-approval, or an email/SMS link step; ' +

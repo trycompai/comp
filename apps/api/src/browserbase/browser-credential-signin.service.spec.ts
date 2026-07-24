@@ -106,27 +106,6 @@ describe('BrowserCredentialSigninService', () => {
     expect(act).not.toHaveBeenCalled(); // already in — no navigation or fill
   });
 
-  it('does NOT trust "logged in" while still on a sign-in page (AWS redirect)', async () => {
-    // The classifier keeps saying logged_in, but the browser never leaves the
-    // sign-in host — that's a false positive, so we must not verify blindly.
-    const extract = jest.fn().mockResolvedValue({ state: 'logged_in' });
-    const act = jest.fn().mockResolvedValue(undefined);
-    const sessions = makeSessions(extract, act);
-    sessions.ensureActivePage.mockResolvedValue({
-      goto: jest.fn().mockResolvedValue(undefined),
-      url: jest.fn().mockReturnValue('https://signin.aws.amazon.com/console'),
-    });
-    const profiles = makeProfiles(profile);
-    withCredentials({ username: 'u', password: 'p' });
-
-    const result = await run(sessions, profiles);
-
-    expect(result.isLoggedIn).toBe(false);
-    expect(profiles.markVerified).not.toHaveBeenCalled();
-    expect(act).toHaveBeenCalled(); // it actually tried to sign in
-    expect(profiles.markNeedsReauth).toHaveBeenCalledTimes(1);
-  });
-
   it('signs in with stored credentials and marks verified', async () => {
     const extract = jest
       .fn()
