@@ -219,7 +219,11 @@ export async function classifyLoginOutcome(
   try {
     const { state } = await stagehand.extract(
       'Classify this page after a sign-in attempt. Return exactly one value: ' +
-        '"logged_in" — the user is signed in (a dashboard, account or avatar menu, no login form); ' +
+        '"logged_in" — there is clear, visible evidence the user is already signed in, ' +
+        'such as an app dashboard, an account/avatar menu, or a "Sign out" control, AND ' +
+        'no sign-in form is shown. Do NOT answer logged_in for a blank, loading, or ' +
+        'redirecting page, or any page still showing a sign-in form or a "Sign in" / ' +
+        '"Log in" button; ' +
         '"invalid_credentials" — it shows an incorrect username/email/password error; ' +
         '"needs_2fa" — it asks for a two-factor, one-time, authenticator, or verification code; ' +
         '"challenge" — it shows a CAPTCHA, a "verify it\'s you", a device-approval, or an email/SMS link step; ' +
