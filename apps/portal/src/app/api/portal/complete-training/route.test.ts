@@ -10,6 +10,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   getSession: vi.fn(),
   memberFindFirst: vi.fn(),
+  frameworkInstanceFindFirst: vi.fn(),
   completionFindFirst: vi.fn(),
   completionCreate: vi.fn(),
   completionUpdate: vi.fn(),
@@ -23,6 +24,7 @@ vi.mock('@/app/lib/auth', () => ({
 vi.mock('@db/server', () => ({
   db: {
     member: { findFirst: mocks.memberFindFirst },
+    frameworkInstance: { findFirst: mocks.frameworkInstanceFindFirst },
     employeeTrainingVideoCompletion: {
       findFirst: mocks.completionFindFirst,
       create: mocks.completionCreate,
@@ -140,5 +142,62 @@ describe('POST /api/portal/complete-training', () => {
 
     expect(res.status).toBe(400);
     expect(mocks.memberFindFirst).not.toHaveBeenCalled();
+  });
+
+  // HIPAA eligibility must match the NestJS training service: an org without the
+  // HIPAA framework enabled cannot complete hipaa-sat-1, otherwise this route
+  // would mint HIPAA completion records (and certificate artifacts) the service
+  // would reject, desyncing the two paths.
+  it('rejects hipaa-sat-1 when the org does not have the HIPAA framework', async () => {
+    mocks.getSession.mockResolvedValue({ user: { id: 'user_1' } });
+    mocks.memberFindFirst.mockResolvedValue({
+      id: 'mem_1',
+      userId: 'user_1',
+      organizationId: 'org_1',
+      role: 'employee',
+      deactivated: false,
+    });
+    // No HIPAA framework instance for this org.
+    mocks.frameworkInstanceFindFirst.mockResolvedValue(null);
+
+    const res = await POST(
+      makeRequest({ videoId: 'hipaa-sat-1', organizationId: 'org_1' }),
+    );
+
+    expect(res.status).toBe(400);
+    expect(mocks.frameworkInstanceFindFirst).toHaveBeenCalledWith({
+      where: { organizationId: 'org_1', framework: { name: 'HIPAA' } },
+      select: { id: true },
+    });
+    expect(mocks.completionCreate).not.toHaveBeenCalled();
+  });
+
+  it('marks hipaa-sat-1 complete when the org has the HIPAA framework', async () => {
+    mocks.getSession.mockResolvedValue({ user: { id: 'user_1' } });
+    mocks.memberFindFirst.mockResolvedValue({
+      id: 'mem_1',
+      userId: 'user_1',
+      organizationId: 'org_1',
+      role: 'employee',
+      deactivated: false,
+    });
+    mocks.frameworkInstanceFindFirst.mockResolvedValue({ id: 'frm_1' });
+    mocks.completionFindFirst.mockResolvedValue(null);
+    const record = {
+      id: 'etvc_hipaa',
+      videoId: 'hipaa-sat-1',
+      memberId: 'mem_1',
+      completedAt: new Date('2026-07-24T00:00:00.000Z'),
+    };
+    mocks.completionCreate.mockResolvedValue(record);
+
+    const res = await POST(
+      makeRequest({ videoId: 'hipaa-sat-1', organizationId: 'org_1' }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(mocks.completionCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({ videoId: 'hipaa-sat-1', memberId: 'mem_1' }),
+    });
   });
 });

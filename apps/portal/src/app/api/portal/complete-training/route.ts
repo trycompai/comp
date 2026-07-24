@@ -68,6 +68,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
+  // HIPAA training is only available to orgs that have the HIPAA framework
+  // enabled. Mirror the NestJS training service (markVideoComplete) so this
+  // route can't create HIPAA completion records — and trigger HIPAA
+  // certificate artifacts — for orgs the service would reject, which would
+  // desync the two completion paths.
+  if (videoId === HIPAA_TRAINING_ID) {
+    const hipaaInstance = await db.frameworkInstance.findFirst({
+      where: { organizationId, framework: { name: 'HIPAA' } },
+      select: { id: true },
+    });
+    if (!hipaaInstance) {
+      return NextResponse.json(
+        { error: 'HIPAA training is not available for this organization' },
+        { status: 400 },
+      );
+    }
+  }
+
   let record = await db.employeeTrainingVideoCompletion.findFirst({
     where: { videoId, memberId: member.id },
   });
