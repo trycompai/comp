@@ -17,6 +17,7 @@ const data: IsmsPlatformData = {
   hasTrainingProgram: true,
   wizardAnswers: {},
   partiesFingerprint: '',
+  riskTreatmentFingerprint: '',
 };
 
 describe('deriveObjectives', () => {

@@ -369,7 +369,7 @@ describe('RisksController', () => {
     const createDto = {
       title: 'New Risk',
       description: 'Description',
-      category: RiskCategory.operational,
+      category: RiskCategory.operations,
     };
 
     it('should call create with organizationId and dto', async () => {
@@ -501,4 +501,5 @@ describe('RisksController', () => {
       expect(result).not.toHaveProperty('authenticatedUser');
     });
   });
+
 });

@@ -27,12 +27,19 @@ import {
   deriveLeadershipNarrative,
   leadershipNarrativeSchema,
 } from './leadership';
+import {
+  buildRiskMethodologySections,
+  deriveRiskMethodologyNarrative,
+  riskMethodologyNarrativeSchema,
+} from './risk-methodology';
+import { buildRiskTreatmentPlanSections } from './risk-treatment-plan';
 import type { DocumentExportInput, IsmsPlatformData } from './types';
 
 /** Document types whose content is a singleton narrative stored in version.narrative. */
 const NARRATIVE_TYPES: IsmsDocumentType[] = [
   'isms_scope',
   'leadership_commitment',
+  'risk_assessment_methodology',
 ];
 
 const EXPORT_SECTION_BUILDERS: Record<
@@ -49,6 +56,8 @@ const EXPORT_SECTION_BUILDERS: Record<
   management_review: buildManagementReviewSections,
   isms_scope: buildScopeSections,
   leadership_commitment: buildLeadershipSections,
+  risk_assessment_methodology: buildRiskMethodologySections,
+  risk_treatment_plan: buildRiskTreatmentPlanSections,
 };
 
 export function buildExportSections({
@@ -75,6 +84,9 @@ export function narrativeSchemaForType(
   if (type === 'leadership_commitment') return leadershipNarrativeSchema;
   if (type === 'internal_audit') return internalAuditNarrativeSchema;
   if (type === 'management_review') return managementReviewNarrativeSchema;
+  if (type === 'risk_assessment_methodology') {
+    return riskMethodologyNarrativeSchema;
+  }
   return null;
 }
 
@@ -90,6 +102,9 @@ export function deriveNarrativeForType({
   if (type === 'leadership_commitment') return deriveLeadershipNarrative(data);
   if (type === 'internal_audit') return deriveInternalAuditNarrative(data);
   if (type === 'management_review') return deriveManagementReviewNarrative(data);
+  if (type === 'risk_assessment_methodology') {
+    return deriveRiskMethodologyNarrative(data);
+  }
   return null;
 }
 

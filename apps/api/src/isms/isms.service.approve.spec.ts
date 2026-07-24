@@ -55,6 +55,7 @@ const platformData = {
   hasTrainingProgram: false,
   wizardAnswers: {},
   partiesFingerprint: '',
+  riskTreatmentFingerprint: '',
 };
 
 describe('IsmsService.approve (CS-701 versioning)', () => {
