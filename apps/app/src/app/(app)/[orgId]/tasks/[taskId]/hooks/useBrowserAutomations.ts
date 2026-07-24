@@ -4,7 +4,7 @@ import { apiClient } from '@/lib/api-client';
 import type { TaskFrequency } from '@db';
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
-import type { BrowserAutomation } from './types';
+import type { BrowserAutomation, BrowserAutomationStepInput } from './types';
 
 interface UseBrowserAutomationsOptions {
   taskId: string;
@@ -15,6 +15,8 @@ interface AutomationConfigInput {
   targetUrl: string;
   instruction: string;
   evaluationCriteria?: string;
+  /** Ordered steps for a multi-vendor automation (sent through to the API). */
+  steps?: BrowserAutomationStepInput[];
   scheduleFrequency?: TaskFrequency;
 }
 
@@ -104,6 +106,25 @@ export function useBrowserAutomations({ taskId }: UseBrowserAutomationsOptions) 
     [fetchAutomations],
   );
 
+  // Browser evidence shares one cadence per task, set from the section header,
+  // so this updates every automation on the task together.
+  const setTaskSchedule = useCallback(
+    async (scheduleFrequency: TaskFrequency) => {
+      try {
+        const res = await apiClient.patch(
+          `/v1/browserbase/automations/task/${taskId}/schedule`,
+          { scheduleFrequency },
+        );
+        if (res.error) throw new Error(res.error);
+        toast.success('Schedule updated');
+        await fetchAutomations();
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Failed to update schedule');
+      }
+    },
+    [taskId, fetchAutomations],
+  );
+
   const toggleAutomation = useCallback(
     async (automationId: string, isEnabled: boolean) => {
       try {
@@ -130,5 +151,6 @@ export function useBrowserAutomations({ taskId }: UseBrowserAutomationsOptions) 
     updateAutomation,
     deleteAutomation,
     toggleAutomation,
+    setTaskSchedule,
   };
 }

@@ -1,106 +1,123 @@
-import { render, screen } from '@testing-library/react';
-import type {
-  ButtonHTMLAttributes,
-  HTMLAttributes,
-  InputHTMLAttributes,
-  LabelHTMLAttributes,
-  ReactNode,
-} from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  setMockPermissions,
   ADMIN_PERMISSIONS,
   AUDITOR_PERMISSIONS,
   mockHasPermission,
+  setMockPermissions,
 } from '@/test-utils/mocks/permissions';
+import { fireEvent, render, screen } from '@testing-library/react';
+import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from 'react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { Connection } from './connection-format';
 
 vi.mock('@/hooks/use-permissions', () => ({
-  usePermissions: () => ({
-    permissions: {},
-    hasPermission: mockHasPermission,
-  }),
+  usePermissions: () => ({ permissions: {}, hasPermission: mockHasPermission }),
 }));
 
 vi.mock('@/lib/api-client', () => ({
+  // Never resolves, so the passed initialProfiles stay in state for the assertion.
   apiClient: {
     get: vi.fn(() => new Promise(() => undefined)),
     post: vi.fn().mockResolvedValue({ data: {} }),
+    patch: vi.fn().mockResolvedValue({ data: {} }),
+    delete: vi.fn().mockResolvedValue({ data: {} }),
   },
 }));
 
 vi.mock('@trycompai/design-system', () => ({
-  Badge: ({ children }: { children?: ReactNode }) => <span data-testid="badge">{children}</span>,
   Button: ({
     children,
     iconLeft,
-    iconRight,
-    loading,
     ...props
-  }: ButtonHTMLAttributes<HTMLButtonElement> & {
-    iconLeft?: ReactNode;
-    iconRight?: ReactNode;
-    loading?: boolean;
-  }) => (
-    <button data-loading={loading || undefined} {...props}>
+  }: ButtonHTMLAttributes<HTMLButtonElement> & { iconLeft?: ReactNode; loading?: boolean }) => (
+    <button {...props}>
       {iconLeft}
       {children}
-      {iconRight}
     </button>
   ),
-  Card: ({ children }: HTMLAttributes<HTMLDivElement>) => <div>{children}</div>,
-  CardContent: ({ children }: HTMLAttributes<HTMLDivElement>) => <div>{children}</div>,
-  CardDescription: ({ children }: HTMLAttributes<HTMLParagraphElement>) => <p>{children}</p>,
-  CardHeader: ({ children }: HTMLAttributes<HTMLDivElement>) => <div>{children}</div>,
-  CardTitle: ({ children }: HTMLAttributes<HTMLHeadingElement>) => <h3>{children}</h3>,
   Input: (props: InputHTMLAttributes<HTMLInputElement>) => <input {...props} />,
-  Label: ({ children, ...props }: LabelHTMLAttributes<HTMLLabelElement>) => (
-    <label {...props}>{children}</label>
+  Spinner: () => <span data-testid="spinner" />,
+  Section: ({
+    title,
+    description,
+    actions,
+    children,
+  }: {
+    title?: ReactNode;
+    description?: ReactNode;
+    actions?: ReactNode;
+    children?: ReactNode;
+  }) => (
+    <section>
+      {title && <h2>{title}</h2>}
+      {description && <p>{description}</p>}
+      {actions}
+      {children}
+    </section>
   ),
-  Spinner: () => <span data-testid="loader-icon" />,
 }));
 
 vi.mock('@trycompai/design-system/icons', () => ({
-  Globe: () => <span data-testid="globe-icon" />,
-  Renew: () => <span data-testid="refresh-icon" />,
-  Screen: () => <span data-testid="monitor-icon" />,
+  Add: () => <span data-testid="add-icon" />,
 }));
+
+// Sub-components are covered on their own; stub them to focus on the client.
+vi.mock('./ConnectionsTable', () => ({
+  ConnectionsTable: ({ connections }: { connections: Connection[] }) => (
+    <div data-testid="table">{connections.length} rows</div>
+  ),
+}));
+vi.mock('./ManageConnectionSheet', () => ({ ManageConnectionSheet: () => null }));
+// The shared connect flow is covered by the task suite; stub it so we only test
+// that the client renders it (and doesn't pull the whole task subsystem).
+vi.mock(
+  '@/app/(app)/[orgId]/tasks/[taskId]/components/browser-automations/ConnectVendorLoginFlow',
+  () => ({ ConnectVendorLoginFlow: () => <div data-testid="connect-flow" /> }),
+);
 
 import { BrowserConnectionClient } from './BrowserConnectionClient';
 
+const profile: Connection = {
+  id: 'bap_1',
+  hostname: 'github.com',
+  loginIdentity: 'ci-bot@acme.com',
+  displayName: 'GitHub',
+  status: 'verified',
+  vaultExternalItemRef: 'op://vault/item',
+};
+
 describe('BrowserConnectionClient permission gating', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+  beforeEach(() => vi.clearAllMocks());
 
-  it('shows Connect Browser button when user has integration:create permission', () => {
+  it('shows "Connect a vendor" and the table when the user can create integrations', () => {
     setMockPermissions(ADMIN_PERMISSIONS);
-    render(<BrowserConnectionClient organizationId="org-1" />);
+    render(<BrowserConnectionClient organizationId="org-1" initialProfiles={[profile]} />);
 
-    const connectButton = screen.getByRole('button', { name: /connect browser/i });
-    expect(connectButton).toBeInTheDocument();
-    expect(connectButton).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: /connect a vendor/i })).toBeInTheDocument();
+    expect(screen.getByTestId('table')).toHaveTextContent('1 rows');
   });
 
-  it('hides Connect Browser button when user lacks integration:create permission', () => {
+  it('hides "Connect a vendor" for a read-only user but still lists connections', () => {
     setMockPermissions(AUDITOR_PERMISSIONS);
-    render(<BrowserConnectionClient organizationId="org-1" />);
+    render(<BrowserConnectionClient organizationId="org-1" initialProfiles={[profile]} />);
 
-    expect(screen.queryByRole('button', { name: /connect browser/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /open browser/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /connect a vendor/i })).not.toBeInTheDocument();
+    expect(screen.getByTestId('table')).toBeInTheDocument();
   });
 
-  it('hides Connect Browser button when user has no permissions', () => {
-    setMockPermissions({});
-    render(<BrowserConnectionClient organizationId="org-1" />);
+  it('shows an empty state when there are no connections', () => {
+    setMockPermissions(ADMIN_PERMISSIONS);
+    render(<BrowserConnectionClient organizationId="org-1" initialProfiles={[]} />);
 
-    expect(screen.queryByRole('button', { name: /connect browser/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /open browser/i })).not.toBeInTheDocument();
+    expect(screen.getByText(/no connections yet/i)).toBeInTheDocument();
+    expect(screen.queryByTestId('table')).not.toBeInTheDocument();
   });
 
-  it('still shows the URL input regardless of permissions', () => {
-    setMockPermissions({});
-    render(<BrowserConnectionClient organizationId="org-1" />);
+  it('opens the shared connect flow when "Connect a vendor" is clicked', () => {
+    setMockPermissions(ADMIN_PERMISSIONS);
+    render(<BrowserConnectionClient organizationId="org-1" initialProfiles={[profile]} />);
 
-    expect(screen.getByLabelText('Website URL')).toBeInTheDocument();
+    expect(screen.queryByTestId('connect-flow')).not.toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole('button', { name: /connect a vendor/i })[0]);
+    expect(screen.getByTestId('connect-flow')).toBeInTheDocument();
   });
 });

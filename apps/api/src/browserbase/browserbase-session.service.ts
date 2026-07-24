@@ -10,14 +10,70 @@ import { isNoPageError } from './run-error-formatter';
 
 type Stagehand = import('@browserbasehq/stagehand').Stagehand;
 
-const BROWSER_WIDTH = 1440;
-const BROWSER_HEIGHT = 900;
-const STAGEHAND_MODEL = 'anthropic/claude-sonnet-4-6';
+export interface BrowserViewport {
+  width: number;
+  height: number;
+}
+
+// A larger native viewport keeps unattended evidence screenshots sharp: our
+// panels are well under 1920px wide, so the viewer downscales rather than
+// upscaling — the latter is what looked soft, especially on HiDPI displays.
+// Browserbase exposes no device-pixel-ratio setting, so viewport size is the
+// only lever for capture sharpness. This is the default.
+export const CAPTURE_VIEWPORT: BrowserViewport = { width: 1920, height: 1080 };
+
+// A smaller viewport for human-facing sessions (sign-in, take-over, SSO,
+// reconnect): the page renders larger in the embedded live view, so forms are
+// easier to read and fill. Capture runs stay on CAPTURE_VIEWPORT.
+export const INTERACTIVE_VIEWPORT: BrowserViewport = { width: 1280, height: 800 };
+// Model behind extract()/act() (reading pages, verdicts, form fills). Separate
+// from the navigation (CUA) model and configurable via env; default unchanged.
+const STAGEHAND_MODEL =
+  process.env.BROWSERBASE_STAGEHAND_MODEL || 'anthropic/claude-sonnet-4-6';
 const BROWSERBASE_API_MAX_ATTEMPTS = 3;
 const BROWSERBASE_RETRY_DELAYS_MS = [250, 750];
 const BROWSERBASE_DEFAULT_HEADERS = { 'accept-encoding': 'identity' };
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Hostname of a URL, or null if it can't be parsed (used to match live tabs). */
+function hostnameOrNull(url: string): string | null {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return null;
+  }
+}
+
+/** A live-view page as returned by Browserbase `sessions.debug()`. */
+interface LiveViewPage {
+  url: string;
+  debuggerFullscreenUrl: string;
+}
+
+/**
+ * Pick the live-view URL to show: the tab matching `matchUrl` (the page the AI
+ * is on) by exact URL, else by hostname, else the newest tab, else the
+ * session-level view. Pure so the tab-selection can be unit-tested.
+ */
+export function selectLiveViewUrl(
+  debug: { debuggerFullscreenUrl?: string; pages?: LiveViewPage[] },
+  matchUrl?: string,
+): string | null {
+  const pages = debug.pages ?? [];
+  if (pages.length === 0) return debug.debuggerFullscreenUrl ?? null;
+
+  if (matchUrl) {
+    const exact = pages.find((page) => page.url === matchUrl);
+    if (exact) return exact.debuggerFullscreenUrl;
+    const host = hostnameOrNull(matchUrl);
+    const byHost =
+      host !== null ? pages.find((page) => hostnameOrNull(page.url) === host) : undefined;
+    if (byHost) return byHost.debuggerFullscreenUrl;
+  }
+  // Newest tab is usually the just-opened sign-in.
+  return pages[pages.length - 1]?.debuggerFullscreenUrl ?? debug.debuggerFullscreenUrl ?? null;
+}
 
 @Injectable()
 export class BrowserbaseSessionService {
@@ -48,6 +104,7 @@ export class BrowserbaseSessionService {
 
   async createSessionWithContext(
     contextId: string,
+    viewport: BrowserViewport = CAPTURE_VIEWPORT,
   ): Promise<{ sessionId: string; liveViewUrl: string }> {
     const bb = this.getBrowserbase();
 
@@ -63,13 +120,13 @@ export class BrowserbaseSessionService {
             },
             fingerprint: {
               screen: {
-                maxHeight: BROWSER_HEIGHT,
-                maxWidth: BROWSER_WIDTH,
-                minHeight: BROWSER_HEIGHT,
-                minWidth: BROWSER_WIDTH,
+                maxHeight: viewport.height,
+                maxWidth: viewport.width,
+                minHeight: viewport.height,
+                minWidth: viewport.width,
               },
             },
-            viewport: { width: BROWSER_WIDTH, height: BROWSER_HEIGHT },
+            viewport: { width: viewport.width, height: viewport.height },
           },
           keepAlive: true,
         }),
@@ -93,6 +150,23 @@ export class BrowserbaseSessionService {
       }
       throw error;
     }
+  }
+
+  /**
+   * Live-view URL for a specific tab, so the UI can follow the AI when a vendor
+   * opens its sign-in in a new tab (e.g. AWS from its homepage). Prefers the tab
+   * matching `matchUrl` (the page the AI is on), falls back to the newest tab,
+   * then the session-level view. Returns null if the session has no pages.
+   */
+  async getActivePageLiveViewUrl(
+    sessionId: string,
+    matchUrl?: string,
+  ): Promise<string | null> {
+    const debug = await this.withBrowserbaseRetry({
+      operationName: 'session live view lookup',
+      operation: () => this.getBrowserbase().sessions.debug(sessionId),
+    });
+    return selectLiveViewUrl(debug, matchUrl);
   }
 
   async closeSession(sessionId: string): Promise<void> {
@@ -215,6 +289,7 @@ export class BrowserbaseSessionService {
 
         try {
           await stagehand.init();
+          await this.calmPageMotion(stagehand);
           return stagehand;
         } catch (error) {
           await this.safeCloseStagehand(stagehand);
@@ -222,6 +297,33 @@ export class BrowserbaseSessionService {
         }
       },
     });
+  }
+
+  /**
+   * Inject "reduce motion" into every page of the session so a vendor's own
+   * looping animations (heavy hero backgrounds, marquees, spinners) don't churn
+   * the live-view stream — that constant repainting is what looks laggy. Also
+   * steadies evidence screenshots. Passed as a string so the browser-side
+   * `document` isn't type-checked in this Node file. Best-effort; a calmer live
+   * view is a nice-to-have, not critical to the run.
+   */
+  private async calmPageMotion(stagehand: Stagehand): Promise<void> {
+    const script = `(() => {
+      const css = '*,*::before,*::after{animation-duration:0.001ms!important;animation-delay:0ms!important;animation-iteration-count:1!important;transition-duration:0.001ms!important;transition-delay:0ms!important;scroll-behavior:auto!important}';
+      const style = document.createElement('style');
+      style.setAttribute('data-comp-reduce-motion', '');
+      style.textContent = css;
+      const attach = () => (document.head || document.documentElement).appendChild(style);
+      if (document.head) attach();
+      else document.addEventListener('DOMContentLoaded', attach, { once: true });
+    })()`;
+    try {
+      await stagehand.context.addInitScript(script);
+    } catch (err) {
+      this.logger.warn('Could not inject reduced-motion styles (ignored)', {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
   }
 
   async safeCloseStagehand(stagehand: Stagehand): Promise<void> {

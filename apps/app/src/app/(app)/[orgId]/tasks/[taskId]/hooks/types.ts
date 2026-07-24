@@ -1,5 +1,29 @@
 import type { TaskFrequency } from '@db';
 
+/**
+ * What the Run live view should show. Between vendors and at the end of a run the
+ * browser session is torn down and Browserbase's iframe briefly shows its own
+ * "disconnected" notice; the server streams this phase so the UI can cover the
+ * iframe with a calm transition state instead of that alarming message.
+ */
+export type BrowserRunLivePhase = 'running' | 'switching' | 'finishing';
+
+/** Per-step evidence within a run — one screenshot + verdict for each step. */
+export interface BrowserAutomationStepRun {
+  id: string;
+  stepId?: string | null;
+  order: number;
+  status: string;
+  screenshotUrl?: string | null;
+  /** Focused close-up (the "proof") shown beside the full page. */
+  focusScreenshotUrl?: string | null;
+  evaluationStatus?: 'pass' | 'fail' | null;
+  evaluationReason?: string | null;
+  error?: string | null;
+  /** The step this ran, if it still exists — used to label the vendor/host. */
+  step?: { targetUrl: string } | null;
+}
+
 export interface BrowserAutomationRun {
   id: string;
   profileId?: string | null;
@@ -7,6 +31,7 @@ export interface BrowserAutomationRun {
   createdAt: string;
   completedAt?: string;
   screenshotUrl?: string;
+  focusScreenshotUrl?: string | null;
   evaluationStatus?: 'pass' | 'fail' | null;
   evaluationReason?: string | null;
   error?: string;
@@ -15,6 +40,44 @@ export interface BrowserAutomationRun {
   blockedReason?: string | null;
   finalUrl?: string | null;
   attemptCount?: number;
+  /** Per-step evidence for multi-step (multi-vendor) automations. */
+  stepRuns?: BrowserAutomationStepRun[];
+}
+
+/** One step of a (possibly multi-vendor) automation, as returned by the API. */
+export interface BrowserAutomationStep {
+  id: string;
+  order: number;
+  profileId?: string | null;
+  targetUrl: string;
+  instruction: string;
+  evaluationCriteria?: string | null;
+}
+
+/** A step as sent to the API on create/update (no id/order — order is positional). */
+export interface BrowserAutomationStepInput {
+  profileId?: string | null;
+  targetUrl: string;
+  instruction: string;
+  evaluationCriteria?: string | null;
+}
+
+/** A step inside a draft — everything optional, since a draft can be half-written. */
+export interface DraftStep {
+  profileId?: string | null;
+  targetUrl?: string | null;
+  instruction?: string | null;
+  evaluationCriteria?: string | null;
+}
+
+/** An in-progress (unsaved) automation, persisted server-side so it resumes. */
+export interface BrowserAutomationDraft {
+  id: string;
+  taskId: string;
+  name?: string | null;
+  steps: DraftStep[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface BrowserAutomation {
@@ -24,6 +87,7 @@ export interface BrowserAutomation {
   targetUrl: string;
   instruction: string;
   evaluationCriteria?: string | null;
+  steps?: BrowserAutomationStep[];
   isEnabled: boolean;
   schedule?: string;
   scheduleFrequency?: TaskFrequency;
@@ -52,6 +116,26 @@ export interface BrowserAuthProfile {
   vaultProvider?: string | null;
   vaultExternalItemRef?: string | null;
   vaultConnectionId?: string | null;
+}
+
+export interface BrowserLoginCredentials {
+  username: string;
+  password: string;
+  totpSeed?: string;
+}
+
+export type LoginRecommendationCategory = 'ready' | 'works_with_checkins' | 'manual';
+
+export interface LoginAnalysis {
+  reachable: boolean;
+  detectedMethods: string[];
+  identifierType: string;
+  extraFields: { label: string }[];
+  recommendation: {
+    category: LoginRecommendationCategory;
+    headline: string;
+    detail: string;
+  };
 }
 
 export interface ResolveAuthProfileResponse {
@@ -93,3 +177,18 @@ export interface ExecuteResponse {
 }
 
 export type BrowserContextStatus = 'loading' | 'no-context' | 'has-context' | 'checking';
+
+/** Final result of an ad-hoc instruction test run (mirrors the API task output). */
+export interface InstructionTestResult {
+  success: boolean;
+  screenshotUrl?: string;
+  /** A focused close-up (the agent's final viewport) shown beside the full page. */
+  focusScreenshotUrl?: string;
+  finalUrl?: string;
+  evaluationStatus?: 'pass' | 'fail';
+  evaluationReason?: string;
+  error?: string;
+  needsReauth?: boolean;
+  failureCode?: string;
+  blockedReason?: string;
+}

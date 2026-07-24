@@ -25,20 +25,28 @@ import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
 import { BrowserbaseService } from './browserbase.service';
 import {
+  AnalyzeLoginDto,
+  AnalyzeLoginResponseDto,
   AuthStatusResponseDto,
   BrowserAutomationResponseDto,
   BrowserAutomationRunResponseDto,
   CheckAuthDto,
   CloseSessionDto,
   ContextResponseDto,
+  CreateBrowserAutomationDraftDto,
   CreateBrowserAutomationDto,
   CreateSessionDto,
   ExecuteAutomationSessionDto,
   NavigateToUrlDto,
   RunAutomationResponseDto,
   SessionResponseDto,
+  SetTaskScheduleDto,
+  TestInstructionDto,
+  TestInstructionResponseDto,
+  UpdateBrowserAutomationDraftDto,
   UpdateBrowserAutomationDto,
 } from './dto/browserbase.dto';
+import { TaskFrequency } from '@db';
 
 @ApiTags('Browserbase')
 @Controller({ path: 'browserbase', version: '1' })
@@ -46,6 +54,23 @@ import {
 @ApiSecurity('apikey')
 export class BrowserbaseController {
   constructor(private readonly browserbaseService: BrowserbaseService) {}
+
+  // ===== Login Analysis =====
+
+  @Post('analyze-login')
+  @RequirePermission('integration', 'create')
+  @ApiOperation({
+    summary: 'Analyze a vendor sign-in page',
+    description:
+      'Opens the vendor sign-in page in a throwaway cloud browser and detects which login methods it supports, so the connect flow can recommend the most reliable setup. Reads a public page only — no credentials. Always degrades to a manual fallback.',
+  })
+  @ApiBody({ type: AnalyzeLoginDto })
+  @ApiResponse({ status: 201, type: AnalyzeLoginResponseDto })
+  async analyzeLogin(
+    @Body() dto: AnalyzeLoginDto,
+  ): Promise<AnalyzeLoginResponseDto> {
+    return this.browserbaseService.analyzeLogin(dto.url);
+  }
 
   // ===== Organization Context =====
 
@@ -101,9 +126,11 @@ export class BrowserbaseController {
     type: SessionResponseDto,
   })
   async createSession(
+    @OrganizationId() organizationId: string,
     @Body() dto: CreateSessionDto,
   ): Promise<SessionResponseDto> {
-    return await this.browserbaseService.createSessionWithContext(
+    return await this.browserbaseService.createSessionForOrg(
+      organizationId,
       dto.contextId,
     );
   }
@@ -118,9 +145,13 @@ export class BrowserbaseController {
     description: 'Session closed',
   })
   async closeSession(
+    @OrganizationId() organizationId: string,
     @Body() dto: CloseSessionDto,
   ): Promise<{ success: boolean }> {
-    await this.browserbaseService.closeSession(dto.sessionId);
+    await this.browserbaseService.closeSessionForOrg(
+      organizationId,
+      dto.sessionId,
+    );
     return { success: true };
   }
 
@@ -137,9 +168,14 @@ export class BrowserbaseController {
     description: 'Navigation result',
   })
   async navigateToUrl(
+    @OrganizationId() organizationId: string,
     @Body() dto: NavigateToUrlDto,
   ): Promise<{ success: boolean; error?: string }> {
-    return await this.browserbaseService.navigateToUrl(dto.sessionId, dto.url);
+    return await this.browserbaseService.navigateToUrlForOrg(
+      organizationId,
+      dto.sessionId,
+      dto.url,
+    );
   }
 
   @Post('check-auth')
@@ -153,8 +189,12 @@ export class BrowserbaseController {
     description: 'Auth status',
     type: AuthStatusResponseDto,
   })
-  async checkAuth(@Body() dto: CheckAuthDto): Promise<AuthStatusResponseDto> {
-    return await this.browserbaseService.checkLoginStatus(
+  async checkAuth(
+    @OrganizationId() organizationId: string,
+    @Body() dto: CheckAuthDto,
+  ): Promise<AuthStatusResponseDto> {
+    return await this.browserbaseService.checkLoginStatusForOrg(
+      organizationId,
       dto.sessionId,
       dto.url,
     );
@@ -180,6 +220,29 @@ export class BrowserbaseController {
       dto,
       organizationId,
     )) as BrowserAutomationResponseDto;
+  }
+
+  @Post('automations/test')
+  @RequirePermission('task', 'update')
+  @ApiOperation({
+    summary: 'Test an instruction before saving',
+    description:
+      'Runs a not-yet-saved instruction against the connection’s live session so the user can watch it work before committing it to the schedule. Nothing is persisted. Returns a run handle to subscribe to for live steps and the final result.',
+  })
+  @ApiBody({ type: TestInstructionDto })
+  @ApiResponse({ status: 201, type: TestInstructionResponseDto })
+  async testInstruction(
+    @OrganizationId() organizationId: string,
+    @Body() dto: TestInstructionDto,
+  ): Promise<TestInstructionResponseDto> {
+    return this.browserbaseService.testInstruction({
+      organizationId,
+      taskId: dto.taskId,
+      profileId: dto.profileId,
+      targetUrl: dto.targetUrl,
+      instruction: dto.instruction,
+      evaluationCriteria: dto.evaluationCriteria,
+    });
   }
 
   @Get('automations/task/:taskId')
@@ -247,6 +310,26 @@ export class BrowserbaseController {
     )) as BrowserAutomationResponseDto;
   }
 
+  @Patch('automations/task/:taskId/schedule')
+  @RequirePermission('task', 'update')
+  @ApiOperation({
+    summary: 'Set the schedule for every browser automation on a task',
+  })
+  @ApiParam({ name: 'taskId', description: 'Task ID' })
+  @ApiResponse({ status: 200, description: 'Task schedule updated' })
+  async setTaskSchedule(
+    @Param('taskId') taskId: string,
+    @OrganizationId() organizationId: string,
+    @Body() dto: SetTaskScheduleDto,
+  ): Promise<{ success: boolean; scheduleFrequency: TaskFrequency }> {
+    const result = await this.browserbaseService.setTaskSchedule(
+      taskId,
+      dto.scheduleFrequency,
+      organizationId,
+    );
+    return { success: true, scheduleFrequency: result.scheduleFrequency };
+  }
+
   @Delete('automations/:automationId')
   @RequirePermission('task', 'delete')
   @ApiOperation({
@@ -265,6 +348,55 @@ export class BrowserbaseController {
       automationId,
       organizationId,
     );
+    return { success: true };
+  }
+
+  // ===== Automation Drafts (in-progress, unsaved) =====
+
+  @Get('automations/task/:taskId/drafts')
+  @RequirePermission('task', 'read')
+  @ApiOperation({ summary: 'List in-progress automation drafts for a task' })
+  @ApiParam({ name: 'taskId', description: 'Task ID' })
+  async listDrafts(
+    @OrganizationId() organizationId: string,
+    @Param('taskId') taskId: string,
+  ) {
+    return this.browserbaseService.listAutomationDrafts(taskId, organizationId);
+  }
+
+  @Post('automation-drafts')
+  @RequirePermission('task', 'create')
+  @ApiOperation({ summary: 'Create an in-progress automation draft' })
+  @ApiBody({ type: CreateBrowserAutomationDraftDto })
+  async createDraft(
+    @OrganizationId() organizationId: string,
+    @Body() dto: CreateBrowserAutomationDraftDto,
+  ) {
+    return this.browserbaseService.createAutomationDraft(dto, organizationId);
+  }
+
+  @Patch('automation-drafts/:draftId')
+  @RequirePermission('task', 'update')
+  @ApiOperation({ summary: 'Autosave an in-progress automation draft' })
+  @ApiParam({ name: 'draftId', description: 'Draft ID' })
+  @ApiBody({ type: UpdateBrowserAutomationDraftDto })
+  async updateDraft(
+    @OrganizationId() organizationId: string,
+    @Param('draftId') draftId: string,
+    @Body() dto: UpdateBrowserAutomationDraftDto,
+  ) {
+    return this.browserbaseService.updateAutomationDraft(draftId, dto, organizationId);
+  }
+
+  @Delete('automation-drafts/:draftId')
+  @RequirePermission('task', 'delete')
+  @ApiOperation({ summary: 'Discard an in-progress automation draft' })
+  @ApiParam({ name: 'draftId', description: 'Draft ID' })
+  async deleteDraft(
+    @OrganizationId() organizationId: string,
+    @Param('draftId') draftId: string,
+  ): Promise<{ success: boolean }> {
+    await this.browserbaseService.deleteAutomationDraft(draftId, organizationId);
     return { success: true };
   }
 
@@ -320,12 +452,47 @@ export class BrowserbaseController {
     error?: string;
     needsReauth?: boolean;
   }> {
+    // The session is client-supplied — confirm it belongs to this org before we
+    // drive an automation on it (cross-tenant IDOR guard).
+    await this.browserbaseService.assertSessionOwnedByOrg(
+      organizationId,
+      body.sessionId,
+    );
     return await this.browserbaseService.executeAutomationOnSession(
       automationId,
       body.runId,
       body.sessionId,
       organizationId,
     );
+  }
+
+  @Post('automations/:automationId/execute-live')
+  @RequirePermission('task', 'update')
+  @ApiOperation({
+    summary: 'Execute automation on a session with live step streaming',
+    description:
+      'Runs the automation on a pre-created session as a background task so the ' +
+      'live view can stream the AI’s steps. Returns a run handle to subscribe to.',
+  })
+  @ApiParam({ name: 'automationId', description: 'Automation ID' })
+  @ApiBody({ type: ExecuteAutomationSessionDto })
+  @ApiResponse({ status: 200, description: 'Run handle for realtime steps' })
+  async executeAutomationLive(
+    @Param('automationId') automationId: string,
+    @Body() body: ExecuteAutomationSessionDto,
+    @OrganizationId() organizationId: string,
+  ): Promise<{ runId: string; publicAccessToken: string }> {
+    // The session is client-supplied — confirm it belongs to this org first.
+    await this.browserbaseService.assertSessionOwnedByOrg(
+      organizationId,
+      body.sessionId,
+    );
+    return await this.browserbaseService.startLiveAutomationExecution({
+      automationId,
+      runId: body.runId,
+      sessionId: body.sessionId,
+      organizationId,
+    });
   }
 
   @Post('automations/:automationId/run')
