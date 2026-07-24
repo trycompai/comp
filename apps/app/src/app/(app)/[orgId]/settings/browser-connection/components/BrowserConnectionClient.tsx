@@ -189,7 +189,6 @@ export function BrowserConnectionClient({
 
   return (
     <Section
-      title="Browser connections"
       description="The vendor logins Comp AI signs in with to capture audit evidence automatically."
       actions={
         canConnect ? (
@@ -207,18 +206,26 @@ export function BrowserConnectionClient({
             How it works
           </div>
           <ol className="flex flex-col gap-1.5 text-[12px] leading-relaxed text-muted-foreground">
-            <li>
-              <span className="text-foreground">1.</span> Connect a vendor login here — Comp
-              AI signs in for you, including any two-factor codes.
+            <li className="flex gap-1.5">
+              <span className="shrink-0 text-foreground">1.</span>
+              <span>
+                Connect a vendor login here — Comp AI signs in for you, including any
+                two-factor codes.
+              </span>
             </li>
-            <li>
-              <span className="text-foreground">2.</span> On a schedule it signs in,
-              screenshots the required page as audit evidence, and re-signs in on its own when
-              a session expires.
+            <li className="flex gap-1.5">
+              <span className="shrink-0 text-foreground">2.</span>
+              <span>
+                On a schedule it signs in, screenshots the required page as audit evidence,
+                and re-signs in on its own when a session expires.
+              </span>
             </li>
-            <li>
-              <span className="text-foreground">3.</span> You build the automations that use
-              these logins inside a task, under &ldquo;Browser evidence&rdquo;.
+            <li className="flex gap-1.5">
+              <span className="shrink-0 text-foreground">3.</span>
+              <span>
+                You build the automations that use these logins inside a task, under
+                &ldquo;Browser evidence&rdquo;.
+              </span>
             </li>
           </ol>
         </div>
