@@ -8,11 +8,7 @@ vi.mock('next/link', () => ({
   ),
 }));
 
-import {
-  AppShell,
-  AppShellBody,
-  AppShellRail,
-} from '@trycompai/design-system';
+import { AppShell, AppShellBody, AppShellRail } from '@trycompai/design-system';
 import { ShellRailNavItem } from './ShellRailNavItem';
 
 const Icon = () => <svg data-testid="icon" />;
@@ -44,7 +40,12 @@ describe('ShellRailNavItem (CS-773 tooltip flicker)', () => {
           <AppShellRail>
             <ShellRailNavItem href="/org/overview" isActive icon={<Icon />} label="Compliance" />
             <ShellRailNavItem href="/org/trust" isActive={false} icon={<Icon />} label="Trust" />
-            <ShellRailNavItem href="/org/security" isActive={false} icon={<Icon />} label="Security" />
+            <ShellRailNavItem
+              href="/org/security"
+              isActive={false}
+              icon={<Icon />}
+              label="Security"
+            />
           </AppShellRail>
         </AppShellBody>
       </AppShell>,
