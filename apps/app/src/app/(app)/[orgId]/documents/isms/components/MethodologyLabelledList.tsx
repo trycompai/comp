@@ -58,7 +58,9 @@ export function MethodologyLabelledList<T extends FieldValues>({
                   )}
                 />
                 {rowErrors?.[index] && (
-                  <span className="text-xs text-destructive">{rowErrors[index]}</span>
+                  <span role="alert" className="text-xs text-destructive">
+                    {rowErrors[index]}
+                  </span>
                 )}
               </div>
             ) : (

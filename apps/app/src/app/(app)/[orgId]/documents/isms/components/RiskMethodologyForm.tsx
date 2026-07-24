@@ -138,7 +138,9 @@ export function RiskMethodologyForm({ narrative, canEdit, onSave }: RiskMethodol
             )}
           />
           {errors[name] && (
-            <span className="text-xs text-destructive">{errors[name]?.message}</span>
+            <span role="alert" className="text-xs text-destructive">
+              {errors[name]?.message}
+            </span>
           )}
         </div>
       ) : (

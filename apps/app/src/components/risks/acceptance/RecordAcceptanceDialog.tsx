@@ -125,7 +125,9 @@ export function RecordAcceptanceDialog({
               )}
             />
             {errors.acceptedById && (
-              <span className="text-xs text-destructive">{errors.acceptedById.message}</span>
+              <span role="alert" className="text-xs text-destructive">
+                {errors.acceptedById.message}
+              </span>
             )}
           </div>
 
