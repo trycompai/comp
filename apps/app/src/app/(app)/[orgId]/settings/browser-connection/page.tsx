@@ -5,7 +5,7 @@ import { BrowserConnectionClient } from './components/BrowserConnectionClient';
 import type { Connection } from './components/connection-format';
 
 export const metadata: Metadata = {
-  title: 'Connections',
+  title: 'Browser connections',
 };
 
 export default async function BrowserConnectionPage({

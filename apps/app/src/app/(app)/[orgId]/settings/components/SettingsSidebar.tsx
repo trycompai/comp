@@ -36,7 +36,7 @@ export function SettingsSidebar({ orgId, showBrowserTab, showBillingTab }: Setti
     { id: 'notifications', label: 'Notifications', path: `/${orgId}/settings/notifications` },
     {
       id: 'browser',
-      label: 'Connections',
+      label: 'Browser connections',
       path: `/${orgId}/settings/browser-connection`,
       hidden: !showBrowserTab,
     },
