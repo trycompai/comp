@@ -16,6 +16,10 @@ vi.mock('@trycompai/design-system/icons', () => ({
   Renew: () => <span data-testid="icon-renew" />,
   Calendar: () => <span data-testid="icon-calendar" />,
   ChevronDown: () => <span data-testid="icon-chevron" />,
+  OverflowMenuVertical: () => <span data-testid="icon-overflow" />,
+}));
+vi.mock('@/components/VendorLogo', () => ({
+  VendorLogo: () => <span data-testid="vendor-logo" />,
 }));
 
 vi.mock('./AutomationItem', () => ({

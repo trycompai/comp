@@ -1,30 +1,14 @@
 'use client';
 
 import { usePermissions } from '@/hooks/use-permissions';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from '@trycompai/design-system';
-import { Add, Calendar, ChevronDown, Renew } from '@trycompai/design-system/icons';
+import { Renew } from '@trycompai/design-system/icons';
 import { TaskFrequency } from '@db';
 import { useEffect, useMemo, useState } from 'react';
 import type { BrowserAuthProfile, BrowserAutomation } from '../../hooks/types';
 import { AutomationItem } from './AutomationItem';
+import { BrowserEvidenceHeader } from './BrowserEvidenceHeader';
 
 const PAGE_SIZE = 8;
-
-/** Cadence options for the task-wide schedule control (matches TaskFrequency). */
-const FREQUENCY_LABELS: Record<TaskFrequency, string> = {
-  daily: 'Daily',
-  weekly: 'Weekly',
-  monthly: 'Monthly',
-  quarterly: 'Quarterly',
-  yearly: 'Yearly',
-};
-const FREQUENCIES = Object.keys(FREQUENCY_LABELS) as TaskFrequency[];
 
 function hostnameFromUrl(url: string): string {
   try {
@@ -122,63 +106,15 @@ export function BrowserAutomationsList({
 
   return (
     <div className="overflow-hidden rounded-lg border border-border bg-card">
-        <div className="flex items-center justify-between border-b border-border px-5 py-4">
-          <div>
-            <h3 className="text-base font-medium tracking-tight text-foreground">
-              Browser evidence
-            </h3>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              {automations.length} {automations.length === 1 ? 'automation' : 'automations'} · run
-              in order, unattended.
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            {canUpdate && automations.length > 0 && (
-              <DropdownMenu>
-                {/* One schedule for all of this task's browser evidence. */}
-                <DropdownMenuTrigger
-                  aria-label="Change schedule for all browser evidence"
-                  className="flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs text-foreground transition-colors hover:bg-muted/40"
-                >
-                  <Calendar size={14} className="text-muted-foreground" />
-                  {FREQUENCY_LABELS[currentCadence]}
-                  <ChevronDown size={12} className="text-muted-foreground" />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuRadioGroup
-                    value={currentCadence}
-                    onValueChange={(value) => {
-                      if (value) onSetTaskSchedule(value as TaskFrequency);
-                    }}
-                  >
-                    {FREQUENCIES.map((freq) => (
-                      <DropdownMenuRadioItem key={freq} value={freq}>
-                        {FREQUENCY_LABELS[freq]}
-                      </DropdownMenuRadioItem>
-                    ))}
-                  </DropdownMenuRadioGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-            {onConnectAnother && canCreate && (
-              <button
-                onClick={onConnectAnother}
-                className="rounded-md border border-border bg-background px-3 py-1.5 text-xs text-foreground transition-colors hover:bg-muted/40"
-              >
-                Connect another vendor
-              </button>
-            )}
-            {onCreate && canCreate && (
-              <button
-                onClick={onCreate}
-                className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground"
-              >
-                <Add size={14} />
-                New evidence
-              </button>
-            )}
-          </div>
-        </div>
+        <BrowserEvidenceHeader
+          automations={automations}
+          currentCadence={currentCadence}
+          canUpdate={canUpdate}
+          canCreate={canCreate}
+          onSetTaskSchedule={onSetTaskSchedule}
+          onConnectAnother={onConnectAnother}
+          onCreate={onCreate}
+        />
 
         <div className="flex flex-col gap-2 p-4">
           {rows.slice(0, visible).map(({ automation, reconnectUrl }) => (
