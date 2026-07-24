@@ -5,6 +5,7 @@ import {
   classifyLoginOutcome,
   signInAndClassify,
 } from './browser-credential-login';
+import { resolveEvidencePage } from './browser-evidence-page';
 import { navigateToSignIn } from './browser-login-navigation';
 import { resolveBrowserCredentialVaultAdapter } from './browser-credential-vault.factory';
 
@@ -141,6 +142,20 @@ export class BrowserCredentialSigninService {
       // homepage or dashboard rather than the login page.
       step('Finding the sign-in form');
       await navigateToSignIn(activeStagehand);
+
+      // A vendor may open its sign-in in a new tab (e.g. AWS from its homepage).
+      // The session live view shows the front tab, so bring the sign-in page to
+      // front — otherwise the user watches the wrong tab and can't complete a
+      // 2FA take-over. Best-effort: proceed on the current page if it fails.
+      try {
+        await resolveEvidencePage({
+          stagehand: activeStagehand,
+          initialPage: page,
+          targetUrl: input.url,
+        });
+      } catch {
+        // Ignore — sign-in continues on whatever page is active.
+      }
 
       // SSO: we can't hold the customer's identity-provider credentials, so the
       // AI only clicks through to the provider, then hands the live browser to
