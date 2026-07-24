@@ -74,36 +74,39 @@ export function ConnectionsTable({
   const totalCount = connections.length;
   const view = summarize(filtered);
 
+  const searchField = (
+    <div className="relative w-full">
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 16 16"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+        aria-hidden="true"
+      >
+        <circle cx="7" cy="7" r="5" />
+        <path d="M11 11l3 3" />
+      </svg>
+      <input
+        type="text"
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        placeholder="Search connections…"
+        aria-label="Search connections"
+        className="h-8 w-full rounded-md border border-border bg-background pl-8 pr-3 text-[12px] font-normal normal-case tracking-normal text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+      />
+    </div>
+  );
+
   return (
     <div className="flex flex-col gap-3">
-      <div className="overflow-hidden rounded-lg border border-border bg-card">
-        {/* Toolbar: search sits at the top of the table, right-aligned on desktop. */}
-        <div className="flex border-b border-border p-3">
-          <div className="relative w-full sm:ml-auto sm:w-64">
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 16 16"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.4"
-              className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
-              aria-hidden="true"
-            >
-              <circle cx="7" cy="7" r="5" />
-              <path d="M11 11l3 3" />
-            </svg>
-            <input
-              type="text"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search connections…"
-              aria-label="Search connections"
-              className="h-9 w-full rounded-md border border-border bg-background pl-8 pr-3 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-            />
-          </div>
-        </div>
+      {/* Mobile: search above the table — the header-inline search is desktop-only
+          so it isn't hidden behind the table's horizontal scroll on small screens. */}
+      <div className="sm:hidden">{searchField}</div>
 
+      <div className="overflow-hidden rounded-lg border border-border bg-card">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[720px] border-collapse text-sm">
           <thead>
@@ -114,7 +117,10 @@ export function ConnectionsTable({
               <th className={HEAD}>Status</th>
               <th className={HEAD}>Automations</th>
               <th className={HEAD}>Last verified</th>
-              <th className={`${HEAD} text-right`}>Actions</th>
+              {/* Desktop: search on the same line as the column headers, right side. */}
+              <th className="px-4 py-2 text-right align-middle">
+                <div className="ml-auto hidden w-56 sm:block">{searchField}</div>
+              </th>
             </tr>
           </thead>
           <tbody>
