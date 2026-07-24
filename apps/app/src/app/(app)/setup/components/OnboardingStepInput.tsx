@@ -533,12 +533,24 @@ const normalizeVendorName = (name: string): string => {
     .trim();
 };
 
+// Helper to strip protocol, www, and trailing slashes from a website URL,
+// leaving just the bare domain for display/validation
+export const cleanDomainInput = (raw: string): string => {
+  return raw
+    .replace(/^(https?:\/\/)+/gi, '')
+    .replace(/^(www\.)+/gi, '')
+    .trim()
+    .replace(/\/+$/, '');
+};
+
 // Helper to validate domain/URL format
-const isValidDomain = (domain: string): boolean => {
+export const isValidDomain = (domain: string): boolean => {
   if (!domain || domain.trim() === '') return true; // Empty is valid (optional field)
 
-  // Clean the input
-  const cleaned = domain.trim().toLowerCase();
+  // Clean the input (also strips a trailing slash defensively, in case the
+  // value wasn't run through cleanDomainInput first)
+  const cleaned = cleanDomainInput(domain).toLowerCase();
+  if (!cleaned) return true;
 
   // Domain regex: allows subdomains, requires at least one dot and valid TLD
   const domainRegex = /^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/;
@@ -593,7 +605,7 @@ function SoftwareVendorInput({
     if (onTouchedInvalidUrlChange) {
       const hasTouchedInvalid = customVendorsForCallback.some((vendor) => {
         if (!touchedUrls.has(vendor.name)) return false;
-        const url = (vendor.website || '').replace(/^https?:\/\//, '').replace(/^www\./, '');
+        const url = cleanDomainInput(vendor.website || '');
         return url.length > 0 && !isValidDomain(url);
       });
       onTouchedInvalidUrlChange(hasTouchedInvalid);
@@ -924,9 +936,7 @@ function SoftwareVendorInput({
             <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
               {customVendors.map((vendor) => {
                 // Strip protocol for display, we'll add it back on save
-                const displayValue = (vendor.website || '')
-                  .replace(/^https?:\/\//, '')
-                  .replace(/^www\./, '');
+                const displayValue = cleanDomainInput(vendor.website || '');
 
                 const isTouched = touchedUrls.has(vendor.name);
                 const isValid = isValidDomain(displayValue);
@@ -953,11 +963,8 @@ function SoftwareVendorInput({
                         type="text"
                         value={displayValue}
                         onChange={(e) => {
-                          // Clean input: remove any protocol, www, and trim
-                          let value = e.target.value
-                            .replace(/^(https?:\/\/)+/gi, '') // Remove one or more https://
-                            .replace(/^(www\.)+/gi, '')       // Remove one or more www.
-                            .trim();
+                          // Clean input: remove any protocol, www, trailing slashes, and trim
+                          const value = cleanDomainInput(e.target.value);
                           const fullUrl = value ? `https://${value}` : '';
                           handleCustomVendorWebsiteChange(vendor.name, fullUrl);
                           
@@ -983,9 +990,9 @@ function SoftwareVendorInput({
                               // Get current value from form state
                               const currentVendors = (form.watch('customVendors') as CustomVendor[] | undefined) || [];
                               const currentVendor = currentVendors.find((v) => v.name === vendor.name);
-                              const currentValue = (currentVendor?.website || '')
-                                .replace(/^https?:\/\//, '')
-                                .replace(/^www\./, '');
+                              const currentValue = cleanDomainInput(
+                                currentVendor?.website || '',
+                              );
                               const isValid = isValidDomain(currentValue);
                               // Only mark as touched if invalid (to show error)
                               if (!isValid && currentValue.length > 0) {
