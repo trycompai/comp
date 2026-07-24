@@ -40,6 +40,9 @@ export const testVendorInstruction = task({
           'testSteps',
           steps as unknown as Parameters<typeof metadata.set>[1],
         ),
+      // Follow the agent across tabs so the composer's live view tracks the
+      // page it's actually working on, not the stale starting tab.
+      onLiveView: (liveViewUrl) => metadata.set('testLiveViewUrl', liveViewUrl),
     });
   },
 });

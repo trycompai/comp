@@ -58,6 +58,8 @@ export class BrowserInstructionTestService {
     sessionId: string;
     /** Live activity timeline, surfaced to the composer's test panel. */
     onSteps?: (steps: InstructionTestStep[]) => void;
+    /** Active-tab live-view URL, so the test panel follows the agent across tabs. */
+    onLiveView?: (url: string) => void;
   }): Promise<InstructionTestResult> {
     const timeline = createEvidenceTimeline(input.onSteps);
 
@@ -87,6 +89,7 @@ export class BrowserInstructionTestService {
         vaultConnectionId: profile.vaultConnectionId,
       },
       onLog: (entry: BrowserEvidenceLog) => timeline.step(entry.message),
+      onLiveView: input.onLiveView,
     });
 
     timeline.finish(

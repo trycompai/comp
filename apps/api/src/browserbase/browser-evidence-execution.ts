@@ -78,6 +78,53 @@ async function runCuaNavigation({
     .execute({ instruction, maxSteps: CUA_MAX_STEPS });
 }
 
+/**
+ * The agent's `.execute()` is a single opaque call, but it opens/switches tabs
+ * mid-run (e.g. a sign-in or console tab). Poll the newest tab's URL and, when it
+ * changes, push its live-view URL so a watched run follows the active tab instead
+ * of showing the stale initial one. Best-effort: never lets live-view following
+ * disturb the run. Returns a stop function.
+ */
+function startLiveViewFollower({
+  stagehand,
+  sessions,
+  sessionId,
+  onLiveView,
+}: {
+  stagehand: Stagehand;
+  sessions: BrowserbaseSessionService;
+  sessionId: string;
+  onLiveView: (url: string) => void;
+}): () => void {
+  let lastUrl = '';
+  let stopped = false;
+  let inFlight = false;
+
+  const tick = async () => {
+    if (stopped || inFlight) return;
+    inFlight = true;
+    try {
+      const pages = stagehand.context?.pages?.() ?? [];
+      const url = pages.at(-1)?.url?.() ?? '';
+      if (url && url !== lastUrl) {
+        lastUrl = url;
+        const liveUrl = await sessions.getActivePageLiveViewUrl(sessionId, url);
+        if (liveUrl && !stopped) onLiveView(liveUrl);
+      }
+    } catch {
+      // Best-effort — following the tab must never affect the run.
+    } finally {
+      inFlight = false;
+    }
+  };
+
+  const interval = setInterval(() => void tick(), 2500);
+  return () => {
+    stopped = true;
+    clearInterval(interval);
+  };
+}
+
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export interface BrowserEvidenceLog {
@@ -108,6 +155,7 @@ export async function executeBrowserEvidence({
   logger,
   vault,
   onLog,
+  onLiveView,
 }: {
   input: BrowserEvidenceSessionInput;
   sessions: BrowserbaseSessionService;
@@ -115,6 +163,8 @@ export async function executeBrowserEvidence({
   vault: BrowserCredentialVaultAdapter;
   /** Called as each stage begins, so a live test run can stream its progress. */
   onLog?: (log: BrowserEvidenceLog) => void;
+  /** Called with the active tab's live-view URL so a watched run follows tabs. */
+  onLiveView?: (url: string) => void;
 }): Promise<BrowserEvidenceExecutionResult> {
   const logs: BrowserEvidenceLog[] = [];
   const log = (stage: string, message: string) => {
@@ -145,6 +195,15 @@ export async function executeBrowserEvidence({
       timeoutMs: 30000,
     });
     await delay(1000);
+
+    // Point a watched run's live view at the current tab up front, so it's
+    // correct before the agent starts opening/switching tabs.
+    if (onLiveView) {
+      const initialLiveView = await sessions
+        .getActivePageLiveViewUrl(input.sessionId, page.url())
+        .catch(() => null);
+      if (initialLiveView) onLiveView(initialLiveView);
+    }
 
     currentStage = 'auth';
     const authCheck = await checkAuth(stagehand);
@@ -190,28 +249,41 @@ export async function executeBrowserEvidence({
     // and read what's already on screen instead of over-navigating.
     const instruction = `${input.instruction}. Work out the path yourself — you don't need exact directions. If the instruction names a specific item or page, open it so the final screenshot clearly shows just that item, not a long list of many. Before finishing, verify the page matches what was asked and correct it if you opened the wrong thing. Don't take unnecessary detours. When the right thing is clearly shown, stop and wait.`;
     const primaryModel = resolveCuaModel(logger);
+    // Follow the agent across tabs while it works (test/watched runs only).
+    const stopFollowing = onLiveView
+      ? startLiveViewFollower({
+          stagehand: activeStagehand,
+          sessions,
+          sessionId: input.sessionId,
+          onLiveView,
+        })
+      : () => {};
     try {
-      await runCuaNavigation({
-        stagehand: activeStagehand,
-        instruction,
-        model: primaryModel,
-      });
-    } catch (navError) {
-      // The navigation model can be unavailable at runtime (preview access, rate
-      // limits, upstream errors). Fall back to Claude once — unless we were
-      // already on it — rather than failing the whole run.
-      if (primaryModel.modelName === FALLBACK_CUA_MODEL) throw navError;
-      logger.warn(
-        `Navigation with ${primaryModel.modelName} failed; retrying with ${FALLBACK_CUA_MODEL}. ${
-          navError instanceof Error ? navError.message : String(navError)
-        }`,
-      );
-      log('action', 'Primary navigation model unavailable — retrying with a backup model.');
-      await runCuaNavigation({
-        stagehand: activeStagehand,
-        instruction,
-        model: claudeFallbackModel(),
-      });
+      try {
+        await runCuaNavigation({
+          stagehand: activeStagehand,
+          instruction,
+          model: primaryModel,
+        });
+      } catch (navError) {
+        // The navigation model can be unavailable at runtime (preview access, rate
+        // limits, upstream errors). Fall back to Claude once — unless we were
+        // already on it — rather than failing the whole run.
+        if (primaryModel.modelName === FALLBACK_CUA_MODEL) throw navError;
+        logger.warn(
+          `Navigation with ${primaryModel.modelName} failed; retrying with ${FALLBACK_CUA_MODEL}. ${
+            navError instanceof Error ? navError.message : String(navError)
+          }`,
+        );
+        log('action', 'Primary navigation model unavailable — retrying with a backup model.');
+        await runCuaNavigation({
+          stagehand: activeStagehand,
+          instruction,
+          model: claudeFallbackModel(),
+        });
+      }
+    } finally {
+      stopFollowing();
     }
 
     await delay(2000);

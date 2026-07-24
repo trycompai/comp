@@ -37,6 +37,8 @@ export interface BrowserEvidenceRunnerInput {
   beforeExecution?: () => Promise<void>;
   /** Live per-stage progress callback (used to stream a test run's activity). */
   onLog?: (log: BrowserEvidenceLog) => void;
+  /** Fired as the agent switches tabs, so a watched run's live view follows it. */
+  onLiveView?: (url: string) => void;
   /** Fired once this step's live session opens, so the Run view can follow it. */
   onSession?: (info: { sessionId: string; liveViewUrl: string }) => void;
   /**
@@ -137,6 +139,7 @@ export class BrowserEvidenceRunnerService {
       logger: this.logger,
       vault: this.vault,
       onLog: input.onLog,
+      onLiveView: input.onLiveView,
     });
     let uploaded: {
       screenshotKey?: string;

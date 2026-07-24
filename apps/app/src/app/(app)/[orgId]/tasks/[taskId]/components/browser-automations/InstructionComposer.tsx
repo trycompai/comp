@@ -181,6 +181,13 @@ export function InstructionComposer({
     if (streamed) setTimeline(streamed);
   }, [runState]);
 
+  // Follow the agent across tabs: when the run reports a new active-tab live
+  // view, point the iframe at it (AWS etc. open sign-in/console in new tabs).
+  useEffect(() => {
+    const streamed = runState?.metadata?.testLiveViewUrl as string | undefined;
+    if (streamed) setLiveViewUrl(streamed);
+  }, [runState]);
+
   useEffect(() => {
     if (!testRun) return;
     if (runState && runState.id !== testRun.runId) return;
