@@ -1,18 +1,18 @@
 'use client';
 
+import { VendorLogo } from '@/components/VendorLogo';
 import {
   Button,
   Input,
-  Label,
   Sheet,
   SheetBody,
   SheetClose,
   SheetContent,
   SheetDescription,
-  SheetHeader,
+  SheetFooter,
   SheetTitle,
 } from '@trycompai/design-system';
-import { Close, Locked, Renew, TrashCan } from '@trycompai/design-system/icons';
+import { Close, Locked } from '@trycompai/design-system/icons';
 import { useEffect, useState } from 'react';
 import { methodOf, statusMeta, type Connection } from './connection-format';
 
@@ -32,11 +32,19 @@ interface ManageConnectionSheetProps {
   onRemove: (connection: Connection) => Promise<void> | void;
 }
 
-function MetaRow({ label, children }: { label: string; children: React.ReactNode }) {
+function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-3 py-1.5 text-[13px]">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="min-w-0 truncate text-right text-foreground">{children}</span>
+    <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+      {children}
+    </div>
+  );
+}
+
+function FactRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-3 px-3 py-2">
+      <span className="flex-none text-[11px] text-muted-foreground">{label}</span>
+      <span className="min-w-0 truncate text-right text-[12px] text-foreground">{children}</span>
     </div>
   );
 }
@@ -74,6 +82,9 @@ export function ManageConnectionSheet({
   const meta = statusMeta(connection.status);
   const nameChanged = name.trim() && name.trim() !== connection.displayName;
   const secured = Boolean(connection.vaultProvider || connection.vaultExternalItemRef);
+  // Reconnect goes solid teal only when the session actually needs attention.
+  const attention = meta.needsAction;
+  const automationCount = connection.automationCount ?? 0;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -87,169 +98,203 @@ export function ManageConnectionSheet({
         >
           <Close size={16} />
         </SheetClose>
-        <SheetHeader>
-          <SheetTitle>{connection.displayName || connection.hostname}</SheetTitle>
-          <SheetDescription>{connection.hostname}</SheetDescription>
-        </SheetHeader>
+
+        {/* Identity header — favicon + name + host, status pill, blocked reason. */}
+        <div className="border-b border-border px-6 py-5">
+          <div className="flex items-center gap-3">
+            <VendorLogo hostname={connection.hostname} size={40} />
+            <div className="min-w-0">
+              <SheetTitle>{connection.displayName || connection.hostname}</SheetTitle>
+              <SheetDescription>{connection.hostname}</SheetDescription>
+            </div>
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span
+              className="inline-flex items-center rounded-sm px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em]"
+              style={{ background: meta.bg, color: meta.color }}
+            >
+              {meta.label}
+            </span>
+            {!canManage && (
+              <span className="inline-flex items-center rounded-sm bg-muted px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                View only
+              </span>
+            )}
+          </div>
+          {connection.status === 'blocked' && connection.blockedReason && (
+            <p className="mt-2 text-[11.5px] leading-relaxed text-destructive">
+              {connection.blockedReason}
+            </p>
+          )}
+        </div>
+
         <SheetBody>
-          <div className="flex flex-col gap-6">
-            {/* Session metadata */}
-            <div className="rounded-lg border border-border px-4 py-2">
-              <MetaRow label="Method">{method === 'password' ? 'Password' : 'SSO'}</MetaRow>
-              <MetaRow label="Connected as">{connection.loginIdentity || '—'}</MetaRow>
-              <MetaRow label="Automations">{connection.automationCount ?? 0}</MetaRow>
-              <MetaRow label="Status">
+          <div className="flex flex-col gap-5">
+            {/* Facts */}
+            <div className="divide-y divide-border rounded-md border border-border">
+              <FactRow label="Method">{method === 'password' ? 'Password' : 'SSO'}</FactRow>
+              <FactRow label="Connected as">{connection.loginIdentity || '—'}</FactRow>
+              <FactRow label="Automations">{automationCount}</FactRow>
+              <FactRow label="Status">
                 <span style={{ color: meta.color }}>{meta.label}</span>
-              </MetaRow>
+              </FactRow>
               {secured && (
-                <MetaRow label="Credentials">
+                <FactRow label="Credentials">
                   <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-                    <Locked size={12} />
+                    <Locked size={11} />
                     Secured by 1Password
                   </span>
-                </MetaRow>
+                </FactRow>
               )}
             </div>
 
-            {connection.status === 'blocked' && connection.blockedReason && (
-              <p className="text-[12.5px] leading-relaxed text-destructive">
-                {connection.blockedReason}
-              </p>
-            )}
-
             {canManage && (
               <>
-                {/* Reconnect */}
-                <div className="flex flex-col gap-2">
-                  <Label>Session</Label>
-                  <p className="text-[12px] text-muted-foreground">
-                    Sign in again in a live browser to refresh this connection.
+                {/* Session */}
+                <section className="flex flex-col gap-2">
+                  <SectionLabel>Session</SectionLabel>
+                  <Button
+                    variant={attention ? 'default' : 'outline'}
+                    width="full"
+                    disabled={busy}
+                    onClick={() => onReconnect(connection)}
+                  >
+                    Reconnect
+                  </Button>
+                  <p className="text-[10.5px] leading-relaxed text-muted-foreground">
+                    Signs in again in a live browser and refreshes the saved session.
                   </p>
-                  <div>
-                    <Button
-                      variant="outline"
-                      onClick={() => onReconnect(connection)}
-                      disabled={busy}
-                      iconLeft={<Renew size={13} />}
-                    >
-                      Reconnect
-                    </Button>
-                  </div>
-                </div>
+                </section>
 
-                {/* Rename */}
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="conn-name">Name</Label>
-                  <div className="flex gap-2">
-                    <div className="flex-1">
-                      <Input
-                        id="conn-name"
-                        value={name}
-                        onChange={(event) => setName(event.target.value)}
-                        placeholder={connection.hostname}
-                      />
-                    </div>
-                    <Button
-                      variant="outline"
-                      disabled={!nameChanged || busy}
-                      onClick={() => onRename(connection, name.trim())}
-                    >
-                      Save
-                    </Button>
-                  </div>
-                </div>
+                {/* Details */}
+                <section className="flex flex-col gap-3">
+                  <SectionLabel>Details</SectionLabel>
 
-                {/* Change login (password connections only) */}
-                {method === 'password' && (
-                  <div className="flex flex-col gap-2">
-                    <Label>Login</Label>
-                    {!showCredForm ? (
-                      <div>
-                        <Button variant="outline" onClick={() => setShowCredForm(true)}>
-                          Change login
-                        </Button>
-                        <p className="mt-1.5 text-[12px] text-muted-foreground">
-                          Rotated the account? Enter the new email and password.
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[11px] text-muted-foreground">Name</span>
+                    <div className="flex gap-2">
+                      <div className="flex-1">
                         <Input
-                          value={username}
-                          onChange={(event) => setUsername(event.target.value)}
-                          placeholder="New email / username"
-                          autoComplete="off"
+                          value={name}
+                          onChange={(event) => setName(event.target.value)}
+                          placeholder={connection.hostname}
                         />
-                        <Input
-                          type="password"
-                          value={password}
-                          onChange={(event) => setPassword(event.target.value)}
-                          placeholder="New password"
-                          autoComplete="new-password"
-                        />
-                        <div className="flex gap-2">
-                          <Button
-                            disabled={!username.trim() || !password || busy}
-                            onClick={() =>
-                              onChangeLogin(connection, {
-                                username: username.trim(),
-                                password,
-                              })
-                            }
-                          >
-                            Save login
-                          </Button>
-                          <Button variant="ghost" onClick={() => setShowCredForm(false)}>
-                            Cancel
-                          </Button>
-                        </div>
                       </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Remove */}
-                {canRemove && (
-                <div className="flex flex-col gap-2 border-t border-border pt-4">
-                  {!confirmingRemove ? (
-                    <div>
                       <Button
-                        variant="ghost"
-                        onClick={() => setConfirmingRemove(true)}
-                        iconLeft={<TrashCan size={13} />}
+                        variant="outline"
+                        disabled={!nameChanged || busy}
+                        onClick={() => onRename(connection, name.trim())}
                       >
-                        Remove connection
+                        Save
                       </Button>
                     </div>
-                  ) : (
-                    <div className="flex flex-col gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3">
-                      <p className="text-[12.5px] text-foreground">
-                        {connection.automationCount && connection.automationCount > 0
-                          ? `Remove this connection? ${connection.automationCount} automation${
-                              connection.automationCount === 1 ? '' : 's'
-                            } that rely on it stop running until it's reconnected.`
-                          : "Remove this connection? Anything that relies on it stops working until it's reconnected."}
-                      </p>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="destructive"
-                          disabled={busy}
-                          onClick={() => onRemove(connection)}
-                        >
-                          Remove
-                        </Button>
-                        <Button variant="ghost" onClick={() => setConfirmingRemove(false)}>
-                          Cancel
-                        </Button>
-                      </div>
+                  </div>
+
+                  {/* Login — password connections only (SSO has no stored password). */}
+                  {method === 'password' && (
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-[11px] text-muted-foreground">Login</span>
+                      {!showCredForm ? (
+                        <>
+                          <div>
+                            <Button variant="outline" onClick={() => setShowCredForm(true)}>
+                              Change login
+                            </Button>
+                          </div>
+                          <p className="text-[10.5px] leading-relaxed text-muted-foreground">
+                            Rotated the account? Store the new email and password here.
+                          </p>
+                        </>
+                      ) : (
+                        <div className="flex flex-col gap-2">
+                          <Input
+                            value={username}
+                            onChange={(event) => setUsername(event.target.value)}
+                            placeholder="New email / username"
+                            autoComplete="off"
+                          />
+                          <Input
+                            type="password"
+                            value={password}
+                            onChange={(event) => setPassword(event.target.value)}
+                            placeholder="New password"
+                            autoComplete="new-password"
+                          />
+                          <div className="flex gap-2">
+                            <Button
+                              disabled={!username.trim() || !password || busy}
+                              onClick={() =>
+                                onChangeLogin(connection, {
+                                  username: username.trim(),
+                                  password,
+                                })
+                              }
+                            >
+                              Save login
+                            </Button>
+                            <Button variant="ghost" onClick={() => setShowCredForm(false)}>
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
-                </div>
-                )}
+                </section>
               </>
             )}
           </div>
         </SheetBody>
+
+        {/* Danger zone (pinned) — or a read-only note when the user can't manage. */}
+        {canManage && canRemove ? (
+          <SheetFooter>
+            {!confirmingRemove ? (
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-[12px] text-foreground">Remove connection</div>
+                  {automationCount > 0 && (
+                    <div className="mt-0.5 text-[10.5px] text-muted-foreground">
+                      {automationCount} {automationCount === 1 ? 'automation relies' : 'automations rely'}{' '}
+                      on it
+                    </div>
+                  )}
+                </div>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setConfirmingRemove(true)}
+                >
+                  Remove…
+                </Button>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3">
+                <p className="text-[11.5px] leading-relaxed text-foreground">
+                  {automationCount > 0
+                    ? `Remove this connection? ${automationCount} automation${
+                        automationCount === 1 ? '' : 's'
+                      } that rely on it stop running until it's reconnected.`
+                    : "Remove this connection? Anything that relies on it stops working until it's reconnected."}
+                </p>
+                <div className="flex gap-2">
+                  <Button variant="destructive" disabled={busy} onClick={() => onRemove(connection)}>
+                    Remove
+                  </Button>
+                  <Button variant="ghost" onClick={() => setConfirmingRemove(false)}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+          </SheetFooter>
+        ) : !canManage ? (
+          <SheetFooter>
+            <p className="text-[11px] leading-relaxed text-muted-foreground">
+              You have view access. Ask an admin to reconnect, rename, or remove this connection.
+            </p>
+          </SheetFooter>
+        ) : null}
       </SheetContent>
     </Sheet>
   );
