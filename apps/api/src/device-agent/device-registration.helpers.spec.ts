@@ -134,6 +134,33 @@ describe('registerWithSerial — orphan adoption', () => {
   });
 });
 
+describe('registerWithSerial — claims agent ownership (CS-770)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('re-stamps an adopted serial-match row as source="agent" so it is not left stuck as an integration import', async () => {
+    // CS-770: a device imported via an integration (source='integration') then
+    // adopted by the endpoint agent — matched here by serial for the same
+    // member — must be re-stamped source='agent'. Otherwise the People tab
+    // skips it (it only rolls up agent devices) and the compliant device reads
+    // "Missing" there even though the Device tab still shows it.
+    (mockDb.device.findUnique as jest.Mock).mockResolvedValue({
+      id: 'dev_intune',
+      memberId: member.id,
+    });
+    (mockDb.device.update as jest.Mock).mockResolvedValue({ id: 'dev_intune' });
+
+    const dto = makeDto();
+    await registerWithSerial({ member, dto });
+
+    expect(mockDb.device.update).toHaveBeenCalledWith({
+      where: { id: 'dev_intune' },
+      data: expect.objectContaining({ source: 'agent' }),
+    });
+  });
+});
+
 describe('registerWithoutSerial — unchanged behavior', () => {
   beforeEach(() => {
     jest.clearAllMocks();

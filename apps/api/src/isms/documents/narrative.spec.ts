@@ -26,6 +26,7 @@ const data: IsmsPlatformData = {
   hasTrainingProgram: true,
   wizardAnswers: {},
   partiesFingerprint: '',
+  riskTreatmentFingerprint: '',
 };
 
 const emptyInput = (narrative: unknown): DocumentExportInput => ({

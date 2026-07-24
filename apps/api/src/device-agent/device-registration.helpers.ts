@@ -13,6 +13,13 @@ function buildUpdateData(dto: RegisterDeviceDto) {
     osVersion: dto.osVersion,
     hardwareModel: dto.hardwareModel,
     agentVersion: dto.agentVersion,
+    // The endpoint agent is the managing source once it registers a device.
+    // When it adopts a row previously created by an integration import (matched
+    // here by serial for the same member), re-stamp it as an agent device.
+    // Otherwise the row stays source='integration', the People tab skips it
+    // (it only rolls up agent devices) and a compliant device reads "Missing"
+    // there while still showing in the Device tab.
+    source: 'agent' as const,
   };
 }
 

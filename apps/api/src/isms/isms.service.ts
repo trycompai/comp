@@ -24,6 +24,9 @@ import {
   reviewValidationMessages,
 } from './documents/management-review';
 import { defaultProcedureText } from './documents/management-review-defaults';
+import { defaultRiskMethodologyNarrative } from './documents/risk-methodology';
+import { loadRiskTreatmentExtras } from './documents/risk-treatment-export-data';
+import { loadRiskTreatmentReadinessMessages } from './documents/risk-treatment-readiness';
 import { updateDraftSnapshot } from './utils/draft-snapshot';
 import { EXPORT_DOCUMENT_INCLUDE } from './utils/export-payload';
 import { lockDocument } from './utils/document-lock';
@@ -266,7 +269,9 @@ export class IsmsService {
 
     const targets = documents.filter(
       (doc) =>
-        (doc.type === 'internal_audit' || doc.type === 'management_review') &&
+        (doc.type === 'internal_audit' ||
+          doc.type === 'management_review' ||
+          doc.type === 'risk_assessment_methodology') &&
         isEmptyNarrative(doc.draftNarrative),
     );
     if (targets.length === 0) return;
@@ -282,15 +287,22 @@ export class IsmsService {
         { draftNarrative: { equals: {} } },
       ],
     };
+    const defaultNarrativeFor = (
+      type: IsmsDocumentType,
+    ): Prisma.InputJsonObject => {
+      if (type === 'internal_audit') {
+        return { programme: defaultProgrammeText(organizationName) };
+      }
+      if (type === 'management_review') {
+        return { procedure: defaultProcedureText(organizationName) };
+      }
+      // risk_assessment_methodology (6.1.2): the fully templated default text.
+      return { ...defaultRiskMethodologyNarrative(organizationName) };
+    };
     for (const doc of targets) {
       await db.ismsDocument.updateMany({
         where: { id: doc.id, ...whileNarrativeEmpty },
-        data: {
-          draftNarrative:
-            doc.type === 'internal_audit'
-              ? { programme: defaultProgrammeText(organizationName) }
-              : { procedure: defaultProcedureText(organizationName) },
-        },
+        data: { draftNarrative: defaultNarrativeFor(doc.type) },
       });
     }
   }
@@ -407,6 +419,11 @@ export class IsmsService {
       if (document.type === 'management_review') {
         await this.assertManagementReviewComplete({ tx, documentId });
       }
+      // Clause 6.1.3: at least one risk recorded and an owner on every risk
+      // and vendor; per-risk acceptance is recommended, never blocking (CS-727).
+      if (document.type === 'risk_treatment_plan') {
+        await this.assertRiskTreatmentPlanComplete({ tx, organizationId });
+      }
 
       return tx.ismsDocument.update({
         where: { id: documentId },
@@ -433,19 +450,27 @@ export class IsmsService {
     const document = await this.requireDocument({ documentId, organizationId });
     this.assertPendingApprovalBy({ document, member });
 
-    const snapshot = await collectPlatformData({
-      organizationId,
-      frameworkId: document.frameworkId,
-    });
     const now = new Date();
 
     // Freeze the draft into a new immutable published version and promote it to
     // currentVersion. Editing afterwards reverts status to draft but leaves this
     // published version live and exportable (CS-701).
-    const published = await db.$transaction(async (tx) => {
+    const publish = async (tx: Prisma.TransactionClient) => {
       // Serialize concurrent approvals (and register-row creates, which take the
       // same lock) on this document so they can't interleave and double-publish.
       await lockDocument(tx, documentId);
+
+      // Collect the drift baseline INSIDE the transaction so it reads the same
+      // point in time as the rows frozen into the published version below.
+      // The transaction runs REPEATABLE READ (one MVCC snapshot for every
+      // statement), so this baseline and the rows loaded further down can
+      // never observe different data — a concurrent platform edit commits
+      // entirely before or entirely after this approval.
+      const snapshot = await collectPlatformData({
+        organizationId,
+        frameworkId: document.frameworkId,
+        client: tx,
+      });
 
       // Atomically claim the approval: the check-then-act guard above runs before
       // the transaction, so under READ COMMITTED a racing approve/decline could
@@ -495,6 +520,24 @@ export class IsmsService {
         data: { currentVersionId: result.versionId },
       });
       return result;
+    };
+
+    // REPEATABLE READ can abort with a write conflict (P2034) when a racing
+    // lifecycle write commits between our snapshot and our claim update —
+    // retry once; the rerun takes a fresh snapshot and either wins cleanly or
+    // fails the conditional claim with the friendly BadRequestException.
+    const runPublish = () =>
+      db.$transaction(publish, {
+        isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
+      });
+    const published = await runPublish().catch((error: unknown) => {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2034'
+      ) {
+        return runPublish();
+      }
+      throw error;
     });
 
     // Render + upload the frozen exports outside the transaction (Policies
@@ -698,6 +741,50 @@ export class IsmsService {
         `This Clause 9.3 document is not ready to submit. ${messages.join(' ')}`,
       );
     }
+  }
+
+  private async assertRiskTreatmentPlanComplete({
+    tx,
+    organizationId,
+  }: {
+    tx: Prisma.TransactionClient;
+    organizationId: string;
+  }) {
+    const messages = await loadRiskTreatmentReadinessMessages({
+      organizationId,
+      client: tx,
+    });
+    if (messages.length > 0) {
+      throw new BadRequestException(
+        `This Clause 6.1.3 document is not ready to submit. ${messages.join(' ')}`,
+      );
+    }
+  }
+
+  /**
+   * The Risk Treatment Plan page payload: the same rows the export renders
+   * (from the Risk Register + Vendors) plus the submit-readiness messages.
+   * Gated at evidence:read — consistent with every other ISMS read — so the
+   * preview never depends on the viewer holding risk/vendor permissions.
+   */
+  async getRiskTreatmentData({
+    documentId,
+    organizationId,
+  }: {
+    documentId: string;
+    organizationId: string;
+  }) {
+    const document = await this.requireDocument({ documentId, organizationId });
+    if (document.type !== 'risk_treatment_plan') {
+      throw new BadRequestException(
+        'This document is not a Risk Treatment Plan',
+      );
+    }
+    const [extras, validationMessages] = await Promise.all([
+      loadRiskTreatmentExtras({ organizationId }),
+      loadRiskTreatmentReadinessMessages({ organizationId }),
+    ]);
+    return { ...extras, validationMessages };
   }
 
   private async requireDocument({

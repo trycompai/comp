@@ -26,4 +26,14 @@ export const VENDOR_OPERATIONS: Record<string, ApiOperationOptions> = {
     description:
       'Permanently removes a vendor from the organization. This action cannot be undone. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).',
   },
+  listVendorAcceptances: {
+    summary: 'List vendor risk acceptance events',
+    description:
+      "Returns the residual-risk acceptance history for a vendor, newest first. Each event freezes the residual rating at acceptance and carries a stale flag set when the vendor's residual rating has changed since (ISO 27001 6.1.3(f)).",
+  },
+  recordVendorAcceptance: {
+    summary: 'Record vendor risk-owner acceptance',
+    description:
+      "Records an immutable, timestamped acceptance of a vendor's current residual risk by the vendor owner (or a chosen member). Re-record after the residual rating changes; prior events remain in the history.",
+  },
 };

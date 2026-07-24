@@ -1,4 +1,5 @@
 import type { ApiBodyOptions } from '@nestjs/swagger';
+import { CreateRiskAcceptanceDto } from '../dto/create-risk-acceptance.dto';
 import { CreateRiskDto } from '../dto/create-risk.dto';
 import { UpdateRiskDto } from '../dto/update-risk.dto';
 
@@ -10,5 +11,9 @@ export const RISK_BODIES: Record<string, ApiBodyOptions> = {
   updateRisk: {
     description: 'Risk update data',
     type: UpdateRiskDto,
+  },
+  recordRiskAcceptance: {
+    description: 'Acceptance data (acceptor defaults to the risk owner)',
+    type: CreateRiskAcceptanceDto,
   },
 };
