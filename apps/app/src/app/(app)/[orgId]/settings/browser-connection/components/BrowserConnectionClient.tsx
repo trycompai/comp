@@ -4,6 +4,7 @@
 // connections use the same reliable path (method detection + automated
 // credential entry + a working live takeover) instead of a bespoke, flaky one.
 import { ConnectVendorLoginFlow } from '@/app/(app)/[orgId]/tasks/[taskId]/components/browser-automations/ConnectVendorLoginFlow';
+import { clearConnectState } from '@/app/(app)/[orgId]/tasks/[taskId]/components/browser-automations/connect-flow-storage';
 import { usePermissions } from '@/hooks/use-permissions';
 import { apiClient } from '@/lib/api-client';
 import { Button } from '@trycompai/design-system';
@@ -21,6 +22,11 @@ interface BrowserConnectionClientProps {
 
 /** The connect/reconnect flow the page is currently showing (full-screen). */
 type ActiveFlow = { kind: 'connect' } | { kind: 'reconnect'; connection: Connection };
+
+// Stable resume-state key for the shared connect flow on this page. Cleared each
+// time the flow opens so "Connect a vendor" always starts fresh (a settings page
+// has no "resume where I left off" — that would trap the user on a stale step).
+const CONNECT_FLOW_KEY = 'org-connections';
 
 /**
  * Org-level browser connections manager. Lists every vendor login the org has,
@@ -62,8 +68,15 @@ export function BrowserConnectionClient({
     [fetchProfiles],
   );
 
+  // Always start the shared flow from a clean slate on this page.
+  const openConnect = useCallback(() => {
+    clearConnectState(CONNECT_FLOW_KEY);
+    setFlow({ kind: 'connect' });
+  }, []);
+
   const handleReconnect = useCallback((connection: Connection) => {
     setManageOpen(false);
+    clearConnectState(CONNECT_FLOW_KEY);
     setFlow({ kind: 'reconnect', connection });
   }, []);
 
@@ -139,7 +152,7 @@ export function BrowserConnectionClient({
       <ConnectVendorLoginFlow
         // Stable key (not a real task) so the flow's resume state is scoped to
         // this page and never collides with a task's in-flight connect.
-        taskId="org-connections"
+        taskId={CONNECT_FLOW_KEY}
         reconnect={reconnect}
         onConnected={() => handleFlowDone('Connection added.')}
         onReconnected={() => handleFlowDone('Connection reconnected.')}
@@ -173,7 +186,7 @@ export function BrowserConnectionClient({
         </div>
         {canConnect && (
           <div>
-            <Button onClick={() => setFlow({ kind: 'connect' })} iconLeft={<Add size={14} />}>
+            <Button onClick={openConnect} iconLeft={<Add size={14} />}>
               Connect a vendor
             </Button>
           </div>
@@ -190,10 +203,7 @@ export function BrowserConnectionClient({
             </p>
             {canConnect && (
               <div className="mt-4">
-                <Button
-                  onClick={() => setFlow({ kind: 'connect' })}
-                  iconLeft={<Add size={14} />}
-                >
+                <Button onClick={openConnect} iconLeft={<Add size={14} />}>
                   Connect a vendor
                 </Button>
               </div>

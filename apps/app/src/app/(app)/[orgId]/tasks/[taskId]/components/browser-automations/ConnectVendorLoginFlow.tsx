@@ -336,8 +336,12 @@ export function ConnectVendorLoginFlow({
   const handleCancel = useCallback(() => {
     endSession();
     void context.cancelAuth();
+    // Clear the resume state so re-opening starts fresh at URL entry — otherwise
+    // the flow reloads the last in-progress step (e.g. "choose method") and the
+    // user is stuck re-entering the same vendor with no way back.
+    clearConnectState(taskId);
     onCancel();
-  }, [endSession, context, onCancel]);
+  }, [endSession, context, onCancel, taskId]);
 
   const host = hostnameOf(url || urlInput);
 
