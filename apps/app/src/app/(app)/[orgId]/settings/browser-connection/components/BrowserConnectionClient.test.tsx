@@ -4,7 +4,7 @@ import {
   mockHasPermission,
   setMockPermissions,
 } from '@/test-utils/mocks/permissions';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Connection } from './connection-format';
@@ -49,7 +49,12 @@ vi.mock('./ConnectionsTable', () => ({
   ),
 }));
 vi.mock('./ManageConnectionSheet', () => ({ ManageConnectionSheet: () => null }));
-vi.mock('./BrowserConnectionLiveView', () => ({ BrowserConnectionLiveView: () => null }));
+// The shared connect flow is covered by the task suite; stub it so we only test
+// that the client renders it (and doesn't pull the whole task subsystem).
+vi.mock(
+  '@/app/(app)/[orgId]/tasks/[taskId]/components/browser-automations/ConnectVendorLoginFlow',
+  () => ({ ConnectVendorLoginFlow: () => <div data-testid="connect-flow" /> }),
+);
 
 import { BrowserConnectionClient } from './BrowserConnectionClient';
 
@@ -87,5 +92,14 @@ describe('BrowserConnectionClient permission gating', () => {
 
     expect(screen.getByText(/no connections yet/i)).toBeInTheDocument();
     expect(screen.queryByTestId('table')).not.toBeInTheDocument();
+  });
+
+  it('opens the shared connect flow when "Connect a vendor" is clicked', () => {
+    setMockPermissions(ADMIN_PERMISSIONS);
+    render(<BrowserConnectionClient organizationId="org-1" initialProfiles={[profile]} />);
+
+    expect(screen.queryByTestId('connect-flow')).not.toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole('button', { name: /connect a vendor/i })[0]);
+    expect(screen.getByTestId('connect-flow')).toBeInTheDocument();
   });
 });
