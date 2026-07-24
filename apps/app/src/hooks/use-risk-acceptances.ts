@@ -48,7 +48,12 @@ export function useAcceptances(kind: AcceptanceSubjectKind, subjectId: string | 
   const endpoint = endpointFor(kind, subjectId);
   const swr = useApiSWR<AcceptancesResponse>(endpoint);
 
-  const acceptances = swr.data?.data?.data ?? [];
+  // apiClient resolves API failures into ApiResponse.error (the fetcher never
+  // throws), so swr.error alone misses forbidden/missing responses — surface
+  // both so callers can distinguish a failed load from an empty history.
+  const apiError = swr.data?.error ? new Error(swr.data.error) : null;
+  const error = swr.error ?? apiError;
+  const acceptances = error ? [] : (swr.data?.data?.data ?? []);
   const latest = acceptances[0] ?? null;
 
   const recordAcceptance = useCallback(
@@ -68,7 +73,7 @@ export function useAcceptances(kind: AcceptanceSubjectKind, subjectId: string | 
     acceptances,
     latest,
     isLoading: swr.isLoading,
-    error: swr.error,
+    error,
     mutate: swr.mutate,
     recordAcceptance,
   };

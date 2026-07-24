@@ -3,7 +3,7 @@
 // behavior: the five-band risk level scale (very-low .. very-high, computed as
 // likelihood x impact in apps/api/src/risks/risk-level.ts) and the platform's
 // four treatment strategies (mitigate/avoid/transfer/accept) with their ISO
-// 27002 option names (Modify/Avoid/Share/Retain). Keep text ASCII-safe: the
+// 27001 option names (Modify/Avoid/Share/Retain). Keep text ASCII-safe: the
 // PDF renderer's standard fonts cannot render glyphs like ">=" ligatures.
 
 /** Platform likelihood levels, in ascending order (matches the Likelihood enum). */

@@ -62,6 +62,14 @@ export function RecordAcceptanceDialog({
   defaultAcceptorId,
   onRecord,
 }: RecordAcceptanceDialogProps) {
+  // Only preselect the owner when they are actually selectable (active) —
+  // a deactivated owner would otherwise be silently submitted and rejected
+  // by the API. With no valid default the user must pick a member.
+  const validDefaultId = acceptorOptions.some(
+    (option) => option.id === defaultAcceptorId,
+  )
+    ? (defaultAcceptorId ?? '')
+    : '';
   const {
     control,
     handleSubmit,
@@ -70,7 +78,7 @@ export function RecordAcceptanceDialog({
     formState: { isSubmitting, errors },
   } = useForm<AcceptanceFormValues>({
     resolver: zodResolver(acceptanceSchema),
-    defaultValues: { acceptedById: defaultAcceptorId ?? '', notes: '' },
+    defaultValues: { acceptedById: validDefaultId, notes: '' },
   });
 
   const acceptorId = watch('acceptedById');
@@ -78,7 +86,7 @@ export function RecordAcceptanceDialog({
     acceptorOptions.find((option) => option.id === acceptorId)?.name ?? 'the selected member';
 
   const handleClose = (next: boolean) => {
-    if (!next) reset({ acceptedById: defaultAcceptorId ?? '', notes: '' });
+    if (!next) reset({ acceptedById: validDefaultId, notes: '' });
     onOpenChange(next);
   };
 

@@ -29,10 +29,16 @@ export function RiskTreatmentPlanClient(props: RiskTreatmentPlanClientProps) {
   const { riskTreatment, error, isLoading, mutateRiskTreatment } =
     useIsmsRiskTreatment(documentId);
 
-  const blockedReason =
-    riskTreatment && riskTreatment.validationMessages.length > 0
+  // null = ready to submit. While readiness is unknown (loading/failed) keep
+  // Submit blocked so the approval dialog can't be completed only to hit the
+  // server-side completeness error.
+  const blockedReason = riskTreatment
+    ? riskTreatment.validationMessages.length > 0
       ? riskTreatment.validationMessages.join(' ')
-      : null;
+      : null
+    : error
+      ? 'The readiness check could not be loaded — refresh the page and try again.'
+      : 'Checking the plan is ready to submit...';
 
   return (
     <IsmsDocumentShell

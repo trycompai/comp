@@ -26,7 +26,7 @@ import {
 import { defaultProcedureText } from './documents/management-review-defaults';
 import { defaultRiskMethodologyNarrative } from './documents/risk-methodology';
 import { loadRiskTreatmentExtras } from './documents/risk-treatment-export-data';
-import { riskTreatmentValidationMessages } from './documents/risk-treatment-plan';
+import { loadRiskTreatmentReadinessMessages } from './documents/risk-treatment-readiness';
 import { updateDraftSnapshot } from './utils/draft-snapshot';
 import { EXPORT_DOCUMENT_INCLUDE } from './utils/export-payload';
 import { lockDocument } from './utils/document-lock';
@@ -450,10 +450,6 @@ export class IsmsService {
     const document = await this.requireDocument({ documentId, organizationId });
     this.assertPendingApprovalBy({ document, member });
 
-    const snapshot = await collectPlatformData({
-      organizationId,
-      frameworkId: document.frameworkId,
-    });
     const now = new Date();
 
     // Freeze the draft into a new immutable published version and promote it to
@@ -463,6 +459,16 @@ export class IsmsService {
       // Serialize concurrent approvals (and register-row creates, which take the
       // same lock) on this document so they can't interleave and double-publish.
       await lockDocument(tx, documentId);
+
+      // Collect the drift baseline INSIDE the transaction so it reads the same
+      // point in time as the rows frozen into the published version below — a
+      // concurrent platform edit can no longer make a just-approved document
+      // immediately stale.
+      const snapshot = await collectPlatformData({
+        organizationId,
+        frameworkId: document.frameworkId,
+        client: tx,
+      });
 
       // Atomically claim the approval: the check-then-act guard above runs before
       // the transaction, so under READ COMMITTED a racing approve/decline could
@@ -717,38 +723,6 @@ export class IsmsService {
     }
   }
 
-  /**
-   * Clause-6.1.3 readiness: the RTP renders from the platform Risk Register +
-   * Vendors (org-scoped), not from register rows of its own — so readiness
-   * reads those tables. Archived risks are out of the plan (see
-   * loadRiskTreatmentExtras). Shared by the submit gate and the page payload.
-   */
-  private async riskTreatmentReadinessMessages({
-    organizationId,
-    client,
-  }: {
-    organizationId: string;
-    client?: Prisma.TransactionClient;
-  }): Promise<string[]> {
-    const dbc = client ?? db;
-    const [risks, vendors] = await Promise.all([
-      dbc.risk.findMany({
-        where: { organizationId, status: { not: 'archived' } },
-        select: { assigneeId: true },
-      }),
-      dbc.vendor.findMany({
-        where: { organizationId },
-        select: { assigneeId: true },
-      }),
-    ]);
-    return riskTreatmentValidationMessages({
-      riskCount: risks.length,
-      risksWithoutOwner: risks.filter((risk) => !risk.assigneeId).length,
-      vendorsWithoutOwner: vendors.filter((vendor) => !vendor.assigneeId)
-        .length,
-    });
-  }
-
   private async assertRiskTreatmentPlanComplete({
     tx,
     organizationId,
@@ -756,7 +730,7 @@ export class IsmsService {
     tx: Prisma.TransactionClient;
     organizationId: string;
   }) {
-    const messages = await this.riskTreatmentReadinessMessages({
+    const messages = await loadRiskTreatmentReadinessMessages({
       organizationId,
       client: tx,
     });
@@ -788,7 +762,7 @@ export class IsmsService {
     }
     const [extras, validationMessages] = await Promise.all([
       loadRiskTreatmentExtras({ organizationId }),
-      this.riskTreatmentReadinessMessages({ organizationId }),
+      loadRiskTreatmentReadinessMessages({ organizationId }),
     ]);
     return { ...extras, validationMessages };
   }

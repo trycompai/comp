@@ -59,8 +59,9 @@ export function RiskLevelMatrixPreview() {
       </div>
       <Text variant="muted">
         Computed from likelihood x impact (1-25), normalized to the same 1-10 score the risk
-        badges use: Very low (1-5), Low (6-10), Medium (11-15), High (16-20), Very high (21-25).
-        This table renders into the document and is not editable.
+        badges use (score bands: Very low 1-2, Low 3-4, Medium 5-6, High 7-8, Very high 9-10 —
+        i.e. raw products 1-5, 6-10, 11-15, 16-20, 21-25). This table renders into the document
+        and is not editable.
       </Text>
     </div>
   );

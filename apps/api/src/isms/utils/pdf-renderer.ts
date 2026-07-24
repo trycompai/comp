@@ -115,7 +115,7 @@ export function renderIsmsPdf({
     const threeCol = table.headers.length === 3;
     const cellFills = table.cellFills;
     // Never let a header word break mid-word ("Acceptanc/e"): floor each
-    // column at its header's longest word. Wide tables (the 6.1.3 plan has 9
+    // column at its header's longest word. Wide tables (the 6.1.3 plan has 10
     // columns) otherwise get squeezed below the header width by autotable's
     // content-proportional sizing.
     pdf.setFont('helvetica', 'bold');

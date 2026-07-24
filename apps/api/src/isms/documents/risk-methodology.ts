@@ -168,7 +168,7 @@ export function buildRiskMethodologySections(
     {
       heading: 'Risk level matrix',
       intro:
-        'The risk level is derived from the product of likelihood and impact (1-25), normalized to a 1-10 score and mapped to five bands: Very low (1-5), Low (6-10), Medium (11-15), High (16-20), and Very high (21-25). Each risk in the register carries its calculated level for both its inherent and residual states.',
+        'The risk level is derived from the product of likelihood and impact (1-25), normalized to a 1-10 score (the product divided by 2.5, rounded up) and banded by score: Very low (score 1-2), Low (3-4), Medium (5-6), High (7-8), Very high (9-10). Expressed as the raw product, the bands are: Very low 1-5, Low 6-10, Medium 11-15, High 16-20, Very high 21-25. Each risk in the register carries its calculated level for both its inherent and residual states.',
       table: riskMatrixTable(),
     },
     {

@@ -81,6 +81,39 @@ const NOT_FOUND = (entity: string): ApiResponseOptions => ({
   },
 });
 
+// Auth fields the controllers spread into every response (sibling pattern:
+// get-risk-by-id.responses.ts).
+const AUTH_RESPONSE_PROPERTIES = {
+  authType: {
+    type: 'string',
+    enum: ['api-key', 'session'],
+    description: 'How the request was authenticated',
+  },
+  authenticatedUser: {
+    type: 'object',
+    description: 'User information (only for session auth)',
+    properties: {
+      id: { type: 'string', example: 'usr_def456ghi789' },
+      email: { type: 'string', example: 'user@example.com' },
+    },
+  },
+};
+
+const INTERNAL_ERROR: ApiResponseOptions = {
+  status: 500,
+  description: 'Internal server error',
+  content: {
+    'application/json': {
+      schema: {
+        type: 'object',
+        properties: {
+          message: { type: 'string', example: 'Internal server error' },
+        },
+      },
+    },
+  },
+};
+
 const UNAUTHORIZED: ApiResponseOptions = {
   status: 401,
   description: 'Unauthorized - Invalid authentication',
@@ -128,6 +161,7 @@ export const LIST_RISK_ACCEPTANCES_RESPONSES: Record<
           type: 'object',
           properties: {
             data: { type: 'array', items: RISK_ACCEPTANCE_SCHEMA },
+            ...AUTH_RESPONSE_PROPERTIES,
           },
         },
       },
@@ -136,6 +170,7 @@ export const LIST_RISK_ACCEPTANCES_RESPONSES: Record<
   401: UNAUTHORIZED,
   403: FORBIDDEN,
   404: NOT_FOUND('Risk'),
+  500: INTERNAL_ERROR,
 };
 
 export const RECORD_RISK_ACCEPTANCE_RESPONSES: Record<
@@ -145,7 +180,17 @@ export const RECORD_RISK_ACCEPTANCE_RESPONSES: Record<
   201: {
     status: 201,
     description: 'Acceptance recorded successfully',
-    content: { 'application/json': { schema: RISK_ACCEPTANCE_SCHEMA } },
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            ...RISK_ACCEPTANCE_SCHEMA.properties,
+            ...AUTH_RESPONSE_PROPERTIES,
+          },
+        },
+      },
+    },
   },
   400: {
     status: 400,
@@ -168,4 +213,5 @@ export const RECORD_RISK_ACCEPTANCE_RESPONSES: Record<
   401: UNAUTHORIZED,
   403: FORBIDDEN,
   404: NOT_FOUND('Risk'),
+  500: INTERNAL_ERROR,
 };
