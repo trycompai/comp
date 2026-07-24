@@ -57,6 +57,22 @@ describe('BrowserMfaInstructionsService', () => {
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
+  it('strips markdown emphasis the model emits', async () => {
+    mockGenerate.mockResolvedValueOnce(
+      asResult({
+        steps: ['Open **Settings**', 'Click `Password and authentication`'],
+        confident: true,
+      }),
+    );
+
+    const result = await service.getInstructions('github.com');
+
+    expect(result.steps).toEqual([
+      'Open Settings',
+      'Click Password and authentication',
+    ]);
+  });
+
   it('falls back to universal steps when the model is not confident', async () => {
     mockGenerate.mockResolvedValueOnce(
       asResult({ steps: ['A guessed step'], confident: false }),

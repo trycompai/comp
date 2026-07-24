@@ -97,7 +97,13 @@ RULES:
 - Do NOT invent specific button or menu names you are unsure about.
 - Only cover authenticator-app (TOTP) setup — never SMS, email, or hardware key/passkey.
 - One short action per step. 3-7 steps.
+- Write each step in PLAIN TEXT. Do NOT use markdown, asterisks, backticks, or bold — the UI renders raw text.
 - Set confident=true ONLY if the steps reflect this vendor's actual current UI (from the provided docs, or your solid knowledge of it). If you do not recognize the vendor or are unsure of the path, set confident=false.`;
+
+/** Strip markdown emphasis the model sometimes emits (`**bold**`, `__`, backticks). */
+function stripEmphasis(text: string): string {
+  return text.replace(/\*\*/g, '').replace(/__/g, '').replace(/`/g, '').trim();
+}
 
 function buildPrompt(hostname: string, grounding: string | null): string {
   const base = `Vendor hostname: ${hostname}
@@ -177,7 +183,7 @@ export class BrowserMfaInstructionsService {
     );
     return {
       hostname,
-      steps: object.steps,
+      steps: object.steps.map(stripEmphasis).filter((step) => step.length > 0),
       tips: UNIVERSAL_TIPS,
       confident: true,
       grounded,

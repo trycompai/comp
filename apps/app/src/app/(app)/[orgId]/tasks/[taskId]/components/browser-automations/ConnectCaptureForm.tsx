@@ -7,6 +7,7 @@ import { useMemo } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import type { LoginAnalysis } from '../../hooks/types';
+import { useMfaInstructions } from '../../hooks/useMfaInstructions';
 import { deriveCaptureFields } from './connect-capture-fields';
 import { MfaSetupHelp } from './MfaSetupHelp';
 
@@ -60,6 +61,11 @@ export function ConnectCaptureForm({
   submitLabel = 'Sign in for me',
 }: ConnectCaptureFormProps) {
   const derived = useMemo(() => deriveCaptureFields(analysis), [analysis]);
+
+  // Warm the per-vendor 2FA guidance while the user fills in the form, so the
+  // "How do I find this key?" helper opens instantly — and the server-side cache
+  // means the next person connecting the same vendor gets it immediately too.
+  useMfaInstructions(hostname, Boolean(hostname?.trim()));
 
   const {
     control,
