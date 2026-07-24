@@ -129,66 +129,80 @@ function ShotPane({ label, src, scroll }: { label: string; src: string; scroll?:
   );
 }
 
-/** One ledger row: collapsed = verdict + reason + count; expand = proof + context. */
+/** One ledger row: collapsed = verdict + reason + count; expand = proof + context.
+ *  In `flat` mode the header isn't clickable and the screenshots are always shown. */
 function StepRow({
   step,
   defaultExpanded,
+  flat,
 }: {
   step: LedgerStep;
   defaultExpanded: boolean;
+  flat?: boolean;
 }) {
   const count = shotCount(step);
-  const [expanded, setExpanded] = useState(defaultExpanded && count > 0);
+  const [open, setOpen] = useState(defaultExpanded && count > 0);
+  const expanded = flat ? count > 0 : open;
   const badge = verdict(step);
   const failed = step.status === 'failed' || step.status === 'blocked';
   // Close-up is the proof; fall back to the full page when no close-up exists.
   const proof = step.focusScreenshotUrl || step.screenshotUrl;
   const full = step.screenshotUrl;
 
-  return (
-    <div className="border-b border-border last:border-b-0">
-      <button
-        type="button"
-        onClick={() => count > 0 && setExpanded((v) => !v)}
-        className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-left ${
-          count > 0 ? 'cursor-pointer hover:bg-muted/40' : 'cursor-default'
+  const header = (
+    <>
+      <span className="grid h-5 w-5 flex-none place-items-center rounded-sm bg-muted font-mono text-[10px] text-foreground">
+        {step.index + 1}
+      </span>
+      {step.host && <VendorLogo hostname={step.host} size={18} />}
+      {step.host && (
+        <span className="hidden flex-none font-mono text-[11px] text-muted-foreground sm:inline">
+          {step.host}
+        </span>
+      )}
+      <span
+        className={`min-w-0 flex-1 truncate text-[11.5px] ${
+          failed ? 'text-destructive' : 'text-muted-foreground'
         }`}
       >
-        <span className="grid h-5 w-5 flex-none place-items-center rounded-sm bg-muted font-mono text-[10px] text-foreground">
-          {step.index + 1}
-        </span>
-        {step.host && <VendorLogo hostname={step.host} size={18} />}
-        {step.host && (
-          <span className="hidden flex-none font-mono text-[11px] text-muted-foreground sm:inline">
-            {step.host}
-          </span>
-        )}
-        <span
-          className={`min-w-0 flex-1 truncate text-[11.5px] ${
-            failed ? 'text-destructive' : 'text-muted-foreground'
+        {step.reason || (failed ? 'No screenshot captured' : 'Evidence captured')}
+      </span>
+      <span
+        className="flex-none rounded-sm px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em]"
+        style={{ backgroundColor: badge.bg, color: badge.fg }}
+      >
+        {badge.label}
+      </span>
+      <span className="hidden flex-none items-center gap-1 whitespace-nowrap text-[10.5px] text-muted-foreground sm:inline-flex">
+        <ImageIcon size={11} className={count === 0 ? 'opacity-50' : undefined} />
+        {count} {count === 1 ? 'screenshot' : 'screenshots'}
+      </span>
+      {!flat && count > 0 && (
+        <ChevronDown
+          size={12}
+          className={`flex-none text-muted-foreground transition-transform ${
+            expanded ? 'rotate-180' : ''
+          }`}
+        />
+      )}
+    </>
+  );
+
+  return (
+    <div className="border-b border-border last:border-b-0">
+      {flat ? (
+        <div className="flex w-full items-center gap-2.5 px-3 py-2.5">{header}</div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => count > 0 && setOpen((v) => !v)}
+          className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-left ${
+            count > 0 ? 'cursor-pointer hover:bg-muted/40' : 'cursor-default'
           }`}
         >
-          {step.reason || (failed ? 'No screenshot captured' : 'Evidence captured')}
-        </span>
-        <span
-          className="flex-none rounded-sm px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em]"
-          style={{ backgroundColor: badge.bg, color: badge.fg }}
-        >
-          {badge.label}
-        </span>
-        <span className="hidden flex-none items-center gap-1 whitespace-nowrap text-[10.5px] text-muted-foreground sm:inline-flex">
-          <ImageIcon size={11} className={count === 0 ? 'opacity-50' : undefined} />
-          {count} {count === 1 ? 'screenshot' : 'screenshots'}
-        </span>
-        {count > 0 && (
-          <ChevronDown
-            size={12}
-            className={`flex-none text-muted-foreground transition-transform ${
-              expanded ? 'rotate-180' : ''
-            }`}
-          />
-        )}
-      </button>
+          {header}
+        </button>
+      )}
 
       {expanded && count > 0 && (
         <div className="flex flex-col gap-3 bg-muted/30 px-3 pb-3 pt-1 sm:flex-row">
@@ -207,13 +221,21 @@ function StepRow({
  * collapsed row (verdict + reason + screenshot count); expanding shows the
  * close-up "proof" beside the scrollable full page. Single-step runs auto-expand.
  */
-export function RunStepLedger({ run }: { run: BrowserAutomationRun }) {
+export function RunStepLedger({
+  run,
+  flat,
+}: {
+  run: BrowserAutomationRun;
+  /** Show every step expanded with its screenshots inline (no per-step click). */
+  flat?: boolean;
+}) {
   const steps = toLedgerSteps(run);
   const single = steps.length === 1;
   return (
-    <div className="overflow-hidden rounded-md border border-border">
+    // Flat mode sits inside the history card, so it drops its own border.
+    <div className={flat ? undefined : 'overflow-hidden rounded-md border border-border'}>
       {steps.map((step) => (
-        <StepRow key={step.key} step={step} defaultExpanded={single} />
+        <StepRow key={step.key} step={step} defaultExpanded={single} flat={flat} />
       ))}
     </div>
   );

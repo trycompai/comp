@@ -101,15 +101,11 @@ export function BrowserAutomationsList({
           ? profileById.get(step.profileId)
           : profileByHost.get(hostnameFromUrl(step.targetUrl ?? '')),
       );
-      const chain = steps.map(
-        (step, index) => conns[index]?.hostname ?? hostnameFromUrl(step.targetUrl ?? ''),
-      );
       const needing = conns.find(
         (conn) => conn && (conn.status === 'needs_reauth' || conn.status === 'blocked'),
       );
       return {
         automation,
-        chain,
         reconnectUrl: needing ? `https://${needing.hostname}` : undefined,
       };
     });
@@ -176,11 +172,10 @@ export function BrowserAutomationsList({
         </div>
 
         <div className="flex flex-col gap-2 p-4">
-          {rows.slice(0, visible).map(({ automation, chain, reconnectUrl }) => (
+          {rows.slice(0, visible).map(({ automation, reconnectUrl }) => (
             <div key={automation.id} className="flex flex-col gap-1.5">
               <AutomationItem
                 automation={automation}
-                vendorChain={chain}
                 isRunning={runningAutomationId === automation.id}
                 isExpanded={expandedId === automation.id}
                 readOnly={!canUpdate}

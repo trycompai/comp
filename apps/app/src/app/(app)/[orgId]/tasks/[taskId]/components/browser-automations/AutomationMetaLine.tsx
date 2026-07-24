@@ -19,6 +19,8 @@ interface AutomationMetaLineProps {
   lastRunAt?: string | null;
   latestRun?: BrowserAutomationRun;
   isPaused: boolean;
+  /** Render as a compact single clause that sits inline beside the name (2B). */
+  inline?: boolean;
 }
 
 /**
@@ -35,6 +37,7 @@ export function AutomationMetaLine({
   lastRunAt,
   latestRun,
   isPaused,
+  inline,
 }: AutomationMetaLineProps) {
   const cadence = scheduleFrequency ? CADENCE_WORD[scheduleFrequency] : null;
   // Next run is only meaningful once there's a real last-run timestamp; it is
@@ -45,7 +48,11 @@ export function AutomationMetaLine({
       : null;
   const cadenceThenNext = `${cadence ? ` · ${cadence}` : ''}${nextRun ? ` · next ${nextRun}` : ''}`;
 
-  const base = 'mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground';
+  // Inline (2B): a compact, non-wrapping clause that rides next to the name.
+  // Block (default): its own line under the name, free to wrap.
+  const base = inline
+    ? 'flex flex-none items-center gap-x-1.5 whitespace-nowrap text-[10.5px] text-muted-foreground'
+    : 'mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground';
 
   if (isPaused) {
     return (

@@ -61,4 +61,36 @@ describe('RunStepLedger', () => {
     fireEvent.click(screen.getByText('gh ok'));
     expect(screen.getByAltText('Close-up · Proof')).toBeInTheDocument();
   });
+
+  it('shows every step expanded inline in flat mode, with no click needed', () => {
+    render(
+      <RunStepLedger
+        flat
+        run={run({
+          stepRuns: [
+            {
+              id: 'a',
+              order: 0,
+              status: 'completed',
+              evaluationStatus: 'pass',
+              evaluationReason: 'gh ok',
+              screenshotUrl: 'https://s3.example.com/gh.png',
+              step: { targetUrl: 'https://github.com/a' },
+            },
+            {
+              id: 'b',
+              order: 1,
+              status: 'completed',
+              evaluationStatus: 'pass',
+              evaluationReason: 'aws ok',
+              screenshotUrl: 'https://s3.example.com/aws.png',
+              step: { targetUrl: 'https://aws.amazon.com/c' },
+            },
+          ],
+        })}
+      />,
+    );
+    // Both proofs are visible up front — flat mode never collapses a step.
+    expect(screen.getAllByAltText('Close-up · Proof')).toHaveLength(2);
+  });
 });
