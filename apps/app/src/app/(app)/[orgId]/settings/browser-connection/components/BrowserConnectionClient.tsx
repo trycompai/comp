@@ -7,7 +7,7 @@ import { ConnectVendorLoginFlow } from '@/app/(app)/[orgId]/tasks/[taskId]/compo
 import { clearConnectState } from '@/app/(app)/[orgId]/tasks/[taskId]/components/browser-automations/connect-flow-storage';
 import { usePermissions } from '@/hooks/use-permissions';
 import { apiClient } from '@/lib/api-client';
-import { Button } from '@trycompai/design-system';
+import { Button, Section } from '@trycompai/design-system';
 import { Add } from '@trycompai/design-system/icons';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -188,36 +188,60 @@ export function BrowserConnectionClient({
   const summary = summarize(profiles);
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="text-[13px] text-muted-foreground">
-          Vendor logins Comp AI uses to sign in and capture evidence on a schedule.
-          {profiles.length > 0 && (
-            <span className="ml-2 text-foreground">
-              {summary.total} {summary.total === 1 ? 'connection' : 'connections'}
-              {' · '}
-              <span style={{ color: 'var(--success)' }}>{summary.active} active</span>
-              {summary.needAttention > 0 && (
-                <>
-                  {' · '}
-                  <span style={{ color: 'oklch(0.5 0.14 85)' }}>
-                    {summary.needAttention} need attention
-                  </span>
-                </>
-              )}
-            </span>
-          )}
+    <Section
+      title="Browser connections"
+      description="The vendor logins Comp AI signs in with to capture audit evidence automatically."
+      actions={
+        canConnect ? (
+          <Button onClick={openConnect} iconLeft={<Add size={14} />}>
+            Connect a vendor
+          </Button>
+        ) : undefined
+      }
+    >
+      <div className="mt-4 flex flex-col gap-4">
+        {/* Orient anyone who lands here from Settings without knowing the feature:
+            what it does, that it's unattended, and where the automations live. */}
+        <div className="rounded-lg border border-border bg-muted/30 p-3.5">
+          <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+            How it works
+          </div>
+          <ol className="flex flex-col gap-1.5 text-[12px] leading-relaxed text-muted-foreground">
+            <li>
+              <span className="text-foreground">1.</span> Connect a vendor login here — Comp
+              AI signs in for you, including any two-factor codes.
+            </li>
+            <li>
+              <span className="text-foreground">2.</span> On a schedule it signs in,
+              screenshots the required page as audit evidence, and re-signs in on its own when
+              a session expires.
+            </li>
+            <li>
+              <span className="text-foreground">3.</span> You build the automations that use
+              these logins inside a task, under &ldquo;Browser evidence&rdquo;.
+            </li>
+          </ol>
         </div>
-        {canConnect && (
-          <div>
-            <Button onClick={openConnect} iconLeft={<Add size={14} />}>
-              Connect a vendor
-            </Button>
+
+        {profiles.length > 0 && (
+          <div className="text-[13px] text-muted-foreground">
+            <span className="text-foreground">
+              {summary.total} {summary.total === 1 ? 'connection' : 'connections'}
+            </span>
+            {' · '}
+            <span style={{ color: 'var(--success)' }}>{summary.active} active</span>
+            {summary.needAttention > 0 && (
+              <>
+                {' · '}
+                <span style={{ color: 'oklch(0.5 0.14 85)' }}>
+                  {summary.needAttention} need attention
+                </span>
+              </>
+            )}
           </div>
         )}
-      </div>
 
-      {profiles.length === 0 ? (
+        {profiles.length === 0 ? (
         <div className="grid place-items-center rounded-lg border border-dashed border-border py-16 text-center">
           <div className="max-w-[320px]">
             <div className="text-sm text-foreground">No connections yet</div>
@@ -257,6 +281,7 @@ export function BrowserConnectionClient({
         onClearTotp={handleClearTotp}
         onRemove={handleRemove}
       />
-    </div>
+      </div>
+    </Section>
   );
 }

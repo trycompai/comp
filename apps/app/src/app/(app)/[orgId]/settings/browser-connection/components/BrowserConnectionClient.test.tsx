@@ -36,6 +36,24 @@ vi.mock('@trycompai/design-system', () => ({
   ),
   Input: (props: InputHTMLAttributes<HTMLInputElement>) => <input {...props} />,
   Spinner: () => <span data-testid="spinner" />,
+  Section: ({
+    title,
+    description,
+    actions,
+    children,
+  }: {
+    title?: ReactNode;
+    description?: ReactNode;
+    actions?: ReactNode;
+    children?: ReactNode;
+  }) => (
+    <section>
+      {title && <h2>{title}</h2>}
+      {description && <p>{description}</p>}
+      {actions}
+      {children}
+    </section>
+  ),
 }));
 
 vi.mock('@trycompai/design-system/icons', () => ({
