@@ -175,7 +175,7 @@ async function triggerCompletionEmail({
   memberId: string;
   organizationId: string;
 }): Promise<void> {
-  await fetch(url, {
+  const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -184,4 +184,14 @@ async function triggerCompletionEmail({
     },
     body: JSON.stringify({ memberId }),
   });
+
+  // fetch only rejects on network errors, never on a 4xx/5xx response. Without
+  // this check an HTTP failure (e.g. the API rejecting the service token) would
+  // be treated as a successful send, so the caller's catch would never log the
+  // delivery failure.
+  if (!response.ok) {
+    throw new Error(
+      `Training completion email request to ${url} failed: ${response.status} ${response.statusText}`,
+    );
+  }
 }

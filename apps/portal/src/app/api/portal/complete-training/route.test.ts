@@ -15,6 +15,12 @@ const mocks = vi.hoisted(() => ({
   completionCreate: vi.fn(),
   completionUpdate: vi.fn(),
   completionFindMany: vi.fn(),
+  logger: vi.fn(),
+  fetch: vi.fn(),
+  env: {
+    SERVICE_TOKEN_PORTAL: undefined as string | undefined,
+    NEXT_PUBLIC_API_URL: 'http://api.test',
+  },
 }));
 
 vi.mock('@/app/lib/auth', () => ({
@@ -34,11 +40,12 @@ vi.mock('@db/server', () => ({
   },
 }));
 
-// No service token → the route skips the (best-effort) completion email, so we
-// don't need to intercept fetch for these tests.
-vi.mock('@/env.mjs', () => ({
-  env: { SERVICE_TOKEN_PORTAL: undefined, NEXT_PUBLIC_API_URL: 'http://api.test' },
-}));
+// SERVICE_TOKEN_PORTAL defaults to undefined so most tests skip the
+// (best-effort) completion email and don't need to intercept fetch. The email
+// failure test below sets it to exercise the fetch path.
+vi.mock('@/env.mjs', () => ({ env: mocks.env }));
+vi.mock('@/utils/logger', () => ({ logger: mocks.logger }));
+vi.stubGlobal('fetch', mocks.fetch);
 
 import { POST } from './route';
 
@@ -53,6 +60,7 @@ function makeRequest(body: unknown): NextRequest {
 describe('POST /api/portal/complete-training', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.env.SERVICE_TOKEN_PORTAL = undefined;
   });
 
   it('returns 401 when there is no session', async () => {
@@ -199,5 +207,50 @@ describe('POST /api/portal/complete-training', () => {
     expect(mocks.completionCreate).toHaveBeenCalledWith({
       data: expect.objectContaining({ videoId: 'hipaa-sat-1', memberId: 'mem_1' }),
     });
+  });
+
+  // The completion email is best-effort, but a non-2xx response from the API is
+  // a real delivery failure and must be logged. fetch does not reject on 4xx/5xx,
+  // so before the fix the failure was silently treated as success (no log, no
+  // signal to retry). Marking training complete must still succeed.
+  it('logs when the completion email request returns a non-2xx response', async () => {
+    mocks.env.SERVICE_TOKEN_PORTAL = 'svc-token';
+    mocks.getSession.mockResolvedValue({ user: { id: 'user_1' } });
+    mocks.memberFindFirst.mockResolvedValue({
+      id: 'mem_1',
+      userId: 'user_1',
+      organizationId: 'org_1',
+      role: 'employee',
+      deactivated: false,
+    });
+    mocks.frameworkInstanceFindFirst.mockResolvedValue({ id: 'frm_1' });
+    mocks.completionFindFirst.mockResolvedValue(null);
+    mocks.completionCreate.mockResolvedValue({
+      id: 'etvc_hipaa',
+      videoId: 'hipaa-sat-1',
+      memberId: 'mem_1',
+      completedAt: new Date('2026-07-24T00:00:00.000Z'),
+    });
+    mocks.fetch.mockResolvedValue({
+      ok: false,
+      status: 500,
+      statusText: 'Internal Server Error',
+    });
+
+    const res = await POST(
+      makeRequest({ videoId: 'hipaa-sat-1', organizationId: 'org_1' }),
+    );
+
+    // Completion is persisted regardless — the email is best-effort.
+    expect(res.status).toBe(200);
+    expect(mocks.fetch).toHaveBeenCalledWith(
+      'http://api.test/v1/training/send-hipaa-completion-email',
+      expect.objectContaining({ method: 'POST' }),
+    );
+    // The HTTP failure must surface to the logger, not be swallowed as success.
+    expect(mocks.logger).toHaveBeenCalledWith(
+      'Error triggering training completion email',
+      expect.objectContaining({ memberId: 'mem_1' }),
+    );
   });
 });
