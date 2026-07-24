@@ -2,8 +2,20 @@
 
 import { VendorLogo } from '@/components/VendorLogo';
 import { cn } from '@/lib/utils';
-import { Button } from '@trycompai/design-system';
-import { ChevronDown, Edit, Play, TrashCan } from '@trycompai/design-system/icons';
+import {
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@trycompai/design-system';
+import {
+  ChevronDown,
+  Edit,
+  OverflowMenuVertical,
+  Play,
+  TrashCan,
+} from '@trycompai/design-system/icons';
 import { useState } from 'react';
 import type { BrowserAutomation, BrowserAutomationRun } from '../../hooks/types';
 import { AutomationMetaLine } from './AutomationMetaLine';
@@ -113,7 +125,7 @@ export function AutomationItem({
         </div>
 
         <div className="flex w-full items-center gap-1.5 sm:w-auto sm:flex-none">
-          {!readOnly && (
+          {!readOnly && !confirmDelete && (
             // A real on/off switch so the paused state is visible at a glance
             // (teal = scheduled runs on, gray = paused).
             <button
@@ -137,86 +149,85 @@ export function AutomationItem({
             </button>
           )}
 
-          {!readOnly && (
-            <Button
-              variant="outline"
-              size="icon-sm"
-              onClick={onEdit}
-              aria-label="Edit automation"
-            >
-              <Edit size={14} className="text-muted-foreground" />
-            </Button>
-          )}
-
-          {!readOnly && (
-            confirmDelete ? (
-              <div className="flex items-center gap-1">
+          {/* Run stays visible; Edit + Delete tuck into a ⋯ menu so the row
+              isn't a wall of icons. Delete confirms inline in place of the row. */}
+          <div className="ml-auto flex items-center gap-1.5 sm:ml-0">
+            {confirmDelete ? (
+              <>
+                <span className="text-xs text-muted-foreground">Delete this automation?</span>
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={() => { onDelete(); setConfirmDelete(false); }}
+                  onClick={() => {
+                    onDelete();
+                    setConfirmDelete(false);
+                  }}
                 >
-                  Confirm
+                  Delete
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setConfirmDelete(false)}
-                >
+                <Button variant="ghost" size="sm" onClick={() => setConfirmDelete(false)}>
                   Cancel
                 </Button>
-              </div>
+              </>
             ) : (
-              <Button
-                variant="outline"
-                size="icon-sm"
-                onClick={() => setConfirmDelete(true)}
-                aria-label="Delete automation"
-              >
-                <TrashCan size={14} className="text-muted-foreground hover:text-destructive" />
-              </Button>
-            )
-          )}
-
-          {/* Run + the run-history toggle, pushed right on mobile. The schedule
-              lives once in the section header (task-wide), so it's not here. */}
-          <div className="ml-auto flex items-center gap-1.5 sm:ml-0">
-            {!readOnly && (
-              <Button
-                variant="default"
-                size="sm"
-                aria-busy={isRunning}
-                disabled={isDisabled}
-                onClick={() => {
-                  if (!isRunning && !isDisabled) onRun();
-                }}
-                iconLeft={
-                  isRunning ? (
-                    // Same 14px footprint as the Play icon, so swapping to the
-                    // spinner keeps the button's width fixed — no layout shift.
-                    <span
-                      aria-hidden
-                      className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent"
+              <>
+                {!readOnly && (
+                  <Button
+                    variant="default"
+                    size="sm"
+                    aria-busy={isRunning}
+                    disabled={isDisabled}
+                    onClick={() => {
+                      if (!isRunning && !isDisabled) onRun();
+                    }}
+                    iconLeft={
+                      isRunning ? (
+                        // Same 14px footprint as the Play icon, so swapping to
+                        // the spinner keeps the width fixed — no layout shift.
+                        <span
+                          aria-hidden
+                          className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent"
+                        />
+                      ) : (
+                        <Play size={14} />
+                      )
+                    }
+                  >
+                    Run
+                  </Button>
+                )}
+                {!readOnly && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger variant="ellipsis" aria-label="More actions">
+                      <OverflowMenuVertical />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={onEdit}>
+                        <Edit size={16} />
+                        Edit steps
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        variant="destructive"
+                        onClick={() => setConfirmDelete(true)}
+                      >
+                        <TrashCan size={16} />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+                {runs.length > 0 && (
+                  <Button size="icon-sm" variant="ghost" onClick={onToggleExpand}>
+                    <ChevronDown
+                      size={14}
+                      className={cn(
+                        'transition-transform duration-300',
+                        isExpanded && 'rotate-180',
+                      )}
                     />
-                  ) : (
-                    <Play size={14} />
-                  )
-                }
-              >
-                Run
-              </Button>
-            )}
-
-            {runs.length > 0 && (
-              <Button size="icon-sm" variant="ghost" onClick={onToggleExpand}>
-                <ChevronDown
-                  size={14}
-                  className={cn(
-                    'transition-transform duration-300',
-                    isExpanded && 'rotate-180',
-                  )}
-                />
-              </Button>
+                  </Button>
+                )}
+              </>
             )}
           </div>
         </div>

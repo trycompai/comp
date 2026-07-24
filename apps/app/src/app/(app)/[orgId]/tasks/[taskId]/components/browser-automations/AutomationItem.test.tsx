@@ -1,13 +1,20 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-// AutomationItem only uses the DS Button now (the schedule moved to the section
-// header), so a simple Button stub is enough.
+// Stub the DS Button + DropdownMenu (Edit/Delete live in a ⋯ menu now).
 vi.mock('@trycompai/design-system', () => ({
   Button: ({ children, onClick, disabled, ...props }: any) => (
     <button onClick={onClick} disabled={disabled} aria-label={props['aria-label']}>
       {children}
     </button>
+  ),
+  DropdownMenu: ({ children }: any) => <div>{children}</div>,
+  DropdownMenuTrigger: ({ children, ...props }: any) => (
+    <button aria-label={props['aria-label']}>{children}</button>
+  ),
+  DropdownMenuContent: ({ children }: any) => <div>{children}</div>,
+  DropdownMenuItem: ({ children, onClick }: any) => (
+    <button onClick={onClick}>{children}</button>
   ),
 }));
 vi.mock('@/components/VendorLogo', () => ({
@@ -48,10 +55,12 @@ const baseProps = {
 };
 
 describe('AutomationItem', () => {
-  it('renders Run and Edit for an editor', () => {
+  it('renders Run and an actions menu (Edit/Delete) for an editor', () => {
     render(<AutomationItem {...baseProps} />);
     expect(screen.getByText('Run')).toBeInTheDocument();
-    expect(screen.getByLabelText('Edit automation')).toBeInTheDocument();
+    expect(screen.getByLabelText('More actions')).toBeInTheDocument();
+    expect(screen.getByText('Edit steps')).toBeInTheDocument();
+    expect(screen.getByText('Delete')).toBeInTheDocument();
   });
 
   it('keeps the "Run" label while running so the button width does not shift', () => {
@@ -65,6 +74,6 @@ describe('AutomationItem', () => {
   it('hides editor actions in read-only mode', () => {
     render(<AutomationItem {...baseProps} readOnly />);
     expect(screen.queryByText('Run')).not.toBeInTheDocument();
-    expect(screen.queryByLabelText('Edit automation')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('More actions')).not.toBeInTheDocument();
   });
 });
