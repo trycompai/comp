@@ -20,6 +20,7 @@ describe('TrainingController', () => {
 
   const mockTrainingService = {
     sendTrainingCompletionEmailIfComplete: jest.fn(),
+    sendHipaaCompletionEmailIfComplete: jest.fn(),
     generateCertificate: jest.fn(),
     getCompletions: jest.fn(),
     markVideoComplete: jest.fn(),
@@ -60,6 +61,27 @@ describe('TrainingController', () => {
 
       expect(
         trainingService.sendTrainingCompletionEmailIfComplete,
+      ).toHaveBeenCalledWith('mem_123', 'org_123');
+      expect(result).toEqual(serviceResult);
+    });
+  });
+
+  describe('sendHipaaTrainingCompletionEmail', () => {
+    const dto = { memberId: 'mem_123' };
+
+    it('should call trainingService.sendHipaaCompletionEmailIfComplete with correct params', async () => {
+      const serviceResult = { sent: true };
+      mockTrainingService.sendHipaaCompletionEmailIfComplete.mockResolvedValue(
+        serviceResult,
+      );
+
+      const result = await controller.sendHipaaTrainingCompletionEmail(
+        'org_123',
+        dto as never,
+      );
+
+      expect(
+        trainingService.sendHipaaCompletionEmailIfComplete,
       ).toHaveBeenCalledWith('mem_123', 'org_123');
       expect(result).toEqual(serviceResult);
     });
@@ -196,6 +218,16 @@ describe('TrainingController', () => {
       const permissions = Reflect.getMetadata(
         PERMISSIONS_KEY,
         controller.sendTrainingCompletionEmail,
+      );
+      expect(permissions).toEqual([
+        { resource: 'training', actions: ['update'] },
+      ]);
+    });
+
+    it('sendHipaaTrainingCompletionEmail should require training:update', () => {
+      const permissions = Reflect.getMetadata(
+        PERMISSIONS_KEY,
+        controller.sendHipaaTrainingCompletionEmail,
       );
       expect(permissions).toEqual([
         { resource: 'training', actions: ['update'] },
