@@ -56,6 +56,7 @@ export class RiskAcceptancesController {
   @ApiResponse(LIST_RISK_ACCEPTANCES_RESPONSES[401])
   @ApiResponse(LIST_RISK_ACCEPTANCES_RESPONSES[403])
   @ApiResponse(LIST_RISK_ACCEPTANCES_RESPONSES[404])
+  @ApiResponse(LIST_RISK_ACCEPTANCES_RESPONSES[500])
   async listRiskAcceptances(
     @Param('id') riskId: string,
     @OrganizationId() organizationId: string,
@@ -85,6 +86,7 @@ export class RiskAcceptancesController {
   @ApiResponse(RECORD_RISK_ACCEPTANCE_RESPONSES[401])
   @ApiResponse(RECORD_RISK_ACCEPTANCE_RESPONSES[403])
   @ApiResponse(RECORD_RISK_ACCEPTANCE_RESPONSES[404])
+  @ApiResponse(RECORD_RISK_ACCEPTANCE_RESPONSES[500])
   async recordRiskAcceptance(
     @Param('id') riskId: string,
     @Body() dto: CreateRiskAcceptanceDto,

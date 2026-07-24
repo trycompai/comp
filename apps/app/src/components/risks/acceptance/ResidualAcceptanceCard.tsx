@@ -60,7 +60,10 @@ export function ResidualAcceptanceCard({
   acceptorOptions,
   canUpdate,
 }: ResidualAcceptanceCardProps) {
-  const { acceptances, latest, isLoading, recordAcceptance } = useAcceptances(kind, subjectId);
+  const { acceptances, latest, isLoading, error, mutate, recordAcceptance } = useAcceptances(
+    kind,
+    subjectId,
+  );
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const currentLevelLabel =
@@ -95,7 +98,9 @@ export function ResidualAcceptanceCard({
             <h3 className="text-lg font-normal tracking-[-0.01em]">Residual risk acceptance</h3>
             {latest && !latestStale && <Badge variant="accent">Accepted</Badge>}
             {latest && latestStale && <Badge variant="destructive">Stale</Badge>}
-            {!latest && !isLoading && <Badge variant="secondary">Awaiting acceptance</Badge>}
+            {!latest && !isLoading && !error && (
+              <Badge variant="secondary">Awaiting acceptance</Badge>
+            )}
           </div>
           <div className="text-xs text-muted-foreground">
             The risk owner&apos;s formal, dated acceptance of the residual risk (ISO 27001
@@ -114,7 +119,16 @@ export function ResidualAcceptanceCard({
         )}
       </div>
 
-      {isLoading && acceptances.length === 0 ? (
+      {error ? (
+        // A failed load must never read as "no acceptance recorded" — that
+        // could prompt a duplicate record of an existing formal acceptance.
+        <div className="flex flex-wrap items-center gap-3">
+          <Text variant="muted">Couldn&apos;t load the acceptance history.</Text>
+          <Button type="button" size="sm" variant="outline" onClick={() => void mutate()}>
+            Retry
+          </Button>
+        </div>
+      ) : isLoading && acceptances.length === 0 ? (
         <div className="flex items-center justify-center py-4">
           <Spinner />
         </div>

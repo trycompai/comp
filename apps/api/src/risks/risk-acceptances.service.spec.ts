@@ -5,6 +5,12 @@ const mockDb = {
   vendor: { findFirst: jest.fn() },
   member: { findFirst: jest.fn() },
   riskAcceptance: { findMany: jest.fn(), create: jest.fn() },
+  // The create paths run inside a transaction with a subject row-lock; the
+  // callback receives this same mock as the transaction client.
+  $transaction: jest.fn(
+    (fn: (tx: typeof mockDb) => unknown): unknown => fn(mockDb),
+  ),
+  $queryRaw: jest.fn().mockResolvedValue([]),
 };
 
 jest.mock('@db', () => ({ db: mockDb }));
@@ -65,6 +71,22 @@ describe('RiskAcceptancesService', () => {
       // unlikely(2) x minor(2) = raw 4 -> score 2 -> very-low (score bands,
       // matching RiskScoreBadge / TreatmentHero)
       expect(view.levelLabel).toBe('Very low');
+    });
+
+    it('row-locks the risk and writes through the same transaction', async () => {
+      mockDb.risk.findFirst.mockResolvedValue(baseRisk);
+      mockDb.member.findFirst.mockResolvedValue(activeMember);
+      mockDb.riskAcceptance.create.mockResolvedValue(storedRow);
+
+      await service.createForRisk('rsk_1', ORG, {});
+
+      // The subject lock serializes concurrent residual edits with the
+      // read-freeze-insert sequence, so a fresh acceptance can never be
+      // recorded against an already-superseded rating.
+      expect(mockDb.$transaction).toHaveBeenCalledTimes(1);
+      expect(mockDb.$queryRaw).toHaveBeenCalledTimes(1);
+      const rawQuery = mockDb.$queryRaw.mock.calls[0][0].join('?');
+      expect(rawQuery).toContain('FOR UPDATE');
     });
 
     it('defaults the acceptor to the risk owner (assignee)', async () => {

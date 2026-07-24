@@ -29,10 +29,17 @@ export function RiskTreatmentPlanClient(props: RiskTreatmentPlanClientProps) {
   const { riskTreatment, error, isLoading, mutateRiskTreatment } =
     useIsmsRiskTreatment(documentId);
 
-  const blockedReason =
-    riskTreatment && riskTreatment.validationMessages.length > 0
-      ? riskTreatment.validationMessages.join(' ')
-      : null;
+  // null = ready to submit. Fail closed: a load/revalidation error blocks
+  // submission even when stale cached data is still present (SWR keeps the
+  // previous data on a failed revalidate), and loading blocks until the
+  // server has confirmed readiness.
+  const blockedReason = error
+    ? 'The readiness check could not be loaded — refresh the page and try again.'
+    : riskTreatment
+      ? riskTreatment.validationMessages.length > 0
+        ? riskTreatment.validationMessages.join(' ')
+        : null
+      : 'Checking the plan is ready to submit...';
 
   return (
     <IsmsDocumentShell

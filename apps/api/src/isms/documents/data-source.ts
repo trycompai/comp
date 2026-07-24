@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { db } from '@db';
+import type { Prisma } from '@db';
 import { parseStoredAnswers } from '../wizard/wizard-schema';
 import type { IsmsPlatformData } from './types';
 
@@ -16,10 +17,19 @@ const HIGH_IMPACT = ['major', 'severe'];
 export async function collectPlatformData({
   organizationId,
   frameworkId,
+  client,
 }: {
   organizationId: string;
   frameworkId: string;
+  /**
+   * Optional transaction client. The approval flow passes its transaction so
+   * the drift baseline is read at the SAME point in time as the rows frozen
+   * into the published version — otherwise a concurrent edit between the two
+   * reads makes a just-approved document immediately show as stale.
+   */
+  client?: Prisma.TransactionClient;
 }): Promise<IsmsPlatformData> {
+  const dbc = client ?? db;
   const [
     organization,
     frameworkInstances,
@@ -34,15 +44,15 @@ export async function collectPlatformData({
     partiesRows,
     acceptanceRows,
   ] = await Promise.all([
-    db.organization.findUnique({
+    dbc.organization.findUnique({
       where: { id: organizationId },
       select: { name: true },
     }),
-    db.frameworkInstance.findMany({
+    dbc.frameworkInstance.findMany({
       where: { organizationId },
       select: { framework: { select: { name: true } } },
     }),
-    db.vendor.findMany({
+    dbc.vendor.findMany({
       where: { organizationId },
       select: {
         id: true,
@@ -61,14 +71,14 @@ export async function collectPlatformData({
         assignee: { select: { user: { select: { name: true, email: true } } } },
       },
     }),
-    db.member.count({ where: { organizationId, deactivated: false } }),
-    db.member.groupBy({
+    dbc.member.count({ where: { organizationId, deactivated: false } }),
+    dbc.member.groupBy({
       by: ['department'],
       where: { organizationId, deactivated: false },
       _count: { _all: true },
     }),
-    db.device.count({ where: { organizationId } }),
-    db.risk.findMany({
+    dbc.device.count({ where: { organizationId } }),
+    dbc.risk.findMany({
       where: { organizationId },
       select: {
         id: true,
@@ -86,18 +96,18 @@ export async function collectPlatformData({
         assignee: { select: { user: { select: { name: true, email: true } } } },
       },
     }),
-    db.employeeTrainingVideoCompletion.count({
+    dbc.employeeTrainingVideoCompletion.count({
       where: { member: { organizationId } },
     }),
-    db.frameworkEditorFramework.findUnique({
+    dbc.frameworkEditorFramework.findUnique({
       where: { id: frameworkId },
       select: { name: true },
     }),
-    db.ismsProfile.findUnique({
+    dbc.ismsProfile.findUnique({
       where: { organizationId_frameworkId: { organizationId, frameworkId } },
       select: { answers: true },
     }),
-    db.ismsInterestedParty.findMany({
+    dbc.ismsInterestedParty.findMany({
       where: {
         document: {
           organizationId,
@@ -107,7 +117,7 @@ export async function collectPlatformData({
       },
       select: { id: true, name: true, category: true },
     }),
-    db.riskAcceptance.findMany({
+    dbc.riskAcceptance.findMany({
       where: { organizationId },
       select: { id: true, riskId: true, vendorId: true },
     }),

@@ -3,7 +3,13 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { db, type Impact, type Likelihood, type RiskAcceptance } from '@db';
+import {
+  db,
+  type Impact,
+  type Likelihood,
+  type Prisma,
+  type RiskAcceptance,
+} from '@db';
 import { CreateRiskAcceptanceDto } from './dto/create-risk-acceptance.dto';
 import { LEVEL_LABEL, ratingLevel, type RiskLevel } from './risk-level';
 
@@ -70,27 +76,36 @@ export class RiskAcceptancesService {
      */
     assertAccess?: (risk: { assigneeId: string | null }) => void,
   ): Promise<RiskAcceptanceView> {
-    const risk = await db.risk.findFirst({
-      where: { id: riskId, organizationId },
-      select: {
-        assigneeId: true,
-        residualLikelihood: true,
-        residualImpact: true,
-      },
-    });
-    if (!risk) {
-      throw new NotFoundException(
-        `Risk with ID ${riskId} not found in organization ${organizationId}`,
-      );
-    }
-    assertAccess?.(risk);
+    // Row-lock the risk for the whole read-freeze-insert sequence: a
+    // concurrent residual PATCH blocks until this commits, so the frozen
+    // rating is always the rating at acceptance time (never instantly stale).
+    return db.$transaction(async (tx) => {
+      // Org-scoped so a foreign-tenant id can never acquire (even briefly)
+      // another organization's row lock.
+      await tx.$queryRaw`SELECT id FROM "Risk" WHERE id = ${riskId} AND "organizationId" = ${organizationId} FOR UPDATE`;
+      const risk = await tx.risk.findFirst({
+        where: { id: riskId, organizationId },
+        select: {
+          assigneeId: true,
+          residualLikelihood: true,
+          residualImpact: true,
+        },
+      });
+      if (!risk) {
+        throw new NotFoundException(
+          `Risk with ID ${riskId} not found in organization ${organizationId}`,
+        );
+      }
+      assertAccess?.(risk);
 
-    return this.createAcceptance({
-      organizationId,
-      subject: { riskId },
-      dto,
-      ownerMemberId: risk.assigneeId,
-      current: risk,
+      return this.createAcceptance({
+        tx,
+        organizationId,
+        subject: { riskId },
+        dto,
+        ownerMemberId: risk.assigneeId,
+        current: risk,
+      });
     });
   }
 
@@ -109,19 +124,30 @@ export class RiskAcceptancesService {
     organizationId: string,
     dto: CreateRiskAcceptanceDto,
   ): Promise<RiskAcceptanceView> {
-    const vendor = await this.findVendorRating(vendorId, organizationId);
+    // Same row-lock rationale as createForRisk.
+    return db.$transaction(async (tx) => {
+      // Org-scoped so a foreign-tenant id can never acquire (even briefly)
+      // another organization's row lock.
+      await tx.$queryRaw`SELECT id FROM "Vendor" WHERE id = ${vendorId} AND "organizationId" = ${organizationId} FOR UPDATE`;
+      const vendor = await this.findVendorRating(vendorId, organizationId, tx);
 
-    return this.createAcceptance({
-      organizationId,
-      subject: { vendorId },
-      dto,
-      ownerMemberId: vendor.assigneeId,
-      current: vendor.rating,
+      return this.createAcceptance({
+        tx,
+        organizationId,
+        subject: { vendorId },
+        dto,
+        ownerMemberId: vendor.assigneeId,
+        current: vendor.rating,
+      });
     });
   }
 
-  private async findVendorRating(vendorId: string, organizationId: string) {
-    const vendor = await db.vendor.findFirst({
+  private async findVendorRating(
+    vendorId: string,
+    organizationId: string,
+    client?: Prisma.TransactionClient,
+  ) {
+    const vendor = await (client ?? db).vendor.findFirst({
       where: { id: vendorId, organizationId },
       select: {
         assigneeId: true,
@@ -160,13 +186,14 @@ export class RiskAcceptancesService {
   }
 
   private async createAcceptance(params: {
+    tx: Prisma.TransactionClient;
     organizationId: string;
     subject: { riskId: string } | { vendorId: string };
     dto: CreateRiskAcceptanceDto;
     ownerMemberId: string | null;
     current: ResidualRating;
   }): Promise<RiskAcceptanceView> {
-    const { organizationId, subject, dto, ownerMemberId, current } = params;
+    const { tx, organizationId, subject, dto, ownerMemberId, current } = params;
 
     const acceptorId = dto.acceptedById ?? ownerMemberId;
     if (!acceptorId) {
@@ -175,7 +202,7 @@ export class RiskAcceptancesService {
       );
     }
 
-    const member = await db.member.findFirst({
+    const member = await tx.member.findFirst({
       where: { id: acceptorId, organizationId },
       select: {
         deactivated: true,
@@ -193,7 +220,7 @@ export class RiskAcceptancesService {
       );
     }
 
-    const row = await db.riskAcceptance.create({
+    const row = await tx.riskAcceptance.create({
       data: {
         organizationId,
         ...subject,
