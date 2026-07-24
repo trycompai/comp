@@ -321,7 +321,7 @@ export function ManageConnectionSheet({
                             type="button"
                             disabled={busy}
                             onClick={handleTurnOffTotp}
-                            className="text-[11px] text-destructive hover:underline disabled:opacity-50"
+                            className="cursor-pointer text-[11px] text-destructive hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             Turn off
                           </button>

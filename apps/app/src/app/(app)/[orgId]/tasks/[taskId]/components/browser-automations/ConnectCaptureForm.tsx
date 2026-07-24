@@ -153,7 +153,7 @@ export function ConnectCaptureForm({
                     type="button"
                     aria-label="Remove field"
                     onClick={() => remove(index)}
-                    className="shrink-0 text-muted-foreground hover:text-foreground"
+                    className="shrink-0 cursor-pointer text-muted-foreground hover:text-foreground"
                   >
                     <Close size={16} />
                   </button>
@@ -188,7 +188,7 @@ export function ConnectCaptureForm({
           <button
             type="button"
             onClick={() => append({ label: '', value: '', kind: 'text', editable: true })}
-            className="flex items-center justify-center gap-1.5 rounded-md border border-dashed border-border py-2 text-xs text-muted-foreground transition-colors hover:border-foreground/40 hover:text-foreground"
+            className="flex cursor-pointer items-center justify-center gap-1.5 rounded-md border border-dashed border-border py-2 text-xs text-muted-foreground transition-colors hover:border-foreground/40 hover:text-foreground"
           >
             <Add size={12} />
             Add a field
@@ -211,10 +211,10 @@ export function ConnectCaptureForm({
             {...register('totpSeed')}
           />
           <p className="text-xs leading-relaxed text-muted-foreground">
-            The long setup key shown <em>once</em> when you add the authenticator app
-            (&ldquo;can&apos;t scan? enter this code&rdquo;) — <strong>not</strong> the
-            rotating 6-digit code. We use it to generate codes at run time so scheduled
-            runs don&apos;t need you.
+            The long setup key shown once when you add the authenticator app
+            (&ldquo;can&apos;t scan? enter this code&rdquo;) — not the rotating 6-digit
+            code. We use it to generate codes at run time so scheduled runs don&apos;t
+            need you.
           </p>
           <MfaSetupHelp hostname={hostname} />
         </div>

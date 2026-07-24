@@ -45,7 +45,7 @@ export function MfaSetupHelp({ hostname }: MfaSetupHelpProps) {
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         aria-expanded={open}
-        className="inline-flex items-center gap-1.5 self-start text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+        className="inline-flex cursor-pointer items-center gap-1.5 self-start text-[11px] text-muted-foreground transition-colors hover:text-foreground"
       >
         <svg
           width="12"
@@ -106,7 +106,7 @@ export function MfaSetupHelp({ hostname }: MfaSetupHelpProps) {
               <button
                 type="button"
                 onClick={() => retry()}
-                className="text-foreground underline underline-offset-2"
+                className="cursor-pointer text-foreground underline underline-offset-2"
               >
                 try again
               </button>

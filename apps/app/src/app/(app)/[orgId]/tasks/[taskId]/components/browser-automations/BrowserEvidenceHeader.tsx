@@ -207,7 +207,7 @@ export function BrowserEvidenceHeader({
                 {/* One schedule for all of this task's browser evidence. */}
                 <DropdownMenuTrigger
                   aria-label="Change schedule for all browser evidence"
-                  className="flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs text-foreground transition-colors hover:bg-muted/40"
+                  className="flex cursor-pointer items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs text-foreground transition-colors hover:bg-muted/40"
                 >
                   <Calendar size={14} className="text-muted-foreground" />
                   {FREQUENCY_LABELS[currentCadence]}
@@ -219,7 +219,7 @@ export function BrowserEvidenceHeader({
             {showConnect && (
               <button
                 onClick={onConnectAnother}
-                className="rounded-md border border-border bg-background px-3 py-1.5 text-xs text-foreground transition-colors hover:bg-muted/40"
+                className="cursor-pointer rounded-md border border-border bg-background px-3 py-1.5 text-xs text-foreground transition-colors hover:bg-muted/40"
               >
                 Connect another vendor
               </button>
@@ -230,7 +230,7 @@ export function BrowserEvidenceHeader({
           {showCreate && (
             <button
               onClick={onCreate}
-              className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground transition-opacity hover:opacity-90"
+              className="flex cursor-pointer items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground transition-opacity hover:opacity-90"
             >
               <Add size={14} />
               New evidence
