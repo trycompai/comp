@@ -197,7 +197,9 @@ export class BrowserCredentialSigninService {
         vault,
         input: { profile, targetUrl: input.url },
         log: step,
-        usernameLabel: input.usernameLabel,
+        // On reconnect the caller doesn't pass a label (no capture form), so fall
+        // back to the one detected + stored at connect time.
+        usernameLabel: input.usernameLabel ?? profile.identifierLabel ?? undefined,
       });
       step('Checking whether that worked');
 

@@ -292,6 +292,14 @@ export class StoreAuthProfileCredentialsDto {
   @ValidateNested({ each: true })
   @Type(() => CredentialExtraFieldDto)
   extraFields?: CredentialExtraFieldDto[];
+
+  @ApiPropertyOptional({
+    description:
+      "The vendor's own label for the identifier field (e.g. \"IAM username\"), stored so sign-in steps and reconnects show the real field name.",
+  })
+  @IsString()
+  @IsOptional()
+  usernameLabel?: string;
 }
 
 export class BrowserAuthProfileResponseDto {

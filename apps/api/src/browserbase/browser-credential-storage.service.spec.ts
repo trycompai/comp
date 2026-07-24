@@ -4,13 +4,14 @@ import * as opClient from './onepassword-client';
 import { TOTP_FIELD_TITLE, buildItemReference } from './onepassword-credential-item';
 
 jest.mock('@db', () => ({
-  db: { browserAuthProfile: { findFirst: jest.fn() } },
+  db: { browserAuthProfile: { findFirst: jest.fn(), update: jest.fn() } },
 }));
 jest.mock('./onepassword-client');
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { db } = require('@db');
 const findFirst = db.browserAuthProfile.findFirst as jest.Mock;
+const update = db.browserAuthProfile.update as jest.Mock;
 
 const mockConfigured = opClient.isOnePasswordConfigured as jest.Mock;
 const mockGetClient = opClient.getOnePasswordClient as jest.Mock;
@@ -127,6 +128,43 @@ describe('BrowserCredentialStorageService — TOTP', () => {
         }),
       ).rejects.toBeInstanceOf(BadRequestException);
       expect(itemsPut).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('storeProfileCredentials — identifier label', () => {
+    it('persists the detected identifier label (trimmed) on the profile', async () => {
+      findFirst.mockResolvedValue({
+        id: 'bap_1',
+        organizationId: 'org_1',
+        displayName: 'GitHub',
+        hostname: 'github.com',
+      });
+      update.mockResolvedValue({});
+      mockGetClient.mockResolvedValue({
+        vaults: {
+          list: jest.fn().mockResolvedValue([]),
+          create: jest.fn().mockResolvedValue({ id: 'vault-1' }),
+        },
+        items: { create: jest.fn().mockResolvedValue({ id: 'item-1' }) },
+      });
+      mockLoadModule.mockResolvedValue({
+        ItemCategory: { Login: 'Login' },
+        ItemFieldType: { Text: 'Text', Concealed: 'Concealed', Totp: 'Totp' },
+      });
+
+      await service.storeProfileCredentials({
+        organizationId: 'org_1',
+        profileId: 'bap_1',
+        username: 'ci-bot',
+        password: 'secret',
+        usernameLabel: '  IAM username  ',
+      });
+
+      expect(update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ identifierLabel: 'IAM username' }),
+        }),
+      );
     });
   });
 

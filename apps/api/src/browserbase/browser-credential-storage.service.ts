@@ -31,6 +31,8 @@ export interface StoreProfileCredentialsInput {
   totpSeed?: string;
   /** Extra site-specific fields (e.g. workspace, subdomain). */
   extraFields?: { label: string; value: string }[];
+  /** The vendor's own label for the identifier field (e.g. "IAM username"). */
+  usernameLabel?: string;
 }
 
 /**
@@ -88,6 +90,9 @@ export class BrowserCredentialStorageService {
         vaultProvider: ONEPASSWORD_PROVIDER,
         vaultExternalItemRef: itemRef,
         vaultConnectionId: vaultId,
+        // Persist the detected identifier label so reconnects and scheduled
+        // sign-ins show the real field name (undefined → Prisma leaves it as-is).
+        identifierLabel: input.usernameLabel?.trim() || undefined,
       },
     });
   }

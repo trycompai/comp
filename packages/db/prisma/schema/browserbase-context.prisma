@@ -28,6 +28,11 @@ model BrowserAuthProfile {
   loginIdentity String @default("")
   displayName   String
 
+  /// The vendor's own label for the identifier field (e.g. "IAM username"),
+  /// detected at connect time, so sign-in steps and reconnects show the real
+  /// field name instead of a generic "username".
+  identifierLabel String?
+
   contextId        String
   status           BrowserAuthProfileStatus @default(unverified)
   lastVerifiedAt   DateTime?

@@ -60,6 +60,7 @@ describe('BrowserAutomationExecutionService', () => {
       hostname: 'example.com',
       loginIdentity: '',
       displayName: 'example.com browser profile',
+      identifierLabel: null,
       contextId: 'ctx_1',
       status: 'verified',
       lastVerifiedAt: null,

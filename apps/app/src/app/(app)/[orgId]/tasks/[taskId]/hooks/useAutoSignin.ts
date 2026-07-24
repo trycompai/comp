@@ -75,6 +75,8 @@ export function useAutoSignin() {
               extraFields: credentials.extraFields?.length
                 ? credentials.extraFields
                 : undefined,
+              // Persist the detected identifier label so reconnects show it too.
+              usernameLabel: usernameLabel?.trim() || undefined,
             },
           );
           if (credRes.error) {
