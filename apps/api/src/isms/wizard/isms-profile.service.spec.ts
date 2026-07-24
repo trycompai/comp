@@ -69,6 +69,7 @@ const platformData = {
   hasTrainingProgram: false,
   wizardAnswers: {},
   partiesFingerprint: '',
+  riskTreatmentFingerprint: '',
 };
 
 const args = { organizationId: 'org_1', frameworkId: 'fw_1' };

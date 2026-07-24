@@ -16,6 +16,16 @@ jest.mock('@db', () => ({
     member: { findFirst: jest.fn() },
     $transaction: jest.fn(),
   },
+  Prisma: {
+    TransactionIsolationLevel: { RepeatableRead: 'RepeatableRead' },
+    PrismaClientKnownRequestError: class PrismaClientKnownRequestError extends Error {
+      code: string;
+      constructor(message: string, { code }: { code: string }) {
+        super(message);
+        this.code = code;
+      }
+    },
+  },
 }));
 jest.mock('./documents/data-source', () => ({
   collectPlatformData: jest.fn(),
@@ -55,6 +65,7 @@ const platformData = {
   hasTrainingProgram: false,
   wizardAnswers: {},
   partiesFingerprint: '',
+  riskTreatmentFingerprint: '',
 };
 
 describe('IsmsService.approve (CS-701 versioning)', () => {
@@ -139,9 +150,12 @@ describe('IsmsService.approve (CS-701 versioning)', () => {
 
     await service.approve(args);
 
+    // The baseline is collected INSIDE the approval transaction (client
+    // threaded) so it reads the same point in time as the frozen rows.
     expect(mockCollect).toHaveBeenCalledWith({
       organizationId: 'org_1',
       frameworkId: 'fw_1',
+      client: expect.anything(),
     });
     // Re-derives in-tx from the same snapshot: persisted rows and the frozen
     // version come from one pass.

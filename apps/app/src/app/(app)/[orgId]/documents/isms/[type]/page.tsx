@@ -15,6 +15,8 @@ import { ManagementReviewClient } from '../components/ManagementReviewClient';
 import { MonitoringClient } from '../components/MonitoringClient';
 import { ObjectivesClient } from '../components/ObjectivesClient';
 import { RequirementsClient } from '../components/RequirementsClient';
+import { RiskMethodologyClient } from '../components/RiskMethodologyClient';
+import { RiskTreatmentPlanClient } from '../components/RiskTreatmentPlanClient';
 import { RolesClient } from '../components/RolesClient';
 import { ScopeClient } from '../components/ScopeClient';
 import {
@@ -55,6 +57,8 @@ const ISMS_DETAIL_CLIENTS: Record<
   management_review: ManagementReviewClient,
   isms_scope: ScopeClient,
   leadership_commitment: LeadershipClient,
+  risk_assessment_methodology: RiskMethodologyClient,
+  risk_treatment_plan: RiskTreatmentPlanClient,
 };
 
 interface FrameworkApiResponse {
