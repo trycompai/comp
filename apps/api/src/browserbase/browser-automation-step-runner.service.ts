@@ -11,6 +11,7 @@ import {
 import type { BrowserEvidenceLog } from './browser-evidence-execution';
 import {
   createEvidenceTimeline,
+  type BrowserRunLivePhase,
   type EvidenceTimelineStep,
 } from './browser-evidence-step-timeline';
 import {
@@ -87,6 +88,8 @@ export class BrowserAutomationStepRunnerService {
     onSteps?: (steps: EvidenceTimelineStep[]) => void;
     /** Follow each vendor's live view as the run advances to it. */
     onLiveView?: (url: string) => void;
+    /** Live-view phase so the UI can cover the iframe between/after vendors. */
+    onLivePhase?: (phase: BrowserRunLivePhase) => void;
   }): Promise<BrowserEvidenceRunResult> {
     const multiStep = input.steps.length > 1;
     const timeline = createEvidenceTimeline(input.onSteps);
@@ -117,6 +120,12 @@ export class BrowserAutomationStepRunnerService {
           sessionId: index === 0 ? input.firstSessionId : undefined,
           onLog: (entry) => timeline.step(entry.message),
           onLiveView: input.onLiveView,
+          // When this vendor's session is torn down, tell the UI whether another
+          // vendor is coming ("switching") or the run is wrapping up ("finishing").
+          onSessionClosing: () =>
+            input.onLivePhase?.(
+              index === input.steps.length - 1 ? 'finishing' : 'switching',
+            ),
         }),
       );
     }
@@ -141,6 +150,8 @@ export class BrowserAutomationStepRunnerService {
     onLog?: (log: BrowserEvidenceLog) => void;
     /** This step's live view once its session opens (fresh-session steps only). */
     onLiveView?: (url: string) => void;
+    /** Fired before this step's fresh session is closed (fresh-session steps only). */
+    onSessionClosing?: () => void;
   }): Promise<BrowserEvidenceRunResult> {
     const stepRun = await this.runs.createStepRun({
       runId: input.runId,
@@ -188,6 +199,7 @@ export class BrowserAutomationStepRunnerService {
                 onSession: input.onLiveView
                   ? (info) => input.onLiveView?.(info.liveViewUrl)
                   : undefined,
+                onSessionClosing: input.onSessionClosing,
               });
         } catch (error) {
           this.logger.error('Browser evidence runner failed', error);

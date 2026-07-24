@@ -39,6 +39,11 @@ export interface BrowserEvidenceRunnerInput {
   onLog?: (log: BrowserEvidenceLog) => void;
   /** Fired once this step's live session opens, so the Run view can follow it. */
   onSession?: (info: { sessionId: string; liveViewUrl: string }) => void;
+  /**
+   * Fired right before this step's session is torn down, so the Run view can
+   * cover the (about-to-disconnect) live iframe with a transition state.
+   */
+  onSessionClosing?: () => void;
 }
 
 export interface BrowserEvidenceSessionInput extends BrowserEvidenceRunnerInput {
@@ -102,6 +107,9 @@ export class BrowserEvidenceRunnerService {
             sessionId,
           });
         } finally {
+          // Signal the imminent teardown before we actually close, so the UI can
+          // cover the live view before Browserbase's iframe shows "disconnected".
+          input.onSessionClosing?.();
           await this.closeSession(sessionId);
         }
       },

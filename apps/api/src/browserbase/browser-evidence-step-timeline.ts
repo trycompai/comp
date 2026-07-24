@@ -13,6 +13,17 @@ export interface EvidenceTimelineStep {
   state: 'done' | 'active' | 'pending' | 'warn' | 'fail';
 }
 
+/**
+ * What the Run view's live iframe should reflect. Between vendors and at the end
+ * of a run a browser session is torn down, and the (now-dead) Browserbase live
+ * view briefly shows its own "disconnected" notice. We stream this phase so the
+ * UI can cover the iframe with a calm transition state instead:
+ *   • running   — a live session is up; show the iframe
+ *   • switching — the current vendor is done; the next vendor's session is opening
+ *   • finishing — the last vendor is done; the run is wrapping up
+ */
+export type BrowserRunLivePhase = 'running' | 'switching' | 'finishing';
+
 const clock = () =>
   new Date().toLocaleTimeString('en-US', {
     hour12: false,

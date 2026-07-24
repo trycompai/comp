@@ -12,6 +12,7 @@ import { stepsForRun } from './browser-automation-step-results';
 import { BrowserAutomationStepRunnerService } from './browser-automation-step-runner.service';
 import {
   createEvidenceTimeline,
+  type BrowserRunLivePhase,
   type EvidenceTimelineStep,
 } from './browser-evidence-step-timeline';
 import {
@@ -164,6 +165,7 @@ export class BrowserAutomationExecutionService {
     organizationId: string,
     onSteps?: (steps: EvidenceTimelineStep[]) => void,
     onLiveView?: (url: string) => void,
+    onLivePhase?: (phase: BrowserRunLivePhase) => void,
   ) {
     const automation = await this.getRunnableAutomation({
       automationId,
@@ -186,6 +188,7 @@ export class BrowserAutomationExecutionService {
       firstSessionId: sessionId,
       onSteps,
       onLiveView,
+      onLivePhase,
     });
 
     await this.runs.finishRun({ runId, startedAt: run.startedAt, result });

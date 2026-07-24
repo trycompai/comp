@@ -310,6 +310,7 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
         liveViewUrl={execution.liveViewUrl}
         variant="execution"
         steps={execution.steps}
+        livePhase={execution.livePhase}
         onCancel={execution.cancelExecution}
       />
     );

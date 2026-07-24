@@ -9,7 +9,10 @@ import { BrowserAutomationDraftService } from './browser-automation-draft.servic
 import { BrowserAutomationExecutionService } from './browser-automation-execution.service';
 import { BrowserAuthProfileService } from './browser-auth-profile.service';
 import { BrowserCredentialStorageService } from './browser-credential-storage.service';
-import type { EvidenceTimelineStep } from './browser-evidence-step-timeline';
+import type {
+  BrowserRunLivePhase,
+  EvidenceTimelineStep,
+} from './browser-evidence-step-timeline';
 import { BrowserEvidenceRunnerService } from './browser-evidence-runner.service';
 import { BrowserbaseScreenshotService } from './browserbase-screenshot.service';
 import { BrowserbaseSessionService } from './browserbase-session.service';
@@ -354,6 +357,7 @@ export class BrowserbaseService {
     organizationId: string,
     onSteps?: (steps: EvidenceTimelineStep[]) => void,
     onLiveView?: (url: string) => void,
+    onLivePhase?: (phase: BrowserRunLivePhase) => void,
   ) {
     return this.automationExecution.executeAutomationLive(
       automationId,
@@ -362,6 +366,7 @@ export class BrowserbaseService {
       organizationId,
       onSteps,
       onLiveView,
+      onLivePhase,
     );
   }
 

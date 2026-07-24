@@ -39,7 +39,14 @@ export const executeAutomationLive = task({
           steps as unknown as Parameters<typeof metadata.set>[1],
         ),
       // Each vendor's live view, so the Run iframe follows the run across vendors.
-      (liveViewUrl) => metadata.set('liveViewUrl', liveViewUrl),
+      // A fresh view means we're live again — clear any transition state.
+      (liveViewUrl) => {
+        metadata.set('liveViewUrl', liveViewUrl);
+        metadata.set('livePhase', 'running');
+      },
+      // Live-view phase: 'switching' between vendors, 'finishing' at the end, so
+      // the Run view covers the (soon-to-disconnect) iframe with a calm overlay.
+      (livePhase) => metadata.set('livePhase', livePhase),
     );
   },
 });

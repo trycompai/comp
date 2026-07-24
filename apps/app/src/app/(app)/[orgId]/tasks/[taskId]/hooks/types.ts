@@ -1,5 +1,13 @@
 import type { TaskFrequency } from '@db';
 
+/**
+ * What the Run live view should show. Between vendors and at the end of a run the
+ * browser session is torn down and Browserbase's iframe briefly shows its own
+ * "disconnected" notice; the server streams this phase so the UI can cover the
+ * iframe with a calm transition state instead of that alarming message.
+ */
+export type BrowserRunLivePhase = 'running' | 'switching' | 'finishing';
+
 /** Per-step evidence within a run — one screenshot + verdict for each step. */
 export interface BrowserAutomationStepRun {
   id: string;

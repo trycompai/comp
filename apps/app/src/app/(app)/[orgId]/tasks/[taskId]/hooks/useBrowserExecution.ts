@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { FAILED_RUN_STATUSES } from '../components/browser-automations/connect-flow-constants';
 import type { SignInStep } from '../components/browser-automations/StepList';
-import type { ExecuteResponse, StartLiveResponse } from './types';
+import type { BrowserRunLivePhase, ExecuteResponse, StartLiveResponse } from './types';
 
 interface UseBrowserExecutionOptions {
   onNeedsReauth: (automationId: string) => void;
@@ -42,6 +42,12 @@ export function useBrowserExecution({ onNeedsReauth, onComplete }: UseBrowserExe
   useEffect(() => {
     if (streamedLiveView) setLiveViewUrl(streamedLiveView);
   }, [streamedLiveView]);
+
+  // Live-view phase (mirrors the server's metadata). While a session is being
+  // torn down between vendors / at the end, the iframe would show Browserbase's
+  // "disconnected" notice — the UI covers it based on this instead.
+  const livePhase =
+    (runState?.metadata?.livePhase as BrowserRunLivePhase | undefined) ?? 'running';
 
   const closeSession = useCallback(async (id: string) => {
     try {
@@ -152,6 +158,7 @@ export function useBrowserExecution({ onNeedsReauth, onComplete }: UseBrowserExe
     liveViewUrl,
     isExecuting,
     steps,
+    livePhase,
     runAutomation,
     cancelExecution,
   };
