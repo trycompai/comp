@@ -111,16 +111,19 @@ export function ConnectionsTable({
           <table className="w-full min-w-[720px] border-collapse text-sm">
           <thead>
             <tr className="border-b border-border">
-              <th className={HEAD}>Vendor</th>
+              <th className={HEAD}>
+                <div className="flex items-center gap-3">
+                  <span>Vendor</span>
+                  {/* Desktop: search lives in the Vendor column, right of the label. */}
+                  <div className="hidden w-52 sm:block">{searchField}</div>
+                </div>
+              </th>
               <th className={HEAD}>Method</th>
               <th className={HEAD}>Connected as</th>
               <th className={HEAD}>Status</th>
               <th className={HEAD}>Automations</th>
               <th className={HEAD}>Last verified</th>
-              {/* Desktop: search on the same line as the column headers, right side. */}
-              <th className="px-4 py-2 text-right align-middle">
-                <div className="ml-auto hidden w-56 sm:block">{searchField}</div>
-              </th>
+              <th className={`${HEAD} text-right`}>Actions</th>
             </tr>
           </thead>
           <tbody>
