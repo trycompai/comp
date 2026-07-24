@@ -189,7 +189,7 @@ export function BrowserConnectionClient({
 
   return (
     <Section
-      description="The vendor logins Comp AI signs in with to capture audit evidence automatically."
+      description="The vendor logins your evidence tasks use to sign in and capture audit evidence automatically."
       actions={
         canConnect ? (
           <Button onClick={openConnect} iconLeft={<Add size={14} />}>
@@ -223,8 +223,9 @@ export function BrowserConnectionClient({
             <li className="flex gap-1.5">
               <span className="shrink-0 text-foreground">3.</span>
               <span>
-                You build the automations that use these logins inside a task, under
-                &ldquo;Browser evidence&rdquo;.
+                You add the automations that use these logins inside an{' '}
+                <span className="text-foreground">evidence task</span>, in its
+                &ldquo;Browser evidence&rdquo; section.
               </span>
             </li>
           </ol>
