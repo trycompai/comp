@@ -8,6 +8,8 @@ export interface MfaInstructions {
   steps: string[];
   tips: string[];
   confident: boolean;
+  /** Whether the steps were grounded in the vendor's current help docs. */
+  grounded: boolean;
   source: 'generated' | 'fallback';
 }
 

@@ -16,6 +16,27 @@ const MODEL = anthropic('claude-sonnet-4-6');
 // drop-in swap behind `getInstructions`.
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
+// Grounding: before generating, pull the vendor's CURRENT help docs via web
+// search and feed them to the model, so steps track the live UI rather than the
+// model's training snapshot. Best-effort — a missing key/failure/empty result
+// just falls back to ungrounded generation (still confidence-gated).
+const FIRECRAWL_SEARCH_URL = 'https://api.firecrawl.dev/v2/search';
+const GROUNDING_RESULT_LIMIT = 3;
+const GROUNDING_TIMEOUT_MS = 20_000;
+const PER_DOC_CHARS = 2_500;
+const TOTAL_DOC_CHARS = 6_000;
+
+interface FirecrawlSearchResult {
+  url?: string;
+  title?: string;
+  markdown?: string | null;
+}
+
+interface FirecrawlSearchResponse {
+  success?: boolean;
+  data?: { web?: FirecrawlSearchResult[] };
+}
+
 const instructionSchema = z.object({
   steps: z
     .array(z.string().min(1))
@@ -34,6 +55,8 @@ export interface MfaInstructions {
   steps: string[];
   tips: string[];
   confident: boolean;
+  /** Whether the steps were grounded in the vendor's current help docs. */
+  grounded: boolean;
   source: 'generated' | 'fallback';
 }
 
@@ -67,16 +90,30 @@ Given only the vendor's hostname, produce the exact steps to:
 3. Reveal the manual setup key (vendors usually show a QR plus a "can't scan / enter code manually" option that reveals a long alphanumeric key).
 
 RULES:
-- Base the steps on the vendor's CURRENT, real UI. Use real menu/button names only when you are confident of them.
+- If CURRENT VENDOR DOCS are provided, treat them as the source of truth for the vendor's live UI and base the steps on them.
+- Otherwise, base the steps on the vendor's CURRENT, real UI. Use real menu/button names only when you are confident of them.
 - Do NOT invent specific button or menu names you are unsure about.
 - Only cover authenticator-app (TOTP) setup — never SMS, email, or hardware key/passkey.
 - One short action per step. 3-7 steps.
-- Set confident=true ONLY if the steps reflect this vendor's actual current UI. If you do not recognize the vendor or are unsure of the path, set confident=false.`;
+- Set confident=true ONLY if the steps reflect this vendor's actual current UI (from the provided docs, or your solid knowledge of it). If you do not recognize the vendor or are unsure of the path, set confident=false.`;
 
-function buildPrompt(hostname: string): string {
-  return `Vendor hostname: ${hostname}
+function buildPrompt(hostname: string, grounding: string | null): string {
+  const base = `Vendor hostname: ${hostname}
 
-Write the steps for a user of this exact vendor to add an authenticator app and reveal its manual setup key. If you do not recognize this vendor or are not confident of its current settings UI, set confident=false.`;
+Write the steps for a user of this exact vendor to add an authenticator app and reveal its manual setup key.`;
+
+  if (grounding) {
+    return `${base}
+
+CURRENT VENDOR DOCS (from a live web search — treat as the source of truth for the vendor's current UI):
+"""
+${grounding}
+"""
+
+Base your steps on these docs. If they clearly describe adding an authenticator app / TOTP and revealing the manual setup key, set confident=true.`;
+  }
+
+  return `${base} If you do not recognize this vendor or are not confident of its current settings UI, set confident=false.`;
 }
 
 /**
@@ -113,29 +150,35 @@ export class BrowserMfaInstructionsService {
   }
 
   private async generate(hostname: string): Promise<MfaInstructions> {
+    const grounding = await this.fetchGroundingDocs(hostname);
+    const grounded = Boolean(grounding);
+
     const { object } = await generateObject({
       model: MODEL,
       schema: instructionSchema,
       system: SYSTEM_PROMPT,
-      prompt: buildPrompt(hostname),
+      prompt: buildPrompt(hostname, grounding),
       temperature: 0.2,
     });
 
     // Don't show shaky, possibly-invented steps — fall back to the universal
     // instruction whenever the model isn't confident (or returned nothing).
     if (!object.confident || object.steps.length === 0) {
-      this.logger.log(`MFA instructions for ${hostname}: not confident → fallback`);
+      this.logger.log(
+        `MFA instructions for ${hostname}: not confident → fallback (grounded=${grounded})`,
+      );
       return this.fallback(hostname);
     }
 
     this.logger.log(
-      `MFA instructions for ${hostname}: generated ${object.steps.length} step(s)`,
+      `MFA instructions for ${hostname}: generated ${object.steps.length} step(s) (grounded=${grounded})`,
     );
     return {
       hostname,
       steps: object.steps,
       tips: UNIVERSAL_TIPS,
       confident: true,
+      grounded,
       source: 'generated',
     };
   }
@@ -146,8 +189,63 @@ export class BrowserMfaInstructionsService {
       steps: UNIVERSAL_STEPS,
       tips: UNIVERSAL_TIPS,
       confident: false,
+      grounded: false,
       source: 'fallback',
     };
+  }
+
+  /**
+   * Best-effort: pull the vendor's current help docs via Firecrawl web search to
+   * ground the generated steps in the live UI. Returns null (never throws) when
+   * the key is missing, the request fails/times out, or nothing useful is found —
+   * generation then proceeds ungrounded.
+   */
+  private async fetchGroundingDocs(hostname: string): Promise<string | null> {
+    const apiKey = process.env.FIRECRAWL_API_KEY;
+    if (!apiKey) return null;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), GROUNDING_TIMEOUT_MS);
+    try {
+      const response = await fetch(FIRECRAWL_SEARCH_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          query: `${hostname} set up an authenticator app (TOTP) for two-factor authentication and reveal the manual setup key / secret key`,
+          limit: GROUNDING_RESULT_LIMIT,
+          sources: [{ type: 'web' }],
+          scrapeOptions: { formats: ['markdown'], onlyMainContent: true },
+        }),
+        signal: controller.signal,
+      });
+      if (!response.ok) return null;
+
+      const body = (await response.json()) as FirecrawlSearchResponse;
+      const docs = (body?.data?.web ?? [])
+        .map((result) => {
+          const markdown = (result.markdown ?? '').trim();
+          if (!markdown) return null;
+          return `# ${result.title ?? result.url ?? 'Result'}\n${
+            result.url ?? ''
+          }\n${markdown.slice(0, PER_DOC_CHARS)}`;
+        })
+        .filter((doc): doc is string => Boolean(doc));
+
+      if (docs.length === 0) return null;
+      return docs.join('\n\n---\n\n').slice(0, TOTAL_DOC_CHARS);
+    } catch (err) {
+      this.logger.warn(
+        `Firecrawl grounding failed for ${hostname}: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+      return null;
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 
   /** Accepts a full URL or a bare hostname; always returns a normalized host. */

@@ -22,6 +22,7 @@ const withInstructions = (overrides: Partial<MfaInstructions>): HookReturn => ({
     steps: ['Open Settings', 'Add authenticator app'],
     tips: ['Copy the manual setup key'],
     confident: true,
+    grounded: false,
     source: 'generated',
     ...overrides,
   },
@@ -65,6 +66,13 @@ describe('MfaSetupHelp', () => {
     render(<MfaSetupHelp hostname="obscure.example.com" />);
 
     expect(screen.getByText(/generic steps/i)).toBeInTheDocument();
+  });
+
+  it('shows a trust line when the steps were grounded in current docs', () => {
+    mockHook.mockReturnValue(withInstructions({ grounded: true }));
+    render(<MfaSetupHelp hostname="github.com" />);
+
+    expect(screen.getByText(/current help docs/i)).toBeInTheDocument();
   });
 
   it('shows a helpful message on error', () => {

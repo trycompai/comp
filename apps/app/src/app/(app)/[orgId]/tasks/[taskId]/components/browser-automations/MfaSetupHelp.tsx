@@ -57,6 +57,13 @@ export function MfaSetupHelp({ hostname }: MfaSetupHelpProps) {
               </p>
             )}
 
+            {instructions.source === 'generated' && instructions.grounded && (
+              <p className="flex items-center gap-1 text-[10.5px] leading-relaxed text-muted-foreground">
+                <span className="h-1 w-1 rounded-full" style={{ background: 'var(--success)' }} />
+                Checked against this vendor&apos;s current help docs.
+              </p>
+            )}
+
             {instructions.tips.length > 0 && (
               <ul className="flex flex-col gap-1 border-t border-border pt-2 text-[10.5px] leading-relaxed text-muted-foreground">
                 {instructions.tips.map((tip, index) => (
