@@ -68,21 +68,44 @@ export function ConnectionsTable({
   const currentPage = Math.min(page, pageCount - 1);
   const start = currentPage * PAGE_SIZE;
   const visible = filtered.slice(start, start + PAGE_SIZE);
-  const summary = summarize(connections);
+  // Summary reflects what's shown: the filtered set when searching (with an
+  // "of N" so the total stays visible), the full set otherwise.
+  const isSearching = query.trim().length > 0;
+  const totalCount = connections.length;
+  const view = summarize(filtered);
 
   return (
     <div className="flex flex-col gap-3">
-      <input
-        type="text"
-        value={query}
-        onChange={(event) => setQuery(event.target.value)}
-        placeholder="Search connections…"
-        aria-label="Search connections"
-        className="h-9 w-full max-w-xs rounded-md border border-border bg-background px-3 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-      />
+      <div className="overflow-hidden rounded-lg border border-border bg-card">
+        {/* Toolbar: search sits at the top of the table, right-aligned on desktop. */}
+        <div className="flex border-b border-border p-3">
+          <div className="relative w-full sm:ml-auto sm:w-64">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.4"
+              className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+              aria-hidden="true"
+            >
+              <circle cx="7" cy="7" r="5" />
+              <path d="M11 11l3 3" />
+            </svg>
+            <input
+              type="text"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search connections…"
+              aria-label="Search connections"
+              className="h-9 w-full rounded-md border border-border bg-background pl-8 pr-3 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+        </div>
 
-      <div className="overflow-x-auto rounded-lg border border-border bg-card">
-        <table className="w-full min-w-[720px] border-collapse text-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[720px] border-collapse text-sm">
           <thead>
             <tr className="border-b border-border">
               <th className={HEAD}>Vendor</th>
@@ -184,20 +207,23 @@ export function ConnectionsTable({
           })}
           </tbody>
         </table>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="text-[13px] text-muted-foreground">
           <span className="text-foreground">
-            {summary.total} {summary.total === 1 ? 'connection' : 'connections'}
+            {isSearching
+              ? `${view.total} of ${totalCount} connections`
+              : `${view.total} ${view.total === 1 ? 'connection' : 'connections'}`}
           </span>
           {' · '}
-          <span style={{ color: 'var(--success)' }}>{summary.active} active</span>
-          {summary.needAttention > 0 && (
+          <span style={{ color: 'var(--success)' }}>{view.active} active</span>
+          {view.needAttention > 0 && (
             <>
               {' · '}
               <span style={{ color: 'oklch(0.5 0.14 85)' }}>
-                {summary.needAttention} need attention
+                {view.needAttention} need attention
               </span>
             </>
           )}
