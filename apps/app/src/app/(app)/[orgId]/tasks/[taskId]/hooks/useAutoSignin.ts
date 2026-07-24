@@ -42,11 +42,14 @@ export function useAutoSignin() {
       url,
       credentials,
       mode = 'password',
+      usernameLabel,
     }: {
       url: string;
       /** Omitted for SSO — there are no credentials to store. */
       credentials?: AutoSigninCredentials;
       mode?: 'password' | 'sso';
+      /** Vendor's identifier-field label (e.g. "IAM username") for a truthful step. */
+      usernameLabel?: string;
     }): Promise<AutoSigninHandle | null> => {
       setIsStarting(true);
       try {
@@ -94,7 +97,7 @@ export function useAutoSignin() {
           publicAccessToken: string;
           sessionId: string;
           liveViewUrl: string;
-        }>(`/v1/browserbase/profiles/${profileId}/sign-in`, { url, mode });
+        }>(`/v1/browserbase/profiles/${profileId}/sign-in`, { url, mode, usernameLabel });
         if (signinRes.error || !signinRes.data?.runId) {
           toast.error(signinRes.error || 'Could not start the sign-in.');
           return null;

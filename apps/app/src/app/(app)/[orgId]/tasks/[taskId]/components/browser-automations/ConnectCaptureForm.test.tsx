@@ -101,6 +101,7 @@ describe('ConnectCaptureForm', () => {
       password: 'sup3r-secret',
       totpSeed: undefined,
       extraFields: [{ label: 'Account ID or alias', value: 'acme-prod' }],
+      usernameLabel: 'IAM username',
     });
   });
 

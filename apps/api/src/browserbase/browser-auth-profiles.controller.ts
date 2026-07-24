@@ -170,6 +170,7 @@ export class BrowserAuthProfilesController {
       profileId,
       url: dto.url,
       mode: dto.mode,
+      usernameLabel: dto.usernameLabel,
     });
   }
 

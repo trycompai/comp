@@ -37,10 +37,14 @@ export async function performCredentialLogin({
   stagehand,
   credentials,
   log,
+  usernameLabel,
 }: {
   stagehand: Stagehand;
   credentials: RuntimeCredentialMaterial;
   log: (message: string) => void;
+  /** The vendor's own label for the identifier field (e.g. "IAM username"), so
+   *  the streamed step matches what's on screen. Falls back to "username". */
+  usernameLabel?: string;
 }): Promise<void> {
   // Stagehand's act() performs ONE action per call, so each field and the submit
   // are separate steps — a single "enter username and password and submit"
@@ -59,7 +63,9 @@ export async function performCredentialLogin({
   }
 
   if (credentials.username) {
-    log('Entering username.');
+    // Show the vendor's real field name in the step; the fill stays semantic so
+    // Stagehand still finds the field even if the label is approximate.
+    log(`Entering ${usernameLabel?.trim() || 'username'}.`);
     await stagehand.act(
       'Enter %username% into the email or username field on the sign-in form.',
       { variables: { username: credentials.username } },
@@ -269,11 +275,14 @@ export async function signInAndClassify({
   vault,
   input,
   log,
+  usernameLabel,
 }: {
   stagehand: Stagehand;
   vault: BrowserCredentialVaultAdapter;
   input: CredentialLoginTarget;
   log: (message: string) => void;
+  /** Vendor's identifier-field label, for a truthful streamed step. */
+  usernameLabel?: string;
 }): Promise<{ outcome: SignInOutcome }> {
   const resolveCredentials = () =>
     vault.resolveCredentialReference({
@@ -286,7 +295,7 @@ export async function signInAndClassify({
   const credentials = await resolveCredentials();
   if (!credentials) return { outcome: 'unknown' };
 
-  await performCredentialLogin({ stagehand, credentials, log });
+  await performCredentialLogin({ stagehand, credentials, log, usernameLabel });
   let outcome = await classifyLoginOutcome(stagehand);
 
   // A 2FA prompt still showing with a stored seed can mean the code landed on
@@ -294,7 +303,7 @@ export async function signInAndClassify({
   if (outcome === 'needs_2fa' && credentials.totpCode) {
     const fresh = await resolveCredentials();
     if (fresh?.totpCode) {
-      await performCredentialLogin({ stagehand, credentials: fresh, log });
+      await performCredentialLogin({ stagehand, credentials: fresh, log, usernameLabel });
       outcome = await classifyLoginOutcome(stagehand);
     }
   }

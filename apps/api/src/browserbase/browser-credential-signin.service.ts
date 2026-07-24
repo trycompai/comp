@@ -82,6 +82,9 @@ export class BrowserCredentialSigninService {
     sessionId: string;
     /** 'password' fills stored credentials; 'sso' drives to the identity provider. */
     mode?: 'password' | 'sso';
+    /** The vendor's detected identifier-field label (e.g. "IAM username"), so the
+     *  streamed step shows the real field name instead of a generic "username". */
+    usernameLabel?: string;
     /** Live activity timeline, surfaced to the connect flow's activity panel. */
     onSteps?: (steps: SignInStep[]) => void;
   }): Promise<AutoSignInResult> {
@@ -164,6 +167,7 @@ export class BrowserCredentialSigninService {
         vault,
         input: { profile, targetUrl: input.url },
         log: step,
+        usernameLabel: input.usernameLabel,
       });
       step('Checking whether that worked');
 

@@ -32,6 +32,8 @@ export interface ConnectCaptureFormData {
   password: string;
   totpSeed?: string;
   extraFields?: { label: string; value: string }[];
+  /** The vendor's own label for the identifier field, for a truthful sign-in step. */
+  usernameLabel?: string;
 }
 
 interface ConnectCaptureFormProps {
@@ -88,6 +90,7 @@ export function ConnectCaptureForm({
       extraFields: values.fields
         .filter((f) => f.kind === 'text')
         .map((f) => ({ label: f.label.trim(), value: f.value.trim() })),
+      usernameLabel: identifier?.label.trim() || undefined,
     });
   };
 

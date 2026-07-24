@@ -312,6 +312,7 @@ export function ConnectVendorLoginFlow({
           totpSeed: data.totpSeed,
           extraFields: data.extraFields,
         },
+        usernameLabel: data.usernameLabel,
       });
       if (!handle) {
         handleStartLiveSignin();

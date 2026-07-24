@@ -182,6 +182,8 @@ export class BrowserbaseService {
     profileId: string;
     url: string;
     mode?: 'password' | 'sso';
+    /** Vendor's identifier-field label, forwarded so the streamed step is truthful. */
+    usernameLabel?: string;
   }): Promise<{
     runId: string;
     publicAccessToken: string;

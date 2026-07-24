@@ -212,6 +212,14 @@ export class SignInAuthProfileDto {
   @IsEnum({ password: 'password', sso: 'sso' })
   @IsOptional()
   mode?: 'password' | 'sso';
+
+  @ApiPropertyOptional({
+    description:
+      "The vendor's detected identifier-field label (e.g. 'IAM username'), shown in the live sign-in steps instead of a generic 'username'.",
+  })
+  @IsString()
+  @IsOptional()
+  usernameLabel?: string;
 }
 
 export class SignInAuthProfileResponseDto {
