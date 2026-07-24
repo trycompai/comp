@@ -6,12 +6,13 @@ import {
   Label,
   Sheet,
   SheetBody,
+  SheetClose,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
 } from '@trycompai/design-system';
-import { Locked, Renew, TrashCan } from '@trycompai/design-system/icons';
+import { Close, Locked, Renew, TrashCan } from '@trycompai/design-system/icons';
 import { useEffect, useState } from 'react';
 import { methodOf, statusMeta, type Connection } from './connection-format';
 
@@ -76,7 +77,16 @@ export function ManageConnectionSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent>
+      {/* The DS SheetContent's built-in close positions itself via a className on
+          a DS Button, which drops className — so it falls to the bottom-left.
+          Hide it and render our own, correctly pinned to the top-right. */}
+      <SheetContent showCloseButton={false}>
+        <SheetClose
+          aria-label="Close"
+          className="absolute right-4 top-4 z-10 grid h-7 w-7 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <Close size={16} />
+        </SheetClose>
         <SheetHeader>
           <SheetTitle>{connection.displayName || connection.hostname}</SheetTitle>
           <SheetDescription>{connection.hostname}</SheetDescription>
