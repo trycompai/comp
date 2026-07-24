@@ -104,7 +104,7 @@ export function ConnectFlowStage({
         <ConnectCaptureForm
           isSubmitting={isStartingSignin}
           onSubmit={onCapture}
-          initialExtraFields={analysis?.extraFields}
+          analysis={analysis}
           submitLabel="Sign in for me"
         />
       )}

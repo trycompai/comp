@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@trycompai/design-system';
-import { ArrowRight } from '@trycompai/design-system/icons';
+import { useState } from 'react';
 import type { LoginAnalysis } from '../../hooks/types';
 
 /**
@@ -12,25 +12,23 @@ import type { LoginAnalysis } from '../../hooks/types';
 export type ConnectMethodKind = 'password' | 'sso' | 'live';
 
 interface MethodOption {
-  kind: ConnectMethodKind;
+  kind: Exclude<ConnectMethodKind, 'live'>;
   title: string;
   detail: string;
   recommended?: boolean;
 }
 
-// Turn detected methods into an ordered chooser — the automatable one first.
-// Passkey is deliberately excluded: passkeys are device-bound (WebAuthn) and
-// can't be completed from a remote cloud browser, so offering it would be a dead
-// end. The passkey-only case is handled with a clear message instead.
+// Only methods we can actually drive. Passkey is deliberately never an option —
+// passkeys are device-bound (WebAuthn) and can't be completed from a remote
+// cloud browser; we call that out plainly instead of offering a dead end.
 function optionsFor(analysis: LoginAnalysis): MethodOption[] {
   const methods = analysis.detectedMethods;
   const options: MethodOption[] = [];
-
   if (methods.includes('password')) {
     options.push({
       kind: 'password',
       title: 'Email & password',
-      detail: 'We sign in for you — runs unattended after this.',
+      detail: 'We sign in for you — runs unattended.',
       recommended: true,
     });
   }
@@ -38,7 +36,7 @@ function optionsFor(analysis: LoginAnalysis): MethodOption[] {
     options.push({
       kind: 'sso',
       title: 'Single sign-on (SSO)',
-      detail: 'The AI opens your provider; you just finish the login there.',
+      detail: 'You finish the login in your provider once; we reuse the session.',
     });
   }
   return options;
@@ -50,25 +48,39 @@ interface ConnectMethodChooserProps {
   onCancel: () => void;
 }
 
-export function ConnectMethodChooser({
-  analysis,
-  onChoose,
-  onCancel,
-}: ConnectMethodChooserProps) {
+function PasskeyGlyph({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.4}>
+      <circle cx="5" cy="11" r="2.5" />
+      <path d="M7 9l6.5-6.5M10.5 5.5L12.5 7.5M12 4l1.5 1.5" />
+    </svg>
+  );
+}
+
+export function ConnectMethodChooser({ analysis, onChoose, onCancel }: ConnectMethodChooserProps) {
   const methods = analysis.detectedMethods;
   const options = optionsFor(analysis);
+  const hasPasskey = methods.includes('passkey');
+  const [selected, setSelected] = useState<MethodOption['kind']>(options[0]?.kind ?? 'password');
 
-  // A passkey-only site has no path that works in a cloud browser — say so plainly
-  // rather than offering a sign-in that can never complete.
-  if (options.length === 0 && methods.includes('passkey')) {
+  // Passkey-only — no path works in a cloud browser; say so plainly.
+  if (options.length === 0 && hasPasskey) {
     return (
-      <div className="flex w-full max-w-md flex-col gap-3">
-        <div className="text-base text-foreground">This site only supports passkeys</div>
-        <div className="rounded-md border border-border bg-muted p-2.5 text-xs leading-relaxed text-muted-foreground">
-          Passkeys are tied to a physical device, so they can’t be used from Comp’s
-          cloud browser — this site can’t be connected here. If the vendor also allows
-          a password or SSO login, enable one of those and try again.
+      <div className="flex w-full max-w-md flex-col gap-4">
+        <div className="flex flex-col items-center gap-2.5 px-3 pb-1 pt-4 text-center">
+          <span className="grid h-10 w-10 place-items-center rounded-full bg-muted text-muted-foreground">
+            <PasskeyGlyph size={17} />
+          </span>
+          <div className="text-[13px] text-foreground">This site only supports passkey sign-in</div>
+          <p className="max-w-[320px] text-[11.5px] leading-relaxed text-muted-foreground">
+            Passkeys are bound to your device, so Comp&apos;s cloud browser can&apos;t sign in
+            unattended. Ask the vendor to enable a password or SSO login — or capture this
+            evidence manually.
+          </p>
         </div>
+        <Button variant="outline" width="full" onClick={() => onChoose('live')}>
+          Capture evidence manually
+        </Button>
         <div>
           <Button variant="ghost" onClick={onCancel}>
             Back
@@ -78,55 +90,97 @@ export function ConnectMethodChooser({
     );
   }
 
-  // Nothing usable detected — let the user try a manual sign-in in the live browser.
+  // Nothing usable detected — offer a manual sign-in in the live browser.
   if (options.length === 0) {
-    options.push({
-      kind: 'live',
-      title: 'Sign in manually',
-      detail: "We'll open the browser for you to sign in.",
-    });
+    return (
+      <div className="flex w-full max-w-md flex-col gap-4">
+        <div className="flex flex-col items-center gap-2.5 px-3 pb-1 pt-4 text-center">
+          <span className="grid h-10 w-10 place-items-center rounded-full bg-muted text-muted-foreground">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.4}>
+              <circle cx="8" cy="8" r="6" />
+              <path d="M8 5v3.5M8 11h.01" />
+            </svg>
+          </span>
+          <div className="text-[13px] text-foreground">No sign-in method detected</div>
+          <p className="max-w-[320px] text-[11.5px] leading-relaxed text-muted-foreground">
+            We couldn&apos;t find a usable sign-in form on this page. Open a live browser and
+            sign in yourself — we&apos;ll save the session for scheduled captures.
+          </p>
+        </div>
+        <Button width="full" onClick={() => onChoose('live')}>
+          Sign in manually
+        </Button>
+        <div>
+          <Button variant="ghost" onClick={onCancel}>
+            Cancel
+          </Button>
+        </div>
+      </div>
+    );
   }
-
-  // "Email & password" is the only method we can replay on a schedule; SSO needs
-  // the person, so warn up front when that's all the site offers.
-  const showCheckInNote = !methods.includes('password') && methods.includes('sso');
 
   return (
     <div className="flex w-full max-w-md flex-col gap-3">
       <div className="text-base text-foreground">Choose how to sign in</div>
-      {showCheckInNote && (
-        <div className="rounded-md border border-border bg-muted p-2.5 text-xs text-muted-foreground leading-relaxed">
-          This site uses single sign-on, so it needs you to sign in and can’t run
-          fully unattended. You can still connect — we’ll keep the session alive and
-          email you when it needs a manual refresh.
+
+      <div className="flex flex-col gap-2">
+        {options.map((option) => {
+          const active = option.kind === selected;
+          return (
+            <button
+              key={option.kind}
+              type="button"
+              onClick={() => setSelected(option.kind)}
+              aria-pressed={active}
+              className={`flex items-start gap-3 rounded-md border p-3 text-left transition-colors ${
+                active
+                  ? 'border-primary bg-primary/[0.04]'
+                  : 'border-border hover:border-primary/40 hover:bg-muted/40'
+              }`}
+            >
+              <span
+                className={`mt-0.5 grid h-3.5 w-3.5 flex-none place-items-center rounded-full border ${
+                  active ? 'border-primary' : 'border-muted-foreground/40'
+                }`}
+              >
+                {active && <span className="h-1.5 w-1.5 rounded-full bg-primary" />}
+              </span>
+              <span className="flex min-w-0 flex-col gap-0.5">
+                <span className="flex items-center gap-2">
+                  <span className="text-[12.5px] text-foreground">{option.title}</span>
+                  {option.recommended && (
+                    <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary">
+                      Recommended
+                    </span>
+                  )}
+                </span>
+                <span className="text-[11px] leading-relaxed text-muted-foreground">
+                  {option.detail}
+                </span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* The site also offers passkey — warn before the user hits the vendor's
+          own passkey button and gets stuck (it can't work in our browser). */}
+      {hasPasskey && (
+        <div className="flex items-start gap-2 rounded-md bg-muted p-2.5 text-[10.5px] leading-relaxed text-muted-foreground">
+          <span className="mt-0.5 flex-none">
+            <PasskeyGlyph size={12} />
+          </span>
+          <span>
+            This site also offers passkey / security key sign-in. Passkeys are tied to your
+            device, so they won&apos;t work in Comp&apos;s browser — use email &amp; password, or
+            finish the SSO login when prompted.
+          </span>
         </div>
       )}
-      <div className="flex flex-col gap-2">
-        {options.map((option, index) => (
-          <button
-            key={`${option.title}-${index}`}
-            type="button"
-            onClick={() => onChoose(option.kind)}
-            className="group flex cursor-pointer items-center justify-between gap-3 rounded-md border border-border bg-background p-3 text-left transition-colors hover:border-primary hover:bg-muted/40 active:bg-muted/60"
-          >
-            <div className="flex flex-col gap-0.5">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-foreground">{option.title}</span>
-                {option.recommended && (
-                  <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary">
-                    Recommended
-                  </span>
-                )}
-              </div>
-              <span className="text-xs text-muted-foreground">{option.detail}</span>
-            </div>
-            <ArrowRight
-              size={16}
-              className="shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5"
-            />
-          </button>
-        ))}
-      </div>
+
+      <Button width="full" onClick={() => onChoose(selected)}>
+        Continue
+      </Button>
       <div>
         <Button variant="ghost" onClick={onCancel}>
           Cancel

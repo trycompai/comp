@@ -28,14 +28,24 @@ vi.mock('@trycompai/design-system/icons', () => ({
   Add: () => <span data-testid="icon-add" />,
   Close: () => <span data-testid="icon-close" />,
   Locked: () => <span data-testid="icon-lock" />,
-  ChevronDown: () => <span data-testid="icon-chevron-down" />,
-  ChevronRight: () => <span data-testid="icon-chevron-right" />,
 }));
 
+import type { LoginAnalysis } from '../../hooks/types';
 import { ConnectCaptureForm } from './ConnectCaptureForm';
 
+function analysis(overrides: Partial<LoginAnalysis> = {}): LoginAnalysis {
+  return {
+    reachable: true,
+    detectedMethods: ['password'],
+    identifierType: 'email',
+    extraFields: [],
+    recommendation: { category: 'ready', headline: '', detail: '' },
+    ...overrides,
+  };
+}
+
 describe('ConnectCaptureForm', () => {
-  it('renders username and password, and keeps 2FA hidden until opted in', () => {
+  it('falls back to a generic username/password form with no detection', () => {
     render(<ConnectCaptureForm isSubmitting={false} onSubmit={vi.fn()} />);
     expect(screen.getByLabelText('Username or email')).toBeInTheDocument();
     expect(screen.getByLabelText('Password')).toBeInTheDocument();
@@ -46,32 +56,61 @@ describe('ConnectCaptureForm', () => {
     expect(screen.getByLabelText('Authenticator setup key')).toBeInTheDocument();
   });
 
-  it('submits the entered details', async () => {
-    const onSubmit = vi.fn();
-    render(<ConnectCaptureForm isSubmitting={false} onSubmit={onSubmit} />);
+  it('renders exactly the detected fields, in order, with their labels (1A)', () => {
+    render(
+      <ConnectCaptureForm
+        isSubmitting={false}
+        onSubmit={vi.fn()}
+        analysis={analysis({
+          identifierType: 'username',
+          extraFields: [{ label: 'Account ID or alias' }, { label: 'IAM username' }],
+        })}
+      />,
+    );
+    expect(screen.getByLabelText('Account ID or alias')).toBeInTheDocument();
+    expect(screen.getByLabelText('IAM username')).toBeInTheDocument();
+    expect(screen.getByLabelText('Password')).toBeInTheDocument();
+    // No redundant generic identifier when a detected field IS the identifier.
+    expect(screen.queryByLabelText('Username or email')).not.toBeInTheDocument();
+  });
 
-    fireEvent.change(screen.getByLabelText('Username or email'), {
-      target: { value: 'sam@acme.com' },
+  it('maps the detected fields back to the sign-in contract on submit', async () => {
+    const onSubmit = vi.fn();
+    render(
+      <ConnectCaptureForm
+        isSubmitting={false}
+        onSubmit={onSubmit}
+        analysis={analysis({
+          identifierType: 'username',
+          extraFields: [{ label: 'Account ID or alias' }, { label: 'IAM username' }],
+        })}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText('Account ID or alias'), {
+      target: { value: 'acme-prod' },
     });
-    fireEvent.change(screen.getByLabelText('Password'), {
-      target: { value: 'sup3r-secret' },
+    fireEvent.change(screen.getByLabelText('IAM username'), {
+      target: { value: 'audit-bot' },
     });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'sup3r-secret' } });
     fireEvent.click(screen.getByText('Sign in for me'));
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
-    expect(onSubmit).toHaveBeenCalledWith(
-      expect.objectContaining({ username: 'sam@acme.com', password: 'sup3r-secret' }),
-      expect.anything(),
-    );
+    expect(onSubmit).toHaveBeenCalledWith({
+      username: 'audit-bot',
+      password: 'sup3r-secret',
+      totpSeed: undefined,
+      extraFields: [{ label: 'Account ID or alias', value: 'acme-prod' }],
+    });
   });
 
-  it('does not submit without the required fields', async () => {
+  it('does not submit while a required field is empty', async () => {
     const onSubmit = vi.fn();
     render(<ConnectCaptureForm isSubmitting={false} onSubmit={onSubmit} />);
 
     fireEvent.click(screen.getByText('Sign in for me'));
 
-    await waitFor(() => expect(screen.getByText('Username is required')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getAllByText('Required').length).toBeGreaterThan(0));
     expect(onSubmit).not.toHaveBeenCalled();
   });
 });

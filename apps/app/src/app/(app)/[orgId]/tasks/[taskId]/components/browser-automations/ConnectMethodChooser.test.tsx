@@ -11,10 +11,6 @@ vi.mock('@trycompai/design-system', () => ({
   ),
 }));
 
-vi.mock('@trycompai/design-system/icons', () => ({
-  ArrowRight: () => <span data-testid="icon-arrow" />,
-}));
-
 import { ConnectMethodChooser } from './ConnectMethodChooser';
 
 function analysisWith(methods: LoginAnalysis['detectedMethods']): LoginAnalysis {
@@ -28,7 +24,7 @@ function analysisWith(methods: LoginAnalysis['detectedMethods']): LoginAnalysis 
 }
 
 describe('ConnectMethodChooser', () => {
-  it('lists usable methods (password recommended) and never offers passkey', () => {
+  it('lists usable methods (password recommended), never a passkey option, and warns about passkey', () => {
     render(
       <ConnectMethodChooser
         analysis={analysisWith(['password', 'sso', 'passkey'])}
@@ -38,26 +34,12 @@ describe('ConnectMethodChooser', () => {
     );
     expect(screen.getByText('Email & password')).toBeInTheDocument();
     expect(screen.getByText('Single sign-on (SSO)')).toBeInTheDocument();
-    // Passkey can't work in a cloud browser, so it's never offered as an option.
-    expect(screen.queryByText('Passkey')).not.toBeInTheDocument();
     expect(screen.getByText('Recommended')).toBeInTheDocument();
+    // Passkey is never a selectable option, but we warn it's present + won't work.
+    expect(screen.getByText(/won.t work in Comp.s browser/i)).toBeInTheDocument();
   });
 
-  it('explains a passkey-only site cannot be connected (no dead-end option)', () => {
-    const onChoose = vi.fn();
-    render(
-      <ConnectMethodChooser
-        analysis={analysisWith(['passkey'])}
-        onChoose={onChoose}
-        onCancel={vi.fn()}
-      />,
-    );
-    expect(screen.getByText(/only supports passkeys/i)).toBeInTheDocument();
-    expect(screen.queryByText('Sign in manually')).not.toBeInTheDocument();
-    expect(onChoose).not.toHaveBeenCalled();
-  });
-
-  it('routes the password option to the automated path', () => {
+  it('continues with the selected method (password default)', () => {
     const onChoose = vi.fn();
     render(
       <ConnectMethodChooser
@@ -66,11 +48,11 @@ describe('ConnectMethodChooser', () => {
         onCancel={vi.fn()}
       />,
     );
-    fireEvent.click(screen.getByText('Email & password'));
+    fireEvent.click(screen.getByText('Continue'));
     expect(onChoose).toHaveBeenCalledWith('password');
   });
 
-  it('routes SSO to the AI-driven SSO path', () => {
+  it('continues with SSO once selected', () => {
     const onChoose = vi.fn();
     render(
       <ConnectMethodChooser
@@ -80,39 +62,40 @@ describe('ConnectMethodChooser', () => {
       />,
     );
     fireEvent.click(screen.getByText('Single sign-on (SSO)'));
+    fireEvent.click(screen.getByText('Continue'));
     expect(onChoose).toHaveBeenCalledWith('sso');
   });
 
-  it('warns up front when no unattended method is available (SSO/passkey only)', () => {
+  it('shows no passkey warning when none is offered, and no "unattended" warning for SSO', () => {
     render(
       <ConnectMethodChooser
-        analysis={analysisWith(['sso', 'passkey'])}
+        analysis={analysisWith(['sso'])}
         onChoose={vi.fn()}
         onCancel={vi.fn()}
       />,
     );
-    expect(screen.getByText(/can.t run fully unattended/i)).toBeInTheDocument();
-  });
-
-  it('does not warn when password (unattended) is available', () => {
-    render(
-      <ConnectMethodChooser
-        analysis={analysisWith(['password', 'passkey'])}
-        onChoose={vi.fn()}
-        onCancel={vi.fn()}
-      />,
-    );
+    expect(screen.queryByText(/won.t work in Comp.s browser/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/can.t run fully unattended/i)).not.toBeInTheDocument();
   });
 
-  it('falls back to a manual option when nothing is detected', () => {
+  it('explains a passkey-only site and offers manual capture (no dead end)', () => {
     const onChoose = vi.fn();
     render(
       <ConnectMethodChooser
-        analysis={analysisWith([])}
+        analysis={analysisWith(['passkey'])}
         onChoose={onChoose}
         onCancel={vi.fn()}
       />,
+    );
+    expect(screen.getByText(/only supports passkey/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Capture evidence manually'));
+    expect(onChoose).toHaveBeenCalledWith('live');
+  });
+
+  it('falls back to a manual sign-in when nothing is detected', () => {
+    const onChoose = vi.fn();
+    render(
+      <ConnectMethodChooser analysis={analysisWith([])} onChoose={onChoose} onCancel={vi.fn()} />,
     );
     fireEvent.click(screen.getByText('Sign in manually'));
     expect(onChoose).toHaveBeenCalledWith('live');
