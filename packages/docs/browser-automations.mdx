@@ -90,7 +90,7 @@ Inside an evidence task, open the **Browser evidence** section:
 1. **Describe what to capture** in plain English — for example, *"Open the organization's security settings and show that two-factor authentication is required for all members."*
 2. *(Optional)* Add a **pass/fail check** — for example, *"Two-factor authentication is required for everyone."* Without one, the run captures a screenshot only.
 3. **Test it.** Watch the automation run live, then review the screenshot and result before you commit.
-4. **Save.** It now runs on the task's schedule and keeps the evidence current.
+4. **Save.** It now runs **automatically on the task's schedule** — Daily, Weekly, Monthly, Quarterly, or Yearly, your choice — and keeps the evidence current. You can also run it on demand any time.
 
 <Frame caption="Testing an instruction — watch the AI drive a real browser live, then review the screenshot and verdict before saving.">
   <img src="/images/browser-test-run.png" alt="Live test run — the AI controlling a browser to capture evidence" />
@@ -101,7 +101,13 @@ Inside an evidence task, open the **Browser evidence** section:
   screenshot and verdict.
 </Note>
 
-## What happens on a schedule
+## Schedule and manual runs
+
+Once saved, an automation runs **automatically on a schedule** — you don't have to trigger it. **You choose how often:** set the cadence to **Daily, Weekly, Monthly, Quarterly, or Yearly** from the schedule control in the **Browser evidence** header. One cadence applies to all the browser evidence on that task, so a task's proof refreshes together. You can change it any time.
+
+Need proof right now? **Run** any automation on demand — its screenshot and verdict appear in the row as soon as it finishes, without waiting for the next scheduled run.
+
+On each run — scheduled or manual:
 
 - Comp AI signs in, navigates to the page you described, and captures a screenshot stamped with the **requirement, source URL, and capture time**. If you added a check, it records a **pass or fail** with a short reason.
 - If the saved session has **expired**, Comp AI **re-signs in on its own** — using the stored login and a freshly generated 2FA code. You don't have to do anything.
