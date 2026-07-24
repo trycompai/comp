@@ -411,16 +411,10 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
     );
   }
 
-  // List of automations (disable creation for manual tasks, but allow editing)
+  // List of automations (disable creation for manual tasks, but allow editing).
+  // Drafts render inside the section (under the header) so they clearly belong.
   return (
-    <>
-      <DraftsStrip
-        drafts={drafts}
-        profiles={profiles}
-        onContinue={handleContinueDraft}
-        onDelete={handleDeleteDraft}
-      />
-      <BrowserAutomationsList
+    <BrowserAutomationsList
       automations={automations.automations}
       profiles={profiles}
       runningAutomationId={execution.runningAutomationId}
@@ -433,7 +427,9 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
       onDelete={automations.deleteAutomation}
       onToggleEnabled={automations.toggleAutomation}
       onSetTaskSchedule={automations.setTaskSchedule}
-      />
-    </>
+      drafts={drafts}
+      onContinueDraft={handleContinueDraft}
+      onDeleteDraft={handleDeleteDraft}
+    />
   );
 }

@@ -11,6 +11,9 @@ interface DraftsStripProps {
   profiles: BrowserAuthProfile[];
   onContinue: (draft: BrowserAutomationDraft) => void;
   onDelete: (draft: BrowserAutomationDraft) => void;
+  /** Render as a band inside the Browser evidence card (under the header) rather
+   *  than a standalone card, so drafts clearly belong to the section. */
+  nested?: boolean;
 }
 
 /** The distinct vendor hosts a draft's steps run on, in order. */
@@ -25,12 +28,23 @@ function vendorChain(draft: BrowserAutomationDraft, profiles: BrowserAuthProfile
   return hosts;
 }
 
-/** Unsaved automations, pinned in a dashed strip above the list (design 4a). */
-export function DraftsStrip({ drafts, profiles, onContinue, onDelete }: DraftsStripProps) {
+/** Unsaved automations. Standalone dashed card by default, or an inset band
+ *  inside the Browser evidence card when `nested` (design 4a). */
+export function DraftsStrip({
+  drafts,
+  profiles,
+  onContinue,
+  onDelete,
+  nested = false,
+}: DraftsStripProps) {
   if (drafts.length === 0) return null;
 
+  const containerClass = nested
+    ? 'border-b border-dashed border-border bg-muted/20 px-4 py-3'
+    : 'mb-4 rounded-lg border border-dashed border-border bg-muted/30 p-3';
+
   return (
-    <div className="mb-4 rounded-lg border border-dashed border-border bg-muted/30 p-3">
+    <div className={containerClass}>
       <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
         Drafts — not saved yet
       </div>

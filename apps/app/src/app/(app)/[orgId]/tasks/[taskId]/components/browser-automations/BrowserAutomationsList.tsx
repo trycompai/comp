@@ -4,9 +4,14 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { Renew } from '@trycompai/design-system/icons';
 import { TaskFrequency } from '@db';
 import { useEffect, useMemo, useState } from 'react';
-import type { BrowserAuthProfile, BrowserAutomation } from '../../hooks/types';
+import type {
+  BrowserAuthProfile,
+  BrowserAutomation,
+  BrowserAutomationDraft,
+} from '../../hooks/types';
 import { AutomationItem } from './AutomationItem';
 import { BrowserEvidenceHeader } from './BrowserEvidenceHeader';
+import { DraftsStrip } from './DraftsStrip';
 
 const PAGE_SIZE = 8;
 
@@ -35,6 +40,10 @@ interface BrowserAutomationsListProps {
   onToggleEnabled: (automationId: string, enabled: boolean) => void;
   /** Set one cadence for all browser evidence on this task (section header). */
   onSetTaskSchedule: (frequency: TaskFrequency) => void;
+  /** Unsaved drafts, shown as a band inside this section (under the header). */
+  drafts?: BrowserAutomationDraft[];
+  onContinueDraft?: (draft: BrowserAutomationDraft) => void;
+  onDeleteDraft?: (draft: BrowserAutomationDraft) => void;
 }
 
 /**
@@ -56,6 +65,9 @@ export function BrowserAutomationsList({
   onDelete,
   onToggleEnabled,
   onSetTaskSchedule,
+  drafts = [],
+  onContinueDraft,
+  onDeleteDraft,
 }: BrowserAutomationsListProps) {
   const { hasPermission } = usePermissions();
   const canCreate = hasPermission('integration', 'create');
@@ -115,6 +127,16 @@ export function BrowserAutomationsList({
           onConnectAnother={onConnectAnother}
           onCreate={onCreate}
         />
+
+        {drafts.length > 0 && onContinueDraft && onDeleteDraft && (
+          <DraftsStrip
+            nested
+            drafts={drafts}
+            profiles={profiles}
+            onContinue={onContinueDraft}
+            onDelete={onDeleteDraft}
+          />
+        )}
 
         <div className="flex flex-col gap-2 p-4">
           {rows.slice(0, visible).map(({ automation, reconnectUrl }) => (
