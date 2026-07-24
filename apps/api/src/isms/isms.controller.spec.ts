@@ -68,6 +68,7 @@ describe('IsmsController', () => {
   const mockIsmsService = {
     ensureSetup: jest.fn(),
     getDocument: jest.fn(),
+    getRiskTreatmentData: jest.fn(),
     submitForApproval: jest.fn(),
     approve: jest.fn(),
     decline: jest.fn(),
@@ -302,6 +303,21 @@ describe('IsmsController', () => {
       documentId: 'doc_1',
       organizationId: 'org_1',
       userId: 'usr_1',
+    });
+  });
+
+  it('riskTreatment delegates to the isms service', async () => {
+    mockIsmsService.getRiskTreatmentData.mockResolvedValue({
+      risks: [],
+      vendors: [],
+      validationMessages: [],
+    });
+
+    await controller.riskTreatment('doc_1', 'org_1');
+
+    expect(mockIsmsService.getRiskTreatmentData).toHaveBeenCalledWith({
+      documentId: 'doc_1',
+      organizationId: 'org_1',
     });
   });
 

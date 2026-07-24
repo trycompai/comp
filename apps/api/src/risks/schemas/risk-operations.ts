@@ -26,4 +26,14 @@ export const RISK_OPERATIONS: Record<string, ApiOperationOptions> = {
     description:
       'Permanently removes a risk from the organization. This action cannot be undone. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).',
   },
+  listRiskAcceptances: {
+    summary: 'List risk-owner acceptance events',
+    description:
+      "Returns the residual-risk acceptance history for a risk, newest first. Each event freezes the residual rating at acceptance and carries a stale flag set when the risk's residual rating has changed since (ISO 27001 6.1.3(f)).",
+  },
+  recordRiskAcceptance: {
+    summary: 'Record risk-owner acceptance',
+    description:
+      "Records an immutable, timestamped acceptance of a risk's current residual risk by the risk owner (or a chosen member). Re-record after the residual rating changes; prior events remain in the history.",
+  },
 };
