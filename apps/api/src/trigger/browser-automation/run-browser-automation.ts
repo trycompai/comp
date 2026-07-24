@@ -28,6 +28,20 @@ export function shouldMarkTaskDoneAfterBrowserRun(input: {
 }
 
 /**
+ * Whether a non-passing run means the task is genuinely no longer satisfied, so
+ * we should flip it to `failed`. A `fail` verdict = the control regressed;
+ * `needsReauth` = we can no longer sign in. An infra-only failure (timeout,
+ * model unavailable, …) has neither — that's "couldn't verify", not "control
+ * failed", so we leave the task alone and let it retry on the next tick.
+ */
+export function shouldMarkTaskFailedAfterBrowserRun(input: {
+  evaluationStatus?: 'pass' | 'fail';
+  needsReauth?: boolean;
+}): boolean {
+  return input.evaluationStatus === 'fail' || input.needsReauth === true;
+}
+
+/**
  * Send email notifications for task status change
  */
 async function sendTaskStatusChangeEmails(params: {
@@ -248,6 +262,10 @@ export const runBrowserAutomation = task({
       organizationId,
     );
 
+    // Whether THIS run flipped the task into `failed` (transition only). The
+    // per-org bundled failure email (next change) reports only these.
+    let statusChangedToFailed = false;
+
     if (result.success) {
       logger.info(`Automation ${automationId} completed successfully`, {
         runId: result.runId,
@@ -302,32 +320,45 @@ export const runBrowserAutomation = task({
         evaluationStatus: result.evaluationStatus,
       });
 
-      // Mark task as failed if auth issue
-      if (result.needsReauth) {
-        // Get current status before updating
+      // A real control failure (verdict `fail`) or a broken connection
+      // (`needsReauth`) means the task is no longer satisfied — flip it to
+      // `failed` so the dashboard reflects reality instead of keeping a stale
+      // `done`. An infra-only failure (timeout, model unavailable, …) is left
+      // alone (see shouldMarkTaskFailedAfterBrowserRun) so it retries next tick.
+      if (
+        shouldMarkTaskFailedAfterBrowserRun({
+          evaluationStatus: result.evaluationStatus,
+          needsReauth: result.needsReauth,
+        })
+      ) {
         const taskBeforeUpdate = await db.task.findUnique({
           where: { id: taskId },
           select: { status: true },
         });
         const oldStatus = taskBeforeUpdate?.status ?? 'todo';
 
-        await db.task.update({
-          where: { id: taskId },
-          data: { status: 'failed' },
-        });
-
-        // Only send email notifications if status actually changed
+        // Transition only: don't re-flip / re-report a task that's already failed.
         if (oldStatus !== 'failed') {
-          await sendTaskStatusChangeEmails({
-            organizationId,
-            taskId,
-            taskTitle,
-            oldStatus,
-            newStatus: 'failed',
+          await db.task.update({
+            where: { id: taskId },
+            data: { status: 'failed' },
           });
+          statusChangedToFailed = true;
+
+          // needs_reauth keeps its existing per-task email for now; the bundled
+          // per-org failure email (next change) replaces this for all cases.
+          if (result.needsReauth) {
+            await sendTaskStatusChangeEmails({
+              organizationId,
+              taskId,
+              taskTitle,
+              oldStatus,
+              newStatus: 'failed',
+            });
+          }
         } else {
           logger.info(
-            `Skipping notification: task ${taskId} was already in failed status`,
+            `Task ${taskId} was already in failed status; not re-reporting`,
           );
         }
       }
@@ -357,6 +388,11 @@ export const runBrowserAutomation = task({
       error: result.error,
       needsReauth: result.needsReauth,
       failureCode: result.failureCode,
+      // Consumed by the per-org bundled failure email (next change).
+      taskId,
+      taskTitle,
+      evaluationStatus: result.evaluationStatus,
+      statusChangedToFailed,
     };
   },
 });
