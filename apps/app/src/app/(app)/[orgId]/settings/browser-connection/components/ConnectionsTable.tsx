@@ -4,7 +4,10 @@ import { VendorLogo } from '@/components/VendorLogo';
 import { Button } from '@trycompai/design-system';
 import { Renew, Settings } from '@trycompai/design-system/icons';
 import { formatDistanceToNow } from 'date-fns';
-import { methodOf, statusMeta, type Connection } from './connection-format';
+import { useEffect, useMemo, useState } from 'react';
+import { methodOf, statusMeta, summarize, type Connection } from './connection-format';
+
+const PAGE_SIZE = 10;
 
 interface ConnectionsTableProps {
   connections: Connection[];
@@ -44,22 +47,65 @@ export function ConnectionsTable({
   onReconnect,
   onManage,
 }: ConnectionsTableProps) {
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(0);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return connections;
+    return connections.filter(
+      (connection) =>
+        connection.hostname.toLowerCase().includes(q) ||
+        (connection.displayName ?? '').toLowerCase().includes(q) ||
+        (connection.loginIdentity ?? '').toLowerCase().includes(q),
+    );
+  }, [connections, query]);
+
+  // Back to the first page whenever the search narrows the list.
+  useEffect(() => setPage(0), [query]);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount - 1);
+  const start = currentPage * PAGE_SIZE;
+  const visible = filtered.slice(start, start + PAGE_SIZE);
+  const summary = summarize(connections);
+
   return (
-    <div className="overflow-x-auto rounded-lg border border-border bg-card">
-      <table className="w-full min-w-[720px] border-collapse text-sm">
-        <thead>
-          <tr className="border-b border-border">
-            <th className={HEAD}>Vendor</th>
-            <th className={HEAD}>Method</th>
-            <th className={HEAD}>Connected as</th>
-            <th className={HEAD}>Status</th>
-            <th className={HEAD}>Automations</th>
-            <th className={HEAD}>Last verified</th>
-            <th className={`${HEAD} text-right`}>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {connections.map((connection) => {
+    <div className="flex flex-col gap-3">
+      <input
+        type="text"
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        placeholder="Search connections…"
+        aria-label="Search connections"
+        className="h-9 w-full max-w-xs rounded-md border border-border bg-background px-3 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+      />
+
+      <div className="overflow-x-auto rounded-lg border border-border bg-card">
+        <table className="w-full min-w-[720px] border-collapse text-sm">
+          <thead>
+            <tr className="border-b border-border">
+              <th className={HEAD}>Vendor</th>
+              <th className={HEAD}>Method</th>
+              <th className={HEAD}>Connected as</th>
+              <th className={HEAD}>Status</th>
+              <th className={HEAD}>Automations</th>
+              <th className={HEAD}>Last verified</th>
+              <th className={`${HEAD} text-right`}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {visible.length === 0 && (
+              <tr>
+                <td
+                  colSpan={7}
+                  className="px-4 py-10 text-center text-[13px] text-muted-foreground"
+                >
+                  No connections match &ldquo;{query.trim()}&rdquo;.
+                </td>
+              </tr>
+            )}
+            {visible.map((connection) => {
             const meta = statusMeta(connection.status);
             const method = methodOf(connection);
             return (
@@ -136,8 +182,51 @@ export function ConnectionsTable({
               </tr>
             );
           })}
-        </tbody>
-      </table>
+          </tbody>
+        </table>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="text-[13px] text-muted-foreground">
+          <span className="text-foreground">
+            {summary.total} {summary.total === 1 ? 'connection' : 'connections'}
+          </span>
+          {' · '}
+          <span style={{ color: 'var(--success)' }}>{summary.active} active</span>
+          {summary.needAttention > 0 && (
+            <>
+              {' · '}
+              <span style={{ color: 'oklch(0.5 0.14 85)' }}>
+                {summary.needAttention} need attention
+              </span>
+            </>
+          )}
+        </div>
+
+        {filtered.length > PAGE_SIZE && (
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={currentPage === 0}
+              onClick={() => setPage(currentPage - 1)}
+            >
+              Previous
+            </Button>
+            <span className="whitespace-nowrap text-[12px] text-muted-foreground">
+              Page {currentPage + 1} of {pageCount}
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={currentPage >= pageCount - 1}
+              onClick={() => setPage(currentPage + 1)}
+            >
+              Next
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

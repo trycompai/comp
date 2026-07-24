@@ -11,7 +11,7 @@ import { Button, Section } from '@trycompai/design-system';
 import { Add } from '@trycompai/design-system/icons';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { methodOf, summarize, type Connection } from './connection-format';
+import { methodOf, type Connection } from './connection-format';
 import { ConnectionsTable } from './ConnectionsTable';
 import { ManageConnectionSheet } from './ManageConnectionSheet';
 
@@ -185,8 +185,6 @@ export function BrowserConnectionClient({
     );
   }
 
-  const summary = summarize(profiles);
-
   return (
     <Section
       description="The vendor logins your evidence tasks use to sign in and capture audit evidence automatically."
@@ -230,24 +228,6 @@ export function BrowserConnectionClient({
             </li>
           </ol>
         </div>
-
-        {profiles.length > 0 && (
-          <div className="text-[13px] text-muted-foreground">
-            <span className="text-foreground">
-              {summary.total} {summary.total === 1 ? 'connection' : 'connections'}
-            </span>
-            {' · '}
-            <span style={{ color: 'var(--success)' }}>{summary.active} active</span>
-            {summary.needAttention > 0 && (
-              <>
-                {' · '}
-                <span style={{ color: 'oklch(0.5 0.14 85)' }}>
-                  {summary.needAttention} need attention
-                </span>
-              </>
-            )}
-          </div>
-        )}
 
         {profiles.length === 0 ? (
         <div className="grid place-items-center rounded-lg border border-dashed border-border py-16 text-center">
