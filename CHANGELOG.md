@@ -1,3 +1,10 @@
+## [3.108.1](https://github.com/trycompai/comp/compare/v3.108.0...v3.108.1) (2026-07-24)
+
+
+### Bug Fixes
+
+* **app:** stop left-nav rail tooltips flickering on hover (CS-773) ([#3502](https://github.com/trycompai/comp/issues/3502)) ([e7ce85c](https://github.com/trycompai/comp/commit/e7ce85c0481e4a97cced3cf281072fe060eafeef))
+
 # [3.108.0](https://github.com/trycompai/comp/compare/v3.107.0...v3.108.0) (2026-07-24)
 
 
