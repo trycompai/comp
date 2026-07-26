@@ -59,16 +59,15 @@ export class BrowserAutomationStepRunnerService {
     step: StepForRun;
   }): Promise<ResolvedProfile> {
     try {
-      if (input.step.profileId) {
-        const bound = await this.profiles.getProfile({
-          profileId: input.step.profileId,
-          organizationId: input.organizationId,
-        });
-        if (bound) return bound;
-      }
+      // Route through resolveProfileForTarget so an explicit binding is honored
+      // exactly: it returns the context-ready profile, throws when the bound
+      // profile is missing/cross-org, and rejects a host mismatch. That way a
+      // broken binding fails as "no connection" (below) instead of silently
+      // falling back to another host's login or handing over a pending context.
       return await this.profiles.resolveProfileForTarget({
         organizationId: input.organizationId,
         targetUrl: input.step.targetUrl,
+        profileId: input.step.profileId ?? undefined,
       });
     } catch {
       return null;

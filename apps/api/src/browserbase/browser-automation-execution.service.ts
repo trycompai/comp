@@ -53,10 +53,19 @@ export class BrowserAutomationExecutionService {
       automationId,
       organizationId,
     });
-    const profile = await this.profiles.resolveProfileForTarget({
+    // Open the live session on the SAME profile the run's first step will use,
+    // so the session's cookies match the login the runner authenticates as
+    // (resolving by targetUrl alone could pick a different profile than step 0).
+    const steps = stepsForRun(automation);
+    const profile = await this.stepRunner.resolveStepProfile({
       organizationId,
-      targetUrl: automation.targetUrl,
+      step: steps[0],
     });
+    if (!profile) {
+      throw new NotFoundException(
+        'No connection is bound to this automation. Connect one, then run again.',
+      );
+    }
     const run = await this.runs.createRun({
       automationId,
       profileId: profile.id,
@@ -178,18 +187,27 @@ export class BrowserAutomationExecutionService {
       step: steps[0],
     });
 
-    const result = await this.stepRunner.runSteps({
-      organizationId,
-      taskId: automation.taskId,
-      automationId,
-      runId,
-      steps,
-      firstProfile,
-      firstSessionId: sessionId,
-      onSteps,
-      onLiveView,
-      onLivePhase,
-    });
+    let result: BrowserEvidenceRunResult;
+    try {
+      result = await this.stepRunner.runSteps({
+        organizationId,
+        taskId: automation.taskId,
+        automationId,
+        runId,
+        steps,
+        firstProfile,
+        firstSessionId: sessionId,
+        onSteps,
+        onLiveView,
+        onLivePhase,
+      });
+    } catch (error) {
+      // A failure in step bookkeeping / profile-health must still finalize the
+      // parent run — otherwise it's stuck in `running` forever.
+      if (this.isTerminalReplayError(error)) throw error;
+      this.logger.error('Browser automation live run failed', error);
+      result = failedBrowserEvidenceRunResult(error);
+    }
 
     await this.runs.finishRun({ runId, startedAt: run.startedAt, result });
     return this.toRunResponse({ runId, result });
@@ -212,14 +230,22 @@ export class BrowserAutomationExecutionService {
       profileId: firstProfile?.id,
     });
 
-    const result = await this.stepRunner.runSteps({
-      organizationId,
-      taskId: automation.taskId,
-      automationId,
-      runId: run.id,
-      steps,
-      firstProfile,
-    });
+    let result: BrowserEvidenceRunResult;
+    try {
+      result = await this.stepRunner.runSteps({
+        organizationId,
+        taskId: automation.taskId,
+        automationId,
+        runId: run.id,
+        steps,
+        firstProfile,
+      });
+    } catch (error) {
+      // Always finalize the run we created — a bookkeeping failure must not leave
+      // it stuck in `running` (the orchestrator would never retry it).
+      this.logger.error('Browser automation run failed', error);
+      result = failedBrowserEvidenceRunResult(error);
+    }
 
     await this.runs.finishRun({ runId: run.id, startedAt: run.startedAt, result });
     return this.toRunResponse({ runId: run.id, result });
