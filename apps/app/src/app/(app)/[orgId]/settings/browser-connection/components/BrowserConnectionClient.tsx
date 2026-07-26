@@ -51,6 +51,12 @@ export function BrowserConnectionClient({
 
   const fetchProfiles = useCallback(async () => {
     const res = await apiClient.get<Connection[]>('/v1/browserbase/profiles');
+    // apiClient resolves (doesn't throw) on an HTTP error — surface it and keep
+    // the connections we already have instead of blanking the list to "none".
+    if (res.error) {
+      toast.error('Could not load connections. Please refresh.');
+      return;
+    }
     setProfiles(Array.isArray(res.data) ? res.data : []);
   }, []);
 
@@ -89,9 +95,14 @@ export function BrowserConnectionClient({
     async (connection: Connection, name: string) => {
       setBusy(true);
       try {
-        await apiClient.patch(`/v1/browserbase/profiles/${connection.id}`, {
-          displayName: name,
-        });
+        const res = await apiClient.patch(
+          `/v1/browserbase/profiles/${connection.id}`,
+          { displayName: name },
+        );
+        if (res.error) {
+          toast.error(res.error || 'Could not rename.');
+          return;
+        }
         await fetchProfiles();
         setManageOpen(false);
         toast.success('Connection renamed.');
@@ -108,7 +119,14 @@ export function BrowserConnectionClient({
     async (connection: Connection, creds: { username: string; password: string }) => {
       setBusy(true);
       try {
-        await apiClient.post(`/v1/browserbase/profiles/${connection.id}/credentials`, creds);
+        const res = await apiClient.post(
+          `/v1/browserbase/profiles/${connection.id}/credentials`,
+          creds,
+        );
+        if (res.error) {
+          toast.error(res.error || 'Could not update the login.');
+          return;
+        }
         await fetchProfiles();
         setManageOpen(false);
         toast.success('Login updated. Reconnect to verify it works.');
@@ -124,7 +142,14 @@ export function BrowserConnectionClient({
   const handleSetTotp = useCallback(async (connection: Connection, totpSeed: string) => {
     setBusy(true);
     try {
-      await apiClient.post(`/v1/browserbase/profiles/${connection.id}/totp`, { totpSeed });
+      const res = await apiClient.post(
+        `/v1/browserbase/profiles/${connection.id}/totp`,
+        { totpSeed },
+      );
+      if (res.error) {
+        toast.error(res.error || 'Could not save the authenticator key.');
+        return;
+      }
       toast.success('Automatic 2FA is on. Scheduled runs generate the code for you.');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Could not save the authenticator key.');
@@ -136,7 +161,13 @@ export function BrowserConnectionClient({
   const handleClearTotp = useCallback(async (connection: Connection) => {
     setBusy(true);
     try {
-      await apiClient.delete(`/v1/browserbase/profiles/${connection.id}/totp`);
+      const res = await apiClient.delete(
+        `/v1/browserbase/profiles/${connection.id}/totp`,
+      );
+      if (res.error) {
+        toast.error(res.error || 'Could not turn off automatic 2FA.');
+        return;
+      }
       toast.success('Automatic 2FA turned off.');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Could not turn off automatic 2FA.');
@@ -149,7 +180,13 @@ export function BrowserConnectionClient({
     async (connection: Connection) => {
       setBusy(true);
       try {
-        await apiClient.delete(`/v1/browserbase/profiles/${connection.id}`);
+        const res = await apiClient.delete(
+          `/v1/browserbase/profiles/${connection.id}`,
+        );
+        if (res.error) {
+          toast.error(res.error || 'Could not remove.');
+          return;
+        }
         await fetchProfiles();
         setManageOpen(false);
         toast.success('Connection removed.');

@@ -74,6 +74,7 @@ vi.mock(
   () => ({ ConnectVendorLoginFlow: () => <div data-testid="connect-flow" /> }),
 );
 
+import { apiClient } from '@/lib/api-client';
 import { BrowserConnectionClient } from './BrowserConnectionClient';
 
 const profile: Connection = {
@@ -110,6 +111,17 @@ describe('BrowserConnectionClient permission gating', () => {
 
     expect(screen.getByText(/no connections yet/i)).toBeInTheDocument();
     expect(screen.queryByTestId('table')).not.toBeInTheDocument();
+  });
+
+  it('keeps existing connections visible when the profiles refresh fails', async () => {
+    setMockPermissions(ADMIN_PERMISSIONS);
+    // A failed refresh (apiClient resolves with an error, it doesn't throw) must
+    // NOT blank the list to the "no connections" empty state.
+    vi.mocked(apiClient.get).mockResolvedValueOnce({ error: 'boom' } as never);
+    render(<BrowserConnectionClient organizationId="org-1" initialProfiles={[profile]} />);
+
+    expect(await screen.findByTestId('table')).toHaveTextContent('1 rows');
+    expect(screen.queryByText(/no connections yet/i)).not.toBeInTheDocument();
   });
 
   it('opens the shared connect flow when "Connect a vendor" is clicked', () => {
