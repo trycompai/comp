@@ -14,9 +14,13 @@ export function useBrowserProfiles() {
   const fetchProfiles = useCallback(async () => {
     try {
       const res = await apiClient.get<BrowserAuthProfile[]>('/v1/browserbase/profiles');
+      // apiClient resolves (doesn't throw) on an HTTP error — keep the existing
+      // list on failure instead of blanking it (which would mask the error as
+      // "no connections").
+      if (res.error) return;
       setProfiles(Array.isArray(res.data) ? res.data : []);
     } catch {
-      setProfiles([]);
+      // Network/parse error — keep what we have rather than wiping to empty.
     }
   }, []);
 

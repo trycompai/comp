@@ -82,8 +82,31 @@ describe('connect-flow-storage', () => {
     expect(loadConnectState(TASK)).toBeNull();
   });
 
-  it('returns null on malformed JSON', () => {
-    window.sessionStorage.setItem(`browser-connect-flow:${TASK}`, '{not json');
+  it('returns null on malformed JSON and clears the corrupt entry (self-heal)', () => {
+    const key = `browser-connect-flow:${TASK}`;
+    window.sessionStorage.setItem(key, '{not json');
+    expect(loadConnectState(TASK)).toBeNull();
+    expect(window.sessionStorage.getItem(key)).toBeNull();
+  });
+
+  it('discards an entry whose url is not a string (would crash the flow)', () => {
+    window.sessionStorage.setItem(
+      `browser-connect-flow:${TASK}`,
+      JSON.stringify({ step: 'enter-url', url: 123, savedAt: Date.now() }),
+    );
+    expect(loadConnectState(TASK)).toBeNull();
+  });
+
+  it('discards a choose entry whose analysis is malformed', () => {
+    window.sessionStorage.setItem(
+      `browser-connect-flow:${TASK}`,
+      JSON.stringify({
+        step: 'choose',
+        url: 'https://notion.so',
+        analysis: {}, // missing detectedMethods etc. → would crash the chooser
+        savedAt: Date.now(),
+      }),
+    );
     expect(loadConnectState(TASK)).toBeNull();
   });
 

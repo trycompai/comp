@@ -23,8 +23,17 @@ export function useBrowserContext() {
   const [showAuthFlow, setShowAuthFlow] = useState(false);
 
   const checkContextStatus = useCallback(async () => {
+    // On a failed fetch, don't drop a known-good context to "no-context" (which
+    // shows the connect empty-state). Keep an existing context; only a first
+    // load with nothing yet falls back to "no-context".
+    const keepOrNoContext = () =>
+      setStatus((prev) => (prev === 'has-context' ? prev : 'no-context'));
     try {
       const res = await apiClient.get<BrowserAuthProfile[]>('/v1/browserbase/profiles');
+      if (res.error) {
+        keepOrNoContext();
+        return;
+      }
       if (res.data) {
         const verifiedProfile = res.data.find((profile) => profile.status === 'verified');
         if (verifiedProfile) {
@@ -42,7 +51,7 @@ export function useBrowserContext() {
         setStatus('no-context');
       }
     } catch {
-      setStatus('no-context');
+      keepOrNoContext();
     }
   }, []);
 
