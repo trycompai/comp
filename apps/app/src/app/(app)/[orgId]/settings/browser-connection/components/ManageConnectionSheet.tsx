@@ -81,6 +81,7 @@ export function ManageConnectionSheet({
   const {
     configured: totpConfigured,
     isLoading: totpLoading,
+    error: totpError,
     mutate: mutateTotp,
   } = useTotpStatus(connection?.id, open && method === 'password');
 
@@ -280,14 +281,20 @@ export function ManageConnectionSheet({
                         <div className="min-w-0">
                           <div className="text-[12px] text-foreground">Automatic 2FA</div>
                           <div className="mt-px text-[10.5px] leading-relaxed text-muted-foreground">
-                            {totpConfigured
-                              ? 'On — codes are generated at each run.'
-                              : `Not set up — a run pauses if ${connection.hostname} asks for a code.`}
+                            {totpError
+                              ? "Couldn't check the 2FA status — try reopening this panel."
+                              : totpConfigured
+                                ? 'On — codes are generated at each run.'
+                                : `Not set up — a run pauses if ${connection.hostname} asks for a code.`}
                           </div>
                         </div>
                         {totpLoading ? (
                           <span className="flex-none rounded-sm bg-muted px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
                             …
+                          </span>
+                        ) : totpError ? (
+                          <span className="flex-none rounded-sm bg-muted px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                            Unknown
                           </span>
                         ) : totpConfigured ? (
                           <span
@@ -306,13 +313,16 @@ export function ManageConnectionSheet({
                         )}
                       </div>
 
-                      {!totpAdding && !totpConfigured && !totpLoading && (
-                        <div>
-                          <Button variant="outline" onClick={() => setTotpAdding(true)}>
-                            Add authenticator key
-                          </Button>
-                        </div>
-                      )}
+                      {!totpAdding &&
+                        !totpConfigured &&
+                        !totpLoading &&
+                        !totpError && (
+                          <div>
+                            <Button variant="outline" onClick={() => setTotpAdding(true)}>
+                              Add authenticator key
+                            </Button>
+                          </div>
+                        )}
 
                       {!totpAdding && totpConfigured && (
                         <div className="flex items-center gap-3">

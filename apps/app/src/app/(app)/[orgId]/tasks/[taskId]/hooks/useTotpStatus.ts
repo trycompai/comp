@@ -11,7 +11,7 @@ import useSWR from 'swr';
 export function useTotpStatus(profileId: string | undefined, enabled: boolean) {
   const key = enabled && profileId ? (['totp-status', profileId] as const) : null;
 
-  const { data, isLoading, mutate } = useSWR<{ configured: boolean }>(
+  const { data, error, isLoading, mutate } = useSWR<{ configured: boolean }>(
     key,
     async () => {
       const res = await apiClient.get<{ configured: boolean }>(
@@ -28,6 +28,9 @@ export function useTotpStatus(profileId: string | undefined, enabled: boolean) {
   return {
     configured: data?.configured ?? false,
     isLoading: enabled && isLoading,
+    // Surface the failure so the UI can show an "unknown" state instead of
+    // silently reporting "2FA off" (which would wrongly offer to set it up).
+    error: enabled ? Boolean(error) : false,
     mutate,
   };
 }

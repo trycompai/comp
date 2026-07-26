@@ -20,6 +20,9 @@ export function useBrowserAutomationDrafts({ taskId }: { taskId: string }) {
     const res = await apiClient.get<BrowserAutomationDraft[]>(
       `/v1/browserbase/automations/task/${taskId}/drafts`,
     );
+    // apiClient resolves (doesn't throw) on error — don't mask a failed fetch as
+    // "no drafts"; keep whatever we already have.
+    if (res.error) return;
     setDrafts(Array.isArray(res.data) ? res.data : []);
   }, [taskId]);
 
@@ -39,15 +42,29 @@ export function useBrowserAutomationDrafts({ taskId }: { taskId: string }) {
   );
 
   const updateDraft = useCallback(
-    async (draftId: string, payload: Partial<DraftPayload>) => {
-      await apiClient.patch(`/v1/browserbase/automation-drafts/${draftId}`, payload);
+    async (
+      draftId: string,
+      payload: Partial<DraftPayload>,
+    ): Promise<boolean> => {
+      const res = await apiClient.patch(
+        `/v1/browserbase/automation-drafts/${draftId}`,
+        payload,
+      );
+      // Report whether the autosave actually persisted instead of assuming it did.
+      return !res.error;
     },
     [],
   );
 
-  const deleteDraft = useCallback(async (draftId: string) => {
-    await apiClient.delete(`/v1/browserbase/automation-drafts/${draftId}`);
+  const deleteDraft = useCallback(async (draftId: string): Promise<boolean> => {
+    const res = await apiClient.delete(
+      `/v1/browserbase/automation-drafts/${draftId}`,
+    );
+    // Only drop it locally once the server confirms — a failed delete must not
+    // make a draft look discarded while it still exists on the server.
+    if (res.error) return false;
     setDrafts((current) => current.filter((draft) => draft.id !== draftId));
+    return true;
   }, []);
 
   return { drafts, fetchDrafts, createDraft, updateDraft, deleteDraft };
