@@ -18,7 +18,7 @@ const captureSchema = z.object({
   fields: z.array(
     z.object({
       label: z.string().trim().min(1, { message: 'Field name is required' }),
-      value: z.string().min(1, { message: 'Required' }),
+      value: z.string().trim().min(1, { message: 'Required' }),
       kind: z.enum(['identifier', 'password', 'text']),
       editable: z.boolean(),
     }),
@@ -207,6 +207,7 @@ export function ConnectCaptureForm({
           <Label htmlFor="capture-totp">Authenticator setup key</Label>
           <Input
             id="capture-totp"
+            type="password"
             placeholder="e.g. JBSW Y3DP EHPK 3PXP"
             {...register('totpSeed')}
           />

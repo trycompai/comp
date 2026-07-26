@@ -117,7 +117,11 @@ export function BrowserAutomationsList({
       );
       return {
         automation,
-        reconnectUrl: needing ? `https://${needing.hostname}` : undefined,
+        // Prefer the saved sign-in URL so vendors whose login lives on a deep
+        // path (…/login) reconnect there, not at the bare host root.
+        reconnectUrl: needing
+          ? needing.lastAuthCheckUrl || `https://${needing.hostname}`
+          : undefined,
       };
     });
   }, [automations, profileById, profileByHost]);
