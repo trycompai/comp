@@ -100,10 +100,11 @@ export class BrowserEvidenceRunnerService {
       run: async () => {
         const { sessionId, liveViewUrl } =
           await this.sessions.createSessionWithContext(input.profile.contextId);
-        // Surface this step's live view so a watched run can follow each vendor.
-        input.onSession?.({ sessionId, liveViewUrl });
 
         try {
+          // Surface this step's live view so a watched run can follow each
+          // vendor. Inside the try so a throwing callback still closes the session.
+          input.onSession?.({ sessionId, liveViewUrl });
           return await this.executeEvidenceOnSessionUnlocked({
             ...input,
             sessionId,
@@ -111,7 +112,12 @@ export class BrowserEvidenceRunnerService {
         } finally {
           // Signal the imminent teardown before we actually close, so the UI can
           // cover the live view before Browserbase's iframe shows "disconnected".
-          input.onSessionClosing?.();
+          // Best-effort: a UI callback failure must never skip the session close.
+          try {
+            input.onSessionClosing?.();
+          } catch {
+            // The teardown signal is cosmetic — ignore and still close.
+          }
           await this.closeSession(sessionId);
         }
       },
@@ -231,8 +237,21 @@ export class BrowserEvidenceRunnerService {
 
     const [full, focus] = await Promise.all([
       this.uploadOne(input, execution.screenshot),
+      // The close-up is a nice-to-have — a focus-upload failure must NOT sink the
+      // full-page evidence, so it degrades to null instead of rejecting.
       execution.focusScreenshot
-        ? this.uploadOne(input, execution.focusScreenshot, 'focus')
+        ? this.uploadOne(input, execution.focusScreenshot, 'focus').catch(
+            (err) => {
+              this.logger.warn(
+                'Focus screenshot upload failed; keeping the full-page only',
+                {
+                  runId: input.runId,
+                  error: err instanceof Error ? err.message : String(err),
+                },
+              );
+              return null;
+            },
+          )
         : Promise.resolve(null),
     ]);
 

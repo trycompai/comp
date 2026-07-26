@@ -96,24 +96,27 @@ export function rollUpStepResults(
   const lastWithShot = [...results]
     .reverse()
     .find((result) => result.screenshotKey);
+  const allSucceeded = results.every((result) => result.success);
 
-  const status: BrowserEvidenceRunResult['status'] = results.every(
-    (result) => result.success,
-  )
+  const status: BrowserEvidenceRunResult['status'] = allSucceeded
     ? 'completed'
     : results.some((result) => result.status === 'failed')
       ? 'failed'
       : 'blocked';
 
   return {
-    success: results.every((result) => result.success),
+    success: allSucceeded,
     status,
     screenshotKey: lastWithShot?.screenshotKey,
     screenshotUrl: lastWithShot?.screenshotUrl,
     finalUrl: results[results.length - 1]?.finalUrl,
+    // Only report a genuine 'pass' when EVERY step ran and at least one had a
+    // passing verdict — a step that failed technically (timeout, session lost)
+    // must not let the run be recorded as 'pass'.
     evaluationStatus: failedCheck
       ? 'fail'
-      : results.some((result) => result.evaluationStatus === 'pass')
+      : allSucceeded &&
+          results.some((result) => result.evaluationStatus === 'pass')
         ? 'pass'
         : undefined,
     evaluationReason: failedCheck?.evaluationReason,

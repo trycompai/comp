@@ -306,12 +306,18 @@ export async function executeBrowserEvidence({
     });
     // The current viewport — the agent stops with the evidence on screen, so this
     // is a naturally focused close-up (one screen, no scroll noise) to sit
-    // alongside the full-page shot as evidence.
-    const rawFocus = await page.screenshot({
-      type: 'jpeg',
-      quality: 80,
-      fullPage: false,
-    });
+    // alongside the full-page shot as evidence. Best-effort: a close-up failure
+    // must NOT drop the full-page evidence we already captured above.
+    let rawFocus: Awaited<ReturnType<typeof page.screenshot>> | undefined;
+    try {
+      rawFocus = await page.screenshot({
+        type: 'jpeg',
+        quality: 80,
+        fullPage: false,
+      });
+    } catch {
+      log('screenshot', 'Close-up capture failed; keeping the full page only.');
+    }
 
     const screenshot = await renderScreenshot({
       logger,
@@ -324,22 +330,24 @@ export async function executeBrowserEvidence({
     // than one screen. If the page fits in the viewport, the two shots are the
     // same, so we'd just show a duplicate.
     let focusScreenshot: string | undefined;
-    try {
-      const [fullMeta, focusMeta] = await Promise.all([
-        sharp(rawScreenshot).metadata(),
-        sharp(rawFocus).metadata(),
-      ]);
-      if ((fullMeta.height ?? 0) > (focusMeta.height ?? 0) * 1.15) {
-        focusScreenshot = await renderScreenshot({
-          logger,
-          logs,
-          rawScreenshot: rawFocus,
-          instruction: input.instruction,
-          finalUrl,
-        });
+    if (rawFocus) {
+      try {
+        const [fullMeta, focusMeta] = await Promise.all([
+          sharp(rawScreenshot).metadata(),
+          sharp(rawFocus).metadata(),
+        ]);
+        if ((fullMeta.height ?? 0) > (focusMeta.height ?? 0) * 1.15) {
+          focusScreenshot = await renderScreenshot({
+            logger,
+            logs,
+            rawScreenshot: rawFocus,
+            instruction: input.instruction,
+            finalUrl,
+          });
+        }
+      } catch {
+        // If we can't measure, skip the close-up rather than risk a duplicate.
       }
-    } catch {
-      // If we can't measure, skip the close-up rather than risk a duplicate.
     }
     currentStage = 'evaluation';
     await bringEvidencePageToFront(page);

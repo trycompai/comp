@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { TaskFrequency } from '@db';
 import { tasks } from '@trigger.dev/sdk';
 import {
@@ -20,6 +20,8 @@ import { normalizeHostnameFromUrl } from './browserbase-url';
 
 @Injectable()
 export class BrowserbaseService {
+  private readonly logger = new Logger(BrowserbaseService.name);
+
   constructor(
     private readonly sessions: BrowserbaseSessionService = new BrowserbaseSessionService(),
     private readonly profiles: BrowserAuthProfileService = new BrowserAuthProfileService(
@@ -83,21 +85,28 @@ export class BrowserbaseService {
     });
     const { sessionId, liveViewUrl } =
       await this.createSessionWithContext(profile.contextId);
-    const handle = await tasks.trigger('test-vendor-instruction', {
-      organizationId: input.organizationId,
-      taskId: input.taskId,
-      profileId: profile.id,
-      targetUrl: input.targetUrl,
-      instruction: input.instruction,
-      evaluationCriteria: input.evaluationCriteria,
-      sessionId,
-    });
-    return {
-      runId: handle.id,
-      publicAccessToken: handle.publicAccessToken,
-      sessionId,
-      liveViewUrl,
-    };
+    try {
+      const handle = await tasks.trigger('test-vendor-instruction', {
+        organizationId: input.organizationId,
+        taskId: input.taskId,
+        profileId: profile.id,
+        targetUrl: input.targetUrl,
+        instruction: input.instruction,
+        evaluationCriteria: input.evaluationCriteria,
+        sessionId,
+      });
+      return {
+        runId: handle.id,
+        publicAccessToken: handle.publicAccessToken,
+        sessionId,
+        liveViewUrl,
+      };
+    } catch (error) {
+      // The task never started — close the session we just opened so it doesn't
+      // linger until Browserbase times it out.
+      await this.closeSessionQuietly(sessionId);
+      throw error;
+    }
   }
 
   async listAuthProfiles(organizationId: string) {
@@ -205,16 +214,22 @@ export class BrowserbaseService {
       organizationId: input.organizationId,
       profileId: input.profileId,
     });
-    const handle = await tasks.trigger('sign-in-vendor-profile', {
-      ...input,
-      sessionId,
-    });
-    return {
-      runId: handle.id,
-      publicAccessToken: handle.publicAccessToken,
-      sessionId,
-      liveViewUrl,
-    };
+    try {
+      const handle = await tasks.trigger('sign-in-vendor-profile', {
+        ...input,
+        sessionId,
+      });
+      return {
+        runId: handle.id,
+        publicAccessToken: handle.publicAccessToken,
+        sessionId,
+        liveViewUrl,
+      };
+    } catch (error) {
+      // The sign-in task never started — close the session so it doesn't leak.
+      await this.closeSessionQuietly(sessionId);
+      throw error;
+    }
   }
 
   async getOrCreateOrgContext(organizationId: string) {
@@ -231,6 +246,19 @@ export class BrowserbaseService {
 
   async closeSession(sessionId: string): Promise<void> {
     return this.sessions.closeSession(sessionId);
+  }
+
+  /** Best-effort close for error/cleanup paths — never throws. */
+  private async closeSessionQuietly(sessionId: string): Promise<void> {
+    try {
+      await this.sessions.closeSession(sessionId);
+    } catch (error) {
+      this.logger.warn(
+        `Failed to close Browserbase session ${sessionId} after a dispatch error: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
   }
 
   async navigateToUrl(sessionId: string, url: string) {
@@ -260,7 +288,15 @@ export class BrowserbaseService {
     let contextId: string | undefined;
     try {
       contextId = await this.sessions.getSessionContextId(sessionId);
-    } catch {
+    } catch (error) {
+      // We won't blind-close a session whose context we can't resolve (that
+      // could close another org's session). Log it so a transient failure that
+      // leaves a session lingering is diagnosable rather than silently "closed".
+      this.logger.warn(
+        `Could not resolve context for session ${sessionId}; skipping close: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
       return;
     }
     if (!contextId) return;

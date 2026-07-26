@@ -249,9 +249,10 @@ export class BrowserAuthProfileService {
     if (!profile) {
       throw new NotFoundException('Browser auth profile not found');
     }
-    // Avoid a needless write when the profile is already verified.
-    if (profile.status === 'verified') return profile;
 
+    // Always refresh lastVerifiedAt on a successful sign-in — even when the
+    // profile is already `verified` — so "last verified" reflects the most
+    // recent successful authentication rather than the first one.
     return db.browserAuthProfile.update({
       where: { id: profile.id },
       data: {
