@@ -1,6 +1,7 @@
 import {
   performCredentialLogin,
   reloginWithStoredCredentials,
+  safeOriginAndPath,
 } from './browser-credential-login';
 import type { BrowserCredentialVaultAdapter } from './credential-vault';
 import type { BrowserbaseSessionService } from './browserbase-session.service';
@@ -183,5 +184,26 @@ describe('reloginWithStoredCredentials', () => {
 
     expect(result.isLoggedIn).toBe(false);
     expect(result.reason).toMatch(/user action/i);
+  });
+});
+
+describe('safeOriginAndPath (keeps auth secrets out of the LLM prompt)', () => {
+  it('drops the query and fragment (OAuth code/state/tokens)', () => {
+    expect(
+      safeOriginAndPath(
+        'https://login.example.com/callback?code=SECRET&state=xyz#access_token=abc',
+      ),
+    ).toBe('https://login.example.com/callback');
+  });
+
+  it('drops userinfo', () => {
+    expect(safeOriginAndPath('https://user:pass@example.com/app')).toBe(
+      'https://example.com/app',
+    );
+  });
+
+  it('returns empty string for an unparseable or empty URL', () => {
+    expect(safeOriginAndPath('not a url')).toBe('');
+    expect(safeOriginAndPath('')).toBe('');
   });
 });

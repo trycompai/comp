@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { TaskFrequency } from '@db';
 import { tasks } from '@trigger.dev/sdk';
 import {
@@ -191,6 +191,19 @@ export class BrowserbaseService {
     sessionId: string;
     liveViewUrl: string;
   }> {
+    // Reject a URL that doesn't belong to this connection before creating a
+    // session — its stored credentials must only ever be filled on its own host.
+    const profile = await this.profiles.getProfile({
+      organizationId: input.organizationId,
+      profileId: input.profileId,
+    });
+    if (!profile) {
+      throw new NotFoundException('Browser auth profile not found');
+    }
+    this.profiles.assertUrlMatchesProfileHostname({
+      url: input.url,
+      profileHostname: profile.hostname,
+    });
     const { sessionId, liveViewUrl } = await this.profiles.startProfileSession({
       organizationId: input.organizationId,
       profileId: input.profileId,

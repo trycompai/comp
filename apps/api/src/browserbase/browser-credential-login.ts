@@ -29,6 +29,21 @@ export interface CredentialLoginTarget {
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
+ * Origin + path only — drops the query, fragment, and userinfo so secrets that
+ * land in an auth redirect (OAuth `code`/`state`, tokens) are never forwarded to
+ * the model. Returns '' for an unparseable URL.
+ */
+export function safeOriginAndPath(rawUrl: string): string {
+  if (!rawUrl) return '';
+  try {
+    const url = new URL(rawUrl);
+    return `${url.origin}${url.pathname}`;
+  } catch {
+    return '';
+  }
+}
+
+/**
  * Drives an automated sign-in using stored credentials. Secret values are passed
  * through Stagehand's `variables` substitution, so they are injected into the page
  * at execution time and are never sent to the model as prompt text.
@@ -230,7 +245,11 @@ export async function classifyLoginOutcome(
     let currentUrl = '';
     try {
       const pages = stagehand.context?.pages?.() ?? [];
-      currentUrl = pages[pages.length - 1]?.url() ?? '';
+      const rawUrl = pages[pages.length - 1]?.url() ?? '';
+      // Only the origin + path is needed to judge "is this a sign-in page". Strip
+      // the query, fragment, and userinfo so OAuth codes / tokens / state that
+      // land in an auth redirect are never forwarded to the model.
+      currentUrl = safeOriginAndPath(rawUrl);
     } catch {
       // URL unavailable — classify from page content alone.
     }

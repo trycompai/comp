@@ -146,6 +146,12 @@ export class BrowserCredentialSigninService {
     if (!profile) {
       throw new NotFoundException('Browser auth profile not found');
     }
+    // The URL we sign in on must belong to this connection — otherwise the
+    // stored username/password/TOTP would be typed into an unrelated site.
+    this.profiles.assertUrlMatchesProfileHostname({
+      url: input.url,
+      profileHostname: profile.hostname,
+    });
 
     let stagehand: Stagehand | null = null;
     try {

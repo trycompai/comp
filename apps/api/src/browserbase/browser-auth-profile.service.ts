@@ -164,6 +164,13 @@ export class BrowserAuthProfileService {
       if (!profile) {
         throw new NotFoundException('Browser auth profile not found');
       }
+      // An explicitly selected connection must match the target host — otherwise
+      // its stored credentials would be filled on an unrelated site (credential
+      // exfiltration). The by-host branch below matches by construction.
+      this.assertUrlMatchesProfileHostname({
+        url: input.targetUrl,
+        profileHostname: profile.hostname,
+      });
       return this.profileContexts.ready(profile);
     }
 
@@ -387,7 +394,7 @@ export class BrowserAuthProfileService {
     return this.orgContexts.getOrgContext(organizationId);
   }
 
-  private assertUrlMatchesProfileHostname(input: {
+  assertUrlMatchesProfileHostname(input: {
     url: string;
     profileHostname: string;
   }): void {

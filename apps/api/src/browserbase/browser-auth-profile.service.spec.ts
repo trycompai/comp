@@ -1,4 +1,4 @@
-import { ForbiddenException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { BrowserbaseSessionService } from './browserbase-session.service';
 import { BrowserAuthProfileService } from './browser-auth-profile.service';
 
@@ -410,6 +410,53 @@ describe('BrowserAuthProfileService', () => {
           detail: 'boom',
         }),
       ).resolves.toBeUndefined();
+    });
+  });
+
+  describe('assertUrlMatchesProfileHostname (credential-safety guard)', () => {
+    it('passes when the URL host matches the connection hostname', () => {
+      expect(() =>
+        service.assertUrlMatchesProfileHostname({
+          url: 'https://app.example.com/login',
+          profileHostname: 'app.example.com',
+        }),
+      ).not.toThrow();
+    });
+
+    it('rejects a URL on a different host', () => {
+      expect(() =>
+        service.assertUrlMatchesProfileHostname({
+          url: 'https://evil.example.net/login',
+          profileHostname: 'app.example.com',
+        }),
+      ).toThrow(BadRequestException);
+    });
+
+    it('rejects an unparseable URL', () => {
+      expect(() =>
+        service.assertUrlMatchesProfileHostname({
+          url: 'not a url',
+          profileHostname: 'app.example.com',
+        }),
+      ).toThrow(BadRequestException);
+    });
+  });
+
+  describe('resolveProfileForTarget (explicit profileId host binding)', () => {
+    it('rejects an explicit profile whose host does not match the target URL', async () => {
+      (db.browserAuthProfile.findFirst as jest.Mock).mockResolvedValue({
+        id: 'bap_1',
+        organizationId: 'org_1',
+        hostname: 'app.example.com',
+      });
+
+      await expect(
+        service.resolveProfileForTarget({
+          organizationId: 'org_1',
+          targetUrl: 'https://evil.example.net/app',
+          profileId: 'bap_1',
+        }),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
   });
 });

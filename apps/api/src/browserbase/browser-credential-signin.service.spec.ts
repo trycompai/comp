@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { BrowserCredentialSigninService } from './browser-credential-signin.service';
 import type { BrowserbaseSessionService } from './browserbase-session.service';
 import type { BrowserAuthProfileService } from './browser-auth-profile.service';
@@ -44,6 +44,8 @@ function makeProfiles(found: typeof profile | null) {
     markVerified: jest.fn().mockResolvedValue(found),
     markNeedsReauth: jest.fn().mockResolvedValue(found),
     recordSignInAttempt: jest.fn().mockResolvedValue(undefined),
+    // No-op by default (matching host); a specific test overrides it to throw.
+    assertUrlMatchesProfileHostname: jest.fn(),
   };
 }
 
@@ -181,6 +183,27 @@ describe('BrowserCredentialSigninService', () => {
     await expect(
       service.signInWithStoredCredentials(input),
     ).rejects.toBeInstanceOf(NotFoundException);
+    expect(sessions.createStagehand).not.toHaveBeenCalled();
+  });
+
+  it('rejects a URL whose host does not belong to the connection (no browser opened)', async () => {
+    const sessions = makeSessions(jest.fn(), jest.fn());
+    const profiles = makeProfiles(profile);
+    // The host guard rejects a mismatched URL before any browser work.
+    profiles.assertUrlMatchesProfileHostname.mockImplementation(() => {
+      throw new BadRequestException('host mismatch');
+    });
+    const service = new BrowserCredentialSigninService(
+      sessions as unknown as BrowserbaseSessionService,
+      profiles as unknown as BrowserAuthProfileService,
+    );
+
+    await expect(
+      service.signInWithStoredCredentials({
+        ...input,
+        url: 'https://evil.example.net/login',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
     expect(sessions.createStagehand).not.toHaveBeenCalled();
   });
 });
