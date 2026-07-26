@@ -16,6 +16,10 @@ const MODEL = anthropic('claude-sonnet-4-6');
 // drop-in swap behind `getInstructions`.
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
+// Bound the in-memory cache so a flood of distinct hostnames can't grow it
+// without limit. Expired entries are also dropped on read.
+const MAX_CACHE_ENTRIES = 500;
+
 // Grounding: before generating, pull the vendor's CURRENT help docs via web
 // search and feed them to the model, so steps track the live UI rather than the
 // model's training snapshot. Best-effort — a missing key/failure/empty result
@@ -139,7 +143,11 @@ export class BrowserMfaInstructionsService {
     const hostname = this.normalizeHost(rawHost);
 
     const cached = this.cache.get(hostname);
-    if (cached && cached.expiresAt > Date.now()) return cached.value;
+    if (cached) {
+      if (cached.expiresAt > Date.now()) return cached.value;
+      // Drop the expired entry so stale hosts don't linger in memory.
+      this.cache.delete(hostname);
+    }
 
     let value: MfaInstructions;
     try {
@@ -153,6 +161,12 @@ export class BrowserMfaInstructionsService {
       value = this.fallback(hostname);
     }
 
+    // Bound the cache: evict the oldest entry (Map preserves insertion order)
+    // before inserting a new host once we're at capacity.
+    if (this.cache.size >= MAX_CACHE_ENTRIES) {
+      const oldest = this.cache.keys().next().value;
+      if (oldest !== undefined) this.cache.delete(oldest);
+    }
     this.cache.set(hostname, { value, expiresAt: Date.now() + CACHE_TTL_MS });
     return value;
   }
@@ -169,21 +183,28 @@ export class BrowserMfaInstructionsService {
       temperature: 0.2,
     });
 
+    // Clean first, THEN check — an emphasis-only response (e.g. ["**"]) is
+    // non-empty before stripping but empty after, and must not slip through as
+    // confident-with-zero-steps.
+    const steps = object.steps
+      .map(stripEmphasis)
+      .filter((step) => step.length > 0);
+
     // Don't show shaky, possibly-invented steps — fall back to the universal
-    // instruction whenever the model isn't confident (or returned nothing).
-    if (!object.confident || object.steps.length === 0) {
+    // instruction whenever the model isn't confident or produced no usable steps.
+    if (!object.confident || steps.length === 0) {
       this.logger.log(
-        `MFA instructions for ${hostname}: not confident → fallback (grounded=${grounded})`,
+        `MFA instructions for ${hostname}: not confident/empty → fallback (grounded=${grounded})`,
       );
       return this.fallback(hostname);
     }
 
     this.logger.log(
-      `MFA instructions for ${hostname}: generated ${object.steps.length} step(s) (grounded=${grounded})`,
+      `MFA instructions for ${hostname}: generated ${steps.length} step(s) (grounded=${grounded})`,
     );
     return {
       hostname,
-      steps: object.steps.map(stripEmphasis).filter((step) => step.length > 0),
+      steps,
       tips: UNIVERSAL_TIPS,
       confident: true,
       grounded,

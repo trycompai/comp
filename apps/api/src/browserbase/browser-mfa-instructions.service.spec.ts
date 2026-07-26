@@ -96,6 +96,19 @@ describe('BrowserMfaInstructionsService', () => {
     expect(result.steps.length).toBeGreaterThan(0);
   });
 
+  it('falls back when the steps are empty after stripping emphasis', async () => {
+    // Non-empty array before stripping, but every step is emphasis-only → empty
+    // after cleaning. Must NOT return confident-with-zero-steps.
+    mockGenerate.mockResolvedValueOnce(
+      asResult({ steps: ['**', '``', '__'], confident: true }),
+    );
+
+    const result = await service.getInstructions('weird-vendor.example.com');
+
+    expect(result.source).toBe('fallback');
+    expect(result.steps.length).toBeGreaterThan(0);
+  });
+
   it('caches per normalized host — a full URL and bare host share one entry', async () => {
     mockGenerate.mockResolvedValueOnce(
       asResult({ steps: ['Open Security'], confident: true }),
