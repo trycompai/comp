@@ -105,6 +105,10 @@ export class BrowserbaseSessionService {
   async createSessionWithContext(
     contextId: string,
     viewport: BrowserViewport = CAPTURE_VIEWPORT,
+    // Persist the session's state back into the context by default (connections
+    // need their cookies saved). Read-only flows (login analysis) pass false so
+    // they never retain cookies in a throwaway context.
+    persist: boolean = true,
   ): Promise<{ sessionId: string; liveViewUrl: string }> {
     const bb = this.getBrowserbase();
 
@@ -116,7 +120,7 @@ export class BrowserbaseSessionService {
           browserSettings: {
             context: {
               id: contextId,
-              persist: true,
+              persist,
             },
             fingerprint: {
               screen: {

@@ -41,7 +41,13 @@ export class BrowserLoginAnalyzerService {
       // unconfigured Browserbase (e.g. missing BROWSERBASE_API_KEY) degrades to
       // the manual fallback instead of surfacing a 500 to the user.
       const contextId = await this.sessions.createBrowserbaseContext();
-      const session = await this.sessions.createSessionWithContext(contextId);
+      // Read-only analysis: never persist cookies/state back into this throwaway
+      // context (it's discarded after the page read).
+      const session = await this.sessions.createSessionWithContext(
+        contextId,
+        undefined,
+        false,
+      );
       sessionId = session.sessionId;
 
       stagehand = await this.sessions.createStagehand(sessionId);
