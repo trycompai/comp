@@ -148,20 +148,10 @@ export class ResolveAuthProfileDto {
   @IsOptional()
   loginIdentity?: string;
 
-  @ApiPropertyOptional({ description: 'External vault provider name' })
-  @IsString()
-  @IsOptional()
-  vaultProvider?: string;
-
-  @ApiPropertyOptional({ description: 'External vault item reference' })
-  @IsString()
-  @IsOptional()
-  vaultExternalItemRef?: string;
-
-  @ApiPropertyOptional({ description: 'External vault connection ID' })
-  @IsString()
-  @IsOptional()
-  vaultConnectionId?: string;
+  // Vault references are intentionally NOT accepted from the client. A
+  // connection's credential-vault item is only ever created server-side (by the
+  // credentials endpoint) inside the organization's own vault, so a caller can
+  // never point a profile at another tenant's vault item.
 }
 
 export class VerifyAuthProfileSessionDto {

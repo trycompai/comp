@@ -109,9 +109,6 @@ export class BrowserbaseService {
     url: string;
     displayName?: string;
     loginIdentity?: string;
-    vaultProvider?: string;
-    vaultExternalItemRef?: string;
-    vaultConnectionId?: string;
   }) {
     return this.profiles.getOrCreateProfileFromUrl(input);
   }

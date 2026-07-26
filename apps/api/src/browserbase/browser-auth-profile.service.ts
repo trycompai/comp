@@ -27,9 +27,8 @@ export interface AuthProfileInput {
   url: string;
   displayName?: string;
   loginIdentity?: string;
-  vaultProvider?: string;
-  vaultExternalItemRef?: string;
-  vaultConnectionId?: string;
+  // Vault references are set server-side only (by the credentials endpoint) into
+  // the org's own vault — never accepted from the caller here.
 }
 
 @Injectable()
@@ -120,9 +119,6 @@ export class BrowserAuthProfileService {
             input.displayName?.trim() || defaultProfileDisplayName(hostname),
           contextId: PENDING_CONTEXT_ID,
           lastAuthCheckUrl: input.url,
-          vaultProvider: input.vaultProvider,
-          vaultExternalItemRef: input.vaultExternalItemRef,
-          vaultConnectionId: input.vaultConnectionId,
         },
       });
       const profile = await this.profileContexts.initialize({
