@@ -129,6 +129,15 @@ export class BrowserCredentialSigninService {
       if (last) last.state = state;
       emit();
     };
+    // Persist the outcome of this attempt on the connection (diagnostic
+    // breadcrumb for support). Best-effort inside the service — never throws.
+    const record = (outcome: string, detail?: string | null) =>
+      this.profiles.recordSignInAttempt({
+        organizationId: input.organizationId,
+        profileId: input.profileId,
+        outcome,
+        detail,
+      });
 
     const profile = await this.profiles.getProfile({
       profileId: input.profileId,
@@ -157,6 +166,7 @@ export class BrowserCredentialSigninService {
       step('Checking if you’re already signed in');
       if ((await classifyLoginOutcome(activeStagehand)) === 'logged_in') {
         await this.profiles.markVerified(input);
+        await record('logged_in', 'Existing session was still valid.');
         finish('done');
         return { isLoggedIn: true, homeUrl: page.url() };
       }
@@ -187,6 +197,7 @@ export class BrowserCredentialSigninService {
         // The identity provider often opens in a new tab — follow it.
         await this.streamActiveLiveView(activeStagehand, input.sessionId, input.onLiveView);
         step('Finish signing in with your provider');
+        await record('sso_handoff', FAILURE_REASON.sso_handoff);
         finish('warn');
         return { isLoggedIn: false, failure: 'sso_handoff' };
       }
@@ -205,6 +216,7 @@ export class BrowserCredentialSigninService {
 
       if (outcome === 'logged_in') {
         await this.profiles.markVerified(input);
+        await record('logged_in');
         finish('done');
         // Re-read the active page: signing in usually navigates to an app/home page.
         const landed = await this.sessions.ensureActivePage(activeStagehand);
@@ -217,8 +229,18 @@ export class BrowserCredentialSigninService {
         profileId: input.profileId,
         reason: FAILURE_REASON[outcome],
       });
+      await record(outcome, FAILURE_REASON[outcome]);
       finish('warn');
       return { isLoggedIn: false, failure: outcome };
+    } catch (error) {
+      // An unexpected error (session/navigation/model failure) is exactly the
+      // kind of thing a "can't connect" ticket is about — record it, then let
+      // it propagate unchanged so the caller's handling is untouched.
+      await record(
+        'error',
+        error instanceof Error ? error.message : 'Automated sign-in errored.',
+      );
+      throw error;
     } finally {
       // Release our automation handle but leave the session open — the caller
       // shows it to the user (to watch, or to take over) and closes it later.

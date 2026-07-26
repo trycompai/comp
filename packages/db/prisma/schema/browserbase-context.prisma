@@ -39,6 +39,16 @@ model BrowserAuthProfile {
   lastAuthCheckUrl String?
   blockedReason    String?
 
+  /// Outcome of the most recent connect/sign-in attempt — a stable code
+  /// (e.g. "logged_in", "invalid_credentials", "needs_2fa", "challenge",
+  /// "sso_handoff", "unknown", "error"), a human-readable detail, and when it
+  /// happened. Persisted so a "can't connect" support ticket can be diagnosed
+  /// from the connection row alone, instead of from ephemeral run logs. This is
+  /// a diagnostic breadcrumb, not the live connection state — see `status`.
+  lastSignInOutcome String?
+  lastSignInDetail  String?
+  lastSignInAt      DateTime?
+
   vaultProvider        String?
   vaultExternalItemRef String?
   vaultConnectionId    String?

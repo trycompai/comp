@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { db, Prisma } from '@db';
@@ -33,6 +34,8 @@ export interface AuthProfileInput {
 
 @Injectable()
 export class BrowserAuthProfileService {
+  private readonly logger = new Logger(BrowserAuthProfileService.name);
+
   constructor(
     private readonly sessions: BrowserbaseSessionService = new BrowserbaseSessionService(),
     private readonly orgContexts: BrowserbaseOrgContextService = new BrowserbaseOrgContextService(
@@ -338,6 +341,38 @@ export class BrowserAuthProfileService {
         blockedReason: input.reason,
       },
     });
+  }
+
+  /**
+   * Persist the outcome of the most recent connect/sign-in attempt on the
+   * connection, so a "can't connect" support ticket can be diagnosed from the
+   * row alone rather than from ephemeral Trigger.dev logs. Purely diagnostic —
+   * it does NOT change `status` (the mark* methods own that). Best-effort: scoped
+   * by org (no cross-tenant write), never throws on a missing row, and swallows
+   * failures so logging can never break the sign-in flow.
+   */
+  async recordSignInAttempt(input: {
+    organizationId: string;
+    profileId: string;
+    outcome: string;
+    detail?: string | null;
+  }): Promise<void> {
+    try {
+      await db.browserAuthProfile.updateMany({
+        where: { id: input.profileId, organizationId: input.organizationId },
+        data: {
+          lastSignInOutcome: input.outcome,
+          lastSignInDetail: input.detail ?? null,
+          lastSignInAt: new Date(),
+        },
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Failed to record sign-in outcome for profile ${input.profileId}: ${
+          error instanceof Error ? error.message : 'unknown error'
+        }`,
+      );
+    }
   }
 
   async getOrCreateOrgContext(

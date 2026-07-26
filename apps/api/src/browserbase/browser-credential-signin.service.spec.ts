@@ -43,6 +43,7 @@ function makeProfiles(found: typeof profile | null) {
     getProfile: jest.fn().mockResolvedValue(found),
     markVerified: jest.fn().mockResolvedValue(found),
     markNeedsReauth: jest.fn().mockResolvedValue(found),
+    recordSignInAttempt: jest.fn().mockResolvedValue(undefined),
   };
 }
 
@@ -124,6 +125,10 @@ describe('BrowserCredentialSigninService', () => {
     expect(act).toHaveBeenCalled(); // navigate to sign-in + fill
     expect(profiles.markVerified).toHaveBeenCalledTimes(1);
     expect(profiles.markNeedsReauth).not.toHaveBeenCalled();
+    // The outcome is persisted for support debugging.
+    expect(profiles.recordSignInAttempt).toHaveBeenCalledWith(
+      expect.objectContaining({ outcome: 'logged_in' }),
+    );
   });
 
   it('reports invalid credentials as a failure and marks needs-reauth', async () => {
@@ -141,6 +146,10 @@ describe('BrowserCredentialSigninService', () => {
     expect(result.failure).toBe('invalid_credentials');
     expect(profiles.markNeedsReauth).toHaveBeenCalledTimes(1);
     expect(profiles.markVerified).not.toHaveBeenCalled();
+    // The failure reason is persisted for support debugging.
+    expect(profiles.recordSignInAttempt).toHaveBeenCalledWith(
+      expect.objectContaining({ outcome: 'invalid_credentials' }),
+    );
     // Session stays open so the user can take over.
     expect(sessions.closeSession).not.toHaveBeenCalled();
   });

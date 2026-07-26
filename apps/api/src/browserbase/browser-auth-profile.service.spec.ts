@@ -11,6 +11,7 @@ jest.mock('@db', () => ({
       findFirst: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
       delete: jest.fn(),
       deleteMany: jest.fn(),
     },
@@ -349,6 +350,66 @@ describe('BrowserAuthProfileService', () => {
           displayName: 'x',
         }),
       ).rejects.toThrow('not found');
+    });
+  });
+
+  describe('recordSignInAttempt', () => {
+    it('persists the outcome, detail, and a timestamp, scoped to the org', async () => {
+      (db.browserAuthProfile.updateMany as jest.Mock).mockResolvedValue({
+        count: 1,
+      });
+
+      await service.recordSignInAttempt({
+        organizationId: 'org_1',
+        profileId: 'bap_1',
+        outcome: 'needs_2fa',
+        detail: 'The account requires a two-factor code to sign in.',
+      });
+
+      expect(db.browserAuthProfile.updateMany).toHaveBeenCalledWith({
+        where: { id: 'bap_1', organizationId: 'org_1' },
+        data: expect.objectContaining({
+          lastSignInOutcome: 'needs_2fa',
+          lastSignInDetail: 'The account requires a two-factor code to sign in.',
+          lastSignInAt: expect.any(Date),
+        }),
+      });
+    });
+
+    it('stores null detail when none is provided', async () => {
+      (db.browserAuthProfile.updateMany as jest.Mock).mockResolvedValue({
+        count: 1,
+      });
+
+      await service.recordSignInAttempt({
+        organizationId: 'org_1',
+        profileId: 'bap_1',
+        outcome: 'logged_in',
+      });
+
+      expect(db.browserAuthProfile.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            lastSignInOutcome: 'logged_in',
+            lastSignInDetail: null,
+          }),
+        }),
+      );
+    });
+
+    it('never throws — a logging write failure cannot break sign-in', async () => {
+      (db.browserAuthProfile.updateMany as jest.Mock).mockRejectedValue(
+        new Error('db down'),
+      );
+
+      await expect(
+        service.recordSignInAttempt({
+          organizationId: 'org_1',
+          profileId: 'bap_1',
+          outcome: 'error',
+          detail: 'boom',
+        }),
+      ).resolves.toBeUndefined();
     });
   });
 });
