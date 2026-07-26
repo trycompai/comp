@@ -102,11 +102,34 @@ describe('ManageConnectionSheet', () => {
     expect(screen.queryByText('Automatic 2FA')).not.toBeInTheDocument();
   });
 
-  it('shows a view-only note and no actions when the user cannot manage', () => {
-    render(<ManageConnectionSheet {...base} canManage={false} connection={connection()} />);
+  it('shows a view-only note and no actions when the user can neither manage nor remove', () => {
+    render(
+      <ManageConnectionSheet
+        {...base}
+        canManage={false}
+        canRemove={false}
+        connection={connection()}
+      />,
+    );
     expect(screen.getByText(/view access/i)).toBeInTheDocument();
     expect(screen.queryByText('Reconnect')).not.toBeInTheDocument();
     expect(screen.queryByText('Remove…')).not.toBeInTheDocument();
+  });
+
+  it('lets a delete-only user remove without exposing the manage actions', () => {
+    render(
+      <ManageConnectionSheet
+        {...base}
+        canManage={false}
+        canRemove={true}
+        connection={connection()}
+      />,
+    );
+    // Remove is available (delete permission), but manage-only actions are not.
+    expect(screen.getByText('Remove…')).toBeInTheDocument();
+    expect(screen.queryByText('Reconnect')).not.toBeInTheDocument();
+    expect(screen.queryByText('Change login')).not.toBeInTheDocument();
+    expect(screen.queryByText(/view access/i)).not.toBeInTheDocument();
   });
 
   it('confirms before removing, warning about dependent automations', () => {

@@ -84,7 +84,9 @@ export function ManageConnectionSheet({
     mutate: mutateTotp,
   } = useTotpStatus(connection?.id, open && method === 'password');
 
-  // Reset the forms each time a different connection is opened.
+  // Reset the forms each time the sheet opens (or a different connection loads).
+  // Depending on `open` too clears any stale name/credentials/setup-key/confirm
+  // state when the SAME connection is reopened.
   useEffect(() => {
     setName(connection?.displayName ?? '');
     setShowCredForm(false);
@@ -93,7 +95,7 @@ export function ManageConnectionSheet({
     setTotpAdding(false);
     setTotpSeed('');
     setConfirmingRemove(false);
-  }, [connection]);
+  }, [connection, open]);
 
   if (!connection) return null;
 
@@ -331,6 +333,7 @@ export function ManageConnectionSheet({
                       {totpAdding && (
                         <div className="flex flex-col gap-2 rounded-md border border-border p-3">
                           <Input
+                            type="password"
                             value={totpSeed}
                             onChange={(event) => setTotpSeed(event.target.value)}
                             placeholder="Authenticator setup key (e.g. JBSW Y3DP EHPK 3PXP)"
@@ -367,8 +370,10 @@ export function ManageConnectionSheet({
           </div>
         </SheetBody>
 
-        {/* Danger zone (pinned) — or a read-only note when the user can't manage. */}
-        {canManage && canRemove ? (
+        {/* Danger zone (pinned) — shown whenever the user can remove, independent
+            of the update permission (delete-only users must still be able to
+            remove). A read-only note shows only when the user can do neither. */}
+        {canRemove ? (
           <SheetFooter>
             {!confirmingRemove ? (
               <div className="flex items-center justify-between gap-3">
