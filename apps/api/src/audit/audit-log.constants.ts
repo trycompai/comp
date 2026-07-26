@@ -17,6 +17,11 @@ export const SENSITIVE_KEYS = new Set([
   'credentials',
   'privateKey',
   'private_key',
+  // Authenticator (TOTP) material — a reusable MFA secret. Must never land in
+  // the audit log in cleartext (browser-connection credential endpoints accept
+  // `totpSeed`; the runtime carries `totpCode`).
+  'totpSeed',
+  'totpCode',
 ]);
 
 export const RESOURCE_TO_ENTITY_TYPE: Record<
