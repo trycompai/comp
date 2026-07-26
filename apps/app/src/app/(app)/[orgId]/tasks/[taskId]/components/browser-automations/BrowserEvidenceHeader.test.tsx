@@ -47,6 +47,7 @@ const base = {
   currentCadence: 'daily' as const,
   canUpdate: true,
   canCreate: true,
+  canConnect: true,
   onSetTaskSchedule: vi.fn(),
   onConnectAnother: vi.fn(),
   onCreate: vi.fn(),
@@ -93,12 +94,28 @@ describe('BrowserEvidenceHeader', () => {
     expect(screen.getAllByTestId('vendor-logo')).toHaveLength(2);
   });
 
+  it('gates "New evidence" on canCreate and "Connect" on canConnect independently', () => {
+    // A user who can add automations (task:create) but cannot connect vendors
+    // (integration:create) sees New evidence but not Connect another vendor.
+    render(
+      <BrowserEvidenceHeader
+        {...base}
+        canCreate={true}
+        canConnect={false}
+        automations={[automation()]}
+      />,
+    );
+    expect(screen.getByText('New evidence')).toBeInTheDocument();
+    expect(screen.queryByText('Connect another vendor')).not.toBeInTheDocument();
+  });
+
   it('keeps the status strip but drops the actions when read-only', () => {
     render(
       <BrowserEvidenceHeader
         {...base}
         canUpdate={false}
         canCreate={false}
+        canConnect={false}
         automations={[automation({ runs: [run('completed')] })]}
       />,
     );

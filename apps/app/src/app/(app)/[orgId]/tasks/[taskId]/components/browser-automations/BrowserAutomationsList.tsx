@@ -70,8 +70,14 @@ export function BrowserAutomationsList({
   onDeleteDraft,
 }: BrowserAutomationsListProps) {
   const { hasPermission } = usePermissions();
-  const canCreate = hasPermission('integration', 'create');
-  const canUpdate = hasPermission('integration', 'update');
+  // Automations are task-scoped resources — the API gates create/update/delete on
+  // task:*. Connecting or reconnecting a vendor goes through the integration
+  // connect flow (integration:create). Gate each control on what its endpoint
+  // actually requires so the UI matches the API (no hidden controls / no 403s).
+  const canCreateAutomation = hasPermission('task', 'create');
+  const canUpdateAutomation = hasPermission('task', 'update');
+  const canDeleteAutomation = hasPermission('task', 'delete');
+  const canConnect = hasPermission('integration', 'create');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   // Auto-expand a just-finished manual run so its results (screenshots +
   // verdict) show without a second click. `autoExpand` is a fresh object per
@@ -121,8 +127,9 @@ export function BrowserAutomationsList({
         <BrowserEvidenceHeader
           automations={automations}
           currentCadence={currentCadence}
-          canUpdate={canUpdate}
-          canCreate={canCreate}
+          canUpdate={canUpdateAutomation}
+          canCreate={canCreateAutomation}
+          canConnect={canConnect}
           onSetTaskSchedule={onSetTaskSchedule}
           onConnectAnother={onConnectAnother}
           onCreate={onCreate}
@@ -145,7 +152,8 @@ export function BrowserAutomationsList({
                 automation={automation}
                 isRunning={runningAutomationId === automation.id}
                 isExpanded={expandedId === automation.id}
-                readOnly={!canUpdate}
+                readOnly={!canUpdateAutomation}
+                canDelete={canDeleteAutomation}
                 onToggleExpand={() =>
                   setExpandedId(expandedId === automation.id ? null : automation.id)
                 }
@@ -154,7 +162,7 @@ export function BrowserAutomationsList({
                 onDelete={() => onDelete(automation.id)}
                 onToggleEnabled={(enabled) => onToggleEnabled(automation.id, enabled)}
               />
-              {reconnectUrl && canUpdate && (
+              {reconnectUrl && canConnect && (
                 <div
                   className="flex items-center justify-between gap-2 rounded-md px-3 py-1.5 text-[11.5px]"
                   style={{

@@ -88,8 +88,12 @@ const HEALTH_DOT: Record<HealthTone, string> = {
 interface BrowserEvidenceHeaderProps {
   automations: BrowserAutomation[];
   currentCadence: TaskFrequency;
+  /** task:update — schedule the task's browser evidence. */
   canUpdate: boolean;
+  /** task:create — add a new automation ("New evidence"). */
   canCreate: boolean;
+  /** integration:create — connect another vendor (the connect flow). */
+  canConnect: boolean;
   onSetTaskSchedule: (frequency: TaskFrequency) => void;
   onConnectAnother?: () => void;
   onCreate?: () => void;
@@ -107,6 +111,7 @@ export function BrowserEvidenceHeader({
   currentCadence,
   canUpdate,
   canCreate,
+  canConnect,
   onSetTaskSchedule,
   onConnectAnother,
   onCreate,
@@ -117,7 +122,7 @@ export function BrowserEvidenceHeader({
   const nextRun = nextRunLabel(automations, currentCadence);
 
   const showSchedule = canUpdate && count > 0;
-  const showConnect = Boolean(onConnectAnother) && canCreate;
+  const showConnect = Boolean(onConnectAnother) && canConnect;
   const showCreate = Boolean(onCreate) && canCreate;
   const mobileHasOverflow = showSchedule || showConnect;
 

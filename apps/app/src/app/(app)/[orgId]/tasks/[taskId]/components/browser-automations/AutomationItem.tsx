@@ -20,6 +20,8 @@ interface AutomationItemProps {
   isRunning: boolean;
   isExpanded: boolean;
   readOnly?: boolean;
+  /** task:delete — show the Delete action. Defaults to true when omitted. */
+  canDelete?: boolean;
   onToggleExpand: () => void;
   onRun: () => void;
   onEdit: () => void;
@@ -41,6 +43,7 @@ export function AutomationItem({
   isRunning,
   isExpanded,
   readOnly,
+  canDelete = true,
   onToggleExpand,
   onRun,
   onEdit,
@@ -260,10 +263,15 @@ export function AutomationItem({
                       <Edit size={16} />
                       Edit steps
                     </DropdownMenuItem>
-                    <DropdownMenuItem variant="destructive" onClick={() => setConfirmDelete(true)}>
-                      <TrashCan size={16} />
-                      Delete
-                    </DropdownMenuItem>
+                    {canDelete && (
+                      <DropdownMenuItem
+                        variant="destructive"
+                        onClick={() => setConfirmDelete(true)}
+                      >
+                        <TrashCan size={16} />
+                        Delete
+                      </DropdownMenuItem>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </>
