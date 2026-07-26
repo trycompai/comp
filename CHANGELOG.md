@@ -1,3 +1,10 @@
+## [3.108.2](https://github.com/trycompai/comp/compare/v3.108.1...v3.108.2) (2026-07-26)
+
+
+### Bug Fixes
+
+* **app:** use the GA gemini-3.1-flash-lite slug ([ec646ed](https://github.com/trycompai/comp/commit/ec646ed7b1b016de785eefee724e51f4c9690a07))
+
 ## [3.108.1](https://github.com/trycompai/comp/compare/v3.108.0...v3.108.1) (2026-07-24)
 
 
