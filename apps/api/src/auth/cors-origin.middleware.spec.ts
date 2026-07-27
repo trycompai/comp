@@ -191,6 +191,27 @@ describe('corsOriginMiddleware', () => {
     expect(next).toHaveBeenCalled();
   });
 
+  it('advertises every method the previous enableCors config allowed', async () => {
+    jest.mocked(isTrustedOrigin).mockResolvedValue(true);
+    const request = createRequest({
+      method: 'OPTIONS',
+      origin: 'https://app.trycomp.ai',
+      path: '/v1/controls',
+      requestedMethod: 'GET',
+    });
+    const response = createResponse();
+    const next = jest.fn();
+
+    runCors({ request, response, next });
+    await flushPromises();
+
+    const allowed = (response.headers['Access-Control-Allow-Methods'] ?? '')
+      .split(',');
+    for (const method of ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE']) {
+      expect(allowed).toContain(method);
+    }
+  });
+
   it('varies on origin even when the origin is rejected, so caches cannot mix responses', async () => {
     jest.mocked(isTrustedOrigin).mockResolvedValue(false);
     const request = createRequest({

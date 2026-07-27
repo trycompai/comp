@@ -2,7 +2,9 @@ import type { NextFunction, Request, Response } from 'express';
 import { isTrustedOrigin } from './auth.server';
 import { isCompExtensionOriginAllowedForRequest } from './origin-policy';
 
-const CORS_METHODS = 'GET,POST,PUT,DELETE,PATCH,OPTIONS';
+// Mirrors the previous `app.enableCors` default set, plus OPTIONS. HEAD must
+// stay listed: dropping it silently breaks cross-origin HEAD preflights.
+const CORS_METHODS = 'GET,HEAD,POST,PUT,PATCH,DELETE,OPTIONS';
 const DEFAULT_CORS_HEADERS =
   'Content-Type,Authorization,X-API-Key,X-Service-Token,X-Organization-Id';
 
