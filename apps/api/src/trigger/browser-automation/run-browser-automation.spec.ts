@@ -23,6 +23,7 @@ jest.mock('@trycompai/email', () => ({
 }));
 
 import {
+  isTaskStatusProtectedFromAutomation,
   shouldMarkTaskDoneAfterBrowserRun,
   shouldMarkTaskFailedAfterBrowserRun,
 } from './run-browser-automation';
@@ -73,5 +74,18 @@ describe('shouldMarkTaskFailedAfterBrowserRun', () => {
 
   it('does not fail the task on a passing verdict', () => {
     expect(shouldMarkTaskFailedAfterBrowserRun({ evaluationStatus: 'pass' })).toBe(false);
+  });
+});
+
+describe('isTaskStatusProtectedFromAutomation', () => {
+  it('protects a deliberate human not_relevant decision', () => {
+    // A scheduled run must never overwrite this (it has a human justification).
+    expect(isTaskStatusProtectedFromAutomation('not_relevant')).toBe(true);
+  });
+
+  it('does not protect the normal automatable statuses', () => {
+    for (const status of ['todo', 'in_progress', 'in_review', 'done', 'failed']) {
+      expect(isTaskStatusProtectedFromAutomation(status)).toBe(false);
+    }
   });
 });

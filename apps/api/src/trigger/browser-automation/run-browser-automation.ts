@@ -38,6 +38,17 @@ export function shouldMarkTaskFailedAfterBrowserRun(input: {
 }
 
 /**
+ * Task statuses a scheduled run must NOT overwrite — a deliberate human decision.
+ * `not_relevant` is set by a person (with a justification) to exclude the task
+ * from compliance; an automation flipping it to done/failed would silently
+ * destroy that decision. Mirrors the codebase norm (cloud-security skips
+ * `not_relevant` "user intent"). Exported for unit testing.
+ */
+export function isTaskStatusProtectedFromAutomation(status: string): boolean {
+  return status === 'not_relevant';
+}
+
+/**
  * Worker task that runs a single browser automation.
  *
  * Triggered by the per-org runner (run-org-browser-automations), which waits on
@@ -123,7 +134,11 @@ export const runBrowserAutomation = task({
           select: { status: true, frequency: true },
         });
 
-        if (currentTask && currentTask.status !== 'done') {
+        if (
+          currentTask &&
+          currentTask.status !== 'done' &&
+          !isTaskStatusProtectedFromAutomation(currentTask.status)
+        ) {
           let reviewDate: Date | undefined;
           if (currentTask.frequency) {
             reviewDate = new Date();
@@ -177,10 +192,14 @@ export const runBrowserAutomation = task({
         const oldStatus = taskBeforeUpdate?.status ?? 'todo';
 
         // Transition only: don't re-flip / re-report a task that's already
-        // failed. The per-org runner (run-org-browser-automations) collects
-        // these transitions and sends one bundled failure email — covering both
-        // `needs_reauth` and control-regressed (`evaluation fail`) cases.
-        if (oldStatus !== 'failed') {
+        // failed. Also never overwrite a deliberate human decision like
+        // `not_relevant`. The per-org runner (run-org-browser-automations)
+        // collects these transitions and sends one bundled failure email —
+        // covering both `needs_reauth` and control-regressed (`evaluation fail`).
+        if (
+          oldStatus !== 'failed' &&
+          !isTaskStatusProtectedFromAutomation(oldStatus)
+        ) {
           await db.task.update({
             where: { id: taskId },
             data: { status: 'failed' },
