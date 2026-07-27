@@ -11,6 +11,7 @@ import {
   BrowserAutomationsList,
   BrowserLiveView,
   ConnectVendorLoginFlow,
+  ConnectionsErrorState,
   EmptyWithContextState,
   InstructionComposer,
   type ConnectionRef,
@@ -62,7 +63,12 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
   // Hooks
   const context = useBrowserContext();
   const automations = useBrowserAutomations({ taskId });
-  const { profiles, fetchProfiles } = useBrowserProfiles();
+  const {
+    profiles,
+    fetchProfiles,
+    isLoading: profilesLoading,
+    isError: profilesError,
+  } = useBrowserProfiles();
   const {
     drafts,
     fetchDrafts,
@@ -293,11 +299,6 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
     [profiles],
   );
 
-  // Loading state
-  if (automations.isLoading) {
-    return null;
-  }
-
   // Execution live view
   if (execution.isExecuting && execution.liveViewUrl) {
     const runningAutomation = automations.automations.find(
@@ -345,6 +346,19 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
         }}
       />
     );
+  }
+
+  // Everything below resolves connections from the profiles list, so it waits
+  // for the load and surfaces a failure — while the flows above (execution,
+  // connect, auth) stay reachable during it, since they don't need the list.
+  // Rendering the states below early would flash "no connections" or
+  // misresolve (empty states invite reconnecting; the composer/list treat
+  // connected vendors as missing).
+  if (automations.isLoading || profilesLoading) {
+    return null;
+  }
+  if (profilesError && profiles.length === 0) {
+    return <ConnectionsErrorState onRetry={() => void fetchProfiles()} />;
   }
 
   // Instruction composer (create/edit) — write, watch the AI test it, then save.
