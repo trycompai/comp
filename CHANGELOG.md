@@ -1,3 +1,16 @@
+# [3.109.0](https://github.com/trycompai/comp/compare/v3.108.2...v3.109.0) (2026-07-27)
+
+
+### Bug Fixes
+
+* **api:** don't let scheduled browser runs overwrite not_relevant tasks ([#3507](https://github.com/trycompai/comp/issues/3507)) ([99393e5](https://github.com/trycompai/comp/commit/99393e569b3d44a042307640e6b7928265a09093))
+* browser automation production-review findings (not_relevant guard, credential re-save, connections load state) ([#3509](https://github.com/trycompai/comp/issues/3509)) ([02746c3](https://github.com/trycompai/comp/commit/02746c3f1154c1dd52bbfd96c29831df2952f360))
+
+
+### Features
+
+* browser automations for scheduled, credential-backed evidence capture ([#3417](https://github.com/trycompai/comp/issues/3417)) ([411a83b](https://github.com/trycompai/comp/commit/411a83b125d30b9fd003061a0e64e590582e59be))
+
 ## [3.108.2](https://github.com/trycompai/comp/compare/v3.108.1...v3.108.2) (2026-07-26)
 
 
