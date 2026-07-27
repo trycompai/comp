@@ -12,7 +12,7 @@ jest.mock(
 );
 
 jest.mock('../frameworks/frameworks-timeline.helper', () => ({
-  checkAutoCompletePhases: jest.fn(),
+  checkAutoCompletePhases: jest.fn().mockResolvedValue(undefined),
 }));
 
 jest.mock('../timelines/timelines.service', () => ({
@@ -42,6 +42,7 @@ jest.mock('@db', () => {
         findFirst: jest.fn(),
         groupBy: jest.fn(),
         update: jest.fn(),
+        create: jest.fn(),
       },
       evidenceFormSetting: {
         findMany: jest.fn(),
@@ -56,6 +57,7 @@ type MockDb = {
     findFirst: jest.Mock;
     groupBy: jest.Mock;
     update: jest.Mock;
+    create: jest.Mock;
   };
   evidenceFormSetting: {
     findMany: jest.Mock;
@@ -82,9 +84,14 @@ describe('EvidenceFormsService', () => {
   const timelinesServiceMock =
     {} as unknown as import('../timelines/timelines.service').TimelinesService;
 
+  const evidenceFormsNotifierMock = {
+    notifyAccessRequestSubmitted: jest.fn().mockResolvedValue(undefined),
+  };
+
   const service = new EvidenceFormsService(
     attachmentsServiceMock,
     timelinesServiceMock,
+    evidenceFormsNotifierMock as unknown as import('./evidence-forms-notifier.service').EvidenceFormsNotifierService,
   );
   const mockedDb = db as unknown as MockDb;
 
@@ -184,6 +191,81 @@ describe('EvidenceFormsService', () => {
         isNotRelevant: true,
         updatedAt: '2026-01-03T00:00:00.000Z',
       });
+    });
+  });
+
+  describe('submitForm', () => {
+    const accessRequestPayload = {
+      submissionDate: '2026-01-01T00:00:00.000Z',
+      userName: 'Jane Employee',
+      accountsNeeded: 'GitHub (org: engineering)',
+      permissionsNeeded: 'write',
+      reasonForRequest: 'Needs write access for a new project',
+      accessGrantedBy: 'IT Admin',
+      dateAccessGranted: '2026-01-01',
+    };
+
+    it('notifies owners/admins after an access-request submission', async () => {
+      mockedDb.evidenceSubmission.create.mockResolvedValue({
+        id: 'sub_access_1',
+        formType: 'access_request',
+        data: accessRequestPayload,
+        submittedBy: {
+          id: 'usr_reviewer',
+          name: 'Jane Employee',
+          email: 'reviewer@example.com',
+        },
+      });
+
+      await service.submitForm({
+        organizationId: 'org_123',
+        formType: 'access-request',
+        payload: accessRequestPayload,
+        authContext,
+      });
+
+      expect(
+        evidenceFormsNotifierMock.notifyAccessRequestSubmitted,
+      ).toHaveBeenCalledWith({
+        organizationId: 'org_123',
+        submitterUserId: 'usr_reviewer',
+        submitterName: 'Jane Employee',
+        submissionId: 'sub_access_1',
+        data: accessRequestPayload,
+      });
+    });
+
+    it('does not notify owners/admins for non access-request submissions', async () => {
+      const meetingPayload = {
+        submissionDate: '2026-01-01T00:00:00.000Z',
+        attendees: 'Board members',
+        date: '2026-01-01',
+        meetingMinutes: 'Discussed Q1 roadmap',
+        meetingMinutesApprovedBy: 'CEO',
+        approvedDate: '2026-01-02',
+      };
+
+      mockedDb.evidenceSubmission.create.mockResolvedValue({
+        id: 'sub_meeting_1',
+        formType: 'meeting',
+        data: meetingPayload,
+        submittedBy: {
+          id: 'usr_reviewer',
+          name: 'Jane Employee',
+          email: 'reviewer@example.com',
+        },
+      });
+
+      await service.submitForm({
+        organizationId: 'org_123',
+        formType: 'meeting',
+        payload: meetingPayload,
+        authContext,
+      });
+
+      expect(
+        evidenceFormsNotifierMock.notifyAccessRequestSubmitted,
+      ).not.toHaveBeenCalled();
     });
   });
 
