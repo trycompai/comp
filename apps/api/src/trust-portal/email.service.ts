@@ -4,6 +4,7 @@ import { AccessGrantedEmail } from '../email/templates/access-granted';
 import { AccessReclaimEmail } from '../email/templates/access-reclaim';
 import { NdaSigningEmail } from '../email/templates/nda-signing';
 import { AccessRequestNotificationEmail } from '../email/templates/access-request-notification';
+import { TrustDomainMisconfiguredEmail } from '../email/templates/trust-domain-misconfigured';
 
 @Injectable()
 export class TrustEmailService {
@@ -129,6 +130,32 @@ export class TrustEmailService {
 
     this.logger.log(
       `Access request notification sent to ${toEmail} for requester ${requesterEmail} (ID: ${id})`,
+    );
+  }
+
+  async sendDomainMisconfiguredEmail(params: {
+    toEmail: string;
+    toName: string;
+    organizationName: string;
+    domain: string;
+    settingsUrl: string;
+  }): Promise<void> {
+    const { toEmail, toName, organizationName, domain, settingsUrl } = params;
+
+    const { id } = await triggerEmail({
+      to: toEmail,
+      subject: `Action required: Trust Portal domain ${domain} is misconfigured`,
+      react: TrustDomainMisconfiguredEmail({
+        toName,
+        organizationName,
+        domain,
+        settingsUrl,
+      }),
+      trustPortal: true,
+    });
+
+    this.logger.log(
+      `Domain misconfigured email sent to ${toEmail} for domain ${domain} (ID: ${id})`,
     );
   }
 }
