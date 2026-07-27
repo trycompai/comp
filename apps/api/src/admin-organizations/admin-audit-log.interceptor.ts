@@ -8,7 +8,11 @@ import {
 import { AuditLogEntityType, db, Prisma } from '@db';
 import { Reflector } from '@nestjs/core';
 import { Observable, tap } from 'rxjs';
-import { MUTATION_METHODS, SENSITIVE_KEYS } from '../audit/audit-log.constants';
+import {
+  MUTATION_METHODS,
+  SENSITIVE_KEYS,
+  SENSITIVE_KEY_PATTERN,
+} from '../audit/audit-log.constants';
 import { SKIP_ADMIN_AUDIT_LOG_KEY } from './skip-admin-audit-log.decorator';
 
 const SEGMENT_TO_RESOURCE: Record<
@@ -261,7 +265,15 @@ export class AdminAuditLogInterceptor implements NestInterceptor {
     const changes: Changes = {};
 
     for (const [key, value] of Object.entries(body)) {
-      if (value === undefined || SENSITIVE_KEYS.has(key)) continue;
+      // Skip exact-match sensitive keys AND credential-shaped names the exact
+      // list misses (clientSecret, secretAccessKey, …) — shared with the global
+      // interceptor so both audit paths redact consistently.
+      if (
+        value === undefined ||
+        SENSITIVE_KEYS.has(key) ||
+        SENSITIVE_KEY_PATTERN.test(key)
+      )
+        continue;
       changes[key] = { previous: null, current: value };
     }
 
