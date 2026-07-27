@@ -6,7 +6,7 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { db } from '@db';
-import type { ItemField } from '@1password/sdk';
+import type { Item, ItemField } from '@1password/sdk';
 import {
   getOnePasswordClient,
   isOnePasswordConfigured,
@@ -59,23 +59,60 @@ export class BrowserCredentialStorageService {
     }
 
     const client = await getOnePasswordClient();
-    const vaultId = await this.ensureOrgVault({
-      client,
-      organizationId: input.organizationId,
-    });
-
     const fields = await this.buildLoginFields({
       username: input.username,
       password: input.password,
       totpSeed: input.totpSeed,
       extraFields: input.extraFields,
     });
+    const title = `${profile.displayName} (${profile.hostname})`;
+
+    // Re-saving a login for a connection that already has one updates the
+    // existing item in place: the op:// reference stays stable (so a scheduled
+    // run mid-flight still resolves current secrets) and no superseded item —
+    // still holding a real username/password/TOTP seed — is orphaned in the
+    // vault. Falls through to creating a fresh item when the stored one is
+    // gone (e.g. deleted in 1Password directly).
+    const existing = profile.vaultExternalItemRef
+      ? parseItemReference(profile.vaultExternalItemRef)
+      : null;
+    if (existing?.vaultId && existing.itemId) {
+      const updated = await this.updateExistingLoginItem({
+        client,
+        vaultId: existing.vaultId,
+        itemId: existing.itemId,
+        title,
+        fields,
+        // A re-save without a new authenticator key keeps the stored one —
+        // dropping automatic 2FA is an explicit action (clearProfileTotp),
+        // not a side effect of updating a password.
+        keepStoredTotp: !input.totpSeed?.trim(),
+      });
+      if (updated) {
+        this.logger.log(
+          `Updated browser credentials for profile ${profile.id} in 1Password.`,
+        );
+        return db.browserAuthProfile.update({
+          where: { id: profile.id },
+          data: {
+            vaultProvider: ONEPASSWORD_PROVIDER,
+            vaultConnectionId: existing.vaultId,
+            identifierLabel: input.usernameLabel?.trim() || undefined,
+          },
+        });
+      }
+    }
+
+    const vaultId = await this.ensureOrgVault({
+      client,
+      organizationId: input.organizationId,
+    });
 
     const { ItemCategory } = await loadOnePasswordModule();
     const item = await client.items.create({
       category: ItemCategory.Login,
       vaultId,
-      title: `${profile.displayName} (${profile.hostname})`,
+      title,
       fields,
     });
 
@@ -95,6 +132,52 @@ export class BrowserCredentialStorageService {
         identifierLabel: input.usernameLabel?.trim() || undefined,
       },
     });
+  }
+
+  /**
+   * Replace the fields of a connection's existing login item, optionally
+   * carrying over its stored TOTP field. Returns false only when the item
+   * can't be READ (e.g. it was deleted directly in 1Password), so the caller
+   * creates a replacement. A write failure propagates instead: the item still
+   * exists, and falling back to a replacement would orphan it and repoint the
+   * profile — the request should fail and the retry hit the same item.
+   */
+  private async updateExistingLoginItem({
+    client,
+    vaultId,
+    itemId,
+    title,
+    fields,
+    keepStoredTotp,
+  }: {
+    client: OnePasswordClient;
+    vaultId: string;
+    itemId: string;
+    title: string;
+    fields: ItemField[];
+    keepStoredTotp: boolean;
+  }): Promise<boolean> {
+    let item: Item;
+    try {
+      item = await client.items.get(vaultId, itemId);
+    } catch (error) {
+      this.logger.warn(
+        'Could not read the existing 1Password item; creating a replacement',
+        { error: error instanceof Error ? error.message : String(error) },
+      );
+      return false;
+    }
+
+    const storedTotp = keepStoredTotp
+      ? item.fields.find(
+          (field) =>
+            field.title === TOTP_FIELD_TITLE && field.value.trim().length > 0,
+        )
+      : undefined;
+    item.title = title;
+    item.fields = storedTotp ? [...fields, storedTotp] : fields;
+    await client.items.put(item);
+    return true;
   }
 
   /**
