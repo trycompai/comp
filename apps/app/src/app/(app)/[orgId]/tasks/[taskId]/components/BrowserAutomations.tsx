@@ -11,6 +11,7 @@ import {
   BrowserAutomationsList,
   BrowserLiveView,
   ConnectVendorLoginFlow,
+  ConnectionsErrorState,
   EmptyWithContextState,
   InstructionComposer,
   type ConnectionRef,
@@ -62,7 +63,12 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
   // Hooks
   const context = useBrowserContext();
   const automations = useBrowserAutomations({ taskId });
-  const { profiles, fetchProfiles } = useBrowserProfiles();
+  const {
+    profiles,
+    fetchProfiles,
+    isLoading: profilesLoading,
+    isError: profilesError,
+  } = useBrowserProfiles();
   const {
     drafts,
     fetchDrafts,
@@ -293,8 +299,9 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
     [profiles],
   );
 
-  // Loading state
-  if (automations.isLoading) {
+  // Loading state — connections load with the automations; rendering before
+  // they arrive would flash the "no connections" states below.
+  if (automations.isLoading || profilesLoading) {
     return null;
   }
 
@@ -345,6 +352,15 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
         }}
       />
     );
+  }
+
+  // Everything below resolves connections from the profiles list — if that
+  // list failed to load and we have nothing cached, rendering on an empty list
+  // would misresolve (empty states invite reconnecting; the composer/list
+  // treat connected vendors as missing). Show the failure and offer a retry.
+  // The connect/auth flows above stay reachable — they don't need the list.
+  if (profilesError && profiles.length === 0) {
+    return <ConnectionsErrorState onRetry={() => void fetchProfiles()} />;
   }
 
   // Instruction composer (create/edit) — write, watch the AI test it, then save.
