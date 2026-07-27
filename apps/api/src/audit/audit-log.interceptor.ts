@@ -76,6 +76,16 @@ export class AuditLogInterceptor implements NestInterceptor {
     }
 
     const { resource, actions } = requiredPermissions[0];
+
+    // Read-only endpoints that use a mutation HTTP verb (e.g. `POST .../list` or
+    // `POST .../status` that carry a filter body) declare exactly `['read']`.
+    // The method-derived verb below would log them as "Created X" on every page
+    // load, so skip them — a required permission of only `read` is definitionally
+    // not a mutation. `@AuditRead` opts a read endpoint back into logging.
+    if (!isAuditRead && actions.length === 1 && actions[0] === 'read') {
+      return next.handle();
+    }
+
     // Derive the actual action from the HTTP method rather than using the first
     // permission action. This is important when a controller declares multiple
     // actions (e.g. ['create','read','update','delete']) at the class level.

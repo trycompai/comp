@@ -381,6 +381,36 @@ describe('AuditLogInterceptor', () => {
     });
   });
 
+  it('should skip read endpoints that use a mutation verb (POST with read-only permission)', (done) => {
+    // e.g. POST /v1/trust-portal/documents/list — a list/status read that uses
+    // POST to carry a filter body. It declares `read`, so it must not be logged
+    // as "Created trust".
+    jest.spyOn(reflector, 'getAllAndOverride').mockImplementation((key) => {
+      if (key === PERMISSIONS_KEY) {
+        return [{ resource: 'trust', actions: ['read'] }];
+      }
+      if (key === SKIP_AUDIT_LOG_KEY) return false;
+      return undefined;
+    });
+
+    const context = createMockExecutionContext({
+      method: 'POST',
+      url: '/v1/trust-portal/documents/list',
+      params: {},
+      body: { organizationId: 'org_123' },
+    });
+    const handler = createMockCallHandler([]);
+
+    interceptor.intercept(context, handler).subscribe({
+      next: () => {
+        setTimeout(() => {
+          expect(mockCreate).not.toHaveBeenCalled();
+          done();
+        }, 50);
+      },
+    });
+  });
+
   it('should skip requests without userId', (done) => {
     jest.spyOn(reflector, 'getAllAndOverride').mockImplementation((key) => {
       if (key === PERMISSIONS_KEY) {
