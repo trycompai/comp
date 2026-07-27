@@ -82,7 +82,15 @@ export class AuditLogInterceptor implements NestInterceptor {
     // The method-derived verb below would log them as "Created X" on every page
     // load, so skip them — a required permission of only `read` is definitionally
     // not a mutation. `@AuditRead` opts a read endpoint back into logging.
-    if (!isAuditRead && actions.length === 1 && actions[0] === 'read') {
+    // Only skip when EVERY declared permission is read-only: an endpoint with
+    // multiple requirements (e.g. [read, create]) still performs a mutation.
+    if (
+      !isAuditRead &&
+      requiredPermissions.every(
+        (permission) =>
+          permission.actions.length === 1 && permission.actions[0] === 'read',
+      )
+    ) {
       return next.handle();
     }
 

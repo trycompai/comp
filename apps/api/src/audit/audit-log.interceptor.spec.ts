@@ -411,6 +411,38 @@ describe('AuditLogInterceptor', () => {
     });
   });
 
+  it('still logs when only ONE of several declared permissions is read-only', (done) => {
+    // A POST that declares [read, create] is a real mutation — the read
+    // requirement must not suppress the audit entry.
+    jest.spyOn(reflector, 'getAllAndOverride').mockImplementation((key) => {
+      if (key === PERMISSIONS_KEY) {
+        return [
+          { resource: 'trust', actions: ['read'] },
+          { resource: 'policy', actions: ['create'] },
+        ];
+      }
+      if (key === SKIP_AUDIT_LOG_KEY) return false;
+      return undefined;
+    });
+
+    const context = createMockExecutionContext({
+      method: 'POST',
+      url: '/v1/something',
+      params: {},
+      body: { organizationId: 'org_123' },
+    });
+    const handler = createMockCallHandler({ id: 'ent_new' });
+
+    interceptor.intercept(context, handler).subscribe({
+      next: () => {
+        setTimeout(() => {
+          expect(mockCreate).toHaveBeenCalled();
+          done();
+        }, 50);
+      },
+    });
+  });
+
   it('should skip requests without userId', (done) => {
     jest.spyOn(reflector, 'getAllAndOverride').mockImplementation((key) => {
       if (key === PERMISSIONS_KEY) {
