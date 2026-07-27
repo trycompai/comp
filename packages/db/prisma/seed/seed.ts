@@ -239,11 +239,46 @@ const ISMS_DOCUMENT_TEMPLATES = [
       'The ISMS governance roles, their responsibilities and authorities, and the members who hold them (ISO 27001 clause 5.3).',
   },
   {
+    documentType: 'risk_assessment_methodology',
+    name: 'Risk Assessment Methodology',
+    clause: '6.1.2',
+    description:
+      'How information-security risks are identified, analysed and evaluated — the scales, risk level matrix, acceptance thresholds and treatment options used (ISO 27001 clause 6.1.2).',
+  },
+  {
+    documentType: 'risk_treatment_plan',
+    name: 'Risk Treatment Plan',
+    clause: '6.1.3',
+    description:
+      'The treatment, controls, owner, residual risk state and owner acceptance for every risk in the Risk Register and every vendor risk (ISO 27001 clause 6.1.3).',
+  },
+  {
     documentType: 'objectives_plan',
     name: 'Information Security Objectives and Plan',
     clause: '6.2',
     description:
       'Measurable information security objectives and the plan to achieve them (ISO 27001 clause 6.2).',
+  },
+  {
+    documentType: 'monitoring',
+    name: 'Monitoring, Measurement, Analysis and Evaluation',
+    clause: '9.1',
+    description:
+      'The metrics the organization monitors — what is measured, how, when, by whom, and who analyses the results (ISO 27001 clause 9.1).',
+  },
+  {
+    documentType: 'internal_audit',
+    name: 'Internal Audit',
+    clause: '9.2',
+    description:
+      'The internal audit programme and the plan, controls tested, findings and conclusion of each internal audit of the ISMS (ISO 27001 clause 9.2).',
+  },
+  {
+    documentType: 'management_review',
+    name: 'Management Review',
+    clause: '9.3',
+    description:
+      'The management review procedure and the minutes of each review — inputs considered, outputs, actions arising and chair sign-off (ISO 27001 clause 9.3).',
   },
 ] as const;
 

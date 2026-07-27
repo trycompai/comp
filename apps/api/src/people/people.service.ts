@@ -3,9 +3,10 @@ import {
   NotFoundException,
   Logger,
   BadRequestException,
+  ConflictException,
   ForbiddenException,
 } from '@nestjs/common';
-import { db } from '@db';
+import { db, Prisma } from '@db';
 import { FleetService } from '../lib/fleet.service';
 import { BUILT_IN_ROLE_PERMISSIONS } from '@trycompai/auth';
 import type { PeopleResponseDto } from './dto/people-responses.dto';
@@ -15,6 +16,11 @@ import type { BulkCreatePeopleDto } from './dto/bulk-create-people.dto';
 import { MemberValidator } from './utils/member-validator';
 import { MemberQueries } from './utils/member-queries';
 import { authorizeRoleChange } from './utils/role-authorization';
+import {
+  notifyLoginEmailChanged,
+  validateLoginEmailChange,
+  type LoginEmailChange,
+} from './utils/login-email-change';
 import {
   collectAssignedItems,
   clearAssignments,
@@ -333,11 +339,59 @@ export class PeopleService {
         );
       }
 
+      // Changing the email here changes the LOGIN email (User.email, global),
+      // so it needs uniqueness + cross-org guards before the raw write.
+      let emailChange: LoginEmailChange | null = null;
+      if (updateData.email !== undefined) {
+        if (updateData.userId && updateData.userId !== existingMember.userId) {
+          // The email write targets the member's CURRENT user, so combining it
+          // with a userId reassignment would rename the wrong account.
+          throw new BadRequestException(
+            'Cannot change userId and email in the same request',
+          );
+        }
+        emailChange = await validateLoginEmailChange({
+          userId: existingMember.userId,
+          organizationId,
+          requestedEmail: updateData.email,
+        });
+        if (emailChange) {
+          updateData.email = emailChange.newEmail;
+        } else {
+          delete updateData.email;
+          if (Object.keys(updateData).length === 0) {
+            // No-op: return the member without writing. Unlike findById, this
+            // must include deactivated members — the update path accepts them.
+            const member = await MemberQueries.findByIdInOrganization(
+              memberId,
+              organizationId,
+              { includeDeactivated: true },
+            );
+            if (!member) {
+              throw new NotFoundException(
+                `Member with ID ${memberId} not found in organization ${organizationId}`,
+              );
+            }
+            return member;
+          }
+        }
+      }
+
       const updatedMember = await MemberQueries.updateMember(
         memberId,
         organizationId,
         updateData,
       );
+
+      if (emailChange) {
+        // Fire-and-forget: notification latency/failure must not block the
+        // update response. notifyLoginEmailChanged handles its own errors.
+        void notifyLoginEmailChanged({
+          organizationId,
+          change: emailChange,
+          logger: this.logger,
+        });
+      }
 
       this.logger.log(
         `Updated member: ${updatedMember.user.name} (${memberId})`,
@@ -347,9 +401,20 @@ export class PeopleService {
       if (
         error instanceof NotFoundException ||
         error instanceof BadRequestException ||
-        error instanceof ForbiddenException
+        error instanceof ForbiddenException ||
+        error instanceof ConflictException
       ) {
         throw error;
+      }
+      // A concurrent email change can slip past the preflight uniqueness
+      // check; translate the unique-constraint violation to the same 409.
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(
+          'That email is already used by another account',
+        );
       }
       this.logger.error(
         `Failed to update member ${memberId} in organization ${organizationId}:`,

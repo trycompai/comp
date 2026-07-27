@@ -64,23 +64,25 @@ describe('ImportFrameworkDto', () => {
     expect(await validatePayload(basePayload())).toHaveLength(0);
   });
 
-  // Bug A — the import path must allow the same 10,000-char requirement
-  // descriptions the standalone requirement editor allows (NIST PL-2 > 6000).
-  it('accepts a 10,000-char requirement description', async () => {
+  // Bug A — the import path must allow the same 100,000-char requirement
+  // descriptions the standalone requirement editor allows (FRAME-2: NIST PL-2
+  // > 6000, HITRUST CSF requirements exceed 70,000).
+  it('accepts a 100,000-char requirement description', async () => {
     expect(
-      await validatePayload(basePayload({ requirementDescription: 'x'.repeat(10_000) })),
+      await validatePayload(basePayload({ requirementDescription: 'x'.repeat(100_000) })),
     ).toHaveLength(0);
   });
 
-  it('rejects a requirement description longer than 10,000 chars', async () => {
+  it('rejects a requirement description longer than 100,000 chars', async () => {
     const messages = await validatePayload(
-      basePayload({ requirementDescription: 'x'.repeat(10_001) }),
+      basePayload({ requirementDescription: 'x'.repeat(100_001) }),
     );
-    expect(messages.some((m) => m.includes('10000'))).toBe(true);
+    expect(messages.some((m) => m.includes('100000'))).toBe(true);
   });
 
-  // Import is the bulk-load path for externally-authored frameworks (NIST), so
-  // every description field accepts 10,000 — not just requirements.
+  // FRAME-2 raised requirement descriptions to 100,000, but control / policy /
+  // task template descriptions keep their existing 10,000 cap — the ticket is
+  // requirements-only, so this divergence is deliberate.
   it('accepts 10,000-char control / policy / task descriptions', async () => {
     const long = 'x'.repeat(10_000);
     const payload = {

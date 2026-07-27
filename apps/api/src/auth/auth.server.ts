@@ -1,5 +1,6 @@
 import '../config/load-env';
 import {
+  ChangeEmailConfirmationEmail,
   MagicLinkEmail,
   OTPVerificationEmail,
   VerifyEmail,
@@ -572,6 +573,23 @@ export const auth = betterAuth({
   socialProviders,
   user: {
     modelName: 'User',
+    changeEmail: {
+      enabled: true,
+      // Double opt-in: this link goes to the CURRENT address; confirming it
+      // makes better-auth send a verification link to the NEW address (via
+      // emailVerification.sendVerificationEmail), which applies the change.
+      sendChangeEmailConfirmation: async ({ user, newEmail, url }) => {
+        await triggerEmail({
+          to: user.email,
+          subject: 'Confirm your email change for Comp AI',
+          react: ChangeEmailConfirmationEmail({
+            currentEmail: user.email,
+            newEmail,
+            url,
+          }),
+        });
+      },
+    },
   },
   organization: {
     modelName: 'Organization',

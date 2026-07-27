@@ -5,65 +5,6 @@
 import * as z from "zod";
 import { ClosedEnum } from "../types/enums.js";
 
-export type RisksControllerGetRiskByIdV1Request = { id: string };
-
-export const RisksControllerGetRiskByIdV1Request$zodSchema: z.ZodType<
-  RisksControllerGetRiskByIdV1Request
-> = z.object({
-  id: z.string().describe("Risk ID"),
-});
-
-/**
- * Internal server error
- */
-export type RisksControllerGetRiskByIdV1InternalServerErrorResponseBody = {
-  message?: string | undefined;
-};
-
-export const RisksControllerGetRiskByIdV1InternalServerErrorResponseBody$zodSchema:
-  z.ZodType<RisksControllerGetRiskByIdV1InternalServerErrorResponseBody> = z
-    .object({
-      message: z.string().optional(),
-    }).describe("Internal server error");
-
-/**
- * Risk not found
- */
-export type RisksControllerGetRiskByIdV1NotFoundResponseBody = {
-  message?: string | undefined;
-};
-
-export const RisksControllerGetRiskByIdV1NotFoundResponseBody$zodSchema:
-  z.ZodType<RisksControllerGetRiskByIdV1NotFoundResponseBody> = z.object({
-    message: z.string().optional(),
-  }).describe("Risk not found");
-
-/**
- * Forbidden - User does not have permission to access this risk
- */
-export type RisksControllerGetRiskByIdV1ForbiddenResponseBody = {
-  message?: string | undefined;
-};
-
-export const RisksControllerGetRiskByIdV1ForbiddenResponseBody$zodSchema:
-  z.ZodType<RisksControllerGetRiskByIdV1ForbiddenResponseBody> = z.object({
-    message: z.string().optional(),
-  }).describe("Forbidden - User does not have permission to access this risk");
-
-/**
- * Unauthorized - Invalid authentication or insufficient permissions
- */
-export type RisksControllerGetRiskByIdV1UnauthorizedResponseBody = {
-  message?: string | undefined;
-};
-
-export const RisksControllerGetRiskByIdV1UnauthorizedResponseBody$zodSchema:
-  z.ZodType<RisksControllerGetRiskByIdV1UnauthorizedResponseBody> = z.object({
-    message: z.string().optional(),
-  }).describe(
-    "Unauthorized - Invalid authentication or insufficient permissions",
-  );
-
 export const RisksControllerGetRiskByIdV1Category = {
   Customer: "customer",
   Governance: "governance",
@@ -244,6 +185,65 @@ export const RisksControllerGetRiskByIdV1AuthType$zodSchema = z.enum([
   "api-key",
   "session",
 ]).describe("How the request was authenticated");
+
+export type RisksControllerGetRiskByIdV1Request = { id: string };
+
+export const RisksControllerGetRiskByIdV1Request$zodSchema: z.ZodType<
+  RisksControllerGetRiskByIdV1Request
+> = z.object({
+  id: z.string().describe("Risk ID"),
+});
+
+/**
+ * Internal server error
+ */
+export type RisksControllerGetRiskByIdV1InternalServerErrorResponseBody = {
+  message?: string | undefined;
+};
+
+export const RisksControllerGetRiskByIdV1InternalServerErrorResponseBody$zodSchema:
+  z.ZodType<RisksControllerGetRiskByIdV1InternalServerErrorResponseBody> = z
+    .object({
+      message: z.string().optional(),
+    }).describe("Internal server error");
+
+/**
+ * Risk not found
+ */
+export type RisksControllerGetRiskByIdV1NotFoundResponseBody = {
+  message?: string | undefined;
+};
+
+export const RisksControllerGetRiskByIdV1NotFoundResponseBody$zodSchema:
+  z.ZodType<RisksControllerGetRiskByIdV1NotFoundResponseBody> = z.object({
+    message: z.string().optional(),
+  }).describe("Risk not found");
+
+/**
+ * Forbidden - User does not have permission to access this risk
+ */
+export type RisksControllerGetRiskByIdV1ForbiddenResponseBody = {
+  message?: string | undefined;
+};
+
+export const RisksControllerGetRiskByIdV1ForbiddenResponseBody$zodSchema:
+  z.ZodType<RisksControllerGetRiskByIdV1ForbiddenResponseBody> = z.object({
+    message: z.string().optional(),
+  }).describe("Forbidden - User does not have permission to access this risk");
+
+/**
+ * Unauthorized - Invalid authentication or insufficient permissions
+ */
+export type RisksControllerGetRiskByIdV1UnauthorizedResponseBody = {
+  message?: string | undefined;
+};
+
+export const RisksControllerGetRiskByIdV1UnauthorizedResponseBody$zodSchema:
+  z.ZodType<RisksControllerGetRiskByIdV1UnauthorizedResponseBody> = z.object({
+    message: z.string().optional(),
+  }).describe(
+    "Unauthorized - Invalid authentication or insufficient permissions",
+  );
 
 /**
  * User information (only for session auth)

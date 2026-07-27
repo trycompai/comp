@@ -17,6 +17,7 @@ const mockFindUnique = jest.fn();
 const mockPolicyFindUnique = jest.fn();
 const mockMemberFindMany = jest.fn();
 const mockControlFindMany = jest.fn();
+const mockResolve = jest.fn();
 jest.mock('@db', () => ({
   db: {
     auditLog: {
@@ -63,8 +64,19 @@ jest.mock('@db', () => ({
   Prisma: {},
 }));
 
+// permission.guard (imported transitively via the interceptor) pulls @trycompai/auth,
+// which loads better-auth's ESM subpaths. Mock it so the spec doesn't have to transform
+// them — we only need the permission metadata keys, not the real role tables.
+jest.mock('@trycompai/auth', () => ({
+  statement: {},
+  BUILT_IN_ROLE_PERMISSIONS: {},
+  RESTRICTED_ROLES: [],
+  PRIVILEGED_ROLES: [],
+}));
+
 // Import after mocks
 import { AuditLogInterceptor } from './audit-log.interceptor';
+import { ActingUserResolver } from '../auth/acting-user.service';
 import { PERMISSIONS_KEY } from '../auth/permission.guard';
 import { AUDIT_READ_KEY, SKIP_AUDIT_LOG_KEY } from './skip-audit-log.decorator';
 
@@ -79,6 +91,8 @@ describe('AuditLogInterceptor', () => {
       organizationId?: string;
       userId?: string;
       memberId?: string;
+      isApiKey?: boolean;
+      apiKeyCreatedByMemberId?: string | null;
       params?: Record<string, string>;
       body?: Record<string, unknown>;
     } = {},
@@ -89,8 +103,13 @@ describe('AuditLogInterceptor', () => {
           method: overrides.method ?? 'PATCH',
           url: overrides.url ?? '/v1/policies/pol_123',
           organizationId: overrides.organizationId ?? 'org_123',
-          userId: overrides.userId ?? 'user_123',
-          memberId: overrides.memberId ?? 'mem_123',
+          // API-key requests never carry a session userId/memberId — the guard
+          // doesn't set them, so the interceptor must resolve the actor. Only
+          // default to the session user for non-API-key requests.
+          userId: overrides.isApiKey ? overrides.userId : overrides.userId ?? 'user_123',
+          memberId: overrides.isApiKey ? overrides.memberId : overrides.memberId ?? 'mem_123',
+          isApiKey: overrides.isApiKey ?? false,
+          apiKeyCreatedByMemberId: overrides.apiKeyCreatedByMemberId,
           params: overrides.params ?? { id: 'pol_123' },
           body: overrides.body ?? undefined,
           headers: {},
@@ -109,7 +128,11 @@ describe('AuditLogInterceptor', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [AuditLogInterceptor, Reflector],
+      providers: [
+        AuditLogInterceptor,
+        Reflector,
+        { provide: ActingUserResolver, useValue: { resolve: mockResolve } },
+      ],
     }).compile();
 
     interceptor = module.get<AuditLogInterceptor>(AuditLogInterceptor);
@@ -124,6 +147,11 @@ describe('AuditLogInterceptor', () => {
     mockMemberFindMany.mockResolvedValue([]);
     mockControlFindMany.mockReset();
     mockControlFindMany.mockResolvedValue([]);
+    mockResolve.mockReset();
+    // Default: resolver returns no attributable user. resolve() must always
+    // return a promise (the interceptor calls .then on it), so a bare jest.fn()
+    // returning undefined would throw. Tests needing a real actor override this.
+    mockResolve.mockResolvedValue({ userId: null, source: 'org-owner-fallback' });
   });
 
   it('should skip GET requests', (done) => {
@@ -179,6 +207,90 @@ describe('AuditLogInterceptor', () => {
               description: 'Created policy',
             }),
           });
+          done();
+        }, 50);
+      },
+    });
+  });
+
+  it('logs API-key mutations, attributing to the resolved actor (key creator)', (done) => {
+    jest.spyOn(reflector, 'getAllAndOverride').mockImplementation((key) => {
+      if (key === PERMISSIONS_KEY) {
+        return [{ resource: 'vendor', actions: ['create'] }];
+      }
+      if (key === SKIP_AUDIT_LOG_KEY) return false;
+      return undefined;
+    });
+    mockResolve.mockResolvedValue({
+      userId: 'usr_creator',
+      memberId: 'mem_creator',
+      source: 'api-key-creator',
+      callerLabel: 'via API key "CI Pipeline"',
+    });
+
+    const context = createMockExecutionContext({
+      method: 'POST',
+      url: '/v1/vendors',
+      params: {},
+      isApiKey: true,
+      apiKeyCreatedByMemberId: 'mem_creator',
+    });
+    const handler = createMockCallHandler({ id: 'vnd_new' });
+
+    interceptor.intercept(context, handler).subscribe({
+      next: () => {
+        setTimeout(() => {
+          expect(mockResolve).toHaveBeenCalledWith(
+            expect.objectContaining({ isApiKey: true, organizationId: 'org_123' }),
+            'org_123',
+          );
+          expect(mockCreate).toHaveBeenCalledWith({
+            data: expect.objectContaining({
+              organizationId: 'org_123',
+              userId: 'usr_creator',
+              memberId: 'mem_creator',
+              entityType: 'vendor',
+              entityId: 'vnd_new',
+              // Provenance marker recorded so the owner/creator attribution
+              // isn't read as a session action.
+              description: expect.stringContaining('[via API key "CI Pipeline"]'),
+            }),
+          });
+          // ...and captured structurally in the data JSON.
+          const call = mockCreate.mock.calls[0][0];
+          expect(call.data.data.via).toBe('via API key "CI Pipeline"');
+          done();
+        }, 50);
+      },
+    });
+  });
+
+  it('skips the audit log for API-key requests when no actor can be resolved', (done) => {
+    jest.spyOn(reflector, 'getAllAndOverride').mockImplementation((key) => {
+      if (key === PERMISSIONS_KEY) {
+        return [{ resource: 'vendor', actions: ['create'] }];
+      }
+      if (key === SKIP_AUDIT_LOG_KEY) return false;
+      return undefined;
+    });
+    mockResolve.mockResolvedValue({
+      userId: null,
+      source: 'org-owner-fallback',
+    });
+
+    const context = createMockExecutionContext({
+      method: 'POST',
+      url: '/v1/vendors',
+      params: {},
+      isApiKey: true,
+    });
+    const handler = createMockCallHandler({ id: 'vnd_new' });
+
+    interceptor.intercept(context, handler).subscribe({
+      next: () => {
+        setTimeout(() => {
+          expect(mockResolve).toHaveBeenCalled();
+          expect(mockCreate).not.toHaveBeenCalled();
           done();
         }, 50);
       },

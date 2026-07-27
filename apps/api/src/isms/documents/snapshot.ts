@@ -90,6 +90,17 @@ const TYPE_DRIFT_SOURCES: Record<IsmsDocumentType, Array<keyof DiffMap>> = {
   // consumes is headcount, which sets the team-size band (small vs standard) and
   // so changes the team-size note + operational-responsibilities rendering.
   roles_and_responsibilities: ['members'],
+  // Monitoring (9.1) renders entirely from its own metrics register (seeded
+  // static defaults + customer edits + measurements); no platform snapshot
+  // input changes its rendering, so it can never be platform-drift stale.
+  monitoring: [],
+  // Internal Audit (9.2) renders from its own audits register + the Programme
+  // narrative (customer-owned once seeded); it never goes platform-drift stale.
+  internal_audit: [],
+  // Management Review (9.3) renders from its own reviews register + the
+  // Procedure narrative (customer-owned once seeded); same as internal_audit,
+  // it never goes platform-drift stale.
+  management_review: [],
   isms_scope: [
     'frameworks',
     'vendors',
@@ -98,6 +109,13 @@ const TYPE_DRIFT_SOURCES: Record<IsmsDocumentType, Array<keyof DiffMap>> = {
     'wizardAnswers',
   ],
   leadership_commitment: ['organizationName', 'wizardAnswers'],
+  // The methodology (6.1.2) is customer-owned templated text once seeded; its
+  // scales/matrix render from fixed platform constants. Never platform-stale.
+  risk_assessment_methodology: [],
+  // The RTP (6.1.3) renders straight from the Risk Register + vendor risk
+  // fields + acceptance events; any of those changing means the approved plan
+  // "may be out of date" (the ticket's drift signal).
+  risk_treatment_plan: ['riskTreatment'],
 };
 
 interface DiffMap {
@@ -113,6 +131,7 @@ interface DiffMap {
   organizationName: boolean;
   wizardAnswers: boolean;
   parties: boolean;
+  riskTreatment: boolean;
 }
 
 function computeChanges({
@@ -146,6 +165,8 @@ function computeChanges({
       current.wizardAnswers,
     ),
     parties: previous.partiesFingerprint !== current.partiesFingerprint,
+    riskTreatment:
+      previous.riskTreatmentFingerprint !== current.riskTreatmentFingerprint,
   };
 }
 
@@ -199,6 +220,7 @@ export function parsePlatformSnapshot(
     hasTrainingProgram: record.hasTrainingProgram === true,
     wizardAnswers: parseStoredAnswers(record.wizardAnswers),
     partiesFingerprint: toStr(record.partiesFingerprint, ''),
+    riskTreatmentFingerprint: toStr(record.riskTreatmentFingerprint, ''),
   };
 }
 

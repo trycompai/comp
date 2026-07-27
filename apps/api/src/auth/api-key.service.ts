@@ -19,6 +19,10 @@ export interface ApiKeyValidationResult {
   apiKeyName: string;
   organizationId: string;
   scopes: string[];
+  /** Member (org membership) that created this key, or null for legacy keys
+   *  created before creator attribution existed. Used by ActingUserResolver
+   *  to attribute API-key mutations to the real creator. */
+  createdByMemberId: string | null;
 }
 
 @Injectable()
@@ -61,6 +65,7 @@ export class ApiKeyService {
     name: string,
     expiresAt?: string,
     scopes?: string[],
+    createdByMemberId?: string | null,
   ) {
     // New keys must have explicit scopes — no more legacy empty-scope keys
     if (!scopes || scopes.length === 0) {
@@ -110,6 +115,7 @@ export class ApiKeyService {
         expiresAt: expirationDate,
         organizationId,
         scopes,
+        createdByMemberId: createdByMemberId ?? null,
       },
       select: {
         id: true,
@@ -200,6 +206,7 @@ export class ApiKeyService {
           organizationId: true,
           expiresAt: true,
           scopes: true,
+          createdByMemberId: true,
         },
       });
 
@@ -228,6 +235,7 @@ export class ApiKeyService {
               organizationId: true,
               expiresAt: true,
               scopes: true,
+              createdByMemberId: true,
             },
           });
           const legacyMatch = legacyRecords.find((record) => {
@@ -247,6 +255,7 @@ export class ApiKeyService {
               apiKeyName: legacyMatch.name,
               organizationId: legacyMatch.organizationId,
               scopes: legacyMatch.scopes,
+              createdByMemberId: legacyMatch.createdByMemberId ?? null,
             };
           }
         }
@@ -273,6 +282,7 @@ export class ApiKeyService {
         apiKeyName: matchingRecord.name,
         organizationId: matchingRecord.organizationId,
         scopes: matchingRecord.scopes,
+        createdByMemberId: matchingRecord.createdByMemberId ?? null,
       };
     } catch (error) {
       this.logger.error('Error validating API key:', error);

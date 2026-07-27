@@ -55,7 +55,15 @@ async function callEnterpriseApi<T>(
 ): Promise<T> {
   const { enterpriseApiUrl, enterpriseApiKey } = getEnterpriseConfig();
 
-  const url = new URL(endpoint, enterpriseApiUrl);
+  const baseUrl = new URL(enterpriseApiUrl);
+  const url = new URL(endpoint, baseUrl);
+
+  // SSRF guard: `endpoint` and params can carry user-derived values, so pin the
+  // request to the configured enterprise API origin — never allow it to be
+  // redirected to another host.
+  if (url.origin !== baseUrl.origin) {
+    throw new EnterpriseApiError('Invalid enterprise API endpoint', 400);
+  }
 
   if (options.params) {
     Object.entries(options.params).forEach(([key, value]) => {
@@ -243,8 +251,10 @@ export async function analyzeAutomationWorkflow(scriptContent: string) {
 
 export const getAutomationRunStatus = async (runId: string) => {
   try {
-    const result = await callEnterpriseApi(`/api/tasks-automations/runs/${runId}`, {
-    });
+    const result = await callEnterpriseApi(
+      `/api/tasks-automations/runs/${encodeURIComponent(runId)}`,
+      {},
+    );
 
     return {
       success: true,

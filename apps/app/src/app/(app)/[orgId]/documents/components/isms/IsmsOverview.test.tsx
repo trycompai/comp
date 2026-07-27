@@ -111,21 +111,19 @@ vi.mock('next/link', () => ({
 }));
 
 import { IsmsOverview } from './IsmsOverview';
+import { ISMS_TYPE_META } from '../../isms/isms-types';
 
 describe('IsmsOverview', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('renders all 6 foundational document cards', () => {
+  it('renders a card for every foundational document type', () => {
     render(<IsmsOverview organizationId="org-1" />);
 
-    expect(screen.getByText(/Context of the Organization/)).toBeInTheDocument();
-    expect(screen.getByText(/Interested Parties Register/)).toBeInTheDocument();
-    expect(screen.getByText(/Interested Parties Requirements/)).toBeInTheDocument();
-    expect(screen.getByText(/ISMS Scope/)).toBeInTheDocument();
-    expect(screen.getByText(/Leadership and Commitment/)).toBeInTheDocument();
-    expect(screen.getByText(/Information Security Objectives and Plan/)).toBeInTheDocument();
+    for (const meta of ISMS_TYPE_META) {
+      expect(screen.getByText(meta.title)).toBeInTheDocument();
+    }
   });
 
   it('renders the Foundational Documents section heading', () => {
@@ -147,13 +145,27 @@ describe('IsmsOverview', () => {
     expect(contextLink).toBeDefined();
   });
 
-  it('links all six foundational documents to their detail pages', () => {
+  it('links every foundational document to its detail page', () => {
     render(<IsmsOverview organizationId="org-1" />);
-    // All six foundational documents are now implemented — none are "Coming soon".
+    // Every foundational document is implemented — none are "Coming soon".
+    // Derived from ISMS_TYPE_META so adding a type can't silently break this.
     expect(screen.queryByText('Coming soon')).not.toBeInTheDocument();
     const ismsDetailLinks = screen
       .getAllByRole('link')
       .filter((link) => link.getAttribute('href')?.includes('/documents/isms/'));
-    expect(ismsDetailLinks).toHaveLength(6);
+    expect(ismsDetailLinks).toHaveLength(ISMS_TYPE_META.length);
+  });
+
+  it('links the Monitoring card to its detail page (CS-723)', () => {
+    render(<IsmsOverview organizationId="org-1" />);
+    const monitoringLink = screen
+      .getAllByRole('link')
+      .find((link) => link.getAttribute('href')?.includes('/documents/isms/monitoring'));
+    expect(monitoringLink).toBeDefined();
+  });
+
+  it('renders the Metrics overdue tile', () => {
+    render(<IsmsOverview organizationId="org-1" />);
+    expect(screen.getByText('Metrics overdue')).toBeInTheDocument();
   });
 });

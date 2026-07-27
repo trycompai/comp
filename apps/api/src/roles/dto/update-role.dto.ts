@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   IsObject,
   IsOptional,
@@ -6,7 +7,9 @@ import {
   MaxLength,
   MinLength,
   Matches,
+  ValidateNested,
 } from 'class-validator';
+import { BuiltInObligationsBody } from './update-built-in-obligations.dto';
 
 export class UpdateRoleDto {
   @ApiProperty({
@@ -44,8 +47,11 @@ export class UpdateRoleDto {
     description: 'Updated obligations for the role.',
     example: { compliance: true },
     required: false,
+    type: BuiltInObligationsBody,
   })
-  @IsObject()
   @IsOptional()
-  obligations?: Record<string, boolean>;
+  @IsObject()
+  @ValidateNested()
+  @Type(() => BuiltInObligationsBody)
+  obligations?: BuiltInObligationsBody;
 }

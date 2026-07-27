@@ -10,6 +10,25 @@ import {
 } from "./peopleresponsedto.js";
 
 /**
+ * How the request was authenticated
+ */
+export const PeopleControllerBulkCreateMembersV1AuthType = {
+  ApiKey: "api-key",
+  Session: "session",
+} as const;
+/**
+ * How the request was authenticated
+ */
+export type PeopleControllerBulkCreateMembersV1AuthType = ClosedEnum<
+  typeof PeopleControllerBulkCreateMembersV1AuthType
+>;
+
+export const PeopleControllerBulkCreateMembersV1AuthType$zodSchema = z.enum([
+  "api-key",
+  "session",
+]).describe("How the request was authenticated");
+
+/**
  * Internal server error
  */
 export type PeopleControllerBulkCreateMembersV1InternalServerErrorResponseBody =
@@ -99,25 +118,6 @@ export const Summary$zodSchema: z.ZodType<Summary> = z.object({
     "Total number of members in the request",
   ),
 });
-
-/**
- * How the request was authenticated
- */
-export const PeopleControllerBulkCreateMembersV1AuthType = {
-  ApiKey: "api-key",
-  Session: "session",
-} as const;
-/**
- * How the request was authenticated
- */
-export type PeopleControllerBulkCreateMembersV1AuthType = ClosedEnum<
-  typeof PeopleControllerBulkCreateMembersV1AuthType
->;
-
-export const PeopleControllerBulkCreateMembersV1AuthType$zodSchema = z.enum([
-  "api-key",
-  "session",
-]).describe("How the request was authenticated");
 
 export type PeopleControllerBulkCreateMembersV1AuthenticatedUser = {
   id?: string | undefined;

@@ -47,6 +47,14 @@ export interface IsmsPlatformData {
    * register has no rows yet.
    */
   partiesFingerprint: string;
+  /**
+   * Stable fingerprint of everything the Risk Treatment Plan (6.1.3) renders:
+   * Risk Register rows, vendor risk fields, and acceptance events. Any change
+   * to a risk's rating/treatment/owner, a vendor's risk fields, or a recorded
+   * acceptance must flag RTP drift ("may be out of date"). Empty string when
+   * there is nothing to render yet.
+   */
+  riskTreatmentFingerprint: string;
 }
 
 /** A row destined for one of the ISMS registers (interested parties, etc.). */
@@ -119,6 +127,190 @@ export interface OperationalOwnershipRow {
   owners: string[];
 }
 
+/** The nine seeded monitoring metrics and their pre-filled default text (9.1). */
+export interface SeedMetricDefinition {
+  metricKey: string;
+  name: string;
+  whatIsMeasured: string;
+  method: string;
+  cadence: 'monthly' | 'quarterly';
+  target: string;
+}
+
+/** A metric, resolved for export: fields + named people + current value. */
+export interface MetricExportRow {
+  metricKey: string | null;
+  name: string;
+  whatIsMeasured: string;
+  method: string;
+  /** Humanized cadence ("Monthly"/"Quarterly") or null when unset. */
+  cadence: string | null;
+  /** Display name of who monitors / analyses (SPO fallback already applied). */
+  monitorName: string;
+  analyzeName: string;
+  /** Free-text target, or the linked objective's target (frozen at build time). */
+  target: string;
+  /** Most recent value with its period, e.g. "99.95% (July 2026)", or "—". */
+  currentValue: string;
+}
+
+/** The fifteen seeded Controls Tested rows and their pre-filled text (9.2). */
+export interface SeedAuditControlDefinition {
+  controlKey: string;
+  controlRef: string;
+  whatWasTested: string;
+  whereToFind: string;
+}
+
+/** One Controls Tested row, resolved for export (result/notes humanized). */
+export interface AuditControlExportRow {
+  controlRef: string;
+  whatWasTested: string;
+  whereToFind: string;
+  /** Humanized result label ("Conformity confirmed") or a dash when unset. */
+  result: string;
+  notes: string;
+}
+
+/** One finding row, resolved for export (owner name frozen at build time). */
+export interface AuditFindingExportRow {
+  reference: string;
+  /** Humanized type label ("NC minor"). */
+  type: string;
+  clauseOrControl: string;
+  description: string;
+  ownerName: string;
+  dueDate: string;
+  /** Humanized status label ("Open"). */
+  status: string;
+  /** How a closed corrective action was evidenced; empty when not recorded. */
+  closureEvidence: string;
+}
+
+/** One sign-off slot rendered in the audit's sign-off table. */
+export interface AuditSignoffExportRow {
+  role: string;
+  name: string;
+  date: string;
+}
+
+/** An audit instance, resolved for export: fields + child tables + sign-off. */
+export interface AuditExportRow {
+  reference: string;
+  scope: string;
+  criteria: string;
+  auditorName: string;
+  plannedStartDate: string | null;
+  plannedEndDate: string | null;
+  /** Humanized status label ("In progress"). */
+  status: string;
+  /** Assembled conclusion sentence, or null while no verdict is chosen. */
+  conclusion: string | null;
+  conclusionNotes: string | null;
+  controls: AuditControlExportRow[];
+  findings: AuditFindingExportRow[];
+  signoffs: AuditSignoffExportRow[];
+}
+
+/** The ten seeded Inputs (9.3.2) rows and their pre-filled text (9.3). */
+export interface SeedReviewInputDefinition {
+  inputKey: string;
+  inputRef: string;
+  whatItCovers: string;
+  whereToFind: string;
+}
+
+/** One Inputs (9.3.2) row, resolved for export (discussed humanized). */
+export interface ReviewInputExportRow {
+  inputRef: string;
+  whatItCovers: string;
+  whereToFind: string;
+  discussionNotes: string;
+  /** "Yes" once the input has been covered at the meeting, else "No". */
+  discussed: string;
+}
+
+/** One action arising, resolved for export (owner name frozen at build time). */
+export interface ReviewActionExportRow {
+  /** Full display reference, e.g. "MR-2026-01-A01". */
+  reference: string;
+  description: string;
+  ownerName: string;
+  dueDate: string;
+  /** Humanized status label ("Open"). */
+  status: string;
+}
+
+/** A review instance, resolved for export: fields + child tables + sign-off. */
+export interface ReviewExportRow {
+  reference: string;
+  meetingDate: string | null;
+  /** Server-set recording date ("Recorded on"), never editable. */
+  recordedOn: string;
+  chairName: string;
+  /** Attendee display names, frozen at selection. */
+  attendees: string[];
+  /** Humanized status label ("In progress"). */
+  status: string;
+  /** Assembled conclusion sentence, or null while no verdict is chosen. */
+  conclusion: string | null;
+  conclusionNotes: string | null;
+  decisionsText: string | null;
+  changesText: string | null;
+  /** Single sign-off slot: the chair signs (empty strings while unsigned). */
+  signoffChairName: string;
+  signoffChairDate: string;
+  inputs: ReviewInputExportRow[];
+  actions: ReviewActionExportRow[];
+  /**
+   * Open actions from previous reviews, carried forward automatically to this
+   * review's input (a). Computed from the earlier review instances at build
+   * time — never copied, so their status keeps tracking to closure.
+   */
+  carriedForward: ReviewActionExportRow[];
+}
+
+/** How a risk's / vendor's latest acceptance stands relative to its live residual rating. */
+export type AcceptanceExportState = 'accepted' | 'awaiting' | 'stale';
+
+/** One Risk Register row, resolved for the Risk Treatment Plan (6.1.3). */
+export interface RiskTreatmentExportRow {
+  /** Display reference generated by register order at build time, e.g. "R-01". */
+  reference: string;
+  title: string;
+  /** Humanized category label ("Vendor management"). */
+  category: string;
+  /** Level label of the inherent rating ("Medium"). */
+  inherentLevel: string;
+  /** Humanized treatment strategy ("Mitigate"). */
+  treatment: string;
+  /** The active treatment/controls description; "—" when none recorded. */
+  controls: string;
+  /** Owner display name (frozen at build time); "—" when unassigned. */
+  ownerName: string;
+  /** Level label of the residual rating ("Low"). */
+  residualLevel: string;
+  /** Rendered acceptance cell ("Accepted 2026-04-15 (Jane Doe)" / "Awaiting acceptance" / "Stale — ..."). */
+  acceptance: string;
+  acceptanceState: AcceptanceExportState;
+  /** Humanized register status ("Open"); summarized in the section intro. */
+  status: string;
+}
+
+/** One vendor row, resolved for the Risk Treatment Plan's supplier table. */
+export interface VendorTreatmentExportRow {
+  name: string;
+  category: string;
+  inherentLevel: string;
+  treatment: string;
+  controls: string;
+  ownerName: string;
+  residualLevel: string;
+  acceptance: string;
+  acceptanceState: AcceptanceExportState;
+  status: string;
+}
+
 /**
  * The organization profile that fills the narrative parts of the Context of the
  * Organization document (clause 4.1) — overview table, mission, intended
@@ -168,4 +360,15 @@ export interface DocumentExportInput {
   operationalOwnership?: OperationalOwnershipRow[];
   /** Team-size band — only populated for the Roles document (5.3). */
   band?: IsmsTeamSizeBand;
+  /** Active metrics with resolved people + values — only populated for the Monitoring document (9.1). */
+  metrics?: MetricExportRow[];
+  /** Audit instances with resolved names — only populated for the Internal Audit document (9.2). */
+  audits?: AuditExportRow[];
+  /** Review instances with resolved names — only populated for the Management Review document (9.3). */
+  reviews?: ReviewExportRow[];
+  /** Risk Register + vendor rows — only populated for the Risk Treatment Plan (6.1.3). */
+  riskTreatment?: {
+    risks: RiskTreatmentExportRow[];
+    vendors: VendorTreatmentExportRow[];
+  };
 }

@@ -18,12 +18,18 @@ describe('createRegisterRegistry', () => {
   };
   const requirements = { create: jest.fn(), update: jest.fn(), remove: jest.fn() };
   const objectives = { create: jest.fn(), update: jest.fn(), remove: jest.fn() };
+  const reviews = { create: jest.fn(), update: jest.fn(), remove: jest.fn() };
+  const reviewInputs = { create: jest.fn(), update: jest.fn(), remove: jest.fn() };
+  const reviewActions = { create: jest.fn(), update: jest.fn(), remove: jest.fn() };
 
   const services = {
     contextIssues,
     interestedParties,
     requirements,
     objectives,
+    reviews,
+    reviewInputs,
+    reviewActions,
   } as unknown as RegisterServices;
 
   const registry = createRegisterRegistry(services);
@@ -244,6 +250,157 @@ describe('createRegisterRegistry', () => {
         }),
       ).toThrow(BadRequestException);
       expect(objectives.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('reviews (9.3)', () => {
+    it('create dispatches with documentId and parsed dto', async () => {
+      const data = {
+        meetingDate: '2026-05-01',
+        chairName: 'Raoul Plickat',
+        attendees: [{ memberId: 'mem_1', name: 'Raoul Plickat' }],
+      };
+      await registry.reviews.create({
+        documentId: 'doc_1',
+        organizationId: 'org_1',
+        data,
+      });
+      expect(reviews.create).toHaveBeenCalledWith({
+        documentId: 'doc_1',
+        organizationId: 'org_1',
+        dto: data,
+      });
+    });
+
+    it('update dispatches with reviewId and accepts the review verdict enum', async () => {
+      await registry.reviews.update({
+        rowId: 'mr_1',
+        organizationId: 'org_1',
+        data: { status: 'complete', conclusionVerdict: 'effective' },
+      });
+      expect(reviews.update).toHaveBeenCalledWith({
+        reviewId: 'mr_1',
+        organizationId: 'org_1',
+        dto: { status: 'complete', conclusionVerdict: 'effective' },
+      });
+    });
+
+    it('create rejects an attendee without a name', () => {
+      expect(() =>
+        registry.reviews.create({
+          documentId: 'doc_1',
+          organizationId: 'org_1',
+          data: { attendees: [{ memberId: 'mem_1' }] },
+        }),
+      ).toThrow(BadRequestException);
+      expect(reviews.create).not.toHaveBeenCalled();
+    });
+
+    it('update rejects an audit verdict on the reviews register', () => {
+      expect(() =>
+        registry.reviews.update({
+          rowId: 'mr_1',
+          organizationId: 'org_1',
+          data: { conclusionVerdict: 'conform' },
+        }),
+      ).toThrow(BadRequestException);
+      expect(reviews.update).not.toHaveBeenCalled();
+    });
+
+    it('remove dispatches with reviewId', async () => {
+      await registry.reviews.remove({ rowId: 'mr_1', organizationId: 'org_1' });
+      expect(reviews.remove).toHaveBeenCalledWith({
+        reviewId: 'mr_1',
+        organizationId: 'org_1',
+      });
+    });
+  });
+
+  describe('review-inputs (9.3)', () => {
+    it('create requires reviewId and inputRef', () => {
+      expect(() =>
+        registry['review-inputs'].create({
+          documentId: 'doc_1',
+          organizationId: 'org_1',
+          data: { whatItCovers: 'w' },
+        }),
+      ).toThrow(BadRequestException);
+      expect(reviewInputs.create).not.toHaveBeenCalled();
+    });
+
+    it('update dispatches with inputId', async () => {
+      await registry['review-inputs'].update({
+        rowId: 'mri_1',
+        organizationId: 'org_1',
+        data: { discussed: true, discussionNotes: 'Covered.' },
+      });
+      expect(reviewInputs.update).toHaveBeenCalledWith({
+        inputId: 'mri_1',
+        organizationId: 'org_1',
+        dto: { discussed: true, discussionNotes: 'Covered.' },
+      });
+    });
+
+    it('remove dispatches with inputId', async () => {
+      await registry['review-inputs'].remove({
+        rowId: 'mri_1',
+        organizationId: 'org_1',
+      });
+      expect(reviewInputs.remove).toHaveBeenCalledWith({
+        inputId: 'mri_1',
+        organizationId: 'org_1',
+      });
+    });
+  });
+
+  describe('review-actions (9.3)', () => {
+    it('create dispatches with documentId and parsed dto', async () => {
+      const data = { reviewId: 'mr_1', description: 'Backfill metrics.' };
+      await registry['review-actions'].create({
+        documentId: 'doc_1',
+        organizationId: 'org_1',
+        data,
+      });
+      expect(reviewActions.create).toHaveBeenCalledWith({
+        documentId: 'doc_1',
+        organizationId: 'org_1',
+        dto: data,
+      });
+    });
+
+    it('create requires a non-empty description', () => {
+      expect(() =>
+        registry['review-actions'].create({
+          documentId: 'doc_1',
+          organizationId: 'org_1',
+          data: { reviewId: 'mr_1', description: '  ' },
+        }),
+      ).toThrow(BadRequestException);
+      expect(reviewActions.create).not.toHaveBeenCalled();
+    });
+
+    it('update dispatches with actionId', async () => {
+      await registry['review-actions'].update({
+        rowId: 'mra_1',
+        organizationId: 'org_1',
+        data: { status: 'closed' },
+      });
+      expect(reviewActions.update).toHaveBeenCalledWith({
+        actionId: 'mra_1',
+        organizationId: 'org_1',
+        dto: { status: 'closed' },
+      });
+    });
+
+    it('remove dispatches with actionId', async () => {
+      await registry['review-actions'].remove({
+        rowId: 'mra_1',
+        organizationId: 'org_1',
+      });
+      expect(reviewActions.remove).toHaveBeenCalledWith({
+        actionId: 'mra_1',
+        organizationId: 'org_1',
+      });
     });
   });
 });

@@ -48,6 +48,25 @@ export function ismsDesignSystemMock() {
     DialogHeader: ({ children }: { children: ReactNode }) => <div>{children}</div>,
     DialogTitle: ({ children }: { children: ReactNode }) => <h2>{children}</h2>,
     Input: (props: React.ComponentProps<'input'>) => <input {...props} />,
+    Checkbox: ({
+      checked,
+      onCheckedChange,
+      disabled,
+      'aria-label': ariaLabel,
+    }: {
+      checked?: boolean;
+      onCheckedChange?: (next: boolean) => void;
+      disabled?: boolean;
+      'aria-label'?: string;
+    }) => (
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(event) => onCheckedChange?.(event.target.checked)}
+        disabled={disabled}
+        aria-label={ariaLabel}
+      />
+    ),
     Section: ({ title, children }: { title?: ReactNode; children: ReactNode }) => (
       <section>
         {title ? <h2>{title}</h2> : null}
@@ -72,6 +91,42 @@ export function ismsDesignSystemMock() {
     HStack: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
     Field: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
     FieldError: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
+    // Collapsible renders open so tests can assert on the collapsed content.
+    Collapsible: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+    CollapsibleTrigger: ({ children }: { children?: ReactNode }) => (
+      <button type="button">{children}</button>
+    ),
+    CollapsibleContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+    // AlertDialog renders only when open (mirrors the real controlled dialog).
+    AlertDialog: ({ open, children }: { open?: boolean; children: ReactNode }) =>
+      open ? <div role="alertdialog">{children}</div> : null,
+    AlertDialogContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+    AlertDialogDescription: ({ children }: { children: ReactNode }) => <p>{children}</p>,
+    AlertDialogFooter: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+    AlertDialogHeader: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+    AlertDialogTitle: ({ children }: { children: ReactNode }) => <h2>{children}</h2>,
+    AlertDialogAction: ({
+      children,
+      onClick,
+    }: {
+      children: ReactNode;
+      onClick?: () => void;
+    }) => (
+      <button type="button" onClick={onClick}>
+        {children}
+      </button>
+    ),
+    AlertDialogCancel: ({
+      children,
+      onClick,
+    }: {
+      children: ReactNode;
+      onClick?: () => void;
+    }) => (
+      <button type="button" onClick={onClick}>
+        {children}
+      </button>
+    ),
   };
 }
 
@@ -79,14 +134,19 @@ export function ismsIconsMock() {
   const Icon = () => <span />;
   return {
     Add: () => <span data-testid="add-icon" />,
+    Analytics: Icon,
     Checkmark: Icon,
+    ChevronDown: Icon,
+    Close: Icon,
     CloseOutline: Icon,
     Document: Icon,
     Download: Icon,
     Edit: Icon,
+    Events: Icon,
     Time: Icon,
     Flag: Icon,
     ListChecked: Icon,
+    Locked: Icon,
     MachineLearningModel: Icon,
     Renew: Icon,
     TrashCan: Icon,

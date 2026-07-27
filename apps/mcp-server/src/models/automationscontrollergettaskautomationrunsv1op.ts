@@ -5,15 +5,6 @@
 import * as z from "zod";
 import { ClosedEnum } from "../types/enums.js";
 
-export type AutomationsControllerGetTaskAutomationRunsV1Request = {
-  taskId: string;
-};
-
-export const AutomationsControllerGetTaskAutomationRunsV1Request$zodSchema:
-  z.ZodType<AutomationsControllerGetTaskAutomationRunsV1Request> = z.object({
-    taskId: z.string().describe("Task ID"),
-  });
-
 export const AutomationsControllerGetTaskAutomationRunsV1Status = {
   Pending: "PENDING",
   Running: "RUNNING",
@@ -44,6 +35,15 @@ export const Trigger$zodSchema = z.enum([
   "SCHEDULED",
   "EVENT",
 ]);
+
+export type AutomationsControllerGetTaskAutomationRunsV1Request = {
+  taskId: string;
+};
+
+export const AutomationsControllerGetTaskAutomationRunsV1Request$zodSchema:
+  z.ZodType<AutomationsControllerGetTaskAutomationRunsV1Request> = z.object({
+    taskId: z.string().describe("Task ID"),
+  });
 
 export type AutomationsControllerGetTaskAutomationRunsV1Error = {};
 

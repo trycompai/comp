@@ -5,6 +5,7 @@ import { deriveInterestedParties } from './interested-parties';
 import { deriveRequirements } from './requirements';
 import { deriveObjectives } from './objectives';
 import { seedRolesIfMissing } from './roles';
+import { seedMetricsIfMissing } from './monitoring';
 import { deriveNarrativeForType, isNarrativeType } from './registry';
 import type { IsmsPlatformData } from './types';
 
@@ -253,6 +254,31 @@ export async function runDerivation({
     // Idempotent seed only — never a destructive replace, so member assignments
     // (IsmsRoleAssignment) and customer edits survive every regenerate.
     await seedRolesIfMissing({ tx, documentId, memberCount: data.memberCount });
+    return;
+  }
+  if (type === 'monitoring') {
+    // Idempotent seed only (same guarantee as roles): a regenerate can never
+    // clobber metric edits, deactivations, or measurement history.
+    await seedMetricsIfMissing({ tx, documentId });
+    return;
+  }
+  if (type === 'internal_audit') {
+    // Only the Programme paragraph is derivable; audit instances are
+    // customer-created (their Controls Tested rows seed at audit creation).
+    // Seed-if-empty, so a regenerate never clobbers an edited programme.
+    await generateNarrative({ tx, documentId, type, data });
+    return;
+  }
+  if (type === 'management_review') {
+    // Only the Procedure paragraph is derivable; review instances are
+    // customer-created (their Inputs rows seed at review creation).
+    // Seed-if-empty, so a regenerate never clobbers an edited procedure.
+    await generateNarrative({ tx, documentId, type, data });
+    return;
+  }
+  if (type === 'risk_treatment_plan') {
+    // Nothing is stored on generate: the plan renders live from the Risk
+    // Register + Vendors at export/snapshot time (loadRiskTreatmentExtras).
     return;
   }
   if (isNarrativeType(type)) {

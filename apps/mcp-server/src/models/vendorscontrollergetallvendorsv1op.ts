@@ -5,46 +5,6 @@
 import * as z from "zod";
 import { ClosedEnum } from "../types/enums.js";
 
-/**
- * Internal server error
- */
-export type VendorsControllerGetAllVendorsV1InternalServerErrorResponseBody = {
-  message?: string | undefined;
-};
-
-export const VendorsControllerGetAllVendorsV1InternalServerErrorResponseBody$zodSchema:
-  z.ZodType<VendorsControllerGetAllVendorsV1InternalServerErrorResponseBody> = z
-    .object({
-      message: z.string().optional(),
-    }).describe("Internal server error");
-
-/**
- * Organization not found
- */
-export type VendorsControllerGetAllVendorsV1NotFoundResponseBody = {
-  message?: string | undefined;
-};
-
-export const VendorsControllerGetAllVendorsV1NotFoundResponseBody$zodSchema:
-  z.ZodType<VendorsControllerGetAllVendorsV1NotFoundResponseBody> = z.object({
-    message: z.string().optional(),
-  }).describe("Organization not found");
-
-/**
- * Unauthorized - Invalid authentication or insufficient permissions
- */
-export type VendorsControllerGetAllVendorsV1UnauthorizedResponseBody = {
-  message?: string | undefined;
-};
-
-export const VendorsControllerGetAllVendorsV1UnauthorizedResponseBody$zodSchema:
-  z.ZodType<VendorsControllerGetAllVendorsV1UnauthorizedResponseBody> = z
-    .object({
-      message: z.string().optional(),
-    }).describe(
-      "Unauthorized - Invalid authentication or insufficient permissions",
-    );
-
 export const VendorsControllerGetAllVendorsV1Category = {
   Cloud: "cloud",
   Infrastructure: "infrastructure",
@@ -163,6 +123,65 @@ export const VendorsControllerGetAllVendorsV1ResidualImpact$zodSchema = z.enum([
   "severe",
 ]);
 
+/**
+ * How the request was authenticated
+ */
+export const VendorsControllerGetAllVendorsV1AuthType = {
+  ApiKey: "api-key",
+  Session: "session",
+} as const;
+/**
+ * How the request was authenticated
+ */
+export type VendorsControllerGetAllVendorsV1AuthType = ClosedEnum<
+  typeof VendorsControllerGetAllVendorsV1AuthType
+>;
+
+export const VendorsControllerGetAllVendorsV1AuthType$zodSchema = z.enum([
+  "api-key",
+  "session",
+]).describe("How the request was authenticated");
+
+/**
+ * Internal server error
+ */
+export type VendorsControllerGetAllVendorsV1InternalServerErrorResponseBody = {
+  message?: string | undefined;
+};
+
+export const VendorsControllerGetAllVendorsV1InternalServerErrorResponseBody$zodSchema:
+  z.ZodType<VendorsControllerGetAllVendorsV1InternalServerErrorResponseBody> = z
+    .object({
+      message: z.string().optional(),
+    }).describe("Internal server error");
+
+/**
+ * Organization not found
+ */
+export type VendorsControllerGetAllVendorsV1NotFoundResponseBody = {
+  message?: string | undefined;
+};
+
+export const VendorsControllerGetAllVendorsV1NotFoundResponseBody$zodSchema:
+  z.ZodType<VendorsControllerGetAllVendorsV1NotFoundResponseBody> = z.object({
+    message: z.string().optional(),
+  }).describe("Organization not found");
+
+/**
+ * Unauthorized - Invalid authentication or insufficient permissions
+ */
+export type VendorsControllerGetAllVendorsV1UnauthorizedResponseBody = {
+  message?: string | undefined;
+};
+
+export const VendorsControllerGetAllVendorsV1UnauthorizedResponseBody$zodSchema:
+  z.ZodType<VendorsControllerGetAllVendorsV1UnauthorizedResponseBody> = z
+    .object({
+      message: z.string().optional(),
+    }).describe(
+      "Unauthorized - Invalid authentication or insufficient permissions",
+    );
+
 export type VendorsControllerGetAllVendorsV1Data = {
   id?: string | undefined;
   name?: string | undefined;
@@ -210,25 +229,6 @@ export const VendorsControllerGetAllVendorsV1Data$zodSchema: z.ZodType<
   ),
   website: z.string().nullable().optional(),
 });
-
-/**
- * How the request was authenticated
- */
-export const VendorsControllerGetAllVendorsV1AuthType = {
-  ApiKey: "api-key",
-  Session: "session",
-} as const;
-/**
- * How the request was authenticated
- */
-export type VendorsControllerGetAllVendorsV1AuthType = ClosedEnum<
-  typeof VendorsControllerGetAllVendorsV1AuthType
->;
-
-export const VendorsControllerGetAllVendorsV1AuthType$zodSchema = z.enum([
-  "api-key",
-  "session",
-]).describe("How the request was authenticated");
 
 /**
  * User information (only for session auth)

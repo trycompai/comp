@@ -1,0 +1,35 @@
+name: Security Review
+
+# Anthropic's official Claude security reviewer. Runs on every PR, analyzes only
+# the changed files (diff-aware), and posts inline comments with findings + fixes.
+# This is the authoritative gate; the local Claude Code hook + skill are the
+# fast dev-time layer. Prereq: add an ANTHROPIC_API_KEY repo secret (enabled for
+# Claude Code). Make this a required check via branch protection to block merges.
+
+on:
+  pull_request:
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  security-review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 2
+      # TODO: pin to a release SHA for supply-chain safety once a tag is chosen.
+      - uses: anthropics/claude-code-security-review@main
+        with:
+          comment-pr: true
+          claude-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Review the latest diff on EVERY push to a PR — not just the first
+          # commit — so code added after the initial review is still checked.
+          run-every-commit: true
+          # Repo-specific checks (tenant isolation, authz-vs-attribution, IDOR)
+          # layered on top of the default audit.
+          custom-security-scan-instructions: .github/security-scan-instructions.md
+          exclude-directories: packages/db/src/generated

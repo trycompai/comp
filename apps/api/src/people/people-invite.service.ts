@@ -170,10 +170,20 @@ export class PeopleInviteService {
     });
 
     if (!existingUser) {
+      // Mark the email verified up front: the address is admin-provided, and
+      // every sign-in method (OTP, magic link, trusted OAuth) proves mailbox
+      // ownership anyway. An unverified user row makes better-auth refuse to
+      // link Google/Microsoft sign-ins to it (account_not_linked), which
+      // strands invited employees at the portal sign-in page.
       const newUser = await db.user.create({
-        data: { emailVerified: false, email, name: email.split('@')[0] },
+        data: { emailVerified: true, email, name: email.split('@')[0] },
       });
       userId = newUser.id;
+    } else {
+      // Legacy rows may predate the created-verified behavior (and the member
+      // backfill only covered users who were members at the time), so upgrade
+      // on re-invite too.
+      await this.ensureEmailVerified(existingUser);
     }
 
     const finalUserId = existingUser?.id ?? userId;
@@ -250,6 +260,29 @@ export class PeopleInviteService {
     return { emailSent };
   }
 
+  /**
+   * Upgrade a legacy unverified user row to verified when (re-)inviting them.
+   *
+   * Invited addresses are admin-provided, and every sign-in method (email OTP,
+   * magic link, trusted OAuth) proves mailbox ownership before a session is
+   * issued, so the flag grants nothing to anyone who cannot already receive
+   * mail at the address. Without it, better-auth refuses to link a
+   * Google/Microsoft sign-in to the existing row (account_not_linked). No-op
+   * when already verified.
+   */
+  private async ensureEmailVerified(user: {
+    id: string;
+    emailVerified: boolean;
+  }): Promise<void> {
+    if (user.emailVerified) {
+      return;
+    }
+    await db.user.update({
+      where: { id: user.id },
+      data: { emailVerified: true },
+    });
+  }
+
   private async inviteWithCheck(params: {
     email: string;
     roles: string[];
@@ -272,6 +305,11 @@ export class PeopleInviteService {
     });
 
     if (existingUser) {
+      // Same rationale as the employee path: an unverified legacy row would
+      // keep blocking Google/Microsoft sign-in linking (account_not_linked)
+      // when this invitee goes to accept.
+      await this.ensureEmailVerified(existingUser);
+
       const existingMember = await db.member.findFirst({
         where: { userId: existingUser.id, organizationId },
       });

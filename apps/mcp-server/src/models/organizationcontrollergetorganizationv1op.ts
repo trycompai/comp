@@ -5,6 +5,27 @@
 import * as z from "zod";
 import { ClosedEnum } from "../types/enums.js";
 
+/**
+ * How the request was authenticated
+ */
+export const OrganizationControllerGetOrganizationV1AuthType = {
+  ApiKey: "api-key",
+  Session: "session",
+} as const;
+/**
+ * How the request was authenticated
+ */
+export type OrganizationControllerGetOrganizationV1AuthType = ClosedEnum<
+  typeof OrganizationControllerGetOrganizationV1AuthType
+>;
+
+export const OrganizationControllerGetOrganizationV1AuthType$zodSchema = z.enum(
+  [
+    "api-key",
+    "session",
+  ],
+).describe("How the request was authenticated");
+
 export type OrganizationControllerGetOrganizationV1Request = {
   includeOwnership?: string | undefined;
 };
@@ -30,27 +51,6 @@ export const OrganizationControllerGetOrganizationV1UnauthorizedResponseBody$zod
     }).describe(
       "Unauthorized - Invalid authentication or insufficient permissions",
     );
-
-/**
- * How the request was authenticated
- */
-export const OrganizationControllerGetOrganizationV1AuthType = {
-  ApiKey: "api-key",
-  Session: "session",
-} as const;
-/**
- * How the request was authenticated
- */
-export type OrganizationControllerGetOrganizationV1AuthType = ClosedEnum<
-  typeof OrganizationControllerGetOrganizationV1AuthType
->;
-
-export const OrganizationControllerGetOrganizationV1AuthType$zodSchema = z.enum(
-  [
-    "api-key",
-    "session",
-  ],
-).describe("How the request was authenticated");
 
 /**
  * Organization information retrieved successfully

@@ -519,6 +519,49 @@ describe('DeviceAgentAuthService', () => {
       });
     });
 
+    it('stamps source="agent" on check-in so an integration-imported row adopted by the agent is counted in People (CS-770)', async () => {
+      // CS-770: the endpoint agent had adopted a device first imported via an
+      // integration, but the row stayed source='integration' — so the People
+      // tab (which only rolls up agent devices) showed the compliant device as
+      // "Missing". A check-in means the agent is managing the device, so it
+      // must assert agent ownership to heal the record.
+      (mockDb.device.findFirst as jest.Mock).mockResolvedValue({
+        id: 'dev-1',
+        agentSessionId: 'ses-1',
+        diskEncryptionEnabled: false,
+        antivirusEnabled: false,
+        passwordPolicySet: false,
+        screenLockEnabled: false,
+        checkDetails: {},
+      });
+      (mockDb.device.update as jest.Mock).mockResolvedValue({
+        isCompliant: true,
+      });
+
+      await service.checkIn({
+        userId: 'user-1',
+        sessionId: 'ses-1',
+        sessionDeviceAgent: true,
+        dto: {
+          deviceId: 'dev-1',
+          checks: [
+            {
+              checkType: 'disk_encryption',
+              passed: true,
+              checkedAt: new Date().toISOString(),
+            },
+          ],
+        },
+      });
+
+      expect(mockDb.device.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'dev-1' },
+          data: expect.objectContaining({ source: 'agent' }),
+        }),
+      );
+    });
+
     it('should throw NotFoundException if device not found', async () => {
       (mockDb.device.findFirst as jest.Mock).mockResolvedValue(null);
 

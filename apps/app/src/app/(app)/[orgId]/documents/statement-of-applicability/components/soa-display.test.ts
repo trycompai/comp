@@ -92,10 +92,10 @@ describe('resolveSoaDisplay', () => {
     });
   });
 
-  it('forces Not Applicable + the remote rationale for a fully remote org on physical-security (7.x) controls, ignoring any stale persisted justification', () => {
-    // Even if a stale justification is persisted (e.g. written before the org
-    // went remote), the locked forced-remote control must show the remote
-    // rationale, not the contradictory old text.
+  it("keeps a fully remote org's saved answer on physical-security (7.x) controls so they stay editable", () => {
+    // Regression (CS-749): a fully remote org must be able to mark a 7.x control
+    // Applicable. The saved answer wins instead of being force-locked to Not
+    // Applicable — the org can move to a physical office at any time.
     const result = resolveSoaDisplay({
       isFullyRemote: true,
       isControl7: true,
@@ -104,11 +104,19 @@ describe('resolveSoaDisplay', () => {
         answerVersion: 1,
         isApplicable: true,
       },
-      processedResult: {
-        success: true,
-        isApplicable: true,
-        justification: 'stale autofill text',
-      },
+    });
+
+    expect(result).toEqual({
+      displayIsApplicable: true,
+      justificationValue: 'We maintain physical access controls at our office',
+    });
+  });
+
+  it('defaults a fully remote org to Not Applicable on physical-security (7.x) controls only when there is no saved answer', () => {
+    const result = resolveSoaDisplay({
+      isFullyRemote: true,
+      isControl7: true,
+      answerData: undefined,
     });
 
     expect(result).toEqual({

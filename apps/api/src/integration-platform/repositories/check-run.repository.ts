@@ -267,6 +267,39 @@ export class CheckRunRepository {
   }
 
   /**
+   * WHEN each (connection, check) last ran for a task — INCLUDING runs held as
+   * `inconclusive`. Timestamps only: no status, no counts, no results, so held
+   * outcomes stay hidden.
+   *
+   * `findLatestPerConnectionAndCheckByTask` above excludes held runs, which is
+   * right for RESULTS — but using that list for the "Last ran" label froze the
+   * label at the last visible run while a scheduled check kept running (and
+   * being held) every day. Customers read that as "the schedule stopped"
+   * (CS-753). This gives the UI the true last-attempt time per group.
+   */
+  async findLastAttemptPerConnectionAndCheckByTask(taskId: string) {
+    const groups = await db.integrationCheckRun.groupBy({
+      by: ['connectionId', 'checkId'],
+      where: {
+        taskId,
+        connection: { status: { not: 'disconnected' } },
+      },
+      _max: { createdAt: true },
+    });
+    return groups.flatMap((g) =>
+      g._max.createdAt
+        ? [
+            {
+              connectionId: g.connectionId,
+              checkId: g.checkId,
+              lastAttemptAt: g._max.createdAt,
+            },
+          ]
+        : [],
+    );
+  }
+
+  /**
    * Count a run's FAILING results whose resourceId is under an active exception.
    * Lets the task UI compute the effective (non-excepted) failure count exactly
    * WITHOUT loading every result row — only the bounded display sample is

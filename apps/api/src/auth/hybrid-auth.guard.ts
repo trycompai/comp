@@ -80,7 +80,10 @@ export class HybridAuthGuard implements CanActivate {
     // without an extra DB lookup.
     request.apiKeyId = result.apiKeyId;
     request.apiKeyName = result.apiKeyName;
-    // API keys are organization-scoped and are not tied to a specific user/member.
+    // The member who created the key (if recorded). Lets ActingUserResolver
+    // attribute mutations to the real creator instead of the org owner.
+    request.apiKeyCreatedByMemberId = result.createdByMemberId;
+    // API keys are organization-scoped; no session user/member is attached here.
     request.userRoles = null;
 
     return true;
@@ -125,14 +128,26 @@ export class HybridAuthGuard implements CanActivate {
     const actingUserId = request.headers['x-user-id'] as string;
     if (actingUserId) {
       const member = await db.member.findFirst({
-        where: { userId: actingUserId, organizationId },
-        select: { userId: true },
+        // Only active memberships may act — an offboarded/deactivated user must
+        // not receive new audit / enteredById attribution. Mirrors the filters
+        // ActingUserResolver applies to its creator/owner lookups.
+        where: {
+          userId: actingUserId,
+          organizationId,
+          deactivated: false,
+          isActive: true,
+        },
+        select: { id: true, userId: true },
       });
       if (member) {
         request.userId = actingUserId;
+        // Set the acting membership too, so Member-FK sinks (audit rows,
+        // enteredById, etc.) can attribute to the acting member and not just
+        // the user.
+        request.memberId = member.id;
       } else {
         this.logger.warn(
-          `Service token x-user-id "${actingUserId}" not found in org ${organizationId}`,
+          `Service token x-user-id "${actingUserId}" is not an active member of org ${organizationId}`,
         );
       }
     }

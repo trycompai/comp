@@ -1,8 +1,8 @@
 import { ISMS_TYPE_DEFINITIONS, matchRequirementId } from './document-types';
 
 describe('ISMS_TYPE_DEFINITIONS', () => {
-  it('defines all seven foundational document types with clauses', () => {
-    expect(ISMS_TYPE_DEFINITIONS).toHaveLength(7);
+  it('defines all twelve foundational document types with clauses', () => {
+    expect(ISMS_TYPE_DEFINITIONS).toHaveLength(12);
     const types = ISMS_TYPE_DEFINITIONS.map((d) => d.type);
     expect(types).toEqual(
       expect.arrayContaining([
@@ -12,9 +12,35 @@ describe('ISMS_TYPE_DEFINITIONS', () => {
         'isms_scope',
         'leadership_commitment',
         'roles_and_responsibilities',
+        'risk_assessment_methodology',
+        'risk_treatment_plan',
         'objectives_plan',
+        'monitoring',
+        'internal_audit',
+        'management_review',
       ]),
     );
+  });
+
+  it('maps monitoring to clause 9.1', () => {
+    const monitoring = ISMS_TYPE_DEFINITIONS.find(
+      (d) => d.type === 'monitoring',
+    );
+    expect(monitoring?.clause).toBe('9.1');
+  });
+
+  it('maps internal_audit to clause 9.2', () => {
+    const internalAudit = ISMS_TYPE_DEFINITIONS.find(
+      (d) => d.type === 'internal_audit',
+    );
+    expect(internalAudit?.clause).toBe('9.2');
+  });
+
+  it('maps management_review to clause 9.3', () => {
+    const managementReview = ISMS_TYPE_DEFINITIONS.find(
+      (d) => d.type === 'management_review',
+    );
+    expect(managementReview?.clause).toBe('9.3');
   });
 
   it('maps 4.2 to both interested-parties documents', () => {

@@ -5,6 +5,19 @@
 import * as z from "zod";
 import { ClosedEnum } from "../types/enums.js";
 
+export const ContextControllerCreateContextV1AuthType = {
+  ApiKey: "api-key",
+  Session: "session",
+} as const;
+export type ContextControllerCreateContextV1AuthType = ClosedEnum<
+  typeof ContextControllerCreateContextV1AuthType
+>;
+
+export const ContextControllerCreateContextV1AuthType$zodSchema = z.enum([
+  "api-key",
+  "session",
+]);
+
 /**
  * Internal server error
  */
@@ -64,19 +77,6 @@ export const ContextControllerCreateContextV1BadRequestResponseBody$zodSchema:
     message: z.array(z.string()).optional(),
     statusCode: z.number().optional(),
   }).describe("Bad request - Invalid input data");
-
-export const ContextControllerCreateContextV1AuthType = {
-  ApiKey: "api-key",
-  Session: "session",
-} as const;
-export type ContextControllerCreateContextV1AuthType = ClosedEnum<
-  typeof ContextControllerCreateContextV1AuthType
->;
-
-export const ContextControllerCreateContextV1AuthType$zodSchema = z.enum([
-  "api-key",
-  "session",
-]);
 
 /**
  * Context entry created successfully

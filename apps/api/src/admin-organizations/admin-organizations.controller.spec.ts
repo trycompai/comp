@@ -257,7 +257,7 @@ describe('AdminOrganizationsController', () => {
 
   describe('getAuditLogs', () => {
     it('should call service with org id and query params', async () => {
-      const mockResult = { data: [{ id: 'aud_1' }] };
+      const mockResult = { data: [{ id: 'aud_1' }], total: 1 };
       mockService.getAuditLogs.mockResolvedValue(mockResult);
 
       const result = await controller.getAuditLogs('org_1', 'policy', '50');
@@ -266,12 +266,26 @@ describe('AdminOrganizationsController', () => {
         orgId: 'org_1',
         entityType: 'policy',
         take: '50',
+        offset: undefined,
       });
       expect(result).toEqual(mockResult);
     });
 
+    it('should forward the offset query param', async () => {
+      mockService.getAuditLogs.mockResolvedValue({ data: [], total: 0 });
+
+      await controller.getAuditLogs('org_1', 'policy', '100', '200');
+
+      expect(mockService.getAuditLogs).toHaveBeenCalledWith({
+        orgId: 'org_1',
+        entityType: 'policy',
+        take: '100',
+        offset: '200',
+      });
+    });
+
     it('should pass undefined for optional params', async () => {
-      mockService.getAuditLogs.mockResolvedValue({ data: [] });
+      mockService.getAuditLogs.mockResolvedValue({ data: [], total: 0 });
 
       await controller.getAuditLogs('org_1');
 
@@ -279,6 +293,7 @@ describe('AdminOrganizationsController', () => {
         orgId: 'org_1',
         entityType: undefined,
         take: undefined,
+        offset: undefined,
       });
     });
   });

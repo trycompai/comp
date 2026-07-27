@@ -1,6 +1,7 @@
 import {
   Injectable,
   BadRequestException,
+  ConflictException,
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
@@ -77,6 +78,63 @@ export class RolesService {
         }
       }
     }
+  }
+
+  /**
+   * Enforces the compliance -> portal permission invariant before a role is
+   * persisted: any role whose obligations require compliance (sign policies,
+   * watch training, etc.) must also carry `portal:read/update`. The
+   * custom-role editor UI keeps this in sync as a callback
+   * (PermissionMatrix.tsx's `handleObligationChange`), but that only covers
+   * the one client — a role created or updated any other way (public API,
+   * MCP, a future UI) could set `obligations.compliance` without `portal`
+   * and end up unable to reach portal-gated endpoints (e.g. training video
+   * completions). Normalizing here, right before every write, closes that
+   * gap regardless of caller. One-directional by design: it never strips an
+   * explicitly granted `portal` permission just because compliance is false.
+   */
+  private withCompliancePortalInvariant(
+    permissions: Record<string, string[]>,
+    obligations: RoleObligations,
+  ): Record<string, string[]> {
+    // Exact-equality check, not a truthy check: `obligations` can come from
+    // parsed, unvalidated DB JSON (parseObligationsField casts without
+    // validating), so a malformed non-boolean value like the string
+    // "false" must not be treated as enabled just because it's truthy.
+    if (obligations.compliance !== true) return permissions;
+
+    const portalActions = new Set([
+      ...(permissions.portal ?? []),
+      ...statement.portal,
+    ]);
+    return { ...permissions, portal: [...portalActions] };
+  }
+
+  /**
+   * Resources/actions present in `after` but not in `before` — what this
+   * request would actually grant that the role didn't already have. Used so
+   * an update only needs privilege-escalation validation for what's newly
+   * granted, not the role's entire resulting permission set: re-checking
+   * everything would fail an obligations-only (or otherwise unrelated)
+   * update against a role that already holds a permission the caller
+   * themselves doesn't have, even though that permission was legitimately
+   * granted earlier and this request isn't touching it.
+   */
+  private diffNewlyGrantedPermissions(
+    before: Record<string, string[]>,
+    after: Record<string, string[]>,
+  ): Record<string, string[]> {
+    const added: Record<string, string[]> = {};
+    for (const [resource, actions] of Object.entries(after)) {
+      const beforeActions = before[resource] ?? [];
+      const newActions = actions.filter(
+        (action) => !beforeActions.includes(action),
+      );
+      if (newActions.length > 0) {
+        added[resource] = newActions;
+      }
+    }
+    return added;
   }
 
   /**
@@ -206,13 +264,23 @@ export class RolesService {
       );
     }
 
-    // Validate permissions
+    // Validate permission shape (resource/action names) as submitted.
     this.validatePermissions(dto.permissions);
 
-    // Check for privilege escalation
+    // Derive the final permission set (including the compliance -> portal
+    // invariant) before checking privilege escalation, so a caller can't
+    // grant themselves/others portal access merely by setting
+    // obligations.compliance=true without explicitly requesting 'portal'.
+    const obligations = dto.obligations || {};
+    const permissions = this.withCompliancePortalInvariant(
+      dto.permissions,
+      obligations,
+    );
+
+    // Check for privilege escalation against the FINAL permission set.
     await this.validateNoPrivilegeEscalation(
       callerRoles,
-      dto.permissions,
+      permissions,
       organizationId,
     );
 
@@ -245,8 +313,8 @@ export class RolesService {
     const role = await db.organizationRole.create({
       data: {
         name: dto.name,
-        permissions: JSON.stringify(dto.permissions),
-        obligations: JSON.stringify(dto.obligations || {}),
+        permissions: JSON.stringify(permissions),
+        obligations: JSON.stringify(obligations),
         organizationId,
       },
     });
@@ -398,44 +466,118 @@ export class RolesService {
       }
     }
 
-    // Validate and check permissions if provided
+    // Validate permission shape (resource/action names) as submitted.
     if (dto.permissions) {
       this.validatePermissions(dto.permissions);
-      await this.validateNoPrivilegeEscalation(
-        callerRoles,
-        dto.permissions,
-        organizationId,
-      );
     }
 
-    // Update the role
-    const updated = await db.organizationRole.update({
-      where: { id: roleId },
+    // Re-derive the compliance -> portal invariant whenever either
+    // permissions or obligations change, using the existing row's stored
+    // value for whichever side wasn't part of this request (e.g. an
+    // obligations-only update must still see the role's current
+    // permissions to merge portal into).
+    let permissionsToPersist: Record<string, string[]> | undefined;
+    if (dto.permissions !== undefined || dto.obligations !== undefined) {
+      const existingPermissions: Record<string, string[]> =
+        typeof role.permissions === 'string'
+          ? (JSON.parse(role.permissions) as Record<string, string[]>)
+          : role.permissions;
+      const effectiveObligations =
+        dto.obligations !== undefined
+          ? dto.obligations
+          : parseObligationsField(role.obligations);
+      const effectivePermissions =
+        dto.permissions !== undefined ? dto.permissions : existingPermissions;
+      permissionsToPersist = this.withCompliancePortalInvariant(
+        effectivePermissions,
+        effectiveObligations,
+      );
+
+      // Validate only what this request would newly grant relative to the
+      // role's current permissions — not the entire resulting set. This
+      // still catches the portal grant the invariant above may have just
+      // added on an obligations-only update (no `dto.permissions` at all),
+      // which would otherwise let a caller without portal access grant it
+      // to a role simply by toggling the compliance obligation. But it
+      // must NOT re-validate permissions the role already legitimately
+      // held before this request — otherwise an obligations-only (or
+      // otherwise unrelated) update fails whenever the role holds some
+      // permission the caller doesn't personally have, even though this
+      // request isn't touching it.
+      const newlyGranted = this.diffNewlyGrantedPermissions(
+        existingPermissions,
+        permissionsToPersist,
+      );
+      if (Object.keys(newlyGranted).length > 0) {
+        await this.validateNoPrivilegeEscalation(
+          callerRoles,
+          newlyGranted,
+          organizationId,
+        );
+      }
+    }
+
+    // Update the role, guarded by an optimistic-concurrency check on
+    // `updatedAt`. The privilege-escalation validation above ran against
+    // the `role` snapshot read at the top of this function — if another
+    // request changed the row in between (e.g. an owner just revoked a
+    // permission from it), writing unconditionally here could silently
+    // reintroduce that permission on top of the concurrent change, never
+    // validated against the caller who's making THIS request. `updateMany`
+    // (unlike `update`, whose `where` is restricted to unique fields) can
+    // include `updatedAt` in the filter, so the write only applies if the
+    // row still matches the exact version we validated against; `count`
+    // tells us whether it did.
+    //
+    // `writeTimestamp` is set explicitly (overriding the `@updatedAt`
+    // default) rather than left to Prisma/Postgres, so the exact value
+    // persisted is known without reading it back.
+    const writeTimestamp = new Date(
+      Math.max(Date.now(), role.updatedAt.getTime() + 1),
+    );
+    const updateResult = await db.organizationRole.updateMany({
+      where: { id: roleId, organizationId, updatedAt: role.updatedAt },
       data: {
         ...(dto.name && { name: dto.name }),
-        ...(dto.permissions && {
-          permissions: JSON.stringify(dto.permissions),
+        ...(permissionsToPersist && {
+          permissions: JSON.stringify(permissionsToPersist),
         }),
         ...(dto.obligations !== undefined && {
           obligations: JSON.stringify(dto.obligations),
         }),
+        updatedAt: writeTimestamp,
       },
     });
 
+    if (updateResult.count === 0) {
+      throw new ConflictException(
+        `Role '${role.name}' was modified by another request. Please retry.`,
+      );
+    }
+
+    // Built from what this request validated and just conditionally wrote —
+    // not from a separate read after the fact. A second read here would
+    // reopen the same race: another request could write in the gap between
+    // our conditional update and that read, and this response would then
+    // reflect that other request's state instead of the version this
+    // request actually validated and persisted.
     return {
-      id: updated.id,
-      name: updated.name,
+      id: role.id,
+      name: dto.name ?? role.name,
       permissions:
-        typeof updated.permissions === 'string'
-          ? JSON.parse(updated.permissions)
-          : updated.permissions,
+        permissionsToPersist ??
+        (typeof role.permissions === 'string'
+          ? JSON.parse(role.permissions)
+          : role.permissions),
       obligations:
-        typeof updated.obligations === 'string'
-          ? JSON.parse(updated.obligations)
-          : updated.obligations || {},
+        dto.obligations !== undefined
+          ? dto.obligations
+          : typeof role.obligations === 'string'
+            ? JSON.parse(role.obligations)
+            : role.obligations || {},
       isBuiltIn: false,
-      createdAt: updated.createdAt,
-      updatedAt: updated.updatedAt,
+      createdAt: role.createdAt,
+      updatedAt: writeTimestamp,
     };
   }
 
