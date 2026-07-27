@@ -7,13 +7,14 @@ import {
   Button,
   HStack,
   Section,
+  Spinner,
   Stack,
   Text,
 } from '@trycompai/design-system';
 import { ChevronLeft, ChevronRight } from '@trycompai/design-system/icons';
 import { formatDistanceToNow } from 'date-fns';
 import { ActivityIcon, ChevronDownIcon, ChevronRightIcon } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { AuditLogWithRelations } from '@/hooks/use-audit-logs';
 
 const LOGS_PER_PAGE = 15;
@@ -130,14 +131,50 @@ function LogRow({ log }: { log: AuditLogWithRelations }) {
 interface RecentAuditLogsProps {
   logs: AuditLogWithRelations[];
   title?: string;
+  /**
+   * Server-pagination (optional). When `total` and `onLoadMore` are provided,
+   * the pager treats `logs` as a growing window into `total` rows: paging past
+   * the loaded set fetches the next batch, and the › arrow stays enabled until
+   * the genuine end (page < ceil(total / LOGS_PER_PAGE)). Omit both for the
+   * legacy client-only pager over the given `logs` array.
+   */
+  total?: number;
+  hasMore?: boolean;
+  onLoadMore?: () => void;
+  isLoadingMore?: boolean;
 }
 
-export function RecentAuditLogs({ logs, title = 'Recent Activity' }: RecentAuditLogsProps) {
+export function RecentAuditLogs({
+  logs,
+  title = 'Recent Activity',
+  total,
+  hasMore = false,
+  onLoadMore,
+  isLoadingMore = false,
+}: RecentAuditLogsProps) {
   const [page, setPage] = useState(0);
-  const totalPages = Math.ceil(logs.length / LOGS_PER_PAGE);
+
+  const serverPaged = total != null && onLoadMore != null;
+  const totalCount = serverPaged ? total : logs.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / LOGS_PER_PAGE));
   const paged = logs.slice(page * LOGS_PER_PAGE, (page + 1) * LOGS_PER_PAGE);
 
-  if (logs.length === 0) {
+  // Server mode: when the current page reaches past the loaded rows and the
+  // server has more, pull the next batch. Fires on the last loaded page too so
+  // a partial page (100 rows don't divide evenly by 15) fills in before you
+  // cross it — no rows get skipped at the batch boundary.
+  useEffect(() => {
+    if (
+      serverPaged &&
+      hasMore &&
+      !isLoadingMore &&
+      (page + 1) * LOGS_PER_PAGE > logs.length
+    ) {
+      onLoadMore();
+    }
+  }, [serverPaged, hasMore, isLoadingMore, page, logs.length, onLoadMore]);
+
+  if (logs.length === 0 && !isLoadingMore) {
     return (
       <Section title={title}>
         <div className="py-8">
@@ -152,19 +189,32 @@ export function RecentAuditLogs({ logs, title = 'Recent Activity' }: RecentAudit
     );
   }
 
+  // The › arrow is disabled only at the genuine last page — of the server total
+  // when known, else of the loaded set.
+  const nextDisabled = page >= totalPages - 1;
+  const waitingForData = paged.length === 0 && isLoadingMore;
+
   return (
     <Section title={title}>
       <div className="divide-y [&>*]:py-2.5">
-        {paged.map((log) => (
-          <LogRow key={log.id} log={log} />
-        ))}
+        {waitingForData ? (
+          <div className="flex items-center gap-2 py-4">
+            <Spinner />
+            <Text size="xs" variant="muted">
+              Loading more activity…
+            </Text>
+          </div>
+        ) : (
+          paged.map((log) => <LogRow key={log.id} log={log} />)
+        )}
       </div>
 
       {totalPages > 1 && (
         <div className="border-t pt-3">
           <HStack justify="between" align="center">
             <Text size="xs" variant="muted">
-              {page * LOGS_PER_PAGE + 1}–{Math.min((page + 1) * LOGS_PER_PAGE, logs.length)} of {logs.length}
+              {page * LOGS_PER_PAGE + 1}–{Math.min((page + 1) * LOGS_PER_PAGE, totalCount)} of{' '}
+              {totalCount}
             </Text>
             <HStack gap="sm" align="center">
               <Button variant="outline" size="sm" onClick={() => setPage((p) => p - 1)} disabled={page === 0}>
@@ -173,7 +223,7 @@ export function RecentAuditLogs({ logs, title = 'Recent Activity' }: RecentAudit
               <Text size="xs" variant="muted">
                 {page + 1}/{totalPages}
               </Text>
-              <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} disabled={page >= totalPages - 1}>
+              <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} disabled={nextDisabled}>
                 <ChevronRight size={14} />
               </Button>
             </HStack>

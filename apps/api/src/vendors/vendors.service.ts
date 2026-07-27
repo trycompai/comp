@@ -471,7 +471,7 @@ export class VendorsService {
                       memberId: creatorMember.id,
                       entityType: 'task',
                       entityId: created.id,
-                      description: 'created this task',
+                      description: `Created task "${VERIFY_RISK_ASSESSMENT_TASK_TITLE}"`,
                       data: {
                         action: 'created',
                         taskItemId: created.id,

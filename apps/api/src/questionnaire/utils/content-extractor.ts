@@ -5,18 +5,12 @@ import ExcelJS from 'exceljs';
 import AdmZip from 'adm-zip';
 import mammoth from 'mammoth';
 import { PDFDocument } from 'pdf-lib';
+import {
+  assertXlsxDecompressionWithinLimit,
+  loadXlsxWorkbook,
+} from '@/utils/load-xlsx';
 import { PARSING_MODEL, VISION_EXTRACTION_PROMPT } from './constants';
 import { parseQuestionsAndAnswers } from './question-parser';
-
-/**
- * Loads an Excel workbook from a buffer.
- */
-async function loadWorkbook(data: Uint8Array): Promise<ExcelJS.Workbook> {
-  const workbook = new ExcelJS.Workbook();
-  type LoadFn = (data: Uint8Array) => Promise<ExcelJS.Workbook>;
-  await (workbook.xlsx.load as unknown as LoadFn)(data);
-  return workbook;
-}
 
 export interface ContentExtractionLogger {
   info: (message: string, meta?: Record<string, unknown>) => void;
@@ -618,7 +612,7 @@ function extractFromExcelXml(
  * are interpreted by the workbook parser instead of regex over raw XML.
  */
 async function extractFromExcelStandard(fileBuffer: Buffer): Promise<string> {
-  const workbook = await loadWorkbook(fileBuffer);
+  const workbook = await loadXlsxWorkbook(fileBuffer);
   const sheets: string[] = [];
 
   for (const worksheet of workbook.worksheets) {
@@ -671,6 +665,10 @@ async function extractFromExcel(
   const fileSizeMB = (fileBuffer.length / (1024 * 1024)).toFixed(2);
 
   logger.info('Processing Excel file', { fileType, fileSizeMB });
+
+  // Must run before extractExcelRawContent: its catch falls back to the
+  // AdmZip XML path, which would inflate an oversized archive anyway.
+  assertXlsxDecompressionWithinLimit(fileBuffer);
 
   const result = await extractExcelRawContent(fileBuffer, logger);
 

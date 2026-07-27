@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { PeopleService } from './people.service';
 import { FleetService } from '../lib/fleet.service';
@@ -10,8 +11,19 @@ import { TimelinesService } from '../timelines/timelines.service';
 import { MemberValidator } from './utils/member-validator';
 import { MemberQueries } from './utils/member-queries';
 
-// Mock the database
+// Mock the database. Includes a stand-in Prisma.PrismaClientKnownRequestError
+// so the service's `instanceof` error-code branches can be exercised.
 jest.mock('@db', () => ({
+  Prisma: {
+    PrismaClientKnownRequestError: class PrismaClientKnownRequestError extends Error {
+      code: string;
+      constructor(message: string, { code }: { code: string }) {
+        super(message);
+        this.code = code;
+        this.name = 'PrismaClientKnownRequestError';
+      }
+    },
+  },
   db: {
     member: {
       findFirst: jest.fn(),
@@ -86,8 +98,13 @@ jest.mock('@trycompai/email', () => ({
 
 jest.mock('./utils/member-validator');
 jest.mock('./utils/member-queries');
+jest.mock('./utils/login-email-change');
 
-import { db } from '@db';
+import { db, Prisma } from '@db';
+import {
+  notifyLoginEmailChanged,
+  validateLoginEmailChange,
+} from './utils/login-email-change';
 
 describe('PeopleService', () => {
   let service: PeopleService;
@@ -296,6 +313,143 @@ describe('PeopleService', () => {
         'org_123',
         updateData,
       );
+    });
+
+    describe('login email change', () => {
+      const existingMember = {
+        id: 'mem_1',
+        userId: 'usr_target',
+        role: 'employee',
+      };
+      const updatedMember = {
+        id: 'mem_1',
+        user: { name: 'Alice' },
+        role: 'employee',
+      };
+
+      beforeEach(() => {
+        (MemberValidator.validateOrganization as jest.Mock).mockResolvedValue(
+          undefined,
+        );
+        (MemberValidator.validateMemberExists as jest.Mock).mockResolvedValue(
+          existingMember,
+        );
+        (MemberQueries.updateMember as jest.Mock).mockResolvedValue(
+          updatedMember,
+        );
+      });
+
+      it('applies the normalized email and notifies both addresses', async () => {
+        (validateLoginEmailChange as jest.Mock).mockResolvedValue({
+          oldEmail: 'old@company.dev',
+          newEmail: 'new@company.io',
+        });
+
+        await service.updateById('mem_1', 'org_123', {
+          email: ' New@Company.IO ',
+        });
+
+        expect(validateLoginEmailChange).toHaveBeenCalledWith({
+          userId: 'usr_target',
+          organizationId: 'org_123',
+          requestedEmail: ' New@Company.IO ',
+        });
+        expect(MemberQueries.updateMember).toHaveBeenCalledWith(
+          'mem_1',
+          'org_123',
+          { email: 'new@company.io' },
+        );
+        expect(notifyLoginEmailChanged).toHaveBeenCalledWith(
+          expect.objectContaining({
+            organizationId: 'org_123',
+            change: {
+              oldEmail: 'old@company.dev',
+              newEmail: 'new@company.io',
+            },
+          }),
+        );
+      });
+
+      it('drops a no-op email change and does not notify', async () => {
+        (validateLoginEmailChange as jest.Mock).mockResolvedValue(null);
+
+        await service.updateById('mem_1', 'org_123', {
+          email: 'old@company.dev',
+          department: 'it',
+        });
+
+        expect(MemberQueries.updateMember).toHaveBeenCalledWith(
+          'mem_1',
+          'org_123',
+          { department: 'it' },
+        );
+        expect(notifyLoginEmailChanged).not.toHaveBeenCalled();
+      });
+
+      it('rejects combining a userId reassignment with an email change', async () => {
+        await expect(
+          service.updateById('mem_1', 'org_123', {
+            userId: 'usr_other',
+            email: 'new@company.io',
+          }),
+        ).rejects.toThrow(BadRequestException);
+
+        expect(validateLoginEmailChange).not.toHaveBeenCalled();
+        expect(MemberQueries.updateMember).not.toHaveBeenCalled();
+      });
+
+      it('returns the member without writing when the no-op email is the only field', async () => {
+        (validateLoginEmailChange as jest.Mock).mockResolvedValue(null);
+        (MemberQueries.findByIdInOrganization as jest.Mock).mockResolvedValue(
+          updatedMember,
+        );
+
+        const result = await service.updateById('mem_1', 'org_123', {
+          email: 'old@company.dev',
+        });
+
+        expect(result).toEqual(updatedMember);
+        expect(MemberQueries.updateMember).not.toHaveBeenCalled();
+        // Must include deactivated members — the update path accepts them,
+        // so the no-op return can't silently 404 on a deactivated member.
+        expect(MemberQueries.findByIdInOrganization).toHaveBeenCalledWith(
+          'mem_1',
+          'org_123',
+          { includeDeactivated: true },
+        );
+      });
+
+      it('translates a unique-constraint race on the write into a 409', async () => {
+        (validateLoginEmailChange as jest.Mock).mockResolvedValue({
+          oldEmail: 'old@company.dev',
+          newEmail: 'new@company.io',
+        });
+        (MemberQueries.updateMember as jest.Mock).mockRejectedValue(
+          new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+            code: 'P2002',
+            clientVersion: 'test',
+          }),
+        );
+
+        await expect(
+          service.updateById('mem_1', 'org_123', { email: 'new@company.io' }),
+        ).rejects.toThrow(ConflictException);
+      });
+
+      it('propagates ConflictException from validation without wrapping', async () => {
+        (validateLoginEmailChange as jest.Mock).mockRejectedValue(
+          new ConflictException('That email is already used by another account'),
+        );
+
+        await expect(
+          service.updateById('mem_1', 'org_123', {
+            email: 'taken@company.io',
+          }),
+        ).rejects.toThrow(ConflictException);
+
+        expect(MemberQueries.updateMember).not.toHaveBeenCalled();
+        expect(notifyLoginEmailChanged).not.toHaveBeenCalled();
+      });
     });
 
     it('should validate new userId when changing user', async () => {

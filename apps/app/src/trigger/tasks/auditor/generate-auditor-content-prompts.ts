@@ -132,20 +132,21 @@ ${NARRATIVE_EXCLUSIONS}${TONE_RULES}`,
 
 Include EVERY vendor listed in the VENDORS TAB. Do NOT shorten the list, do NOT omit any vendor, and do NOT add vendors that are not in the VENDORS TAB.
 
-For each vendor, classify it as SaaS, PaaS, or IaaS and add a short description of its function.
+For each vendor, classify it as SaaS, PaaS, or IaaS and describe its function. Identify each vendor from its name and state what that named product or service is widely known to do — the vendor's name is a sufficient basis for a concise, factual function. Never leave the function blank, and never restate onboarding metadata (for example "selected during onboarding") as the function.
 
 FORMAT — one vendor per line:
-[Vendor Name] - [SaaS/PaaS/IaaS] - ([brief function])
+[Vendor Name] - [SaaS/PaaS/IaaS] - [brief function]
 
 EXAMPLE:
-Vercel - PaaS - (Application hosting)
-AWS - IaaS - (Cloud infrastructure)
-Slack - SaaS - (Team messaging)
+Vercel - PaaS - Application hosting
+AWS - IaaS - Cloud infrastructure
+Slack - SaaS - Team messaging
 
 RULES:
 - Do NOT include the section title.
 - One vendor per line, in the exact format above.
 - The VENDORS TAB is the source of truth for which vendors to list — include all of them, invent none.
+- The function must be a real description of what the vendor does — never onboarding placeholder text, "unknown", or a blank.
 ${TONE_RULES}`,
 
   'subservice-organizations': `Identify the subservice organisations for the SOC 2 report, choosing ONLY from the VENDORS TAB provided in the sources.
@@ -190,6 +191,19 @@ ABSOLUTELY FORBIDDEN:
 - If information is not available, simply OMIT that topic and write about what IS available.
 - Always produce substantive content based on what you CAN find.`;
 
+// Placeholder descriptions written by the onboarding vendor fallback loop
+// (onboard-organization-helpers.ts) when a vendor is named during onboarding
+// but no real description was extracted. They carry no business function, so
+// buildVendorsBlock drops them before the critical-vendors prompt — left in,
+// the model echoes them verbatim as the vendor's "function" (CS-747, e.g.
+// "Claude AI - SaaS - (Onboarding-selected vendor)").
+export const SELECTED_ONBOARDING_VENDOR_DESCRIPTION = 'Vendor selected during onboarding';
+export const CUSTOM_ONBOARDING_VENDOR_DESCRIPTION = 'Custom vendor added during onboarding';
+export const ONBOARDING_VENDOR_PLACEHOLDER_DESCRIPTIONS: readonly string[] = [
+  SELECTED_ONBOARDING_VENDOR_DESCRIPTION,
+  CUSTOM_ONBOARDING_VENDOR_DESCRIPTION,
+];
+
 /**
  * Formats the org's Vendors tab into a plain-text block for the prompt. Lists
  * EVERY vendor so the model can reproduce the full list — CS-589: the critical
@@ -203,7 +217,16 @@ export function buildVendorsBlock(vendors: VendorTabEntry[]): string {
 
   return vendors
     .map((vendor) => {
-      const details = [vendor.category, vendor.description]
+      const description = vendor.description?.trim();
+      // Drop the onboarding fallback placeholders (CS-747): they are not a real
+      // function, and the model otherwise echoes them verbatim as the vendor's
+      // function. Stripped, the model describes the vendor from its own
+      // knowledge — the same way it already classifies SaaS/PaaS/IaaS.
+      const meaningfulDescription =
+        description && !ONBOARDING_VENDOR_PLACEHOLDER_DESCRIPTIONS.includes(description)
+          ? description
+          : undefined;
+      const details = [vendor.category, meaningfulDescription]
         .map((part) => part?.trim())
         .filter((part): part is string => Boolean(part));
       const detailText = details.length > 0 ? ` — ${details.join(' — ')}` : '';

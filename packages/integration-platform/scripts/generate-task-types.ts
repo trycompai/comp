@@ -87,19 +87,24 @@ function generateTaskTypes() {
   lines.push('  { name: string; description: string; department: string; frequency: string }');
   lines.push('> = {');
 
+  // Escape a value for embedding inside a single-quoted TS string literal.
+  // Backslash MUST be escaped first, otherwise the quote-escaping is incomplete
+  // (e.g. a trailing "\" or "\'" would break out of the literal).
+  const sq = (value: string) => `'${value.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
+
   for (const task of tasks) {
-    // Escape description for use in template literal
+    // Escape description for use in a template literal (backslash first).
     const escapedDesc = task.description
       .replace(/\\/g, '\\\\')
       .replace(/`/g, '\\`')
       .replace(/\$/g, '\\$')
       .substring(0, 100); // Truncate for readability
 
-    lines.push(`  '${task.id}': {`);
-    lines.push(`    name: '${task.name.replace(/'/g, "\\'")}',`);
+    lines.push(`  ${sq(task.id)}: {`);
+    lines.push(`    name: ${sq(task.name)},`);
     lines.push(`    description: \`${escapedDesc}...\`,`);
-    lines.push(`    department: '${task.department}',`);
-    lines.push(`    frequency: '${task.frequency}',`);
+    lines.push(`    department: ${sq(task.department)},`);
+    lines.push(`    frequency: ${sq(task.frequency)},`);
     lines.push('  },');
   }
 

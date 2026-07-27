@@ -49,7 +49,7 @@ import { CheckGroupBlock } from './CheckGroupBlock';
 import { buildCheckGroups } from './check-groups';
 import { filterFindingsByConnection } from './finding-filters';
 import { EvidenceJsonViewer } from './EvidenceJsonViewer';
-import { MarkExceptionModal } from './MarkExceptionModal';
+import { MarkExceptionModal } from '@/components/integrations/MarkExceptionModal';
 import { RemediationSection } from './RemediationSection';
 
 interface RemediationCapabilities {

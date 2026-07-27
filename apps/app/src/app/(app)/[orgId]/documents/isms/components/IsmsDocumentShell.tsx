@@ -62,6 +62,12 @@ export interface IsmsDocumentShellProps {
    * documents omit it and are never gated.
    */
   getSubmitBlockedReason?: (document: IsmsDocumentData) => string | null;
+  /**
+   * Optional hook run after a successful generate (before the toast). The Risk
+   * Treatment Plan revalidates its preview rows here so a "refresh" actually
+   * refreshes what the user sees.
+   */
+  onGenerated?: () => Promise<unknown> | unknown;
   /** Renders the register-specific body once a document is loaded. */
   children: (args: IsmsDocumentBodyArgs) => ReactNode;
 }
@@ -86,6 +92,7 @@ export function IsmsDocumentShell({
   sectionDescription,
   generateSuccessMessage,
   getSubmitBlockedReason,
+  onGenerated,
   children,
 }: IsmsDocumentShellProps) {
   const { hasPermission } = usePermissions();
@@ -120,6 +127,7 @@ export function IsmsDocumentShell({
     try {
       await generate();
       await mutateDrift();
+      await onGenerated?.();
       toast.success(generateSuccessMessage);
     } catch (caught) {
       toast.error(caught instanceof Error ? caught.message : 'Failed to generate');

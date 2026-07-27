@@ -28,9 +28,9 @@ describe('CreateRequirementDto', () => {
     expect(errors).toHaveLength(0);
   });
 
-  // ── description length (FRAME-2: limit raised 5,000 → 10,000) ──────
-  it('accepts a description at the 10,000-char limit', async () => {
-    const dto = toDto({ ...VALID_BASE, description: 'x'.repeat(10_000) });
+  // ── description length (FRAME-2: limit raised 10,000 → 100,000) ────
+  it('accepts a description at the 100,000-char limit', async () => {
+    const dto = toDto({ ...VALID_BASE, description: 'x'.repeat(100_000) });
     const errors = await validate(dto, {
       whitelist: true,
       forbidNonWhitelisted: true,
@@ -38,8 +38,8 @@ describe('CreateRequirementDto', () => {
     expect(errors).toHaveLength(0);
   });
 
-  it('rejects a description longer than 10,000 chars', async () => {
-    const dto = toDto({ ...VALID_BASE, description: 'x'.repeat(10_001) });
+  it('rejects a description longer than 100,000 chars', async () => {
+    const dto = toDto({ ...VALID_BASE, description: 'x'.repeat(100_001) });
     const errors = await validate(dto, {
       whitelist: true,
       forbidNonWhitelisted: true,

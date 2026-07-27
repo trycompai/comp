@@ -7,6 +7,25 @@ import {
   loadRolesExtras,
   type RolesExtras,
 } from '../documents/roles-export-data';
+import {
+  loadMonitoringExtras,
+  mapMetrics,
+  type MonitoringExtras,
+} from '../documents/monitoring-export-data';
+import {
+  loadInternalAuditExtras,
+  mapAudits,
+  type InternalAuditExtras,
+} from '../documents/internal-audit-export-data';
+import {
+  loadManagementReviewExtras,
+  mapReviews,
+  type ManagementReviewExtras,
+} from '../documents/management-review-export-data';
+import {
+  loadRiskTreatmentExtras,
+  type RiskTreatmentExtras,
+} from '../documents/risk-treatment-export-data';
 import type {
   DocumentExportInput,
   IsmsOrgProfile,
@@ -45,6 +64,35 @@ export const EXPORT_DOCUMENT_INCLUDE = {
   roles: {
     orderBy: { position: 'asc' },
     include: { assignments: { orderBy: { position: 'asc' } } },
+  },
+  metrics: {
+    orderBy: { position: 'asc' },
+    include: {
+      objective: { select: { objective: true, target: true } },
+      // Only the most recent measurement: the document renders the current
+      // value, never the history (which stays in the platform / CSV export).
+      measurements: {
+        orderBy: [{ periodStart: 'desc' }, { recordedAt: 'desc' }],
+        take: 1,
+      },
+    },
+  },
+  audits: {
+    orderBy: { position: 'asc' },
+    include: {
+      controls: { orderBy: { position: 'asc' } },
+      findings: { orderBy: { position: 'asc' } },
+    },
+  },
+  reviews: {
+    // Deterministic tie-breakers: review order drives which actions carry
+    // forward into which review's input (a), so two reviews sharing a
+    // position must order the same on every read.
+    orderBy: [{ position: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
+    include: {
+      inputs: { orderBy: { position: 'asc' } },
+      actions: { orderBy: { position: 'asc' } },
+    },
   },
 } satisfies Prisma.IsmsDocumentInclude;
 
@@ -85,6 +133,54 @@ export async function resolveRolesExtras(
   return loadRolesExtras({ organizationId: document.organizationId, client });
 }
 
+/** The Monitoring document (9.1) resolves people + the SPO fallback; other types don't. */
+export async function resolveMonitoringExtras(
+  document: LoadedExportDocument,
+  client?: Prisma.TransactionClient,
+): Promise<MonitoringExtras | undefined> {
+  if (document.type !== 'monitoring') return undefined;
+  return loadMonitoringExtras({
+    organizationId: document.organizationId,
+    client,
+  });
+}
+
+/** The Internal Audit document (9.2) resolves finding-owner names; other types don't. */
+export async function resolveInternalAuditExtras(
+  document: LoadedExportDocument,
+  client?: Prisma.TransactionClient,
+): Promise<InternalAuditExtras | undefined> {
+  if (document.type !== 'internal_audit') return undefined;
+  return loadInternalAuditExtras({
+    organizationId: document.organizationId,
+    client,
+  });
+}
+
+/** The Management Review document (9.3) resolves action-owner names; other types don't. */
+export async function resolveManagementReviewExtras(
+  document: LoadedExportDocument,
+  client?: Prisma.TransactionClient,
+): Promise<ManagementReviewExtras | undefined> {
+  if (document.type !== 'management_review') return undefined;
+  return loadManagementReviewExtras({
+    organizationId: document.organizationId,
+    client,
+  });
+}
+
+/** The Risk Treatment Plan (6.1.3) reads the Risk Register + vendors; other types don't. */
+export async function resolveRiskTreatmentExtras(
+  document: LoadedExportDocument,
+  client?: Prisma.TransactionClient,
+): Promise<RiskTreatmentExtras | undefined> {
+  if (document.type !== 'risk_treatment_plan') return undefined;
+  return loadRiskTreatmentExtras({
+    organizationId: document.organizationId,
+    client,
+  });
+}
+
 function formatDateYmd(date: Date | null): string | null {
   return date ? date.toISOString().slice(0, 10) : null;
 }
@@ -121,10 +217,18 @@ export function buildExportInput({
   document,
   orgProfile,
   rolesExtras,
+  monitoringExtras,
+  internalAuditExtras,
+  managementReviewExtras,
+  riskTreatmentExtras,
 }: {
   document: LoadedExportDocument;
   orgProfile?: IsmsOrgProfile;
   rolesExtras?: RolesExtras;
+  monitoringExtras?: MonitoringExtras;
+  internalAuditExtras?: InternalAuditExtras;
+  managementReviewExtras?: ManagementReviewExtras;
+  riskTreatmentExtras?: RiskTreatmentExtras;
 }): DocumentExportInput {
   return {
     contextIssues: document.contextIssues.map((issue) => ({
@@ -156,6 +260,16 @@ export function buildExportInput({
     roles: rolesExtras ? mapRoles(document, rolesExtras) : undefined,
     operationalOwnership: rolesExtras?.operationalOwnership,
     band: rolesExtras?.band,
+    metrics: monitoringExtras
+      ? mapMetrics(document.metrics, monitoringExtras)
+      : undefined,
+    audits: internalAuditExtras
+      ? mapAudits(document.audits, internalAuditExtras)
+      : undefined,
+    reviews: managementReviewExtras
+      ? mapReviews(document.reviews, managementReviewExtras)
+      : undefined,
+    riskTreatment: riskTreatmentExtras,
   };
 }
 
@@ -176,7 +290,20 @@ export async function buildDraftSnapshot(
 ): Promise<IsmsExportSnapshot> {
   const orgProfile = await resolveOrgProfile(document);
   const rolesExtras = await resolveRolesExtras(document);
-  const input = buildExportInput({ document, orgProfile, rolesExtras });
+  const monitoringExtras = await resolveMonitoringExtras(document);
+  const internalAuditExtras = await resolveInternalAuditExtras(document);
+  const managementReviewExtras =
+    await resolveManagementReviewExtras(document);
+  const riskTreatmentExtras = await resolveRiskTreatmentExtras(document);
+  const input = buildExportInput({
+    document,
+    orgProfile,
+    rolesExtras,
+    monitoringExtras,
+    internalAuditExtras,
+    managementReviewExtras,
+    riskTreatmentExtras,
+  });
   const metadata = buildExportMetadata({
     type: document.type,
     title: document.title,

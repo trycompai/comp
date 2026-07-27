@@ -10,6 +10,9 @@ export default defineConfig({
   logLevel: 'log',
   maxDuration: 300, // 5 minutes
   build: {
+    // The 1Password SDK ships a native WASM core; keep it external so it's
+    // resolved from node_modules at runtime instead of being bundled by esbuild.
+    external: ['@1password/sdk'],
     extensions: [
       caBundleExtension(),
       prismaExtension({

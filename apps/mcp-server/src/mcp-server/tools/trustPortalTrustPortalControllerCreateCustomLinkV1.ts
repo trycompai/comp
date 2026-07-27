@@ -3,10 +3,15 @@
  */
 
 import { trustPortalTrustPortalControllerCreateCustomLinkV1 } from "../../funcs/trustPortalTrustPortalControllerCreateCustomLinkV1.js";
+import { TrustPortalControllerCreateCustomLinkV1Request$zodSchema } from "../../models/trustportalcontrollercreatecustomlinkv1op.js";
 import { formatResult, ToolDefinition } from "../tools.js";
 
+const args = {
+  request: TrustPortalControllerCreateCustomLinkV1Request$zodSchema,
+};
+
 export const tool$trustPortalTrustPortalControllerCreateCustomLinkV1:
-  ToolDefinition = {
+  ToolDefinition<typeof args> = {
     name: "create-custom-link",
     description: `Create a custom link for trust portal
 
@@ -18,9 +23,11 @@ Create a custom link for trust portal in Comp AI. Configure the live Trust Cente
       "openWorldHint": false,
       "readOnlyHint": false,
     },
-    tool: async (client, ctx) => {
+    args,
+    tool: async (client, args, ctx) => {
       const [result] = await trustPortalTrustPortalControllerCreateCustomLinkV1(
         client,
+        args.request,
         { fetchOptions: { signal: ctx.signal } },
       ).$inspect();
 

@@ -359,6 +359,7 @@ export class OrganizationController {
   @ApiOperation({ summary: 'Create a new API key' })
   async createApiKey(
     @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
     @Body() body: { name: string; expiresAt?: string; scopes?: string[] },
   ) {
     if (!body.name) {
@@ -369,6 +370,9 @@ export class OrganizationController {
       body.name,
       body.expiresAt,
       body.scopes,
+      // Attribute the key to the member creating it (session auth). Null when
+      // created via API key/service token — falls back to org owner at use time.
+      authContext.memberId ?? null,
     );
   }
 

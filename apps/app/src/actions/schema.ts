@@ -1,6 +1,5 @@
 import {
   CommentEntityType,
-  Departments,
   Frequency,
   Impact,
   Likelihood,
@@ -281,14 +280,6 @@ export const addFrameworksSchema = z.object({
 
 export const assistantSettingsSchema = z.object({
   enabled: z.boolean().optional(),
-});
-
-export const createEmployeeSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  email: z.string().email('Invalid email address'),
-  department: z.nativeEnum(Departments, { error: 'Department is required' }),
-  externalEmployeeId: z.string().optional(),
-  isActive: z.boolean().default(true),
 });
 
 export const updatePolicyOverviewSchema = z.object({

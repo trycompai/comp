@@ -6,11 +6,12 @@ disable-model-invocation: true
 
 Run a comprehensive production readiness check on $ARGUMENTS.
 
-Use parallel subagents to run all four audits simultaneously:
+Use parallel subagents to run all five audits simultaneously:
 1. audit-rbac on $ARGUMENTS
 2. audit-hooks on $ARGUMENTS
 3. audit-design-system on $ARGUMENTS
 4. audit-tests on $ARGUMENTS
+5. security-review on $ARGUMENTS
 
 Then run full monorepo verification:
 ```bash

@@ -225,6 +225,11 @@ export class DeviceAgentAuthService {
         checkDetails: checkDetails as Prisma.InputJsonValue,
         isCompliant,
         lastCheckIn: new Date(),
+        // A check-in means the endpoint agent is actively managing this device,
+        // so assert agent ownership. Heals a row that was imported by an
+        // integration and adopted by the agent but left source='integration'
+        // (which hid the compliant device as "Missing" in the People tab).
+        source: 'agent',
         ...(dto.agentVersion ? { agentVersion: dto.agentVersion } : {}),
         ...(sessionIdToLink !== undefined ? { agentSessionId: sessionIdToLink } : {}),
       },

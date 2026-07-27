@@ -15,7 +15,11 @@ import {
   buildExportInput,
   parseExportSnapshot,
   renderSnapshot,
+  resolveInternalAuditExtras,
+  resolveManagementReviewExtras,
+  resolveMonitoringExtras,
   resolveOrgProfile,
+  resolveRiskTreatmentExtras,
   resolveRolesExtras,
   type IsmsExportSnapshot,
   type LoadedExportDocument,
@@ -71,7 +75,22 @@ export class IsmsVersionService {
     // and the register rows written in this transaction share one point in time.
     const orgProfile = await resolveOrgProfile(document, tx);
     const rolesExtras = await resolveRolesExtras(document, tx);
-    const input = buildExportInput({ document, orgProfile, rolesExtras });
+    const monitoringExtras = await resolveMonitoringExtras(document, tx);
+    const internalAuditExtras = await resolveInternalAuditExtras(document, tx);
+    const managementReviewExtras = await resolveManagementReviewExtras(
+      document,
+      tx,
+    );
+    const riskTreatmentExtras = await resolveRiskTreatmentExtras(document, tx);
+    const input = buildExportInput({
+      document,
+      orgProfile,
+      rolesExtras,
+      monitoringExtras,
+      internalAuditExtras,
+      managementReviewExtras,
+      riskTreatmentExtras,
+    });
     const metadata = buildExportMetadata({
       type: document.type,
       title: document.title,

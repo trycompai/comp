@@ -266,6 +266,55 @@ describe('CheckRunRepository.findLatestPerConnectionAndCheckByTask', () => {
   });
 });
 
+describe('CheckRunRepository.findLastAttemptPerConnectionAndCheckByTask', () => {
+  const repo = new CheckRunRepository();
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('returns each group’s latest attempt timestamp, INCLUDING held runs (CS-753)', async () => {
+    mockGroupBy.mockResolvedValue([
+      {
+        connectionId: 'A',
+        checkId: 'entra_id_mfa',
+        _max: { createdAt: new Date('2026-07-16T06:00:00Z') },
+      },
+    ]);
+
+    const attempts =
+      await repo.findLastAttemptPerConnectionAndCheckByTask('task_1');
+
+    expect(attempts).toEqual([
+      {
+        connectionId: 'A',
+        checkId: 'entra_id_mfa',
+        lastAttemptAt: new Date('2026-07-16T06:00:00Z'),
+      },
+    ]);
+    // The whole point: NO status filter — a run held as 'inconclusive' still
+    // counts as an attempt. Disconnected connections stay excluded.
+    const where = mockGroupBy.mock.calls[0][0].where;
+    expect(where.status).toBeUndefined();
+    expect(where.connection).toEqual({ status: { not: 'disconnected' } });
+    expect(where.taskId).toBe('task_1');
+  });
+
+  it('drops groups without a timestamp and returns [] for a task with no runs', async () => {
+    mockGroupBy.mockResolvedValue([
+      { connectionId: 'A', checkId: 'c', _max: { createdAt: null } },
+    ]);
+    expect(
+      await repo.findLastAttemptPerConnectionAndCheckByTask('task_1'),
+    ).toEqual([]);
+
+    mockGroupBy.mockResolvedValue([]);
+    expect(
+      await repo.findLastAttemptPerConnectionAndCheckByTask('task_1'),
+    ).toEqual([]);
+  });
+});
+
 describe('CheckRunRepository.countExceptedFailures', () => {
   const repo = new CheckRunRepository();
 

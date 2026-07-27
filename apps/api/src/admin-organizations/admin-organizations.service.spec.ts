@@ -22,6 +22,26 @@ jest.mock('@db', () => ({
       update: jest.fn(),
       updateMany: jest.fn(),
     },
+    auditLog: {
+      findMany: jest.fn(),
+      count: jest.fn(),
+    },
+  },
+  AuditLogEntityType: {
+    organization: 'organization',
+    framework: 'framework',
+    requirement: 'requirement',
+    control: 'control',
+    policy: 'policy',
+    task: 'task',
+    people: 'people',
+    risk: 'risk',
+    vendor: 'vendor',
+    tests: 'tests',
+    integration: 'integration',
+    trust: 'trust',
+    finding: 'finding',
+    pentest: 'pentest',
   },
 }));
 
@@ -439,6 +459,137 @@ describe('AdminOrganizationsService', () => {
       await expect(
         service.revokeInvitation('org_1', 'inv_missing'),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('getAuditLogs', () => {
+    const mockLogs = [{ id: 'aud_1' }, { id: 'aud_2' }];
+
+    beforeEach(() => {
+      (mockDb.auditLog.findMany as jest.Mock).mockResolvedValue(mockLogs);
+      (mockDb.auditLog.count as jest.Mock).mockResolvedValue(42);
+    });
+
+    it('passes skip/take to findMany and returns { data, total }', async () => {
+      const result = await service.getAuditLogs({
+        orgId: 'org_1',
+        take: '25',
+        offset: '50',
+      });
+
+      expect(mockDb.auditLog.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { organizationId: 'org_1' },
+          take: 25,
+          skip: 50,
+          orderBy: [{ timestamp: 'desc' }, { id: 'desc' }],
+        }),
+      );
+      expect(mockDb.auditLog.count).toHaveBeenCalledWith({
+        where: { organizationId: 'org_1' },
+      });
+      expect(result).toEqual({ data: mockLogs, total: 42 });
+    });
+
+    it('uses the SAME where for count and findMany', async () => {
+      await service.getAuditLogs({ orgId: 'org_1', entityType: 'policy' });
+
+      const findManyWhere = (mockDb.auditLog.findMany as jest.Mock).mock
+        .calls[0][0].where;
+      const countWhere = (mockDb.auditLog.count as jest.Mock).mock.calls[0][0]
+        .where;
+
+      expect(findManyWhere).toEqual(countWhere);
+    });
+
+    it('defaults take to 100 and offset to 0', async () => {
+      await service.getAuditLogs({ orgId: 'org_1' });
+
+      expect(mockDb.auditLog.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ take: 100, skip: 0 }),
+      );
+    });
+
+    it('clamps take to a max of 200', async () => {
+      await service.getAuditLogs({ orgId: 'org_1', take: '1000' });
+
+      expect(mockDb.auditLog.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ take: 200 }),
+      );
+    });
+
+    it('clamps take to a min of 1', async () => {
+      await service.getAuditLogs({ orgId: 'org_1', take: '0' });
+
+      expect(mockDb.auditLog.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ take: 100 }),
+      );
+    });
+
+    it('clamps a negative offset to 0', async () => {
+      await service.getAuditLogs({ orgId: 'org_1', offset: '-10' });
+
+      expect(mockDb.auditLog.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ skip: 0 }),
+      );
+    });
+
+    it('clamps a NaN offset to 0', async () => {
+      await service.getAuditLogs({ orgId: 'org_1', offset: 'abc' });
+
+      expect(mockDb.auditLog.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ skip: 0 }),
+      );
+    });
+
+    it('clamps an oversized offset to the maximum', async () => {
+      await service.getAuditLogs({ orgId: 'org_1', offset: '999999999' });
+
+      expect(mockDb.auditLog.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ skip: 100_000 }),
+      );
+    });
+
+    it('caps the reported total at the reachable maximum', async () => {
+      (mockDb.auditLog.count as jest.Mock).mockResolvedValue(500_000);
+
+      const result = await service.getAuditLogs({ orgId: 'org_1' });
+
+      // Beyond the offset cap the window is unreachable, so total must not
+      // exceed it — otherwise the client pager loops load-more forever.
+      expect(result.total).toBe(100_000);
+    });
+
+    it('builds a single-value entityType filter', async () => {
+      await service.getAuditLogs({ orgId: 'org_1', entityType: 'policy' });
+
+      expect(mockDb.auditLog.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { organizationId: 'org_1', entityType: 'policy' },
+        }),
+      );
+    });
+
+    it('builds an { in: [...] } filter for multiple entityTypes', async () => {
+      await service.getAuditLogs({
+        orgId: 'org_1',
+        entityType: 'policy, task',
+      });
+
+      expect(mockDb.auditLog.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            organizationId: 'org_1',
+            entityType: { in: ['policy', 'task'] },
+          },
+        }),
+      );
+    });
+
+    it('throws BadRequestException for an invalid entityType', async () => {
+      await expect(
+        service.getAuditLogs({ orgId: 'org_1', entityType: 'not_a_type' }),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 });
