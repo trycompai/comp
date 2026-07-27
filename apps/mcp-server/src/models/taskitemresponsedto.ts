@@ -10,15 +10,6 @@ import {
 } from "./taskitemcreatordto.js";
 
 /**
- * Task description
- */
-export type TaskItemResponseDtoDescription = {};
-
-export const TaskItemResponseDtoDescription$zodSchema: z.ZodType<
-  TaskItemResponseDtoDescription
-> = z.object({}).describe("Task description");
-
-/**
  * Task status
  */
 export const TaskItemResponseDtoStatus = {
@@ -84,6 +75,15 @@ export const TaskItemResponseDtoEntityType$zodSchema = z.enum([
   "vendor",
   "risk",
 ]).describe("Type of entity");
+
+/**
+ * Task description
+ */
+export type TaskItemResponseDtoDescription = {};
+
+export const TaskItemResponseDtoDescription$zodSchema: z.ZodType<
+  TaskItemResponseDtoDescription
+> = z.object({}).describe("Task description");
 
 /**
  * User information

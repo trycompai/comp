@@ -57,6 +57,39 @@ describe('buildManifestForFramework', () => {
     expect(manifest.tasks).toHaveLength(1);
   });
 
+  // FRAME-18: the frozen manifest must order requirements by sortOrder, then by
+  // the stable identifier key, then name. Tiebreaking by name alone would let a
+  // published manifest reorder unsorted requirements whenever a name is edited.
+  it('requests canonical requirement ordering (sortOrder → identifier → name) and preserves sortOrder', async () => {
+    (db.frameworkEditorFramework.findUnique as jest.Mock).mockResolvedValue({
+      id: 'frk_csf',
+      name: 'NIST CSF',
+      version: '2.0',
+      description: null,
+      requirements: [
+        {
+          id: 'frk_rq_gv',
+          identifier: 'GV.OC-01',
+          name: 'Organizational Context',
+          description: 'd',
+          sortOrder: 10,
+          controlTemplates: [],
+        },
+      ],
+    });
+
+    const manifest = await buildManifestForFramework('frk_csf');
+
+    const findUniqueArg = (db.frameworkEditorFramework.findUnique as jest.Mock).mock
+      .calls[0][0];
+    expect(findUniqueArg.include.requirements.orderBy).toEqual([
+      { sortOrder: { sort: 'asc', nulls: 'last' } },
+      { identifier: 'asc' },
+      { name: 'asc' },
+    ]);
+    expect(manifest.requirements[0].sortOrder).toBe(10);
+  });
+
   it('dedupes controls/policies/tasks that appear under multiple requirements', async () => {
     (db.frameworkEditorFramework.findUnique as jest.Mock).mockResolvedValue({
       id: 'frk_iso',

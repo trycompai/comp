@@ -66,7 +66,7 @@ export class MemberQueries {
     return db.member.findMany({
       where: {
         organizationId,
-        ...(includeDeactivated ? {} : { deactivated: false }),
+        ...(includeDeactivated ? {} : { deactivated: false, isActive: true }),
         ...(filters?.onboardAfter || filters?.onboardBefore
           ? {
               onboardDate: {
@@ -95,12 +95,13 @@ export class MemberQueries {
   static async findByIdInOrganization(
     memberId: string,
     organizationId: string,
+    options?: { includeDeactivated?: boolean },
   ): Promise<PeopleResponseDto | null> {
     return db.member.findFirst({
       where: {
         id: memberId,
         organizationId,
-        deactivated: false,
+        ...(options?.includeDeactivated ? {} : { deactivated: false }),
       },
       select: this.MEMBER_SELECT,
     });
@@ -167,6 +168,14 @@ export class MemberQueries {
     if (updatePayload.backgroundCheckExempt === false) {
       updatePayload.backgroundCheckExemptReason = null;
       updatePayload.backgroundCheckExemptJustification = null;
+    }
+
+    // Reactivation: the status dropdown sends { isActive: true } via PATCH. A
+    // member deactivated via offboarding (or the skip-offboarding path) carries
+    // deactivated:true, which hides them from the people list. Clear it so
+    // isActive and deactivated stay in sync and the member is fully restored.
+    if (updatePayload.isActive === true) {
+      updatePayload.deactivated = false;
     }
 
     const hasUserUpdates = name !== undefined || email !== undefined;

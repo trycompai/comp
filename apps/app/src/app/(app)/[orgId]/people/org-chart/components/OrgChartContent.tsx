@@ -20,11 +20,18 @@ interface OrgChartData {
 interface OrgChartContentProps {
   chartData: OrgChartData | null;
   members: OrgChartMember[];
+  onChartChange: () => void | Promise<unknown>;
 }
 
-export function OrgChartContent({ chartData, members }: OrgChartContentProps) {
+export function OrgChartContent({
+  chartData,
+  members,
+  onChartChange,
+}: OrgChartContentProps) {
   if (!chartData) {
-    return <OrgChartEmptyState members={members} />;
+    return (
+      <OrgChartEmptyState members={members} onChartChange={onChartChange} />
+    );
   }
 
   if (chartData.type === 'uploaded' && chartData.signedImageUrl) {
@@ -32,6 +39,7 @@ export function OrgChartContent({ chartData, members }: OrgChartContentProps) {
       <OrgChartImageView
         imageUrl={chartData.signedImageUrl}
         chartName={chartData.name}
+        onChartChange={onChartChange}
       />
     );
   }
@@ -57,6 +65,7 @@ export function OrgChartContent({ chartData, members }: OrgChartContentProps) {
       initialEdges={chartData.edges}
       members={members}
       updatedAt={chartData.updatedAt ?? null}
+      onChartChange={onChartChange}
     />
   );
 }

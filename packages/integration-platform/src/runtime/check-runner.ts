@@ -38,6 +38,10 @@ export async function runCheck(
   const startTime = Date.now();
 
   const { ctx, getResults } = createCheckContext(options);
+  // Expose the running check's id so emitters (e.g. AWS emitOutcomes) can stamp
+  // a stable findingKey on each outcome. Distinct from RunCheckOptions.checkId,
+  // which is the optional "run only this check" filter.
+  ctx.checkId = check.id;
 
   try {
     ctx.log(`Starting check: ${check.name}`);

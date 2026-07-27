@@ -1,7 +1,15 @@
 import { DescribeSecurityGroupsCommand, EC2Client } from '@aws-sdk/client-ec2';
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, FindingSeverity, IntegrationCheck } from '../../../types';
-import { resolveAwsSessionOrFail, type CheckOutcome, emitOutcomes } from './shared';
+import {
+  combineReadFailures,
+  remediationForReadFailure,
+  resolveAwsSessionOrFail,
+  toReadFailure,
+  type CheckOutcome,
+  type ReadFailure,
+  emitOutcomes,
+} from './shared';
 
 export interface SgPermission {
   ipProtocol: string;
@@ -95,12 +103,18 @@ export const ec2SecurityGroupsCheck: IntegrationCheck = {
       return;
     }
     const sgs: SgInfo[] = [];
-    const failedRegions: string[] = [];
+    const regionFailures: Array<{ region: string; failure: ReadFailure }> = [];
     for (const region of session.regions) {
       // Isolate per-region failures (opted-out/disabled regions, throttling)
       // so one region's error doesn't abort scanning of the others.
       try {
-        const ec2 = new EC2Client({ region, credentials: session.credentials });
+        const ec2 = new EC2Client({
+          region,
+          credentials: session.credentials,
+          // Reads are idempotent; extra attempts ride out transient network or
+          // throttling failures during the scheduled-run herd.
+          maxAttempts: 5,
+        });
         let token: string | undefined;
         do {
           const resp = await ec2.send(
@@ -125,25 +139,35 @@ export const ec2SecurityGroupsCheck: IntegrationCheck = {
           token = resp.NextToken;
         } while (token);
       } catch (err) {
-        failedRegions.push(region);
-        ctx.log(
-          `EC2: could not list security groups in ${region}: ${err instanceof Error ? err.message : String(err)}`,
-        );
+        const failure = toReadFailure(err);
+        regionFailures.push({ region, failure });
+        ctx.log(`EC2: could not list security groups in ${region}: ${failure.error}`);
       }
     }
     // A region we couldn't read is unverified — surface it instead of letting a
     // total/partial read failure end as a silent clean run (no findings).
-    if (failedRegions.length > 0) {
-      ctx.fail({
-        title: 'Could not verify security groups in some regions',
-        description: `Security groups could not be listed in: ${failedRegions.join(', ')}. Internet exposure in those regions is unverified.`,
-        resourceType: 'aws-security-group',
-        resourceId: `regions:${failedRegions.join(',')}`,
-        severity: 'medium',
-        remediation:
-          'Ensure the integration role can call ec2:DescribeSecurityGroups in all enabled regions, then re-run the check.',
-        evidence: { failedRegions },
-      });
+    if (regionFailures.length > 0) {
+      const regions = regionFailures.map((r) => r.region);
+      emitOutcomes(ctx, [
+        {
+          kind: 'fail',
+          title: 'Could not verify security groups in some regions',
+          description: `Security groups could not be listed in: ${regions.join(', ')}. Internet exposure in those regions is unverified.`,
+          resourceType: 'aws-security-group',
+          resourceId: `regions:${regions.join(',')}`,
+          severity: 'medium',
+          remediation: remediationForReadFailure(
+            combineReadFailures(regionFailures.map((r) => r.failure)),
+            'Grant ec2:DescribeSecurityGroups to the integration role in all enabled regions, then re-run the check.',
+          ),
+          evidence: {
+            failedRegions: regionFailures.map((r) => ({
+              region: r.region,
+              error: r.failure.error,
+            })),
+          },
+        },
+      ]);
     }
     if (sgs.length === 0) return;
     emitOutcomes(ctx, evaluateSecurityGroups(sgs));

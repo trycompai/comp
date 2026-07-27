@@ -42,6 +42,7 @@ import { UploadAttachmentDto } from '../attachments/upload-attachment.dto';
 import { AttachmentEntityType } from '@db';
 import { PeopleService } from './people.service';
 import { PeopleInviteService } from './people-invite.service';
+import { PeopleAccessService } from './people-access.service';
 import { GET_ALL_PEOPLE_RESPONSES } from './schemas/get-all-people.responses';
 import { CREATE_MEMBER_RESPONSES } from './schemas/create-member.responses';
 import { BULK_CREATE_MEMBERS_RESPONSES } from './schemas/bulk-create-members.responses';
@@ -62,6 +63,7 @@ export class PeopleController {
   constructor(
     private readonly peopleService: PeopleService,
     private readonly peopleInviteService: PeopleInviteService,
+    private readonly peopleAccessService: PeopleAccessService,
     private readonly attachmentsService: AttachmentsService,
   ) {}
 
@@ -373,6 +375,37 @@ export class PeopleController {
     };
   }
 
+  @Get(':id/access')
+  @RequirePermission('member', 'read')
+  @ApiOperation({
+    summary: "Member's access across connected integrations",
+    description:
+      'Aggregates the latest Employee Access check results from every connected integration bound to the Employee Access task, matched to the member by email.',
+  })
+  @ApiParam(PEOPLE_PARAMS.memberId)
+  async getMemberAccess(
+    @Param('id') memberId: string,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const data = await this.peopleAccessService.getMemberAccess(
+      organizationId,
+      memberId,
+    );
+
+    return {
+      data,
+      authType: authContext.authType,
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
+    };
+  }
+
   @Get(':id/training-videos')
   @RequirePermission('member', 'read')
   @ApiOperation({ summary: 'Get training video completions for a member' })
@@ -437,6 +470,7 @@ export class PeopleController {
   @ApiResponse(UPDATE_MEMBER_RESPONSES[400])
   @ApiResponse(UPDATE_MEMBER_RESPONSES[401])
   @ApiResponse(UPDATE_MEMBER_RESPONSES[404])
+  @ApiResponse(UPDATE_MEMBER_RESPONSES[409])
   @ApiResponse(UPDATE_MEMBER_RESPONSES[500])
   async updateMember(
     @Param('id') memberId: string,

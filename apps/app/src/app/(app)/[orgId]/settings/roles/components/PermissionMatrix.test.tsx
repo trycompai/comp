@@ -258,6 +258,116 @@ describe('PermissionMatrix', () => {
       expect(RESOURCES.find((r) => r.key === 'pentest')).toBeDefined();
     });
   });
+
+  // CS-591: the role editor exposed no toggle for the `secret` resource, so
+  // admins could not grant secrets access to custom roles. Users were told to
+  // use "Integrations write", which only grants `integration:*` — the Secrets
+  // page then 403s on GET /v1/secrets (RequirePermission('secret','read')) and
+  // renders empty. The matrix must surface a dedicated Secrets toggle.
+  describe('Secrets management (CS-591)', () => {
+    it('includes secret resource in RESOURCES list', () => {
+      expect(RESOURCES.find((r) => r.key === 'secret')).toBeDefined();
+    });
+
+    it('renders a Secrets row in the matrix', () => {
+      const mockOnChange = vi.fn();
+      render(<PermissionMatrix value={{}} onChange={mockOnChange} />);
+
+      expect(screen.getByText('Secrets')).toBeInTheDocument();
+    });
+
+    it('maps Write to full secret CRUD including read (unblocks the Secrets page)', () => {
+      // accessLevelToPermissions is exactly what handleAccessChange calls when
+      // an admin picks "Write"; it must include 'read' so the assigned user
+      // passes RequirePermission('secret','read') on GET /v1/secrets.
+      expect(accessLevelToPermissions('secret', 'edit')).toEqual([
+        'create', 'read', 'update', 'delete',
+      ]);
+    });
+
+    it('maps Read (view) to secret:read', () => {
+      expect(accessLevelToPermissions('secret', 'view')).toEqual(['read']);
+    });
+  });
+});
+
+describe('Employee Compliance obligation implies portal access', () => {
+  function findComplianceSwitch(): HTMLElement {
+    const label = screen.getByText('Employee Compliance');
+    const row = label.closest('[class*="flex"]') as HTMLElement;
+    const switchEl = row.querySelector('[role="switch"]');
+    if (!switchEl) throw new Error('Employee Compliance switch not found');
+    return switchEl as HTMLElement;
+  }
+
+  it('adds portal:read/update permissions when the compliance obligation is enabled', () => {
+    const mockOnChange = vi.fn();
+    const mockOnObligationsChange = vi.fn();
+    render(
+      <PermissionMatrix
+        value={{ control: ['read'] }}
+        onChange={mockOnChange}
+        obligations={{}}
+        onObligationsChange={mockOnObligationsChange}
+      />,
+    );
+
+    fireEvent.click(findComplianceSwitch());
+
+    expect(mockOnObligationsChange).toHaveBeenCalledWith({ compliance: true });
+    expect(mockOnChange).toHaveBeenCalledWith({
+      control: ['read'],
+      portal: ['read', 'update'],
+    });
+  });
+
+  it('does not touch permissions when the compliance obligation is disabled (one-directional implication)', () => {
+    // Disabling compliance must NOT strip 'portal' back off — a role can
+    // hold portal access independently of this obligation (e.g. granted
+    // directly through the API), and the matrix has no separate row for
+    // 'portal' to tell that case apart from "granted via this toggle".
+    const mockOnChange = vi.fn();
+    const mockOnObligationsChange = vi.fn();
+    render(
+      <PermissionMatrix
+        value={{ control: ['read'], portal: ['read', 'update'] }}
+        onChange={mockOnChange}
+        obligations={{ compliance: true }}
+        onObligationsChange={mockOnObligationsChange}
+      />,
+    );
+
+    fireEvent.click(findComplianceSwitch());
+
+    expect(mockOnObligationsChange).toHaveBeenCalledWith({});
+    expect(mockOnChange).not.toHaveBeenCalled();
+  });
+
+  it('does not inject portal permissions or touch obligations when an unrelated resource permission changes', () => {
+    // Only the 'compliance' obligation toggle should sync portal — a plain
+    // resource-permission change must not go through the obligation branch.
+    const mockOnChange = vi.fn();
+    const mockOnObligationsChange = vi.fn();
+    render(
+      <PermissionMatrix
+        value={{}}
+        onChange={mockOnChange}
+        obligations={{}}
+        onObligationsChange={mockOnObligationsChange}
+      />,
+    );
+
+    const controlsText = screen.getByText('Controls');
+    const controlsRow = controlsText.closest('[class*="grid"]');
+    const radios = controlsRow?.querySelectorAll('[data-slot="radio-group-item"]');
+    if (radios && radios[1]) {
+      fireEvent.click(radios[1]); // No Access -> Read: a real change
+    }
+
+    expect(mockOnChange).toHaveBeenCalledTimes(1);
+    expect(mockOnChange).toHaveBeenCalledWith({ control: ['read'] });
+    expect(mockOnObligationsChange).not.toHaveBeenCalled();
+  });
 });
 
 describe('Utility Functions', () => {

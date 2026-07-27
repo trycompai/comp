@@ -14,6 +14,8 @@ interface FrameworkDetail {
     name: string;
     identifier: string;
     description: string;
+    requirementFamily: string | null;
+    sortOrder: number | null;
     frameworkId: string;
     createdAt: string;
     updatedAt: string;

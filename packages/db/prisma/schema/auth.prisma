@@ -217,7 +217,10 @@ model Member {
   assignedPolicies                 Policy[]                 @relation("PolicyAssignee") // Policies where this member is an assignee
   approvedPolicies                 Policy[]                 @relation("PolicyApprover") // Policies where this member is an approver
   approvedSOADocuments             SOADocument[]            @relation("SOADocumentApprover") // SOA documents where this member is an approver
+  approvedIsmsDocuments            IsmsDocument[]           @relation("IsmsDocumentApprover") // ISMS documents where this member is an approver
+  publishedIsmsVersions            IsmsDocumentVersion[]    @relation("IsmsDocumentVersionPublisher") // ISMS document versions this member published
   risks                            Risk[]
+  riskAcceptances                  RiskAcceptance[] // acceptance events this member recorded as acceptor
   tasks                            Task[]
   vendors                          Vendor[]
   comments                         Comment[]
@@ -230,6 +233,7 @@ model Member {
   assignedTaskItems                TaskItem[]               @relation("TaskItemAssignee")
   createdFindings                  Finding[]                @relation("FindingCreatedBy")
   subjectFindings                  Finding[]                @relation("FindingSubject")
+  createdApiKeys                   ApiKey[]                 @relation("ApiKeyCreatedBy")
   publishedPolicyVersions          PolicyVersion[]          @relation("PolicyVersionPublisher")
   performedFrameworkSyncOperations FrameworkSyncOperation[] @relation("FrameworkSyncOperationPerformer")
   approvedTasks                    Task[]                   @relation("TaskApprover")

@@ -44,6 +44,13 @@ export interface EdgeDiffCounts {
 export interface DraftDiff {
   latestVersion: { id: string; version: string } | null;
   diff: {
+    // Optional for older API responses / historical diffs that predate the
+    // framework-metadata diff (FRAME-9).
+    framework?: {
+      changed: boolean;
+      name?: { from: string; to: string };
+      description?: { from: string | null; to: string | null };
+    };
     controls: EntityDiffCounts<DiffControl>;
     requirements: EntityDiffCounts<DiffRequirement>;
     policies: EntityDiffCounts<DiffPolicy>;

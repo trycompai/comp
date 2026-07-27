@@ -412,8 +412,10 @@ describe('AiRemediationService.refineStepFromError', () => {
     expect(callArgs.prompt).toContain('CreateServiceLinkedRoleCommand');
     // ... and the neighbor step's service so the AI can use cross-step context.
     expect(callArgs.prompt).toContain('guardduty');
-    // Temperature is 0 for deterministic repair.
-    expect(callArgs.temperature).toBe(0);
+    // `temperature` must NOT be sent: claude-opus-4-8 rejects it with a 400
+    // ("temperature is deprecated for this model"), which would make the call
+    // throw and silently degrade auto-fix to manual steps.
+    expect(callArgs.temperature).toBeUndefined();
   });
 });
 
@@ -538,7 +540,7 @@ describe('AiRemediationService.generateFixPlan empty-plan retry', () => {
     generateObjectMock.mockResolvedValueOnce({
       object: basePlan({ canAutoFix: true, fixSteps: [] }),
     });
-    // Second pass (higher temperature): a real plan.
+    // Second pass (re-sample): a real plan.
     generateObjectMock.mockResolvedValueOnce({
       object: basePlan({
         canAutoFix: true,
@@ -566,9 +568,10 @@ describe('AiRemediationService.generateFixPlan empty-plan retry', () => {
     });
 
     expect(generateObjectMock).toHaveBeenCalledTimes(2);
-    // The retry runs at a non-zero temperature so it is a genuinely different sample.
-    expect(generateObjectMock.mock.calls[0][0].temperature).toBe(0);
-    expect(generateObjectMock.mock.calls[1][0].temperature).toBeGreaterThan(0);
+    // Neither call may send `temperature` — claude-opus-4-8 rejects it (400).
+    // The retry is a fresh re-sample (default sampling), not a temperature bump.
+    expect(generateObjectMock.mock.calls[0][0].temperature).toBeUndefined();
+    expect(generateObjectMock.mock.calls[1][0].temperature).toBeUndefined();
     expect(plan.fixSteps).toHaveLength(1);
     expect(plan.fixSteps[0].command).toBe('PutConfigurationRecorderCommand');
   });
@@ -622,7 +625,7 @@ describe('AiRemediationService GCP/Azure empty-plan retry', () => {
     evidence: {},
   };
 
-  it('GCP: retries once at higher temperature when the first plan is empty', async () => {
+  it('GCP: retries once (re-sample) when the first plan is empty, without sending temperature', async () => {
     generateObjectMock.mockResolvedValueOnce({
       object: { canAutoFix: true, fixSteps: [] },
     });
@@ -634,8 +637,8 @@ describe('AiRemediationService GCP/Azure empty-plan retry', () => {
     const plan = await service.generateGcpFixPlan(finding);
 
     expect(generateObjectMock).toHaveBeenCalledTimes(2);
-    expect(generateObjectMock.mock.calls[0][0].temperature).toBe(0);
-    expect(generateObjectMock.mock.calls[1][0].temperature).toBeGreaterThan(0);
+    expect(generateObjectMock.mock.calls[0][0].temperature).toBeUndefined();
+    expect(generateObjectMock.mock.calls[1][0].temperature).toBeUndefined();
     expect(plan.fixSteps).toHaveLength(1);
   });
 
@@ -650,7 +653,7 @@ describe('AiRemediationService GCP/Azure empty-plan retry', () => {
     expect(generateObjectMock).toHaveBeenCalledTimes(1);
   });
 
-  it('Azure: retries once at higher temperature when the first plan is empty', async () => {
+  it('Azure: retries once (re-sample) when the first plan is empty, without sending temperature', async () => {
     generateObjectMock.mockResolvedValueOnce({
       object: { canAutoFix: true, fixSteps: [] },
     });
@@ -662,8 +665,8 @@ describe('AiRemediationService GCP/Azure empty-plan retry', () => {
     const plan = await service.generateAzureFixPlan(finding);
 
     expect(generateObjectMock).toHaveBeenCalledTimes(2);
-    expect(generateObjectMock.mock.calls[0][0].temperature).toBe(0);
-    expect(generateObjectMock.mock.calls[1][0].temperature).toBeGreaterThan(0);
+    expect(generateObjectMock.mock.calls[0][0].temperature).toBeUndefined();
+    expect(generateObjectMock.mock.calls[1][0].temperature).toBeUndefined();
     expect(plan.fixSteps).toHaveLength(1);
   });
 
@@ -676,6 +679,82 @@ describe('AiRemediationService GCP/Azure empty-plan retry', () => {
     await service.generateAzureFixPlan(finding);
 
     expect(generateObjectMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('AiRemediationService MODEL calls omit temperature (opus-4-8 regression)', () => {
+  // Regression for the production bug where auto-fix silently showed manual
+  // "Remediation Steps" for every cloud finding. The remediation model was
+  // bumped to claude-opus-4-8, which rejects the `temperature` parameter with
+  // a 400 ("temperature is deprecated for this model"). Every generateObject
+  // call that passed `temperature` therefore threw, was caught, and fell back
+  // to fallbackPlan() → guidedOnly:true with the verbatim adapter remediation.
+  const generateObjectMock = generateObject as unknown as jest.Mock;
+
+  beforeEach(() => {
+    generateObjectMock.mockReset();
+  });
+
+  it('AWS: generateFixPlan does not send temperature to the model', async () => {
+    generateObjectMock.mockResolvedValueOnce({
+      object: basePlan({
+        fixSteps: [
+          { service: 'cloudtrail', command: 'CreateTrailCommand', params: { Name: 'compai-cloudtrail' }, purpose: 'Create trail' },
+        ],
+      }),
+    });
+
+    await new AiRemediationService().generateFixPlan({
+      title: 'No CloudTrail trails configured',
+      description: 'No CloudTrail trails exist.',
+      severity: 'critical',
+      resourceType: 'AwsCloudTrailTrail',
+      resourceId: 'account-level',
+      remediation: 'Create a multi-region trail using cloudtrail:CreateTrailCommand.',
+      findingKey: 'cloudtrail-no-trails',
+      evidence: { awsAccountId: '123456789012', service: 'CloudTrail' },
+    });
+
+    expect(generateObjectMock).toHaveBeenCalledTimes(1);
+    expect(generateObjectMock.mock.calls[0][0].temperature).toBeUndefined();
+  });
+
+  it('GCP: generateGcpFixPlan does not send temperature to the model', async () => {
+    generateObjectMock.mockResolvedValueOnce({
+      object: { canAutoFix: true, fixSteps: [{ method: 'PATCH' }] },
+    });
+
+    await new AiRemediationService().generateGcpFixPlan({
+      title: 'finding',
+      description: null,
+      severity: 'high',
+      resourceType: 'CloudResource',
+      resourceId: 'r',
+      remediation: null,
+      findingKey: 'fk',
+      evidence: {},
+    });
+
+    expect(generateObjectMock.mock.calls[0][0].temperature).toBeUndefined();
+  });
+
+  it('Azure: generateAzureFixPlan does not send temperature to the model', async () => {
+    generateObjectMock.mockResolvedValueOnce({
+      object: { canAutoFix: true, fixSteps: [{ method: 'PATCH' }] },
+    });
+
+    await new AiRemediationService().generateAzureFixPlan({
+      title: 'finding',
+      description: null,
+      severity: 'high',
+      resourceType: 'CloudResource',
+      resourceId: 'r',
+      remediation: null,
+      findingKey: 'fk',
+      evidence: {},
+    });
+
+    expect(generateObjectMock.mock.calls[0][0].temperature).toBeUndefined();
   });
 });
 

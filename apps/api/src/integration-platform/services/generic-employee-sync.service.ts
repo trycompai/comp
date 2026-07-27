@@ -1,7 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { db } from '@db';
 import type { SyncEmployee } from '@trycompai/integration-platform';
+import { matchesSyncFilterTerms } from '@trycompai/integration-platform';
 import { BUILT_IN_ROLE_PERMISSIONS } from '@trycompai/auth';
+import type { ResolvedSyncEmployeeFilter } from './sync-employee-filter';
 
 // ============================================================================
 // Types
@@ -44,6 +46,15 @@ export interface ProcessEmployeesOptions {
    * deactivating active employees when their API returns a partial member list.
    */
   isDirectorySource?: boolean;
+  /**
+   * Optional include/exclude email filter (resolved from connection variables).
+   *
+   * When omitted (or mode 'all'), every active employee is imported — the
+   * historical behavior. When provided, this mirrors the Google Workspace /
+   * JumpCloud sync filter so dynamic providers (e.g. Microsoft Entra) can
+   * limit which users are synced.
+   */
+  syncFilter?: ResolvedSyncEmployeeFilter;
 }
 
 const DEFAULT_PROTECTED_ROLES = ['owner', 'admin', 'auditor'];
@@ -126,14 +137,40 @@ export class GenericEmployeeSyncService {
       `[GenericSync] Processing ${employees.length} employees for org="${organizationId}" provider="${providerName}"`,
     );
 
-    // Separate employees by status
-    const activeEmployees = employees.filter((e) => e.status === 'active');
+    // Resolve the configured include/exclude email filter. When unset (or
+    // mode 'all') this is a no-op and every active employee is imported.
+    const filterMode = options.syncFilter?.mode ?? 'all';
+    const excludedTerms = options.syncFilter?.excludedTerms ?? [];
+    const includedTerms = options.syncFilter?.includedTerms ?? [];
+    const passesImportFilter = (email: string): boolean => {
+      if (filterMode === 'exclude') {
+        return (
+          excludedTerms.length === 0 ||
+          !matchesSyncFilterTerms(email, excludedTerms)
+        );
+      }
+      if (filterMode === 'include') {
+        return matchesSyncFilterTerms(email, includedTerms);
+      }
+      return true;
+    };
+
+    // Separate employees by status. Phase 1 imports only the active employees
+    // that pass the filter; Phase 2 tracks presence against both the filtered
+    // set and the full provider list (see the deactivation note below).
+    const activeEmployeesAll = employees.filter((e) => e.status === 'active');
+    const activeEmployees = activeEmployeesAll.filter((e) =>
+      passesImportFilter(e.email.toLowerCase()),
+    );
     const inactiveEmails = new Set(
       employees
         .filter((e) => e.status !== 'active')
         .map((e) => e.email.toLowerCase()),
     );
-    const activeEmails = new Set(
+    const allActiveEmails = new Set(
+      activeEmployeesAll.map((e) => e.email.toLowerCase()),
+    );
+    const filteredActiveEmails = new Set(
       activeEmployees.map((e) => e.email.toLowerCase()),
     );
 
@@ -307,6 +344,14 @@ export class GenericEmployeeSyncService {
       },
     });
 
+    // In 'include' mode, members who still exist in the provider must NOT be
+    // deactivated just for being outside the include subset — check presence
+    // against the full provider list (mirrors the Google Workspace path). In
+    // 'exclude'/'all' mode, presence is the filtered set, so excluded users and
+    // genuinely-removed users are both deactivated.
+    const presenceActiveEmails =
+      filterMode === 'include' ? allActiveEmails : filteredActiveEmails;
+
     for (const member of allOrgMembers) {
       const memberEmail = member.user.email.toLowerCase();
       const memberDomain = memberEmail.split('@')[1];
@@ -326,7 +371,7 @@ export class GenericEmployeeSyncService {
 
       // If member is not in active set AND not already accounted for, deactivate
       const isSuspended = inactiveEmails.has(memberEmail);
-      const isRemoved = !activeEmails.has(memberEmail) && !isSuspended;
+      const isRemoved = !presenceActiveEmails.has(memberEmail) && !isSuspended;
 
       if (isSuspended || isRemoved) {
         try {

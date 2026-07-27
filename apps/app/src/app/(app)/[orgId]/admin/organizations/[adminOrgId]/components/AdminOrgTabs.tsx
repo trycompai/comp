@@ -55,6 +55,7 @@ export interface AdminOrgDetail {
   onboardingCompleted: boolean;
   website: string | null;
   backgroundCheckStepEnabled: boolean;
+  isInternal: boolean;
   members: OrgMember[];
 }
 

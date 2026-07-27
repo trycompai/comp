@@ -15,6 +15,8 @@ interface RelationalCellProps {
   items: RelationalItem[];
   rowId: string;
   isNewRow: boolean;
+  /** Let uncommitted rows pick links locally; they are persisted on commit. */
+  allowSelectOnNewRows?: boolean;
   getAllItems: () => Promise<RelationalItem[]>;
   onLink: (parentId: string, itemId: string) => Promise<void>;
   onUnlink: (parentId: string, itemId: string) => Promise<void>;
@@ -27,6 +29,7 @@ export function RelationalCell({
   items,
   rowId,
   isNewRow,
+  allowSelectOnNewRows = false,
   getAllItems,
   onLink,
   onUnlink,
@@ -39,6 +42,7 @@ export function RelationalCell({
   const [search, setSearch] = useState('');
   const [allItems, setAllItems] = useState<RelationalItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [dropUp, setDropUp] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Close when clicking outside
@@ -115,7 +119,13 @@ export function RelationalCell({
     return (
       <div
         className="hover:bg-muted/50 flex h-full cursor-pointer items-center px-2 py-1.5"
-        onClick={() => setIsExpanded(true)}
+        onClick={(e) => {
+          // Flip the panel upward when there isn't room below the cell, so it
+          // isn't clipped by the table's overflow-auto scroll container.
+          const rect = e.currentTarget.getBoundingClientRect();
+          setDropUp(window.innerHeight - rect.bottom < 340);
+          setIsExpanded(true);
+        }}
       >
         {items.length === 0 ? (
           <span className="text-muted-foreground text-sm italic">None</span>
@@ -131,7 +141,9 @@ export function RelationalCell({
   // Expanded view - show all items with controls
   return (
     <div
-      className="bg-popover border-border absolute left-0 top-0 z-50 min-w-[280px] rounded-xs border shadow-lg"
+      className={`bg-popover border-border absolute left-0 ${
+        dropUp ? 'bottom-0' : 'top-0'
+      } z-50 min-w-[280px] rounded-xs border shadow-lg`}
       ref={containerRef}
     >
       {/* Header */}
@@ -183,7 +195,7 @@ export function RelationalCell({
       </div>
 
       {/* Add section */}
-      {!isNewRow && (
+      {(!isNewRow || allowSelectOnNewRows) && (
         <div className="border-border border-t p-2">
           {isSearching ? (
             <>
@@ -235,7 +247,7 @@ export function RelationalCell({
         </div>
       )}
 
-      {isNewRow && (
+      {isNewRow && !allowSelectOnNewRows && (
         <div className="border-border text-muted-foreground border-t p-2 text-center text-xs">
           Save row first to link items
         </div>

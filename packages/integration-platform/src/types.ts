@@ -33,6 +33,14 @@ export const OAuthConfigSchema = z.object({
    */
   supportsRefreshToken: z.boolean().default(true),
   /**
+   * App-installation URL for providers (e.g. GitHub Apps) where user
+   * authorization and app installation are separate steps. When set, the OAuth
+   * callback can redirect a user who authorized but has NOT installed the app to
+   * this URL to complete installation (choosing account/repositories) before the
+   * connection is finalized.
+   */
+  installUrl: z.string().url().optional(),
+  /**
    * Separate URL for token refresh (if different from tokenUrl).
    * Most providers use the same tokenUrl for both.
    */
@@ -285,6 +293,14 @@ export interface CheckContext {
 
   /** Organization ID */
   organizationId: string;
+
+  /**
+   * The id of the check currently running (e.g. "aws-s3-public-access").
+   * Set by the runner before `run()` is invoked. AWS `emitOutcomes` uses it
+   * to stamp a stable `findingKey` on each outcome so findings can be marked
+   * as exceptions and matched across scans.
+   */
+  checkId?: string;
 
   /** Connection metadata (e.g., OAuth team/user info from token response) */
   metadata?: Record<string, unknown>;
@@ -884,6 +900,14 @@ export type RunJobType = 'full_sync' | 'delta_sync' | 'webhook' | 'manual';
 export interface IntegrationRegistry {
   /** Get manifest by ID */
   getManifest(id: string): IntegrationManifest | undefined;
+
+  /**
+   * True when `id` is a code-based (bundled) manifest — one that can never be
+   * overridden by a dynamic (DB-loaded) manifest of the same id. Callers use this
+   * to classify a provider's checks as static even when a dynamic integration of
+   * the same slug also exists (the code manifest always wins).
+   */
+  isCodeManifest(id: string): boolean;
 
   /** Get all manifests */
   getAllManifests(): IntegrationManifest[];

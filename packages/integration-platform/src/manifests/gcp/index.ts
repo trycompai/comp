@@ -1,8 +1,13 @@
 import type { IntegrationManifest } from '../../types';
+import { environmentAliasesVariable } from '../environment-aliases';
 import {
+  cloudMonitoringAlertingCheck,
   cloudSqlBackupsCheck,
+  cloudSqlEncryptionCheck,
   cloudSqlSslCheck,
+  environmentSeparationCheck,
   iamPrimitiveRolesCheck,
+  storageEncryptionCheck,
   storagePublicAccessCheck,
   vpcOpenFirewallsCheck,
 } from './checks';
@@ -34,7 +39,10 @@ export const gcpManifest: IntegrationManifest = {
       supportsRefreshToken: true,
       authorizationParams: {
         access_type: 'offline',
-        prompt: 'consent',
+        // select_account forces Google's account chooser so a user can switch
+        // from a wrong account when connecting/reconnecting; consent keeps the
+        // consent screen so a refresh token is always issued.
+        prompt: 'select_account consent',
       },
       setupInstructions: `## Platform Admin: Enable GCP OAuth
 
@@ -151,6 +159,7 @@ This is industry standard - all GCP security monitoring tools use the same scope
         }
       },
     },
+    environmentAliasesVariable,
   ],
 
   checks: [
@@ -159,5 +168,9 @@ This is industry standard - all GCP security monitoring tools use the same scope
     vpcOpenFirewallsCheck,
     cloudSqlSslCheck,
     cloudSqlBackupsCheck,
+    cloudMonitoringAlertingCheck,
+    storageEncryptionCheck,
+    cloudSqlEncryptionCheck,
+    environmentSeparationCheck,
   ],
 };

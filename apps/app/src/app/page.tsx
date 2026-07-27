@@ -1,4 +1,5 @@
 import { serverApi } from '@/lib/api-server';
+import { resolveNoActiveOrgRedirect } from '@/lib/no-active-org-redirect';
 import { getDefaultRoute, mergePermissions, resolveBuiltInPermissions } from '@/lib/permissions';
 import { auth } from '@/utils/auth';
 import { db } from '@db/server';
@@ -15,6 +16,9 @@ interface OrgInfo {
 interface AuthMeResponse {
   organizations: OrgInfo[];
   pendingInvitation: { id: string } | null;
+  // True when the user has memberships that are all deactivated/removed
+  // (i.e. they were offboarded), used to avoid the onboarding loop (CS-569).
+  hasInactiveMembership?: boolean;
 }
 
 export default async function RootPage({
@@ -53,13 +57,20 @@ export default async function RootPage({
 
   const meRes = await serverApi.get<AuthMeResponse>('/v1/auth/me');
   const memberships = meRes.data?.organizations ?? [];
-  const pendingInvitation = meRes.data?.pendingInvitation;
 
   if (memberships.length === 0) {
-    if (pendingInvitation) {
-      return redirect(await buildUrlWithParams(`/invite/${pendingInvitation.id}`));
+    // An explicit ?inviteCode= (the user is accepting a specific invitation)
+    // always wins over the offboard guard: hand off to /setup, which preserves
+    // the code and passes it through to /invite downstream. Mirrors the /setup
+    // route precedence so an offboarded user can still accept a valid invite.
+    const inviteCode = (await searchParams)?.inviteCode;
+    if (inviteCode) {
+      return redirect(await buildUrlWithParams('/setup'));
     }
-    return redirect(await buildUrlWithParams('/setup'));
+    // Otherwise route via the shared decision (pending invite > offboarded >
+    // new user). `null` = genuinely new user → onboarding.
+    const target = resolveNoActiveOrgRedirect(meRes.data);
+    return redirect(await buildUrlWithParams(target ?? '/setup'));
   }
 
   // Always use the org the user last switched to (stored in session)

@@ -3,7 +3,9 @@
  */
 
 import { CompAiCore } from "../core.js";
+import { encodeJSON } from "../lib/encodings.js";
 import { compactMap } from "../lib/primitives.js";
+import { safeParse } from "../lib/schemas.js";
 import { RequestOptions } from "../lib/sdks.js";
 import { extractSecurity, resolveGlobalSecurity } from "../lib/security.js";
 import { pathToFunc } from "../lib/url.js";
@@ -16,6 +18,10 @@ import {
   UnexpectedClientError,
 } from "../models/errors/httpclienterrors.js";
 import { SDKValidationError } from "../models/errors/sdkvalidationerror.js";
+import {
+  TrustPortalControllerCreateCustomLinkV1Request,
+  TrustPortalControllerCreateCustomLinkV1Request$zodSchema,
+} from "../models/trustportalcontrollercreatecustomlinkv1op.js";
 import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
 
@@ -29,6 +35,7 @@ import { Result } from "../types/fp.js";
  */
 export function trustPortalTrustPortalControllerCreateCustomLinkV1(
   client$: CompAiCore,
+  request: TrustPortalControllerCreateCustomLinkV1Request,
   options?: RequestOptions,
 ): APIPromise<
   Result<
@@ -44,12 +51,14 @@ export function trustPortalTrustPortalControllerCreateCustomLinkV1(
 > {
   return new APIPromise($do(
     client$,
+    request,
     options,
   ));
 }
 
 async function $do(
   client$: CompAiCore,
+  request: TrustPortalControllerCreateCustomLinkV1Request,
   options?: RequestOptions,
 ): Promise<
   [
@@ -66,9 +75,21 @@ async function $do(
     APICall,
   ]
 > {
+  const parsed$ = safeParse(
+    request,
+    (value$) =>
+      TrustPortalControllerCreateCustomLinkV1Request$zodSchema.parse(value$),
+    "Input validation failed",
+  );
+  if (!parsed$.ok) {
+    return [parsed$, { status: "invalid" }];
+  }
+  const payload$ = parsed$.value;
+  const body$ = encodeJSON("body", payload$, { explode: true });
   const path$ = pathToFunc("/v1/trust-portal/custom-links")();
 
   const headers$ = new Headers(compactMap({
+    "Content-Type": "application/json",
     Accept: "*/*",
   }));
   const securityInput = await extractSecurity(client$._options.security);
@@ -99,6 +120,7 @@ async function $do(
     baseURL: options?.serverURL,
     path: path$,
     headers: headers$,
+    body: body$,
     userAgent: client$._options.userAgent,
     timeoutMs: options?.timeoutMs || client$._options.timeoutMs
       || 120000,

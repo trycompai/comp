@@ -66,7 +66,29 @@ jest.mock('@/tasks/evidence-export/evidence-attachment-streamer', () => ({
   createFilenameTracker: jest.fn(),
 }));
 
-import { streamArchiveToS3 } from './export-organization-evidence';
+import {
+  exportOrganizationEvidenceTask,
+  streamArchiveToS3,
+} from './export-organization-evidence';
+
+describe('exportOrganizationEvidenceTask config', () => {
+  // schemaTask is mocked to return its config, so the task IS its config object.
+  const config = exportOrganizationEvidenceTask as unknown as {
+    id: string;
+    maxDuration: number;
+  };
+
+  it('allows large orgs at least an hour before Trigger.dev kills the run', () => {
+    // Regression: orgs with high automation volume + large outputs exceeded the
+    // old 30-minute (60 * 30 = 1800s) budget, so Trigger.dev killed the run
+    // (retry maxAttempts: 0), leaving it in a non-COMPLETED terminal state that
+    // the browser surfaces as a failed export with no download link. The task
+    // must be allowed at least an hour to finish streaming the ZIP to S3.
+    expect(config.maxDuration).toBeGreaterThanOrEqual(60 * 60);
+    // maxDuration is in SECONDS — guard against the ms form (which would be days).
+    expect(config.maxDuration).toBeLessThan(24 * 60 * 60);
+  });
+});
 
 describe('streamArchiveToS3', () => {
   const s3Client = {} as never;

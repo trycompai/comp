@@ -1,5 +1,10 @@
 import '../config/load-env';
-import { MagicLinkEmail, OTPVerificationEmail } from '@trycompai/email';
+import {
+  ChangeEmailConfirmationEmail,
+  MagicLinkEmail,
+  OTPVerificationEmail,
+  VerifyEmail,
+} from '@trycompai/email';
 import { triggerEmail } from '../email/trigger-email';
 import { InviteEmail } from '../email/templates/invite-member';
 import { db } from '@db';
@@ -18,6 +23,10 @@ import { ac, allRoles } from '@trycompai/auth';
 import { createAuthMiddleware } from 'better-auth/api';
 import { Redis } from '@upstash/redis';
 import type { AccessControl } from 'better-auth/plugins/access';
+import {
+  resolveMicrosoftEmail,
+  type MicrosoftEmailClaims,
+} from './microsoft-email';
 import {
   getBetterAuthTrustedOrigins,
   isStaticTrustedOrigin,
@@ -151,6 +160,13 @@ if (
     clientSecret: process.env.AUTH_MICROSOFT_CLIENT_SECRET,
     tenantId: process.env.AUTH_MICROSOFT_TENANT_ID || 'common',
     prompt: 'select_account',
+    // Microsoft Entra often omits the `email` claim for work/school accounts,
+    // which makes better-auth abort sign-in with `email_not_found`. Fall back to
+    // the username/UPN claims so these users can sign in. Accounts that DO return
+    // an `email` claim are unaffected. See ./microsoft-email.ts.
+    mapProfileToUser: (profile: MicrosoftEmailClaims) => ({
+      email: resolveMicrosoftEmail(profile),
+    }),
   };
 }
 
@@ -248,7 +264,21 @@ export const auth = betterAuth({
   baseURL: process.env.BASE_URL || 'http://localhost:3333',
   trustedOrigins: getBetterAuthTrustedOrigins(),
   emailAndPassword: {
-    enabled: true,
+    // Not used — apps sign in via magic link, email OTP, and OAuth.
+    enabled: false,
+  },
+  emailVerification: {
+    sendOnSignUp: true,
+    sendVerificationEmail: async ({ user, url }) => {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Auth] Sending verification email to:', user.email);
+      }
+      await triggerEmail({
+        to: user.email,
+        subject: 'Verify your email for Comp AI',
+        react: VerifyEmail({ email: user.email, url }),
+      });
+    },
   },
   advanced: {
     database: {
@@ -510,6 +540,23 @@ export const auth = betterAuth({
   socialProviders,
   user: {
     modelName: 'User',
+    changeEmail: {
+      enabled: true,
+      // Double opt-in: this link goes to the CURRENT address; confirming it
+      // makes better-auth send a verification link to the NEW address (via
+      // emailVerification.sendVerificationEmail), which applies the change.
+      sendChangeEmailConfirmation: async ({ user, newEmail, url }) => {
+        await triggerEmail({
+          to: user.email,
+          subject: 'Confirm your email change for Comp AI',
+          react: ChangeEmailConfirmationEmail({
+            currentEmail: user.email,
+            newEmail,
+            url,
+          }),
+        });
+      },
+    },
   },
   organization: {
     modelName: 'Organization',

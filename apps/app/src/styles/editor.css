@@ -212,6 +212,11 @@ pre .hljs-strong {
 /* Links */
 .ProseMirror a {
   @apply text-primary underline underline-offset-2;
+  /* Break long, space-less URLs so they wrap instead of overflowing the
+     container horizontally. `anywhere` (not `break-word`) is required so the
+     break opportunities shrink min-content, letting flex `min-w:auto`
+     ancestors (e.g. the comment column) collapse rather than overflow. */
+  overflow-wrap: anywhere;
 }
 
 /* Horizontal rule */

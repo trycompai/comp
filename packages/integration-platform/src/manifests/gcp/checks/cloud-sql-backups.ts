@@ -1,6 +1,10 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
-import { gcpListItems, resolveGcpProjectIds } from './shared';
+import {
+  remediationForReadFailure,
+  toHttpReadFailure,
+} from '../../http-read-failure';
+import { gcpListItems, resolveGcpProjectIds, isGcpApiDisabled } from './shared';
 
 interface SqlInstance {
   name: string;
@@ -72,17 +76,26 @@ export const cloudSqlBackupsCheck: IntegrationCheck = {
           }
         }
       } catch (err) {
-        // Unverified project → emit a finding, not a warn-and-skip, so an
-        // all-projects-failed run doesn't leave the task stale (silent pass).
+        // The service's API simply isn't enabled on this project (403
+        // SERVICE_DISABLED) — nothing of this type exists here to evaluate,
+        // so skip it like a zero-resource project instead of emitting a
+        // false "grant permission" finding.
+        if (isGcpApiDisabled(err)) {
+          ctx.log(`GCP Cloud SQL: API not enabled in project "${projectId}" — no Cloud SQL instances to evaluate; skipping`);
+          continue;
+        }
+        const failure = toHttpReadFailure(err);
         ctx.fail({
           title: `Could not verify Cloud SQL backups: ${projectId}`,
-          description: `Cloud SQL instances for project "${projectId}" could not be listed, so backup configuration is unverified.`,
+          description: `Cloud SQL instances for project "${projectId}" could not be listed (${failure.error}), so backup configuration is unverified.`,
           resourceType: 'gcp-project',
           resourceId: projectId,
           severity: 'medium',
-          remediation:
+          remediation: remediationForReadFailure(
+            failure,
             'Grant cloudsql.instances.list (e.g. roles/cloudsql.viewer) to the connection for this project, then re-run.',
-          evidence: { projectId, error: err instanceof Error ? err.message : String(err) },
+          ),
+          evidence: { projectId, error: failure.error },
         });
         continue;
       }

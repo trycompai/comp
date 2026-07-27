@@ -17,6 +17,14 @@ import { meetingFields } from '@trycompai/company';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Alert,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
   Button,
   Field,
   FieldError,
@@ -32,7 +40,6 @@ import {
   Text,
   Textarea,
 } from '@trycompai/design-system';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -64,6 +71,46 @@ function createEmptyMatrixRow(columns: ReadonlyArray<MatrixColumnDefinition>): M
   return Object.fromEntries(columns.map((column) => [column.key, '']));
 }
 
+// A single matrix cell: a dropdown when the column declares `type: 'select'`,
+// otherwise a free-text input.
+function MatrixCellControl({
+  id,
+  column,
+  value,
+  onChange,
+}: {
+  id: string;
+  column: MatrixColumnDefinition;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  if (column.type === 'select' && column.options) {
+    return (
+      <Select value={value} onValueChange={(next) => onChange(next ?? '')}>
+        <SelectTrigger id={id}>
+          <SelectValue placeholder={column.placeholder ?? 'Select...'} />
+        </SelectTrigger>
+        <SelectContent>
+          {column.options.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    );
+  }
+
+  return (
+    <Input
+      id={id}
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      placeholder={column.placeholder}
+    />
+  );
+}
+
 export function CompanySubmissionWizard({
   organizationId,
   formType,
@@ -85,6 +132,7 @@ export function CompanySubmissionWizard({
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [analysisSkipped, setAnalysisSkipped] = useState(false);
+  const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false);
 
   const activeFormDefinition = useMemo(() => {
     if (!isMeeting) return evidenceFormDefinitions[formType];
@@ -150,7 +198,11 @@ export function CompanySubmissionWizard({
     }
 
     for (const matrixField of matrixFields) {
-      defaults[matrixField.key] = [createEmptyMatrixRow(matrixField.columns)];
+      const seedRows = matrixField.defaultRows;
+      defaults[matrixField.key] =
+        seedRows && seedRows.length > 0
+          ? seedRows.map((row) => ({ ...createEmptyMatrixRow(matrixField.columns), ...row }))
+          : [createEmptyMatrixRow(matrixField.columns)];
     }
 
     return defaults;
@@ -163,7 +215,7 @@ export function CompanySubmissionWizard({
     setValue,
     trigger,
     watch,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<Record<string, unknown>>({
     resolver: zodResolver(formSchema as never),
     mode: 'onChange',
@@ -171,6 +223,23 @@ export function CompanySubmissionWizard({
   });
 
   const values = watch();
+
+  const cancelDestination = `/${organizationId}/documents/${formType}`;
+
+  const handleCancel = () => {
+    // Pressing Cancel with unsaved input would silently discard the entire
+    // multi-step submission, so confirm before navigating away.
+    if (isDirty) {
+      setIsCancelConfirmOpen(true);
+      return;
+    }
+    router.push(cancelDestination);
+  };
+
+  const handleDiscardConfirmed = () => {
+    setIsCancelConfirmOpen(false);
+    router.push(cancelDestination);
+  };
 
   const handleFileUpload = async (fieldKey: string, file: File) => {
     setUploadingField(fieldKey);
@@ -783,18 +852,13 @@ export function CompanySubmissionWizard({
                                       {column.description}
                                     </Text>
                                   )}
-                                  <Input
+                                  <MatrixCellControl
                                     id={`${field.key}-${rowIndex}-${column.key}`}
+                                    column={column}
                                     value={row[column.key] ?? ''}
-                                    onChange={(event) =>
-                                      updateMatrixCell(
-                                        field,
-                                        rowIndex,
-                                        column.key,
-                                        event.target.value,
-                                      )
+                                    onChange={(value) =>
+                                      updateMatrixCell(field, rowIndex, column.key, value)
                                     }
-                                    placeholder={column.placeholder}
                                   />
                                 </Field>
                               ))}
@@ -948,13 +1012,13 @@ export function CompanySubmissionWizard({
                                   {column.description}
                                 </Text>
                               )}
-                              <Input
+                              <MatrixCellControl
                                 id={`${field.key}-${rowIndex}-${column.key}`}
+                                column={column}
                                 value={row[column.key] ?? ''}
-                                onChange={(event) =>
-                                  updateMatrixCell(field, rowIndex, column.key, event.target.value)
+                                onChange={(value) =>
+                                  updateMatrixCell(field, rowIndex, column.key, value)
                                 }
-                                placeholder={column.placeholder}
                               />
                             </Field>
                           ))}
@@ -1107,9 +1171,9 @@ export function CompanySubmissionWizard({
         )}
 
         <div className="flex items-center justify-between">
-          <Link href={`/${organizationId}/documents/${formType}`}>
-            <Button variant="ghost">Cancel</Button>
-          </Link>
+          <Button type="button" variant="ghost" onClick={handleCancel}>
+            Cancel
+          </Button>
           <div className="flex items-center gap-2">
             {step > 1 && (
               <Button type="button" variant="secondary" onClick={() => setStep((step - 1) as Step)}>
@@ -1166,6 +1230,22 @@ export function CompanySubmissionWizard({
           </div>
         </div>
       </form>
+
+      <AlertDialog open={isCancelConfirmOpen} onOpenChange={setIsCancelConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard submission?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have unsaved changes. Leaving now discards everything you have entered on
+              every step of this submission, and it cannot be recovered.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep editing</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDiscardConfirmed}>Discard</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Section>
   );
 }

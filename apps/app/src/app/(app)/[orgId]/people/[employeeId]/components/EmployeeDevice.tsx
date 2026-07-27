@@ -49,6 +49,27 @@ function staleTooltipCopy(daysSinceLastCheckIn: number | null): string {
 }
 
 function DeviceComplianceBadge({ device }: { device: DeviceWithChecks }) {
+  if (device.source === 'integration') {
+    const provider = device.integrationProvider?.name ?? 'an integration';
+    return (
+      <div className="flex items-center gap-1">
+        <Badge variant="secondary">Not tracked</Badge>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger
+              aria-label="Why is compliance not tracked?"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <Information size={14} />
+            </TooltipTrigger>
+            <TooltipContent>
+              {`This device was imported from ${provider}. CompAI doesn't collect compliance checks for imported devices — install the CompAI agent to track its security posture.`}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+    );
+  }
   if (device.complianceStatus === 'stale') {
     return (
       <div className="flex items-center gap-1">
@@ -115,8 +136,13 @@ export function EmployeeDevice({
             <CardContent>
               <div className="space-y-2">
                 {CHECK_FIELDS.map(({ key, dbKey, label }) => {
+                  const isIntegration = memberDevice.source === 'integration';
                   const isFleetUnsupported =
                     memberDevice.source === 'fleet' && key !== 'diskEncryptionEnabled';
+                  const isUntracked = isIntegration || isFleetUnsupported;
+                  const untrackedCopy = isIntegration
+                    ? 'Not collected for imported devices'
+                    : 'Not tracked by Fleet';
                   const isStale = memberDevice.complianceStatus === 'stale';
                   const passed = memberDevice[key];
                   const details = memberDevice.checkDetails?.[dbKey];
@@ -124,19 +150,19 @@ export function EmployeeDevice({
                     <div key={key} className="flex items-center justify-between rounded-lg border p-3">
                       <div>
                         <span className="text-sm font-medium">{label}</span>
-                        {!isFleetUnsupported && !isStale && details?.message && (
+                        {!isUntracked && !isStale && details?.message && (
                           <p className="text-muted-foreground text-xs">{details.message}</p>
                         )}
-                        {isFleetUnsupported && (
-                          <p className="text-muted-foreground text-xs">Not tracked by Fleet</p>
+                        {isUntracked && (
+                          <p className="text-muted-foreground text-xs">{untrackedCopy}</p>
                         )}
-                        {!isFleetUnsupported && !isStale && details?.exception && (
+                        {!isUntracked && !isStale && details?.exception && (
                           <p className="text-amber-600 dark:text-amber-400 text-xs mt-0.5">
                             {details.exception}
                           </p>
                         )}
                       </div>
-                      {isFleetUnsupported ? (
+                      {isUntracked ? (
                         <Badge variant="outline">N/A</Badge>
                       ) : isStale ? (
                         <Badge variant="secondary" title={`${label} - unknown (device is stale)`}>
@@ -153,7 +179,8 @@ export function EmployeeDevice({
               </div>
               {memberDevice.lastCheckIn && (
                 <p className="text-muted-foreground text-xs mt-3">
-                  Last check-in: {new Date(memberDevice.lastCheckIn).toLocaleString()}
+                  {memberDevice.source === 'integration' ? 'Last synced' : 'Last check-in'}:{' '}
+                  {new Date(memberDevice.lastCheckIn).toLocaleString()}
                 </p>
               )}
             </CardContent>

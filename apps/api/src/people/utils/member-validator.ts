@@ -37,7 +37,12 @@ export class MemberValidator {
   }
 
   /**
-   * Validates that a member exists in an organization
+   * Validates that a member exists in an organization.
+   *
+   * Deactivated members are intentionally included. This check guards the
+   * member-update path, and reactivating a deactivated member (the status
+   * dropdown sends PATCH { isActive: true }) must be able to find them.
+   * Organization scoping is preserved.
    */
   static async validateMemberExists(
     memberId: string,
@@ -47,7 +52,6 @@ export class MemberValidator {
       where: {
         id: memberId,
         organizationId,
-        deactivated: false,
       },
       select: { id: true, userId: true, role: true },
     });

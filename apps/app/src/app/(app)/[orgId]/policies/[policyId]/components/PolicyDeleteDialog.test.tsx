@@ -95,6 +95,22 @@ describe('PolicyDeleteDialog', () => {
       ).toBeInTheDocument();
     });
 
+    it('warns that the entire policy and all versions are deleted, not just the current version', () => {
+      render(
+        <PolicyDeleteDialog
+          isOpen={true}
+          onClose={onClose}
+          policy={basePolicy}
+        />,
+      );
+      expect(
+        screen.getByText(/all of its versions/i),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText(/not just the version you are currently viewing/i),
+      ).toBeInTheDocument();
+    });
+
     it('renders Delete button enabled for admin', () => {
       render(
         <PolicyDeleteDialog

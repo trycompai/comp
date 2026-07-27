@@ -35,44 +35,55 @@ export class AuthController {
       return { user: null, organizations: [], pendingInvitation: null };
     }
 
-    const [user, memberships, pendingInvitation] = await Promise.all([
-      db.user.findUnique({
-        where: { id: userId },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          image: true,
-          role: true,
-        },
-      }),
-      db.member.findMany({
-        where: { userId, isActive: true, deactivated: false },
-        select: {
-          id: true,
-          role: true,
-          organizationId: true,
-          organization: {
-            select: {
-              id: true,
-              name: true,
-              logo: true,
-              onboardingCompleted: true,
-              hasAccess: true,
-              createdAt: true,
+    const [user, memberships, pendingInvitation, inactiveMembershipCount] =
+      await Promise.all([
+        db.user.findUnique({
+          where: { id: userId },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            image: true,
+            role: true,
+          },
+        }),
+        db.member.findMany({
+          where: { userId, isActive: true, deactivated: false },
+          select: {
+            id: true,
+            role: true,
+            organizationId: true,
+            organization: {
+              select: {
+                id: true,
+                name: true,
+                logo: true,
+                onboardingCompleted: true,
+                hasAccess: true,
+                createdAt: true,
+              },
             },
           },
-        },
-        orderBy: { createdAt: 'desc' },
-      }),
-      db.invitation.findFirst({
-        where: {
-          email: authContext.userEmail ?? '',
-          status: 'pending',
-        },
-        select: { id: true },
-      }),
-    ]);
+          orderBy: { createdAt: 'desc' },
+        }),
+        db.invitation.findFirst({
+          where: {
+            email: authContext.userEmail ?? '',
+            status: 'pending',
+          },
+          select: { id: true },
+        }),
+        // Count memberships that exist but are no longer active (deactivated
+        // or removed). Lets the app tell a genuinely new user (no memberships
+        // at all → onboarding) apart from an offboarded user whose access was
+        // revoked (→ "access removed" instead of a spurious new org). CS-569.
+        db.member.count({
+          where: {
+            userId,
+            OR: [{ deactivated: true }, { isActive: false }],
+          },
+        }),
+      ]);
 
     return {
       user,
@@ -82,6 +93,7 @@ export class AuthController {
         memberId: m.id,
       })),
       pendingInvitation,
+      hasInactiveMembership: inactiveMembershipCount > 0,
     };
   }
 

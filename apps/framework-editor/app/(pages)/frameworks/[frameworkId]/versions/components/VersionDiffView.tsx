@@ -32,6 +32,7 @@ export function hasAnyChanges(diff: DraftDiff['diff']): boolean {
   } = diff;
   const docTypeEdges = controlDocumentTypeEdges ?? { added: [], removed: [] };
   return (
+    (diff.framework?.changed ?? false) ||
     controls.added.length > 0 ||
     controls.removed.length > 0 ||
     controls.updated.length > 0 ||
@@ -58,6 +59,7 @@ export function hasAnyChanges(diff: DraftDiff['diff']): boolean {
 export function VersionDiffView({ diff, linkChanges }: VersionDiffViewProps) {
   return (
     <>
+      <FrameworkMetaSection framework={diff.framework} />
       <DiffDetailSection
         title="Requirements"
         added={diff.requirements.added}
@@ -169,6 +171,37 @@ export function VersionDiffView({ diff, linkChanges }: VersionDiffViewProps) {
         fallbackRemoved={diff.controlDocumentTypeEdges?.removed.length ?? 0}
       />
     </>
+  );
+}
+
+function FrameworkMetaSection({
+  framework,
+}: {
+  framework: DraftDiff['diff']['framework'];
+}) {
+  if (!framework?.changed) return null;
+  return (
+    <div className="border-b last:border-b-0 px-4 py-3">
+      <p className="text-muted-foreground mb-2 text-xs font-semibold uppercase tracking-wide">
+        Framework
+      </p>
+      <div className="flex flex-col gap-1">
+        {framework.name && (
+          <DiffRow kind="modified">
+            <span>
+              Name:{' '}
+              <span className="text-muted-foreground line-through">{framework.name.from}</span>{' '}
+              → <span className="font-medium">{framework.name.to}</span>
+            </span>
+          </DiffRow>
+        )}
+        {framework.description && (
+          <DiffRow kind="modified">
+            <span>Description updated</span>
+          </DiffRow>
+        )}
+      </div>
+    </div>
   );
 }
 

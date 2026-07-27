@@ -1,11 +1,12 @@
 import type { CheckContext } from '../../../types';
+import { remediationForReadFailure, toHttpReadFailure } from '../../http-read-failure';
 
 /**
  * Resolve which GCP projects a check should evaluate: the user-selected
  * `project_ids` variable if present, otherwise a bounded best-effort
- * detection of active projects. Returns [] when none can be resolved — the
- * check should then no-op (emit neither pass nor fail) rather than produce a
- * false pass.
+ * detection of active projects. Returns [] when none can be resolved; a
+ * discovery FAILURE emits an explicit "could not verify" finding first, so
+ * the mapped task never goes silently stale.
  */
 export async function resolveGcpProjectIds(ctx: CheckContext): Promise<string[]> {
   const selected = ctx.variables.project_ids;
@@ -54,8 +55,20 @@ export async function resolveGcpProjectIds(ctx: CheckContext): Promise<string[]>
     }
     return projectIds;
   } catch (err) {
-    ctx.warn('GCP project auto-discovery failed; checks will be skipped', {
-      error: err instanceof Error ? err.message : String(err),
+    // Surface the scope failure as an explicit finding — a silent [] would
+    // leave every mapped task stale with no signal anything went wrong.
+    const failure = toHttpReadFailure(err);
+    ctx.fail({
+      title: 'Could not verify GCP project scope',
+      description: `GCP projects could not be listed (${failure.error}), so nothing could be scanned.`,
+      resourceType: 'gcp-project',
+      resourceId: 'unknown',
+      severity: 'medium',
+      remediation: remediationForReadFailure(
+        failure,
+        'Grant resourcemanager.projects.get to the connection (or select projects in the integration settings), then re-run the check.',
+      ),
+      evidence: { readError: failure.error },
     });
     return [];
   }
@@ -113,4 +126,26 @@ export function portsCover(
     }
     return Number(spec) === target;
   });
+}
+
+/**
+ * True when a GCP API call failed only because the service's API is not
+ * enabled on the project (HTTP 403 with reason SERVICE_DISABLED, e.g. "Cloud
+ * SQL Admin API has not been used in project X ... or it is disabled").
+ *
+ * This is NOT a permission problem: a project that hasn't enabled the API has
+ * no resources of that type to evaluate, so the per-project check should skip
+ * it (like a project with zero instances) rather than emit a false "could not
+ * verify — grant <permission>" finding. A genuine PERMISSION_DENIED (API
+ * enabled, role missing) does NOT match and still surfaces as a finding.
+ */
+export function isGcpApiDisabled(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+  // Match only Google's specific SERVICE_DISABLED signature, not any mention of
+  // "API"/"disabled" — over-broad matching could hide a genuine permission gap.
+  return (
+    /SERVICE_DISABLED/i.test(message) ||
+    /has not been used in project .* before or it is disabled/i.test(message) ||
+    /Enable it by visiting/i.test(message)
+  );
 }

@@ -1,5 +1,6 @@
 'use client';
 
+import { confirmDiscardUnsavedChanges } from '@/app/lib/unsaved-changes';
 import { Tabs, TabsList, TabsTrigger } from '@trycompai/ui';
 import Link from 'next/link';
 import { useParams, useSelectedLayoutSegment } from 'next/navigation';
@@ -14,6 +15,11 @@ export function FrameworkTabs() {
     { name: 'Policies', href: `/frameworks/${frameworkId}/policies`, segment: 'policies' },
     { name: 'Tasks', href: `/frameworks/${frameworkId}/tasks`, segment: 'tasks' },
     { name: 'Documents', href: `/frameworks/${frameworkId}/documents`, segment: 'documents' },
+    {
+      name: 'ISMS Documents',
+      href: `/frameworks/${frameworkId}/isms-documents`,
+      segment: 'isms-documents',
+    },
     { name: 'Versions', href: `/frameworks/${frameworkId}/versions`, segment: 'versions' },
   ];
 
@@ -29,7 +35,14 @@ export function FrameworkTabs() {
             className="flex-1"
             asChild
           >
-            <Link href={tab.href}>{tab.name}</Link>
+            <Link
+              href={tab.href}
+              onClick={(event) => {
+                if (!confirmDiscardUnsavedChanges()) event.preventDefault();
+              }}
+            >
+              {tab.name}
+            </Link>
           </TabsTrigger>
         ))}
       </TabsList>

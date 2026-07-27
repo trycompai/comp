@@ -29,12 +29,15 @@ interface PendingInvitationRowProps {
   };
   onCancel: (invitationId: string) => Promise<void>;
   canCancel: boolean;
+  /** How many requirement columns the table renders (one dash per column). */
+  requirementColumnCount?: number;
 }
 
 export function PendingInvitationRow({
   invitation,
   onCancel,
   canCancel,
+  requirementColumnCount = 1,
 }: PendingInvitationRowProps) {
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
@@ -110,12 +113,14 @@ export function PendingInvitationRow({
           <Text size="sm" variant="muted">—</Text>
         </TableCell>
 
-        {/* TASKS */}
-        <TableCell>
-          <Text size="sm" variant="muted">
-            —
-          </Text>
-        </TableCell>
+        {/* Requirement columns — never applicable before the invite is accepted */}
+        {Array.from({ length: requirementColumnCount }).map((_, i) => (
+          <TableCell key={i}>
+            <Text size="sm" variant="muted">
+              —
+            </Text>
+          </TableCell>
+        ))}
 
         {/* ACTIONS */}
         <TableCell>

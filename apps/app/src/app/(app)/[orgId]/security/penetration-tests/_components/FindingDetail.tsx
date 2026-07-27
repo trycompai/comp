@@ -11,10 +11,14 @@ import {
 import { ArrowLeft, Copy } from '@trycompai/design-system/icons';
 import { toast } from 'sonner';
 import type { PentestIssue } from '@/lib/security/penetration-tests-client';
+import { FindingContextSection } from './FindingContextSection';
 import { SEVERITY_BAR_VAR, SEVERITY_FG_VAR } from './severity';
 
 interface FindingDetailProps {
+  orgId: string;
   issue: PentestIssue;
+  runId?: string | null;
+  targetUrl?: string | null;
   onBack: () => void;
 }
 
@@ -28,7 +32,13 @@ const TABS = [
   { value: 'evidence', label: 'Evidence' },
 ] as const;
 
-export function FindingDetail({ issue, onBack }: FindingDetailProps) {
+export function FindingDetail({
+  orgId,
+  issue,
+  runId,
+  targetUrl,
+  onBack,
+}: FindingDetailProps) {
   const accentBar = SEVERITY_BAR_VAR[issue.severity];
   const eyebrowFg = SEVERITY_FG_VAR[issue.severity];
 
@@ -67,6 +77,14 @@ export function FindingDetail({ issue, onBack }: FindingDetailProps) {
 
         {/* KV strip */}
         <KVStrip issue={issue} />
+
+        {/* Customer context shared with the agent on future scans */}
+        <FindingContextSection
+          orgId={orgId}
+          issue={issue}
+          runId={runId}
+          targetUrl={targetUrl}
+        />
 
         {/* Tabs */}
         <Tabs defaultValue="summary">

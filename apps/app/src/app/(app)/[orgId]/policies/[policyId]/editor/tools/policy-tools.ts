@@ -66,8 +66,14 @@ export function getPolicyTools({ currentPolicyId, cookieHeader }: PolicyToolsOpt
             'A very short imperative phrase that tells the user to review the updated policy content in the editor below.',
           ),
       }),
-      execute: async ({ summary, title, detail, reviewHint }) => ({
-        success: true,
+      // Report success based on whether content actually materialized. When a
+      // response is truncated (timeout / output-token cap), the tool call can
+      // complete with empty/partial `content`, yet the assistant's prose still
+      // claims success — leaving the user with a blank policy (CS-256). Tie the
+      // tool's own `success` flag to real content so the UI can flag it.
+      execute: async ({ content, summary, title, detail, reviewHint }) => ({
+        success: content.trim().length > 0,
+        contentLength: content.length,
         summary,
         title,
         detail,

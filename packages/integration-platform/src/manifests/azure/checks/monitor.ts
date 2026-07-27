@@ -1,6 +1,11 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
-import { ARM_BASE, armListAll, resolveAzureSubscriptionId } from './shared';
+import {
+  remediationForReadFailure,
+  toHttpReadFailure,
+  type ReadFailure,
+} from '../../http-read-failure';
+import { ARM_BASE, armListAll, resolveAzureSubscriptionIds } from './shared';
 
 interface ActivityLogAlert {
   properties?: {
@@ -26,22 +31,18 @@ const RECOMMENDED_ALERTS = [
 ];
 
 /** Activity log alerts for critical ops + subscription log export → Monitoring & Alerting. */
-export const monitorLoggingAlertingCheck: IntegrationCheck = {
-  id: 'azure-monitor-logging-alerting',
-  name: 'Azure Monitor — alerts and log export',
-  description:
-    'Verify activity log alerts exist for critical operations and subscription logs are exported.',
-  service: 'monitor',
-  taskMapping: TASK_TEMPLATES.monitoringAlerting,
-  run: async (ctx: CheckContext) => {
-    const sub = await resolveAzureSubscriptionId(ctx);
-    if (!sub) return;
+async function runMonitorLoggingAlertingForSubscription(ctx: CheckContext, sub: string): Promise<void> {
     let evaluated = false;
 
+    let alertsReadFailure: ReadFailure | undefined;
     const alerts = await armListAll<ActivityLogAlert>(
       ctx,
       `${ARM_BASE}/subscriptions/${sub}/providers/Microsoft.Insights/activityLogAlerts?api-version=2020-10-01`,
-    ).catch(() => null);
+    ).catch((err) => {
+      alertsReadFailure = toHttpReadFailure(err);
+      ctx.log(`Azure Monitor: activity log alerts read failed — ${alertsReadFailure.error}`);
+      return null;
+    });
     if (alerts !== null) {
       evaluated = true;
       const ops = new Set<string>();
@@ -80,22 +81,28 @@ export const monitorLoggingAlertingCheck: IntegrationCheck = {
       // shared Monitoring task on incomplete evaluation.
       ctx.fail({
         title: 'Could not read activity log alerts',
-        description:
-          'Activity log alert coverage could not be read, so alerting was not verified.',
+        description: `Activity log alert coverage could not be read${alertsReadFailure ? ` (${alertsReadFailure.error})` : ''}, so alerting was not verified.`,
         resourceType: 'azure-subscription',
         resourceId: sub,
         severity: 'medium',
-        remediation:
+        remediation: remediationForReadFailure(
+          alertsReadFailure,
           'Grant Monitoring Reader (or Reader) so activity log alerts can be evaluated.',
-        evidence: {},
+        ),
+        evidence: alertsReadFailure ? { readError: alertsReadFailure.error } : {},
       });
     }
 
+    let diagReadFailure: ReadFailure | undefined;
     const diag = await ctx
       .fetch<{ value?: DiagnosticSetting[] }>(
         `${ARM_BASE}/subscriptions/${sub}/providers/Microsoft.Insights/diagnosticSettings?api-version=2021-05-01-preview`,
       )
-      .catch(() => null);
+      .catch((err) => {
+        diagReadFailure = toHttpReadFailure(err);
+        ctx.log(`Azure Monitor: diagnostic settings read failed — ${diagReadFailure.error}`);
+        return null;
+      });
     if (diag !== null) {
       evaluated = true;
       const settings = diag.value ?? [];
@@ -149,19 +156,34 @@ export const monitorLoggingAlertingCheck: IntegrationCheck = {
       // pass the shared Monitoring task on incomplete evaluation.
       ctx.fail({
         title: 'Could not read diagnostic settings',
-        description:
-          'Subscription diagnostic settings could not be read, so log export was not verified.',
+        description: `Subscription diagnostic settings could not be read${diagReadFailure ? ` (${diagReadFailure.error})` : ''}, so log export was not verified.`,
         resourceType: 'azure-subscription',
         resourceId: sub,
         severity: 'medium',
-        remediation:
+        remediation: remediationForReadFailure(
+          diagReadFailure,
           'Grant Monitoring Reader (or Reader) so diagnostic settings can be evaluated.',
-        evidence: {},
+        ),
+        evidence: diagReadFailure ? { readError: diagReadFailure.error } : {},
       });
     }
 
     if (!evaluated) {
       ctx.log('Azure monitor check: could not read monitor data — skipping');
+    }
+}
+
+export const monitorLoggingAlertingCheck: IntegrationCheck = {
+  id: 'azure-monitor-logging-alerting',
+  name: 'Azure Monitor — alerts and log export',
+  description:
+    'Verify activity log alerts exist for critical operations and subscription logs are exported.',
+  service: 'monitor',
+  taskMapping: TASK_TEMPLATES.monitoringAlerting,
+  run: async (ctx: CheckContext) => {
+    const subs = await resolveAzureSubscriptionIds(ctx);
+    for (const sub of subs) {
+      await runMonitorLoggingAlertingForSubscription(ctx, sub);
     }
   },
 };

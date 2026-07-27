@@ -1,5 +1,6 @@
 'use server';
 
+import { getOrgIsInternal } from '@/lib/org-participation';
 import { sendNewPolicyEmail } from '@/trigger/tasks/email/new-policy-email';
 import { db, PolicyStatus, type Prisma } from '@db/server';
 import { tasks } from '@trigger.dev/sdk';
@@ -102,12 +103,13 @@ export const acceptRequestedPolicyChangesAction = authActionClient
 
       // Get all active members — the downstream isUserUnsubscribed check
       // handles role-based notification filtering via the org's notification matrix.
+      const orgIsInternal = await getOrgIsInternal(session.activeOrganizationId);
       const members = await db.member.findMany({
         where: {
           organizationId: session.activeOrganizationId,
           isActive: true,
           deactivated: false,
-          user: { role: { not: 'admin' } },
+          ...(orgIsInternal ? {} : { user: { role: { not: 'admin' } } }),
         },
         include: {
           user: true,

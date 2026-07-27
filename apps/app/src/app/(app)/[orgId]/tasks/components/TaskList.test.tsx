@@ -225,3 +225,30 @@ describe('TaskList automation status filter', () => {
     expect(screen.getAllByText('All types').length).toBeGreaterThan(0);
   });
 });
+
+describe('TaskList assignee filter eligibility', () => {
+  type TaskListMember = Parameters<typeof TaskList>[0]['members'][number];
+
+  const makeMember = (id: string, role: string, name: string): TaskListMember =>
+    ({
+      id,
+      role,
+      user: { id: `usr_${id}`, name, email: `${name}@example.com`, image: null },
+    }) as unknown as TaskListMember;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    automationStatusValue = null;
+  });
+
+  // Regression: members reach this component already filtered to those with
+  // app access (custom roles included). The assignee filter must offer every
+  // such member — not just built-in admin/owner — or evidence assigned to a
+  // custom role (e.g. "SecDev") can't be filtered to.
+  it('lists a custom-role member (e.g. SecDev) as an assignee filter option', () => {
+    render(
+      <TaskList {...defaultProps} members={[makeMember('mem_secdev', 'SecDev', 'Sec Dev')]} />,
+    );
+    expect(screen.getByTestId('select-item-mem_secdev')).toBeInTheDocument();
+  });
+});

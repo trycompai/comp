@@ -5,17 +5,19 @@
 import * as z from "zod";
 
 export type CreateVersionDto = {
-  sourceVersionId?: string | undefined;
+  version: number;
+  scriptKey: string;
   changelog?: string | undefined;
 };
 
 export const CreateVersionDto$zodSchema: z.ZodType<CreateVersionDto> = z.object(
   {
     changelog: z.string().optional().describe(
-      "Optional changelog to associate with the new version",
+      "Optional changelog describing this version",
     ),
-    sourceVersionId: z.string().optional().describe(
-      "Optional version ID to base the new version on",
+    scriptKey: z.string().describe(
+      "S3 key of the already-generated & published automation script (returned by the publish step).",
     ),
+    version: z.number().describe("Version number for this published script"),
   },
 );

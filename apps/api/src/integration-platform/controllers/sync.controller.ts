@@ -40,6 +40,7 @@ import {
 } from '@trycompai/integration-platform';
 import { IntegrationSyncLoggerService } from '../services/integration-sync-logger.service';
 import { GenericEmployeeSyncService } from '../services/generic-employee-sync.service';
+import { resolveSyncEmployeeFilter } from '../services/sync-employee-filter';
 import { GenericDeviceSyncService } from '../services/generic-device-sync.service';
 import { DynamicIntegrationRepository } from '../repositories/dynamic-integration.repository';
 import { CheckRunRepository } from '../repositories/check-run.repository';
@@ -1776,32 +1777,55 @@ export class SyncController {
       m.capabilities?.includes(capability),
     );
 
-    const results = await Promise.all(
-      syncProviders.map(async (m) => {
-        const connection = await db.integrationConnection.findFirst({
-          where: {
-            organizationId,
-            status: 'active',
-            provider: { slug: m.id },
-          },
-          select: {
-            id: true,
-            status: true,
-            lastSyncAt: true,
-            nextSyncAt: true,
-          },
-        });
-        return {
-          slug: m.id,
-          name: m.name,
-          logoUrl: m.logoUrl,
-          connected: !!connection,
-          connectionId: connection?.id ?? null,
-          lastSyncAt: connection?.lastSyncAt?.toISOString() ?? null,
-          nextSyncAt: connection?.nextSyncAt?.toISOString() ?? null,
-        };
-      }),
-    );
+    // One batched query for every provider's connections (newest first), then
+    // resolve per-provider status in memory — avoids N (to 2N) point lookups.
+    const orgConnections = await db.integrationConnection.findMany({
+      where: {
+        organizationId,
+        provider: { slug: { in: syncProviders.map((m) => m.id) } },
+      },
+      select: {
+        id: true,
+        status: true,
+        lastSyncAt: true,
+        nextSyncAt: true,
+        provider: { select: { slug: true } },
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+    const connectionsBySlug = new Map<string, typeof orgConnections>();
+    for (const conn of orgConnections) {
+      const slug = conn.provider.slug;
+      const list = connectionsBySlug.get(slug);
+      if (list) list.push(conn);
+      else connectionsBySlug.set(slug, [conn]);
+    }
+
+    const results = syncProviders.map((m) => {
+      const conns = connectionsBySlug.get(m.id) ?? [];
+      const connection = conns.find((c) => c.status === 'active');
+      // No active connection: surface a broken (errored) one so the UI can
+      // prompt a reconnect instead of silently hiding sync for the provider.
+      // Multiple rows can exist per (org, provider) — reconnects create new
+      // rows — so the LATEST row decides: a newer 'disconnected' row means
+      // the user chose to disconnect, and a stale older 'error' row must
+      // not resurface a reconnect hint.
+      const latestConnection = connection ? null : (conns[0] ?? null);
+      return {
+        slug: m.id,
+        name: m.name,
+        logoUrl: m.logoUrl,
+        connected: !!connection,
+        connectionStatus: connection
+          ? ('active' as const)
+          : latestConnection?.status === 'error'
+            ? ('error' as const)
+            : null,
+        connectionId: connection?.id ?? null,
+        lastSyncAt: connection?.lastSyncAt?.toISOString() ?? null,
+        nextSyncAt: connection?.nextSyncAt?.toISOString() ?? null,
+      };
+    });
 
     return { providers: results };
   }
@@ -1953,6 +1977,19 @@ export class SyncController {
         `[DynamicSync] Sync definition produced ${employees.length} employees for "${providerSlug}"`,
       );
 
+      // Resolve the org's configured include/exclude email filter from the
+      // connection variables. This lets dynamic providers (e.g. Microsoft
+      // Entra ID) limit which users are synced via the same
+      // sync_user_filter_mode / sync_excluded_emails / sync_included_emails
+      // variables that Google Workspace and JumpCloud already honor. Absent
+      // those variables this resolves to 'all' (import everyone — unchanged).
+      const syncFilter = resolveSyncEmployeeFilter(
+        (connection.variables as Record<string, unknown>) ?? {},
+      );
+      this.logger.log(
+        `[DynamicSync] Employee filter mode="${syncFilter.mode}" excluded=${syncFilter.excludedTerms.length} included=${syncFilter.includedTerms.length} for "${providerSlug}"`,
+      );
+
       // 8. Process employees via generic service
       const result = await this.genericSyncService.processEmployees({
         organizationId,
@@ -1966,6 +2003,7 @@ export class SyncController {
           isDirectorySource:
             (syncDefinition as { isDirectorySource?: boolean })
               .isDirectorySource ?? false,
+          syncFilter,
         },
       });
 

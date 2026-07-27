@@ -1,4 +1,11 @@
 import type { DeviceWithChecks } from '../types';
+import {
+  CANONICAL_DEVICE_CHECKS,
+  computeSourceComplianceVerdict,
+  isComplianceTracked,
+  sourceChecks,
+  sourceLabel,
+} from './device-source';
 
 export const DEVICES_CSV_HEADER = [
   'Device Name',
@@ -14,6 +21,7 @@ export const DEVICES_CSV_HEADER = [
   'Antivirus',
   'Password Policy',
   'Screen Lock',
+  'Source',
 ].join(',');
 
 const FORMULA_TRIGGER = /^[=+\-@\t\r]/;
@@ -35,8 +43,26 @@ function yesNo(value: boolean): 'yes' | 'no' {
 }
 
 export function buildDevicesCsv(devices: DeviceWithChecks[]): string {
-  const rows = devices.map((d) =>
-    [
+  const rows = devices.map((d) => {
+    // Imported devices are judged by CompAI's OWN standard — the same four
+    // canonical checks the agent measures — computed from the data the source
+    // integration reports. Unreported canonical checks export as 'unverified'.
+    const tracked = isComplianceTracked(d);
+    const verdict = computeSourceComplianceVerdict(d);
+    const status = tracked
+      ? d.complianceStatus
+      : verdict === null || verdict.kind === 'not_tracked'
+        ? 'not_tracked'
+        : verdict.kind === 'unverified'
+          ? `unverified (${verdict.reported}/${CANONICAL_DEVICE_CHECKS.length} checks reported)`
+          : verdict.kind;
+    const bySourceId = new Map(sourceChecks(d).map((c) => [c.id, c.passed]));
+    const check = (agentValue: boolean, canonicalId: string) => {
+      if (tracked) return yesNo(agentValue);
+      const reported = bySourceId.get(canonicalId);
+      return reported === undefined ? 'unverified' : yesNo(reported);
+    };
+    return [
       escapeCell(d.name),
       escapeCell(d.user.name),
       escapeCell(d.user.email),
@@ -45,13 +71,14 @@ export function buildDevicesCsv(devices: DeviceWithChecks[]): string {
       escapeCell(d.agentVersion ?? ''),
       escapeCell(d.lastCheckIn ?? ''),
       escapeCell(d.daysSinceLastCheckIn ?? ''),
-      escapeCell(d.complianceStatus),
-      escapeCell(yesNo(d.diskEncryptionEnabled)),
-      escapeCell(yesNo(d.antivirusEnabled)),
-      escapeCell(yesNo(d.passwordPolicySet)),
-      escapeCell(yesNo(d.screenLockEnabled)),
-    ].join(','),
-  );
+      escapeCell(status),
+      escapeCell(check(d.diskEncryptionEnabled, 'disk_encryption')),
+      escapeCell(check(d.antivirusEnabled, 'antivirus')),
+      escapeCell(check(d.passwordPolicySet, 'password_policy')),
+      escapeCell(check(d.screenLockEnabled, 'screen_lock')),
+      escapeCell(sourceLabel(d)),
+    ].join(',');
+  });
   // RFC 4180: records separated by CRLF; trailing CRLF after the final record.
   // Prepend a UTF-8 BOM so Excel correctly detects UTF-8 encoding for non-ASCII data.
   return '\uFEFF' + [DEVICES_CSV_HEADER, ...rows].join('\r\n') + '\r\n';

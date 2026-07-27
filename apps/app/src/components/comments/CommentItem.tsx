@@ -162,7 +162,7 @@ export function CommentItem({ comment, refreshComments, readOnly = false, entity
       refreshComments();
       setIsDeleteOpen(false);
     } catch (error) {
-      toast.error('Failed to delete comment.');
+      toast.error(error instanceof Error ? error.message : 'Failed to delete comment.');
       console.error('Delete comment error:', error);
     } finally {
       setIsDeleting(false);

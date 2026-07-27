@@ -101,6 +101,13 @@ const convertToInternalFormat = (content: TipTapJSONContent[]): JSONContent[] =>
   }));
 };
 
+// Keep-together: minimum number of body lines that must fit on the same page
+// as a heading. If the heading plus this many lines of the following section
+// don't fit, the heading is pushed to the next page so it isn't orphaned at
+// the bottom of a page (CS-704).
+// NOTE: Keep in sync with apps/api/src/trust-portal/policy-pdf-renderer.service.ts HEADING_KEEP_WITH_LINES
+const HEADING_KEEP_WITH_LINES = 3;
+
 // Helper function to check for page breaks
 const checkPageBreak = (config: PDFConfig, requiredHeight: number = config.lineHeight) => {
   if (config.yPosition + requiredHeight > config.pageHeight - config.margin) {
@@ -148,6 +155,60 @@ const extractTextFromContent = (content: JSONContent[]): string => {
   }).join('');
 };
 
+// First-row height of a table, mirroring renderTable's row-height math so the
+// heading keep-together reserve can size itself against a table that follows a
+// heading (not just plain paragraphs). Keep in sync with renderTable below.
+const measureTableFirstRowHeight = (
+  tableNode: JSONContent,
+  config: PDFConfig,
+): number => {
+  const firstRow = tableNode.content?.[0];
+  if (!firstRow?.content?.length) return 0;
+
+  let columnCount = 0;
+  for (const cell of firstRow.content) {
+    columnCount += cell.attrs?.colspan ?? 1;
+  }
+  if (columnCount === 0) return 0;
+
+  const colWidth = config.contentWidth / columnCount;
+  const cellPadding = 2;
+  let rowHeight = config.lineHeight + cellPadding * 2;
+  for (const cell of firstRow.content) {
+    if (cell.type !== 'tableCell' && cell.type !== 'tableHeader') continue;
+    const width = colWidth * (cell.attrs?.colspan ?? 1);
+    const text = cleanTextForPDF(extractCellText(cell.content ?? []));
+    const lines = config.doc.splitTextToSize(text || ' ', width - cellPadding * 2);
+    rowHeight = Math.max(
+      rowHeight,
+      lines.length * config.lineHeight + cellPadding * 2,
+    );
+  }
+  return rowHeight;
+};
+
+// Content height (beyond the heading's own height plus spacingAfter) needed to
+// keep a heading with the start of the section that follows it. Returns 0 when
+// nothing visible follows (a trailing heading). Handles tables (first-row
+// height) so keep-together isn't limited to plain paragraphs. Empty paragraphs
+// and hard breaks render nothing here, so they're skipped.
+const sectionLeadHeight = (
+  content: JSONContent[],
+  index: number,
+  config: PDFConfig,
+  spacingAfter: number,
+): number => {
+  for (let i = index + 1; i < content.length; i++) {
+    const node = content[i];
+    if (node.type === 'table' && node.content?.length) {
+      return spacingAfter + measureTableFirstRowHeight(node, config);
+    }
+    if (extractTextFromContent([node]).trim().length === 0) continue;
+    return spacingAfter + HEADING_KEEP_WITH_LINES * config.lineHeight;
+  }
+  return 0;
+};
+
 // Enhanced helper function that renders text with proper formatting
 const renderFormattedContent = (
   config: PDFConfig,
@@ -178,14 +239,14 @@ const renderFormattedContent = (
 
 // Process JSON content recursively
 const processContent = (config: PDFConfig, content: JSONContent[], level: number = 0) => {
-  for (const item of content) {
+  for (const [nodeIndex, item] of content.entries()) {
     switch (item.type) {
-      case 'heading':
+      case 'heading': {
         const headingLevel = item.attrs?.level || 1;
         let fontSize: number;
         let spacingBefore: number;
         let spacingAfter: number;
-        
+
         switch (headingLevel) {
           case 1:
             fontSize = 14;
@@ -207,18 +268,52 @@ const processContent = (config: PDFConfig, content: JSONContent[], level: number
             spacingBefore = config.lineHeight;
             spacingAfter = config.lineHeight * 0.5;
         }
-        
+
         config.yPosition += spacingBefore;
-        checkPageBreak(config);
-        
-        if (item.content) {
-          const headingText = extractTextFromContent(item.content);
+
+        // Keep-together: require room for the heading itself PLUS the first
+        // few lines of the section that follows it; otherwise push the whole
+        // heading to the next page so it isn't stranded at the page bottom
+        // (CS-704). Only reserve the following-section space when content
+        // actually follows this heading.
+        const headingText = item.content
+          ? extractTextFromContent(item.content)
+          : '';
+        config.doc.setFontSize(fontSize);
+        config.doc.setFont('helvetica', 'bold');
+        const headingLineCount = headingText
+          ? config.doc.splitTextToSize(
+              cleanTextForPDF(headingText),
+              config.contentWidth,
+            ).length
+          : 0;
+        // sectionLeadHeight measures what the following section needs (a few
+        // text lines, or a table's first row, or 0 for a trailing heading),
+        // added to the heading's own height. The reserve is capped at the
+        // usable page height so an oversized heading can't force an empty
+        // leading page — addTextWithWrapping's per-line checks paginate it.
+        const headingHeight = Math.max(headingLineCount, 1) * config.lineHeight;
+        const leadHeight = sectionLeadHeight(
+          content,
+          nodeIndex,
+          config,
+          spacingAfter,
+        );
+        const usableHeight = config.pageHeight - config.margin * 2;
+        const requiredHeight = Math.min(
+          leadHeight > 0 ? headingHeight + leadHeight : headingHeight,
+          usableHeight,
+        );
+        checkPageBreak(config, requiredHeight);
+
+        if (headingText) {
           addTextWithWrapping(config, headingText, fontSize, true);
         }
-        
+
         config.yPosition += spacingAfter;
         break;
-        
+      }
+
       case 'paragraph':
         if (item.content) {
           const paragraphText = extractTextFromContent(item.content);

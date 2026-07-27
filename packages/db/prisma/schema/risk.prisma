@@ -45,6 +45,7 @@ model Risk {
   assignee       Member?      @relation(fields: [assigneeId], references: [id])
   tasks          Task[]
   findings       Finding[]
+  acceptances    RiskAcceptance[] // risk-owner residual-risk acceptance events (6.1.3(f))
 
   @@index([organizationId])
   @@index([category])

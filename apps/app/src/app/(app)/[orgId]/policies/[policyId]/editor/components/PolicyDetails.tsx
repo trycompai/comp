@@ -57,6 +57,8 @@ import type { PolicyChatUIMessage } from '../types';
 import { PolicyAiAssistant } from './ai/policy-ai-assistant';
 import { useSuggestions } from '../hooks/use-suggestions';
 import { buildPositionMap } from '../lib/build-position-map';
+import { sanitizeMarkdown } from '../lib/policy-markdown';
+import { resolveInitialPolicyContent } from '../lib/resolve-initial-content';
 import { InlineEditBubble } from './ai/inline-edit-bubble';
 import { markdownToTipTapJSON } from './ai/markdown-utils';
 
@@ -110,7 +112,9 @@ function getLatestCompletedProposal(messages: PolicyChatUIMessage[]): LatestProp
 
       latest = {
         key: `${msg.id}:${index}`,
-        content: input.content,
+        // Strip control-char noise (e.g. stray "013" glyphs) before the content
+        // feeds the diff + apply pipeline, so both see identical clean text.
+        content: sanitizeMarkdown(input.content),
         summary: input.summary ?? 'Proposing policy changes',
         title: input.title ?? input.summary ?? 'Policy updates ready for your review',
         detail:
@@ -197,12 +201,13 @@ export function PolicyContentManager({
   const [editorKey, setEditorKey] = useState(0);
   const [activeTab, setActiveTab] = useState<string>(displayFormat);
   const previousTabRef = useRef<string>(displayFormat);
-  const [currentContent, setCurrentContent] = useState<Array<JSONContent>>(() => {
-    const formattedContent = Array.isArray(policyContent)
-      ? policyContent
-      : [policyContent as JSONContent];
-    return formattedContent;
-  });
+  const [currentContent, setCurrentContent] = useState<Array<JSONContent>>(() =>
+    // When opening directly on a specific version (e.g. "Edit" a draft from the
+    // Versions tab, which remounts this tab fresh with a versionId in the URL),
+    // seed from that version's content — not the published policyContent — so a
+    // draft's saved edits don't appear to vanish. See resolve-initial-content.ts.
+    resolveInitialPolicyContent({ initialVersionId, versions, policyContent }),
+  );
 
   const [dismissedProposalKey, setDismissedProposalKey] = useState<string | null>(null);
   const [editorInstance, setEditorInstance] = useState<TipTapEditor | null>(null);
@@ -469,6 +474,7 @@ export function PolicyContentManager({
     messages,
     status,
     sendMessage: baseSendMessage,
+    regenerate,
     stop: stopChat,
   } = useChat<PolicyChatUIMessage>({
     transport: new DefaultChatTransport({
@@ -480,15 +486,27 @@ export function PolicyContentManager({
     },
   });
 
+  // The AI needs the live editor content (it may hold unsaved accepted changes),
+  // so every request — initial and retry — re-derives it from the current doc.
+  const buildChatBody = useCallback(
+    () => ({
+      currentContent: editorInstance
+        ? buildPositionMap(editorInstance.state.doc).markdown
+        : '',
+    }),
+    [editorInstance],
+  );
+
   const sendMessage = (payload: { text: string }) => {
     setChatErrorMessage(null);
-    // Send current editor content so the AI sees the latest state,
-    // not stale DB content (e.g. after accepting changes)
-    const currentContent = editorInstance
-      ? buildPositionMap(editorInstance.state.doc).markdown
-      : '';
-    baseSendMessage(payload, { body: { currentContent } });
+    baseSendMessage(payload, { body: buildChatBody() });
   };
+
+  // Recover from an interrupted/incomplete run by re-running the last request.
+  const handleRetryChat = useCallback(() => {
+    setChatErrorMessage(null);
+    regenerate({ body: buildChatBody() });
+  }, [regenerate, buildChatBody]);
 
   // ── Proposal state management ──────────────────────────────────────
   // Scan ALL assistant messages for the latest completed proposePolicy tool call.
@@ -900,6 +918,7 @@ export function PolicyContentManager({
                 errorMessage={chatErrorMessage}
                 sendMessage={sendMessage}
                 stop={stopChat}
+                retry={handleRetryChat}
                 close={() => setShowAiAssistant(false)}
               />
             </div>
@@ -978,6 +997,7 @@ export function PolicyContentManager({
                   errorMessage={chatErrorMessage}
                   sendMessage={sendMessage}
                   stop={stopChat}
+                  retry={handleRetryChat}
                   close={() => setShowAiAssistant(false)}
                 />
               </div>

@@ -16,6 +16,24 @@ vi.mock('sonner', () => ({
   toast: { error: vi.fn() },
 }));
 
+// RunContextField fetches saved finding-context notes over SWR; tests must
+// not hit the network. Override `notes` per test before rendering.
+const findingContextsMock = vi.hoisted(() => ({
+  notes: [] as Array<{ id: string; providerIssueId: string }>,
+}));
+
+vi.mock('../hooks/use-pentest-finding-contexts', () => ({
+  usePentestFindingContexts: () => ({
+    contexts: findingContextsMock.notes,
+    contextByIssueId: new Map(),
+    isLoading: false,
+    error: undefined,
+    isSaving: false,
+    saveContext: vi.fn(),
+    removeContext: vi.fn(),
+  }),
+}));
+
 async function confirmAuthorization(user: ReturnType<typeof userEvent.setup>) {
   await user.click(
     screen.getByText('I own this target or have written authorization to test it.'),
@@ -29,6 +47,65 @@ function checkInput(label: RegExp) {
 describe('CreateRunPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    findingContextsMock.notes = [];
+  });
+
+  it('includes trimmed additional context in the submit payload', async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn(async () => ({ id: 'run_ctx' }));
+
+    render(<CreateRunPanel orgId="org_1" balance={1} onSubmit={onSubmit} />);
+
+    await user.type(screen.getByLabelText(/target url/i), 'app.example.com');
+    await user.type(
+      screen.getByLabelText(/context for the agent/i),
+      '  We remediated the auth findings last week.  ',
+    );
+    await confirmAuthorization(user);
+    await user.click(screen.getByRole('button', { name: /start scan/i }));
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          additionalContext: 'We remediated the auth findings last week.',
+        }),
+      );
+    });
+  });
+
+  it('omits additionalContext when the context field is left empty', async () => {
+    const user = userEvent.setup();
+    let submittedPayload: PentestCreateRequest | undefined;
+    const onSubmit = vi.fn(async (payload: PentestCreateRequest) => {
+      submittedPayload = payload;
+      return { id: 'run_no_ctx' };
+    });
+
+    render(<CreateRunPanel orgId="org_1" balance={1} onSubmit={onSubmit} />);
+
+    await user.type(screen.getByLabelText(/target url/i), 'app.example.com');
+    await confirmAuthorization(user);
+    await user.click(screen.getByRole('button', { name: /start scan/i }));
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalled();
+    });
+    expect(submittedPayload).not.toHaveProperty('additionalContext');
+  });
+
+  it('tells the user how many saved finding notes will be shared automatically', () => {
+    findingContextsMock.notes = [
+      { id: 'ptfc_1', providerIssueId: 'issue_1' },
+      { id: 'ptfc_2', providerIssueId: 'issue_2' },
+    ];
+
+    render(<CreateRunPanel orgId="org_1" balance={1} onSubmit={vi.fn()} />);
+
+    expect(
+      screen.getByText(
+        /2 saved finding context notes for this target will be shared with the agent automatically/i,
+      ),
+    ).toBeInTheDocument();
   });
 
   it('routes users without allowance to billing even when required fields are empty', async () => {

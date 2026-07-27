@@ -13,6 +13,7 @@ import { RunningDetail } from './RunningDetail';
 import { isRunInProgress } from './severity';
 
 interface DetailPaneProps {
+  orgId: string;
   run: PentestRun | undefined;
   issues: PentestIssue[];
   events: PentestAgentEvent[];
@@ -30,6 +31,7 @@ interface DetailPaneProps {
  * finding-detail → failed → clean → completed → running (default).
  */
 export function DetailPane({
+  orgId,
   run,
   issues,
   events,
@@ -42,7 +44,15 @@ export function DetailPane({
   onDownloadPdf,
 }: DetailPaneProps) {
   if (selectedFinding) {
-    return <FindingDetail issue={selectedFinding} onBack={onCloseFinding} />;
+    return (
+      <FindingDetail
+        orgId={orgId}
+        issue={selectedFinding}
+        runId={run?.id}
+        targetUrl={run?.targetUrl}
+        onBack={onCloseFinding}
+      />
+    );
   }
 
   if (isLoading && !run) {

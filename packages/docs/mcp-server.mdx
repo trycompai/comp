@@ -25,7 +25,7 @@ The AI assistant figures out which tools to call. Your team types the request an
 1. Sign in to [Comp AI](https://app.trycomp.ai).
 2. Open **Settings → API Keys**.
 3. Click **Create new key**. Scope it to the actions the AI assistant should be allowed to take.
-4. Copy the key (it starts with `comp_…`) — you will paste it into your AI client's config once.
+4. Copy the key (it starts with `comp_`) — you will paste it into your AI client's config once. Copy the full string exactly, with no extra characters, spaces, or line breaks.
 
 The API key carries your existing RBAC and permissions. The AI assistant can only do what *your* role can do in the dashboard.
 
@@ -45,8 +45,12 @@ The `npx -y @trycompai/mcp-server` command you'll see throughout is what handles
 
 **Easiest path — drag-and-drop install:**
 
-1. Download the latest [`mcp-server.mcpb`](https://github.com/trycompai/comp/releases) bundle from our GitHub Releases page.
-2. Drag the `.mcpb` file directly onto the Claude Desktop window.
+<Card title="Download for Claude Desktop" icon="download" href="https://api.trycomp.ai/mcp/download/claude-desktop">
+  Always serves the latest Comp AI MCP bundle (`.mcpb`) — no version hunting.
+</Card>
+
+1. Click **Download for Claude Desktop** above to get the latest `mcp-server.mcpb` bundle.
+2. Drag the downloaded `.mcpb` file directly onto the Claude Desktop window.
 3. Claude Desktop shows an install prompt — confirm, then paste your Comp AI API key in the extension settings.
 4. Restart any open chats. Comp AI tools are now available.
 
@@ -65,7 +69,7 @@ If you prefer to manage `claude_desktop_config.json` yourself, open **Settings �
         "@trycompai/mcp-server",
         "start",
         "--apikey",
-        "comp_…your_key_here…"
+        "comp_your_api_key_here"
       ]
     }
   }
@@ -96,7 +100,7 @@ Open **Cursor → Settings → Tools and Integrations → New MCP Server** and p
     "@trycompai/mcp-server",
     "start",
     "--apikey",
-    "comp_…your_key_here…"
+    "comp_your_api_key_here"
   ]
 }
 ```
@@ -125,7 +129,7 @@ Open the **Command Palette → MCP: Open User Configuration** and paste:
     "@trycompai/mcp-server",
     "start",
     "--apikey",
-    "comp_…your_key_here…"
+    "comp_your_api_key_here"
   ]
 }
 ```
@@ -138,7 +142,7 @@ Open the **Command Palette → MCP: Open User Configuration** and paste:
 Install with one command:
 
 ```bash
-claude mcp add CompAI -- npx -y @trycompai/mcp-server start --apikey comp_…your_key_here…
+claude mcp add CompAI -- npx -y @trycompai/mcp-server start --apikey comp_your_api_key_here
 ```
 
 Claude Code registers the server immediately — Comp AI tools become available in your next session.
@@ -150,7 +154,7 @@ Claude Code registers the server immediately — Comp AI tools become available 
 Install with one command:
 
 ```bash
-codex mcp add comp-ai -- npx -y @trycompai/mcp-server start --apikey comp_…your_key_here…
+codex mcp add comp-ai -- npx -y @trycompai/mcp-server start --apikey comp_your_api_key_here
 ```
 
 Codex registers the server immediately — Comp AI tools become available in your next session.
@@ -164,7 +168,7 @@ For ChatGPT desktop / web with MCP support, follow OpenAI's MCP integration docs
 Install with one command:
 
 ```bash
-gemini mcp add CompAI -- npx -y @trycompai/mcp-server start --apikey comp_…your_key_here…
+gemini mcp add CompAI -- npx -y @trycompai/mcp-server start --apikey comp_your_api_key_here
 ```
 
 </Tab>
@@ -183,7 +187,7 @@ Open **Windsurf → Settings → Cascade → Manage MCPs → View raw config** a
         "@trycompai/mcp-server",
         "start",
         "--apikey",
-        "comp_…your_key_here…"
+        "comp_your_api_key_here"
       ]
     }
   }
@@ -218,9 +222,18 @@ Most common causes:
 </Accordion>
 
 <Accordion title="401 / authentication error">
-- Confirm your API key starts with `comp_…` and you copied the full string (these keys are long).
+- Confirm your API key starts with `comp_` and you copied the full string (these keys are long).
 - Confirm the key hasn't been revoked in **Comp AI → Settings → API Keys**.
 - Confirm the key's role has permission for the action you're asking the AI to take.
+</Accordion>
+
+<Accordion title="Every tool call fails with an encoding error (e.g. “character … value 8230”)">
+This means the API key in your config contains a stray non-standard character — most often an ellipsis (`…`) accidentally pasted in place of the real key. HTTP headers only allow plain characters, so the request can't be sent.
+
+Fix it by re-entering the key cleanly:
+1. In **Comp AI → Settings → API Keys**, copy your key again (or create a new one).
+2. In your config, replace the entire `--apikey` value so it's just your real key — `comp_` followed by letters and numbers, with **no `…`, spaces, or line breaks**.
+3. Fully quit and reopen your AI client.
 </Accordion>
 
 <Accordion title="`npx` or `command not found`">

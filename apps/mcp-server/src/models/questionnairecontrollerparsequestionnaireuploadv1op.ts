@@ -6,19 +6,6 @@ import * as z from "zod";
 import * as b64$ from "../lib/base64.js";
 import { ClosedEnum } from "../types/enums.js";
 
-export type QuestionnaireControllerParseQuestionnaireUploadV1File = {
-  fileName: string;
-  content: Uint8Array | string;
-};
-
-export const QuestionnaireControllerParseQuestionnaireUploadV1File$zodSchema:
-  z.ZodType<QuestionnaireControllerParseQuestionnaireUploadV1File> = z.object({
-    content: z.string().describe("Base64-encoded binary content").transform(
-      b64$.bytesFromBase64,
-    ),
-    fileName: z.string(),
-  });
-
 /**
  * Output format (defaults to XLSX)
  */
@@ -60,6 +47,19 @@ export const QuestionnaireControllerParseQuestionnaireUploadV1Source$zodSchema =
   ]).describe(
     "Indicates if the request originated from our UI (internal) or trust portal (external).",
   );
+
+export type QuestionnaireControllerParseQuestionnaireUploadV1File = {
+  fileName: string;
+  content: Uint8Array | string;
+};
+
+export const QuestionnaireControllerParseQuestionnaireUploadV1File$zodSchema:
+  z.ZodType<QuestionnaireControllerParseQuestionnaireUploadV1File> = z.object({
+    content: z.string().describe("Base64-encoded binary content").transform(
+      b64$.bytesFromBase64,
+    ),
+    fileName: z.string(),
+  });
 
 export type QuestionnaireControllerParseQuestionnaireUploadV1Request = {
   file: QuestionnaireControllerParseQuestionnaireUploadV1File | Blob;

@@ -5,6 +5,25 @@
 import * as z from "zod";
 import { ClosedEnum } from "../types/enums.js";
 
+/**
+ * How the request was authenticated
+ */
+export const PeopleControllerDeleteMemberV1AuthType = {
+  ApiKey: "api-key",
+  Session: "session",
+} as const;
+/**
+ * How the request was authenticated
+ */
+export type PeopleControllerDeleteMemberV1AuthType = ClosedEnum<
+  typeof PeopleControllerDeleteMemberV1AuthType
+>;
+
+export const PeopleControllerDeleteMemberV1AuthType$zodSchema = z.enum([
+  "api-key",
+  "session",
+]).describe("How the request was authenticated");
+
 export type PeopleControllerDeleteMemberV1Request = {
   id: string;
   skipOffboarding: string;
@@ -67,25 +86,6 @@ export const DeletedMember$zodSchema: z.ZodType<DeletedMember> = z.object({
   id: z.string().optional().describe("The deleted member ID"),
   name: z.string().optional().describe("The deleted member name"),
 });
-
-/**
- * How the request was authenticated
- */
-export const PeopleControllerDeleteMemberV1AuthType = {
-  ApiKey: "api-key",
-  Session: "session",
-} as const;
-/**
- * How the request was authenticated
- */
-export type PeopleControllerDeleteMemberV1AuthType = ClosedEnum<
-  typeof PeopleControllerDeleteMemberV1AuthType
->;
-
-export const PeopleControllerDeleteMemberV1AuthType$zodSchema = z.enum([
-  "api-key",
-  "session",
-]).describe("How the request was authenticated");
 
 /**
  * Member deleted successfully

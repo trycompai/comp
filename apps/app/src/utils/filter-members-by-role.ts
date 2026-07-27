@@ -1,17 +1,24 @@
+import { isBuiltInRole, parseRolesString } from '@/lib/permissions';
 import { Member, User } from '@db';
 
 interface FilterMembersByOwnerOrAdminParams {
   members: (Member & { user: User })[];
   /**
-   * Optional current assignee ID to always include (even if not owner/admin),
+   * Optional current assignee ID to always include (even if not assignable),
    * so existing assignments/active filters remain visible.
    */
   currentAssigneeId?: string | null;
 }
 
 /**
- * Filters members to only include those with owner or admin roles
- * Roles are stored as comma-separated strings (e.g., "owner,admin" or "employee")
+ * Filters members to those eligible to be task assignees.
+ *
+ * Roles are stored as comma-separated strings (e.g., "owner,admin" or "SecDev").
+ * A member is eligible when any of their roles is `owner`/`admin` OR a custom
+ * (non-built-in) role such as "SecDev". Custom roles are org-defined and the
+ * backend accepts them as assignees, so they must be selectable here too.
+ * The built-in restricted roles (`employee`, `contractor`) and `auditor` remain
+ * excluded.
  */
 export function filterMembersByOwnerOrAdmin(
   { members, currentAssigneeId }: FilterMembersByOwnerOrAdminParams,
@@ -21,11 +28,16 @@ export function filterMembersByOwnerOrAdmin(
     if (currentAssigneeId && member.id === currentAssigneeId) {
       return true;
     }
-    
+
     if (!member.role) return false;
-    
-    // Roles can be comma-separated, so we need to check if any role is owner or admin
-    const roles = member.role.split(',').map((r) => r.trim().toLowerCase());
-    return roles.includes('owner') || roles.includes('admin');
+
+    // Roles can be comma-separated, so include the member if any single role qualifies.
+    const roles = parseRolesString(member.role);
+    return roles.some((role) => {
+      const normalized = role.toLowerCase();
+      if (normalized === 'owner' || normalized === 'admin') return true;
+      // Custom roles (anything not built in) are valid assignees.
+      return !isBuiltInRole(role);
+    });
   });
 }

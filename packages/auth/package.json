@@ -13,6 +13,10 @@
       "types": "./dist/permissions.d.ts",
       "default": "./dist/permissions.js"
     },
+    "./participation": {
+      "types": "./dist/participation.d.ts",
+      "default": "./dist/participation.js"
+    },
     "./server": {
       "types": "./dist/server.d.ts",
       "default": "./dist/server.js"
@@ -23,7 +27,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "better-auth": "^1.4.22"
+    "better-auth": "^1.6.13"
   },
   "devDependencies": {
     "@trycompai/tsconfig": "workspace:*",

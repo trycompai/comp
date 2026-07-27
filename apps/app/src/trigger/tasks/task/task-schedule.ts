@@ -1,3 +1,4 @@
+import { isOrgParticipant } from '@/lib/org-participation-rule';
 import { db } from '@db/server';
 import { Novu } from '@novu/api';
 import { logger, schedules } from '@trigger.dev/sdk';
@@ -33,13 +34,10 @@ export const taskSchedule = schedules.task({
           select: {
             id: true,
             name: true,
+            isInternal: true,
             members: {
               where: {
                 deactivated: false,
-                OR: [
-                  { user: { role: { not: 'admin' } } },
-                  { role: { contains: 'owner' } },
-                ],
               },
               select: {
                 user: {
@@ -47,6 +45,7 @@ export const taskSchedule = schedules.task({
                     id: true,
                     name: true,
                     email: true,
+                    role: true,
                   },
                 },
               },
@@ -196,21 +195,33 @@ export const taskSchedule = schedules.task({
         }
       >();
       const addRecipients = (
-        users: Array<{ user: { id: string; email: string; name?: string } }>,
+        members: Array<{
+          user: {
+            id: string;
+            email: string;
+            name?: string;
+            role?: string | null;
+          };
+        }>,
         task: (typeof allUpdatedTasks)[number],
       ) => {
-        for (const entry of users) {
+        // Exclude platform admins (Comp AI staff) unless the org is internal —
+        // the single participation rule (no per-member owner carve-out).
+        const orgIsInternal = task.organization?.isInternal ?? false;
+        for (const entry of members) {
           const user = entry.user;
-          if (user && user.email && user.id) {
-            const key = `${user.id}-${task.id}`;
-            if (!recipientsMap.has(key)) {
-              recipientsMap.set(key, {
-                email: user.email,
-                userId: user.id,
-                name: user.name ?? '',
-                task,
-              });
-            }
+          if (!user?.email || !user.id) continue;
+          if (!isOrgParticipant(user.role, { orgIsInternal })) {
+            continue;
+          }
+          const key = `${user.id}-${task.id}`;
+          if (!recipientsMap.has(key)) {
+            recipientsMap.set(key, {
+              email: user.email,
+              userId: user.id,
+              name: user.name ?? '',
+              task,
+            });
           }
         }
       };
@@ -238,7 +249,12 @@ export const taskSchedule = schedules.task({
             : ('todo' as const);
 
           // Check if user is unsubscribed
-          const isUnsubscribed = await isUserUnsubscribed(db, recipient.email, 'taskReminders', recipient.task.organizationId);
+          const isUnsubscribed = await isUserUnsubscribed(
+            db,
+            recipient.email,
+            'taskReminders',
+            recipient.task.organizationId,
+          );
 
           if (isUnsubscribed) {
             logger.info(

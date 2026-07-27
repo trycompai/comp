@@ -6,9 +6,13 @@ import {
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
 import {
+  combineReadFailures,
+  remediationForReadFailure,
   resolveAwsSessionOrFail,
+  toReadFailure,
   type AwsSession,
   type CheckOutcome,
+  type ReadFailure,
   emitOutcomes,
 } from './shared';
 
@@ -140,7 +144,7 @@ export function evaluateRdsClusterBackups(clusters: RdsClusterInfo[]): CheckOutc
 interface RegionScan<T> {
   items: T[];
   /** Regions whose listing call failed — their resources are unverified. */
-  failedRegions: string[];
+  failedRegions: Array<{ region: string; failure: ReadFailure }>;
 }
 
 async function listRdsInstances(
@@ -148,11 +152,17 @@ async function listRdsInstances(
   ctx: CheckContext,
 ): Promise<RegionScan<RdsInstanceInfo>> {
   const items: RdsInstanceInfo[] = [];
-  const failedRegions: string[] = [];
+  const failedRegions: Array<{ region: string; failure: ReadFailure }> = [];
   for (const region of session.regions) {
     // Isolate per-region failures so one bad region doesn't abort the rest.
     try {
-      const rds = new RDSClient({ region, credentials: session.credentials });
+      const rds = new RDSClient({
+        region,
+        credentials: session.credentials,
+        // Reads are idempotent; extra attempts ride out transient network or
+        // throttling failures during the scheduled-run herd.
+        maxAttempts: 5,
+      });
       let marker: string | undefined;
       do {
         const resp = await rds.send(new DescribeDBInstancesCommand({ Marker: marker }));
@@ -168,10 +178,9 @@ async function listRdsInstances(
         marker = resp.Marker;
       } while (marker);
     } catch (err) {
-      failedRegions.push(region);
-      ctx.log(
-        `RDS: could not list DB instances in ${region}: ${err instanceof Error ? err.message : String(err)}`,
-      );
+      const failure = toReadFailure(err);
+      failedRegions.push({ region, failure });
+      ctx.log(`RDS: could not list DB instances in ${region}: ${failure.error}`);
     }
   }
   return { items, failedRegions };
@@ -182,10 +191,14 @@ async function listRdsClusters(
   ctx: CheckContext,
 ): Promise<RegionScan<RdsClusterInfo>> {
   const items: RdsClusterInfo[] = [];
-  const failedRegions: string[] = [];
+  const failedRegions: Array<{ region: string; failure: ReadFailure }> = [];
   for (const region of session.regions) {
     try {
-      const rds = new RDSClient({ region, credentials: session.credentials });
+      const rds = new RDSClient({
+        region,
+        credentials: session.credentials,
+        maxAttempts: 5,
+      });
       let marker: string | undefined;
       do {
         const resp = await rds.send(new DescribeDBClustersCommand({ Marker: marker }));
@@ -201,10 +214,9 @@ async function listRdsClusters(
         marker = resp.Marker;
       } while (marker);
     } catch (err) {
-      failedRegions.push(region);
-      ctx.log(
-        `RDS: could not list DB clusters in ${region}: ${err instanceof Error ? err.message : String(err)}`,
-      );
+      const failure = toReadFailure(err);
+      failedRegions.push({ region, failure });
+      ctx.log(`RDS: could not list DB clusters in ${region}: ${failure.error}`);
     }
   }
   return { items, failedRegions };
@@ -216,21 +228,40 @@ async function listRdsClusters(
  */
 function failUnverifiedRegions(
   ctx: CheckContext,
-  failedRegions: string[],
+  failedRegions: Array<{ region: string; failure: ReadFailure }>,
   what: string,
 ): void {
   if (failedRegions.length === 0) return;
-  const regions = [...new Set(failedRegions)];
-  ctx.fail({
-    title: `Could not verify RDS ${what} in some regions`,
-    description: `RDS resources could not be listed in: ${regions.join(', ')}, so ${what} in those regions is unverified.`,
-    resourceType: 'aws-rds',
-    resourceId: `regions:${regions.join(',')}`,
-    severity: 'medium',
-    remediation:
-      'Ensure the integration role can describe RDS instances and clusters in all enabled regions, then re-run the check.',
-    evidence: { failedRegions: regions },
-  });
+  // One entry per region; a denied failure wins over a transient one so the
+  // grant hint isn't masked when instances and clusters failed differently.
+  const byRegion = new Map<string, ReadFailure>();
+  for (const f of failedRegions) {
+    const existing = byRegion.get(f.region);
+    if (!existing || (f.failure.denied && !existing.denied)) {
+      byRegion.set(f.region, f.failure);
+    }
+  }
+  const regions = [...byRegion.keys()];
+  emitOutcomes(ctx, [
+    {
+      kind: 'fail',
+      title: `Could not verify RDS ${what} in some regions`,
+      description: `RDS resources could not be listed in: ${regions.join(', ')}, so ${what} in those regions is unverified.`,
+      resourceType: 'aws-rds',
+      resourceId: `regions:${regions.join(',')}`,
+      severity: 'medium',
+      remediation: remediationForReadFailure(
+        combineReadFailures([...byRegion.values()]),
+        'Grant rds:DescribeDBInstances and rds:DescribeDBClusters to the integration role in all enabled regions, then re-run the check.',
+      ),
+      evidence: {
+        failedRegions: [...byRegion.entries()].map(([region, failure]) => ({
+          region,
+          error: failure.error,
+        })),
+      },
+    },
+  ]);
 }
 
 export const rdsEncryptionCheck: IntegrationCheck = {

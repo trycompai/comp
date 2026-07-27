@@ -124,7 +124,9 @@ export function ModernTaskListItem({
                 />
               ) : (
                 <span className="text-muted-foreground text-xs font-medium">
-                  {member.user?.name?.charAt(0) ?? '?'}
+                  {member.user?.name?.charAt(0) ||
+                    member.user?.email?.charAt(0).toUpperCase() ||
+                    '?'}
                 </span>
               )}
             </div>

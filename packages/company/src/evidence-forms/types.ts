@@ -6,6 +6,10 @@ export type EvidenceFormMatrixColumnDefinition = {
   required?: boolean;
   placeholder?: string;
   description?: string;
+  // Defaults to a free-text input. Set to 'select' to render a dropdown
+  // picklist using `options`.
+  type?: 'text' | 'select';
+  options?: ReadonlyArray<{ label: string; value: string }>;
 };
 
 export type EvidenceFormFieldDefinition = {
@@ -19,6 +23,8 @@ export type EvidenceFormFieldDefinition = {
   accept?: string;
   columns?: ReadonlyArray<EvidenceFormMatrixColumnDefinition>;
   addRowLabel?: string;
+  // Matrix only: rows the form is pre-seeded with (keyed by column key).
+  defaultRows?: ReadonlyArray<Readonly<Record<string, string>>>;
 };
 
 export type EvidenceFormDefinition = {

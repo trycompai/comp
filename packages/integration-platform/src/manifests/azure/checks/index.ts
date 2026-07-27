@@ -10,3 +10,4 @@ export { keyVaultProtectionCheck, keyVaultRbacCheck } from './key-vault';
 export { nsgNoOpenPortsCheck } from './network';
 export { rbacLeastPrivilegeCheck } from './entra-id';
 export { monitorLoggingAlertingCheck } from './monitor';
+export { environmentSeparationCheck } from './environment-separation';

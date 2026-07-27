@@ -97,6 +97,8 @@ export const useEmployeeSync = ({
           ? PROVIDER_CONFIG[provider as BuiltInSyncProvider].name
           : (availableProviders.find((p) => p.slug === provider)?.name ?? provider);
         toast.success(`${name} set as your employee sync provider`);
+      } else {
+        toast.success('Employee auto-sync turned off');
       }
     } catch (error) {
       toast.error('Failed to set sync provider');

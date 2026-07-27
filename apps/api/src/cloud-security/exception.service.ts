@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { db } from '@db';
 import { logCloudSecurityActivity } from './cloud-security-audit';
-import { normalizeCheckId } from './check-definition.utils';
+import { resolveCheckKey } from './check-definition.utils';
 
 /** Minimum chars for an exception reason — meant to discourage low-effort
  * reasons like "ok" or "test". Auditors rely on this field as the
@@ -198,7 +198,7 @@ export class CloudExceptionService {
       select: {
         resourceId: true,
         evidence: true,
-        checkRun: { select: { connectionId: true } },
+        checkRun: { select: { connectionId: true, checkId: true } },
       },
     });
 
@@ -213,7 +213,14 @@ export class CloudExceptionService {
       evidence && typeof evidence.findingKey === 'string'
         ? evidence.findingKey
         : null;
-    if (!rawFindingKey || !result.resourceId) {
+
+    const resolvedCheckId = resolveCheckKey({
+      findingKey: rawFindingKey,
+      resourceId: result.resourceId,
+      runCheckId: result.checkRun.checkId,
+    });
+
+    if (!resolvedCheckId || !result.resourceId) {
       throw new BadRequestException(
         'This finding cannot be marked as an exception — it lacks a stable check/resource identity.',
       );
@@ -221,7 +228,7 @@ export class CloudExceptionService {
 
     return {
       connectionId: result.checkRun.connectionId,
-      checkId: normalizeCheckId(rawFindingKey, result.resourceId),
+      checkId: resolvedCheckId,
       resourceId: result.resourceId,
     };
   }

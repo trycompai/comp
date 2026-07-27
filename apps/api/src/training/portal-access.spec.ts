@@ -93,7 +93,10 @@ describe('Portal access matrix', () => {
       ['employee'],
       ['contractor'],
       ['owner'],
+      ['admin'],
       ['admin,employee'],
+      ['admin,member'],
+      ['admin,auditor'],
       ['owner,employee'],
       ['employee,contractor'],
     ])('%s → ALLOW', (roleString) => {
@@ -102,24 +105,24 @@ describe('Portal access matrix', () => {
   });
 
   describe('roles that should NOT have portal access', () => {
-    it.each([
-      ['admin'],
-      ['auditor'],
-      ['member'],
-      ['admin,member'],
-      ['admin,auditor'],
-      [''],
-    ])('%s → DENY', (roleString) => {
-      expect(hasPortalAccessForBuiltInRoles(roleString)).toBe(false);
-    });
+    it.each([['auditor'], ['member'], ['']])(
+      '%s → DENY',
+      (roleString) => {
+        expect(hasPortalAccessForBuiltInRoles(roleString)).toBe(false);
+      },
+    );
   });
 
   describe('portal access relies on RBAC, not role names', () => {
-    it('admin gets portal access only through the employee role', () => {
-      expect(BUILT_IN_ROLE_PERMISSIONS.admin?.portal).toBeUndefined();
-      expect(BUILT_IN_ROLE_PERMISSIONS.employee?.portal).toEqual(
+    it('admin has portal access through its own permissions', () => {
+      expect(BUILT_IN_ROLE_PERMISSIONS.admin?.portal).toEqual(
         expect.arrayContaining(['read', 'update']),
       );
+    });
+
+    it('auditor is denied portal access by RBAC, not by role name', () => {
+      expect(BUILT_IN_ROLE_PERMISSIONS.auditor?.portal).toBeUndefined();
+      expect(BUILT_IN_ROLE_OBLIGATIONS.auditor?.compliance).toBeFalsy();
     });
 
     it('admin does not have compliance obligation', () => {

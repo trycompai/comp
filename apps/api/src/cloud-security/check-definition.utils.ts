@@ -38,6 +38,27 @@ export function normalizeCheckId(
   return findingKey;
 }
 
+/**
+ * The stable check key used to key exceptions and suppress findings across
+ * scans. Prefer the stamped `findingKey` (normalized to the bare check id);
+ * fall back to the check run's own `checkId` for older rows stored before
+ * findingKey stamping. The auto-run sentinel `'all'` is not a real check, so
+ * it yields null (the finding can't be marked as an exception).
+ *
+ * Shared by the exception resolver and the findings query so a finding marked
+ * as an exception is also the one suppressed from the list.
+ */
+export function resolveCheckKey(params: {
+  findingKey: string | null;
+  resourceId: string | null;
+  runCheckId: string | null;
+}): string | null {
+  const { findingKey, resourceId, runCheckId } = params;
+  if (findingKey) return normalizeCheckId(findingKey, resourceId);
+  if (runCheckId && runCheckId !== 'all') return runCheckId;
+  return null;
+}
+
 export interface SourceHashInput {
   provider: string;
   serviceName: string | null;

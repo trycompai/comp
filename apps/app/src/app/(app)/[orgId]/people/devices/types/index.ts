@@ -11,6 +11,23 @@ export type CheckDetailEntry = {
 
 export type CheckDetails = Record<string, CheckDetailEntry>;
 
+/** A compliance check as reported by the source integration (provider naming). */
+export type SourceComplianceCheck = {
+  id: string;
+  label: string;
+  passed: boolean;
+};
+
+/**
+ * Compliance reported by the SOURCE integration for imported devices. Both
+ * fields optional — providers report what they know. null/absent = the source
+ * reports no compliance (UI shows "Not tracked").
+ */
+export type SourceCompliance = {
+  isCompliant?: boolean;
+  checks?: SourceComplianceCheck[];
+};
+
 export interface DeviceWithChecks {
   id: string;
   name: string;
@@ -34,7 +51,23 @@ export interface DeviceWithChecks {
     email: string;
   };
   /** Indicates which system reported this device */
-  source: 'device_agent' | 'fleet';
+  source: 'device_agent' | 'fleet' | 'integration';
+  /**
+   * Set only when `source === 'integration'`: the provider that imported this
+   * device, so the UI can label its provenance instead of mislabeling it as an
+   * agent device. `logoUrl` is optional — the DB provider row has no logo, so it
+   * may be filled later from the manifest registry.
+   */
+  integrationProvider?: {
+    slug: string;
+    name: string;
+    logoUrl?: string;
+  };
+  /**
+   * Set only when `source === 'integration'` and the provider reports
+   * compliance: the source's verdict and/or its own named checks.
+   */
+  sourceCompliance?: SourceCompliance | null;
   /** Derived on the server; 'stale' = no check-in for >= 7 days. */
   complianceStatus: DeviceComplianceStatus;
   /** Whole days since last check-in, or null when never synced. */

@@ -18,7 +18,6 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { formatDistanceToNow } from 'date-fns';
-import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import type { OrgChartMember } from '../types';
@@ -30,6 +29,7 @@ interface OrgChartEditorProps {
   initialEdges: Edge[];
   members: OrgChartMember[];
   updatedAt: string | null;
+  onChartChange: () => void | Promise<unknown>;
 }
 
 export function OrgChartEditor({
@@ -37,9 +37,9 @@ export function OrgChartEditor({
   initialEdges,
   members,
   updatedAt,
+  onChartChange,
 }: OrgChartEditorProps) {
   const api = useApi();
-  const router = useRouter();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
 
@@ -161,7 +161,12 @@ export function OrgChartEditor({
         setLastSavedAt(new Date().toISOString());
       }
       toast.success('Org chart saved');
-      router.refresh();
+
+      try {
+        await onChartChange();
+      } catch {
+        // Save already succeeded; a refresh failure shouldn't surface as a save error.
+      }
     } catch {
       toast.error('Failed to save org chart');
     } finally {

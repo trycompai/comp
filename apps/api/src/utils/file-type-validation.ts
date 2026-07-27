@@ -4,9 +4,15 @@ const MAGIC_BYTES: Record<string, Buffer[]> = {
   'image/png': [Buffer.from([0x89, 0x50, 0x4e, 0x47])],
   'image/jpeg': [Buffer.from([0xff, 0xd8, 0xff])],
   'image/gif': [Buffer.from('GIF87a'), Buffer.from('GIF89a')],
-  'application/pdf': [Buffer.from('%PDF')],
   'application/zip': [Buffer.from([0x50, 0x4b, 0x03, 0x04])],
 };
+
+// PDFs are handled separately: the %PDF-<version> header is allowed within the
+// first 1024 bytes (ISO 32000 §7.5.2 / Adobe's reader behaviour), not necessarily
+// at byte 0. Some exporters/vendors prepend a BOM or whitespace, so a strict
+// offset-0 magic-byte check rejects otherwise-valid PDFs.
+const PDF_HEADER = Buffer.from('%PDF');
+const PDF_HEADER_SEARCH_BYTES = 1024;
 
 /**
  * RIFF-based formats need extra validation — RIFF is shared by WAV, AVI, WebP, etc.
@@ -48,6 +54,17 @@ export function validateFileContent(
   // WebP needs special handling — RIFF prefix is shared with WAV, AVI, etc.
   if (lowerMime === 'image/webp') {
     if (!isValidWebP(fileBuffer)) {
+      throw new BadRequestException(
+        'The uploaded file is invalid or corrupted. Please try again with a valid file.',
+      );
+    }
+    return;
+  }
+
+  // PDFs: accept the %PDF header anywhere in the first 1024 bytes (not just at
+  // offset 0), so valid PDFs with a leading BOM/whitespace aren't rejected.
+  if (lowerMime === 'application/pdf') {
+    if (!fileBuffer.subarray(0, PDF_HEADER_SEARCH_BYTES).includes(PDF_HEADER)) {
       throw new BadRequestException(
         'The uploaded file is invalid or corrupted. Please try again with a valid file.',
       );

@@ -63,6 +63,24 @@ export const UPDATE_MEMBER_RESPONSES: Record<string, ApiResponseOptions> = {
       },
     },
   },
+  409: {
+    status: 409,
+    description:
+      'Conflict - Login email already used by another account, or the member belongs to other organizations',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            message: {
+              type: 'string',
+              example: 'That email is already used by another account',
+            },
+          },
+        },
+      },
+    },
+  },
   404: {
     status: 404,
     description: 'Organization, member, or user not found',

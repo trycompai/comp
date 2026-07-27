@@ -12,6 +12,16 @@ export async function buildManifestForFramework(frameworkId: string): Promise<Fr
     where: { id: frameworkId },
     include: {
       requirements: {
+        // FRAME-18: freeze requirements into the manifest in their configured
+        // order so newly-built instances inherit the framework's sort order.
+        // Secondary key is identifier (stable canonical-order key) then name —
+        // using name alone would let the frozen order shift when a descriptive
+        // name is edited.
+        orderBy: [
+          { sortOrder: { sort: 'asc', nulls: 'last' } },
+          { identifier: 'asc' },
+          { name: 'asc' },
+        ],
         include: {
           controlTemplates: {
             include: {
@@ -108,6 +118,7 @@ export async function buildManifestForFramework(frameworkId: string): Promise<Fr
       name: r.name,
       description: r.description,
       requirementFamily: r.requirementFamily || null,
+      sortOrder: r.sortOrder ?? null,
     })),
     controls: [...controlsMap.values()],
     policies: [...policiesMap.values()],

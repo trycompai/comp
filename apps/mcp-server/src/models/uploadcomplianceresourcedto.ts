@@ -6,7 +6,7 @@ import * as z from "zod";
 import { ClosedEnum } from "../types/enums.js";
 
 /**
- * Compliance framework identifier
+ * Native compliance framework identifier
  */
 export const UploadComplianceResourceDtoFramework = {
   Iso27001: "iso_27001",
@@ -23,7 +23,7 @@ export const UploadComplianceResourceDtoFramework = {
   Ccpa: "ccpa",
 } as const;
 /**
- * Compliance framework identifier
+ * Native compliance framework identifier
  */
 export type UploadComplianceResourceDtoFramework = ClosedEnum<
   typeof UploadComplianceResourceDtoFramework
@@ -42,11 +42,12 @@ export const UploadComplianceResourceDtoFramework$zodSchema = z.enum([
   "iso_9001",
   "pipeda",
   "ccpa",
-]).describe("Compliance framework identifier");
+]).describe("Native compliance framework identifier");
 
 export type UploadComplianceResourceDto = {
   organizationId: string;
-  framework: UploadComplianceResourceDtoFramework;
+  framework?: UploadComplianceResourceDtoFramework | undefined;
+  customFrameworkId?: string | undefined;
   fileName: string;
   fileType: string;
   fileData: string;
@@ -55,11 +56,14 @@ export type UploadComplianceResourceDto = {
 export const UploadComplianceResourceDto$zodSchema: z.ZodType<
   UploadComplianceResourceDto
 > = z.object({
+  customFrameworkId: z.string().optional().describe(
+    "Org-authored custom framework ID (alternative to `framework`)",
+  ),
   fileData: z.string().describe("Base64 encoded PDF content"),
   fileName: z.string().describe("Original file name (PDF only)"),
   fileType: z.string().describe("MIME type of the file"),
-  framework: UploadComplianceResourceDtoFramework$zodSchema.describe(
-    "Compliance framework identifier",
+  framework: UploadComplianceResourceDtoFramework$zodSchema.optional().describe(
+    "Native compliance framework identifier",
   ),
   organizationId: z.string().describe(
     "Organization ID that owns the compliance resource",

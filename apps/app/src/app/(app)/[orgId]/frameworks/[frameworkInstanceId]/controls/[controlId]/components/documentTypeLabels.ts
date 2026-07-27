@@ -19,6 +19,7 @@ export const DOCUMENT_TYPE_LABELS: Record<EvidenceFormType, string> = {
   employee_performance_evaluation: 'Employee Performance Evaluation',
   network_diagram: 'Network Diagram',
   tabletop_exercise: 'Tabletop Exercise',
+  account_types: 'Account Types',
 };
 
 export const ALL_DOCUMENT_TYPES = Object.keys(

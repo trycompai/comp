@@ -34,7 +34,10 @@ export default async function Page({
   const orgId = session?.session?.activeOrganizationId;
 
   if (orgId && inviteCode) {
-    redirect('/setup');
+    // An invite code always takes priority: send the user to the invitation
+    // acceptance flow (which validates the invite and applies the role), never
+    // to the new-org onboarding wizard.
+    redirect(`/invite/${inviteCode}`);
   }
 
   if (orgId && !inviteCode) {

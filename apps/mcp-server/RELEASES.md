@@ -31,3 +31,51 @@ Based on:
 - Speakeasy CLI 1.771.0 (2.893.0) https://github.com/speakeasy-api/speakeasy
 ### Generated
 - [mcp-typescript v0.1.0] apps/mcp-server
+
+## 2026-06-12 00:27:40
+### Changes
+Based on:
+- OpenAPI Doc  
+- Speakeasy CLI 1.777.1 (2.903.2) https://github.com/speakeasy-api/speakeasy
+### Generated
+- [mcp-typescript v0.2.0] apps/mcp-server
+
+## 2026-06-24 20:02:47
+### Changes
+Based on:
+- OpenAPI Doc  
+- Speakeasy CLI 1.785.0 (2.912.1) https://github.com/speakeasy-api/speakeasy
+### Generated
+- [mcp-typescript v0.2.1] apps/mcp-server
+
+## 2026-07-16 00:48:06
+### Changes
+Based on:
+- OpenAPI Doc  
+- Speakeasy CLI 1.790.2 (2.918.3) https://github.com/speakeasy-api/speakeasy
+### Generated
+- [mcp-typescript v0.2.2] apps/mcp-server
+
+## 2026-07-16 21:15:17
+### Changes
+Based on:
+- OpenAPI Doc  
+- Speakeasy CLI 1.790.2 (2.918.3) https://github.com/speakeasy-api/speakeasy
+### Generated
+- [mcp-typescript v0.2.3] apps/mcp-server
+
+## 2026-07-22 03:34:34
+### Changes
+Based on:
+- OpenAPI Doc  
+- Speakeasy CLI 1.790.3 (2.918.4) https://github.com/speakeasy-api/speakeasy
+### Generated
+- [mcp-typescript v0.2.4] apps/mcp-server
+
+## 2026-07-22 20:23:52
+### Changes
+Based on:
+- OpenAPI Doc  
+- Speakeasy CLI 1.790.3 (2.918.4) https://github.com/speakeasy-api/speakeasy
+### Generated
+- [mcp-typescript v0.2.5] apps/mcp-server

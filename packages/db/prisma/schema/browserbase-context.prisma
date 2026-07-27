@@ -16,6 +16,55 @@ model BrowserbaseContext {
   @@index([organizationId])
 }
 
+/// Auth state for one website identity backed by a Browserbase context.
+/// Credentials and TOTP secrets are intentionally not stored here.
+model BrowserAuthProfile {
+  id String @id @default(dbgenerated("generate_prefixed_cuid('bap'::text)"))
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  hostname      String
+  loginIdentity String @default("")
+  displayName   String
+
+  /// The vendor's own label for the identifier field (e.g. "IAM username"),
+  /// detected at connect time, so sign-in steps and reconnects show the real
+  /// field name instead of a generic "username".
+  identifierLabel String?
+
+  contextId        String
+  status           BrowserAuthProfileStatus @default(unverified)
+  lastVerifiedAt   DateTime?
+  lastAuthCheckUrl String?
+  blockedReason    String?
+
+  /// Outcome of the most recent connect/sign-in attempt — a stable code
+  /// (e.g. "logged_in", "invalid_credentials", "needs_2fa", "challenge",
+  /// "sso_handoff", "unknown", "error"), a human-readable detail, and when it
+  /// happened. Persisted so a "can't connect" support ticket can be diagnosed
+  /// from the connection row alone, instead of from ephemeral run logs. This is
+  /// a diagnostic breadcrumb, not the live connection state — see `status`.
+  lastSignInOutcome String?
+  lastSignInDetail  String?
+  lastSignInAt      DateTime?
+
+  vaultProvider        String?
+  vaultExternalItemRef String?
+  vaultConnectionId    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  runs           BrowserAutomationRun[]
+  automationSteps BrowserAutomationStep[]
+
+  @@unique([organizationId, hostname, loginIdentity])
+  @@index([organizationId])
+  @@index([organizationId, hostname])
+  @@index([status])
+}
+
 /// Browser automation configuration linked to a task
 model BrowserAutomation {
   id          String  @id @default(dbgenerated("generate_prefixed_cuid('bau'::text)"))
@@ -45,7 +94,8 @@ model BrowserAutomation {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  runs BrowserAutomationRun[]
+  runs  BrowserAutomationRun[]
+  steps BrowserAutomationStep[]
 
   @@index([taskId])
 }
@@ -58,6 +108,10 @@ model BrowserAutomationRun {
   automationId String
   automation   BrowserAutomation @relation(fields: [automationId], references: [id], onDelete: Cascade)
 
+  /// Auth profile/context used by this run
+  profileId String?
+  profile   BrowserAuthProfile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
+
   /// Execution status
   status BrowserAutomationRunStatus @default(pending)
 
@@ -68,8 +122,11 @@ model BrowserAutomationRun {
   /// Duration in milliseconds
   durationMs Int?
 
-  /// Screenshot URL in S3 (if successful)
+  /// Screenshot URL in S3 (if successful) — the full page
   screenshotUrl String?
+
+  /// A focused close-up (the agent's final viewport) shown as the "proof"
+  focusScreenshotUrl String?
 
   /// Evaluation result - whether the automation fulfilled the task requirements
   evaluationStatus BrowserAutomationEvaluationStatus?
@@ -80,11 +137,123 @@ model BrowserAutomationRun {
   /// Error message (if failed)
   error String?
 
+  /// Stable failure metadata for retries, UI copy, and profile repair flows
+  failureCode  BrowserAutomationFailureCode?
+  failureStage BrowserAutomationFailureStage?
+  attemptCount Int                            @default(1)
+  blockedReason String?
+
+  /// Final browser URL and structured execution events
+  finalUrl String?
+  logs     Json?
+
   createdAt DateTime @default(now())
 
+  stepRuns BrowserAutomationStepRun[]
+
   @@index([automationId])
+  @@index([profileId])
   @@index([status])
+  @@index([failureCode])
   @@index([createdAt])
+}
+
+/// An in-progress (unsaved) automation the user is composing. Persisted
+/// server-side so a draft survives refreshes and follows the user across
+/// devices; it becomes a BrowserAutomation on save and is deleted then.
+model BrowserAutomationDraft {
+  id String @id @default(dbgenerated("generate_prefixed_cuid('bad'::text)"))
+
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  /// Member who last edited the draft (attribution / "your drafts").
+  createdById String?
+
+  /// Preview name, derived from the first step's instruction.
+  name String?
+
+  /// The composer state: an ordered array of
+  /// { profileId, targetUrl, instruction, evaluationCriteria }.
+  steps Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([taskId])
+}
+
+/// One step of a (possibly multi-vendor) automation. Steps run in `order`, each
+/// on its own connection's saved session, so a single automation can span
+/// several vendors without re-logging in.
+model BrowserAutomationStep {
+  id String @id @default(dbgenerated("generate_prefixed_cuid('bas'::text)"))
+
+  automationId String
+  automation   BrowserAutomation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+
+  /// Position in the sequence (0-based).
+  order Int
+
+  /// Connection this step runs on. Nullable so removing a connection leaves the
+  /// step in place (needing a re-bind) instead of deleting it.
+  profileId String?
+  profile   BrowserAuthProfile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
+
+  /// Starting URL for this step.
+  targetUrl String
+
+  /// Natural-language instruction for the AI agent on this step.
+  instruction String
+
+  /// Optional pass/fail criterion for this step. Null = capture only.
+  evaluationCriteria String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  stepRuns BrowserAutomationStepRun[]
+
+  @@index([automationId])
+  @@index([profileId])
+}
+
+/// Per-step result within one automation run (evidence + verdict per step).
+model BrowserAutomationStepRun {
+  id String @id @default(dbgenerated("generate_prefixed_cuid('basr'::text)"))
+
+  runId String
+  run   BrowserAutomationRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  /// Step this result belongs to. Nullable so editing/removing a step doesn't
+  /// delete historical run evidence.
+  stepId String?
+  step   BrowserAutomationStep? @relation(fields: [stepId], references: [id], onDelete: SetNull)
+
+  order Int
+
+  status BrowserAutomationRunStatus @default(pending)
+
+  screenshotUrl      String?
+  focusScreenshotUrl String?
+  evaluationStatus   BrowserAutomationEvaluationStatus?
+  evaluationReason   String?
+  error              String?
+
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([runId])
+  @@index([stepId])
+}
+
+enum BrowserAuthProfileStatus {
+  unverified
+  verified
+  needs_reauth
+  blocked
 }
 
 enum BrowserAutomationEvaluationStatus {
@@ -97,4 +266,27 @@ enum BrowserAutomationRunStatus {
   running
   completed
   failed
+  blocked
+}
+
+enum BrowserAutomationFailureCode {
+  needs_reauth
+  needs_user_action
+  rate_limited
+  captcha_blocked
+  timeout
+  browser_session_lost
+  evaluation_failed
+  unknown
+}
+
+enum BrowserAutomationFailureStage {
+  auth
+  navigation
+  action
+  screenshot
+  evaluation
+  upload
+  session
+  unknown
 }

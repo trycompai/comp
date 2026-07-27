@@ -6,7 +6,15 @@ import {
 } from '@aws-sdk/client-cloudtrail';
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
-import { resolveAwsSessionOrFail, type CheckOutcome, emitOutcomes } from './shared';
+import {
+  combineReadFailures,
+  remediationForReadFailure,
+  resolveAwsSessionOrFail,
+  toReadFailure,
+  type CheckOutcome,
+  type ReadFailure,
+  emitOutcomes,
+} from './shared';
 
 export interface TrailInfo {
   name: string;
@@ -20,9 +28,19 @@ export interface TrailInfo {
    * be read, this is set to false so it is NOT misreported as logging=false.
    */
   loggingKnown?: boolean;
+  /** set when GetTrailStatus failed — the real error, surfaced in evidence */
+  statusReadFailure?: ReadFailure;
 }
 
-export function evaluateCloudTrail(trails: TrailInfo[]): CheckOutcome[] {
+export interface CloudTrailEvalOptions {
+  /** regions DescribeTrails ran in — shown when no trail is found */
+  scannedRegions?: string[];
+}
+
+export function evaluateCloudTrail(
+  trails: TrailInfo[],
+  opts?: CloudTrailEvalOptions,
+): CheckOutcome[] {
   const good = trails.find(
     (t) => t.multiRegion && t.logValidation && t.logging && t.loggingKnown !== false,
   );
@@ -47,31 +65,44 @@ export function evaluateCloudTrail(trails: TrailInfo[]): CheckOutcome[] {
     (t) => t.multiRegion && t.logValidation && t.loggingKnown === false,
   );
   if (unverifiableCandidate) {
+    const failure = unverifiableCandidate.statusReadFailure;
     return [
       {
         kind: 'fail',
         title: 'Could not verify CloudTrail logging status',
-        description: `Trail "${unverifiableCandidate.name}" is multi-region with log file validation, but its logging status (GetTrailStatus) could not be read, so active logging is unverified.`,
+        description: `Trail "${unverifiableCandidate.name}" is multi-region with log file validation, but its logging status (GetTrailStatus) could not be read${failure ? ` (${failure.error})` : ''}, so active logging is unverified.`,
         resourceType: 'aws-cloudtrail',
         resourceId: unverifiableCandidate.name,
         severity: 'medium',
-        remediation:
+        remediation: remediationForReadFailure(
+          failure,
           'Grant cloudtrail:GetTrailStatus to the integration role so logging status can be verified, then re-run the check.',
-        evidence: { trail: unverifiableCandidate.name },
+        ),
+        evidence: {
+          trail: unverifiableCandidate.name,
+          ...(failure ? { readError: failure.error } : {}),
+        },
       },
     ];
   }
   if (trails.length === 0) {
+    const scanned = opts?.scannedRegions ?? [];
     return [
       {
         kind: 'fail',
-        title: 'No CloudTrail configured',
-        description: 'No CloudTrail trail is configured for the account.',
+        title: 'No CloudTrail trail found',
+        // A multi-region trail shadows into every region, so it would be
+        // visible in any scanned region — only single-region trails homed
+        // outside the scanned regions (non-compliant anyway) are invisible.
+        description: `No CloudTrail trail was found${scanned.length > 0 ? ` in the scanned regions (${scanned.join(', ')})` : ''}. A compliant multi-region trail would be visible in any scanned region.`,
         resourceType: 'aws-cloudtrail',
         resourceId: 'account',
         severity: 'high',
         remediation: 'Create a multi-region CloudTrail trail with log file validation enabled.',
-        evidence: { trailsFound: 0 },
+        evidence: {
+          trailsFound: 0,
+          ...(scanned.length > 0 ? { scannedRegions: scanned } : {}),
+        },
       },
     ];
   }
@@ -118,12 +149,15 @@ export const cloudTrailEnabledCheck: IntegrationCheck = {
     // dedupe by TrailARN before evaluating.
     const seenArns = new Set<string>();
     const trails: TrailInfo[] = [];
-    const failedRegions: string[] = [];
+    const regionFailures: Array<{ region: string; failure: ReadFailure }> = [];
 
     for (const region of session.regions) {
       const ct = new CloudTrailClient({
         region,
         credentials: session.credentials,
+        // Reads are idempotent; extra attempts ride out transient network or
+        // throttling failures during the scheduled-run herd.
+        maxAttempts: 5,
       });
 
       let trailList: DescribeTrailsCommandOutput['trailList'];
@@ -131,10 +165,9 @@ export const cloudTrailEnabledCheck: IntegrationCheck = {
         const resp = await ct.send(new DescribeTrailsCommand({}));
         trailList = resp.trailList;
       } catch (err) {
-        failedRegions.push(region);
-        ctx.log(
-          `CloudTrail: could not list trails in ${region}: ${err instanceof Error ? err.message : String(err)}`,
-        );
+        const failure = toReadFailure(err);
+        regionFailures.push({ region, failure });
+        ctx.log(`CloudTrail: could not list trails in ${region}: ${failure.error}`);
         continue;
       }
 
@@ -149,6 +182,7 @@ export const cloudTrailEnabledCheck: IntegrationCheck = {
         // Track whether the logging status was actually read so a failed
         // GetTrailStatus is not misreported as logging=false.
         let loggingKnown = true;
+        let statusReadFailure: ReadFailure | undefined;
         // Logging status only matters for otherwise-compliant trails.
         if (multiRegion && logValidation && t.TrailARN) {
           // Query GetTrailStatus against the trail's home region. A multi-region
@@ -163,6 +197,7 @@ export const cloudTrailEnabledCheck: IntegrationCheck = {
               : new CloudTrailClient({
                   region: homeRegion,
                   credentials: session.credentials,
+                  maxAttempts: 5,
                 });
           try {
             const status = await statusClient.send(
@@ -171,8 +206,9 @@ export const cloudTrailEnabledCheck: IntegrationCheck = {
             logging = status.IsLogging === true;
           } catch (err) {
             loggingKnown = false;
+            statusReadFailure = toReadFailure(err);
             ctx.log(
-              `CloudTrail: could not read logging status for ${t.Name ?? t.TrailARN}: ${err instanceof Error ? err.message : String(err)}`,
+              `CloudTrail: could not read logging status for ${t.Name ?? t.TrailARN}: ${statusReadFailure.error}`,
             );
           }
         }
@@ -182,6 +218,7 @@ export const cloudTrailEnabledCheck: IntegrationCheck = {
           logValidation,
           logging,
           loggingKnown,
+          statusReadFailure,
         });
       }
     }
@@ -189,20 +226,34 @@ export const cloudTrailEnabledCheck: IntegrationCheck = {
     // If we found no trails AND at least one region's DescribeTrails failed, we
     // can't conclude "No CloudTrail configured" (that would be a false high on a
     // permissions/transient error) — report it as unverified instead.
-    if (trails.length === 0 && failedRegions.length > 0) {
-      ctx.fail({
-        title: 'Could not verify CloudTrail configuration',
-        description: `CloudTrail trails could not be listed in: ${failedRegions.join(', ')}, so trail configuration is unverified.`,
-        resourceType: 'aws-cloudtrail',
-        resourceId: 'account',
-        severity: 'medium',
-        remediation:
-          'Grant cloudtrail:DescribeTrails to the integration role in all enabled regions, then re-run the check.',
-        evidence: { failedRegions },
-      });
+    if (trails.length === 0 && regionFailures.length > 0) {
+      const combined = combineReadFailures(regionFailures.map((r) => r.failure));
+      emitOutcomes(ctx, [
+        {
+          kind: 'fail',
+          title: 'Could not verify CloudTrail configuration',
+          description: `CloudTrail trails could not be listed in: ${regionFailures.map((r) => r.region).join(', ')}, so trail configuration is unverified.`,
+          resourceType: 'aws-cloudtrail',
+          resourceId: 'account',
+          severity: 'medium',
+          remediation: remediationForReadFailure(
+            combined,
+            'Grant cloudtrail:DescribeTrails to the integration role in all enabled regions, then re-run the check.',
+          ),
+          evidence: {
+            failedRegions: regionFailures.map((r) => ({
+              region: r.region,
+              error: r.failure.error,
+            })),
+          },
+        },
+      ]);
       return;
     }
 
-    emitOutcomes(ctx, evaluateCloudTrail(trails));
+    emitOutcomes(
+      ctx,
+      evaluateCloudTrail(trails, { scannedRegions: session.regions }),
+    );
   },
 };

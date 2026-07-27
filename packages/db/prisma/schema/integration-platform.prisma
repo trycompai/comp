@@ -65,6 +65,16 @@ model IntegrationConnection {
   /// Error message if status is error
   errorMessage String?
 
+  /// Lease expiry used to serialize concurrent OAuth token refreshes across
+  /// processes. Set while a refresh is in flight; auto-expires so a crashed
+  /// worker cannot block future refreshes. Null = no refresh in progress.
+  refreshLeaseUntil DateTime?
+
+  /// Owner token for the active refresh lease. The lease may only be released
+  /// by the holder whose token matches, so a holder whose work outlived the
+  /// lease TTL cannot wipe a lease another worker has since acquired.
+  refreshLeaseToken String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -172,6 +182,10 @@ enum IntegrationRunStatus {
   success
   failed
   cancelled
+  /// The check could not be evaluated for a non-customer reason (our bug, a
+  /// changed/deprecated vendor endpoint, or a transient error). Held instead of
+  /// shown as a red "failed" — the self-heal layer investigates/fixes it.
+  inconclusive
 }
 
 /// Stores findings/results from integration syncs

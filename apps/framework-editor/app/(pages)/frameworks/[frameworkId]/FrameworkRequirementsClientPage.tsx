@@ -2,6 +2,10 @@
 
 import { apiClient } from '@/app/lib/api-client';
 import {
+  loadColumnWidths,
+  saveColumnWidths,
+} from '@/app/components/table/column-widths-cookie';
+import {
   createColumnHelper,
   flexRender,
   getCoreRowModel,
@@ -12,7 +16,7 @@ import {
 import { Button } from '@trycompai/ui';
 import { ArrowDown, ArrowUp, ArrowUpDown, Download, PencilIcon, Plus, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { ComboboxCell, DateCell, EditableCell, RelationalCell } from '../../../components/table';
 import { EditFrameworkDialog } from './components/EditFrameworkDialog';
@@ -37,6 +41,7 @@ interface RequirementInput {
   identifier: string;
   description: string;
   requirementFamily?: string | null;
+  sortOrder?: number | null;
   frameworkId: string;
   createdAt: string | Date;
   updatedAt: string | Date;
@@ -66,6 +71,9 @@ async function unlinkControlFromRequirement(requirementId: string, controlId: st
 
 const columnHelper = createColumnHelper<RequirementGridRow>();
 
+// FRAME-17: cookie key for this table's persisted column widths.
+const REQUIREMENTS_COLS_COOKIE = 'fwk-requirements-col-widths';
+
 export function FrameworkRequirementsClientPage({
   frameworkDetails,
   initialRequirements,
@@ -73,6 +81,9 @@ export function FrameworkRequirementsClientPage({
   const router = useRouter();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  // Row whose large description editor is currently open — highlighted so the
+  // edited row is obvious behind the (semi-transparent) editor dialog.
+  const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
 
   const initialGridData: RequirementGridRow[] = useMemo(
     () =>
@@ -82,6 +93,7 @@ export function FrameworkRequirementsClientPage({
         identifier: r.identifier ?? null,
         description: r.description ?? null,
         requirementFamily: r.requirementFamily ?? null,
+        sortOrder: r.sortOrder ?? null,
         controlTemplates: r.controlTemplates ?? [],
         controlTemplatesLength: r.controlTemplates?.length ?? 0,
         createdAt: r.createdAt ? new Date(r.createdAt) : null,
@@ -114,6 +126,38 @@ export function FrameworkRequirementsClientPage({
 
   const columns = useMemo(
     () => [
+      columnHelper.accessor('sortOrder', {
+        header: 'Order',
+        size: 90,
+        // Numbered rows ascending, unset rows last, identifier as a tiebreak.
+        // (tanstack inverts this for the desc toggle.)
+        sortingFn: (a, b) => {
+          const ao = a.original.sortOrder;
+          const bo = b.original.sortOrder;
+          if (ao !== bo) {
+            if (ao == null) return 1;
+            if (bo == null) return -1;
+            return ao - bo;
+          }
+          return (a.original.identifier ?? '').localeCompare(
+            b.original.identifier ?? '',
+            undefined,
+            { numeric: true },
+          );
+        },
+        cell: ({ row, getValue }) => {
+          const value = getValue();
+          return (
+            <EditableCell
+              value={value == null ? null : String(value)}
+              rowId={row.original.id}
+              columnId="sortOrder"
+              onUpdate={updateCell}
+              placeholder="—"
+            />
+          );
+        },
+      }),
       columnHelper.accessor('requirementFamily', {
         header: 'Family',
         size: 200,
@@ -154,15 +198,30 @@ export function FrameworkRequirementsClientPage({
       columnHelper.accessor('description', {
         header: 'Description',
         size: 300,
-        maxSize: 300,
-        cell: ({ row, getValue }) => (
-          <EditableCell
-            value={getValue()}
-            rowId={row.original.id}
-            columnId="description"
-            onUpdate={updateCell}
-          />
-        ),
+        // FRAME-17: allow widening well past the default so long requirement
+        // text is readable inline once the column is resized.
+        maxSize: 1200,
+        cell: ({ row, getValue }) => {
+          const { identifier, name } = row.original;
+          const titleSuffix = [identifier, name].filter(Boolean).join(' - ');
+          return (
+            <EditableCell
+              value={getValue()}
+              rowId={row.original.id}
+              columnId="description"
+              onUpdate={updateCell}
+              expandable
+              expandTitle={
+                titleSuffix
+                  ? `Edit Requirement Description - ${titleSuffix}`
+                  : 'Edit Requirement Description'
+              }
+              onExpandedChange={(open) =>
+                setExpandedRowId(open ? row.original.id : null)
+              }
+            />
+          );
+        },
       }),
       columnHelper.accessor('controlTemplates', {
         header: 'Linked Controls',
@@ -174,6 +233,7 @@ export function FrameworkRequirementsClientPage({
               items={getValue()}
               rowId={row.original.id}
               isNewRow={createdIds.has(row.original.id)}
+              allowSelectOnNewRows
               getAllItems={fetchAllControlTemplates}
               onLink={linkControlToRequirement}
               onUnlink={unlinkControlFromRequirement}
@@ -200,6 +260,7 @@ export function FrameworkRequirementsClientPage({
         id: 'actions',
         header: '',
         size: 50,
+        enableResizing: false,
         cell: ({ row }) => (
           <Button
             variant="ghost"
@@ -215,17 +276,40 @@ export function FrameworkRequirementsClientPage({
     [uniqueFamilies, updateCell, updateRelational, deleteRow, createdIds],
   );
 
-  const [sorting, setSorting] = useState<SortingState>([{ id: 'identifier', desc: false }]);
+  // FRAME-18: default to the framework's configured order. Numbered requirements
+  // come first; unset rows fall back to identifier order and sort last.
+  const [sorting, setSorting] = useState<SortingState>([{ id: 'sortOrder', desc: false }]);
+
+  // FRAME-17: persisted, drag-resizable column widths (cookie-backed). Loaded
+  // after mount (cookie is client-only) to avoid an SSR hydration mismatch.
+  const [columnSizing, setColumnSizing] = useState<Record<string, number>>({});
+  useEffect(() => {
+    const saved = loadColumnWidths(REQUIREMENTS_COLS_COOKIE);
+    if (Object.keys(saved).length > 0) setColumnSizing(saved);
+  }, []);
 
   const table = useReactTable({
     data,
     columns,
-    state: { sorting },
+    state: { sorting, columnSizing },
     onSortingChange: setSorting,
+    onColumnSizingChange: setColumnSizing,
+    columnResizeMode: 'onChange',
+    defaultColumn: { minSize: 60 },
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getRowId: (row) => row.id,
   });
+
+  // Persist widths once a drag ends (not on every mouse move).
+  const resizingColumn = table.getState().columnSizingInfo.isResizingColumn;
+  const wasResizing = useRef(false);
+  useEffect(() => {
+    if (wasResizing.current && !resizingColumn) {
+      saveColumnWidths(REQUIREMENTS_COLS_COOKIE, table.getState().columnSizing);
+    }
+    wasResizing.current = Boolean(resizingColumn);
+  }, [resizingColumn, table]);
 
   const handleAddRow = useCallback(() => {
     addRow({
@@ -234,6 +318,7 @@ export function FrameworkRequirementsClientPage({
       identifier: '',
       description: '',
       requirementFamily: null,
+      sortOrder: null,
       controlTemplates: [],
       controlTemplatesLength: 0,
       createdAt: new Date(),
@@ -330,15 +415,18 @@ export function FrameworkRequirementsClientPage({
       </div>
 
       <div className="scrollbar-primary border-border min-h-0 flex-1 overflow-auto rounded-xs border">
-        <table className="w-full border-collapse">
+        <table
+          className="border-collapse"
+          style={{ tableLayout: 'fixed', width: table.getTotalSize() }}
+        >
           <thead className="bg-muted/50">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="border-border text-muted-foreground border-b px-2 py-2 text-left text-xs font-medium"
-                    style={{ width: header.getSize(), maxWidth: header.column.columnDef.maxSize }}
+                    className="border-border text-muted-foreground relative border-b px-2 py-2 text-left text-xs font-medium"
+                    style={{ width: header.getSize() }}
                   >
                     {header.isPlaceholder ? null : header.column.getCanSort() ? (
                       <button
@@ -357,6 +445,15 @@ export function FrameworkRequirementsClientPage({
                     ) : (
                       flexRender(header.column.columnDef.header, header.getContext())
                     )}
+                    {/* FRAME-17: drag handle to resize this column. */}
+                    {header.column.getCanResize() && (
+                      <div
+                        onMouseDown={header.getResizeHandler()}
+                        onTouchStart={header.getResizeHandler()}
+                        onClick={(event) => event.stopPropagation()}
+                        className="hover:bg-primary/50 absolute top-0 right-0 z-10 h-full w-1.5 cursor-col-resize select-none"
+                      />
+                    )}
                   </th>
                 ))}
               </tr>
@@ -366,13 +463,17 @@ export function FrameworkRequirementsClientPage({
             {table.getRowModel().rows.map((row) => (
               <tr
                 key={row.id}
-                className={`border-border hover:bg-muted/30 border-b transition-colors ${getRowClassName(row.original.id)}`}
+                className={`border-border hover:bg-muted/30 border-b transition-colors ${getRowClassName(row.original.id)} ${
+                  expandedRowId === row.original.id
+                    ? 'ring-primary !bg-primary/15 ring-2 ring-inset'
+                    : ''
+                }`}
               >
                 {row.getVisibleCells().map((cell) => (
                   <td
                     key={cell.id}
-                    className="p-0"
-                    style={{ width: cell.column.getSize(), maxWidth: cell.column.columnDef.maxSize }}
+                    className="overflow-hidden p-0"
+                    style={{ width: cell.column.getSize() }}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>

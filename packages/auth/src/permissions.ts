@@ -42,7 +42,7 @@ export const statement = {
   app: ['read'], // Main app access
   trust: ['read', 'update'], // Trust center access
   // Security product resources
-  pentest: ['create', 'read', 'delete'],
+  pentest: ['create', 'read', 'update', 'delete'],
   // Training management
   training: ['read', 'update'],
   // Portal self-service
@@ -84,7 +84,7 @@ export const owner = ac.newRole({
   app: ['read'],
   trust: ['read', 'update'],
   // Security product
-  pentest: ['create', 'read', 'delete'],
+  pentest: ['create', 'read', 'update', 'delete'],
   // Training management
   training: ['read', 'update'],
   // Portal self-service
@@ -122,9 +122,12 @@ export const admin = ac.newRole({
   app: ['read'],
   trust: ['read', 'update'],
   // Security product
-  pentest: ['create', 'read', 'delete'],
+  pentest: ['create', 'read', 'update', 'delete'],
   // Training management
   training: ['read', 'update'],
+  // Portal self-service — admins manage GRC evidence, so they need to submit
+  // evidence forms (portal:update) just like owners do.
+  portal: ['read', 'update'],
   // Secrets manager — admin can fully manage decrypted credentials
   secret: ['create', 'read', 'update', 'delete'],
 });

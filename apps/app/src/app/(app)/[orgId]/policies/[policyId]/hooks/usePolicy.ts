@@ -26,14 +26,16 @@ export function usePolicy({ policyId, organizationId, initialData }: UsePolicyOp
   const { data, error, isLoading, mutate } = useSWR(
     policyKey(policyId, organizationId),
     async () => {
-      const response = await apiClient.get<PolicyApiResponse>(
-        `/v1/policies/${policyId}`,
-      );
+      const response = await apiClient.get<PolicyApiResponse>(`/v1/policies/${policyId}`);
       if (response.error) throw new Error(response.error);
       if (!response.data) return null;
 
       // Extract policy fields, excluding auth info
-      const { authType: _authType, authenticatedUser: _authenticatedUser, ...policy } = response.data;
+      const {
+        authType: _authType,
+        authenticatedUser: _authenticatedUser,
+        ...policy
+      } = response.data;
       return policy as PolicyWithApprover;
     },
     {
@@ -103,11 +105,17 @@ export function usePolicy({ policyId, organizationId, initialData }: UsePolicyOp
 
   const acceptChanges = useCallback(
     async (body: { approverId: string; comment?: string }) => {
-      const response = await apiClient.post(
-        `/v1/policies/${policyId}/accept-changes`,
-        body,
-      );
-      if (response.error) throw new Error(response.error);
+      // Route through the app's API (not apiClient → NestJS directly) so
+      // notification emails are sent after the version is published. The email
+      // task lives in the app's Trigger.dev project, so the trigger must happen
+      // server-side in the app; the route forwards to the NestJS endpoint.
+      const response = await fetch(`/api/policies/${policyId}/accept-changes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(body),
+      });
+      if (!response.ok) throw new Error('Failed to accept policy changes');
       await mutate();
       return response;
     },
@@ -116,10 +124,7 @@ export function usePolicy({ policyId, organizationId, initialData }: UsePolicyOp
 
   const denyChanges = useCallback(
     async (body: { approverId: string; comment?: string }) => {
-      const response = await apiClient.post(
-        `/v1/policies/${policyId}/deny-changes`,
-        body,
-      );
+      const response = await apiClient.post(`/v1/policies/${policyId}/deny-changes`, body);
       if (response.error) throw new Error(response.error);
       await mutate();
       return response;
@@ -140,9 +145,7 @@ export function usePolicy({ policyId, organizationId, initialData }: UsePolicyOp
 
   const removeControlMapping = useCallback(
     async (controlId: string) => {
-      const response = await apiClient.delete(
-        `/v1/policies/${policyId}/controls/${controlId}`,
-      );
+      const response = await apiClient.delete(`/v1/policies/${policyId}/controls/${controlId}`);
       if (response.error) throw new Error(response.error);
       return response;
     },

@@ -13,6 +13,7 @@ interface SOADocumentData {
   answers: Array<{
     questionId: string;
     answer: string | null;
+    isApplicable: boolean | null;
     answerVersion: number;
   }>;
   [key: string]: unknown;

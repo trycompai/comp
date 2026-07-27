@@ -46,6 +46,19 @@ const RESOURCE_CONTROL_MODELS: Record<string, string> = {
   risks: 'risk',
 };
 
+/**
+ * Singularize a plural resource segment for human-readable audit descriptions.
+ * Prefers the known Prisma model name (policies→policy, risks→risk); falls back
+ * to English rules ("ies"→"y", else drop trailing "s") so we never emit the
+ * naive-strip artifact "policie".
+ */
+function singularize(resource: string): string {
+  const known = RESOURCE_CONTROL_MODELS[resource];
+  if (known) return known;
+  if (resource.endsWith('ies')) return `${resource.slice(0, -3)}y`;
+  return resource.replace(/s$/, '');
+}
+
 async function fetchControlIds(
   resource: string,
   parentId: string,
@@ -103,7 +116,7 @@ export async function buildRelationMappingChanges(
     const afterIds = [...new Set([...currentIds, ...newIds])];
     const afterDisplay = afterIds.map((id) => nameMap[id] || id).join(', ');
 
-    const singularResource = resource.replace(/s$/, '');
+    const singularResource = singularize(resource);
 
     return {
       changes: { controls: { previous: prevDisplay, current: afterDisplay } },
@@ -132,7 +145,7 @@ export async function buildRelationMappingChanges(
         ? afterIds.map((id) => nameMap[id] || id).join(', ')
         : 'None';
 
-    const singularResource = resource.replace(/s$/, '');
+    const singularResource = singularize(resource);
 
     return {
       changes: { controls: { previous: prevDisplay, current: afterDisplay } },

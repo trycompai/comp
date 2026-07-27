@@ -65,6 +65,29 @@ describe('diffManifests', () => {
     expect(diff.requirementMapEdges.removed).toContainEqual({ controlTemplateId: 'c1', requirementTemplateId: 'r1' });
   });
 
+  it('reports no framework-metadata change for identical manifests', () => {
+    const m = emptyManifest();
+    expect(diffManifests(m, m).framework.changed).toBe(false);
+  });
+
+  it('detects a framework name change (FRAME-9)', () => {
+    const from = emptyManifest();
+    const to = { ...emptyManifest(), framework: { ...from.framework, name: 'New Name' } };
+    const diff = diffManifests(from, to);
+    expect(diff.framework.changed).toBe(true);
+    expect(diff.framework.name).toEqual({ from: 'n', to: 'New Name' });
+    expect(diff.framework.description).toBeUndefined();
+  });
+
+  it('detects a framework description change (FRAME-9)', () => {
+    const from = { ...emptyManifest(), framework: { id: 'f', name: 'n', catalogVersion: '1', description: 'old' } };
+    const to = { ...emptyManifest(), framework: { id: 'f', name: 'n', catalogVersion: '1', description: 'new' } };
+    const diff = diffManifests(from, to);
+    expect(diff.framework.changed).toBe(true);
+    expect(diff.framework.description).toEqual({ from: 'old', to: 'new' });
+    expect(diff.framework.name).toBeUndefined();
+  });
+
   it('drops phantom edges that reference entities missing from the manifest', () => {
     // Older snapshots sometimes stored cross-framework requirement IDs in
     // control.requirementIds. Those IDs are not in manifest.requirements, so

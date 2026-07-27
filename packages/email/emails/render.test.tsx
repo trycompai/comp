@@ -1,9 +1,11 @@
 import { render } from '@react-email/render';
 import { describe, expect, it } from 'vitest';
 import { AllPolicyNotificationEmail } from './all-policy-notification';
+import { ChangeEmailConfirmationEmail } from './change-email-confirmation';
 import { InviteEmail } from './invite';
 import { InvitePortalEmail } from './invite-portal';
 import { MagicLinkEmail } from './magic-link';
+import { VerifyEmail } from './verify-email';
 import { WelcomeEmail } from './marketing/welcome';
 import { OTPVerificationEmail } from './otp';
 import { PolicyAcknowledgmentDigestEmail } from './policy-acknowledgment-digest';
@@ -115,6 +117,20 @@ const cases = [
     ),
   },
   { name: 'otp', el: <OTPVerificationEmail email="user@example.com" otp="123456" /> },
+  {
+    name: 'verify-email',
+    el: <VerifyEmail email="user@example.com" url="https://app.trycomp.ai/verify" />,
+  },
+  {
+    name: 'change-email-confirmation',
+    el: (
+      <ChangeEmailConfirmationEmail
+        currentEmail="old@example.com"
+        newEmail="new@example.com"
+        url="https://app.trycomp.ai/verify"
+      />
+    ),
+  },
   {
     name: 'training-completed',
     el: (

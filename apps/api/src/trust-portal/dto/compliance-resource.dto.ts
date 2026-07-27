@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsString } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsEnum, IsOptional, IsString } from 'class-validator';
 import { TrustFramework } from '@db';
 
 export class ComplianceResourceBaseDto {
@@ -10,13 +10,26 @@ export class ComplianceResourceBaseDto {
   @IsString()
   organizationId!: string;
 
-  @ApiProperty({
-    description: 'Compliance framework identifier',
+  // A compliance certificate targets EITHER a native framework OR a custom
+  // framework. Exactly one of `framework` / `customFrameworkId` must be set;
+  // the service enforces this (assertExactlyOneFrameworkRef).
+  @ApiPropertyOptional({
+    description: 'Native compliance framework identifier',
     enum: TrustFramework,
     example: TrustFramework.iso_27001,
   })
+  @IsOptional()
   @IsEnum(TrustFramework)
-  framework!: TrustFramework;
+  framework?: TrustFramework;
+
+  @ApiPropertyOptional({
+    description:
+      'Org-authored custom framework ID (alternative to `framework`)',
+    example: 'cfrm_6914cd0e16e4c7dccbb54426',
+  })
+  @IsOptional()
+  @IsString()
+  customFrameworkId?: string;
 }
 
 export class UploadComplianceResourceDto extends ComplianceResourceBaseDto {
@@ -44,8 +57,20 @@ export class UploadComplianceResourceDto extends ComplianceResourceBaseDto {
 export class ComplianceResourceSignedUrlDto extends ComplianceResourceBaseDto {}
 
 export class ComplianceResourceResponseDto {
-  @ApiProperty({ enum: TrustFramework })
-  framework!: TrustFramework;
+  // Always present in the response (one of the two is null), so these are
+  // required-but-nullable — not optional.
+  @ApiProperty({
+    enum: TrustFramework,
+    description: 'Set for native-framework certificates; null for custom ones',
+    nullable: true,
+  })
+  framework!: TrustFramework | null;
+
+  @ApiProperty({
+    description: 'Set for custom-framework certificates; null for native ones',
+    nullable: true,
+  })
+  customFrameworkId!: string | null;
 
   @ApiProperty()
   fileName!: string;

@@ -24,6 +24,8 @@ import { VendorsModule } from './vendors/vendors.module';
 import { ContextModule } from './context/context.module';
 import { TrustPortalModule } from './trust-portal/trust-portal.module';
 import { ControlTemplateModule } from './framework-editor/control-template/control-template.module';
+import { IsmsDocumentTemplateModule } from './framework-editor/isms-document-template/isms-document-template.module';
+import { FrameworkFamilyModule } from './framework-editor/framework-family/framework-family.module';
 import { FrameworkEditorFrameworkModule } from './framework-editor/framework/framework.module';
 import { PolicyTemplateModule } from './framework-editor/policy-template/policy-template.module';
 import { RequirementModule } from './framework-editor/requirement/requirement.module';
@@ -34,6 +36,7 @@ import { QuestionnaireModule } from './questionnaire/questionnaire.module';
 import { VectorStoreModule } from './vector-store/vector-store.module';
 import { KnowledgeBaseModule } from './knowledge-base/knowledge-base.module';
 import { SOAModule } from './soa/soa.module';
+import { IsmsModule } from './isms/isms.module';
 import { IntegrationPlatformModule } from './integration-platform/integration-platform.module';
 import { CloudSecurityModule } from './cloud-security/cloud-security.module';
 import { BrowserbaseModule } from './browserbase/browserbase.module';
@@ -48,6 +51,7 @@ import { AuditModule } from './audit/audit.module';
 import { ControlsModule } from './controls/controls.module';
 import { RolesModule } from './roles/roles.module';
 import { McpModule } from './mcp/mcp.module';
+import { McpDownloadModule } from './mcp-download/mcp-download.module';
 import { EmailModule } from './email/email.module';
 import { SecretsModule } from './secrets/secrets.module';
 import { SecurityPenetrationTestsModule } from './security-penetration-tests/security-penetration-tests.module';
@@ -94,9 +98,11 @@ import { OffboardingChecklistModule } from './offboarding-checklist/offboarding-
     HealthModule,
     TrustPortalModule,
     ControlTemplateModule,
+    IsmsDocumentTemplateModule,
     FrameworkEditorFrameworkModule,
     PolicyTemplateModule,
     RequirementModule,
+    FrameworkFamilyModule,
     TaskTemplateModule,
     FindingTemplateModule,
     FindingsModule,
@@ -104,6 +110,7 @@ import { OffboardingChecklistModule } from './offboarding-checklist/offboarding-
     VectorStoreModule,
     KnowledgeBaseModule,
     SOAModule,
+    IsmsModule,
     IntegrationPlatformModule,
     CloudSecurityModule,
     BrowserbaseModule,
@@ -128,6 +135,7 @@ import { OffboardingChecklistModule } from './offboarding-checklist/offboarding-
     TimelinesModule,
     OffboardingChecklistModule,
     McpModule,
+    McpDownloadModule,
   ],
   controllers: [AppController],
   providers: [

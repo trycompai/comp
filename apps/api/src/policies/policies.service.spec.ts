@@ -250,6 +250,70 @@ describe('PoliciesService', () => {
       expect(updateArg.data.signedBy).toBeUndefined();
     });
 
+    // CS-587: the policy-schedule cron flips a published policy to
+    // needs_review (with no pending version) once its periodic review is due.
+    // Re-publishing that policy must NOT force the whole org to re-acknowledge
+    // unchanged content, and must advance the review date so the cron doesn't
+    // immediately re-flag it.
+    it('preserves signedBy and advances reviewDate when re-publishing a periodic-review policy (no pending version)', async () => {
+      const orgId = 'org_abc';
+      const existing = {
+        id: 'pol_1',
+        organizationId: orgId,
+        status: 'needs_review',
+        pendingVersionId: null,
+        approverId: null,
+        frequency: 'yearly',
+        pdfUrl: null,
+        signedBy: ['usr_a', 'usr_b'],
+      };
+      const updatedResult = { ...existing, status: 'published', name: 'Test Policy' };
+
+      db.$transaction.mockImplementation(async (callback: (tx: unknown) => Promise<unknown>) => {
+        const tx = { policy: { findFirst: db.policy.findFirst, update: db.policy.update } };
+        return callback(tx);
+      });
+      db.policy.findFirst.mockResolvedValueOnce(existing);
+      db.policy.update.mockResolvedValueOnce(updatedResult);
+
+      await service.updateById('pol_1', orgId, { status: 'published' } as never);
+
+      const updateArg = db.policy.update.mock.calls[0][0];
+      // Acknowledgments are NOT wiped — content never changed.
+      expect(updateArg.data.signedBy).toBeUndefined();
+      expect(updateArg.data.status).toBe('published');
+      // Review date is pushed to the next cycle so the cron doesn't re-flag it.
+      expect(updateArg.data.reviewDate).toBeInstanceOf(Date);
+      expect(updateArg.data.reviewDate.getTime()).toBeGreaterThan(Date.now());
+    });
+
+    it('still clears signedBy when re-publishing a needs_review policy that has a pending approval version', async () => {
+      const orgId = 'org_abc';
+      const existing = {
+        id: 'pol_1',
+        organizationId: orgId,
+        status: 'needs_review',
+        pendingVersionId: 'pv_pending',
+        approverId: 'mem_1',
+        frequency: 'yearly',
+        pdfUrl: null,
+        signedBy: ['usr_a'],
+      };
+      const updatedResult = { ...existing, status: 'published', name: 'Test Policy' };
+
+      db.$transaction.mockImplementation(async (callback: (tx: unknown) => Promise<unknown>) => {
+        const tx = { policy: { findFirst: db.policy.findFirst, update: db.policy.update } };
+        return callback(tx);
+      });
+      db.policy.findFirst.mockResolvedValueOnce(existing);
+      db.policy.update.mockResolvedValueOnce(updatedResult);
+
+      await service.updateById('pol_1', orgId, { status: 'published' } as never);
+
+      const updateArg = db.policy.update.mock.calls[0][0];
+      expect(updateArg.data.signedBy).toEqual([]);
+    });
+
     // Auto-route: content update on a non-draft policy creates a new
     // PolicyVersion and publishes it, rather than mutating the published
     // version's content in place. This lets MCP/API consumers say
@@ -518,6 +582,7 @@ describe('PoliciesService', () => {
       db.policy.findUnique.mockResolvedValueOnce(buildPendingPolicy());
       db.policyVersion.findUnique.mockResolvedValueOnce(pendingVersion);
       db.member.findFirst.mockResolvedValueOnce({ id: 'mem_caller' });
+      db.member.findMany.mockResolvedValueOnce([]);
       mockTransactionTx();
 
       const result = await service.acceptChanges(
@@ -527,7 +592,7 @@ describe('PoliciesService', () => {
         'usr_caller',
       );
 
-      expect(result).toEqual({ versionId: 'ver_1', version: 2 });
+      expect(result).toEqual({ versionId: 'ver_1', version: 2, members: [] });
       expect(db.policyVersion.update).toHaveBeenCalledWith({
         where: { id: 'ver_1' },
         data: { publishedById: 'mem_caller' },
@@ -553,6 +618,7 @@ describe('PoliciesService', () => {
       db.policy.findUnique.mockResolvedValueOnce(buildPendingPolicy());
       db.policyVersion.findUnique.mockResolvedValueOnce(pendingVersion);
       db.member.findFirst.mockResolvedValueOnce({ id: 'mem_impersonated' });
+      db.member.findMany.mockResolvedValueOnce([]);
       mockTransactionTx();
 
       const result = await service.acceptChanges(
@@ -562,11 +628,114 @@ describe('PoliciesService', () => {
         'usr_impersonated',
       );
 
-      expect(result).toEqual({ versionId: 'ver_1', version: 2 });
+      expect(result).toEqual({ versionId: 'ver_1', version: 2, members: [] });
       expect(db.policyVersion.update).toHaveBeenCalledWith({
         where: { id: 'ver_1' },
         data: { publishedById: 'mem_impersonated' },
       });
+    });
+
+    it('returns the compliance members who must re-acknowledge the new version, with notificationType', async () => {
+      // Regression (CS-655): accepting changes on an already-published policy
+      // clears signedBy[] and republishes, so affected users must be re-notified.
+      // The service must surface that audience (with notificationType) for the
+      // app layer to email; previously it returned nothing, so no email was sent.
+      const orgId = 'org_abc';
+      const pendingVersion = {
+        id: 'ver_1',
+        version: 3,
+        content: [{ type: 'paragraph' }],
+      };
+      db.policy.findUnique.mockResolvedValueOnce(
+        buildPendingPolicy({
+          organizationId: orgId,
+          name: 'Background Screening',
+          signedBy: ['mem_signed'],
+          lastPublishedAt: new Date('2026-01-01'),
+        }),
+      );
+      db.policyVersion.findUnique.mockResolvedValueOnce(pendingVersion);
+      db.member.findFirst.mockResolvedValueOnce({ id: 'mem_caller' });
+      db.member.findMany.mockResolvedValueOnce([
+        {
+          id: 'mem_signed',
+          role: 'employee',
+          user: { email: 'signed@example.com', name: 'Signed User', role: null },
+          organization: { id: orgId, name: 'Acme' },
+        },
+        {
+          id: 'mem_unsigned',
+          role: 'employee',
+          user: { email: 'new@example.com', name: 'New User', role: null },
+          organization: { id: orgId, name: 'Acme' },
+        },
+      ]);
+      mockTransactionTx();
+
+      const result = await service.acceptChanges(
+        'pol_1',
+        orgId,
+        { approverId: 'mem_approver' },
+        'usr_caller',
+      );
+
+      expect(result.versionId).toBe('ver_1');
+      // A user who had already signed the previous version is asked to re-accept;
+      // a user who hadn't signed gets the "updated" notification.
+      expect(result.members).toEqual([
+        {
+          email: 'signed@example.com',
+          userName: 'Signed User',
+          policyName: 'Background Screening',
+          organizationId: orgId,
+          organizationName: 'Acme',
+          notificationType: 're-acceptance',
+        },
+        {
+          email: 'new@example.com',
+          userName: 'New User',
+          policyName: 'Background Screening',
+          organizationId: orgId,
+          organizationName: 'Acme',
+          notificationType: 'updated',
+        },
+      ]);
+    });
+
+    it('only queries active, non-deactivated members for re-acknowledgment emails', async () => {
+      // Inactive members (offboarded / pending invite) must not be emailed
+      // policy re-acknowledgment notifications, so the recipient query must
+      // scope by isActive: true in addition to deactivated: false.
+      const orgId = 'org_abc';
+      db.policy.findUnique.mockResolvedValueOnce(
+        buildPendingPolicy({
+          organizationId: orgId,
+          name: 'Background Screening',
+          signedBy: [],
+          lastPublishedAt: new Date('2026-01-01'),
+        }),
+      );
+      db.policyVersion.findUnique.mockResolvedValueOnce({
+        id: 'ver_1',
+        version: 3,
+        content: [{ type: 'paragraph' }],
+      });
+      db.member.findFirst.mockResolvedValueOnce({ id: 'mem_caller' });
+      db.member.findMany.mockResolvedValueOnce([]);
+      mockTransactionTx();
+
+      await service.acceptChanges(
+        'pol_1',
+        orgId,
+        { approverId: 'mem_approver' },
+        'usr_caller',
+      );
+
+      expect(db.member.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { organizationId: orgId, isActive: true, deactivated: false },
+        }),
+      );
     });
 
     it('rejects when the body approverId does not match the assigned approver', async () => {

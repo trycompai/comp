@@ -1,5 +1,6 @@
 'use client';
 
+import { useFeatureFlag } from '@trycompai/analytics';
 import {
   PageHeader,
   PageLayout,
@@ -11,24 +12,57 @@ import {
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { useCallback } from 'react';
+import { useIso27001FrameworkId } from '../isms/hooks/useIso27001FrameworkId';
+
+/**
+ * PostHog flag gating the ISMS area while it's privately tested. Enable it
+ * per-org in PostHog to expose the tab. Local development falls through so the
+ * tab stays visible without PostHog configured.
+ */
+const ISMS_FEATURE_FLAG = 'is-isms-enabled';
 
 interface DocumentsPageTabsProps {
-  overviewContent: ReactNode;
+  organizationId: string;
+  ismsContent: ReactNode;
+  companyFormsContent: ReactNode;
   settingsContent: ReactNode;
 }
 
-const DEFAULT_TAB = 'overview';
+const ISMS_TAB = 'iso-27001';
+const COMPANY_FORMS_TAB = 'overview';
+const SETTINGS_TAB = 'settings';
+const DEFAULT_TAB = COMPANY_FORMS_TAB;
 
-function tabParamToInternal(tabParam: string | null): string {
-  if (tabParam === 'settings') return 'settings';
+function tabParamToInternal({
+  tabParam,
+  showIsmsTab,
+}: {
+  tabParam: string | null;
+  showIsmsTab: boolean;
+}): string {
+  if (tabParam === SETTINGS_TAB) return SETTINGS_TAB;
+  if (tabParam === ISMS_TAB && showIsmsTab) return ISMS_TAB;
   return DEFAULT_TAB;
 }
 
-export function DocumentsPageTabs({ overviewContent, settingsContent }: DocumentsPageTabsProps) {
+export function DocumentsPageTabs({
+  organizationId,
+  ismsContent,
+  companyFormsContent,
+  settingsContent,
+}: DocumentsPageTabsProps) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const activeTab = tabParamToInternal(searchParams.get('tab'));
+  // The ISO 27001 (ISMS) tab appears only when the organization has ISO 27001
+  // active AND the ISMS feature flag is enabled (private testing). Development
+  // falls through so the tab is visible locally without PostHog.
+  const hasIso27001 = !!useIso27001FrameworkId(organizationId);
+  const ismsFlagEnabled = useFeatureFlag(ISMS_FEATURE_FLAG);
+  const showIsmsTab =
+    hasIso27001 &&
+    (ismsFlagEnabled || process.env.NODE_ENV === 'development');
+  const activeTab = tabParamToInternal({ tabParam: searchParams.get('tab'), showIsmsTab });
 
   const handleTabChange = useCallback(
     (value: string) => {
@@ -44,6 +78,9 @@ export function DocumentsPageTabs({ overviewContent, settingsContent }: Document
     [pathname, router, searchParams],
   );
 
+  // When ISO 27001 is not active the IA is unchanged: a single "Overview" tab plus Settings.
+  const companyFormsLabel = showIsmsTab ? 'Company Forms' : 'Overview';
+
   return (
     <Tabs value={activeTab} onValueChange={handleTabChange}>
       <PageLayout
@@ -52,15 +89,17 @@ export function DocumentsPageTabs({ overviewContent, settingsContent }: Document
             title="Documents"
             tabs={
               <TabsList variant="underline">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="settings">Settings</TabsTrigger>
+                {showIsmsTab && <TabsTrigger value={ISMS_TAB}>ISO 27001 (ISMS)</TabsTrigger>}
+                <TabsTrigger value={COMPANY_FORMS_TAB}>{companyFormsLabel}</TabsTrigger>
+                <TabsTrigger value={SETTINGS_TAB}>Settings</TabsTrigger>
               </TabsList>
             }
           />
         }
       >
-        <TabsContent value="overview">{overviewContent}</TabsContent>
-        <TabsContent value="settings">{settingsContent}</TabsContent>
+        {showIsmsTab && <TabsContent value={ISMS_TAB}>{ismsContent}</TabsContent>}
+        <TabsContent value={COMPANY_FORMS_TAB}>{companyFormsContent}</TabsContent>
+        <TabsContent value={SETTINGS_TAB}>{settingsContent}</TabsContent>
       </PageLayout>
     </Tabs>
   );

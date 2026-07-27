@@ -21,6 +21,7 @@ export const EvidenceFormType = {
   EmployeePerformanceEvaluation: "employee-performance-evaluation",
   NetworkDiagram: "network-diagram",
   TabletopExercise: "tabletop-exercise",
+  AccountTypes: "account-types",
 } as const;
 /**
  * Evidence form type
@@ -40,6 +41,7 @@ export const EvidenceFormType$zodSchema = z.enum([
   "employee-performance-evaluation",
   "network-diagram",
   "tabletop-exercise",
+  "account-types",
 ]).describe("Evidence form type");
 
 /**

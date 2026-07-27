@@ -3,6 +3,7 @@ import { anthropic } from '@ai-sdk/anthropic';
 import { generateText } from 'ai';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { sanitizeMarkdown } from '../../../../(app)/[orgId]/policies/[policyId]/editor/lib/policy-markdown';
 
 export const maxDuration = 30;
 
@@ -33,6 +34,9 @@ export async function POST(req: Request) {
 
     const result = await generateText({
       model: anthropic('claude-sonnet-4-6'),
+      // A single section is small; cap output so a runaway generation can't hang
+      // the 30s request, and so we get a clean stop rather than a truncated edit.
+      maxOutputTokens: 4000,
       system: `You are a GRC policy editor. You will receive text from a policy and feedback on how to change it. Return ONLY the updated text. Rules:
 - Do not include explanations, preamble, or commentary — just the updated text.
 - If the input is a plain sentence or paragraph, return a plain sentence or paragraph. Do NOT add markdown formatting (no ##, no **, no -) unless the input already uses it.
@@ -41,7 +45,7 @@ export async function POST(req: Request) {
       prompt: `Text to edit:\n${sectionText}\n\nInstruction: ${feedback}`,
     });
 
-    return NextResponse.json({ updatedText: result.text.trim() });
+    return NextResponse.json({ updatedText: sanitizeMarkdown(result.text).trim() });
   } catch (error) {
     console.error('Edit section error:', error);
     return NextResponse.json({ error: 'Failed to edit section' }, { status: 500 });

@@ -4,10 +4,13 @@ import type { FrameworkInstanceWithControls } from '@/lib/types/framework';
 import {
   buildControlItems,
   buildRequirementMap,
+  compareRequirementsByOrder,
   getStatusBadge,
   groupByFamily,
+  groupRequirementsByFamily,
   UNCATEGORIZED_FAMILY,
   type ControlItem,
+  type RequirementItem,
 } from './framework-controls-shared';
 
 // ---------------------------------------------------------------------------
@@ -262,5 +265,108 @@ describe('groupByFamily', () => {
     expect(groups).toHaveLength(1);
     expect(groups[0].family).toBe(UNCATEGORIZED_FAMILY);
     expect(groups[0].items).toHaveLength(2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// compareRequirementsByOrder (FRAME-18)
+// ---------------------------------------------------------------------------
+
+function reqItem(overrides: {
+  name?: string;
+  identifier?: string;
+  sortOrder?: number | null;
+  requirementFamily?: string | null;
+}): RequirementItem {
+  return makeRequirement(overrides as Partial<FrameworkEditorRequirement>) as unknown as RequirementItem;
+}
+
+describe('compareRequirementsByOrder', () => {
+  const orderOf = (sortOrders: Array<number | null>) =>
+    sortOrders
+      .map((sortOrder, i) => reqItem({ identifier: `R-${i}`, sortOrder }))
+      .sort(compareRequirementsByOrder)
+      .map((r) => r.sortOrder ?? null);
+
+  it('orders numbered requirements ascending', () => {
+    expect(orderOf([3, 1, 2])).toEqual([1, 2, 3]);
+  });
+
+  it('places unset (null) rows after numbered rows', () => {
+    expect(orderOf([null, 2, null, 1])).toEqual([1, 2, null, null]);
+  });
+
+  it('treats undefined sortOrder the same as null (sorts last)', () => {
+    const items = [
+      reqItem({ identifier: 'R-2', sortOrder: undefined }),
+      reqItem({ identifier: 'R-1', sortOrder: 5 }),
+    ];
+    expect(items.sort(compareRequirementsByOrder).map((r) => r.identifier)).toEqual([
+      'R-1',
+      'R-2',
+    ]);
+  });
+
+  it('falls back to numeric identifier order for unset rows', () => {
+    const items = [
+      reqItem({ identifier: 'R-10', sortOrder: null }),
+      reqItem({ identifier: 'R-2', sortOrder: null }),
+    ];
+    expect(items.sort(compareRequirementsByOrder).map((r) => r.identifier)).toEqual([
+      'R-2',
+      'R-10',
+    ]);
+  });
+
+  it('falls back to identifier when two rows share a sortOrder', () => {
+    const items = [
+      reqItem({ identifier: 'B', sortOrder: 1 }),
+      reqItem({ identifier: 'A', sortOrder: 1 }),
+    ];
+    expect(items.sort(compareRequirementsByOrder).map((r) => r.identifier)).toEqual(['A', 'B']);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// groupRequirementsByFamily (FRAME-18)
+// ---------------------------------------------------------------------------
+
+describe('groupRequirementsByFamily', () => {
+  it('orders families by their lowest sortOrder (NIST CSF canonical order)', () => {
+    // Canonical NIST CSF order is GV → ID → PR → DE → RS → RC, which is NOT
+    // alphabetical. Numbering requirements drives the family order.
+    const items = [
+      reqItem({ identifier: 'PR.AA', sortOrder: 30, requirementFamily: 'Protect' }),
+      reqItem({ identifier: 'GV.OC', sortOrder: 10, requirementFamily: 'Govern' }),
+      reqItem({ identifier: 'ID.AM', sortOrder: 20, requirementFamily: 'Identify' }),
+      reqItem({ identifier: 'DE.CM', sortOrder: 40, requirementFamily: 'Detect' }),
+    ];
+
+    const families = groupRequirementsByFamily(items).map((g) => g.family);
+
+    expect(families).toEqual(['Govern', 'Identify', 'Protect', 'Detect']);
+  });
+
+  it('sorts requirements within a family by sortOrder', () => {
+    const items = [
+      reqItem({ identifier: 'GV.B', sortOrder: 12, requirementFamily: 'Govern' }),
+      reqItem({ identifier: 'GV.A', sortOrder: 11, requirementFamily: 'Govern' }),
+    ];
+
+    const order = groupRequirementsByFamily(items)[0].items.map((r) => r.identifier);
+
+    expect(order).toEqual(['GV.A', 'GV.B']);
+  });
+
+  it('falls back to alphabetical family order when no sortOrder is set', () => {
+    // Every existing framework today has null sortOrder — behavior is unchanged.
+    const items = [
+      reqItem({ identifier: 'Z-1', sortOrder: null, requirementFamily: 'Zoning' }),
+      reqItem({ identifier: 'A-1', sortOrder: null, requirementFamily: 'Access Control' }),
+    ];
+
+    const families = groupRequirementsByFamily(items).map((g) => g.family);
+
+    expect(families).toEqual(['Access Control', 'Zoning']);
   });
 });

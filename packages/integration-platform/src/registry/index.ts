@@ -12,6 +12,7 @@ import { awsManifest } from '../manifests/aws';
 import { azureManifest } from '../manifests/azure';
 import { gcpManifest } from '../manifests/gcp';
 import { manifest as githubManifest } from '../manifests/github';
+import { githubAppManifest } from '../manifests/github-app';
 import { googleWorkspaceManifest } from '../manifests/google-workspace';
 import { ripplingManifest } from '../manifests/rippling';
 import { vercelManifest } from '../manifests/vercel';
@@ -105,6 +106,10 @@ class IntegrationRegistryImpl implements IntegrationRegistry {
     return this.manifests.get(id);
   }
 
+  isCodeManifest(id: string): boolean {
+    return this.codeManifestIds.has(id);
+  }
+
   getAllManifests(): IntegrationManifest[] {
     return Array.from(this.manifests.values());
   }
@@ -141,6 +146,7 @@ const allManifests: IntegrationManifest[] = [
   azureManifest,
   gcpManifest,
   githubManifest,
+  githubAppManifest,
   googleWorkspaceManifest,
   ripplingManifest,
   vercelManifest,
@@ -159,6 +165,17 @@ export const registry: IntegrationRegistry = new IntegrationRegistryImpl(allMani
  */
 export function getManifest(id: string): IntegrationManifest | undefined {
   return registry.getManifest(id);
+}
+
+/**
+ * Whether `id` is a code-based (bundled) manifest. A code manifest always wins
+ * over a dynamic (DB-loaded) manifest of the same slug (registry precedence), so
+ * its checks must be treated as static — never held as an "inconclusive" dynamic
+ * result. Use this instead of "an active DynamicIntegration row exists for the
+ * slug" when deciding whether a run is dynamic.
+ */
+export function isCodeManifest(id: string): boolean {
+  return registry.isCodeManifest(id);
 }
 
 /**

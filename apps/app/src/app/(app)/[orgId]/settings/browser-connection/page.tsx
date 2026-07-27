@@ -1,13 +1,11 @@
-import type { Metadata } from 'next';
-import { getFeatureFlags } from '@/app/posthog';
+import { serverApi } from '@/lib/api-server';
 import { requireRoutePermission } from '@/lib/permissions.server';
-import { auth } from '@/utils/auth';
-import { headers } from 'next/headers';
-import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
 import { BrowserConnectionClient } from './components/BrowserConnectionClient';
+import type { Connection } from './components/connection-format';
 
 export const metadata: Metadata = {
-  title: 'Browser Connection',
+  title: 'Browser connections',
 };
 
 export default async function BrowserConnectionPage({
@@ -16,23 +14,10 @@ export default async function BrowserConnectionPage({
   params: Promise<{ orgId: string }>;
 }) {
   const { orgId } = await params;
-
   await requireRoutePermission('settings/browser-connection', orgId);
 
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-  if (!session?.user?.id) {
-    return notFound();
-  }
+  const res = await serverApi.get<Connection[]>('/v1/browserbase/profiles');
+  const initialProfiles = Array.isArray(res.data) ? res.data : [];
 
-  const flags = await getFeatureFlags(session.user.id);
-  const isWebAutomationsEnabled =
-    flags['is-web-automations-enabled'] === true || flags['is-web-automations-enabled'] === 'true';
-
-  if (!isWebAutomationsEnabled) {
-    return notFound();
-  }
-
-  return <BrowserConnectionClient organizationId={orgId} />;
+  return <BrowserConnectionClient organizationId={orgId} initialProfiles={initialProfiles} />;
 }

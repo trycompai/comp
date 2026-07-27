@@ -12,6 +12,7 @@ import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { IntegrationCheck } from '../../../types';
 import type { GitHubRepo, GitHubTreeEntry, GitHubTreeResponse } from '../types';
 import { parseRepoBranch, targetReposVariable } from '../variables';
+import { FILE_READ_CONCURRENCY, mapWithConcurrency } from './concurrency';
 
 const JS_VALIDATION_PACKAGES = [
   'zod',
@@ -210,36 +211,45 @@ export const sanitizedInputsCheck: IntegrationCheck = {
       return null;
     };
 
+    const scanFile = async (
+      repoName: string,
+      entry: GitHubTreeEntry,
+    ): Promise<ValidationMatch | null> => {
+      const content = await fetchFile(repoName, entry.path);
+      if (!content) return null;
+
+      const fileName = getFileName(entry.path);
+
+      if (fileName === 'package.json') {
+        return checkPackageJson(content, entry.path);
+      }
+      if (fileName === 'requirements.txt' || fileName === 'pyproject.toml') {
+        return checkPythonFile(content, entry.path, fileName);
+      }
+      if (fileName === 'composer.json') {
+        return checkComposerJson(content, entry.path);
+      }
+      return null;
+    };
+
     const findValidationLibraries = async (
       repoName: string,
       tree: GitHubTreeEntry[],
     ): Promise<ValidationMatch[]> => {
-      const matches: ValidationMatch[] = [];
-
       // Find all target files in the tree
       const targetEntries = tree.filter(
         (entry) => entry.type === 'blob' && TARGET_FILES.includes(getFileName(entry.path)),
       );
 
-      for (const entry of targetEntries) {
-        const content = await fetchFile(repoName, entry.path);
-        if (!content) continue;
+      // Read + classify each dependency file with bounded concurrency. Serially,
+      // a monorepo with many dependency files (or any repo under GitHub's
+      // secondary rate limit) exceeded the synchronous manual-run HTTP timeout,
+      // so the run never completed. See concurrency.ts.
+      const results = await mapWithConcurrency(targetEntries, FILE_READ_CONCURRENCY, (entry) =>
+        scanFile(repoName, entry),
+      );
 
-        const fileName = getFileName(entry.path);
-
-        if (fileName === 'package.json') {
-          const match = checkPackageJson(content, entry.path);
-          if (match) matches.push(match);
-        } else if (fileName === 'requirements.txt' || fileName === 'pyproject.toml') {
-          const match = checkPythonFile(content, entry.path, fileName);
-          if (match) matches.push(match);
-        } else if (fileName === 'composer.json') {
-          const match = checkComposerJson(content, entry.path);
-          if (match) matches.push(match);
-        }
-      }
-
-      return matches;
+      return results.filter((match): match is ValidationMatch => match !== null);
     };
 
     for (const repoName of targetRepos) {

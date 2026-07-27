@@ -10,6 +10,10 @@ model CustomFramework {
   requirements CustomRequirement[]
   instances    FrameworkInstance[]
 
+  // Trust Portal display selection + per-framework certificate uploads.
+  trustSelections TrustCustomFramework[]
+  trustResources  TrustResource[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 

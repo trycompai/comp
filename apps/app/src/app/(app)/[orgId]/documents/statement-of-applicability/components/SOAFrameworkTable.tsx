@@ -53,6 +53,25 @@ type SOAQuestion = {
   };
 };
 
+type SOAAnswerRecord = {
+  questionId: string;
+  answer: string | null;
+  isApplicable: boolean | null;
+  answerVersion: number;
+};
+
+// Map a persisted answer to row state. `isApplicable` carries the persisted
+// value; `savedIsApplicable` is deliberately left unset here — it is reserved
+// for a manual save this session (set in handleAnswerUpdate) so it doesn't
+// shadow in-session autofill results in resolveSoaDisplay.
+function toAnswerData(answer: SOAAnswerRecord): SOATableAnswerData {
+  return {
+    answer: answer.answer,
+    answerVersion: answer.answerVersion,
+    isApplicable: answer.isApplicable,
+  };
+}
+
 type SOADocumentInfoDocument = Parameters<typeof SOADocumentInfo>[0]['document'];
 
 export function SOAFrameworkTable({
@@ -97,12 +116,14 @@ export function SOAFrameworkTable({
   const columns = configuration.columns as SOAColumn[];
   const questions = configuration.questions as SOAQuestion[];
 
-  // Create answers map from document answers
+  // Create answers map from document answers. Applicability + justification are
+  // per-organization values that live on the answer, so the table reads them
+  // from here — never from the shared framework configuration.
   const [answersMap, setAnswersMap] = useState<Map<string, SOATableAnswerData>>(() => {
     return new Map(
-      (document?.answers || []).map((answer: { questionId: string; answer: string | null; answerVersion: number }) => [
+      (document?.answers || []).map((answer: SOAAnswerRecord) => [
         answer.questionId,
-        { answer: answer.answer, answerVersion: answer.answerVersion },
+        toAnswerData(answer),
       ])
     );
   });
@@ -114,19 +135,20 @@ export function SOAFrameworkTable({
     }
     setAnswersMap(
       new Map(
-        resolvedDocument.answers.map((answer: { questionId: string; answer: string | null; answerVersion: number }) => [
+        resolvedDocument.answers.map((answer: SOAAnswerRecord) => [
           answer.questionId,
-          { answer: answer.answer, answerVersion: answer.answerVersion },
+          toAnswerData(answer),
         ])
       )
     );
   }, [resolvedDocument?.answers]);
 
   const handleAnswerUpdate = (questionId: string, payload: SOAFieldSavePayload) => {
+    const existingAnswer = answersMap.get(questionId);
     const previousIsApplicable =
-      answersMap.get(questionId)?.savedIsApplicable ??
+      existingAnswer?.savedIsApplicable ??
       processedResults.get(questionId)?.isApplicable ??
-      questions.find((q) => q.id === questionId)?.columnMapping.isApplicable ??
+      existingAnswer?.isApplicable ??
       null;
 
     setAnswersMap((prev) => {
@@ -225,28 +247,6 @@ export function SOAFrameworkTable({
     },
   });
 
-  // Merge processed results into questions for display
-  const questionsWithResults = useMemo(() => {
-    if (processedResults.size === 0) {
-      return questions;
-    }
-
-    return questions.map((q) => {
-      const result = processedResults.get(q.id);
-      if (result && 'success' in result && result.success === true) {
-        return {
-          ...q,
-          columnMapping: {
-            ...q.columnMapping,
-            isApplicable: result.isApplicable,
-            justification: result.justification,
-          },
-        };
-      }
-      return q;
-    });
-  }, [questions, processedResults]);
-
   // Document should always exist at this point
   if (!document) {
     return (
@@ -337,7 +337,7 @@ export function SOAFrameworkTable({
       {/* Table */}
       <SOATable
         columns={columns}
-        questions={questionsWithResults}
+        questions={questions}
         answersMap={answersMap}
         questionStatuses={questionStatuses}
         processedResults={processedResults}

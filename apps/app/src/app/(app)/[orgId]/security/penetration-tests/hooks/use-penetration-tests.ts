@@ -336,6 +336,7 @@ export function useCreatePenetrationTest(organizationId: string): UseCreatePenet
             scanDepth: payload.scanDepth,
             evidenceLevel: payload.evidenceLevel,
             checks: payload.checks,
+            additionalContext: payload.additionalContext,
           } satisfies CreateReportApiPayload,
           organizationId,
         );

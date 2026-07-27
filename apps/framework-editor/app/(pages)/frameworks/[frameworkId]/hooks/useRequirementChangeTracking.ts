@@ -1,4 +1,6 @@
 import { apiClient } from '@/app/lib/api-client';
+import { useUnsavedChangesGuard } from '@/app/lib/unsaved-changes';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -8,10 +10,21 @@ export interface RequirementGridRow {
   identifier: string | null;
   description: string | null;
   requirementFamily: string | null;
+  // FRAME-18: per-framework display order. null = unset (sorts last).
+  sortOrder: number | null;
   controlTemplates: Array<{ id: string; name: string }>;
   controlTemplatesLength: number;
   createdAt: Date | null;
   updatedAt: Date | null;
+}
+
+// Parse the free-text Order cell into a non-negative integer, or null when blank
+// / invalid. Keeps the grid's sortOrder numeric so the column sorts correctly.
+function parseSortOrder(value: string): number | null {
+  const trimmed = value.trim();
+  if (trimmed === '') return null;
+  const parsed = Number.parseInt(trimmed, 10);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
 }
 
 export const simpleUUID = () => crypto.randomUUID();
@@ -20,6 +33,7 @@ export function useRequirementChangeTracking(
   initialData: RequirementGridRow[],
   frameworkId: string,
 ) {
+  const router = useRouter();
   const [data, setData] = useState<RequirementGridRow[]>(() => initialData);
   const [prevData, setPrevData] = useState<RequirementGridRow[]>(() => initialData);
 
@@ -40,6 +54,11 @@ export function useRequirementChangeTracking(
       setData((prev) =>
         prev.map((row) => {
           if (row.id !== rowId) return row;
+          // sortOrder is numeric — coerce the free-text cell to number | null
+          // so the grid sorts correctly and the API receives a valid value.
+          if (columnId === 'sortOrder') {
+            return { ...row, sortOrder: parseSortOrder(value), updatedAt: new Date() };
+          }
           return { ...row, [columnId]: value, updatedAt: new Date() };
         }),
       );
@@ -123,7 +142,13 @@ export function useRequirementChangeTracking(
 
     for (const tempId of createdIds) {
       const row = currentData.find((r) => r.id === tempId);
-      if (!row?.name) continue;
+      if (!row) continue;
+      if (!row.name?.trim()) {
+        results.errors.push(
+          `New requirement${row.identifier ? ` "${row.identifier}"` : ''}: name is required`,
+        );
+        continue;
+      }
       try {
         const created = await apiClient<{ id: string }>('/requirement', {
           method: 'POST',
@@ -133,9 +158,28 @@ export function useRequirementChangeTracking(
             identifier: row.identifier ?? '',
             description: row.description ?? '',
             requirementFamily: row.requirementFamily ?? undefined,
+            sortOrder: row.sortOrder ?? undefined,
           }),
         });
-        results.successes.push(`Created: ${row.name}`);
+        // Persist control links the user picked on the uncommitted row.
+        const failedLinks: string[] = [];
+        for (const controlTemplate of row.controlTemplates) {
+          try {
+            await apiClient(
+              `/control-template/${controlTemplate.id}/requirements/${created.id}`,
+              { method: 'POST' },
+            );
+          } catch {
+            failedLinks.push(controlTemplate.name);
+          }
+        }
+        if (failedLinks.length > 0) {
+          results.errors.push(
+            `Created "${row.name}" but failed to link control(s): ${failedLinks.join(', ')}`,
+          );
+        } else {
+          results.successes.push(`Created: ${row.name}`);
+        }
         okCreated.add(tempId);
         setData((prev) =>
           prev.map((r) => (r.id === tempId ? { ...r, id: created.id } : r)),
@@ -153,6 +197,7 @@ export function useRequirementChangeTracking(
       identifier: string;
       description: string;
       requirementFamily: string | null;
+      sortOrder: number | null;
     }> = [];
     for (const id of updatedIds) {
       if (createdIds.has(id) || deletedIds.has(id)) continue;
@@ -164,6 +209,7 @@ export function useRequirementChangeTracking(
         identifier: row.identifier ?? '',
         description: row.description ?? '',
         requirementFamily: row.requirementFamily ?? null,
+        sortOrder: row.sortOrder ?? null,
       });
     }
     if (updatesToSend.length > 0) {
@@ -226,8 +272,10 @@ export function useRequirementChangeTracking(
       toast.success('Changes saved', {
         description: `${results.successes.length} operation(s) completed`,
       });
+      // Re-sync the grid with server truth (ids, timestamps, links).
+      router.refresh();
     }
-  }, [data, createdIds, updatedIds, deletedIds, frameworkId]);
+  }, [data, createdIds, updatedIds, deletedIds, frameworkId, router]);
 
   const handleCancel = useCallback(() => {
     setData(prevData);
@@ -240,6 +288,10 @@ export function useRequirementChangeTracking(
     () => createdIds.size > 0 || updatedIds.size > 0 || deletedIds.size > 0,
     [createdIds, updatedIds, deletedIds],
   );
+
+  // Uncommitted rows only live in this grid's state — warn before they are
+  // discarded by a reload or a tab switch.
+  useUnsavedChangesGuard('framework-requirements-grid', isDirty);
 
   const changesSummary = useMemo(() => {
     const total = createdIds.size + updatedIds.size + deletedIds.size;

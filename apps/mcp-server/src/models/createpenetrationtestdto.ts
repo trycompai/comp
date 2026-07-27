@@ -7,11 +7,15 @@ import * as z from "zod";
 export type CreatePenetrationTestDto = {
   targetUrl: string;
   repoUrl?: string | undefined;
+  additionalContext?: string | undefined;
 };
 
 export const CreatePenetrationTestDto$zodSchema: z.ZodType<
   CreatePenetrationTestDto
 > = z.object({
+  additionalContext: z.string().optional().describe(
+    "Free-text context shared with the testing agent, e.g. remediation notes or accepted-by-design explanations from a previous run. Saved per-finding context notes for the same target are appended automatically. Max 4000 characters.",
+  ),
   repoUrl: z.string().optional().describe(
     "Repository URL containing the target application code",
   ),

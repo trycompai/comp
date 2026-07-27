@@ -21,6 +21,7 @@ export interface ManifestRequirement {
   name: string;
   description: string | null;
   requirementFamily?: string | null;
+  sortOrder?: number | null; // FRAME-18: per-framework display order
 }
 
 export interface ManifestControl {

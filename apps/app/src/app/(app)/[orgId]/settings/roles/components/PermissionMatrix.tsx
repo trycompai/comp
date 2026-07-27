@@ -34,6 +34,7 @@ const RESOURCE_LABELS: Record<string, { label: string; description: string }> = 
   questionnaire: { label: 'Questionnaires', description: 'Manage security questionnaires' },
   integration: { label: 'Integrations', description: 'Manage third-party integrations' },
   apiKey: { label: 'API Keys', description: 'Manage API keys for programmatic access' },
+  secret: { label: 'Secrets', description: 'Manage secrets and encrypted credentials for automations' },
   trust: { label: 'Trust Center', description: 'Manage trust portal settings and access requests' },
   pentest: { label: 'Penetration Tests', description: 'Manage penetration testing activities' },
 };
@@ -45,7 +46,7 @@ const RESOURCE_SECTIONS: Array<{ label: string; keys: string[] }> = [
     keys: [
       'organization', 'member', 'control', 'evidence', 'policy', 'risk',
       'vendor', 'task', 'framework', 'audit', 'finding', 'questionnaire',
-      'integration', 'apiKey', 'trust',
+      'integration', 'apiKey', 'secret', 'trust',
     ],
   },
   {
@@ -234,6 +235,20 @@ export function PermissionMatrix({ value, onChange, obligations, onObligationsCh
       delete newObligations[key];
     }
     onObligationsChange(newObligations);
+
+    // The 'compliance' obligation (Employee Compliance) implies portal
+    // self-service access (sign policies, watch training, etc.) — there's
+    // no separate matrix row for the 'portal' resource itself (it's
+    // excluded from RESOURCE_LABELS/RESOURCE_SECTIONS), so grant it here
+    // when the obligation is enabled. This is intentionally one-directional:
+    // disabling the obligation must NOT strip 'portal' back off, since a
+    // role can also hold portal access independently of this obligation
+    // (e.g. granted directly through the API) — the UI has no separate row
+    // for 'portal' to tell those cases apart, so it must never revoke an
+    // access grant it didn't itself create.
+    if (key === 'compliance' && enabled) {
+      onChange({ ...value, portal: [...statement.portal] });
+    }
   };
 
   const handleToggleChange = (resourceKey: string, enabled: boolean) => {

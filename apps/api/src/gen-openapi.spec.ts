@@ -32,6 +32,12 @@ jest.mock('@thallesp/nestjs-better-auth', () => {
   return { AuthModule: AuthModuleStub };
 });
 
+// @inference/tracing is ESM-only, same as better-auth above.
+jest.mock('@inference/tracing', () => ({ setup: jest.fn() }));
+jest.mock('@inference/tracing/ai-sdk', () => ({
+  createAISdkTelemetrySettings: jest.fn(() => ({})),
+}));
+
 jest.mock('better-auth/plugins/access', () => ({
   createAccessControl: () => ({
     newRole: () => ({}),
@@ -98,6 +104,7 @@ process.env.APP_AWS_ACCESS_KEY_ID = 'test-access-key-id';
 process.env.APP_AWS_SECRET_ACCESS_KEY = 'test-secret-access-key';
 process.env.APP_AWS_BUCKET_NAME = 'test-bucket';
 process.env.APP_AWS_REGION = 'us-east-1';
+process.env.MACED_API_KEY = 'mc_dev_test-openapi-gen';
 
 import path from 'path';
 import { writeFileSync, mkdirSync, existsSync } from 'fs';

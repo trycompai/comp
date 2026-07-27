@@ -1,18 +1,26 @@
 'use client';
 
-import { useState } from 'react';
-import { toast } from 'sonner';
-import useSWR from 'swr';
-import { apiClient } from '@/lib/api-client';
 import { RecentAuditLogs } from '@/components/RecentAuditLogs';
-import type { AuditLogWithRelations } from '@/hooks/use-audit-logs';
+import { apiClient } from '@/lib/api-client';
+import { useAdminAuditLogs } from '../hooks/use-admin-audit-logs';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
   Badge,
   Section,
   Stack,
   Switch,
   Text,
 } from '@trycompai/design-system';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 interface AdminOrgDetail {
   id: string;
@@ -22,30 +30,33 @@ interface AdminOrgDetail {
   onboardingCompleted: boolean;
   members: { id: string }[];
   backgroundCheckStepEnabled: boolean;
+  isInternal: boolean;
 }
 
 export function OrganizationDetail({
   org,
+  currentOrgId,
   hasAccess,
 }: {
   org: AdminOrgDetail;
   currentOrgId: string;
   hasAccess: boolean;
 }) {
-  const [bgCheckEnabled, setBgCheckEnabled] = useState(
-    org.backgroundCheckStepEnabled,
-  );
+  const router = useRouter();
+  const [bgCheckEnabled, setBgCheckEnabled] = useState(org.backgroundCheckStepEnabled);
   const [savingBgCheck, setSavingBgCheck] = useState(false);
+  const [isInternal, setIsInternal] = useState(org.isInternal);
+  const [savingInternal, setSavingInternal] = useState(false);
+  const [pendingInternal, setPendingInternal] = useState<boolean | null>(null);
 
   const handleToggleBgCheck = async (next: boolean) => {
     const previous = bgCheckEnabled;
     setBgCheckEnabled(next);
     setSavingBgCheck(true);
 
-    const res = await apiClient.patch(
-      `/v1/admin/organizations/${org.id}`,
-      { backgroundCheckStepEnabled: next },
-    );
+    const res = await apiClient.patch(`/v1/admin/organizations/${org.id}`, {
+      backgroundCheckStepEnabled: next,
+    });
 
     setSavingBgCheck(false);
 
@@ -56,21 +67,52 @@ export function OrganizationDetail({
     }
 
     toast.success(
-      next
-        ? 'Background checks now required'
-        : 'Background checks bypassed for this organization',
+      next ? 'Background checks now required' : 'Background checks bypassed for this organization',
     );
   };
 
-  const { data: logs = [], isLoading } = useSWR(
-    `/v1/admin/organizations/${org.id}/audit-logs`,
-    async (url: string) => {
-      const res = await apiClient.get<{ data: AuditLogWithRelations[] }>(url);
-      if (res.error || !res.data?.data) return [];
-      return res.data.data;
-    },
-    { revalidateOnFocus: true, refreshInterval: 15_000 },
-  );
+  // Toggling `isInternal` changes org-wide membership semantics, so confirm
+  // first (the switch flips only after the admin confirms).
+  const handleRequestToggleInternal = (next: boolean) => {
+    setPendingInternal(next);
+  };
+
+  const handleConfirmToggleInternal = async () => {
+    if (pendingInternal === null) return;
+    const next = pendingInternal;
+    const previous = isInternal;
+    setPendingInternal(null);
+    setIsInternal(next);
+    setSavingInternal(true);
+
+    const res = await apiClient.patch(`/v1/admin/organizations/${org.id}`, {
+      isInternal: next,
+    });
+
+    setSavingInternal(false);
+
+    if (res.error) {
+      setIsInternal(previous);
+      toast.error('Failed to update internal-organization setting');
+      return;
+    }
+
+    // If this is the org the admin is currently browsing, refresh the server
+    // layout so OrgInternalProvider (and consumers like the assignee picker)
+    // reflect the new flag without a full page reload.
+    if (org.id === currentOrgId) {
+      router.refresh();
+    }
+
+    toast.success(
+      next
+        ? 'Marked as internal — platform admins can now participate here'
+        : 'Unmarked as internal — platform admins are excluded again',
+    );
+  };
+
+  const { logs, total, hasMore, loadMore, isLoadingMore, isLoading } =
+    useAdminAuditLogs(org.id);
 
   return (
     <Stack gap="lg">
@@ -81,14 +123,8 @@ export function OrganizationDetail({
           variant={hasAccess ? 'default' : 'destructive'}
         />
         <InfoCard label="Members" value={String(org.members.length)} />
-        <InfoCard
-          label="Created"
-          value={new Date(org.createdAt).toLocaleDateString()}
-        />
-        <InfoCard
-          label="Onboarding"
-          value={org.onboardingCompleted ? 'Completed' : 'Pending'}
-        />
+        <InfoCard label="Created" value={new Date(org.createdAt).toLocaleDateString()} />
+        <InfoCard label="Onboarding" value={org.onboardingCompleted ? 'Completed' : 'Pending'} />
       </div>
 
       <Section title="Compliance settings">
@@ -96,9 +132,8 @@ export function OrganizationDetail({
           <div className="flex-1">
             <Text weight="medium">Require background checks</Text>
             <Text size="sm" variant="muted">
-              When off, this org&apos;s members do not need to pass a background
-              check to count toward people completion. Existing requests stay
-              accessible.
+              When off, this org&apos;s members do not need to pass a background check to count
+              toward people completion. Existing requests stay accessible.
             </Text>
           </div>
           <Switch
@@ -106,6 +141,25 @@ export function OrganizationDetail({
             disabled={savingBgCheck}
             onCheckedChange={handleToggleBgCheck}
             aria-label="Require background checks"
+          />
+        </div>
+      </Section>
+
+      <Section title="Platform settings">
+        <div className="flex items-start justify-between gap-4 rounded-lg border p-4">
+          <div className="flex-1">
+            <Text weight="medium">Internal organization</Text>
+            <Text size="sm" variant="muted">
+              For Comp AI-operated orgs only. When on, platform admins are treated as real members
+              here — assignable, counted in compliance, and notified. Leave off for every customer
+              organization.
+            </Text>
+          </div>
+          <Switch
+            checked={isInternal}
+            disabled={savingInternal}
+            onCheckedChange={handleRequestToggleInternal}
+            aria-label="Internal organization"
           />
         </div>
       </Section>
@@ -122,8 +176,43 @@ export function OrganizationDetail({
           </div>
         </Section>
       ) : (
-        <RecentAuditLogs logs={logs} title="Recent Activity" />
+        <RecentAuditLogs
+          logs={logs}
+          title="Recent Activity"
+          total={total}
+          hasMore={hasMore}
+          onLoadMore={loadMore}
+          isLoadingMore={isLoadingMore}
+        />
       )}
+
+      <AlertDialog
+        open={pendingInternal !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingInternal(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pendingInternal
+                ? 'Mark as internal organization?'
+                : 'Remove internal organization?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingInternal
+                ? 'Platform admins will be treated as real members here — assignable, counted in compliance, and notified. Only enable this for Comp AI-operated orgs, never a customer organization.'
+                : 'Platform admins will be excluded from this organization again — removed from assignments, compliance counts, and notifications.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmToggleInternal}>
+              {pendingInternal ? 'Mark as internal' : 'Remove internal'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Stack>
   );
 }

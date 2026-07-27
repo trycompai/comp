@@ -26,8 +26,8 @@ import { OrganizationId } from '../../auth/auth-context.decorator';
 import {
   getActiveManifests,
   getManifest,
+  isCodeManifest,
   runAllChecks,
-  type CheckRunResult,
 } from '@trycompai/integration-platform';
 import { ConnectionRepository } from '../repositories/connection.repository';
 import { ProviderRepository } from '../repositories/provider.repository';
@@ -38,8 +38,37 @@ import { TaskIntegrationChecksService } from '../services/task-integration-check
 import { getStringValue } from '../utils/credential-utils';
 import { isCheckDisabledForTask } from '../utils/disabled-task-checks';
 import { getProviderSummary } from '../utils/provider-summary';
+import { getConnectionLabel } from '../utils/connection-label';
+import { loadActiveExceptionSet } from '../../cloud-security/finding-exceptions';
+import {
+  countEffectiveFailures,
+  decideTaskStatus,
+  decideRunStatus,
+  type FailingFinding,
+} from '../utils/task-check-evaluation';
+import {
+  capEvidence,
+  capLogs,
+  capResultsForList,
+} from '../utils/run-history-limits';
 import { db } from '@db';
-import type { Prisma } from '@db';
+import type { IntegrationConnection, Prisma } from '@db';
+
+/** Manifest + check types derived from the integration-platform registry. */
+type IntegrationManifest = NonNullable<ReturnType<typeof getManifest>>;
+type IntegrationCheckDef = NonNullable<IntegrationManifest['checks']>[number];
+
+/** Outcome of running one check against one connection (account). */
+interface ConnectionCheckOutcome {
+  connectionId: string;
+  checkRunId: string;
+  status: 'success' | 'failed' | 'error';
+  findings: number;
+  passing: number;
+  /** This account's failing findings (identity only) for exception filtering.
+   *  comp does not classify — the self-heal agent decides our-bug vs real fail. */
+  failures: FailingFinding[];
+}
 
 interface TaskIntegrationCheck {
   integrationId: string;
@@ -291,8 +320,12 @@ export class TaskIntegrationsController {
     @Body() body: RunCheckForTaskDto,
   ): Promise<{
     success: boolean;
-    result?: CheckRunResult;
     error?: string;
+    accountsRun?: number;
+    totalPassing?: number;
+    totalFindings?: number;
+    /** True when at least one account could not be checked (e.g. bad creds). */
+    hadErrors?: boolean;
     checkRunId?: string;
     taskStatus?: string | null;
   }> {
@@ -307,30 +340,32 @@ export class TaskIntegrationsController {
       throw new HttpException('Task not found', HttpStatus.NOT_FOUND);
     }
 
-    // Get connection
-    const connection = await this.connectionRepository.findById(connectionId);
-    if (!connection || connection.organizationId !== organizationId) {
+    // The UI references one connection, but a customer may have several
+    // accounts connected for the same provider (e.g. multiple AWS accounts).
+    // Use the referenced connection only to resolve the provider, then run the
+    // check against EVERY active account of that provider — matching the
+    // scheduler, which already runs each connection. This is why running once
+    // checked only the first account.
+    const referencedConnection =
+      await this.connectionRepository.findById(connectionId);
+    if (
+      !referencedConnection ||
+      referencedConnection.organizationId !== organizationId
+    ) {
       throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
     }
 
-    if (connection.status !== 'active') {
+    // Reject inactive connections up front. This also keeps the fallback below
+    // safe: it can only ever contain a connection we've verified is active.
+    if (referencedConnection.status !== 'active') {
       throw new HttpException(
         'Connection is not active',
         HttpStatus.BAD_REQUEST,
       );
     }
 
-    // Reject runs for checks that have been disconnected from this task.
-    if (isCheckDisabledForTask(connection.metadata, taskId, checkId)) {
-      throw new HttpException(
-        'This check is disconnected from the task. Reconnect it before running.',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    // Get provider and manifest
     const provider = await this.providerRepository.findById(
-      connection.providerId,
+      referencedConnection.providerId,
     );
     if (!provider) {
       throw new HttpException('Provider not found', HttpStatus.NOT_FOUND);
@@ -341,44 +376,6 @@ export class TaskIntegrationsController {
       throw new HttpException('Manifest not found', HttpStatus.NOT_FOUND);
     }
 
-    // Get credentials
-    const credentials =
-      await this.credentialVaultService.getDecryptedCredentials(connectionId);
-
-    // Validate credentials based on auth type
-    if (!credentials) {
-      throw new HttpException(
-        'No credentials found for connection',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    // For OAuth, require access_token. For custom auth (like AWS), check for required fields
-    if (manifest.auth.type === 'oauth2' && !credentials.access_token) {
-      throw new HttpException(
-        'No valid OAuth credentials found. Please reconnect.',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    // For custom auth, the credentials are the form field values directly
-    if (
-      manifest.auth.type === 'custom' &&
-      Object.keys(credentials).length === 0
-    ) {
-      throw new HttpException(
-        'No valid credentials found for custom integration',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    const variables =
-      (connection.variables as Record<
-        string,
-        string | number | boolean | string[] | undefined
-      >) || {};
-
-    // Find the check definition to get the name
     const checkDef = manifest.checks?.find((c) => c.id === checkId);
     if (!checkDef) {
       throw new HttpException(
@@ -387,26 +384,220 @@ export class TaskIntegrationsController {
       );
     }
 
-    // Build token refresh callback for OAuth integrations that support it
-    let onTokenRefresh: (() => Promise<string | null>) | undefined;
-    if (manifest.auth.type === 'oauth2') {
-      const oauthConfig = manifest.auth.config;
+    const activeConnections =
+      await this.connectionRepository.findActiveByProviderAndOrg(
+        provider.id,
+        organizationId,
+      );
+    // Never run zero accounts: if a status race leaves the active query empty,
+    // fall back to the referenced connection (verified active above).
+    const connections =
+      activeConnections.length > 0 ? activeConnections : [referencedConnection];
 
-      // Only set up refresh callback if provider supports refresh tokens
-      const supportsRefresh = oauthConfig.supportsRefreshToken !== false;
+    // Determined once: a dynamic integration holds our-side/transient failures
+    // as 'inconclusive' — both on each per-account run row (so the customer never
+    // sees it and the self-heal agent picks it up) AND excluded from task status
+    // below. Mirrors the scheduled path.
+    //
+    // A code-based manifest ALWAYS wins over a dynamic integration of the same
+    // slug (registry precedence), so the check we just resolved is the CODE one —
+    // it must be classified statically, never held as 'inconclusive'. Several
+    // providers (github, vercel, aikido, rippling) have BOTH a code manifest and
+    // an active DynamicIntegration row for their extra DB-backed checks; keying
+    // `isDynamic` off the DB row alone wrongly hid every code-check finding from
+    // the manual run (CS-715). Only a provider with NO code manifest is dynamic —
+    // matching the scheduled and server-run paths.
+    const isDynamic = isCodeManifest(provider.slug)
+      ? false
+      : !!(await db.dynamicIntegration.findFirst({
+          where: { slug: provider.slug, isActive: true },
+          select: { id: true },
+        }));
 
-      if (supportsRefresh) {
-        const oauthCredentials =
-          await this.oauthCredentialsService.getCredentials(
-            provider.slug,
-            organizationId,
-          );
+    let totalFindings = 0;
+    let totalPassing = 0;
+    let accountsRun = 0;
+    let hasExecutionError = false;
+    let lastCheckRunId: string | undefined;
+    // Failing findings across all accounts (keyed like an exception) so task
+    // status can exclude explicitly-excepted ones below.
+    const failingFindings: FailingFinding[] = [];
+    // Checks HELD ('inconclusive') across accounts this run — including error-only
+    // runs with no findings — so a held check keeps the task pending, not 'done'.
+    let heldRunCount = 0;
 
-        if (oauthCredentials) {
-          onTokenRefresh = async () => {
-            return this.credentialVaultService.refreshOAuthTokens(
-              connectionId,
-              {
+    // Sequential so each per-account run commits as it completes — a slow or
+    // failing account still leaves the earlier accounts' results persisted.
+    for (const conn of connections) {
+      // Respect a check that was disconnected from this task for this account.
+      if (isCheckDisabledForTask(conn.metadata, taskId, checkId)) {
+        continue;
+      }
+      const outcome = await this.runCheckForConnection({
+        connection: conn,
+        manifest,
+        checkDef,
+        taskId,
+        organizationId,
+        isDynamic,
+      });
+      accountsRun += 1;
+      totalFindings += outcome.findings;
+      totalPassing += outcome.passing;
+      if (outcome.status === 'error') hasExecutionError = true;
+      // For dynamic, any non-success account run was held (pending) — count it so
+      // an error-only account (no findings) still keeps the task pending.
+      if (isDynamic && outcome.status !== 'success') heldRunCount++;
+      failingFindings.push(...outcome.failures);
+      lastCheckRunId = outcome.checkRunId;
+    }
+
+    if (accountsRun === 0) {
+      throw new HttpException(
+        'This check is disconnected from the task. Reconnect it before running.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // Aggregate task status across ALL accounts, HONORING active finding
+    // exceptions so an explicitly-excepted finding doesn't fail the task —
+    // matched with the scheduled run and the Cloud Tests findings view (one
+    // rule, via the shared helpers). Any real (non-excepted) finding → failed;
+    // else any passing result → done; else leave unchanged.
+    const exceptions = await loadActiveExceptionSet(organizationId);
+    // For DYNAMIC integrations EVERY failure is held (pending) — comp never
+    // classifies; the self-heal agent decides our-bug vs real fail. So none fail
+    // the task here. Static/AWS behavior is unchanged (no holding).
+    const statusFailures = isDynamic ? [] : failingFindings;
+    // heldCount = checks HELD this run (incl. error-only, no-findings) so any held
+    // check keeps the task pending instead of slipping to 'done'.
+    const heldCount = heldRunCount;
+    if (heldCount > 0) {
+      this.logger.log(
+        `Held ${heldCount} check(s) as inconclusive (pending) for task ${taskId} (manual run) — not failed, not done`,
+      );
+    }
+    const effectiveFailures = countEffectiveFailures(statusFailures, exceptions);
+    const newStatus = decideTaskStatus(
+      effectiveFailures,
+      totalPassing,
+      totalFindings,
+      heldCount,
+    );
+
+    if (newStatus) {
+      const isTransitioningToDone =
+        newStatus === 'done' && task.status !== 'done';
+
+      let reviewDate: Date | undefined;
+      if (isTransitioningToDone && task.frequency) {
+        reviewDate = new Date();
+        switch (task.frequency) {
+          case 'monthly':
+            reviewDate.setMonth(reviewDate.getMonth() + 1);
+            break;
+          case 'quarterly':
+            reviewDate.setMonth(reviewDate.getMonth() + 3);
+            break;
+          case 'yearly':
+            reviewDate.setFullYear(reviewDate.getFullYear() + 1);
+            break;
+        }
+      }
+
+      await db.task.update({
+        where: { id: taskId },
+        data: {
+          status: newStatus,
+          ...(reviewDate ? { reviewDate } : {}),
+        },
+      });
+      this.logger.log(
+        `Updated task ${taskId} status to ${newStatus} across ${accountsRun} account(s)${reviewDate ? `, next review: ${reviewDate.toISOString()}` : ''}`,
+      );
+    }
+
+    return {
+      success: true,
+      accountsRun,
+      totalPassing,
+      totalFindings,
+      hadErrors: hasExecutionError,
+      checkRunId: lastCheckRunId,
+      taskStatus: newStatus,
+    };
+  }
+
+  /**
+   * Run one check against ONE connection (account) and persist the run +
+   * results. Resilient: any failure (missing credentials, execution error) is
+   * recorded on the check run and returned as an outcome rather than thrown, so
+   * a caller looping over multiple accounts is never aborted by one bad
+   * account. Does NOT update task status — the caller aggregates across
+   * accounts.
+   */
+  private async runCheckForConnection(params: {
+    connection: IntegrationConnection;
+    manifest: IntegrationManifest;
+    checkDef: IntegrationCheckDef;
+    taskId: string;
+    organizationId: string;
+    isDynamic: boolean;
+  }): Promise<ConnectionCheckOutcome> {
+    const {
+      connection,
+      manifest,
+      checkDef,
+      taskId,
+      organizationId,
+      isDynamic,
+    } = params;
+    const connectionId = connection.id;
+
+    // Create the run up front so even an account that fails credential
+    // validation still produces a visible (failed) run row for that account.
+    const checkRun = await this.checkRunRepository.create({
+      connectionId,
+      taskId,
+      checkId: checkDef.id,
+      checkName: checkDef.name,
+    });
+
+    try {
+      const credentials =
+        await this.credentialVaultService.getDecryptedCredentials(connectionId);
+
+      if (
+        !credentials ||
+        (manifest.auth.type === 'oauth2' && !credentials.access_token) ||
+        (manifest.auth.type === 'custom' &&
+          Object.keys(credentials).length === 0)
+      ) {
+        throw new Error(
+          'No valid credentials found for this connection. Reconnect the integration.',
+        );
+      }
+
+      const variables =
+        (connection.variables as Record<
+          string,
+          string | number | boolean | string[] | undefined
+        >) || {};
+
+      // Build token refresh callback for OAuth integrations that support it.
+      let onTokenRefresh: (() => Promise<string | null>) | undefined;
+      if (manifest.auth.type === 'oauth2') {
+        const oauthConfig = manifest.auth.config;
+        const supportsRefresh = oauthConfig.supportsRefreshToken !== false;
+        if (supportsRefresh) {
+          const oauthCredentials =
+            await this.oauthCredentialsService.getCredentials(
+              manifest.id,
+              organizationId,
+            );
+          if (oauthCredentials) {
+            onTokenRefresh = async () =>
+              this.credentialVaultService.refreshOAuthTokens(connectionId, {
                 tokenUrl: oauthConfig.tokenUrl,
                 refreshUrl: oauthConfig.refreshUrl,
                 clientId: oauthCredentials.clientId,
@@ -414,23 +605,11 @@ export class TaskIntegrationsController {
                 clientAuthMethod: oauthConfig.clientAuthMethod,
                 scope: oauthCredentials.scopes.join(' '),
                 tokenParams: oauthConfig.tokenParams,
-              },
-            );
-          };
+              });
+          }
         }
       }
-    }
 
-    // Create check run record
-    const checkRun = await this.checkRunRepository.create({
-      connectionId,
-      taskId,
-      checkId,
-      checkName: checkDef.name,
-    });
-
-    try {
-      // Run the specific check
       const accessToken = getStringValue(credentials.access_token);
       const result = await runAllChecks({
         manifest,
@@ -442,7 +621,7 @@ export class TaskIntegrationsController {
         variables,
         connectionId,
         organizationId,
-        checkId, // Only run this specific check
+        checkId: checkDef.id, // Only run this specific check
         onTokenRefresh,
         logger: {
           info: (msg, data) => this.logger.log(msg, data),
@@ -452,7 +631,6 @@ export class TaskIntegrationsController {
       });
 
       const checkResult = result.results[0];
-
       if (!checkResult) {
         await this.checkRunRepository.complete(checkRun.id, {
           status: 'failed',
@@ -462,12 +640,17 @@ export class TaskIntegrationsController {
           failedCount: 0,
           errorMessage: 'Check not found in manifest',
         });
-        return { success: false, error: 'Check not found' };
+        return {
+          connectionId,
+          checkRunId: checkRun.id,
+          status: 'error',
+          findings: 0,
+          passing: 0,
+          failures: [],
+        };
       }
 
-      // Store individual results
       const resultsToStore = [
-        // Passing results
         ...checkResult.result.passingResults.map((r) => ({
           checkRunId: checkRun.id,
           passed: true,
@@ -477,7 +660,6 @@ export class TaskIntegrationsController {
           description: r.description,
           evidence: r.evidence as Prisma.InputJsonValue,
         })),
-        // Findings (failures)
         ...checkResult.result.findings.map((f) => ({
           checkRunId: checkRun.id,
           passed: false,
@@ -485,12 +667,7 @@ export class TaskIntegrationsController {
           resourceId: f.resourceId,
           title: f.title,
           description: f.description,
-          severity: f.severity as
-            | 'info'
-            | 'low'
-            | 'medium'
-            | 'high'
-            | 'critical',
+          severity: f.severity,
           remediation: f.remediation,
           evidence: f.evidence as Prisma.InputJsonValue,
         })),
@@ -500,16 +677,36 @@ export class TaskIntegrationsController {
         await this.checkRunRepository.addResults(resultsToStore);
       }
 
-      // Complete the check run
+      // Classifiable failures for this account — built once, used for both the
+      // held-run decision below and the returned outcome (the caller aggregates
+      // them for task status).
+      const failures = checkResult.result.findings.map((f) => ({
+        connectionId,
+        checkId: checkDef.id,
+        resourceId: f.resourceId,
+      }));
+
+      // Per-account run status (shared rule): a DYNAMIC run that didn't succeed is
+      // held as 'inconclusive' (pending, hidden) and handed to the self-heal agent
+      // — comp never classifies. Static integrations keep success/failed.
+      const runStatus = decideRunStatus({
+        resultStatus: checkResult.status,
+        isDynamic,
+      });
+
       await this.checkRunRepository.complete(checkRun.id, {
-        status: checkResult.status === 'error' ? 'failed' : checkResult.status,
+        status: runStatus,
         durationMs: checkResult.durationMs,
         totalChecked:
           checkResult.result.summary?.totalChecked ||
           checkResult.result.passingResults.length +
             checkResult.result.findings.length,
         passedCount: checkResult.result.passingResults.length,
-        failedCount: checkResult.result.findings.length,
+        // A held (inconclusive) run has no CONFIRMED failures — its findings are
+        // our-side/transient, not real fails — so failedCount is 0. The raw
+        // findings still persist as results for the agent to diagnose.
+        failedCount:
+          runStatus === 'inconclusive' ? 0 : checkResult.result.findings.length,
         errorMessage: checkResult.error,
         logs: JSON.parse(
           JSON.stringify(checkResult.result.logs),
@@ -517,70 +714,38 @@ export class TaskIntegrationsController {
       });
 
       this.logger.log(
-        `Check ${checkId} for task ${taskId}: ${checkResult.status} - ${checkResult.result.findings.length} findings, ${checkResult.result.passingResults.length} passing`,
+        `Check ${checkDef.id} for task ${taskId} (connection ${connectionId}): ${runStatus} - ${checkResult.result.findings.length} findings, ${checkResult.result.passingResults.length} passing`,
       );
 
-      // Update task status based on check results
-      const hasFindings = checkResult.result.findings.length > 0;
-      const hasPassing = checkResult.result.passingResults.length > 0;
-      const newStatus = hasFindings ? 'failed' : hasPassing ? 'done' : null;
-
-      if (newStatus) {
-        // Only update review date if transitioning to done from a different status
-        const isTransitioningToDone =
-          newStatus === 'done' && task.status !== 'done';
-
-        // Calculate next review date based on frequency
-        let reviewDate: Date | undefined;
-        if (isTransitioningToDone && task.frequency) {
-          reviewDate = new Date();
-          switch (task.frequency) {
-            case 'monthly':
-              reviewDate.setMonth(reviewDate.getMonth() + 1);
-              break;
-            case 'quarterly':
-              reviewDate.setMonth(reviewDate.getMonth() + 3);
-              break;
-            case 'yearly':
-              reviewDate.setFullYear(reviewDate.getFullYear() + 1);
-              break;
-          }
-        }
-
-        await db.task.update({
-          where: { id: taskId },
-          data: {
-            status: newStatus,
-            ...(reviewDate ? { reviewDate } : {}),
-          },
-        });
-        this.logger.log(
-          `Updated task ${taskId} status to ${newStatus}${reviewDate ? `, next review: ${reviewDate.toISOString()}` : ''}`,
-        );
-      }
-
       return {
-        success: true,
-        result: checkResult,
+        connectionId,
         checkRunId: checkRun.id,
-        taskStatus: newStatus,
+        status: checkResult.status,
+        findings: checkResult.result.findings.length,
+        passing: checkResult.result.passingResults.length,
+        failures,
       };
     } catch (error) {
-      // Mark run as failed
       await this.checkRunRepository.complete(checkRun.id, {
         status: 'failed',
-        durationMs: Date.now() - checkRun.startedAt!.getTime(),
+        durationMs: checkRun.startedAt
+          ? Date.now() - checkRun.startedAt.getTime()
+          : 0,
         totalChecked: 0,
         passedCount: 0,
         failedCount: 0,
         errorMessage: error instanceof Error ? error.message : String(error),
       });
-
-      this.logger.error(`Failed to run check: ${error}`);
+      this.logger.error(
+        `Failed to run check ${checkDef.id} for connection ${connectionId}: ${error}`,
+      );
       return {
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
+        connectionId,
         checkRunId: checkRun.id,
+        status: 'error',
+        findings: 0,
+        passing: 0,
+        failures: [],
       };
     }
   }
@@ -639,35 +804,71 @@ export class TaskIntegrationsController {
   @RequirePermission('integration', 'read')
   async getTaskCheckRuns(
     @Param('taskId') taskId: string,
+    @OrganizationId() organizationId: string,
     @Query('limit') limit?: string,
   ) {
-    const runs = await this.checkRunRepository.findByTask(
-      taskId,
-      limit ? parseInt(limit, 10) : 10,
-    );
+    // Tenant scoping: confirm the task belongs to the caller's org before
+    // returning its check runs. The runs carry account ids, connection labels,
+    // and logs — without this an arbitrary taskId would leak cross-tenant data.
+    const task = await db.task.findUnique({
+      where: { id: taskId, organizationId },
+      select: { id: true },
+    });
+    if (!task) {
+      throw new HttpException('Task not found', HttpStatus.NOT_FOUND);
+    }
 
-    return {
-      runs: runs.map((run) => {
+    // Latest run per (connection, check) is guaranteed present — so a customer
+    // with multiple accounts always sees every account, never just the most
+    // recently re-run one. `connectionId` + `connectionLabel` let the UI show
+    // which account each run belongs to.
+    const runs =
+      await this.checkRunRepository.findLatestPerConnectionAndCheckByTask(
+        taskId,
+        { historyPerGroup: limit ? parseInt(limit, 10) : 5 },
+      );
+
+    // Honor active finding exceptions in what the UI shows: a failing result
+    // under an active exception is surfaced as `excepted` and excluded from the
+    // run's failed count/status — matched with task status + the Cloud Tests
+    // findings view (one rule, via the shared exception set). Raw rows are left
+    // untouched in the DB; this only affects the response.
+    const exceptions = await loadActiveExceptionSet(organizationId);
+
+    const mappedRuns = await Promise.all(
+      runs.map(async (run) => {
         const provider = getProviderSummary(run.connection);
 
-        return {
-          id: run.id,
-          checkId: run.checkId,
-          checkName: run.checkName,
-          status: run.status,
-          startedAt: run.startedAt,
-          completedAt: run.completedAt,
-          durationMs: run.durationMs,
-          totalChecked: run.totalChecked,
-          passedCount: run.passedCount,
-          failedCount: run.failedCount,
-          errorMessage: run.errorMessage,
-          logs: run.logs,
-          provider: {
-            slug: provider?.slug,
-            name: provider?.name,
-          },
-          results: run.results.map((r) => ({
+        // `run.results` is a BOUNDED, findings-first sample — the repo caps how
+        // many rows it loads per run (a check can produce tens of thousands, so
+        // loading them all hangs/OOMs the request). The effective failure count
+        // is therefore computed EXACTLY via a targeted count query over the
+        // full set, NOT by filtering this sample. The query is skipped when
+        // this (connection, check) has no exceptions — the common case.
+        const exceptedResourceIds = exceptions.exceptedResourceIds(
+          run.connectionId,
+          run.checkId,
+        );
+        const exceptedCount =
+          await this.checkRunRepository.countExceptedFailures(
+            run.id,
+            exceptedResourceIds,
+          );
+
+        // Tag each sampled result with whether it's excepted (for display);
+        // authoritative totals come from the run's summary columns +
+        // exceptedCount above. Excepted rows also carry the exception's id
+        // (so the UI can offer revoke) and its documented reason. Cap evidence
+        // so one oversized blob can't bloat the payload that the browser must
+        // parse + render.
+        const sample = run.results.map((r) => {
+          const excepted =
+            !r.passed &&
+            exceptions.has(run.connectionId, run.checkId, r.resourceId);
+          const exceptionInfo = excepted
+            ? exceptions.infoFor(run.connectionId, run.checkId, r.resourceId)
+            : null;
+          return {
             id: r.id,
             passed: r.passed,
             resourceType: r.resourceType,
@@ -678,10 +879,61 @@ export class TaskIntegrationsController {
             remediation: r.remediation,
             evidence: r.evidence,
             collectedAt: r.collectedAt,
-          })),
+            excepted,
+            exceptionId: exceptionInfo?.id,
+            exceptionReason: exceptionInfo?.reason,
+          };
+        });
+        const results = capResultsForList(sample).map((r) => ({
+          ...r,
+          evidence: capEvidence(r.evidence),
+        }));
+
+        const effectiveFailed = Math.max(0, run.failedCount - exceptedCount);
+        // Only downgrade failed → success when the failures were actually
+        // EXCEPTED. A failed run with no findings (e.g. an execution error,
+        // which is persisted as failed with failedCount 0) must stay failed so
+        // real runtime errors aren't hidden.
+        const displayStatus =
+          run.status === 'failed' && effectiveFailed === 0 && exceptedCount > 0
+            ? 'success'
+            : run.status;
+
+        return {
+          id: run.id,
+          checkId: run.checkId,
+          checkName: run.checkName,
+          status: displayStatus,
+          startedAt: run.startedAt,
+          completedAt: run.completedAt,
+          durationMs: run.durationMs,
+          totalChecked: run.totalChecked,
+          passedCount: run.passedCount,
+          failedCount: effectiveFailed,
+          exceptedCount,
+          errorMessage: run.errorMessage,
+          logs: capLogs(run.logs),
+          connectionId: run.connectionId,
+          connectionLabel: getConnectionLabel(run.connection),
+          provider: {
+            slug: provider?.slug,
+            name: provider?.name,
+          },
+          results,
           createdAt: run.createdAt,
         };
       }),
-    };
+    );
+
+    // WHEN each (connection, check) last ran, INCLUDING runs held as
+    // 'inconclusive' (which are excluded from `runs`). Timestamps only — held
+    // outcomes stay hidden. Without this the UI's "Last ran" froze at the last
+    // visible run while the daily schedule kept running (CS-753).
+    const lastAttempts =
+      await this.checkRunRepository.findLastAttemptPerConnectionAndCheckByTask(
+        taskId,
+      );
+
+    return { runs: mappedRuns, lastAttempts };
   }
 }

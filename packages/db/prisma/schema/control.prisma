@@ -26,6 +26,7 @@ model Control {
   frameworkPolicyLinks   FrameworkControlPolicyLink[]
   frameworkTaskLinks     FrameworkControlTaskLink[]
   frameworkDocumentLinks FrameworkControlDocumentTypeLink[]
+  ismsDocumentLinks      IsmsDocumentControlLink[]
   frameworkControlFamilies FrameworkControlFamily[]
 
   @@index([organizationId])

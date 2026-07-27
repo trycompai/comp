@@ -185,6 +185,60 @@ const tabletopExerciseDataSchema = z.object({
   evidenceFile: evidenceFormFileSchema.optional(),
 });
 
+// Lenient row schema so the pre-seeded default rows parse before the
+// superRefine applies the conditional (Allowed ⇒ Justification) rule.
+const accountTypeRowSchemaLenient = z.object({
+  accountType: z.string().default(''),
+  status: z.string().default(''),
+  justification: z.string().default(''),
+});
+
+const accountTypesDataSchema = z
+  .object({
+    submissionDate: required('Submission date'),
+    accountTypeRows: z.array(accountTypeRowSchemaLenient).optional(),
+  })
+  .superRefine((data, ctx) => {
+    const rows = data.accountTypeRows ?? [];
+    const isRowEmpty = (row: { accountType: string; status: string; justification: string }) =>
+      !row.accountType.trim() && !row.status.trim() && !row.justification.trim();
+
+    if (!rows.some((row) => !isRowEmpty(row))) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Add at least one account type',
+        path: ['accountTypeRows'],
+      });
+      return;
+    }
+
+    rows.forEach((row, i) => {
+      if (isRowEmpty(row)) return;
+      if (!row.accountType.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Account type is required',
+          path: ['accountTypeRows', i, 'accountType'],
+        });
+      }
+      if (row.status !== 'Allowed' && row.status !== 'Disallowed') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Select Allowed or Disallowed',
+          path: ['accountTypeRows', i, 'status'],
+        });
+      }
+      // Conditional rule: justification is mandatory only when Allowed.
+      if (row.status === 'Allowed' && !row.justification.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Justification is required when the account type is Allowed',
+          path: ['accountTypeRows', i, 'justification'],
+        });
+      }
+    });
+  });
+
 export const evidenceFormSubmissionSchemaMap = {
   meeting: meetingDataSchema,
   'board-meeting': meetingDataSchema,
@@ -198,4 +252,5 @@ export const evidenceFormSubmissionSchemaMap = {
   'employee-performance-evaluation': employeePerformanceEvaluationDataSchema,
   'network-diagram': networkDiagramDataSchema,
   'tabletop-exercise': tabletopExerciseDataSchema,
+  'account-types': accountTypesDataSchema,
 } as const satisfies Record<EvidenceFormType, z.ZodTypeAny>;

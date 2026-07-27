@@ -40,7 +40,7 @@ describe('SOAController', () => {
     batchSearchSOAQuestions: jest.fn(),
     processSOAQuestionWithContent: jest.fn(),
     saveAnswersToDatabase: jest.fn(),
-    updateConfigurationWithResults: jest.fn(),
+    countAnsweredAnswers: jest.fn(),
     updateDocumentAfterAutoFill: jest.fn(),
     createDocument: jest.fn(),
     ensureSetup: jest.fn(),

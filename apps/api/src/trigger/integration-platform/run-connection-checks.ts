@@ -6,7 +6,14 @@ import {
   requestValidCredentials,
   type IntegrationCredentialValues,
 } from './ensure-valid-credentials';
-import { injectAwsResolvedSession } from './checks-aws-session';
+import {
+  runChecksOnServer,
+  type RunAllChecksResult,
+} from './run-checks-on-server';
+import {
+  isActiveDynamicProvider,
+  shouldRunOnServer,
+} from './dynamic-provider';
 
 /**
  * Trigger task that runs all checks for a connection.
@@ -37,12 +44,24 @@ export const runConnectionChecks = task({
 
     const manifest = getManifest(providerSlug);
 
-    if (!manifest) {
+    // Dynamic (DB-backed) providers have no manifest in the Trigger.dev runtime,
+    // so run their checks ON OUR SERVER (like AWS), where the dynamic-manifest
+    // loader has populated the registry. Static providers keep running here.
+    const isDynamic = manifest
+      ? false
+      : await isActiveDynamicProvider(providerSlug);
+    const runOnServer = shouldRunOnServer({
+      providerSlug,
+      hasManifest: !!manifest,
+      isActiveDynamic: isDynamic,
+    });
+
+    if (!manifest && !runOnServer) {
       logger.error(`Manifest not found for provider: ${providerSlug}`);
       return { success: false, error: `Manifest not found: ${providerSlug}` };
     }
 
-    if (!manifest.checks || manifest.checks.length === 0) {
+    if (manifest && (!manifest.checks || manifest.checks.length === 0)) {
       logger.info(`No checks defined for provider: ${providerSlug}`);
       return { success: true, reason: 'No checks defined' };
     }
@@ -57,107 +76,110 @@ export const runConnectionChecks = task({
       return { success: false, error: 'Connection not found or inactive' };
     }
 
-    // Check if all required variables are configured
-    const requiredVariables = new Set<string>();
-    for (const check of manifest.checks) {
-      if (check.variables) {
-        for (const variable of check.variables) {
-          if (variable.required) {
-            requiredVariables.add(variable.id);
+    // Check if all required variables are configured. Only possible for
+    // in-process (static) providers — for server-delegated dynamic providers the
+    // manifest (and thus its variable definitions) isn't available here, so the
+    // server runs every check and reports any that are unconfigured as results.
+    if (manifest) {
+      const requiredVariables = new Set<string>();
+      for (const check of manifest.checks ?? []) {
+        if (check.variables) {
+          for (const variable of check.variables) {
+            if (variable.required) {
+              requiredVariables.add(variable.id);
+            }
           }
         }
       }
-    }
 
-    const configuredVariables =
-      (connection.variables as Record<string, unknown>) || {};
-    const missingVariables: string[] = [];
+      const configuredVariables =
+        (connection.variables as Record<string, unknown>) || {};
+      const missingVariables: string[] = [];
 
-    for (const requiredVar of requiredVariables) {
-      const value = configuredVariables[requiredVar];
-      if (value === undefined || value === null || value === '') {
-        missingVariables.push(requiredVar);
+      for (const requiredVar of requiredVariables) {
+        const value = configuredVariables[requiredVar];
+        if (value === undefined || value === null || value === '') {
+          missingVariables.push(requiredVar);
+        }
+        if (Array.isArray(value) && value.length === 0) {
+          missingVariables.push(requiredVar);
+        }
       }
-      if (Array.isArray(value) && value.length === 0) {
-        missingVariables.push(requiredVar);
+
+      if (missingVariables.length > 0) {
+        logger.info(
+          `Skipping auto-run: missing required variables: ${missingVariables.join(', ')}`,
+        );
+        return {
+          success: true,
+          reason: `Missing required variables: ${missingVariables.join(', ')}`,
+        };
       }
     }
 
-    if (missingVariables.length > 0) {
-      logger.info(
-        `Skipping auto-run: missing required variables: ${missingVariables.join(', ')}`,
-      );
-      return {
-        success: true,
-        reason: `Missing required variables: ${missingVariables.join(', ')}`,
-      };
-    }
-
-    // Ensure we have valid credentials
     const apiUrl = process.env.BASE_URL || 'http://localhost:3333';
-    let credentials: IntegrationCredentialValues;
 
-    logger.info('Ensuring valid credentials...');
-    const credentialsResult = await requestValidCredentials({
-      apiUrl,
-      connectionId,
-      organizationId,
-    });
+    // Server-delegated checks (AWS + dynamic providers) decrypt credentials and
+    // run ON OUR SERVER, so the Trigger-side credential preflight is skipped for
+    // them — running it would add redundant failure points (a transient
+    // preflight error would falsely fail a run that `runChecksOnServer` could
+    // have completed). The `&& manifest` is a no-op at runtime (a non-delegated
+    // provider always has a manifest by here) that narrows the type below.
+    let credentials: IntegrationCredentialValues = {};
+    let handleTokenRefresh: (() => Promise<string | null>) | undefined;
 
-    if (!credentialsResult.success || !credentialsResult.credentials) {
-      const errorMessage =
-        credentialsResult.error || 'Failed to validate credentials';
-      logger.error(errorMessage);
-      return { success: false, error: errorMessage };
-    }
-    credentials = credentialsResult.credentials;
-
-    const handleTokenRefresh = async (): Promise<string | null> => {
-      logger.info('Force refreshing OAuth credentials after provider 401...');
-      const refreshResult = await requestValidCredentials({
+    if (!runOnServer && manifest) {
+      logger.info('Ensuring valid credentials...');
+      const credentialsResult = await requestValidCredentials({
         apiUrl,
         connectionId,
         organizationId,
-        forceRefresh: true,
       });
 
-      if (!refreshResult.success || !refreshResult.credentials) {
-        logger.error(refreshResult.error || 'Forced token refresh failed');
-        return null;
+      if (!credentialsResult.success || !credentialsResult.credentials) {
+        const errorMessage =
+          credentialsResult.error || 'Failed to validate credentials';
+        logger.error(errorMessage);
+        return { success: false, error: errorMessage };
+      }
+      credentials = credentialsResult.credentials;
+
+      handleTokenRefresh = async (): Promise<string | null> => {
+        logger.info('Force refreshing OAuth credentials after provider 401...');
+        const refreshResult = await requestValidCredentials({
+          apiUrl,
+          connectionId,
+          organizationId,
+          forceRefresh: true,
+        });
+
+        if (!refreshResult.success || !refreshResult.credentials) {
+          logger.error(refreshResult.error || 'Forced token refresh failed');
+          return null;
+        }
+
+        credentials = refreshResult.credentials;
+        return getAccessToken(credentials) ?? null;
+      };
+
+      // Validate credentials based on auth type
+      if (manifest.auth.type === 'oauth2' && !getAccessToken(credentials)) {
+        logger.error(
+          `No OAuth access token found for connection: ${connectionId}`,
+        );
+        return { success: false, error: 'No OAuth access token found' };
       }
 
-      credentials = refreshResult.credentials;
-      return getAccessToken(credentials) ?? null;
-    };
-
-    // Validate credentials based on auth type
-    if (manifest.auth.type === 'oauth2' && !getAccessToken(credentials)) {
-      logger.error(
-        `No OAuth access token found for connection: ${connectionId}`,
-      );
-      return { success: false, error: 'No OAuth access token found' };
+      if (
+        manifest.auth.type === 'custom' &&
+        Object.keys(credentials).length === 0
+      ) {
+        logger.error(
+          `No credentials found for custom integration: ${connectionId}`,
+        );
+        return { success: false, error: 'No credentials found' };
+      }
     }
-
-    if (
-      manifest.auth.type === 'custom' &&
-      Object.keys(credentials).length === 0
-    ) {
-      logger.error(
-        `No credentials found for custom integration: ${connectionId}`,
-      );
-      return { success: false, error: 'No credentials found' };
-    }
-
-    // For AWS, resolve the cross-account session in ECS and inject the temp
-    // creds — the checks run in the Trigger.dev runtime, which cannot assume the
-    // role itself (no base creds / roleAssumer ARN there).
-    credentials = await injectAwsResolvedSession({
-      credentials,
-      apiUrl,
-      connectionId,
-      organizationId,
-      providerSlug,
-    });
 
     const variables =
       (connection.variables as Record<
@@ -180,22 +202,37 @@ export const runConnectionChecks = task({
     let totalPassing = 0;
 
     try {
-      // Run all checks
-      const result = await runAllChecks({
-        manifest,
-        accessToken: getAccessToken(credentials),
-        credentials,
-        variables,
-        connectionId,
-        organizationId,
-        onTokenRefresh:
-          manifest.auth.type === 'oauth2' ? handleTokenRefresh : undefined,
-        logger: {
-          info: (msg, data) => logger.info(msg, data),
-          warn: (msg, data) => logger.warn(msg, data),
-          error: (msg, data) => logger.error(msg, data),
-        },
-      });
+      // Server-delegated providers (AWS + dynamic) run ON OUR SERVER so their
+      // checks egress our VPC / resolve their DB-backed manifest there. Static
+      // providers keep running here in the Trigger.dev runtime, unchanged. Same
+      // result shape either way, so the persistence below is shared.
+      let result: RunAllChecksResult;
+      if (runOnServer) {
+        result = await runChecksOnServer({
+          apiUrl,
+          connectionId,
+          organizationId,
+        });
+      } else if (manifest) {
+        result = await runAllChecks({
+          manifest,
+          accessToken: getAccessToken(credentials),
+          credentials,
+          variables,
+          connectionId,
+          organizationId,
+          onTokenRefresh:
+            manifest.auth.type === 'oauth2' ? handleTokenRefresh : undefined,
+          logger: {
+            info: (msg, data) => logger.info(msg, data),
+            warn: (msg, data) => logger.warn(msg, data),
+            error: (msg, data) => logger.error(msg, data),
+          },
+        });
+      } else {
+        // Unreachable: guarded at the top (no manifest ⇒ runOnServer).
+        throw new Error(`Manifest not found: ${providerSlug}`);
+      }
 
       totalFindings = result.totalFindings;
       totalPassing = result.totalPassing;

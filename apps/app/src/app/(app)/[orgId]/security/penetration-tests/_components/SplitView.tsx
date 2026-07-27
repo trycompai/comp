@@ -237,6 +237,7 @@ export function SplitView({ orgId, selectedRunId, mode = 'default' }: SplitViewP
           />
         ) : (
           <DetailPane
+            orgId={orgId}
             run={selectedRun}
             issues={issues}
             events={events}

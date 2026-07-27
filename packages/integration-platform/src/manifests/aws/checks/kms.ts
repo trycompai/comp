@@ -7,9 +7,13 @@ import {
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
 import {
+  combineReadFailures,
+  remediationForReadFailure,
   resolveAwsSessionOrFail,
+  toReadFailure,
   type AwsSession,
   type CheckOutcome,
+  type ReadFailure,
   emitOutcomes,
 } from './shared';
 
@@ -25,6 +29,8 @@ export interface KmsKeyInfo {
   /** false when GetKeyRotationStatus couldn't be read → emit no finding. */
   rotationStatusKnown: boolean;
   rotationEnabled: boolean;
+  /** set when GetKeyRotationStatus failed — the real error, surfaced in evidence */
+  rotationReadFailure?: ReadFailure;
 }
 
 /**
@@ -37,16 +43,24 @@ export function evaluateKmsRotation(keys: KmsKeyInfo[]): CheckOutcome[] {
     .filter((k) => k.rotationEligible)
     .map((k): CheckOutcome => {
       if (!k.rotationStatusKnown) {
+        const failure = k.rotationReadFailure;
         return {
           kind: 'fail',
           title: `Could not verify KMS key rotation: ${k.keyId}`,
-          description: `Rotation status for customer-managed KMS key "${k.keyId}" (${k.region}) could not be read, so rotation is unverified.`,
+          description: `Rotation status for customer-managed KMS key "${k.keyId}" (${k.region}) could not be read${failure ? ` (${failure.error})` : ''}, so rotation is unverified.`,
           resourceType: 'aws-kms-key',
           resourceId: k.keyId,
           severity: 'medium',
-          remediation:
+          remediation: remediationForReadFailure(
+            failure,
             'Grant kms:GetKeyRotationStatus to the integration role so rotation can be verified, then re-run.',
-          evidence: { keyId: k.keyId, region: k.region, rotationStatusKnown: false },
+          ),
+          evidence: {
+            keyId: k.keyId,
+            region: k.region,
+            rotationStatusKnown: false,
+            ...(failure ? { readError: failure.error } : {}),
+          },
         };
       }
       return k.rotationEnabled
@@ -73,8 +87,8 @@ export function evaluateKmsRotation(keys: KmsKeyInfo[]): CheckOutcome[] {
 
 interface KmsKeyScan {
   keys: KmsKeyInfo[];
-  /** Keys whose DescribeKey failed — eligibility couldn't be classified. */
-  unreadableKeyIds: string[];
+  /** Keys (or "region:<name>" markers) whose read failed, with the real error. */
+  unreadable: Array<{ id: string; failure: ReadFailure }>;
 }
 
 async function listKmsKeys(
@@ -82,9 +96,15 @@ async function listKmsKeys(
   session: AwsSession,
 ): Promise<KmsKeyScan> {
   const out: KmsKeyInfo[] = [];
-  const unreadableKeyIds: string[] = [];
+  const unreadable: Array<{ id: string; failure: ReadFailure }> = [];
   for (const region of session.regions) {
-    const kms = new KMSClient({ region, credentials: session.credentials });
+    const kms = new KMSClient({
+      region,
+      credentials: session.credentials,
+      // Reads are idempotent; extra attempts ride out transient network or
+      // throttling failures during the scheduled-run herd.
+      maxAttempts: 5,
+    });
     let marker: string | undefined;
     try {
     do {
@@ -99,10 +119,9 @@ async function listKmsKeys(
           // Can't classify this key's eligibility — record it as unreadable so
           // an all-unreadable account isn't reported as a clean run (a denied
           // kms:DescribeKey would otherwise leave zero eligible keys silently).
-          unreadableKeyIds.push(keyId);
-          ctx.log(
-            `KMS: could not describe key ${keyId} in ${region}: ${err instanceof Error ? err.message : String(err)}`,
-          );
+          const failure = toReadFailure(err);
+          unreadable.push({ id: keyId, failure });
+          ctx.log(`KMS: could not describe key ${keyId} in ${region}: ${failure.error}`);
           continue;
         }
         // Only symmetric, enabled, AWS-managed-material, encrypt/decrypt
@@ -116,32 +135,40 @@ async function listKmsKeys(
 
         let rotationEnabled = false;
         let rotationStatusKnown = false;
+        let rotationReadFailure: ReadFailure | undefined;
         if (rotationEligible) {
           try {
             const rot = await kms.send(new GetKeyRotationStatusCommand({ KeyId: keyId }));
             rotationEnabled = rot.KeyRotationEnabled === true;
             rotationStatusKnown = true;
           } catch (err) {
+            rotationReadFailure = toReadFailure(err);
             ctx.log(
-              `KMS: could not read rotation status for ${keyId} in ${region}: ${err instanceof Error ? err.message : String(err)}`,
+              `KMS: could not read rotation status for ${keyId} in ${region}: ${rotationReadFailure.error}`,
             );
             rotationStatusKnown = false;
           }
         }
-        out.push({ keyId, region, rotationEligible, rotationStatusKnown, rotationEnabled });
+        out.push({
+          keyId,
+          region,
+          rotationEligible,
+          rotationStatusKnown,
+          rotationEnabled,
+          rotationReadFailure,
+        });
       }
       marker = resp.NextMarker;
     } while (marker);
     } catch (err) {
       // ListKeys failed for this region — record a region marker so run()
       // surfaces "could not verify" instead of aborting / silently skipping it.
-      unreadableKeyIds.push(`region:${region}`);
-      ctx.log(
-        `KMS: could not list keys in ${region}: ${err instanceof Error ? err.message : String(err)}`,
-      );
+      const failure = toReadFailure(err);
+      unreadable.push({ id: `region:${region}`, failure });
+      ctx.log(`KMS: could not list keys in ${region}: ${failure.error}`);
     }
   }
-  return { keys: out, unreadableKeyIds };
+  return { keys: out, unreadable };
 }
 
 export const kmsKeyRotationCheck: IntegrationCheck = {
@@ -156,34 +183,46 @@ export const kmsKeyRotationCheck: IntegrationCheck = {
       ctx.log('AWS KMS check: connection not configured — skipping');
       return;
     }
-    const { keys, unreadableKeyIds } = await listKmsKeys(ctx, session);
+    const { keys, unreadable } = await listKmsKeys(ctx, session);
 
     // Keys/regions that couldn't be read can't be classified — surface them so
     // an all-unreadable account (e.g. kms:ListKeys or kms:DescribeKey denied)
     // isn't recorded as a clean run with no findings. Region markers
     // ("region:<name>") are ListKeys failures; the rest are DescribeKey failures.
-    if (unreadableKeyIds.length > 0) {
-      const failedRegions = unreadableKeyIds
-        .filter((k) => k.startsWith('region:'))
-        .map((k) => k.slice('region:'.length));
-      const failedKeyCount = unreadableKeyIds.length - failedRegions.length;
+    if (unreadable.length > 0) {
+      const failedRegions = unreadable
+        .filter((u) => u.id.startsWith('region:'))
+        .map((u) => ({ region: u.id.slice('region:'.length), error: u.failure.error }));
+      const failedKeys = unreadable.filter((u) => !u.id.startsWith('region:'));
       const parts: string[] = [];
       if (failedRegions.length > 0) {
-        parts.push(`keys could not be listed in ${failedRegions.length} region(s) (${failedRegions.join(', ')})`);
+        parts.push(`keys could not be listed in ${failedRegions.length} region(s) (${failedRegions.map((r) => r.region).join(', ')})`);
       }
-      if (failedKeyCount > 0) {
-        parts.push(`metadata could not be read for ${failedKeyCount} key(s)`);
+      if (failedKeys.length > 0) {
+        parts.push(`metadata could not be read for ${failedKeys.length} key(s)`);
       }
-      ctx.fail({
-        title: 'Could not verify KMS keys',
-        description: `${parts.join('; ')} — rotation eligibility/status is unverified.`,
-        resourceType: 'aws-kms-key',
-        resourceId: 'account',
-        severity: 'medium',
-        remediation:
-          'Grant kms:ListKeys, kms:DescribeKey, and kms:GetKeyRotationStatus to the integration role in all enabled regions, then re-run the check.',
-        evidence: { failedRegions, failedKeyCount },
-      });
+      emitOutcomes(ctx, [
+        {
+          kind: 'fail',
+          title: 'Could not verify KMS keys',
+          description: `${parts.join('; ')} — rotation eligibility/status is unverified.`,
+          resourceType: 'aws-kms-key',
+          resourceId: 'account',
+          severity: 'medium',
+          remediation: remediationForReadFailure(
+            combineReadFailures(unreadable.map((u) => u.failure)),
+            'Grant kms:ListKeys, kms:DescribeKey, and kms:GetKeyRotationStatus to the integration role in all enabled regions, then re-run the check.',
+          ),
+          evidence: {
+            failedRegions,
+            failedKeyCount: failedKeys.length,
+            // first few per-key errors so the cause is visible without log digging
+            keyReadErrors: failedKeys
+              .slice(0, 5)
+              .map((u) => ({ keyId: u.id, error: u.failure.error })),
+          },
+        },
+      ]);
     }
 
     // Rotation-eligible keys each produce an outcome (incl. could-not-verify for

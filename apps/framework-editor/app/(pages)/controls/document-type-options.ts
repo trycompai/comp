@@ -18,6 +18,7 @@ export const DOCUMENT_TYPE_OPTIONS: MultiSelectOption[] = [
   { value: 'tabletop_exercise', label: 'Incident Response Tabletop Exercise', category: 'Security' },
   { value: 'whistleblower_report', label: 'Whistleblower Report', category: 'People' },
   { value: 'employee_performance_evaluation', label: 'Employee Performance Evaluation', category: 'People' },
+  { value: 'account_types', label: 'Account Types', category: 'Security' },
 ];
 
 export function getDocumentTypeLabel(value: string): string {

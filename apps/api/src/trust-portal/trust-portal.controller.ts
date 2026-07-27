@@ -56,9 +56,22 @@ import {
 } from './dto/trust-custom-link.dto';
 import type { UpdateTrustOverviewDto } from './dto/update-trust-overview.dto';
 import { UpdateTrustOverviewSchema } from './dto/update-trust-overview.dto';
+import type { UpdateSecurityQuestionnaireDto } from './dto/update-security-questionnaire.dto';
+import { UpdateSecurityQuestionnaireSchema } from './dto/update-security-questionnaire.dto';
+import { UpdateAllowedEmailsDto } from './dto/update-allowed-emails.dto';
 import type { UpdateVendorTrustSettingsDto } from './dto/trust-vendor.dto';
 import { UpdateVendorTrustSettingsSchema } from './dto/trust-vendor.dto';
+import {
+  UpdateTrustCustomFrameworkSchema,
+  type UpdateTrustCustomFrameworkDto,
+  UploadCustomFrameworkBadgeDto,
+  RemoveCustomFrameworkBadgeQueryDto,
+  CustomFrameworkBadgeResponseDto,
+} from './dto/trust-custom-framework.dto';
+import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { TrustPortalService } from './trust-portal.service';
+import { TrustCustomFrameworkService } from './trust-custom-framework.service';
+import { TrustCustomFrameworkBadgeService } from './trust-custom-framework-badge.service';
 
 class ListComplianceResourcesDto {
   @ApiProperty({
@@ -74,7 +87,11 @@ class ListComplianceResourcesDto {
 @UseGuards(HybridAuthGuard, PermissionGuard)
 @ApiSecurity('apikey')
 export class TrustPortalController {
-  constructor(private readonly trustPortalService: TrustPortalService) {}
+  constructor(
+    private readonly trustPortalService: TrustPortalService,
+    private readonly trustCustomFrameworkService: TrustCustomFrameworkService,
+    private readonly trustCustomFrameworkBadgeService: TrustCustomFrameworkBadgeService,
+  ) {}
 
   @Get('settings')
   @HttpCode(HttpStatus.OK)
@@ -361,6 +378,28 @@ export class TrustPortalController {
   @Put('settings/faqs')
   @RequirePermission('trust', 'update')
   @ApiOperation({ summary: 'Update trust portal FAQs' })
+  // organizationId comes from the authenticated context (@OrganizationId), so the
+  // body only carries faqs. Without an explicit @ApiBody the generated spec has no
+  // request body and the MCP tool can't send FAQs at all. (CS-752)
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['faqs'],
+      properties: {
+        faqs: {
+          type: 'array',
+          items: {
+            type: 'object',
+            required: ['question', 'answer'],
+            properties: {
+              question: { type: 'string' },
+              answer: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+  })
   async updateFaqs(
     @OrganizationId() organizationId: string,
     @Body() body: { faqs: Array<{ question: string; answer: string }> },
@@ -381,6 +420,20 @@ export class TrustPortalController {
     );
   }
 
+  @Put('settings/allowed-emails')
+  @RequirePermission('trust', 'update')
+  @ApiOperation({ summary: 'Update allowed emails for the trust portal' })
+  @ApiBody({ type: UpdateAllowedEmailsDto })
+  async updateAllowedEmails(
+    @OrganizationId() organizationId: string,
+    @Body() body: UpdateAllowedEmailsDto,
+  ) {
+    return this.trustPortalService.updateAllowedEmails(
+      organizationId,
+      body.emails ?? [],
+    );
+  }
+
   @Put('settings/frameworks')
   @RequirePermission('trust', 'update')
   @ApiOperation({ summary: 'Update trust portal framework settings' })
@@ -391,11 +444,155 @@ export class TrustPortalController {
     return this.trustPortalService.updateFrameworks(organizationId, body);
   }
 
+  @Put('settings/security-questionnaire')
+  @RequirePermission('trust', 'update')
+  @ApiOperation({
+    summary: 'Show or hide the Security Questionnaire on the public trust portal',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['enabled'],
+      properties: {
+        enabled: {
+          type: 'boolean',
+          description:
+            'When false, the Security Questionnaire is hidden from the public trust portal.',
+        },
+      },
+    },
+  })
+  async updateSecurityQuestionnaire(
+    @OrganizationId() organizationId: string,
+    @Body(new ZodValidationPipe(UpdateSecurityQuestionnaireSchema))
+    body: UpdateSecurityQuestionnaireDto,
+  ) {
+    return this.trustPortalService.updateSecurityQuestionnaireEnabled(
+      organizationId,
+      body.enabled,
+    );
+  }
+
+  @Get('custom-frameworks')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('trust', 'read')
+  @ApiOperation({
+    summary:
+      'List org-authored custom frameworks with their trust portal selection',
+  })
+  async listCustomFrameworks(@OrganizationId() organizationId: string) {
+    return this.trustCustomFrameworkService.listForOrg(organizationId);
+  }
+
+  @Put('custom-frameworks')
+  @RequirePermission('trust', 'update')
+  @ApiOperation({
+    summary:
+      'Enable/disable a custom framework on the trust portal and set its status',
+  })
+  @ApiBody({
+    description: 'At least one of `enabled` or `status` must be provided.',
+    schema: {
+      type: 'object',
+      required: ['customFrameworkId'],
+      // Mirrors UpdateTrustCustomFrameworkSchema's .refine(): the id is
+      // required and at least one mutable field must be present.
+      anyOf: [{ required: ['enabled'] }, { required: ['status'] }],
+      properties: {
+        customFrameworkId: { type: 'string', minLength: 1 },
+        enabled: { type: 'boolean' },
+        status: {
+          type: 'string',
+          enum: ['started', 'in_progress', 'compliant'],
+        },
+      },
+    },
+  })
+  async updateCustomFramework(
+    @OrganizationId() organizationId: string,
+    // Validate via the pipe so a malformed body returns 400 (matching the
+    // @ApiBody/MCP contract) instead of an inline .parse() throwing a raw
+    // ZodError that surfaces as a 500.
+    @Body(new ZodValidationPipe(UpdateTrustCustomFrameworkSchema))
+    dto: UpdateTrustCustomFrameworkDto,
+  ) {
+    return this.trustCustomFrameworkService.updateSelection(
+      organizationId,
+      dto,
+    );
+  }
+
+  @Post('custom-frameworks/badge')
+  @HttpCode(HttpStatus.CREATED)
+  @RequirePermission('trust', 'update')
+  @ApiOperation({
+    summary: "Upload or replace a custom framework's Trust Portal badge image",
+    description:
+      "Stores a PNG/JPEG/WebP badge (max 256KB) in the organization assets bucket. Does not change the framework's portal visibility.",
+  })
+  @ApiBody({ type: UploadCustomFrameworkBadgeDto })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Badge uploaded successfully',
+    type: CustomFrameworkBadgeResponseDto,
+  })
+  async uploadCustomFrameworkBadge(
+    @OrganizationId() organizationId: string,
+    @Body() dto: UploadCustomFrameworkBadgeDto,
+  ): Promise<CustomFrameworkBadgeResponseDto> {
+    return this.trustCustomFrameworkBadgeService.uploadBadge(
+      organizationId,
+      dto,
+    );
+  }
+
+  @Delete('custom-frameworks/badge')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('trust', 'update')
+  @ApiOperation({
+    summary: "Remove a custom framework's Trust Portal badge image",
+  })
+  @ApiQuery({
+    name: 'customFrameworkId',
+    description: 'Org-authored custom framework ID whose badge to remove',
+    required: true,
+  })
+  async removeCustomFrameworkBadge(
+    @OrganizationId() organizationId: string,
+    @Query() query: RemoveCustomFrameworkBadgeQueryDto,
+  ) {
+    return this.trustCustomFrameworkBadgeService.removeBadge(
+      organizationId,
+      query.customFrameworkId,
+    );
+  }
+
   @Post('overview')
   @HttpCode(HttpStatus.OK)
   @RequirePermission('trust', 'update')
   @ApiOperation({
     summary: 'Update trust portal overview section',
+  })
+  // Mirrors UpdateTrustOverviewSchema plus the organizationId the handler reads
+  // from the body. Without an explicit @ApiBody the generated OpenAPI spec has
+  // no request body, so the MCP tool sends none, organizationId arrives
+  // undefined, and assertOrganizationAccess 400s for API-key callers. (CS-752)
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['organizationId'],
+      properties: {
+        organizationId: {
+          type: 'string',
+          description:
+            "Organization that owns the trust portal. Must match the authenticated API key's organization.",
+          example: 'org_6914cd0e16e4c7dccbb54426',
+        },
+        overviewTitle: { type: 'string', maxLength: 200, nullable: true },
+        overviewContent: { type: 'string', maxLength: 10000, nullable: true },
+        showOverview: { type: 'boolean' },
+      },
+    },
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -430,6 +627,25 @@ export class TrustPortalController {
   @RequirePermission('trust', 'update')
   @ApiOperation({
     summary: 'Create a custom link for trust portal',
+  })
+  // Mirrors CreateCustomLinkSchema plus the organizationId the handler reads
+  // from the body (see updateOverview for why the explicit body matters). (CS-752)
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['organizationId', 'title', 'url'],
+      properties: {
+        organizationId: {
+          type: 'string',
+          description:
+            "Organization that owns the trust portal. Must match the authenticated API key's organization.",
+          example: 'org_6914cd0e16e4c7dccbb54426',
+        },
+        title: { type: 'string', minLength: 1, maxLength: 100 },
+        description: { type: 'string', maxLength: 500, nullable: true },
+        url: { type: 'string', format: 'uri', maxLength: 2000 },
+      },
+    },
   })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -492,6 +708,27 @@ export class TrustPortalController {
   @RequirePermission('trust', 'update')
   @ApiOperation({
     summary: 'Reorder custom links',
+  })
+  // Mirrors ReorderCustomLinksSchema plus the organizationId the handler reads
+  // from the body (see updateOverview for why the explicit body matters). (CS-752)
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['organizationId', 'linkIds'],
+      properties: {
+        organizationId: {
+          type: 'string',
+          description:
+            "Organization that owns the trust portal. Must match the authenticated API key's organization.",
+          example: 'org_6914cd0e16e4c7dccbb54426',
+        },
+        linkIds: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Custom link IDs in the desired display order.',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: HttpStatus.OK,

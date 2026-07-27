@@ -29,6 +29,12 @@ jest.mock('@thallesp/nestjs-better-auth', () => {
   return { AuthModule: AuthModuleStub };
 });
 
+// @inference/tracing is ESM-only, same as better-auth above.
+jest.mock('@inference/tracing', () => ({ setup: jest.fn() }));
+jest.mock('@inference/tracing/ai-sdk', () => ({
+  createAISdkTelemetrySettings: jest.fn(() => ({})),
+}));
+
 jest.mock('better-auth/plugins/access', () => ({
   createAccessControl: () => ({
     newRole: () => ({}),
@@ -101,6 +107,7 @@ process.env.APP_AWS_ACCESS_KEY_ID = 'test-access-key-id';
 process.env.APP_AWS_SECRET_ACCESS_KEY = 'test-secret-access-key';
 process.env.APP_AWS_BUCKET_NAME = 'test-bucket';
 process.env.APP_AWS_REGION = 'us-east-1';
+process.env.MACED_API_KEY = 'mc_dev_test-openapi-gen';
 
 import { Test } from '@nestjs/testing';
 import {
@@ -254,6 +261,77 @@ describe('OpenAPI document', () => {
         );
 
       expect(apiKeyOps.length).toBeGreaterThan(0);
+    });
+  });
+
+  // Guardrail against the CS-761 regression: two DTO classes were both named
+  // `CreateVersionDto` — one in policies (optional sourceVersionId/changelog),
+  // one in tasks/automations (REQUIRED version + scriptKey). They collided on
+  // the OpenAPI component name, so the automations shape overwrote the policies
+  // component. That made the create-policy-version MCP tool demand version +
+  // scriptKey, which the policies endpoint's ValidationPipe (whitelist +
+  // forbidNonWhitelisted) then rejected with 400 — no valid path through it.
+  describe('create-policy-version tool schema', () => {
+    type SchemaLike = {
+      $ref?: string;
+      properties?: Record<string, unknown>;
+      required?: string[];
+    };
+
+    const resolveRequestBodyComponent = (
+      routePath: string,
+    ): { name: string; schema: SchemaLike } | undefined => {
+      const operation = (
+        document.paths[routePath] as
+          | { post?: { requestBody?: unknown } }
+          | undefined
+      )?.post;
+      const bodySchema = (
+        operation?.requestBody as
+          | { content?: { 'application/json'?: { schema?: SchemaLike } } }
+          | undefined
+      )?.content?.['application/json']?.schema;
+      const ref = bodySchema?.$ref;
+      if (!ref) return undefined;
+      const name = ref.replace('#/components/schemas/', '');
+      const schema = (
+        document.components?.schemas as Record<string, SchemaLike> | undefined
+      )?.[name];
+      if (!schema) return undefined;
+      return { name, schema };
+    };
+
+    it('does not share an OpenAPI component with the automations create-version body', () => {
+      // Root-cause guard: the two `CreateVersionDto` classes must resolve to
+      // DISTINCT components, or one silently overwrites the other.
+      const policy = resolveRequestBodyComponent('/v1/policies/{id}/versions');
+      const automation = resolveRequestBodyComponent(
+        '/v1/tasks/{taskId}/automations/{automationId}/versions',
+      );
+
+      expect(policy).toBeDefined();
+      expect(automation).toBeDefined();
+      expect(policy?.name).not.toBe(automation?.name);
+    });
+
+    it('exposes the optional policies shape, not the automations version/scriptKey fields', () => {
+      const policy = resolveRequestBodyComponent('/v1/policies/{id}/versions');
+      expect(policy).toBeDefined();
+
+      const properties = policy?.schema.properties ?? {};
+      const required = policy?.schema.required ?? [];
+
+      // The policies endpoint accepts only these optional fields; the tool
+      // schema must match so an MCP client can call it without being blocked.
+      expect(Object.keys(properties)).toEqual(
+        expect.arrayContaining(['sourceVersionId', 'changelog']),
+      );
+      // The automations-only fields must be absent — their presence (required)
+      // is exactly what triggered the "property scriptKey should not exist" 400.
+      expect(properties).not.toHaveProperty('scriptKey');
+      expect(properties).not.toHaveProperty('version');
+      expect(required).not.toContain('scriptKey');
+      expect(required).not.toContain('version');
     });
   });
 });

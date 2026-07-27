@@ -6,6 +6,7 @@ import { Toaster as SonnerToaster } from 'sonner';
 import { headers } from 'next/headers';
 import '../styles/globals.css';
 import { Header } from './components/HeaderFrameworks';
+import { ThemeProvider } from './components/theme-provider';
 import { auth } from './lib/auth';
 import { isInternalUser } from './lib/utils';
 
@@ -25,14 +26,21 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     isInternalUser(session.user.email);
 
   return (
-    <html lang="en" className="h-full">
+    <html lang="en" className="h-full" suppressHydrationWarning>
       <body className="flex h-full flex-col">
-        {hasSession && <Header />}
-        <div className="flex min-h-0 flex-1 flex-col gap-2 p-4">
-          {children}
-          <Toaster />
-          <SonnerToaster richColors position="top-right" />
-        </div>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {hasSession && <Header />}
+          <div className="flex min-h-0 flex-1 flex-col gap-2 p-4">
+            {children}
+            <Toaster />
+            <SonnerToaster richColors position="top-right" />
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -1,5 +1,9 @@
 import { TaskFrequency } from '@trycompai/db';
-import { filterDueAutomations } from './run-browser-automations-schedule';
+import {
+  filterDueAutomations,
+  groupAutomationsByOrg,
+  limitAutomationBatch,
+} from './run-browser-automations-schedule';
 
 // Mock @db at the module boundary so importing the orchestrator does not try
 // to connect to Postgres. We never call the scheduled `run` function itself
@@ -25,8 +29,11 @@ jest.mock('@trigger.dev/sdk', () => ({
   },
 }));
 
-jest.mock('./run-browser-automation', () => ({
-  runBrowserAutomation: { batchTrigger: jest.fn() },
+// The schedule now dispatches per-org runners; stub it so importing the
+// orchestrator doesn't load the real runner (which evaluates queue()/task() and
+// pulls in the integration email chain at module load).
+jest.mock('./run-org-browser-automations', () => ({
+  runOrgBrowserAutomations: { batchTrigger: jest.fn() },
 }));
 
 const atUtc = (iso: string) => new Date(`${iso}T00:00:00.000Z`);
@@ -114,5 +121,157 @@ describe('filterDueAutomations (browser automation orchestrator)', () => {
     });
 
     expect(due).toEqual([]);
+  });
+});
+
+describe('limitAutomationBatch', () => {
+  it('limits due automations by organization and hostname', () => {
+    const automations = [
+      {
+        id: 'ba_1',
+        targetUrl: 'https://github.com/a',
+        task: { organizationId: 'org_1' },
+      },
+      {
+        id: 'ba_2',
+        targetUrl: 'https://github.com/b',
+        task: { organizationId: 'org_1' },
+      },
+      {
+        id: 'ba_3',
+        targetUrl: 'https://gitlab.com/a',
+        task: { organizationId: 'org_1' },
+      },
+      {
+        id: 'ba_4',
+        targetUrl: 'https://github.com/c',
+        task: { organizationId: 'org_2' },
+      },
+    ];
+
+    const limited = limitAutomationBatch({
+      automations,
+      maxPerOrg: 2,
+      maxPerHostname: 2,
+    });
+
+    expect(limited.map((automation) => automation.id)).toEqual([
+      'ba_1',
+      'ba_2',
+    ]);
+  });
+
+  it('prioritizes never-run and oldest automations before applying caps', () => {
+    const automations = [
+      {
+        id: 'ba_newer',
+        lastRunAt: atUtc('2026-04-20'),
+        targetUrl: 'https://github.com/newer',
+        task: { organizationId: 'org_1' },
+      },
+      {
+        id: 'ba_never',
+        lastRunAt: null,
+        targetUrl: 'https://github.com/never',
+        task: { organizationId: 'org_1' },
+      },
+      {
+        id: 'ba_older',
+        lastRunAt: atUtc('2026-04-01'),
+        targetUrl: 'https://gitlab.com/older',
+        task: { organizationId: 'org_1' },
+      },
+    ];
+
+    const limited = limitAutomationBatch({
+      automations,
+      maxPerOrg: 2,
+      maxPerHostname: 2,
+    });
+
+    expect(limited.map((automation) => automation.id)).toEqual([
+      'ba_never',
+      'ba_older',
+    ]);
+  });
+
+  it('skips malformed target URLs without dropping valid automations', () => {
+    const automations = [
+      {
+        id: 'ba_bad',
+        targetUrl: 'not-a-url',
+        task: { organizationId: 'org_1' },
+      },
+      {
+        id: 'ba_good',
+        targetUrl: 'https://github.com/a',
+        task: { organizationId: 'org_1' },
+      },
+    ];
+
+    const limited = limitAutomationBatch({
+      automations,
+      maxPerOrg: 2,
+      maxPerHostname: 2,
+    });
+
+    expect(limited.map((automation) => automation.id)).toEqual(['ba_good']);
+  });
+});
+
+describe('groupAutomationsByOrg', () => {
+  const automations = [
+    {
+      id: 'ba_1',
+      name: 'GitHub login',
+      taskId: 'tsk_1',
+      task: { organizationId: 'org_1' },
+    },
+    {
+      id: 'ba_2',
+      name: 'GitLab login',
+      taskId: 'tsk_2',
+      task: { organizationId: 'org_1' },
+    },
+    {
+      id: 'ba_3',
+      name: 'Datadog login',
+      taskId: 'tsk_3',
+      task: { organizationId: 'org_2' },
+    },
+  ];
+
+  it('groups automations into one entry per org and attaches the org name', () => {
+    const groups = groupAutomationsByOrg({
+      automations,
+      orgNameById: new Map([
+        ['org_1', 'Acme'],
+        ['org_2', 'Globex'],
+      ]),
+    });
+
+    expect(groups).toHaveLength(2);
+    const org1 = groups.find((g) => g.organizationId === 'org_1');
+    expect(org1?.organizationName).toBe('Acme');
+    expect(org1?.automations.map((a) => a.automationId)).toEqual([
+      'ba_1',
+      'ba_2',
+    ]);
+    expect(org1?.automations[0]).toEqual({
+      automationId: 'ba_1',
+      automationName: 'GitHub login',
+      taskId: 'tsk_1',
+    });
+    const org2 = groups.find((g) => g.organizationId === 'org_2');
+    expect(org2?.automations.map((a) => a.automationId)).toEqual(['ba_3']);
+  });
+
+  it('falls back to a generic org name when one is missing', () => {
+    const groups = groupAutomationsByOrg({
+      automations: [automations[0]],
+      orgNameById: new Map(),
+    });
+
+    expect(groups[0]?.organizationName).toBe('your organization');
   });
 });

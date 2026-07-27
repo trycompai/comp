@@ -88,7 +88,7 @@ export const AccessReclaimEmail = ({
             <br />
             <Section>
               <Text className="text-[12px] leading-[24px] text-[#666666]">
-                This link will expire in 24 hours. Your grant expires on:{' '}
+                This link will remain valid until your access expires on:{' '}
                 <strong>
                   {expiresAt.toLocaleDateString('en-US', {
                     year: 'numeric',

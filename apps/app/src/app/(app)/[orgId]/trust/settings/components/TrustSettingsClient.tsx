@@ -12,6 +12,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { AllowedDomainsManager } from '../../portal-settings/components/AllowedDomainsManager';
+import { AllowedEmailsManager } from '../../portal-settings/components/AllowedEmailsManager';
 import { TrustPortalDomain } from '../../portal-settings/components/TrustPortalDomain';
 
 const trustSettingsSchema = z.object({
@@ -26,6 +27,7 @@ interface TrustSettingsClientProps {
   isVercelDomain: boolean;
   vercelVerification: string | null;
   allowedDomains: string[];
+  allowedEmails: string[];
 }
 
 export function TrustSettingsClient({
@@ -36,6 +38,7 @@ export function TrustSettingsClient({
   isVercelDomain,
   vercelVerification,
   allowedDomains,
+  allowedEmails,
 }: TrustSettingsClientProps) {
   const { hasPermission } = usePermissions();
   const canUpdate = hasPermission('trust', 'update');
@@ -163,6 +166,9 @@ export function TrustSettingsClient({
 
       {/* Allowed Domains */}
       <AllowedDomainsManager initialDomains={allowedDomains} orgId={orgId} />
+
+      {/* Allowed Emails */}
+      <AllowedEmailsManager initialEmails={allowedEmails} orgId={orgId} />
     </div>
   );
 }

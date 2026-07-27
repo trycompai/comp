@@ -4,7 +4,9 @@ import type {
   CheckVariableValues,
   IntegrationCheck,
 } from '../../../../types';
+import { azureManifest } from '../../index';
 import { rbacLeastPrivilegeCheck } from '../entra-id';
+import { environmentSeparationCheck } from '../environment-separation';
 import { keyVaultProtectionCheck, keyVaultRbacCheck } from '../key-vault';
 import { monitorLoggingAlertingCheck } from '../monitor';
 import {
@@ -27,7 +29,12 @@ import {
 
 interface Captured {
   passed: string[];
-  failed: Array<{ title: string; severity: string }>;
+  failed: Array<{
+    title: string;
+    severity: string;
+    remediation?: string;
+    evidence?: Record<string, unknown>;
+  }>;
 }
 
 async function run(
@@ -48,7 +55,13 @@ async function run(
     warn: () => {},
     error: () => {},
     pass: (r) => passed.push(r.title),
-    fail: (r) => failed.push({ title: r.title, severity: r.severity }),
+    fail: (r) =>
+      failed.push({
+        title: r.title,
+        severity: r.severity,
+        remediation: r.remediation,
+        evidence: r.evidence,
+      }),
     fetch: (async <T,>(url: string): Promise<T> => fetchFn(url) as T) as CheckContext['fetch'],
     post: (async () => ({})) as CheckContext['post'],
     put: (async () => ({})) as CheckContext['put'],
@@ -608,5 +621,456 @@ describe('Azure PostgreSQL Flexible Server TLS check', () => {
     const { passed, failed } = await run(postgresqlFlexibleTlsCheck, pgFetch('ON', 'TLSv1.2', []));
     expect(passed).toHaveLength(0);
     expect(failed).toHaveLength(0);
+  });
+});
+
+describe('Azure read-failure remediation gating', () => {
+  const httpError = (status: number, message: string) => {
+    const err = new Error(message);
+    (err as Error & { status: number }).status = status;
+    return err;
+  };
+  const SERVER = {
+    id: '/subscriptions/sub-1/resourceGroups/rg/providers/Microsoft.Sql/servers/s1',
+    name: 's1',
+    properties: {},
+  };
+
+  it('sql auditing: transient read says re-run; denied keeps the grant hint', async () => {
+    const transient = await run(sqlAuditingCheck, (url: string) => {
+      if (url.includes('/providers/Microsoft.Sql/servers?')) return { value: [SERVER] };
+      if (url.includes('/auditingSettings/')) throw httpError(500, 'HTTP 500: Internal Server Error');
+      return {};
+    });
+    const f = transient.failed.find((x) => x.title.includes('Could not read SQL auditing settings'));
+    expect(f).toBeDefined();
+    expect(f!.remediation).toMatch(/re-run/i);
+    expect(f!.remediation).not.toContain('auditingSettings/read');
+    expect(f!.evidence).toMatchObject({ readError: 'HTTP 500: Internal Server Error' });
+
+    const denied = await run(sqlAuditingCheck, (url: string) => {
+      if (url.includes('/providers/Microsoft.Sql/servers?')) return { value: [SERVER] };
+      if (url.includes('/auditingSettings/')) throw httpError(403, 'HTTP 403: Forbidden - AuthorizationFailed');
+      return {};
+    });
+    const fd = denied.failed.find((x) => x.title.includes('Could not read SQL auditing settings'));
+    expect(fd).toBeDefined();
+    expect(fd!.remediation).toContain('Microsoft.Sql/servers/auditingSettings/read');
+    expect(fd!.evidence).toMatchObject({ readError: 'HTTP 403: Forbidden - AuthorizationFailed' });
+  });
+
+  it('monitor: unreadable alerts carry readError and a gated (transient) remediation', async () => {
+    const out = await run(monitorLoggingAlertingCheck, (url: string) => {
+      if (url.includes('activityLogAlerts')) throw httpError(500, 'HTTP 500: boom');
+      if (url.includes('diagnosticSettings')) return { value: [] };
+      return {};
+    });
+    const f = out.failed.find((x) => x.title === 'Could not read activity log alerts');
+    expect(f).toBeDefined();
+    expect(f!.remediation).toMatch(/re-run/i);
+    expect(f!.remediation).not.toContain('Monitoring Reader');
+    expect(f!.evidence).toMatchObject({ readError: 'HTTP 500: boom' });
+  });
+});
+
+describe('Azure multi-subscription scanning', () => {
+  const SUBS = {
+    value: [
+      { subscriptionId: 'sub-a', state: 'Enabled', displayName: 'A' },
+      { subscriptionId: 'sub-b', state: 'Enabled', displayName: 'B' },
+      { subscriptionId: 'sub-old', state: 'Disabled', displayName: 'Old' },
+    ],
+  };
+  const serverIn = (sub: string) => ({
+    value: [
+      {
+        id: `/subscriptions/${sub}/resourceGroups/rg/providers/Microsoft.Sql/servers/s-${sub}`,
+        name: `s-${sub}`,
+        properties: { minimalTlsVersion: '1.2' },
+      },
+    ],
+  });
+
+  it('without a selection, keeps the pre-picker single-subscription behavior (first Enabled)', async () => {
+    const seen: string[] = [];
+    const out = await run(
+      sqlTlsCheck,
+      (url: string) => {
+        if (url.includes('/subscriptions?api-version')) return SUBS;
+        const m = url.match(/subscriptions\/(sub-\w+)\/providers\/Microsoft.Sql\/servers\?/);
+        if (m) {
+          seen.push(m[1]!);
+          return serverIn(m[1]!);
+        }
+        return {};
+      },
+      {},
+    );
+    // scope expansion is strictly opt-in: only the first Enabled sub is scanned
+    expect(seen).toEqual(['sub-a']);
+    expect(out.passed).toHaveLength(1);
+    expect(out.failed).toHaveLength(0);
+  });
+
+  it('scans multiple subscriptions ONLY when explicitly selected', async () => {
+    const seen: string[] = [];
+    const out = await run(
+      sqlTlsCheck,
+      (url: string) => {
+        const m = url.match(/subscriptions\/(sub-\w+)\/providers\/Microsoft.Sql\/servers\?/);
+        if (m) {
+          seen.push(m[1]!);
+          return serverIn(m[1]!);
+        }
+        return {};
+      },
+      { subscription_ids: ['sub-a', 'sub-b'] },
+    );
+    expect(seen).toEqual(['sub-a', 'sub-b']);
+    expect(out.passed).toHaveLength(2);
+  });
+
+  it('scopes to the selected subscription_ids when set', async () => {
+    const seen: string[] = [];
+    const out = await run(
+      sqlTlsCheck,
+      (url: string) => {
+        const m = url.match(/subscriptions\/(sub-\w+)\/providers\/Microsoft.Sql\/servers\?/);
+        if (m) {
+          seen.push(m[1]!);
+          return serverIn(m[1]!);
+        }
+        return {};
+      },
+      { subscription_ids: ['sub-b'] },
+    );
+    expect(seen).toEqual(['sub-b']);
+    expect(out.passed).toHaveLength(1);
+  });
+
+  it('a saved subscription_id keeps exactly its previous scope (no list call needed)', async () => {
+    const seen: string[] = [];
+    const out = await run(
+      sqlTlsCheck,
+      (url: string) => {
+        if (url.includes('/subscriptions?api-version')) {
+          throw new Error('must not list subscriptions when legacy value is set');
+        }
+        const m = url.match(/subscriptions\/(sub-\w+)\/providers\/Microsoft.Sql\/servers\?/);
+        if (m) {
+          seen.push(m[1]!);
+          return serverIn(m[1]!);
+        }
+        return {};
+      },
+      { subscription_id: 'sub-legacy' },
+    );
+    expect(seen).toEqual(['sub-legacy']);
+    expect(out.passed).toHaveLength(1);
+    expect(out.failed).toHaveLength(0);
+  });
+
+  it('emits an explicit scope finding when nothing is visible and no legacy value exists', async () => {
+    const out = await run(
+      sqlTlsCheck,
+      (url: string) => {
+        if (url.includes('/subscriptions?api-version')) return { value: [] };
+        return {};
+      },
+      {},
+    );
+    expect(out.passed).toHaveLength(0);
+    expect(out.failed).toHaveLength(1);
+    expect(out.failed[0]!.title).toMatch(/Could not verify Azure subscription scope/);
+  });
+});
+
+describe('Azure subscription cap', () => {
+  it('selecting more than the limit scans the first 50 AND emits an explicit coverage finding', async () => {
+    const selected = Array.from({ length: 53 }, (_, i) => `sub-${i}`);
+    const seen = new Set<string>();
+    const out = await run(
+      sqlTlsCheck,
+      (url: string) => {
+        const m = url.match(/subscriptions\/(sub-\d+)\/providers\/Microsoft.Sql\/servers\?/);
+        if (m) {
+          seen.add(m[1]!);
+          return { value: [] };
+        }
+        return {};
+      },
+      { subscription_ids: selected },
+    );
+    expect(seen.size).toBe(50);
+    const capFinding = out.failed.find((f) => f.title.includes('exceeds the scan limit'));
+    expect(capFinding).toBeDefined();
+    expect(capFinding!.evidence).toMatchObject({
+      selected: 53,
+      scanned: 50,
+      unscannedSubscriptionIds: ['sub-50', 'sub-51', 'sub-52'],
+    });
+  });
+});
+
+describe('entra-id multi-subscription wildcard isolation (cubic finding on #3090)', () => {
+  it('an MG wildcard role referenced only by one subscription is reported exactly once', async () => {
+    const MG_DEF_ID = '/providers/Microsoft.Management/managementGroups/mg1/providers/Microsoft.Authorization/roleDefinitions/wild';
+    let mgDefFetches = 0;
+    const { failed } = await run(
+      rbacLeastPrivilegeCheck,
+      (url: string) => {
+        if (url.startsWith(MG_DEF_ID)) {
+          mgDefFetches++;
+          return {
+            id: MG_DEF_ID,
+            properties: {
+              roleName: 'MG Wildcard',
+              type: 'CustomRole',
+              permissions: [{ actions: ['*'], dataActions: [] }],
+            },
+          };
+        }
+        if (url.includes('roleDefinitions')) {
+          return { value: [{ id: 'reader', properties: { roleName: 'Reader', type: 'BuiltInRole', permissions: [] } }] };
+        }
+        if (url.includes('roleAssignments')) {
+          // only sub-a has an assignment referencing the MG wildcard role
+          return url.includes('sub-a')
+            ? { value: [{ properties: { roleDefinitionId: MG_DEF_ID, principalId: 'p1', principalType: 'User' } }] }
+            : { value: [] };
+        }
+        return { value: [] };
+      },
+      { subscription_ids: ['sub-a', 'sub-b'] },
+    );
+    const wildcardFindings = failed.filter((f) => f.title.match(/[Ww]ildcard/));
+    expect(wildcardFindings).toHaveLength(1);
+    // the shared cache still prevents refetching across subscriptions
+    expect(mgDefFetches).toBe(1);
+  });
+});
+
+describe('azure subscription picker fetchOptions', () => {
+  it('follows nextLink so every subscription page is selectable', async () => {
+    const variable = azureManifest.variables?.find((v) => v.id === 'subscription_ids');
+    const ctx = {
+      fetch: async (url: string) => {
+        if (url.includes('skiptoken')) {
+          return { value: [{ subscriptionId: 'sub-2', displayName: 'B', state: 'Enabled' }] };
+        }
+        return {
+          value: [{ subscriptionId: 'sub-1', displayName: 'A', state: 'Enabled' }],
+          nextLink: 'https://management.azure.com/subscriptions?api-version=2020-01-01&skiptoken=x',
+        };
+      },
+    } as unknown as Parameters<NonNullable<typeof variable.fetchOptions>>[0];
+    const options = await variable!.fetchOptions!(ctx);
+    expect(options.map((o) => o.value)).toEqual(['sub-1', 'sub-2']);
+  });
+
+  it('does not follow a nextLink that leaves the ARM host', async () => {
+    const variable = azureManifest.variables?.find((v) => v.id === 'subscription_ids');
+    const fetched: string[] = [];
+    const ctx = {
+      fetch: async (url: string) => {
+        fetched.push(url);
+        return {
+          value: [{ subscriptionId: 'sub-1', displayName: 'A', state: 'Enabled' }],
+          nextLink: 'https://evil.example.com/subscriptions',
+        };
+      },
+    } as unknown as Parameters<NonNullable<typeof variable.fetchOptions>>[0];
+    const options = await variable!.fetchOptions!(ctx);
+    expect(fetched).toHaveLength(1);
+    expect(options.map((o) => o.value)).toEqual(['sub-1']);
+  });
+
+  it('returns [] instead of throwing when subscriptions cannot be listed', async () => {
+    const variable = azureManifest.variables?.find((v) => v.id === 'subscription_ids');
+    expect(variable?.fetchOptions).toBeDefined();
+    const ctx = {
+      fetch: async () => {
+        throw new Error('HTTP 403: Forbidden');
+      },
+    } as unknown as Parameters<NonNullable<typeof variable.fetchOptions>>[0];
+    const options = await variable!.fetchOptions!(ctx);
+    expect(options).toEqual([]);
+  });
+
+  it('exposes environment aliases as an Azure connection variable', () => {
+    expect(azureManifest.variables?.some((v) => v.id === 'environment_aliases')).toBe(true);
+  });
+});
+
+describe('Azure environment separation', () => {
+  // Mocks the IN-SCOPE per-subscription name GET and the per-subscription
+  // resource-group list. Scope is driven by the `variables` arg (subscription_id
+  // / subscription_ids) via resolveAzureSubscriptionIds — there is NO list-all.
+  const azFetch =
+    (opts: { names?: Record<string, string>; rgs?: Record<string, unknown[]> }) =>
+    (url: string) => {
+      const subM = url.match(/\/subscriptions\/([^/?]+)\?api-version/);
+      if (subM) return { displayName: opts.names?.[subM[1]!] ?? subM[1]! };
+      const rgM = url.match(/\/subscriptions\/([^/]+)\/resourcegroups/);
+      if (rgM) return { value: opts.rgs?.[rgM[1]!] ?? [] };
+      return {};
+    };
+
+  it('passes (strong) when scoped subscriptions classify to prod + non-prod', async () => {
+    const { passed, failed } = await run(
+      environmentSeparationCheck,
+      azFetch({ names: { s1: 'Production', s2: 'Development' } }),
+      { subscription_ids: ['s1', 's2'] },
+    );
+    expect(failed).toHaveLength(0);
+    expect(passed).toContain('Environments separated across subscriptions');
+  });
+
+  it('passes (weak) on resource-group separation, disclosed as logical', async () => {
+    const { passed, failed } = await run(
+      environmentSeparationCheck,
+      azFetch({
+        names: { 'sub-1': 'MyCompany' },
+        rgs: { 'sub-1': [{ id: 'a', name: 'rg-prod' }, { id: 'b', name: 'rg-dev' }] },
+      }),
+    );
+    expect(failed).toHaveLength(0);
+    expect(passed).toContain('Environments separated across resource groups');
+  });
+
+  it('passes on resource-group tags (case-insensitive key)', async () => {
+    const { passed } = await run(
+      environmentSeparationCheck,
+      azFetch({
+        names: { 'sub-1': 'Company' },
+        rgs: {
+          'sub-1': [
+            { id: 'a', name: 'a', tags: { environment: 'production' } },
+            { id: 'b', name: 'b', tags: { Environment: 'staging' } },
+          ],
+        },
+      }),
+    );
+    expect(passed).toContain('Environments separated across resource groups');
+  });
+
+  it('passes with customer-configured environment aliases', async () => {
+    const { passed, failed } = await run(
+      environmentSeparationCheck,
+      azFetch({
+        names: { 'sub-1': 'Company' },
+        rgs: {
+          'sub-1': [{ id: 'a', name: 'app-release' }, { id: 'b', name: 'app-preview' }],
+        },
+      }),
+      {
+        subscription_id: 'sub-1',
+        environment_aliases: 'release=production, preview=staging',
+      },
+    );
+    expect(failed).toHaveLength(0);
+    expect(passed).toContain('Environments separated across resource groups');
+  });
+
+  it('fails on two non-production environments (no production)', async () => {
+    const { passed, failed } = await run(
+      environmentSeparationCheck,
+      azFetch({
+        names: { 'sub-1': 'Company' },
+        rgs: { 'sub-1': [{ id: 'a', name: 'rg-dev' }, { id: 'b', name: 'rg-staging' }] },
+      }),
+    );
+    expect(passed).toHaveLength(0);
+    expect(failed.some((f) => /Could not confirm environment separation/.test(f.title))).toBe(true);
+  });
+
+  it('does NOT union tiers: prod subscription + an rg-dev inside fails', async () => {
+    const { passed, failed } = await run(
+      environmentSeparationCheck,
+      azFetch({ names: { s1: 'Production' }, rgs: { s1: [{ id: 'a', name: 'rg-dev' }] } }),
+      { subscription_ids: ['s1'] },
+    );
+    expect(passed).toHaveLength(0);
+    expect(failed.some((f) => /Could not confirm environment separation/.test(f.title))).toBe(true);
+  });
+
+  it('only scans the configured subscription scope', async () => {
+    // Scope is ['s1']; touching any other subscription must throw.
+    const { passed, failed } = await run(
+      environmentSeparationCheck,
+      (url) => {
+        if (!url.includes('/subscriptions/s1')) {
+          throw new Error(`out-of-scope access: ${url}`);
+        }
+        const subM = url.match(/\/subscriptions\/([^/?]+)\?api-version/);
+        if (subM) return { displayName: 'Company' };
+        if (url.includes('/resourcegroups')) {
+          return { value: [{ id: 'a', name: 'rg-prod' }, { id: 'b', name: 'rg-dev' }] };
+        }
+        return {};
+      },
+      { subscription_ids: ['s1'] },
+    );
+    expect(failed).toHaveLength(0);
+    expect(passed).toContain('Environments separated across resource groups');
+  });
+
+  it('fails with guidance when nothing classifies', async () => {
+    const { passed, failed } = await run(
+      environmentSeparationCheck,
+      azFetch({ names: { 'sub-1': 'Company' }, rgs: { 'sub-1': [{ id: 'a', name: 'backend' }] } }),
+    );
+    expect(passed).toHaveLength(0);
+    expect(failed).toHaveLength(1);
+    expect(failed[0]!.remediation).toMatch(/distinct subscriptions/);
+  });
+
+  it('fails "could not verify" when a resource-group read fails', async () => {
+    const { passed, failed } = await run(environmentSeparationCheck, (url) => {
+      if (url.includes('/resourcegroups')) throw new Error('HTTP 403: Forbidden');
+      const subM = url.match(/\/subscriptions\/([^/?]+)\?api-version/);
+      if (subM) return { displayName: 'Company' };
+      return {};
+    });
+    expect(passed).toHaveLength(0);
+    expect(failed.some((f) => /Could not verify environment separation/.test(f.title))).toBe(true);
+  });
+
+  it('fails "could not verify" when a SUBSCRIPTION name read fails (cubic finding)', async () => {
+    // Tier-1 displayName read fails while resource-group listing succeeds but
+    // classifies nothing. Coverage is incomplete, so the verdict must be the
+    // retry-signalling "could not verify", not the confident "could not confirm".
+    const { passed, failed } = await run(
+      environmentSeparationCheck,
+      (url) => {
+        const subM = url.match(/\/subscriptions\/([^/?]+)\?api-version/);
+        if (subM) throw new Error('HTTP 403: Forbidden');
+        if (url.includes('/resourcegroups')) {
+          return { value: [{ id: 'a', name: 'backend' }] };
+        }
+        return {};
+      },
+      { subscription_ids: ['s1'] },
+    );
+    expect(passed).toHaveLength(0);
+    expect(failed.some((f) => /Could not verify environment separation/.test(f.title))).toBe(true);
+    expect(failed.some((f) => /Could not confirm environment separation/.test(f.title))).toBe(false);
+  });
+
+  it('defers to the scope resolver when no subscription is in scope', async () => {
+    // variables {} → discovery; no enabled subscription → resolveAzureSubscriptionIds
+    // emits its own scope finding and the check early-returns (no double fail).
+    const { passed, failed } = await run(
+      environmentSeparationCheck,
+      (url) => {
+        if (url.includes('/subscriptions?api-version')) {
+          return { value: [{ subscriptionId: 's1', state: 'Disabled' }] };
+        }
+        return {};
+      },
+      {},
+    );
+    expect(passed).toHaveLength(0);
+    expect(failed.some((f) => /Could not verify Azure subscription scope/.test(f.title))).toBe(true);
   });
 });

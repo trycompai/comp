@@ -58,6 +58,7 @@ export interface PentestCreateRequest {
   scanDepth?: ScanDepth;
   evidenceLevel?: EvidenceLevel;
   checks?: PentestCheck[];
+  additionalContext?: string;
 }
 
 export interface CreatePenetrationTestResponse {
@@ -87,6 +88,22 @@ export interface PentestIssue {
   proofOfConcept?: string | null;
   impact?: string | null;
   remediation?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Customer-written context note attached to a pentest finding ("accepted
+// by design because…"). Grouped by target URL — the API automatically
+// shares the notes for a target with the testing agent on future scans.
+// Mirrors the API's SecurityPenetrationTestFindingContext rows.
+export interface PentestFindingContext {
+  id: string;
+  organizationId: string;
+  providerIssueId: string;
+  providerRunId: string;
+  targetUrl: string;
+  issueTitle: string;
+  context: string;
   createdAt: string;
   updatedAt: string;
 }

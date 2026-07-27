@@ -106,7 +106,10 @@ export class PeopleInviteService {
           results.push({
             email: invite.email,
             success: true,
-            emailSent: result.emailSent,
+            // Only surface email status when we actually attempted to send, so
+            // the UI's "invite email could not be sent" warning never fires for
+            // an intentional skip (portal invite unchecked).
+            ...(shouldSendPortalEmail ? { emailSent: result.emailSent } : {}),
           });
         } else {
           await this.inviteWithCheck({
@@ -167,10 +170,20 @@ export class PeopleInviteService {
     });
 
     if (!existingUser) {
+      // Mark the email verified up front: the address is admin-provided, and
+      // every sign-in method (OTP, magic link, trusted OAuth) proves mailbox
+      // ownership anyway. An unverified user row makes better-auth refuse to
+      // link Google/Microsoft sign-ins to it (account_not_linked), which
+      // strands invited employees at the portal sign-in page.
       const newUser = await db.user.create({
-        data: { emailVerified: false, email, name: email.split('@')[0] },
+        data: { emailVerified: true, email, name: email.split('@')[0] },
       });
       userId = newUser.id;
+    } else {
+      // Legacy rows may predate the created-verified behavior (and the member
+      // backfill only covered users who were members at the time), so upgrade
+      // on re-invite too.
+      await this.ensureEmailVerified(existingUser);
     }
 
     const finalUserId = existingUser?.id ?? userId;
@@ -190,7 +203,17 @@ export class PeopleInviteService {
           data: { deactivated: false, isActive: true, role: roleString },
         });
       } else {
-        member = existingMember;
+        // Active member re-added: union the new roles into their existing roles
+        // so we never strip a role they already have, and so adding a role
+        // actually takes effect instead of silently no-op'ing.
+        const mergedRole = this.mergeRoleString(existingMember.role, roles);
+        member =
+          mergedRole === this.normalizeRoleString(existingMember.role)
+            ? existingMember
+            : await db.member.update({
+                where: { id: existingMember.id },
+                data: { role: mergedRole },
+              });
       }
     } else {
       member = await db.member.create({
@@ -208,10 +231,12 @@ export class PeopleInviteService {
       await this.createTrainingVideoEntries(member.id, organizationId);
     }
 
-    // Send invite email (non-fatal)
-    let emailSent = true;
-    try {
-      if (sendPortalEmail) {
+    // Send the portal invite email only when requested (non-fatal). When the
+    // admin opts out ("Send portal invite email" unchecked) we add the member
+    // silently and send no email at all.
+    let emailSent = false;
+    if (sendPortalEmail) {
+      try {
         const inviteLink = this.buildPortalUrl(organizationId);
         await triggerEmail({
           to: email,
@@ -222,23 +247,40 @@ export class PeopleInviteService {
             email,
           }),
         });
-      } else {
-        const inviteLink = this.buildPortalUrl(organizationId);
-        await triggerEmail({
-          to: email,
-          subject: `You've been invited to join ${organization.name} on Comp AI`,
-          react: InviteEmail({ organizationName: organization.name, inviteLink }),
-        });
+        emailSent = true;
+      } catch (emailErr) {
+        emailSent = false;
+        this.logger.error(
+          `Portal invite email failed after member was added: ${email}`,
+          emailErr instanceof Error ? emailErr.message : 'Unknown error',
+        );
       }
-    } catch (emailErr) {
-      emailSent = false;
-      this.logger.error(
-        `Invite email failed after member was added: ${email}`,
-        emailErr instanceof Error ? emailErr.message : 'Unknown error',
-      );
     }
 
     return { emailSent };
+  }
+
+  /**
+   * Upgrade a legacy unverified user row to verified when (re-)inviting them.
+   *
+   * Invited addresses are admin-provided, and every sign-in method (email OTP,
+   * magic link, trusted OAuth) proves mailbox ownership before a session is
+   * issued, so the flag grants nothing to anyone who cannot already receive
+   * mail at the address. Without it, better-auth refuses to link a
+   * Google/Microsoft sign-in to the existing row (account_not_linked). No-op
+   * when already verified.
+   */
+  private async ensureEmailVerified(user: {
+    id: string;
+    emailVerified: boolean;
+  }): Promise<void> {
+    if (user.emailVerified) {
+      return;
+    }
+    await db.user.update({
+      where: { id: user.id },
+      data: { emailVerified: true },
+    });
   }
 
   private async inviteWithCheck(params: {
@@ -263,6 +305,11 @@ export class PeopleInviteService {
     });
 
     if (existingUser) {
+      // Same rationale as the employee path: an unverified legacy row would
+      // keep blocking Google/Microsoft sign-in linking (account_not_linked)
+      // when this invitee goes to accept.
+      await this.ensureEmailVerified(existingUser);
+
       const existingMember = await db.member.findFirst({
         where: { userId: existingUser.id, organizationId },
       });
@@ -277,14 +324,18 @@ export class PeopleInviteService {
           return;
         }
 
-        await this.sendInvitationEmailToExistingMember({
-          email,
-          roles,
-          organizationId,
-          inviterId: currentUserId,
-          sendPortalEmail,
-          sendAppEmail,
-        });
+        // Already an active member: an invitation/accept round-trip can't grant
+        // new roles to someone who is already in the org (and historically left
+        // their role unchanged, so promoting an employee to admin silently
+        // failed and the user hit "Access Denied"). Upgrade their role in place
+        // by unioning the new roles into their existing roles.
+        const mergedRole = this.mergeRoleString(existingMember.role, roles);
+        if (mergedRole !== this.normalizeRoleString(existingMember.role)) {
+          await db.member.update({
+            where: { id: existingMember.id },
+            data: { role: mergedRole },
+          });
+        }
         return;
       }
     }
@@ -320,51 +371,36 @@ export class PeopleInviteService {
     });
   }
 
-  private async sendInvitationEmailToExistingMember(params: {
-    email: string;
-    roles: string[];
-    organizationId: string;
-    inviterId: string;
-    sendPortalEmail?: boolean;
-    sendAppEmail?: boolean;
-  }): Promise<void> {
-    const {
-      email,
-      roles,
-      organizationId,
-      inviterId,
-      sendPortalEmail,
-      sendAppEmail,
-    } = params;
+  /** Sort + de-dupe a comma-separated role string into a canonical form. */
+  private normalizeRoleString(role: string | null | undefined): string {
+    return [
+      ...new Set(
+        (role ?? '')
+          .split(',')
+          .map((r) => r.trim())
+          .filter(Boolean),
+      ),
+    ]
+      .sort()
+      .join(',');
+  }
 
-    const organization = await db.organization.findUnique({
-      where: { id: organizationId },
-      select: { name: true },
-    });
-
-    if (!organization) {
-      throw new BadRequestException('Organization not found.');
-    }
-
-    const invitation = await db.invitation.create({
-      data: {
-        email: email.toLowerCase(),
-        organizationId,
-        role: roles.length === 1 ? roles[0] : roles.join(','),
-        status: 'pending',
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        inviterId,
-      },
-    });
-
-    await this.sendInviteEmails({
-      email: email.toLowerCase(),
-      organizationName: organization.name,
-      sendPortalEmail,
-      sendAppEmail,
-      portalLink: this.buildPortalUrl(organizationId),
-      appLink: this.buildInviteLink(invitation.id),
-    });
+  /** Union new roles into an existing comma-separated role string. */
+  private mergeRoleString(
+    existingRole: string | null | undefined,
+    addedRoles: string[],
+  ): string {
+    return [
+      ...new Set([
+        ...(existingRole ?? '')
+          .split(',')
+          .map((r) => r.trim())
+          .filter(Boolean),
+        ...addedRoles.map((r) => r.trim()).filter(Boolean),
+      ]),
+    ]
+      .sort()
+      .join(',');
   }
 
   async resendPortalInvite(params: {

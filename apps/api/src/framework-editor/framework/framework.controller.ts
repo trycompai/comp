@@ -11,10 +11,11 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { PlatformAdminGuard } from '../../auth/platform-admin.guard';
 import { CreateFrameworkDto } from './dto/create-framework.dto';
 import { ImportFrameworkDto } from './dto/import-framework.dto';
+import { LinkControlDto } from './dto/link-control.dto';
 import { UpdateFrameworkDto } from './dto/update-framework.dto';
 import { FrameworkExportService } from './framework-export.service';
 import { FrameworkEditorFrameworkService } from './framework.service';
@@ -100,12 +101,19 @@ export class FrameworkEditorFrameworkController {
   }
 
   @Post(':id/link-control/:controlId')
-  @ApiOperation({ summary: 'Link a control to a framework' })
+  @ApiOperation({
+    summary: 'Link a control to a framework',
+    description:
+      'Links a control to the framework. Pass requirementIds to link only ' +
+      'the selected requirements; omit it to link every requirement (legacy).',
+  })
+  @ApiBody({ type: LinkControlDto, required: false })
   async linkControl(
     @Param('id') id: string,
     @Param('controlId') controlId: string,
+    @Body() body: LinkControlDto = {},
   ) {
-    return this.frameworkService.linkControl(id, controlId);
+    return this.frameworkService.linkControl(id, controlId, body.requirementIds);
   }
 
   @Post(':id/link-task/:taskId')

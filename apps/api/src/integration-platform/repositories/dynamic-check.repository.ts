@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { db } from '@db';
-import type { DynamicCheck, Prisma } from '@db';
+import type { DynamicCheck, DynamicCheckVersion, Prisma } from '@db';
 
 @Injectable()
 export class DynamicCheckRepository {
@@ -55,6 +55,43 @@ export class DynamicCheckRepository {
 
   async delete(id: string): Promise<void> {
     await db.dynamicCheck.delete({ where: { id } });
+  }
+
+  // ==================== Version history (rollback + audit) ====================
+
+  /**
+   * Record an immutable snapshot of a check's logic. Call this with the check's
+   * CURRENT (pre-change) definition + variables BEFORE applying an edit, so the
+   * snapshot is a rollback point. Never store secrets in `note`.
+   */
+  async recordVersion(data: {
+    checkId: string;
+    definition: Prisma.InputJsonValue;
+    variables: Prisma.InputJsonValue;
+    source?: string;
+    note?: string;
+  }): Promise<DynamicCheckVersion> {
+    return db.dynamicCheckVersion.create({
+      data: {
+        checkId: data.checkId,
+        definition: data.definition,
+        variables: data.variables,
+        source: data.source ?? 'api',
+        note: data.note,
+      },
+    });
+  }
+
+  /** List a check's version history, newest first. */
+  async listVersions(checkId: string): Promise<DynamicCheckVersion[]> {
+    return db.dynamicCheckVersion.findMany({
+      where: { checkId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async findVersionById(id: string): Promise<DynamicCheckVersion | null> {
+    return db.dynamicCheckVersion.findUnique({ where: { id } });
   }
 
   async deleteAllForIntegration(integrationId: string): Promise<void> {

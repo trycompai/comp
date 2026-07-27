@@ -1,6 +1,7 @@
 'use server';
 
 import { createTrainingVideoEntries } from '@/lib/db/employee';
+import { mergeRoleStrings, normalizeRoleString } from '@/lib/permissions';
 import { auth } from '@/utils/auth';
 import { db } from '@db/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
@@ -74,8 +75,14 @@ export const completeInvitation = authActionClientWithoutOrg
         });
 
         if (existingMembership) {
-          // Reactivate member before setting active org, since better-auth
-          // validates membership status when setting the active organization.
+          // Ensure the member ends up with at least the invited roles.
+          // Reactivate first since better-auth validates membership status when
+          // setting the active organization.
+          // - Deactivated members are reactivated with the invited roles.
+          // - Active members have the invited roles UNIONed into their existing
+          //   roles. Previously this branch left an active member's role
+          //   untouched, so promoting e.g. an employee to admin via an invite
+          //   never granted app access and the user hit "Access Denied".
           if (existingMembership.deactivated) {
             await db.member.update({
               where: { id: existingMembership.id },
@@ -84,6 +91,17 @@ export const completeInvitation = authActionClientWithoutOrg
                 role: invitation.role,
               },
             });
+          } else {
+            const mergedRole = mergeRoleStrings(
+              existingMembership.role,
+              invitation.role,
+            );
+            if (mergedRole !== normalizeRoleString(existingMembership.role)) {
+              await db.member.update({
+                where: { id: existingMembership.id },
+                data: { role: mergedRole },
+              });
+            }
           }
 
           if (ctx.session.activeOrganizationId !== invitation.organizationId) {

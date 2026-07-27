@@ -1,4 +1,5 @@
 import { db } from '@db';
+import { orgParticipantMemberWhereForFlag } from '../utils/org-participation';
 import { Injectable, Logger } from '@nestjs/common';
 import { TaskStatus } from '@db';
 import { isUserUnsubscribed } from '@trycompai/email';
@@ -1085,11 +1086,14 @@ export class TaskNotifierService {
     } = params;
 
     try {
-      const [organization, task, allMembers] = await Promise.all([
-        db.organization.findUnique({
-          where: { id: organizationId },
-          select: { name: true },
-        }),
+      const organization = await db.organization.findUnique({
+        where: { id: organizationId },
+        select: { name: true, isInternal: true },
+      });
+      const participantWhere = orgParticipantMemberWhereForFlag(
+        organization?.isInternal ?? false,
+      );
+      const [task, allMembers] = await Promise.all([
         db.task.findUnique({
           where: { id: taskId },
           select: {
@@ -1110,10 +1114,7 @@ export class TaskNotifierService {
           where: {
             organizationId,
             deactivated: false,
-            OR: [
-              { user: { role: { not: 'admin' } } },
-              { role: { contains: 'owner' } },
-            ],
+            ...participantWhere,
           },
           select: {
             id: true,
@@ -1289,12 +1290,15 @@ export class TaskNotifierService {
 
     try {
       const taskIds = failedTasks.map((t) => t.taskId);
+      const organization = await db.organization.findUnique({
+        where: { id: organizationId },
+        select: { name: true, isInternal: true },
+      });
+      const participantWhere = orgParticipantMemberWhereForFlag(
+        organization?.isInternal ?? false,
+      );
 
-      const [organization, tasks, allMembers] = await Promise.all([
-        db.organization.findUnique({
-          where: { id: organizationId },
-          select: { name: true },
-        }),
+      const [tasks, allMembers] = await Promise.all([
         db.task.findMany({
           where: {
             id: { in: taskIds },
@@ -1319,10 +1323,7 @@ export class TaskNotifierService {
           where: {
             organizationId,
             deactivated: false,
-            OR: [
-              { user: { role: { not: 'admin' } } },
-              { role: { contains: 'owner' } },
-            ],
+            ...participantWhere,
           },
           select: {
             id: true,

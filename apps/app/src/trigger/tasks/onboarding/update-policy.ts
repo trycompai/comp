@@ -23,6 +23,9 @@ export const updatePolicy = schemaTask({
         description: z.string(),
         visible: z.boolean(),
         organizationId: z.string().nullable().default(null),
+        // FRAME-20: frameworks now carry a family pointer; keep this payload
+        // schema in step with the FrameworkEditorFramework shape it's typed as.
+        familyId: z.string().nullable().default(null),
         createdAt: z.date(),
         updatedAt: z.date(),
       }),

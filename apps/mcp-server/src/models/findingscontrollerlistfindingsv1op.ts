@@ -75,6 +75,7 @@ export const FindingsControllerListFindingsV1EvidenceFormType = {
   EmployeePerformanceEvaluation: "employee-performance-evaluation",
   NetworkDiagram: "network-diagram",
   TabletopExercise: "tabletop-exercise",
+  AccountTypes: "account-types",
 } as const;
 export type FindingsControllerListFindingsV1EvidenceFormType = ClosedEnum<
   typeof FindingsControllerListFindingsV1EvidenceFormType
@@ -94,6 +95,7 @@ export const FindingsControllerListFindingsV1EvidenceFormType$zodSchema = z
     "employee-performance-evaluation",
     "network-diagram",
     "tabletop-exercise",
+    "account-types",
   ]);
 
 export type FindingsControllerListFindingsV1Request = {

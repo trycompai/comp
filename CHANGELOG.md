@@ -1,3 +1,1008 @@
+# [3.109.0](https://github.com/trycompai/comp/compare/v3.108.2...v3.109.0) (2026-07-27)
+
+
+### Bug Fixes
+
+* **api:** don't let scheduled browser runs overwrite not_relevant tasks ([#3507](https://github.com/trycompai/comp/issues/3507)) ([99393e5](https://github.com/trycompai/comp/commit/99393e569b3d44a042307640e6b7928265a09093))
+* browser automation production-review findings (not_relevant guard, credential re-save, connections load state) ([#3509](https://github.com/trycompai/comp/issues/3509)) ([02746c3](https://github.com/trycompai/comp/commit/02746c3f1154c1dd52bbfd96c29831df2952f360))
+
+
+### Features
+
+* browser automations for scheduled, credential-backed evidence capture ([#3417](https://github.com/trycompai/comp/issues/3417)) ([411a83b](https://github.com/trycompai/comp/commit/411a83b125d30b9fd003061a0e64e590582e59be))
+
+## [3.108.2](https://github.com/trycompai/comp/compare/v3.108.1...v3.108.2) (2026-07-26)
+
+
+### Bug Fixes
+
+* **app:** use the GA gemini-3.1-flash-lite slug ([ec646ed](https://github.com/trycompai/comp/commit/ec646ed7b1b016de785eefee724e51f4c9690a07))
+
+## [3.108.1](https://github.com/trycompai/comp/compare/v3.108.0...v3.108.1) (2026-07-24)
+
+
+### Bug Fixes
+
+* **app:** stop left-nav rail tooltips flickering on hover (CS-773) ([#3502](https://github.com/trycompai/comp/issues/3502)) ([e7ce85c](https://github.com/trycompai/comp/commit/e7ce85c0481e4a97cced3cf281072fe060eafeef))
+
+# [3.108.0](https://github.com/trycompai/comp/compare/v3.107.0...v3.108.0) (2026-07-24)
+
+
+### Bug Fixes
+
+* **device-registration:** set source to device_agent when agent adopts intune device ([#3495](https://github.com/trycompai/comp/issues/3495)) ([1071066](https://github.com/trycompai/comp/commit/10710666c51251ce8c5ab7bd5d16e0073861ac9b))
+* **risks:** cs-727 deploy-review fixes (acceptance race, approval drift baseline, error surfacing) ([#3497](https://github.com/trycompai/comp/issues/3497)) ([7446c89](https://github.com/trycompai/comp/commit/7446c89b3fdfdccf3392858e8e308cec30e85aec))
+
+
+### Features
+
+* **risks:** risk acceptance events + ISMS 6.1.2 methodology and 6.1.3 treatment plan documents (CS-727) ([#3493](https://github.com/trycompai/comp/issues/3493)) ([8c4b358](https://github.com/trycompai/comp/commit/8c4b358ea5a170538e5097f1a28874fd5d470826))
+
+# [3.107.0](https://github.com/trycompai/comp/compare/v3.106.0...v3.107.0) (2026-07-22)
+
+
+### Bug Fixes
+
+* **api:** resolve comments left by Cubic-dev-ai from Production-Deploy PR ([#3483](https://github.com/trycompai/comp/issues/3483)) ([e489af6](https://github.com/trycompai/comp/commit/e489af6f5aa99d965ea2545cf06e5780ab89aba2))
+* **app:** show the actual error reason when comment deletion fails ([#3485](https://github.com/trycompai/comp/issues/3485)) ([25ac1d9](https://github.com/trycompai/comp/commit/25ac1d9f12cc371240a7d1fc301a73b5e68be21d))
+* **isms:** management review deploy-review fixes ([#3486](https://github.com/trycompai/comp/issues/3486)) ([49fcd6a](https://github.com/trycompai/comp/commit/49fcd6a3d46758490e0e4a7e64435c450324ab61))
+
+
+### Features
+
+* isms management review (clause 9.3) ([#3481](https://github.com/trycompai/comp/issues/3481)) ([b201b7e](https://github.com/trycompai/comp/commit/b201b7e2459ff4080ccbb4143688439d7ff29076))
+
+# [3.106.0](https://github.com/trycompai/comp/compare/v3.105.0...v3.106.0) (2026-07-22)
+
+
+### Bug Fixes
+
+* **auth:** attribute API-key mutations to the key's creator, not the org owner ([#3472](https://github.com/trycompai/comp/issues/3472)) ([206ed96](https://github.com/trycompai/comp/commit/206ed9664742b120aa3b476311cc807df5370400)), closes [hi#risk](https://github.com/hi/issues/risk)
+* **deps:** bump adm-zip 0.5.18 -> 0.6.0 in apps/api (Dependabot [#88](https://github.com/trycompai/comp/issues/88)/[#89](https://github.com/trycompai/comp/issues/89)) ([#3462](https://github.com/trycompai/comp/issues/3462)) ([300f2a1](https://github.com/trycompai/comp/commit/300f2a1aed312adbd3a6a0675f7f48c987657a4c)), closes [#3451](https://github.com/trycompai/comp/issues/3451)
+* **deps:** override tar to ^7.5.19 to clear node-tar Dependabot alerts ([#94](https://github.com/trycompai/comp/issues/94)-[#104](https://github.com/trycompai/comp/issues/104)) ([#3466](https://github.com/trycompai/comp/issues/3466)) ([8ab5709](https://github.com/trycompai/comp/commit/8ab5709c2a484510fe9ca8f1c4c04df5ac1ababc))
+* **deps:** patch engine.io ([#93](https://github.com/trycompai/comp/issues/93)) and body-parser ([#92](https://github.com/trycompai/comp/issues/92)) Dependabot alerts ([#3464](https://github.com/trycompai/comp/issues/3464)) ([94c33b1](https://github.com/trycompai/comp/commit/94c33b1202661f7e99fc4e3b41e46e79878f81c2))
+* **isms:** harden internal-audit validation and edge cases from deploy review ([#3473](https://github.com/trycompai/comp/issues/3473)) ([c6c7379](https://github.com/trycompai/comp/commit/c6c737974151a9cbcf8741dceb4522692a821c82))
+* **policies:** create draft version on policy regenerate instead of overwriting published ([#3471](https://github.com/trycompai/comp/issues/3471)) ([ff31dbd](https://github.com/trycompai/comp/commit/ff31dbd262b568e81fe8b838fe2af9b864fd6dba))
+* **policies:** delete detached PDF objects when regenerating a draft ([#3474](https://github.com/trycompai/comp/issues/3474)) ([ecd1bd0](https://github.com/trycompai/comp/commit/ecd1bd0ef710823065e50de5b242b9a43024f90f))
+* **policies:** rename CreateVersionDto to avoid swagger collision with automations ([#3469](https://github.com/trycompai/comp/issues/3469)) ([2d5290a](https://github.com/trycompai/comp/commit/2d5290a2d32086f7bb26c4e7a7b161716afe0eea))
+
+
+### Features
+
+* **isms:** internal audit programme, plan and report — clause 9.2 (CS-724) ([#3468](https://github.com/trycompai/comp/issues/3468)) ([42e5ebd](https://github.com/trycompai/comp/commit/42e5ebd789d034ca07ff996985301cc150ea8dc1)), closes [hi#impact](https://github.com/hi/issues/impact)
+
+# [3.105.0](https://github.com/trycompai/comp/compare/v3.104.2...v3.105.0) (2026-07-20)
+
+
+### Features
+
+* **isms:** monitoring & measurement framework — clause 9.1 (CS-723) ([#3460](https://github.com/trycompai/comp/issues/3460)) ([585e162](https://github.com/trycompai/comp/commit/585e162d2bcc64f01eb1c6621efe49df8ec560e2))
+
+## [3.104.2](https://github.com/trycompai/comp/compare/v3.104.1...v3.104.2) (2026-07-20)
+
+
+### Bug Fixes
+
+* **auth:** redirect microsoft sso callback errors to portal instead of api docs ([7920bae](https://github.com/trycompai/comp/commit/7920baec27f21571030553bc43b6b63cc779701a))
+* **integrations:** report code scanning off vs missing permission correctly ([220d60f](https://github.com/trycompai/comp/commit/220d60f902038654665ccadeb23e6c2bbd6e1b9b))
+* **people:** create invited employees with verified emails so SSO can link ([#3459](https://github.com/trycompai/comp/issues/3459)) ([cd31daf](https://github.com/trycompai/comp/commit/cd31daf4f78ce385e664d2a4eb658f5432ea8661))
+
+## [3.104.1](https://github.com/trycompai/comp/compare/v3.104.0...v3.104.1) (2026-07-17)
+
+
+### Bug Fixes
+
+* **app:** keep task automation "Last ran" fresh when recent runs are held ([990f025](https://github.com/trycompai/comp/commit/990f025e895434607c632b0251ab0f9cc2a7aa1b))
+* **github-integration:** distinguish ghas disabled from permission denied in oauth flow ([ec42f96](https://github.com/trycompai/comp/commit/ec42f969ce659735645f4667a775a09883be14ea))
+* **people:** make role picker modal-aware in invite members dialog ([#3448](https://github.com/trycompai/comp/issues/3448)) ([5f8a031](https://github.com/trycompai/comp/commit/5f8a0318876f73e18d17177e739d81a9f49655cd))
+* **todo:** [bug] trust center config write endpoints return "organizati ([#3444](https://github.com/trycompai/comp/issues/3444)) ([2304d1f](https://github.com/trycompai/comp/commit/2304d1ff56bcacc0f9ffccdbc2cb298ca8091af0))
+
+# [3.104.0](https://github.com/trycompai/comp/compare/v3.103.1...v3.104.0) (2026-07-16)
+
+
+### Bug Fixes
+
+* **app:** address review findings on out-of-scope actions ([5113276](https://github.com/trycompai/comp/commit/51132769d057d8a62fdc6276d5c7159e00d1d2d6))
+* **soa:** allow editing of remote-applicable iso 27001 section 7 controls ([#3433](https://github.com/trycompai/comp/issues/3433)) ([024ced4](https://github.com/trycompai/comp/commit/024ced49a340a26d2ad999b4a2ab120e01c56185))
+
+
+### Features
+
+* **app:** mark evidence check resources out of scope ([b5dd117](https://github.com/trycompai/comp/commit/b5dd11735e5fa3a0804a48246904e49861d47569))
+
+## [3.103.1](https://github.com/trycompai/comp/compare/v3.103.0...v3.103.1) (2026-07-16)
+
+
+### Bug Fixes
+
+* **people:** keep role picker clickable in the invite dialog ([0f24c95](https://github.com/trycompai/comp/commit/0f24c95ee0b20c5403ca7bcc8c46beba1d13bad8))
+
+# [3.103.0](https://github.com/trycompai/comp/compare/v3.102.0...v3.103.0) (2026-07-16)
+
+
+### Bug Fixes
+
+* **auditor:** remove brackets from vendor use case and replace placeholder descriptions ([#3425](https://github.com/trycompai/comp/issues/3425)) ([0bb84a5](https://github.com/trycompai/comp/commit/0bb84a5431d7bbcaa182a639c6348dd2655a0b4f))
+* **people:** restore role selection in invite dialog ([9329dfa](https://github.com/trycompai/comp/commit/9329dfa8b564e9fcee8c830d9a0cd1218dbf26a8))
+* **questionnaire:** strip whole-sheet dataValidations before ExcelJS parse ([#3427](https://github.com/trycompai/comp/issues/3427)) ([e28f51d](https://github.com/trycompai/comp/commit/e28f51d8e6b3015d17a4d24030c4cba02db29b9d))
+
+
+### Features
+
+* **auth:** add self-serve and admin login email change ([#3421](https://github.com/trycompai/comp/issues/3421)) ([a760e33](https://github.com/trycompai/comp/commit/a760e33eaa9b2d1e1c682afcf709defc408d013e))
+
+# [3.102.0](https://github.com/trycompai/comp/compare/v3.101.2...v3.102.0) (2026-07-15)
+
+
+### Bug Fixes
+
+* **ci:** pin Syft 1.46.0 in SBOM action (1.42.3 can't parse bun.lock) ([#3415](https://github.com/trycompai/comp/issues/3415)) ([5f47024](https://github.com/trycompai/comp/commit/5f470240e56ae47a8489cfeb731e44e5950cd35b))
+* **ci:** scan bun.lock via file: input so the SBOM isn't empty ([#3414](https://github.com/trycompai/comp/issues/3414)) ([e47e6fd](https://github.com/trycompai/comp/commit/e47e6fd43a07b031fbaaa4bd77a7963625639dc3))
+* **deps:** override uuid to ^11.1.1 (Dependabot [#85](https://github.com/trycompai/comp/issues/85)) ([#3418](https://github.com/trycompai/comp/issues/3418)) ([598ff8c](https://github.com/trycompai/comp/commit/598ff8c5ca4105b7c8d1503f02b7f8286a8d4da7))
+* **deps:** patch tmp and js-yaml in mcp-server (Dependabot [#58](https://github.com/trycompai/comp/issues/58)/[#59](https://github.com/trycompai/comp/issues/59)/[#71](https://github.com/trycompai/comp/issues/71)) ([#3412](https://github.com/trycompai/comp/issues/3412)) ([59a6b0f](https://github.com/trycompai/comp/commit/59a6b0faaf8700b80b25b3897d572cf78198c900))
+* **deps:** remediate dependency security vulnerabilities ([#3403](https://github.com/trycompai/comp/issues/3403)) ([7577a37](https://github.com/trycompai/comp/commit/7577a3783defd68059583ed1ec4012cec7cbb6e5))
+* **deps:** remediate dependency security vulnerabilities (165→16, 4 critical→0) ([#3406](https://github.com/trycompai/comp/issues/3406)) ([d403e9c](https://github.com/trycompai/comp/commit/d403e9c9805cf1fd4731caef9968745fbf4fe055))
+* **device-agent:** implement the installer-cleanup fix ([#3381](https://github.com/trycompai/comp/issues/3381)) ([0f7581b](https://github.com/trycompai/comp/commit/0f7581b36bafa7157adb6e355b424a8b9459afe5))
+* **security:** prevent SSRF in task-automation enterprise API calls ([#3411](https://github.com/trycompai/comp/issues/3411)) ([dcec288](https://github.com/trycompai/comp/commit/dcec288f4f9667e08602beecc00ce04594326b66)), closes [#116](https://github.com/trycompai/comp/issues/116)
+* **security:** resolve open CodeQL alerts (XSS, sanitization, workflow perms) ([#3419](https://github.com/trycompai/comp/issues/3419)) ([32329be](https://github.com/trycompai/comp/commit/32329be11fcf6ca9cc7255921bfcec03f0a507d8)), closes [#108](https://github.com/trycompai/comp/issues/108) [js/xss-throu#dom](https://github.com/js/xss-throu/issues/dom) [#95](https://github.com/trycompai/comp/issues/95) [84/#85](https://github.com/trycompai/comp/issues/85)
+
+
+### Features
+
+* **framework-editor:** raise requirement description limit to 100,000 chars (FRAME-2) ([67c9f4a](https://github.com/trycompai/comp/commit/67c9f4a01b0cf7b33d6ecaaf341385ca520556a4))
+
+## [3.101.2](https://github.com/trycompai/comp/compare/v3.101.1...v3.101.2) (2026-07-14)
+
+
+### Bug Fixes
+
+* **api:** pentest retry follow-ups from production review ([#3400](https://github.com/trycompai/comp/issues/3400)) ([e6e9239](https://github.com/trycompai/comp/commit/e6e9239dd4b4cecaea642f828cdd29f14993359e))
+* **api:** revert deterministic retry billing id (caused free-scan on redelivery) ([#3401](https://github.com/trycompai/comp/issues/3401)) ([6033674](https://github.com/trycompai/comp/commit/6033674a51c75bb1c2f390008dabcf920855495e))
+
+## [3.101.1](https://github.com/trycompai/comp/compare/v3.101.0...v3.101.1) (2026-07-13)
+
+
+### Bug Fixes
+
+* **soa:** apply the fully-remote physical-control rule consistently ([#3397](https://github.com/trycompai/comp/issues/3397)) ([1bde95b](https://github.com/trycompai/comp/commit/1bde95b7cc17a74f5d360688a28f844257197bd0))
+
+# [3.101.0](https://github.com/trycompai/comp/compare/v3.100.1...v3.101.0) (2026-07-10)
+
+
+### Bug Fixes
+
+* **api:** reject assignees that aren't members of the organization ([dd071b6](https://github.com/trycompai/comp/commit/dd071b65f74ee59edb47a78660200f3771a00c71))
+* **api:** stop Trigger.dev deploy failing on @trycompai/auth/participation ([#3393](https://github.com/trycompai/comp/issues/3393)) ([1ba1d20](https://github.com/trycompai/comp/commit/1ba1d2014b067e27cbc760a96201d92d2b564046))
+* **org:** address 2nd review pass — harden vendor assignee, unify UI rule, guard boundaries ([ef1a53f](https://github.com/trycompai/comp/commit/ef1a53fe51a814d2c7947cc8198b0d5fb2f2f802))
+* **org:** address review — align browser-automation, tighten null validation, keep dep boundary ([415ee40](https://github.com/trycompai/comp/commit/415ee40786aa104638ed34f27d00b94af3485f09))
+* **org:** address review — spread-safe participant filter, confirm internal toggle ([26cecbe](https://github.com/trycompai/comp/commit/26cecbe4c15f0dcf0e5b5e0b24f631408a475980))
+* **org:** unify participation where-fragment, guard deactivated author, skip needless query ([77df89c](https://github.com/trycompai/comp/commit/77df89cdb61b038bcbc0f615f5f8a6df58657134))
+
+
+### Features
+
+* **isms:** add Roles, Responsibilities & Authorities document (CS-698) ([#3391](https://github.com/trycompai/comp/issues/3391)) ([c013515](https://github.com/trycompai/comp/commit/c01351518a61f104f1f39555f872760974dae587))
+* **org:** treat platform admins as members in internal organizations ([e179c58](https://github.com/trycompai/comp/commit/e179c5823328b29c2ee52cd49c53f2ef690469fb))
+
+## [3.100.1](https://github.com/trycompai/comp/compare/v3.100.0...v3.100.1) (2026-07-10)
+
+
+### Bug Fixes
+
+* **devices:** judge imported devices by the canonical four-check standard ([0ac98f3](https://github.com/trycompai/comp/commit/0ac98f3bfbbee784297b2c7055d5abf5a5a4a896))
+* **policies:** restore content serialization in mcp write path ([862edf7](https://github.com/trycompai/comp/commit/862edf7d4531d58cea9dbe007c7bef75c7c7877f))
+
+# [3.100.0](https://github.com/trycompai/comp/compare/v3.99.3...v3.100.0) (2026-07-10)
+
+
+### Bug Fixes
+
+* **devices:** address cubic review on device-sync connection status ([4fa7598](https://github.com/trycompai/comp/commit/4fa759818ac26cb1d1d4d2001283bb95e46bf247))
+* **devices:** address release-PR review on device sync ([#3387](https://github.com/trycompai/comp/issues/3387)) ([f0c9f2c](https://github.com/trycompai/comp/commit/f0c9f2cb34b499f7e2117ae6d26b0bfeb560fec8))
+* **devices:** show reconnect hint when device-sync connection is errored ([d41bb5c](https://github.com/trycompai/comp/commit/d41bb5c55dd932e16306c00431b5b02dc40d9558))
+* **devices:** surface broken saved sync source on the closed trigger ([d59f0a0](https://github.com/trycompai/comp/commit/d59f0a0425c2ee79cbda53631552096211bb792e))
+
+
+### Features
+
+* **devices:** count imported devices in the compliance chart ([#3384](https://github.com/trycompai/comp/issues/3384)) ([f94f02a](https://github.com/trycompai/comp/commit/f94f02ac255fb56b0cbe354dc80e6aa26e72194a))
+* **devices:** universal source-reported compliance + last-seen for device sync ([#3383](https://github.com/trycompai/comp/issues/3383)) ([c45fa5f](https://github.com/trycompai/comp/commit/c45fa5f02cb3094e9e516d7f92d08f3d5aeaa80b))
+
+## [3.99.3](https://github.com/trycompai/comp/compare/v3.99.2...v3.99.3) (2026-07-08)
+
+
+### Bug Fixes
+
+* **integration-platform:** classify code-based checks statically on manual run (CS-715) ([#3376](https://github.com/trycompai/comp/issues/3376)) ([200b191](https://github.com/trycompai/comp/commit/200b191aed0148e780dd868f144fb30b553014f1))
+
+## [3.99.2](https://github.com/trycompai/comp/compare/v3.99.1...v3.99.2) (2026-07-08)
+
+
+### Bug Fixes
+
+* **integrations:** create install-handoff state before deleting original ([04d8206](https://github.com/trycompai/comp/commit/04d82068a70784a6e35cc369d0cc9ca2399bcf82))
+* **integrations:** redirect GitHub App users to install when not installed ([32df09a](https://github.com/trycompai/comp/commit/32df09a4866f3c30d3b9e1f94d3b3ab3464d408c))
+
+## [3.99.1](https://github.com/trycompai/comp/compare/v3.99.0...v3.99.1) (2026-07-07)
+
+
+### Bug Fixes
+
+* **integrations:** connect GitHub App via OAuth authorize URL, not install URL (CS-710) ([#3371](https://github.com/trycompai/comp/issues/3371)) ([51ab7b1](https://github.com/trycompai/comp/commit/51ab7b11395ce9bf824ab5a67b468e52101e3e00))
+
+# [3.99.0](https://github.com/trycompai/comp/compare/v3.98.1...v3.99.0) (2026-07-07)
+
+
+### Bug Fixes
+
+* **integrations:** don't persist unverified GitHub installation_id ([#3370](https://github.com/trycompai/comp/issues/3370)) ([9c6f6fa](https://github.com/trycompai/comp/commit/9c6f6faf19aa2dcac750e02f48aeefb0c502d471))
+* **isms:** lock before writing control links so edits serialize with approve ([#3369](https://github.com/trycompai/comp/issues/3369)) ([a21f866](https://github.com/trycompai/comp/commit/a21f8667fcbc704c4d3dd2af0380d23dceb9761d))
+* **isms:** production-deploy review follow-ups (CS-701) ([#3365](https://github.com/trycompai/comp/issues/3365)) ([d756d4a](https://github.com/trycompai/comp/commit/d756d4a444d21447ae2bcb60b647cdacfa36a173)), closes [#3364](https://github.com/trycompai/comp/issues/3364)
+* **isms:** serialize approve against ALL register/content edits (central lock) ([#3367](https://github.com/trycompai/comp/issues/3367)) ([5c88a3d](https://github.com/trycompai/comp/commit/5c88a3dc84ec45f2ca1f3970ac3fbde61b775af7))
+* **isms:** serialize approve/decline to prevent concurrent double-publish (CS-701) ([#3366](https://github.com/trycompai/comp/issues/3366)) ([b158bc9](https://github.com/trycompai/comp/commit/b158bc9f8678c9f5fe4d52f5c1c1406ec0de95f6)), closes [#3364](https://github.com/trycompai/comp/issues/3364)
+
+
+### Features
+
+* **integrations:** add read-only GitHub App integration (CS-710) ([#3363](https://github.com/trycompai/comp/issues/3363)) ([a5a9243](https://github.com/trycompai/comp/commit/a5a9243ab01453f45d81480ab52b9a74744b6888))
+* **isms:** document versioning and history (CS-701) ([#3361](https://github.com/trycompai/comp/issues/3361)) ([d95dc2e](https://github.com/trycompai/comp/commit/d95dc2e34a96e577a99886893a4537064b02a445))
+
+## [3.98.1](https://github.com/trycompai/comp/compare/v3.98.0...v3.98.1) (2026-07-06)
+
+
+### Bug Fixes
+
+* **policies:** keep PDF headings with their section (CS-704) ([#3358](https://github.com/trycompai/comp/issues/3358)) ([5bac5c9](https://github.com/trycompai/comp/commit/5bac5c9bb23cc15f61d3912a6bb457c57a026083))
+* **risk-treatment:** rank tasks by exact in-process cosine, not filtered ANN ([#3359](https://github.com/trycompai/comp/issues/3359)) ([6293aad](https://github.com/trycompai/comp/commit/6293aaddaa61946faea42be9241ca51d9ff3faef))
+
+# [3.98.0](https://github.com/trycompai/comp/compare/v3.97.0...v3.98.0) (2026-07-06)
+
+
+### Bug Fixes
+
+* address follow-up ([70c393c](https://github.com/trycompai/comp/commit/70c393c89d71ef6ba0e49e3a2a8a9c5e2176cabc))
+* **api:** add isActive filter to member query ([545bc74](https://github.com/trycompai/comp/commit/545bc7466ccab2b37ebbf6b5926fcc69bb7ea158))
+* **api:** tie trust portal access link expiry to the grant duration ([cc493f0](https://github.com/trycompai/comp/commit/cc493f0bd0ec4a5735e67d7b975d4de3dad9e071))
+* **app:** sort assignee list alphabetically in assignee dropdown ([13aa3ef](https://github.com/trycompai/comp/commit/13aa3ef0741b144ef50a98886a4d3c07ac6a07a8))
+* **cloud-security:** exclude per-task runs from latest scan selection ([c51b17c](https://github.com/trycompai/comp/commit/c51b17c799f06d5f99ff2a81c934df9c9ea30b64))
+* **risk-treatment:** ensure live tasks filter before ranking in draft plan ([98401f4](https://github.com/trycompai/comp/commit/98401f4b0b94b09f97c2a27c21ea4b7790a3c989))
+* **risk-treatment:** harden orphan task-vector prune (CS-681 review) ([eb3c097](https://github.com/trycompai/comp/commit/eb3c097a44b5482da569eb8745548b0d233563ac))
+* **trust-portal:** derive public vendor badges from cert data (CS-688) ([#3355](https://github.com/trycompai/comp/issues/3355)) ([dd2ea84](https://github.com/trycompai/comp/commit/dd2ea8401d6d83e0faee2f042bcac109a7023223)), closes [3315/#3318](https://github.com/trycompai/comp/issues/3318)
+* **trust-portal:** restore soc3/pipeda/ccpa badge mappings (CS-688) ([#3357](https://github.com/trycompai/comp/issues/3357)) ([e8cb123](https://github.com/trycompai/comp/commit/e8cb12319ace042594be4495490b6c560ad49aa5))
+* **trust:** address cubic review on the questionnaire toggle ([6e71c3f](https://github.com/trycompai/comp/commit/6e71c3fd0e7d03655568e70c40fbb2b9640e9932))
+
+
+### Features
+
+* **trust:** add setting to show/hide the Security Questionnaire on the public trust portal ([f89c323](https://github.com/trycompai/comp/commit/f89c32395951f1cb6d47b629b32eeee9336f801b))
+
+# [3.97.0](https://github.com/trycompai/comp/compare/v3.96.1...v3.97.0) (2026-07-06)
+
+
+### Bug Fixes
+
+* **people:** polish the redesigned People tab (requirement columns, filters, per-employee 2FA) ([#3347](https://github.com/trycompai/comp/issues/3347)) ([75758ec](https://github.com/trycompai/comp/commit/75758ecad8ccf748c3820debd54b0c015c4a291b))
+
+
+### Features
+
+* **integrations:** emit per-user rows from the Google Workspace employee-access check ([#3352](https://github.com/trycompai/comp/issues/3352)) ([0b54252](https://github.com/trycompai/comp/commit/0b54252e05d53d7f1118d473de1374f93dd02beb))
+* **people:** access tab on member details, per connected integration ([#3349](https://github.com/trycompai/comp/issues/3349)) ([83f188c](https://github.com/trycompai/comp/commit/83f188c0499ca01726a328baf587e26f8e99ce95)), closes [#2](https://github.com/trycompai/comp/issues/2)
+
+## [3.96.1](https://github.com/trycompai/comp/compare/v3.96.0...v3.96.1) (2026-07-03)
+
+
+### Bug Fixes
+
+* **people:** polish the redesigned People tab (requirement columns, filters, per-employee 2FA) ([#3347](https://github.com/trycompai/comp/issues/3347)) ([#3348](https://github.com/trycompai/comp/issues/3348)) ([f0e837c](https://github.com/trycompai/comp/commit/f0e837c436f0a74c37e10cad6b56860646d5fa86))
+
+# [3.96.0](https://github.com/trycompai/comp/compare/v3.95.2...v3.96.0) (2026-07-03)
+
+
+### Bug Fixes
+
+* **people:** address cubic review on 2FA source ([66edac2](https://github.com/trycompai/comp/commit/66edac25049f96744d65d5f43d26e57485bb7842))
+* **people:** address cubic review on columns + filters ([9e3cab1](https://github.com/trycompai/comp/commit/9e3cab127499fdaa53e8ad49ca80bfdb976e9ddc))
+* **people:** associate toolbar select labels for screen readers ([2f18dae](https://github.com/trycompai/comp/commit/2f18dae7525865251dbbc4f04bc29eaa219bd6fb))
+* **people:** guard org existence before provider validation on POST two-factor-source ([21e2bef](https://github.com/trycompai/comp/commit/21e2befd5d035152a16605729e14e580638aded2))
+* **people:** inline select dropdowns inside toolbar popovers ([aeb707e](https://github.com/trycompai/comp/commit/aeb707edaca859670bac5504597d63c7c2d7478f))
+* **people:** label the toolbar source selects and stop date-chip wrapping ([c9038a3](https://github.com/trycompai/comp/commit/c9038a3f88c71c22deef6e9889ab4fd68c1351d9))
+* **people:** make the 2FA select uncontrolled like the sync select ([4c4492d](https://github.com/trycompai/comp/commit/4c4492d7bf30cf24626a13fd67f7cd6bb44df48d))
+* **people:** map missing-org cases to 404 on 2FA source endpoints ([e2176ad](https://github.com/trycompai/comp/commit/e2176ad9db2090eea75474f7ed2e103a131f7f62))
+* **people:** match filter-change handlers to the DS Select signature ([5ac1099](https://github.com/trycompai/comp/commit/5ac1099cc0835a1038a967f8ded0361a472e36ac))
+
+
+### Features
+
+* **people:** 2FA source backend — schema, read path, endpoints ([d2ad593](https://github.com/trycompai/comp/commit/d2ad593d7a8cee61e82e70ca2df17bbe3a44d5e1))
+* **people:** per-employee 2FA column from the org's selected 2FA source ([7f75e36](https://github.com/trycompai/comp/commit/7f75e36f7eb8069f8247ebb53041dd968c4b354d))
+* **people:** redesign TASKS column with per-requirement status rows ([075cba4](https://github.com/trycompai/comp/commit/075cba46ee101db55a1b3a2e6e978cd14c110cb8))
+* **people:** removable active-filter chips + always-visible table scrollbar ([dc2be7b](https://github.com/trycompai/comp/commit/dc2be7b92cf7498f5bd9760dfe3b9d0246f1ea1d))
+* **people:** split requirements into table columns + collapse filters behind a funnel button ([03c7641](https://github.com/trycompai/comp/commit/03c76417c853106dcf040a579df706cbdba0bc94))
+* **ui:** responsive-by-default mandate + collapse 2FA selector on mobile ([07808ba](https://github.com/trycompai/comp/commit/07808ba574adec243671c335ec586ec0ae00eedb))
+
+
+### Reverts
+
+* **people:** portal={false} on in-popover selects broke positioning ([339f5f4](https://github.com/trycompai/comp/commit/339f5f45ff48bb9e4c82ddef391e532f9e6a8685))
+
+## [3.95.2](https://github.com/trycompai/comp/compare/v3.95.1...v3.95.2) (2026-07-02)
+
+
+### Bug Fixes
+
+* **github-integration:** use concurrent mapping for branch protection checks ([5b68642](https://github.com/trycompai/comp/commit/5b68642f829e2578b586451c77ea6c84601aec02))
+* **todo:** create a ticket in team cs "[feature request/ux] - policy de ([2a6b892](https://github.com/trycompai/comp/commit/2a6b89264cc424b77210ea7cbbc0ede47bb6e64c))
+
+## [3.95.1](https://github.com/trycompai/comp/compare/v3.95.0...v3.95.1) (2026-07-01)
+
+
+### Bug Fixes
+
+* **evidence-export:** raise trigger task duration ceiling to prevent timeout ([5375032](https://github.com/trycompai/comp/commit/53750326fc7b31b0a72ecd7876d6b47fdafb716f)), closes [hi#volume](https://github.com/hi/issues/volume)
+
+# [3.95.0](https://github.com/trycompai/comp/compare/v3.94.2...v3.95.0) (2026-07-01)
+
+
+### Bug Fixes
+
+* **frameworks:** reject null fields and empty payload on custom framework update ([e5f847b](https://github.com/trycompai/comp/commit/e5f847b8d619f0bcfc9afa2d9cec5ba97d207c6d))
+* **frameworks:** reject whitespace-only custom framework name ([8db8ac5](https://github.com/trycompai/comp/commit/8db8ac5dfd84988ab2bd39961b1f1c7190598429))
+* **frameworks:** trim custom framework name/description in update DTO ([dcf3dc1](https://github.com/trycompai/comp/commit/dcf3dc156022026d8e4a64c760d8874342ad0061))
+* **integrations:** use catalog-defined field names for fivetran basic auth ([6050902](https://github.com/trycompai/comp/commit/6050902b12a73a630a1d7d4472d7fbf431dc9559))
+* **tasks:** bound sanitized inputs check to prevent timeout on manual run ([070a964](https://github.com/trycompai/comp/commit/070a964226311e8ab856e667d266af2a8cd34a99))
+
+
+### Features
+
+* **frameworks:** allow editing custom framework name and description ([4e3f9ac](https://github.com/trycompai/comp/commit/4e3f9ac20b3e2ead3f9c5315bd3a0b242ccf0edd))
+
+## [3.94.2](https://github.com/trycompai/comp/compare/v3.94.1...v3.94.2) (2026-07-01)
+
+
+### Bug Fixes
+
+* **auth:** honor explicit ?inviteCode= before the offboard guard on the root page ([ab7ba22](https://github.com/trycompai/comp/commit/ab7ba22ff8be46ba7937bd1c841c30e9058185a7))
+* **auth:** let invite flows take precedence over the offboard guard at /setup ([afb759e](https://github.com/trycompai/comp/commit/afb759eb297a7e4599287aa7a4f7ffa5be4625ea))
+* **auth:** stop offboarded users from looping into a spurious new org ([2aa20e6](https://github.com/trycompai/comp/commit/2aa20e67c00514d0bc17aa8acae37b1a255de312))
+* **trust-portal:** bound ISO cert regex so a number can't match a longer one ([514e0e5](https://github.com/trycompai/comp/commit/514e0e5bf20f27826c2c6d3cc5ad08b1eced6298)), closes [#3318](https://github.com/trycompai/comp/issues/3318)
+* **trust-portal:** sync iso 27001 certification mapping with vendor-risk task ([9f944a0](https://github.com/trycompai/comp/commit/9f944a0df8ea52dcaf209dce3d25ec17bc02b4c0))
+* **trust-portal:** tighten ISO cert badge matching to require the ISO prefix ([3b426f7](https://github.com/trycompai/comp/commit/3b426f7c8137865a9173a52808de63caa7b76a44)), closes [#3315](https://github.com/trycompai/comp/issues/3315) [#3315](https://github.com/trycompai/comp/issues/3315)
+
+## [3.94.1](https://github.com/trycompai/comp/compare/v3.94.0...v3.94.1) (2026-07-01)
+
+
+### Bug Fixes
+
+* **self-heal:** refresh manifest cache before persisted re-run ([3783ed8](https://github.com/trycompai/comp/commit/3783ed8f4b612acd0230a3221515d91e1d8f395b))
+
+# [3.94.0](https://github.com/trycompai/comp/compare/v3.93.1...v3.94.0) (2026-06-30)
+
+
+### Bug Fixes
+
+* **devices:** address cubic review on device-import display + sync definitions ([dda64db](https://github.com/trycompai/comp/commit/dda64db1c96ddf5c04af8582fd0fa45d20dd71d5))
+* **devices:** address cubic review on the device-import display PR ([#3308](https://github.com/trycompai/comp/issues/3308)) ([9056d1b](https://github.com/trycompai/comp/commit/9056d1b7c47ea8fffc56fc83fee2db77eea439ff))
+* **devices:** second cubic pass — JumpCloud error handling, a11y, untracked rendering ([ea93f29](https://github.com/trycompai/comp/commit/ea93f2900f1e1cc7d43c5405620d9eae13ebf06f))
+* **isms:** resolve back nav, approver/owner display, party tags, and status formatting ([c9a6697](https://github.com/trycompai/comp/commit/c9a66971de2231efd448bbdc3e47e817f10c2e23))
+* **pentest:** gate initial free credit to new (un-onboarded) orgs only ([199e890](https://github.com/trycompai/comp/commit/199e89053f0616164c7f9875875f82c8aed5e7d9))
+* **people:** lock sync-source dropdown while disabling auto-sync ([541a72f](https://github.com/trycompai/comp/commit/541a72fc107000eaeaa536296a504f8b1fccc71f))
+* **self-heal:** address cubic — validate task org on reveal/rerun + held error-runs keep task pending ([3cecc79](https://github.com/trycompai/comp/commit/3cecc798a6edc34ad12bc8f6bfe72fb127f67627))
+* **self-heal:** reveal also syncs the task status (cubic P1) ([9bbf38b](https://github.com/trycompai/comp/commit/9bbf38bfe8b595ac2b4f7665e810ab38518e463a))
+* **self-heal:** reveal task-sync only flips ACTIVE statuses (cubic P2) ([5e3c6e3](https://github.com/trycompai/comp/commit/5e3c6e3a8c16747b0ab2c54abd1b88146ac8e027))
+
+
+### Features
+
+* **devices:** show integration-imported devices in People tab + Intune/JumpCloud device sync ([923a9e9](https://github.com/trycompai/comp/commit/923a9e997a2a007bc80372f2f6622ca24021242d))
+* **pentest:** auto-grant one free pentest credit to new organizations ([a5f815f](https://github.com/trycompai/comp/commit/a5f815f6ab01692f6b24447020696b17746b9121))
+* **people:** add "Don't auto-sync" option to employee sync source ([ae88ec6](https://github.com/trycompai/comp/commit/ae88ec66e3ef3cbdf5c8f12508136cc531fbef32))
+* **self-heal:** add /reveal endpoint — persist the real fail (customer-side / finding) ([e2f1fc0](https://github.com/trycompai/comp/commit/e2f1fc089013e50acb2bf9d67195eaa1aa98493d))
+
+## [3.93.1](https://github.com/trycompai/comp/compare/v3.93.0...v3.93.1) (2026-06-29)
+
+
+### Bug Fixes
+
+* **api:** clear offboardDate when removing member with skip offboarding ([99181db](https://github.com/trycompai/comp/commit/99181db5559c699468e9d8a2dda70652e4b77011))
+* **auditor:** tighten context generation prompts and feed complete vendor list ([79be921](https://github.com/trycompai/comp/commit/79be921680fb3f193c6eff0d37b0afeb300463f8))
+* **bug-todo:** address cubic review ([27f605d](https://github.com/trycompai/comp/commit/27f605dc461673f8f8a7e00388c2dd9fd0ae1982))
+* **cloud-security:** drop unsupported temperature param from auto-fix model calls ([e94bcd6](https://github.com/trycompai/comp/commit/e94bcd64bb479ab19fb4f01476f37771484b475f))
+* **policies:** send re-acknowledgment emails when policy is updated ([b24884e](https://github.com/trycompai/comp/commit/b24884e063963025a52d52834d4670f9ebef0b5c))
+* **todo:** address cubic review ([e0f8471](https://github.com/trycompai/comp/commit/e0f84711644ffb5b6dd8a83f5a3146411124b419))
+
+# [3.93.0](https://github.com/trycompai/comp/compare/v3.92.5...v3.93.0) (2026-06-29)
+
+
+### Bug Fixes
+
+* **policies:** preserve acceptances when republishing unchanged policy in review ([83915c2](https://github.com/trycompai/comp/commit/83915c221d99ea691cda35cda79f8158dbe9cad8))
+* **self-heal:** anchor status-string parse + reuse decideRunStatus in throw path ([da2e923](https://github.com/trycompai/comp/commit/da2e923df87cfdf75121088fe1f94fafa254a615))
+* **self-heal:** cubic — broaden HTTP status parse + held failures block 'done' ([425ecb6](https://github.com/trycompai/comp/commit/425ecb610f778dbfb57942310c5ee4abe97da9f8))
+* **self-heal:** cubic backlog — empty-msg mask, string status, bounded queue, throw→inconclusive ([59f8a63](https://github.com/trycompai/comp/commit/59f8a630984100e280dc26441787725ebe81118b))
+* **self-heal:** held runs store failedCount 0 + document done-on-held decision ([95b6f88](https://github.com/trycompai/comp/commit/95b6f8837e199557146f04ed4abe140f0c5fc4fd))
+* **self-heal:** hide held (inconclusive) runs from the customer task UI ([a24b9af](https://github.com/trycompai/comp/commit/a24b9af5d70be971e4d969669d60d48f728847f8))
+* **self-heal:** mark manual held dynamic runs inconclusive (consistent w/ scheduled) ([333f753](https://github.com/trycompai/comp/commit/333f753dd97a895a4ca6b05310f75ed437ae20f7))
+* **self-heal:** only surface checks whose latest run is still inconclusive ([8fdf5e1](https://github.com/trycompai/comp/commit/8fdf5e1a6c71f4c89924d0d497e0bd307fb62dcb))
+* **self-heal:** redact quoted JSON keys/values + short secrets (cubic P1) ([98201f1](https://github.com/trycompai/comp/commit/98201f1c108d60de1a79242b391790ae1b886c23))
+* **self-heal:** redact quoted secret values containing spaces (cubic P1) ([ae4cc47](https://github.com/trycompai/comp/commit/ae4cc4707144cd2361d3e090c0f8fc7023fabdef))
+
+
+### Features
+
+* **api:** add inference.net Catalyst tracing for LLM observability ([4f4c6f5](https://github.com/trycompai/comp/commit/4f4c6f51acd82607ebb7a174248023683027cdc0))
+* **integration-platform:** failure classifier for the self-heal layer ([487a4d9](https://github.com/trycompai/comp/commit/487a4d9f917856a1c66a5f172352e8f7859d3836))
+* **integration-platform:** hold our-side dynamic failures (manual run path) ([b374c89](https://github.com/trycompai/comp/commit/b374c89b6bb7c1f229b8896ffa2c201e0b3c4393))
+* **integration-platform:** hold our-side dynamic failures (scheduled run path) ([b191fcc](https://github.com/trycompai/comp/commit/b191fcc6eb8d00fb343224473364bddcfc26b14d))
+* **integration-platform:** inconclusive run status + failure partition ([aa1bba8](https://github.com/trycompai/comp/commit/aa1bba893fae4c280f0ac6f87fc53f53dbd5885b))
+* **integration-platform:** inconclusive-runs queue endpoint for the self-heal agent ([32e0295](https://github.com/trycompai/comp/commit/32e02952561038d39dd6cdb082c5a9cb0f7ee694))
+* **integration-platform:** mark held dynamic check-runs as inconclusive ([59c879e](https://github.com/trycompai/comp/commit/59c879eb350fc89f28868b8c9b4d16a1382d0f0d))
+* **integration-platform:** version + rollback for dynamic check edits ([7f7eb49](https://github.com/trycompai/comp/commit/7f7eb4903236c39ac973a71489fd6d0ae315c488))
+* **self-heal:** include the evidence-task title in the agent queue ([a14bd87](https://github.com/trycompai/comp/commit/a14bd87abb1591388a49bb1f222de79b757d79fc))
+* **self-heal:** persisting re-run endpoint so fixed checks flip customers to green ([63fb53a](https://github.com/trycompai/comp/commit/63fb53a7ece6169bd46dd886100853a3152dd87d))
+
+
+### Performance Improvements
+
+* **db:** use composite (checkId, createdAt) index for check version history ([713fe32](https://github.com/trycompai/comp/commit/713fe321e3921b4ed441607e43df399893ed9b7b))
+
+## [3.92.5](https://github.com/trycompai/comp/compare/v3.92.4...v3.92.5) (2026-06-27)
+
+
+### Bug Fixes
+
+* **auth:** disable unused email/password login ([a9d887f](https://github.com/trycompai/comp/commit/a9d887f9a4bf18493403d157c2e6e26897abbec2))
+
+## [3.92.4](https://github.com/trycompai/comp/compare/v3.92.3...v3.92.4) (2026-06-26)
+
+
+### Bug Fixes
+
+* **people:** upgrade an existing active member's role on invite/accept ([dc46128](https://github.com/trycompai/comp/commit/dc46128a3470c1dabd0e4d5bc80e179223d2294b))
+
+## [3.92.3](https://github.com/trycompai/comp/compare/v3.92.2...v3.92.3) (2026-06-26)
+
+
+### Bug Fixes
+
+* **questionnaire-ai:** cap source retrieval to top-k relevant policies ([b606356](https://github.com/trycompai/comp/commit/b606356a1d158986a9f1c80c33e1934164acc058))
+
+## [3.92.2](https://github.com/trycompai/comp/compare/v3.92.1...v3.92.2) (2026-06-25)
+
+
+### Bug Fixes
+
+* address follow-up ([c2e38f3](https://github.com/trycompai/comp/commit/c2e38f3c5b03504140eeff32faa03c8db5845f73))
+* **employee-access:** prevent automations tab crash on large run history payloads ([c6b3fb4](https://github.com/trycompai/comp/commit/c6b3fb4bde75deb10c2fd04854713960d5b817b2))
+* **findings:** wrap long urls in comment containers ([b6e353b](https://github.com/trycompai/comp/commit/b6e353b6674f98fce8b880e22f9772ef925a5db8))
+* **rbac:** add secrets permission to custom role editor ui ([5f43411](https://github.com/trycompai/comp/commit/5f43411d8cee1928c355d72c3b6dfe920f081652))
+
+## [3.92.1](https://github.com/trycompai/comp/compare/v3.92.0...v3.92.1) (2026-06-24)
+
+
+### Bug Fixes
+
+* **auth:** route auditor invite links directly to workspace instead of onboarding ([db849e2](https://github.com/trycompai/comp/commit/db849e2e0e2e4816018bd468eaafd57b63acd23b))
+* **sync:** apply user filters to dynamic provider employee sync ([8dfbec3](https://github.com/trycompai/comp/commit/8dfbec3d5ea2b884dede2b4656d0cec3eaef2ca1))
+
+# [3.92.0](https://github.com/trycompai/comp/compare/v3.91.1...v3.92.0) (2026-06-24)
+
+
+### Features
+
+* **email:** dedicated verification template + backfill existing accounts ([#3273](https://github.com/trycompai/comp/issues/3273)) ([1d94576](https://github.com/trycompai/comp/commit/1d94576b4300a02959a5ca5b54fe213a3dd0f24e))
+
+## [3.91.1](https://github.com/trycompai/comp/compare/v3.91.0...v3.91.1) (2026-06-24)
+
+
+### Bug Fixes
+
+* **integration-checks:** bundle per-task failure emails into one per org ([f59076c](https://github.com/trycompai/comp/commit/f59076c8bf6c17e2854cdffa5c83079b29c0cab1))
+* **integration-checks:** exact role-token recipients, drop platform-role filter ([5cbb855](https://github.com/trycompai/comp/commit/5cbb8554b6e6415445aeea58ea9db0967d7134b1))
+
+# [3.91.0](https://github.com/trycompai/comp/compare/v3.90.1...v3.91.0) (2026-06-23)
+
+
+### Bug Fixes
+
+* **auth:** fall back to UPN/username when Microsoft omits the email claim ([6e27044](https://github.com/trycompai/comp/commit/6e27044b4f096b60c87b297245016e96cbec20e6))
+* **cloud-security:** combine GCP direct-API checks with SCC, skip SCC when unavailable ([29ddd1a](https://github.com/trycompai/comp/commit/29ddd1abdd91451a436e30ab8358b79446b05b59))
+* **cloud-security:** honor disabled-service toggle in GCP direct-API checks ([0182676](https://github.com/trycompai/comp/commit/0182676220ecd6155881298fdc35f68e4448ddca))
+* **drata:** handle non-array policy content in bulk pdf render ([33d9157](https://github.com/trycompai/comp/commit/33d91575e21ee9cfa1a34564ebd33e373f282575)), closes [#3249](https://github.com/trycompai/comp/issues/3249)
+* **policies:** use deterministic template engine for individual policy regen ([aad6a80](https://github.com/trycompai/comp/commit/aad6a802b90aa69ce1479ce45938c892fd0818fa))
+
+
+### Features
+
+* **cloud-security:** make GCP auto-fix first-class for direct-API findings ([5684b97](https://github.com/trycompai/comp/commit/5684b9774513110458826aafc9a7a4c9d4ff998b))
+
+## [3.90.1](https://github.com/trycompai/comp/compare/v3.90.0...v3.90.1) (2026-06-23)
+
+
+### Bug Fixes
+
+* **pentest:** use run id instead of issue run id for context submission ([24353c4](https://github.com/trycompai/comp/commit/24353c4d8b9d4f00b8e7df33fefe3327433acf65))
+
+# [3.90.0](https://github.com/trycompai/comp/compare/v3.89.0...v3.90.0) (2026-06-23)
+
+
+### Bug Fixes
+
+* **framework-editor:** clean up resize listeners on unmount (FRAME-17 review) ([b75be84](https://github.com/trycompai/comp/commit/b75be840b38428b9d29062ae88910b1a679dfb96))
+
+
+### Features
+
+* **framework-editor:** resizable columns persisted to a cookie (FRAME-17) ([7756295](https://github.com/trycompai/comp/commit/77562957564200ae48d1b95eb45b10448750f02f))
+* **integration-platform:** capture + surface OAuth connect failures ([7d7792d](https://github.com/trycompai/comp/commit/7d7792d29bc481fa790708e3ccfe69a245f16f49))
+
+# [3.89.0](https://github.com/trycompai/comp/compare/v3.88.0...v3.89.0) (2026-06-23)
+
+
+### Bug Fixes
+
+* **integration-platform:** address cubic review on internal debug toolkit ([1771a37](https://github.com/trycompai/comp/commit/1771a37a2baf3f6400775c967144ac0d615e56a5))
+
+
+### Features
+
+* **integration-platform:** add candidate-code test endpoint (validate a fix before applying) ([86ce563](https://github.com/trycompai/comp/commit/86ce5633c4870bf448b22206a04cb6983e42cc29))
+* **integration-platform:** internal debug toolkit for dynamic integrations ([9723e9d](https://github.com/trycompai/comp/commit/9723e9dd9f01ab33c497c38d64d39d83b7747cf3))
+
+# [3.88.0](https://github.com/trycompai/comp/compare/v3.87.3...v3.88.0) (2026-06-23)
+
+
+### Bug Fixes
+
+* **api:** add daily cron to refresh OAuth tokens expiring within 24h ([e3cdfa1](https://github.com/trycompai/comp/commit/e3cdfa106726e14d4975215d10166056f03c0a6c))
+* **api:** ensure only latest versions are considered in refresh-expiring-tokens-schedule ([7375005](https://github.com/trycompai/comp/commit/7375005f0bdb8bcc35b97555093323556791fb91))
+* **api:** fix mismatched field issue in refresh-expiring-tokens-schedule ([9d30b3e](https://github.com/trycompai/comp/commit/9d30b3e754f643c7381c6e7c6716217a25382935))
+* **attachments:** accept PDFs with a leading BOM/whitespace before %PDF ([6493443](https://github.com/trycompai/comp/commit/64934434006d0d871cbe230cd1feefd37fecc954))
+* **browserbase:** attach Stagehand over CDP to avoid premature-close on resume ([a1cec9b](https://github.com/trycompai/comp/commit/a1cec9bbd9fbbfab99a3a10b0c18fdd926b978a2)), closes [#3230](https://github.com/trycompai/comp/issues/3230)
+* **browserbase:** surface the underlying cause on exhausted retries ([acdfd1e](https://github.com/trycompai/comp/commit/acdfd1ea2bb3032cdc3929e739cf7a6f61583176))
+* **evidence:** include custom roles in assignee visibility and filters ([ba85a4e](https://github.com/trycompai/comp/commit/ba85a4e622eb338fffc07d423a2245a9329a4bcc))
+* **tasks:** show custom roles in assignee filter and task overview ([87f0b55](https://github.com/trycompai/comp/commit/87f0b551536cdc504e867e9b746131a65eb702cc))
+
+
+### Features
+
+* **framework-editor:** unified Finder-style frameworks list (FRAME-20 follow-up) ([0084c43](https://github.com/trycompai/comp/commit/0084c438a853cee0e2a6c9a829ddbea0c2803c24))
+
+## [3.87.3](https://github.com/trycompai/comp/compare/v3.87.2...v3.87.3) (2026-06-22)
+
+
+### Bug Fixes
+
+* **background-checks:** drop HEIC/HEIF from manual upload accept list ([6cbd40f](https://github.com/trycompai/comp/commit/6cbd40f7ea61a5ab74039799e93b5d673bcc0256)), closes [#3233](https://github.com/trycompai/comp/issues/3233)
+
+## [3.87.2](https://github.com/trycompai/comp/compare/v3.87.1...v3.87.2) (2026-06-22)
+
+
+### Bug Fixes
+
+* **background-checks:** accept image formats for manual passport upload ([cf41b40](https://github.com/trycompai/comp/commit/cf41b40b01978aafb1f5363eb9acdfd298c39bea))
+* **browserbase:** disable Stagehand hosted API to unblock connect ([2b5fe4a](https://github.com/trycompai/comp/commit/2b5fe4aa4a805799331e30de93a72c5eaba9683a))
+
+## [3.87.1](https://github.com/trycompai/comp/compare/v3.87.0...v3.87.1) (2026-06-22)
+
+
+### Bug Fixes
+
+* **integrations:** persist Zoho multi-DC api_domain so OAuth tokens hit the right region ([9231286](https://github.com/trycompai/comp/commit/923128658d02057ae9a8eeeaefaf52890f464203))
+
+# [3.87.0](https://github.com/trycompai/comp/compare/v3.86.5...v3.87.0) (2026-06-22)
+
+
+### Bug Fixes
+
+* **api:** add familyId to update-policy frameworks schema (unblock build after FRAME-20) ([483c368](https://github.com/trycompai/comp/commit/483c36856475a06bbd076dda48454f1318c2fafb))
+* **browserbase:** close remaining reliability gaps ([bbb15db](https://github.com/trycompai/comp/commit/bbb15db5f82de4d6fda20f379d4d1a2d95df1ec0))
+* **browserbase:** harden automation run reliability ([a20de6d](https://github.com/trycompai/comp/commit/a20de6d067d86df6d44ae5436f073a31a08697d9))
+* **browserbase:** make task auth flow primary ([ea00eea](https://github.com/trycompai/comp/commit/ea00eead63389c671936f3e49ae766b2c0aa755a))
+* **browserbase:** preserve non-retryable errors ([1683d00](https://github.com/trycompai/comp/commit/1683d009bc9cbc36056617c49a638cde567769dc))
+* **browserbase:** recover stale context setup ([829a7f8](https://github.com/trycompai/comp/commit/829a7f8b528f929ce259c78bdf20ec470ef324fe))
+* **browserbase:** remove llm credential prompts ([35df682](https://github.com/trycompai/comp/commit/35df68219ac6d3e363ff150e73ef01f1f241ded0))
+* **browserbase:** request identity encoded api responses ([c8ed2e9](https://github.com/trycompai/comp/commit/c8ed2e910a88fbf94a4ad4e4f8213ca454ddb251))
+* **browserbase:** retry context creation failures ([a67beaf](https://github.com/trycompai/comp/commit/a67beaf70dbb48b4117f6b9e56d372eaf910c1ba))
+* **browserbase:** retry session api failures ([b3ac466](https://github.com/trycompai/comp/commit/b3ac46600aec15188c90f650513a1cecb68be494))
+* **browserbase:** retry stagehand init to survive premature close ([78030f6](https://github.com/trycompai/comp/commit/78030f63b4006bfa9e1dc77f7d93c3b7d86c5930))
+* **browserbase:** select active evidence page ([4138764](https://github.com/trycompai/comp/commit/41387640712d81b5a37ec7830dd8dcfebcaba785))
+* **browserbase:** tighten auth profile reliability ([0bc328c](https://github.com/trycompai/comp/commit/0bc328c5546ff76a1decf9a0110a159a22a554c8))
+* **bug-todo:** address cubic review ([fe7f906](https://github.com/trycompai/comp/commit/fe7f906be14a1004de7b05010341caed252a8f02))
+* **compliance:** order frameworks consistently to prevent accidental misselection ([8f43b92](https://github.com/trycompai/comp/commit/8f43b92f244a2ca5752369d9a8fc7dbc005fb09d))
+* **evidence-wizard:** add confirmation before discarding form on cancel ([aee86ec](https://github.com/trycompai/comp/commit/aee86ec22e98f0544d02d6e58a660efa5cb931c0))
+* **evidence:** display user email fallback when name is empty ([16bcdbc](https://github.com/trycompai/comp/commit/16bcdbc53b13fe2badc93120b2c40ff28c70581f))
+* **findings:** include all enabled frameworks in overview filter dropdown ([10c9c1b](https://github.com/trycompai/comp/commit/10c9c1ba66f797236ca28cd4fdbb532be13947c5))
+* **framework-editor:** family-scoped move + reject null in update DTO (FRAME-20 review) ([d3a399d](https://github.com/trycompai/comp/commit/d3a399ded46be0687ee840ae95ce7e48df83fc71))
+* **framework-editor:** fix app build + address review on framework families (FRAME-20) ([0a016ef](https://github.com/trycompai/comp/commit/0a016efdeb9efcf1cc2825efac5282ecac304f72))
+* **framework-editor:** make family delete atomic against concurrent moves (FRAME-20 review) ([116383a](https://github.com/trycompai/comp/commit/116383a38e724ffa0888de80926867323e56dfcd))
+* **framework-editor:** tiebreak requirement order by identifier, not name (FRAME-18) ([0af0c3d](https://github.com/trycompai/comp/commit/0af0c3d1e07686e0e0aaefeed17ab47b45f5eb5f))
+* **gcp-scc:** allow exceptions on public bucket findings by using fallback resource identity ([167f1c9](https://github.com/trycompai/comp/commit/167f1c966dcb16688399eb0520461dd16e3489ff))
+* **integrations:** retry transient transport errors in check runtime ([a866b3a](https://github.com/trycompai/comp/commit/a866b3a1051c68e1636b4cd7c1e9c4f5729aa6ab))
+* **members:** enable email update in employee details for admins ([0548f7a](https://github.com/trycompai/comp/commit/0548f7a8eca8bd8fd83c3fe612703c81af798c96))
+* **people:** allow reactivating deactivated members via update endpoint ([c317b77](https://github.com/trycompai/comp/commit/c317b77ec9d140af793761903549377c2f46807a))
+* **trust-portal:** review access button links to correct page ([3021cbf](https://github.com/trycompai/comp/commit/3021cbfb3764ecd76fff31473aae161b037bfc60))
+* **wizard:** restore step progress indicator on return to saved profile ([d7cca3a](https://github.com/trycompai/comp/commit/d7cca3a4f0f618831fd768a8cb45fbb961b0144f))
+
+
+### Features
+
+* **browserbase:** add per-site auth profiles ([3b40979](https://github.com/trycompai/comp/commit/3b409793d206f69c088e982f6c5012445c571f16))
+* **framework-editor:** add framework families (FRAME-20) ([e3bd813](https://github.com/trycompai/comp/commit/e3bd813e4f801ef196259f312e780a10f0c4cd9e))
+* **framework-editor:** add per-framework requirement sort order (FRAME-18) ([ee394dd](https://github.com/trycompai/comp/commit/ee394dddeca96f5825d20021d837f8f1cce8363d))
+
+## [3.86.5](https://github.com/trycompai/comp/compare/v3.86.4...v3.86.5) (2026-06-19)
+
+
+### Bug Fixes
+
+* **integrations:** harden google oauth refresh ([b8fa9bb](https://github.com/trycompai/comp/commit/b8fa9bb9a07f24a02f124563ad43f3ca97591b6b))
+
+## [3.86.4](https://github.com/trycompai/comp/compare/v3.86.3...v3.86.4) (2026-06-19)
+
+
+### Bug Fixes
+
+* **integration-platform:** surface setup instructions for non-custom auth types ([582a277](https://github.com/trycompai/comp/commit/582a2777e5316f07f6770860b577a52ce77ee1ba))
+
+## [3.86.3](https://github.com/trycompai/comp/compare/v3.86.2...v3.86.3) (2026-06-18)
+
+
+### Bug Fixes
+
+* **integrations:** scheduler skips MANUAL evidence tasks ([1ee9c9f](https://github.com/trycompai/comp/commit/1ee9c9f61e33f649382f93241e3d1333885bddc7))
+
+## [3.86.2](https://github.com/trycompai/comp/compare/v3.86.1...v3.86.2) (2026-06-18)
+
+
+### Bug Fixes
+
+* **integration-platform:** default environment separation checks off ([0455fd1](https://github.com/trycompai/comp/commit/0455fd15f4e5a17305c05098c9a000a475abcdee))
+
+## [3.86.1](https://github.com/trycompai/comp/compare/v3.86.0...v3.86.1) (2026-06-18)
+
+
+### Bug Fixes
+
+* **integration-platform:** fail closed on partial environment coverage ([35eef7f](https://github.com/trycompai/comp/commit/35eef7f75ff0049dfecf117d11276deb162d14f7))
+* **integration-platform:** reject duplicate environment aliases ([bfb7a4f](https://github.com/trycompai/comp/commit/bfb7a4fb31b07437718943c87d25366f1fbae809))
+* **integration-platform:** support environment aliases ([448f0b2](https://github.com/trycompai/comp/commit/448f0b23c771da7a65aa1fdbb984e091b1c05661))
+
+# [3.86.0](https://github.com/trycompai/comp/compare/v3.85.0...v3.86.0) (2026-06-18)
+
+
+### Bug Fixes
+
+* **integration-platform:** fail closed on capped azure env pagination ([ee53b72](https://github.com/trycompai/comp/commit/ee53b72495fa90cd3760bcf1690b10c9ecf1f196))
+* **integrations:** address env-separation review — scope, prod+non-prod bar, truncation ([adc2634](https://github.com/trycompai/comp/commit/adc2634f9b8b4bc398ef90b1a2b7574e7b696c2d)), closes [#1](https://github.com/trycompai/comp/issues/1)
+* **integrations:** env-separation classifier negation + read-failure verdicts ([1420c1c](https://github.com/trycompai/comp/commit/1420c1c6362f47e8e860d2c1fad0289d0d8b7463))
+* **integrations:** env-tag priority order + surface Azure subscription scan cap ([11696f9](https://github.com/trycompai/comp/commit/11696f9624111e2845d2c487ecee797f5232b124))
+
+
+### Features
+
+* **integrations:** add AWS & Azure Separation of Environments checks + shared env classifier ([76c505b](https://github.com/trycompai/comp/commit/76c505bf41e3d468fb3ec2005540ff4dd0e1271f))
+* **integrations:** add GCP Separation of Environments check ([393a460](https://github.com/trycompai/comp/commit/393a460193c6fab0fca0af8262f6bf1156c4c513))
+
+# [3.85.0](https://github.com/trycompai/comp/compare/v3.84.0...v3.85.0) (2026-06-17)
+
+
+### Bug Fixes
+
+* **integrations:** require a durable destination for GCP log-export prong ([600f277](https://github.com/trycompai/comp/commit/600f277e54aa4f85afcfd85dbe5e74649d27dcc0))
+
+
+### Features
+
+* **integrations:** add GCP Monitoring & Alerting and Encryption at Rest checks ([d294ba0](https://github.com/trycompai/comp/commit/d294ba0312015dd3fa30abbb50f8644d5cec0d52))
+
+# [3.84.0](https://github.com/trycompai/comp/compare/v3.83.8...v3.84.0) (2026-06-17)
+
+
+### Bug Fixes
+
+* **risk:** stop AI mitigation from reopening user-closed risks ([afd89eb](https://github.com/trycompai/comp/commit/afd89eb36eab2675fa5f56e066fb130d99ac56b9))
+* **trust-portal:** fall back to initials when a badge image fails to load ([66399a9](https://github.com/trycompai/comp/commit/66399a9a8ae76405a3f314ca1321933bed3acac1))
+* **trust-portal:** harden custom framework badge upload validation ([c248a15](https://github.com/trycompai/comp/commit/c248a15016e91b28519a8b3d922d9fd560fde2a7))
+
+
+### Features
+
+* **trust-portal:** upload custom framework badges on the trust portal ([68d187a](https://github.com/trycompai/comp/commit/68d187adeb45408c0fb555161ea3b21a164cd1c2))
+
+## [3.83.8](https://github.com/trycompai/comp/compare/v3.83.7...v3.83.8) (2026-06-17)
+
+
+### Bug Fixes
+
+* **auth:** grant admin role portal permission to submit evidence forms ([3386bb2](https://github.com/trycompai/comp/commit/3386bb260a232b7c830d141935299fa6c0cb26d7))
+
+## [3.83.7](https://github.com/trycompai/comp/compare/v3.83.6...v3.83.7) (2026-06-16)
+
+
+### Bug Fixes
+
+* **integration-platform:** parallelize S3 bucket reads to avoid gateway 504s ([23aae17](https://github.com/trycompai/comp/commit/23aae17a28d80f6d933a2f1a9b7d97379b70c458)), closes [#3133](https://github.com/trycompai/comp/issues/3133)
+
+## [3.83.6](https://github.com/trycompai/comp/compare/v3.83.5...v3.83.6) (2026-06-16)
+
+
+### Bug Fixes
+
+* **integration-platform:** run dynamic integration checks on the daily schedule ([db2db18](https://github.com/trycompai/comp/commit/db2db189ed4b3b2f53745ce743bdc01b9e7bba16))
+
+## [3.83.5](https://github.com/trycompai/comp/compare/v3.83.4...v3.83.5) (2026-06-16)
+
+
+### Bug Fixes
+
+* **tasks:** respect evidenceApprovalEnabled when gating task completion ([440f0cc](https://github.com/trycompai/comp/commit/440f0cc7a0befed74acf6ce7b49357639d94464b))
+
+## [3.83.4](https://github.com/trycompai/comp/compare/v3.83.3...v3.83.4) (2026-06-16)
+
+
+### Bug Fixes
+
+* **framework-editor:** also delete timeline templates when deleting a framework ([59aa455](https://github.com/trycompai/comp/commit/59aa455c677eae04d5c70f5baf5314a264f5c136))
+
+## [3.83.3](https://github.com/trycompai/comp/compare/v3.83.2...v3.83.3) (2026-06-16)
+
+
+### Bug Fixes
+
+* **framework-editor:** allow deleting a framework that has versions/instances ([4cf2142](https://github.com/trycompai/comp/commit/4cf2142cf67172d7aa457a58e6761b50adb7e0c1))
+* **framework-editor:** commit changes independently of publishing a version ([e06d446](https://github.com/trycompai/comp/commit/e06d44647362e33730ff36992038d207a6049343))
+
+## [3.83.2](https://github.com/trycompai/comp/compare/v3.83.1...v3.83.2) (2026-06-16)
+
+
+### Bug Fixes
+
+* **integration-platform:** force Google account chooser on connect/reconnect ([13fe965](https://github.com/trycompai/comp/commit/13fe965d226f7c9879de908b883c70d6466536a8))
+
+## [3.83.1](https://github.com/trycompai/comp/compare/v3.83.0...v3.83.1) (2026-06-15)
+
+
+### Bug Fixes
+
+* **policy-editor:** correct insert position, paragraph modify, and multi-edit merge ([7e6d073](https://github.com/trycompai/comp/commit/7e6d073acb5a6500fd083dcbad96babae439c936))
+* **policy-editor:** correct insert-fallback side for unmapped anchors ([789e0a1](https://github.com/trycompai/comp/commit/789e0a1d6c5fad1dc38303e186d4c37042dbf631))
+* **policy-editor:** don't swallow inline formatting-only edits ([750edcd](https://github.com/trycompai/comp/commit/750edcd211c650e0fdb2073b8469d22f8aac00ce))
+* **policy-editor:** stabilize AI Policy Assistant edit pipeline (CS-427) ([2812455](https://github.com/trycompai/comp/commit/2812455ba330edd4f443a31cf567a692af378214))
+* **policy-editor:** use node boundaries for blocks; fix section delete ([0350a9d](https://github.com/trycompai/comp/commit/0350a9d1592fc12102e56d4fa812f06cdb428452))
+
+# [3.83.0](https://github.com/trycompai/comp/compare/v3.82.3...v3.83.0) (2026-06-15)
+
+
+### Bug Fixes
+
+* **automation-builder:** make polling backstop independent of the poll loop ([6417018](https://github.com/trycompai/comp/commit/6417018de92f8ae924efe058fb7dcc1267a4be73))
+* **automation-builder:** stop test dialog hanging on "Running your automation" ([ddf7b34](https://github.com/trycompai/comp/commit/ddf7b34a7c304ad6bfd1ac25b09e036c4000ab2f))
+* **integration-platform:** make refresh lease release ownership-checked ([dc4b3f4](https://github.com/trycompai/comp/commit/dc4b3f4a5da88e298de6f23f2f836daf8caffd70))
+* **integration-platform:** serialize OAuth token refresh per connection ([1821eb2](https://github.com/trycompai/comp/commit/1821eb23830c8d835c1ddce28a5f03487fcce19a))
+
+
+### Features
+
+* **isms:** add CS-437 foundational documents ([5bf86d3](https://github.com/trycompai/comp/commit/5bf86d3987ca86ff9529c5637e4b75b36cb7c21e)), closes [#8](https://github.com/trycompai/comp/issues/8) [#9](https://github.com/trycompai/comp/issues/9) [#6](https://github.com/trycompai/comp/issues/6) [#7](https://github.com/trycompai/comp/issues/7) [#1](https://github.com/trycompai/comp/issues/1) [#2](https://github.com/trycompai/comp/issues/2) [#4](https://github.com/trycompai/comp/issues/4) [#5](https://github.com/trycompai/comp/issues/5) [#3](https://github.com/trycompai/comp/issues/3) [#11](https://github.com/trycompai/comp/issues/11) [#10](https://github.com/trycompai/comp/issues/10) [#2992](https://github.com/trycompai/comp/issues/2992) [mutation-throu#to-hook](https://github.com/mutation-throu/issues/to-hook)
+
+## [3.82.3](https://github.com/trycompai/comp/compare/v3.82.2...v3.82.3) (2026-06-15)
+
+
+### Bug Fixes
+
+* **framework-editor:** raise all import description limits to 10k ([e2f22a2](https://github.com/trycompai/comp/commit/e2f22a2c6162069e79c611b5d0fbf9f8f5c6bbe1))
+* **framework-editor:** unblock framework import (10k requirement limit + content shape) ([09aeba6](https://github.com/trycompai/comp/commit/09aeba6787a4d9d398c9a3d5064361ef27554605))
+
+## [3.82.2](https://github.com/trycompai/comp/compare/v3.82.1...v3.82.2) (2026-06-15)
+
+
+### Bug Fixes
+
+* **sentry:** only report errors from the production environment ([f1e8e8f](https://github.com/trycompai/comp/commit/f1e8e8f30a963f07c6702d2ed8cf4852ff98cfe5))
+
+## [3.82.1](https://github.com/trycompai/comp/compare/v3.82.0...v3.82.1) (2026-06-15)
+
+
+### Bug Fixes
+
+* **cloud-security:** address cubic review on exception handling ([bd1b774](https://github.com/trycompai/comp/commit/bd1b774b48cde7cdeea856bc7421e99f40ae5f76))
+* **cloud-security:** honor finding exceptions in integration task checks ([10c89fa](https://github.com/trycompai/comp/commit/10c89fae9b3c783ec6246bf5ccbd989d70b2d8f6))
+
+# [3.82.0](https://github.com/trycompai/comp/compare/v3.81.0...v3.82.0) (2026-06-12)
+
+
+### Bug Fixes
+
+* **analytics:** fall back to server-evaluated feature flags when posthog-js is blocked ([0653950](https://github.com/trycompai/comp/commit/065395056e8608eb6989f57cd123178b2dfa7655))
+* **cloud-security:** address cubic review on AWS-on-server checks ([aa23647](https://github.com/trycompai/comp/commit/aa23647c29dd3a6fd6e2e4b963a0e11f5dc1ab32))
+* **cloud-security:** exempt internal check-run endpoint from throttle + validate creds by auth type ([91ca27b](https://github.com/trycompai/comp/commit/91ca27b8ac6ad4c14ec469c7a4a35d6eb43758f6))
+* **cloud-security:** re-throw non-AWS errors in the per-check catch ([577bc05](https://github.com/trycompai/comp/commit/577bc057f0c564a9193188c523a8951f50b2bbf5))
+* **cloud-security:** run AWS integration checks on our server (scheduled false-fails) ([ade4bfa](https://github.com/trycompai/comp/commit/ade4bfacbf6041a8b6d26f2d96debf1ba2bd4793))
+* **framework-editor:** detect framework name/description-only changes for publish ([b6e8240](https://github.com/trycompai/comp/commit/b6e824070d5283673cb429bdf818dbdfaee48812))
+* **framework-editor:** flip Linked Controls panel up when clipped at bottom ([0483f3c](https://github.com/trycompai/comp/commit/0483f3ce44941a42201838bf7cdfca318e16117e))
+
+
+### Features
+
+* **app:** add expand-to-read for long requirement descriptions ([a7d30f3](https://github.com/trycompai/comp/commit/a7d30f32254f9538e28bb533f29f52d6e716e650))
+* **framework-editor:** add dark mode ([cc03bc2](https://github.com/trycompai/comp/commit/cc03bc2beedac44219c2bf190ad057b4ec421d63))
+* **framework-editor:** add save-as-draft and save-and-commit buttons ([bb7064b](https://github.com/trycompai/comp/commit/bb7064b8f8d0ac14855b4afc85ff61ccc1043a31))
+* **framework-editor:** resizable + size-remembering description editor ([9ef22dc](https://github.com/trycompai/comp/commit/9ef22dc5efc60aca3d9a09bc7659b1f93503fd20))
+* **framework-editor:** show requirement context in edit dialog + highlight row ([aad9701](https://github.com/trycompai/comp/commit/aad970122e03ad4b15c02eb0b01932bb2e93f470))
+
+# [3.81.0](https://github.com/trycompai/comp/compare/v3.80.0...v3.81.0) (2026-06-12)
+
+
+### Features
+
+* **framework-editor:** raise requirement description limit to 10,000 chars ([75d9c5d](https://github.com/trycompai/comp/commit/75d9c5ddaf1e26889e8bc4fe52db71958c09cce8))
+
+# [3.80.0](https://github.com/trycompai/comp/compare/v3.79.1...v3.80.0) (2026-06-12)
+
+
+### Bug Fixes
+
+* **api:** paginate + time-bound the MCP release lookup ([760ef2f](https://github.com/trycompai/comp/commit/760ef2f6c8b20c5cf04ba3425d61ce2dc45add54))
+* **frameworks:** let unpinned instances adopt version updates (FRAME-2) ([d4f1d49](https://github.com/trycompai/comp/commit/d4f1d49d07bf1aa3abe6290f30f9e833d357e2e1))
+
+
+### Features
+
+* **api:** stable download URLs for MCP server artifacts ([9420bf0](https://github.com/trycompai/comp/commit/9420bf025b213799d3f5754e184de911d24f4f3e))
+
+## [3.79.1](https://github.com/trycompai/comp/compare/v3.79.0...v3.79.1) (2026-06-12)
+
+
+### Bug Fixes
+
+* **cloud-security:** stamp findingKey on AWS checks so findings can be excepted ([5b52c79](https://github.com/trycompai/comp/commit/5b52c79afd9566692f162d83d4757e20abb421c6))
+
+# [3.79.0](https://github.com/trycompai/comp/compare/v3.78.4...v3.79.0) (2026-06-12)
+
+
+### Bug Fixes
+
+* **pentest:** address review findings on finding-context flow ([9bf3bb1](https://github.com/trycompai/comp/commit/9bf3bb1c5a1d7471b8f24da15095fd95263d7506))
+* **pentest:** cap the composed additionalContext briefing at 20k chars ([7485b03](https://github.com/trycompai/comp/commit/7485b03555432f60105686aa561d5f7c496e8e35))
+* **pentest:** reject whitespace-only provider target URLs in context upsert ([1a45397](https://github.com/trycompai/comp/commit/1a45397a27bb461e04b5a8b9102afdf997a6cd08))
+
+
+### Features
+
+* **pentest:** append customer context appendix to report downloads ([5f59df7](https://github.com/trycompai/comp/commit/5f59df71166bd88cc236076d7af261983227fd6c))
+* **pentest:** let customers add context to findings so retests are informed ([4f0dfc5](https://github.com/trycompai/comp/commit/4f0dfc5dca343eb613e72165e88e4018c90dacb8))
+
+## [3.78.4](https://github.com/trycompai/comp/compare/v3.78.3...v3.78.4) (2026-06-11)
+
+
+### Bug Fixes
+
+* **cloud-security:** don't let a fully-failed GCP/Azure scan wipe good results ([d893eb6](https://github.com/trycompai/comp/commit/d893eb65aac033afdf57b0d0ee06b70d9710e2b7))
+* **cloud-security:** map SCC 404 NOT_FOUND to the actionable SCC_NOT_ACTIVATED error ([d36d908](https://github.com/trycompai/comp/commit/d36d9089bb59d3a6a481a58f02e65642a87fa6df))
+
+## [3.78.3](https://github.com/trycompai/comp/compare/v3.78.2...v3.78.3) (2026-06-11)
+
+
+### Bug Fixes
+
+* **trust-portal:** use NDA-free copy in access-granted email when NDA is bypassed ([9920760](https://github.com/trycompai/comp/commit/99207602754943c41374f6bd9c0860bceed0e0ae))
+
+## [3.78.2](https://github.com/trycompai/comp/compare/v3.78.1...v3.78.2) (2026-06-11)
+
+
+### Bug Fixes
+
+* **assistant-chat:** scope chat to membership-verified org ([2294c2e](https://github.com/trycompai/comp/commit/2294c2eb26b49dfb34d3088dc2e8040e8505ce83))
+
+## [3.78.1](https://github.com/trycompai/comp/compare/v3.78.0...v3.78.1) (2026-06-11)
+
+
+### Bug Fixes
+
+* **integration-platform:** skip GCP projects whose service API is disabled instead of a false permission finding ([e554269](https://github.com/trycompai/comp/commit/e554269c02f6432473e8e0bf168dd2d475f6311f))
+
+# [3.78.0](https://github.com/trycompai/comp/compare/v3.77.0...v3.78.0) (2026-06-11)
+
+
+### Bug Fixes
+
+* guard optimistic state sync and align picker page cap (cubic on [#3095](https://github.com/trycompai/comp/issues/3095)) ([c39011f](https://github.com/trycompai/comp/commit/c39011fe803c01855558361b8b658fb028545cb1))
+* **integration-platform:** isolate per-subscription wildcard scan + graceful subscription picker ([62fd692](https://github.com/trycompai/comp/commit/62fd6927be813c3592075ca801b77ae9f3f61d9b))
+* **integration-platform:** make multi-subscription scanning strictly opt-in ([c1bce47](https://github.com/trycompai/comp/commit/c1bce471fad128a1100f4fb142938ed27e343165))
+* **integration-platform:** stamp account attribution on account-level AWS findings ([1493c5c](https://github.com/trycompai/comp/commit/1493c5c50eb48d057bfba411bd52eed8f229e7ce)), closes [#3086](https://github.com/trycompai/comp/issues/3086) [#3065](https://github.com/trycompai/comp/issues/3065)
+* **integration-platform:** surface real read errors in azure/gcp checks (CS-534 part 1) ([91135b2](https://github.com/trycompai/comp/commit/91135b2adb80851c309e3023c8beee69063e7be4))
+* **integration-platform:** surface real read errors in cloudtrail/kms/iam/ec2/rds checks (CS-533) ([5d7e2a0](https://github.com/trycompai/comp/commit/5d7e2a001dc2cdfe00ed68b2fafd3a6bfc3bb83b)), closes [#3075](https://github.com/trycompai/comp/issues/3075)
+* **integration-platform:** surface the subscription scan cap as an explicit finding ([e6dda8c](https://github.com/trycompai/comp/commit/e6dda8c14ba88536e8336b3a343c70c9f8e939c5))
+* **integrations:** gate the Add-account CTA on integration:create RBAC ([6c35625](https://github.com/trycompai/comp/commit/6c35625d6dd38cd77b44322cf1c21ccedc3c37c5))
+* resolve cubic findings from the production deploy review ([#3087](https://github.com/trycompai/comp/issues/3087)) ([9f30138](https://github.com/trycompai/comp/commit/9f3013854bc2a86bffc35c57ad2fb9c570c117b0))
+* **trust-portal:** resync custom-framework state + mark response fields nullable ([ec5ba44](https://github.com/trycompai/comp/commit/ec5ba440965293de95de03b6ba104ca4d70e46fc))
+* **trust-portal:** validate allowed-emails body with a DTO ([06ed9bd](https://github.com/trycompai/comp/commit/06ed9bd3da20245e22ac57531f19518b132f83b3))
+* **trust:** gate certificate drag-and-drop behind the read-only permission ([086bf7c](https://github.com/trycompai/comp/commit/086bf7c4f6396f8f4a13281fd2678ed72e4686e0))
+* **trust:** reset the certificate file input on every selection, not only success ([7d51e2c](https://github.com/trycompai/comp/commit/7d51e2cce240395bccf2e42a19843a6486fc9713))
+* **trust:** resolve 4 cubic findings from the production deploy review ([c2b9122](https://github.com/trycompai/comp/commit/c2b91222c3f0c3dbce37433809426a37ef65657f))
+* **trust:** return 400 not 500 on malformed PUT /custom-frameworks body ([bb30749](https://github.com/trycompai/comp/commit/bb3074948e8d6de94d45fc6eb2533bae0086fae0))
+
+
+### Features
+
+* **integration-platform:** scan all enabled Azure subscriptions (CS-534 part 2) ([9912b9a](https://github.com/trycompai/comp/commit/9912b9a54a220c33c62fdb8ebac453958a2dbdba))
+* **trust-portal:** add per-email NDA-bypass allowlist ([3e3ed70](https://github.com/trycompai/comp/commit/3e3ed70d59af17a3189065804f33e4ef20aaee67))
+* **trust-portal:** display custom frameworks on the trust portal ([e9ed93d](https://github.com/trycompai/comp/commit/e9ed93df7740d23279ca461550a6c5cbe2187351))
+
+# [3.77.0](https://github.com/trycompai/comp/compare/v3.76.0...v3.77.0) (2026-06-10)
+
+
+### Bug Fixes
+
+* **evidence-forms:** hide Account Types from the global Documents browse list ([628b220](https://github.com/trycompai/comp/commit/628b22004905db8aae7651d923182eac4691a5d2))
+* **evidence-forms:** mark Account Types optional so it doesn't change org scores ([680e47d](https://github.com/trycompai/comp/commit/680e47d5b86c109d6cbd921868e2e5be70a1d898))
+* **framework-editor:** default Controls tab to Name A-Z sort (CS-511) ([2b30fa7](https://github.com/trycompai/comp/commit/2b30fa74b0422505203d9b0b760f02608c64697e))
+
+
+### Features
+
+* **evidence-forms:** add Account Types document type (CS-513) ([9b6e610](https://github.com/trycompai/comp/commit/9b6e610afcde183fe5fc177933fef60867cf6464))
+* **framework-editor:** remove Control Family column from Controls tab (CS-512) ([f60775c](https://github.com/trycompai/comp/commit/f60775c0cab4f4aa28c13e18a7ec3ef127c698d0))
+
+# [3.76.0](https://github.com/trycompai/comp/compare/v3.75.0...v3.76.0) (2026-06-10)
+
+
+### Features
+
+* **framework-editor:** multi-line editor for Requirement descriptions (CS-513) ([750fa17](https://github.com/trycompai/comp/commit/750fa177c680a8a6023e4e6d250e503e386deb48)), closes [#3078](https://github.com/trycompai/comp/issues/3078)
+
+# [3.75.0](https://github.com/trycompai/comp/compare/v3.74.5...v3.75.0) (2026-06-10)
+
+
+### Features
+
+* **framework-editor:** multi-line editor for long control descriptions ([4896365](https://github.com/trycompai/comp/commit/4896365bd5bb41392498dfdc4691eb6ecc056128))
+
+## [3.74.5](https://github.com/trycompai/comp/compare/v3.74.4...v3.74.5) (2026-06-10)
+
+
+### Bug Fixes
+
+* **framework-editor:** let "Add Existing Control" pick requirements instead of linking all ([dde15af](https://github.com/trycompai/comp/commit/dde15af3fce38ace12762f55b19d12c83010347d))
+* **framework-editor:** treat null requirementIds as link-all, not a crash ([7b24fb6](https://github.com/trycompai/comp/commit/7b24fb6c1a1a1dd983778e073f4b9ad073255156))
+* **integration-platform:** log degraded region routing when paginated ListBuckets is rejected ([5f3e4f2](https://github.com/trycompai/comp/commit/5f3e4f2eca7555e92ba3c152a5999c58bb10fede))
+* **integration-platform:** route S3 bucket reads to each bucket's own region ([9f6e6f6](https://github.com/trycompai/comp/commit/9f6e6f65f1b0804096b54cf49b86edc8c33dc4dd))
+* **integration-platform:** surface real S3 read errors instead of claiming missing permissions ([8f2bb19](https://github.com/trycompai/comp/commit/8f2bb19be21aa36be29dc0294871230b96e5dd30))
+
+## [3.74.4](https://github.com/trycompai/comp/compare/v3.74.3...v3.74.4) (2026-06-10)
+
+
+### Bug Fixes
+
+* **framework-editor:** drop @vitejs/plugin-react from vitest config ([716205c](https://github.com/trycompai/comp/commit/716205c3e63f7d6595ee0b82d5976ff1059e6726))
+* **framework-editor:** prevent silent loss of new requirements and controls ([e231fcc](https://github.com/trycompai/comp/commit/e231fcc31d16d1e561574f41309784aa8086f3b3))
+
+## [3.74.3](https://github.com/trycompai/comp/compare/v3.74.2...v3.74.3) (2026-06-09)
+
+
+### Bug Fixes
+
+* **policies:** show a draft version's own content when editing it ([a10aa2a](https://github.com/trycompai/comp/commit/a10aa2a6a9621a2d1fd6501098795e7052486d1e))
+
+## [3.74.2](https://github.com/trycompai/comp/compare/v3.74.1...v3.74.2) (2026-06-09)
+
+
+### Bug Fixes
+
+* **cloud-security:** run task evidence checks against all connected accounts ([bdb6b3b](https://github.com/trycompai/comp/commit/bdb6b3b0d7976b2f3c098edf13d8fda8a57c13ab))
+* **cloud-security:** tenant-scope the task check-runs endpoint ([612d624](https://github.com/trycompai/comp/commit/612d62403be69d11420cd767367cd0389d5f6c63)), closes [#3067](https://github.com/trycompai/comp/issues/3067)
+* **cloud-security:** validate run-history limit and reject inactive connections ([c82f9fc](https://github.com/trycompai/comp/commit/c82f9fc3d4d130cb2a483bb52a314cbbcb297c29))
+* **people:** respect "Send portal invite email" opt-out when adding users ([18144fd](https://github.com/trycompai/comp/commit/18144fd7622b20a9db271b7357f3107d1ca080c7))
+
+## [3.74.1](https://github.com/trycompai/comp/compare/v3.74.0...v3.74.1) (2026-06-09)
+
+
+### Bug Fixes
+
+* **integration-platform:** attribute AWS check findings to their AWS account ([06a237d](https://github.com/trycompai/comp/commit/06a237d772beca1147ec1e3eed9d08d4c5dc5611))
+* **integration-platform:** show the customer's AWS connection name alongside the account ([69c84c8](https://github.com/trycompai/comp/commit/69c84c85badc226c40d9773d561548e20b84b6b0))
+
 # [3.74.0](https://github.com/trycompai/comp/compare/v3.73.3...v3.74.0) (2026-06-08)
 
 

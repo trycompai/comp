@@ -87,10 +87,30 @@ export class OrganizationService {
         throw new NotFoundException(`Organization with ID ${id} not found`);
       }
 
-      // Update the organization with only provided fields
+      // Persist only the profile fields an organization owner may change.
+      // Platform- and billing-managed flags are set through their own flows.
+      const data = {
+        name: updateData.name,
+        slug: updateData.slug,
+        logo: updateData.logo,
+        metadata: updateData.metadata,
+        website: updateData.website,
+        onboardingCompleted: updateData.onboardingCompleted,
+        fleetDmLabelId: updateData.fleetDmLabelId,
+        isFleetSetupCompleted: updateData.isFleetSetupCompleted,
+        primaryColor: updateData.primaryColor,
+        advancedModeEnabled: updateData.advancedModeEnabled,
+        backgroundCheckStepEnabled: updateData.backgroundCheckStepEnabled,
+        evidenceApprovalEnabled: updateData.evidenceApprovalEnabled,
+        deviceAgentStepEnabled: updateData.deviceAgentStepEnabled,
+        securityTrainingStepEnabled: updateData.securityTrainingStepEnabled,
+        whistleblowerReportEnabled: updateData.whistleblowerReportEnabled,
+        accessRequestFormEnabled: updateData.accessRequestFormEnabled,
+      };
+
       const updatedOrganization = await db.organization.update({
         where: { id },
-        data: updateData,
+        data,
         select: {
           id: true,
           name: true,

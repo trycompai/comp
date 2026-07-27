@@ -12,6 +12,7 @@ import { Prisma } from '@db';
 import type { TriggerVendorRiskAssessmentVendorDto } from './dto/trigger-vendor-risk-assessment.dto';
 import { resolveTaskCreatorAndAssignee } from '../trigger/vendor/vendor-risk-assessment/assignee';
 import { resolveStrategyDescriptionUpdate } from '../risks/strategy-descriptions';
+import { isMemberOrgParticipant } from '../utils/org-participation';
 
 const normalizeWebsite = (
   website: string | null | undefined,
@@ -225,7 +226,12 @@ export class VendorsService {
       where: { id: assigneeId, organizationId },
       include: { user: { select: { role: true } } },
     });
-    if (member?.user.role === 'admin') {
+    if (!member) {
+      throw new BadRequestException(
+        'Assignee is not a member of this organization',
+      );
+    }
+    if (!(await isMemberOrgParticipant(member.user.role, organizationId))) {
       throw new BadRequestException(
         'Cannot assign a platform admin as assignee',
       );

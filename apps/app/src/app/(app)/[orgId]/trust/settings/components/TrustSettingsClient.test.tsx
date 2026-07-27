@@ -20,6 +20,7 @@ vi.mock('@/hooks/use-trust-portal-settings', () => ({
     submitCustomDomain: vi.fn(),
     checkDns: vi.fn(),
     updateAllowedDomains: vi.fn(),
+    updateAllowedEmails: vi.fn(),
   }),
 }));
 
@@ -68,6 +69,7 @@ describe('TrustSettingsClient permission gating', () => {
     isVercelDomain: false,
     vercelVerification: null,
     allowedDomains: ['example.com'],
+    allowedEmails: ['vip@partner.com'],
   };
 
   beforeEach(() => {
@@ -81,6 +83,7 @@ describe('TrustSettingsClient permission gating', () => {
     expect(screen.getByText('Contact Information')).toBeInTheDocument();
     expect(screen.getByText('Configure Custom Domain')).toBeInTheDocument();
     expect(screen.getByText('NDA Bypass - Allowed Domains')).toBeInTheDocument();
+    expect(screen.getByText('NDA Bypass - Allowed Emails')).toBeInTheDocument();
   });
 
   it('enables contact email input when user has trust:update permission', () => {

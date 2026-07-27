@@ -65,8 +65,9 @@ export function DeleteFrameworkDialog({
             Are you sure you want to delete {`"${frameworkName}"`}?
           </AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete the framework and all of its
-            associated requirements.
+            This action cannot be undone. This will permanently delete the framework, all of its
+            requirements and published versions, and remove it from any organizations currently
+            tracking it.
             {error && <p className="text-destructive mt-2 text-sm font-medium">Error: {error}</p>}
           </AlertDialogDescription>
         </AlertDialogHeader>

@@ -1,6 +1,12 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
-import { ARM_BASE, armListAllOrFail, resolveAzureSubscriptionId } from './shared';
+import {
+  combineReadFailures,
+  remediationForReadFailure,
+  toHttpReadFailure,
+  type ReadFailure,
+} from '../../http-read-failure';
+import { ARM_BASE, armListAllOrFail, resolveAzureSubscriptionIds } from './shared';
 
 // Pinned stable api-version for Azure Database for PostgreSQL Flexible Server.
 // NOTE: PostgreSQL is a SEPARATE resource provider from MySQL with its own
@@ -84,15 +90,17 @@ async function readConfig(
   ctx: CheckContext,
   serverId: string,
   name: string,
-): Promise<{ ok: true; value: string } | { ok: false }> {
+): Promise<{ ok: true; value: string } | { ok: false; failure: ReadFailure }> {
   try {
     const res = await ctx.fetch<PgConfiguration>(
       `${ARM_BASE}${serverId}/configurations/${name}?api-version=${POSTGRES_API_VERSION}`,
     );
     const value = res?.properties?.value;
     return { ok: true, value: typeof value === 'string' ? value : '' };
-  } catch {
-    return { ok: false };
+  } catch (err) {
+    const failure = toHttpReadFailure(err);
+    ctx.log(`PostgreSQL ${serverId}: could not read ${name} — ${failure.error}`);
+    return { ok: false, failure };
   }
 }
 
@@ -104,16 +112,7 @@ async function readConfig(
  * customer running only PostgreSQL Flexible Server gets 0 servers found by the
  * Azure SQL check → "0 passed" for the TLS task (the reported bug class).
  */
-export const postgresqlFlexibleTlsCheck: IntegrationCheck = {
-  id: 'azure-postgresql-flexible-tls',
-  name: 'Database for PostgreSQL — TLS 1.2 enforced',
-  description:
-    'Verify Azure Database for PostgreSQL Flexible Servers require secure transport and a minimum TLS version of 1.2.',
-  service: 'postgresql-flexible',
-  taskMapping: TASK_TEMPLATES.tlsHttps,
-  run: async (ctx: CheckContext) => {
-    const sub = await resolveAzureSubscriptionId(ctx);
-    if (!sub) return;
+async function runPostgresqlFlexibleTlsForSubscription(ctx: CheckContext, sub: string): Promise<void> {
     const servers = await listPgFlexibleServers(ctx, sub);
     if (!servers) return;
     if (servers.length === 0) return;
@@ -126,15 +125,23 @@ export const postgresqlFlexibleTlsCheck: IntegrationCheck = {
       // back as an empty string on a SUCCESSFUL response, which evaluatePgTls
       // treats as a compliant TLS 1.2 floor; that is distinct from a failed read.)
       if (!requireSecure.ok || !sslMin.ok) {
+        const combined = combineReadFailures(
+          [requireSecure, sslMin].flatMap((r) => (r.ok ? [] : [r.failure])),
+        );
         ctx.fail({
           title: `Could not verify PostgreSQL TLS settings: ${s.name}`,
-          description: `Unable to read the TLS server parameters for PostgreSQL flexible server "${s.name}", so TLS enforcement cannot be verified.`,
+          description: `Unable to read the TLS server parameters for PostgreSQL flexible server "${s.name}"${combined ? ` (${combined.error})` : ''}, so TLS enforcement cannot be verified.`,
           resourceType: 'azure-postgresql-flexible-server',
           resourceId: s.id,
           severity: 'medium',
-          remediation:
+          remediation: remediationForReadFailure(
+            combined,
             'Grant read access to server configurations (Microsoft.DBforPostgreSQL/flexibleServers/configurations/read), then re-run the check.',
-          evidence: { server: s.name },
+          ),
+          evidence: {
+            server: s.name,
+            ...(combined ? { readError: combined.error } : {}),
+          },
         });
         continue;
       }
@@ -165,6 +172,20 @@ export const postgresqlFlexibleTlsCheck: IntegrationCheck = {
           evidence,
         });
       }
+    }
+}
+
+export const postgresqlFlexibleTlsCheck: IntegrationCheck = {
+  id: 'azure-postgresql-flexible-tls',
+  name: 'Database for PostgreSQL — TLS 1.2 enforced',
+  description:
+    'Verify Azure Database for PostgreSQL Flexible Servers require secure transport and a minimum TLS version of 1.2.',
+  service: 'postgresql-flexible',
+  taskMapping: TASK_TEMPLATES.tlsHttps,
+  run: async (ctx: CheckContext) => {
+    const subs = await resolveAzureSubscriptionIds(ctx);
+    for (const sub of subs) {
+      await runPostgresqlFlexibleTlsForSubscription(ctx, sub);
     }
   },
 };

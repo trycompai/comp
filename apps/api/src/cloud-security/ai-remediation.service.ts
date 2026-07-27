@@ -53,19 +53,19 @@ export class AiRemediationService {
   /** Phase 1: Generate initial plan (read steps + preliminary fix plan). */
   async generateFixPlan(finding: FindingContext): Promise<FixPlan> {
     try {
-      let plan = await this.requestFixPlan(finding, 0);
+      let plan = await this.requestFixPlan(finding);
 
       // The model occasionally returns canAutoFix=true with zero fixSteps, or
       // the normalizer strips every step (e.g. unsupported S3 ACL calls). That
       // surfaces to the user as "AI generated an empty fix plan. Cannot
       // proceed." and — combined with plan caching — a Retry that does
-      // nothing. Generation is non-deterministic, so retry ONCE at a higher
-      // temperature to force a genuinely different sample before giving up.
+      // nothing. Generation is non-deterministic, so regenerate ONCE to force a
+      // genuinely different sample before giving up.
       if (plan.canAutoFix && plan.fixSteps.length === 0) {
         this.logger.warn(
-          `Empty fix plan for ${finding.findingKey}; regenerating once at higher temperature`,
+          `Empty fix plan for ${finding.findingKey}; regenerating once`,
         );
-        const retry = await this.requestFixPlan(finding, 0.5);
+        const retry = await this.requestFixPlan(finding);
         // Prefer the retry if it is usable (has steps) OR if it correctly
         // concludes the finding is not auto-fixable — either is better than
         // returning the original empty canAutoFix=true plan (which only yields
@@ -84,16 +84,16 @@ export class AiRemediationService {
   }
 
   /** Single fix-plan generation pass (generate → enrich → normalize). */
-  private async requestFixPlan(
-    finding: FindingContext,
-    temperature: number,
-  ): Promise<FixPlan> {
+  private async requestFixPlan(finding: FindingContext): Promise<FixPlan> {
+    // NOTE: claude-opus-4-8 rejects the `temperature` parameter
+    // ("temperature is deprecated for this model" → 400), which previously
+    // made every plan generation throw and silently fall back to manual
+    // remediation steps. Do not re-add `temperature` to MODEL calls.
     const { object } = await generateObject({
       model: MODEL,
       schema: fixPlanSchema,
       system: SYSTEM_PROMPT,
       prompt: buildFixPlanPrompt(finding),
-      temperature,
     });
 
     this.logger.log(
@@ -133,7 +133,6 @@ IMPORTANT:
 3. ALWAYS overestimate permissions. It is much better to request 5 extra permissions than to fail mid-execution because one was missing.
 
 Generate the complete fix plan with EXACT values from the real AWS state.`,
-        temperature: 0,
       });
 
       this.logger.log(`AI refined plan for ${params.finding.findingKey}`);
@@ -185,7 +184,6 @@ List EVERY IAM action needed. Include:
 - Read permissions needed for validation (e.g., cloudtrail:GetTrailStatus after creating a trail)
 
 OVERESTIMATE. Better to have 5 extra permissions than to miss one.`,
-        temperature: 0,
       });
 
       this.logger.log(
@@ -217,7 +215,6 @@ OVERESTIMATE. Better to have 5 extra permissions than to miss one.`,
           failedStep: params.failedStep,
           roleName: REMEDIATION_ROLE_NAME,
         }),
-        temperature: 0,
       });
 
       const policy = JSON.stringify({
@@ -329,7 +326,6 @@ INSTRUCTIONS:
 3. If the error says "failed to satisfy constraint" or "regular expression pattern", fix the value to match.
 4. Keep the same service and command — do not switch to a different API.
 5. Return a complete AwsCommandStep with all required schema fields.`,
-        temperature: 0,
       });
 
       this.logger.log(
@@ -465,17 +461,17 @@ Produce 3-8 ordered steps. Each step is a single concrete action the customer ca
   async generateGcpFixPlan(finding: FindingContext): Promise<GcpFixPlan> {
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        let object = await this.requestGcpFixPlan(finding, 0);
+        let object = await this.requestGcpFixPlan(finding);
 
         // canAutoFix=true with zero fixSteps surfaces as "AI generated an
         // empty fix plan" and (with caching) a Retry that does nothing.
-        // Generation is non-deterministic — retry once at a higher
-        // temperature to force a genuinely different sample.
+        // Generation is non-deterministic — regenerate once to force a
+        // genuinely different sample.
         if (object.canAutoFix && object.fixSteps.length === 0) {
           this.logger.warn(
-            `Empty GCP fix plan for ${finding.findingKey}; regenerating once at higher temperature`,
+            `Empty GCP fix plan for ${finding.findingKey}; regenerating once`,
           );
-          const retry = await this.requestGcpFixPlan(finding, 0.5);
+          const retry = await this.requestGcpFixPlan(finding);
           // Prefer a retry that is usable OR correctly non-auto-fixable —
           // either beats returning the original empty canAutoFix=true plan.
           if (retry.fixSteps.length > 0 || !retry.canAutoFix) object = retry;
@@ -499,14 +495,13 @@ Produce 3-8 ordered steps. Each step is a single concrete action the customer ca
   /** Single GCP fix-plan generation pass. */
   private async requestGcpFixPlan(
     finding: FindingContext,
-    temperature: number,
   ): Promise<GcpFixPlan> {
+    // MODEL (claude-opus-4-8) rejects `temperature` — do not re-add it.
     const { object } = await generateObject({
       model: MODEL,
       schema: gcpFixPlanSchema,
       system: GCP_SYSTEM_PROMPT,
       prompt: buildGcpFixPlanPrompt(finding),
-      temperature,
     });
     return object;
   }
@@ -538,7 +533,6 @@ CRITICAL INSTRUCTIONS:
 6. The "body" field is sent directly as JSON to fetch(). If it contains strings like "enabled for all services" instead of actual JSON, the API will ignore it silently.
 
 Generate the complete fix plan with EXACT JSON values from the real GCP state.`,
-        temperature: 0,
       });
 
       this.logger.log(`GCP AI refined plan for ${params.finding.findingKey}`);
@@ -555,17 +549,17 @@ Generate the complete fix plan with EXACT JSON values from the real GCP state.`,
 
   async generateAzureFixPlan(finding: FindingContext): Promise<AzureFixPlan> {
     try {
-      let object = await this.requestAzureFixPlan(finding, 0);
+      let object = await this.requestAzureFixPlan(finding);
 
       // canAutoFix=true with zero fixSteps surfaces as "AI generated an empty
       // fix plan" and (with caching) a Retry that does nothing. Generation is
-      // non-deterministic — retry once at a higher temperature to force a
-      // genuinely different sample.
+      // non-deterministic — regenerate once to force a genuinely different
+      // sample.
       if (object.canAutoFix && object.fixSteps.length === 0) {
         this.logger.warn(
-          `Empty Azure fix plan for ${finding.findingKey}; regenerating once at higher temperature`,
+          `Empty Azure fix plan for ${finding.findingKey}; regenerating once`,
         );
-        const retry = await this.requestAzureFixPlan(finding, 0.5);
+        const retry = await this.requestAzureFixPlan(finding);
         // Prefer a retry that is usable OR correctly non-auto-fixable —
         // either beats returning the original empty canAutoFix=true plan.
         if (retry.fixSteps.length > 0 || !retry.canAutoFix) object = retry;
@@ -586,14 +580,13 @@ Generate the complete fix plan with EXACT JSON values from the real GCP state.`,
   /** Single Azure fix-plan generation pass. */
   private async requestAzureFixPlan(
     finding: FindingContext,
-    temperature: number,
   ): Promise<AzureFixPlan> {
+    // MODEL (claude-opus-4-8) rejects `temperature` — do not re-add it.
     const { object } = await generateObject({
       model: MODEL,
       schema: azureFixPlanSchema,
       system: AZURE_SYSTEM_PROMPT,
       prompt: buildAzureFixPlanPrompt(finding),
-      temperature,
     });
     return object;
   }
@@ -622,7 +615,6 @@ IMPORTANT:
 3. Make sure all URLs include the correct api-version parameter.
 
 Generate the complete fix plan with EXACT values from the real Azure state.`,
-        temperature: 0,
       });
 
       this.logger.log(`Azure AI refined plan for ${params.finding.findingKey}`);

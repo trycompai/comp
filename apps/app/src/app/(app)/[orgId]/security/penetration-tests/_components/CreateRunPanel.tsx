@@ -22,6 +22,7 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 import { AuthorizationConsentField } from './AuthorizationConsentField';
 import { CreateRunTargetFields } from './CreateRunTargetFields';
+import { RunContextField } from './RunContextField';
 import { RunExpectationSummary } from './RunExpectationSummary';
 import { ScanAdvancedOptions } from './ScanAdvancedOptions';
 import { ScanProfilePicker } from './ScanProfilePicker';
@@ -71,6 +72,10 @@ const createRunSchema = z.object({
     .refine((value) => value === true, {
       message: 'Confirm you own or are authorized to test this target.',
     }),
+  additionalContext: z
+    .string()
+    .max(4000, 'Keep context under 4000 characters.')
+    .optional(),
 });
 
 export type CreateRunForm = z.infer<typeof createRunSchema>;
@@ -98,11 +103,14 @@ export function CreateRunPanel({
       evidenceLevel: standardDefaults.evidenceLevel,
       checks: standardDefaults.checks,
       authorized: false,
+      additionalContext: '',
     },
   });
   const evidenceLevel = form.watch('evidenceLevel');
   const checks = form.watch('checks');
   const authorized = form.watch('authorized');
+  const targetUrlValue = form.watch('targetUrl');
+  const normalizedTargetUrl = useMemo(() => normalizeUrl(targetUrlValue), [targetUrlValue]);
   const effectiveMode = useMemo(
     () =>
       resolveEffectiveScanMode({
@@ -180,6 +188,9 @@ export function CreateRunPanel({
         scanDepth: submitScanDepth,
         evidenceLevel: values.evidenceLevel,
         checks: values.checks,
+        ...(values.additionalContext?.trim()
+          ? { additionalContext: values.additionalContext.trim() }
+          : {}),
       });
       router.push(`/${orgId}/security/penetration-tests/${encodeURIComponent(result.id)}`);
     } catch {
@@ -234,6 +245,8 @@ export function CreateRunPanel({
           />
 
           <CreateRunTargetFields form={form} />
+
+          <RunContextField orgId={orgId} targetUrl={normalizedTargetUrl} form={form} />
 
           <ScanAdvancedOptions
             open={advancedOpen}

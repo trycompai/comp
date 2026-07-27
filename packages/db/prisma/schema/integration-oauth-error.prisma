@@ -1,0 +1,24 @@
+// ===== Integration OAuth error capture =====
+// Append-only diagnostic log of OAuth callback errors, recorded by the frontend
+// when an OAuth connect redirects back with `?error=...&error_description=...`.
+// This makes failed connects diagnosable after the fact (the redirect error was
+// previously shown to no one and stored nowhere). No FK relations — it must be
+// writable even when no IntegrationConnection exists yet (connect failed before
+// one was created). Never stores secrets (no auth `code`, no tokens).
+model IntegrationOAuthError {
+  id               String   @id @default(dbgenerated("generate_prefixed_cuid('ioe'::text)"))
+  /// Organization that initiated the OAuth flow.
+  organizationId   String
+  /// User that initiated it (from the session), if available.
+  userId           String?
+  /// Provider slug (e.g. "quickbooks-online", "zoho-crm").
+  providerSlug     String
+  /// OAuth error code from the provider redirect (e.g. "access_denied", "token_exchange_failed").
+  errorCode        String?
+  /// Human-readable error description from the provider redirect.
+  errorDescription String?
+  createdAt        DateTime @default(now())
+
+  @@index([organizationId, providerSlug])
+  @@index([createdAt])
+}

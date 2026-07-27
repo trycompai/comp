@@ -34,6 +34,9 @@ jest.mock('@db', () => ({
       updateMany: jest.fn(),
       findUnique: jest.fn(),
     },
+    securityPenetrationTestFindingContext: {
+      findMany: jest.fn(),
+    },
     secret: {
       upsert: jest.fn(),
     },
@@ -46,6 +49,9 @@ type MockDb = {
     upsert: jest.Mock;
     updateMany: jest.Mock;
     findUnique: jest.Mock;
+  };
+  securityPenetrationTestFindingContext: {
+    findMany: jest.Mock;
   };
   secret: {
     upsert: jest.Mock;
@@ -102,6 +108,10 @@ describe('SecurityPenetrationTestsService billing usage', () => {
     mockedDb.securityPenetrationTestRun.updateMany.mockResolvedValue({
       count: 1,
     });
+    // Default: no stored finding-context notes for the target.
+    mockedDb.securityPenetrationTestFindingContext.findMany.mockResolvedValue(
+      [],
+    );
     mockedDb.$transaction.mockImplementation(
       (callback: (tx: MockDb) => Promise<void>) => callback(mockedDb),
     );

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
   ConflictException,
@@ -52,7 +53,14 @@ export class FrameworkEditorFrameworkService {
       where: { id },
       include: {
         requirements: {
-          orderBy: { name: 'asc' },
+          // FRAME-18: surface requirements in the framework's configured order
+          // (numbered first, unset last), tiebreaking by identifier (the
+          // canonical-order key) then name, so the editor grid opens pre-sorted.
+          orderBy: [
+            { sortOrder: { sort: 'asc', nulls: 'last' } },
+            { identifier: 'asc' },
+            { name: 'asc' },
+          ],
           include: {
             controlTemplates: { select: { id: true, name: true } },
           },
@@ -101,8 +109,28 @@ export class FrameworkEditorFrameworkService {
   async delete(id: string) {
     await this.findById(id);
 
+    // A framework may have published versions, org-level instances, and timeline
+    // templates that reference it. Delete the dependency graph in order inside one
+    // transaction:
+    //   1. instances        — cascades their org controls/maps/links/sync-ops AND
+    //                         their TimelineInstances+phases, and frees the Restrict
+    //                         FK on FrameworkInstance.currentVersionId -> Version
+    //   2. timeline templates — TimelineTemplate.frameworkId is a Restrict FK back
+    //                         to the framework; its TimelineInstances are already
+    //                         gone via step 1, so it (and its phase templates) can
+    //                         now be removed
+    //   3. versions         — now unreferenced by instances or sync-operations
+    //   4. requirements     — Restrict FK back to the framework
+    //   5. the framework    — cascades the editor-side control/policy/task/document
+    //                         links + ISMS docs
+    // Deleting the framework directly would cascade versions and instances
+    // together, which trips the currentVersionId Restrict (P2003) depending on
+    // cascade order; the explicit ordering avoids that.
     try {
       await db.$transaction([
+        db.frameworkInstance.deleteMany({ where: { frameworkId: id } }),
+        db.timelineTemplate.deleteMany({ where: { frameworkId: id } }),
+        db.frameworkVersion.deleteMany({ where: { frameworkId: id } }),
         db.frameworkEditorRequirement.deleteMany({
           where: { frameworkId: id },
         }),
@@ -114,7 +142,7 @@ export class FrameworkEditorFrameworkService {
         error.code === 'P2003'
       ) {
         throw new ConflictException(
-          'Cannot delete framework: it is referenced by existing framework instances',
+          'Could not delete framework: it still has references that could not be removed automatically',
         );
       }
       throw error;
@@ -231,25 +259,55 @@ export class FrameworkEditorFrameworkService {
     }));
   }
 
-  async linkControl(frameworkId: string, controlId: string) {
+  async linkControl(
+    frameworkId: string,
+    controlId: string,
+    requirementIds?: string[] | null,
+  ) {
     await this.findById(frameworkId);
 
-    const requirementIds = await db.frameworkEditorRequirement
-      .findMany({ where: { frameworkId }, select: { id: true } })
-      .then((reqs) => reqs.map((r) => ({ id: r.id })));
+    const frameworkRequirements = await db.frameworkEditorRequirement.findMany({
+      where: { frameworkId },
+      select: { id: true },
+    });
 
-    if (requirementIds.length === 0) {
+    if (frameworkRequirements.length === 0) {
       throw new ConflictException(
         'Framework has no requirements to link the control to',
       );
     }
 
+    // A control belongs to a framework only through its requirement links. When
+    // the caller passes requirementIds, link just those — this is the UI path,
+    // so adding an existing control no longer fans out to every requirement.
+    // When omitted (undefined/null), link all: the documented legacy bulk
+    // behavior the CLI uses. (@IsOptional lets a JSON null through, so guard it.)
+    let targetIds: { id: string }[];
+    if (requirementIds === undefined || requirementIds === null) {
+      targetIds = frameworkRequirements.map((r) => ({ id: r.id }));
+    } else {
+      const frameworkRequirementIds = new Set(
+        frameworkRequirements.map((r) => r.id),
+      );
+      const invalid = requirementIds.filter(
+        (id) => !frameworkRequirementIds.has(id),
+      );
+      if (invalid.length > 0) {
+        throw new BadRequestException(
+          `Requirement(s) not in this framework: ${invalid.join(', ')}`,
+        );
+      }
+      targetIds = requirementIds.map((id) => ({ id }));
+    }
+
     await db.frameworkEditorControlTemplate.update({
       where: { id: controlId },
-      data: { requirements: { connect: requirementIds } },
+      data: { requirements: { connect: targetIds } },
     });
 
-    this.logger.log(`Linked control ${controlId} to framework ${frameworkId}`);
+    this.logger.log(
+      `Linked control ${controlId} to framework ${frameworkId} (${targetIds.length} requirement(s))`,
+    );
     return { message: 'Control linked to framework' };
   }
 

@@ -20,6 +20,7 @@ import {
   DynamicIntegrationRepository,
   type DynamicIntegrationWithChecks,
 } from '../repositories/dynamic-integration.repository';
+import { buildBasicAuthCredentialFields } from './basic-auth-credential-fields';
 import type { DynamicCheck } from '@db';
 
 @Injectable()
@@ -153,6 +154,15 @@ export class DynamicManifestLoaderService
     > | null;
     const syncVariables = syncDef?.variables as CheckVariable[] | undefined;
 
+    // Basic-auth integrations declare their credential field names (e.g. Fivetran
+    // maps Basic auth to api_key/api_secret) but ship no credentialFields. Synthesize
+    // them so the connect form labels the inputs correctly and — critically — stores
+    // the values under the same keys the runtime reads to build the Basic header.
+    const credentialFields =
+      auth.type === 'basic'
+        ? buildBasicAuthCredentialFields(auth.config)
+        : undefined;
+
     return {
       id: integration.slug,
       name: integration.name,
@@ -164,6 +174,7 @@ export class DynamicManifestLoaderService
       baseUrl: integration.baseUrl ?? undefined,
       defaultHeaders:
         (integration.defaultHeaders as Record<string, string>) ?? undefined,
+      credentialFields,
       capabilities:
         (integration.capabilities as unknown as IntegrationCapability[]) ?? [
           'checks',

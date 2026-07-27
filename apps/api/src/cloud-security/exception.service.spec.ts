@@ -184,7 +184,7 @@ describe('CloudExceptionService.markAsException', () => {
     dbMock.integrationCheckResult.findFirst.mockResolvedValueOnce({
       resourceId: null,
       evidence: null,
-      checkRun: { connectionId: 'icn_aws' },
+      checkRun: { connectionId: 'icn_aws', checkId: 'all' },
     });
     await expect(
       buildService().markAsException({
@@ -194,6 +194,77 @@ describe('CloudExceptionService.markAsException', () => {
         reason: 'A perfectly long, well-documented reason here for tests.',
       }),
     ).rejects.toThrow(BadRequestException);
+  });
+
+  it('falls back to the run checkId for older rows that have no findingKey', async () => {
+    // AWS integration-platform finding stored before findingKey stamping: the
+    // evidence has no findingKey, but a task-scoped run carries the real check
+    // id, which IS the normalized check id used to key the exception.
+    dbMock.integrationCheckResult.findFirst.mockResolvedValueOnce({
+      resourceId: 'primer-production-reports-bucket',
+      evidence: { bucket: 'primer-production-reports-bucket' },
+      checkRun: { connectionId: 'icn_aws', checkId: 'aws-s3-public-access' },
+    });
+    dbMock.findingException.upsert.mockResolvedValueOnce({ id: 'fex_fb' });
+
+    const result = await buildService().markAsException({
+      findingId: 'icx_old',
+      organizationId: 'org_1',
+      userId: 'usr_1',
+      reason: 'Bucket intentionally public for marketing assets — reviewed.',
+    });
+
+    expect(result.id).toBe('fex_fb');
+    expect(dbMock.findingException.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          organizationId_connectionId_checkId_resourceId: {
+            organizationId: 'org_1',
+            connectionId: 'icn_aws',
+            checkId: 'aws-s3-public-access',
+            resourceId: 'primer-production-reports-bucket',
+          },
+        },
+      }),
+    );
+  });
+
+  it("rejects older rows whose run checkId is the 'all' auto-run sentinel", async () => {
+    dbMock.integrationCheckResult.findFirst.mockResolvedValueOnce({
+      resourceId: 'some-bucket',
+      evidence: { bucket: 'some-bucket' },
+      checkRun: { connectionId: 'icn_aws', checkId: 'all' },
+    });
+    await expect(
+      buildService().markAsException({
+        findingId: 'icx_all',
+        organizationId: 'org_1',
+        userId: 'usr_1',
+        reason: 'A perfectly long, well-documented reason here for tests.',
+      }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('stamped findingKey (new rows) normalizes to the bare check id', async () => {
+    // Mirrors what AWS emitOutcomes now writes: findingKey = `${checkId}-${resourceId}`.
+    withFinding({
+      findingKey: 'aws-s3-public-access-primer-production-reports-bucket',
+      resourceId: 'primer-production-reports-bucket',
+      connectionId: 'icn_aws',
+    });
+    dbMock.findingException.upsert.mockResolvedValueOnce({ id: 'fex_new2' });
+
+    await buildService().markAsException({
+      findingId: 'icx_new',
+      organizationId: 'org_1',
+      userId: 'usr_1',
+      reason: 'Bucket intentionally public for marketing assets — reviewed.',
+    });
+
+    const call = dbMock.findingException.upsert.mock.calls[0][0];
+    expect(
+      call.where.organizationId_connectionId_checkId_resourceId.checkId,
+    ).toBe('aws-s3-public-access');
   });
 });
 

@@ -21,6 +21,25 @@ export function parseRolesString(rolesStr: string | null | undefined): string[] 
     .filter((r) => r.length > 0);
 }
 
+/** Sort + de-dupe a comma-separated role string into a canonical form. */
+export function normalizeRoleString(rolesStr: string | null | undefined): string {
+  return [...new Set(parseRolesString(rolesStr))].sort().join(',');
+}
+
+/**
+ * Union the invited roles into an existing comma-separated role string.
+ * Used when an existing member is (re-)invited: we add the new roles rather
+ * than replacing, so a member is never stripped of a role they already hold.
+ */
+export function mergeRoleStrings(
+  existingRoles: string | null | undefined,
+  invitedRoles: string | null | undefined,
+): string {
+  return [...new Set([...parseRolesString(existingRoles), ...parseRolesString(invitedRoles)])]
+    .sort()
+    .join(',');
+}
+
 /**
  * Check if a role name is a built-in role.
  */
@@ -211,7 +230,7 @@ export function resolveBuiltInPermissions(roleString: string | null | undefined)
     if (BUILT_IN_ROLE_NAMES.includes(roleName)) {
       const role = allRoles[roleName as RoleName];
       if (role) {
-        mergePermissions(combined, role.statements as Record<string, string[]>);
+        mergePermissions(combined, role.statements as Record<string, readonly string[]>);
       }
     }
   }
@@ -219,7 +238,10 @@ export function resolveBuiltInPermissions(roleString: string | null | undefined)
   return { permissions: combined, customRoleNames };
 }
 
-export function mergePermissions(target: UserPermissions, source: Record<string, string[]>): void {
+export function mergePermissions(
+  target: UserPermissions,
+  source: Record<string, readonly string[]>,
+): void {
   for (const [resource, actions] of Object.entries(source)) {
     if (!target[resource]) {
       target[resource] = [];

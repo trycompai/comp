@@ -5,6 +5,19 @@
 import * as z from "zod";
 import { ClosedEnum } from "../types/enums.js";
 
+export const ContextControllerGetAllContextV1AuthType = {
+  ApiKey: "api-key",
+  Session: "session",
+} as const;
+export type ContextControllerGetAllContextV1AuthType = ClosedEnum<
+  typeof ContextControllerGetAllContextV1AuthType
+>;
+
+export const ContextControllerGetAllContextV1AuthType$zodSchema = z.enum([
+  "api-key",
+  "session",
+]);
+
 export type ContextControllerGetAllContextV1Request = {
   search?: string | undefined;
   page?: string | undefined;
@@ -84,19 +97,6 @@ export const ContextControllerGetAllContextV1Data$zodSchema: z.ZodType<
   tags: z.array(z.string()).optional(),
   updatedAt: z.iso.datetime({ offset: true }).optional(),
 });
-
-export const ContextControllerGetAllContextV1AuthType = {
-  ApiKey: "api-key",
-  Session: "session",
-} as const;
-export type ContextControllerGetAllContextV1AuthType = ClosedEnum<
-  typeof ContextControllerGetAllContextV1AuthType
->;
-
-export const ContextControllerGetAllContextV1AuthType$zodSchema = z.enum([
-  "api-key",
-  "session",
-]);
 
 /**
  * Context entries retrieved successfully

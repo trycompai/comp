@@ -7,7 +7,6 @@ import {
   IsOptional,
   IsArray,
   IsInt,
-  IsObject,
   IsEnum,
   MaxLength,
   ValidateNested,
@@ -21,6 +20,8 @@ import {
   TaskAutomationStatus,
 } from '@db';
 import { MaxJsonSize } from '../../validators/max-json-size.validator';
+import { IsObjectOrArray } from '../../validators/is-object-or-array.validator';
+import { REQUIREMENT_DESCRIPTION_MAX_LENGTH } from '../../constants';
 
 class ImportFrameworkMetaDto {
   @ApiProperty()
@@ -60,10 +61,13 @@ class ImportRequirementDto {
   @MaxLength(255)
   identifier?: string;
 
+  // Matches the standalone requirement DTOs (FRAME-2). Regulatory control text
+  // can be very long: NIST SP800-53r5 PL-2 > 6000 chars, and many HITRUST CSF
+  // requirements exceed 70,000 — hence the shared 100,000 ceiling.
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  @MaxLength(5000)
+  @MaxLength(REQUIREMENT_DESCRIPTION_MAX_LENGTH)
   description: string;
 
   @ApiPropertyOptional()
@@ -71,6 +75,13 @@ class ImportRequirementDto {
   @IsOptional()
   @MaxLength(255)
   requirementFamily?: string;
+
+  // FRAME-18: per-framework display order, preserved across export/import.
+  @ApiPropertyOptional({ nullable: true })
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  sortOrder?: number | null;
 }
 
 class ImportControlTemplateDto {
@@ -83,7 +94,7 @@ class ImportControlTemplateDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  @MaxLength(5000)
+  @MaxLength(10000)
   description: string;
 
   @ApiPropertyOptional({ example: 'AC - Access Control' })
@@ -134,7 +145,7 @@ class ImportPolicyTemplateDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  @MaxLength(5000)
+  @MaxLength(10000)
   description: string;
 
   @ApiProperty()
@@ -145,11 +156,13 @@ class ImportPolicyTemplateDto {
   @IsEnum(Departments)
   department: Departments;
 
+  // TipTap content is stored either as a `{ type: 'doc', … }` object or a bare
+  // node array (legacy data) — accept both; it's normalized on persist.
   @ApiPropertyOptional()
-  @IsObject()
+  @IsObjectOrArray()
   @IsOptional()
   @MaxJsonSize()
-  content?: Record<string, unknown>;
+  content?: Record<string, unknown> | unknown[];
 }
 
 class ImportTaskTemplateDto {
@@ -162,7 +175,7 @@ class ImportTaskTemplateDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  @MaxLength(5000)
+  @MaxLength(10000)
   description: string;
 
   @ApiProperty()

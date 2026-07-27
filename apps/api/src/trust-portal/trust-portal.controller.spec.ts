@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
 import { TrustPortalController } from './trust-portal.controller';
 import { TrustPortalService } from './trust-portal.service';
+import { TrustCustomFrameworkService } from './trust-custom-framework.service';
+import { TrustCustomFrameworkBadgeService } from './trust-custom-framework-badge.service';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import type { AuthContext as AuthContextType } from '../auth/types';
@@ -38,6 +40,7 @@ describe('TrustPortalController', () => {
     checkDnsRecords: jest.fn(),
     updateFaqs: jest.fn(),
     updateAllowedDomains: jest.fn(),
+    updateAllowedEmails: jest.fn(),
     updateFrameworks: jest.fn(),
     updateOverview: jest.fn(),
     getOverview: jest.fn(),
@@ -49,6 +52,18 @@ describe('TrustPortalController', () => {
     updateVendorTrustSettings: jest.fn(),
     getPublicVendors: jest.fn(),
     getAllVendorsWithSync: jest.fn(),
+  };
+
+  const mockCustomFrameworkService = {
+    listForOrg: jest.fn(),
+    updateSelection: jest.fn(),
+    getPublicCustomFrameworks: jest.fn(),
+  };
+
+  const mockBadgeService = {
+    uploadBadge: jest.fn(),
+    removeBadge: jest.fn(),
+    signBadgeUrl: jest.fn(),
   };
 
   const mockGuard = { canActivate: jest.fn().mockReturnValue(true) };
@@ -71,7 +86,17 @@ describe('TrustPortalController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [TrustPortalController],
-      providers: [{ provide: TrustPortalService, useValue: mockService }],
+      providers: [
+        { provide: TrustPortalService, useValue: mockService },
+        {
+          provide: TrustCustomFrameworkService,
+          useValue: mockCustomFrameworkService,
+        },
+        {
+          provide: TrustCustomFrameworkBadgeService,
+          useValue: mockBadgeService,
+        },
+      ],
     })
       .overrideGuard(HybridAuthGuard)
       .useValue(mockGuard)
@@ -418,6 +443,26 @@ describe('TrustPortalController', () => {
     });
   });
 
+  describe('updateAllowedEmails', () => {
+    it('should call service.updateAllowedEmails with organizationId and emails', async () => {
+      const emails = ['person@example.com', 'other@test.com'];
+      mockService.updateAllowedEmails.mockResolvedValue({ success: true });
+
+      const result = await controller.updateAllowedEmails(orgId, { emails });
+
+      expect(result).toEqual({ success: true });
+      expect(service.updateAllowedEmails).toHaveBeenCalledWith(orgId, emails);
+    });
+
+    it('should default to empty array when emails is undefined', async () => {
+      mockService.updateAllowedEmails.mockResolvedValue({ success: true });
+
+      await controller.updateAllowedEmails(orgId, {} as any);
+
+      expect(service.updateAllowedEmails).toHaveBeenCalledWith(orgId, []);
+    });
+  });
+
   describe('updateFrameworks', () => {
     it('should call service.updateFrameworks with organizationId and body', async () => {
       const body = { SOC2: true, ISO27001: false };
@@ -637,6 +682,43 @@ describe('TrustPortalController', () => {
 
       expect(service.getPublicVendors).toHaveBeenCalledWith(orgId);
       expect(service.getAllVendorsWithSync).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('uploadCustomFrameworkBadge', () => {
+    it('delegates to badgeService.uploadBadge with org + dto', async () => {
+      const dto = {
+        customFrameworkId: 'cfrm_a',
+        fileName: 'badge.png',
+        fileType: 'image/png',
+        fileData: 'base64data',
+      };
+      const mockResult = {
+        success: true,
+        badgeUrl: 'https://signed/badge.png',
+      };
+      mockBadgeService.uploadBadge.mockResolvedValue(mockResult);
+
+      const result = await controller.uploadCustomFrameworkBadge(orgId, dto);
+
+      expect(result).toEqual(mockResult);
+      expect(mockBadgeService.uploadBadge).toHaveBeenCalledWith(orgId, dto);
+    });
+  });
+
+  describe('removeCustomFrameworkBadge', () => {
+    it('delegates to badgeService.removeBadge with org + customFrameworkId', async () => {
+      mockBadgeService.removeBadge.mockResolvedValue({ success: true });
+
+      const result = await controller.removeCustomFrameworkBadge(orgId, {
+        customFrameworkId: 'cfrm_a',
+      });
+
+      expect(result).toEqual({ success: true });
+      expect(mockBadgeService.removeBadge).toHaveBeenCalledWith(
+        orgId,
+        'cfrm_a',
+      );
     });
   });
 });

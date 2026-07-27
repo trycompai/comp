@@ -22,6 +22,7 @@ export const DocumentType = {
   EmployeePerformanceEvaluation: "employee_performance_evaluation",
   NetworkDiagram: "network_diagram",
   TabletopExercise: "tabletop_exercise",
+  AccountTypes: "account_types",
 } as const;
 export type DocumentType = ClosedEnum<typeof DocumentType>;
 
@@ -38,6 +39,7 @@ export const DocumentType$zodSchema = z.enum([
   "employee_performance_evaluation",
   "network_diagram",
   "tabletop_exercise",
+  "account_types",
 ]);
 
 export type CreateControlDto = {

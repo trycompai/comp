@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'bun:test';
+import type { CheckContext } from '../../../../types';
+import { parseEnvironmentAliases } from '../../../environment-aliases';
+import { awsManifest } from '../../index';
 import { evaluateCloudTrail } from '../cloudtrail';
 import { evaluateSecurityGroups } from '../ec2';
 import {
-  evaluateAccountSummary,
-  evaluateIamAccount,
-  evaluatePasswordPolicy,
-} from '../iam';
+  buildEnvironmentSeparationOutcomes,
+  classifyVpcEnv,
+  classifyVpcEnvWithAliases,
+  evaluateEnvironmentSeparation,
+} from '../environment-separation';
+import { evaluateAccountSummary, evaluateIamAccount, evaluatePasswordPolicy } from '../iam';
 import { evaluateKmsRotation } from '../kms';
 import {
   evaluateRdsBackups,
@@ -14,7 +19,18 @@ import {
   evaluateRdsEncryption,
 } from '../rds';
 import { evaluateS3Encryption, evaluateS3PublicAccess } from '../s3';
-import { assumeAwsSession, resolveAwsCredentialInputs } from '../shared';
+import { gatherBuckets } from '../s3-buckets';
+import {
+  assumeAwsSession,
+  awsAccountIdFromCtx,
+  combineReadFailures,
+  emitOutcomes,
+  remediationForReadFailure,
+  resolveAwsCredentialInputs,
+  resolveAwsSessionOrFail,
+  toReadFailure,
+  type CheckOutcome,
+} from '../shared';
 
 const kinds = (os: { kind: string }[]) => os.map((o) => o.kind);
 
@@ -115,9 +131,7 @@ describe('AWS credential resolution (regions shape)', () => {
   });
 
   it('returns null when roleArn or externalId is missing', () => {
-    expect(
-      resolveAwsCredentialInputs({ externalId: 'eid', regions: ['us-east-1'] }),
-    ).toBeNull();
+    expect(resolveAwsCredentialInputs({ externalId: 'eid', regions: ['us-east-1'] })).toBeNull();
     expect(
       resolveAwsCredentialInputs({ roleArn: base.roleArn, regions: ['us-east-1'] }),
     ).toBeNull();
@@ -155,7 +169,9 @@ describe('AWS IAM account evaluator', () => {
     expect(out[0]!.kind).toBe('fail');
     expect(out[0]!.title).toMatch(/password policy/i);
     // and the summary evaluator is independent
-    expect(evaluateAccountSummary({ AccountMFAEnabled: 1, AccountAccessKeysPresent: 0 })).toHaveLength(2);
+    expect(
+      evaluateAccountSummary({ AccountMFAEnabled: 1, AccountAccessKeysPresent: 0 }),
+    ).toHaveLength(2);
   });
 });
 
@@ -169,10 +185,28 @@ const ALL_BLOCKED = {
 describe('AWS S3 evaluators', () => {
   it('encryption: pass when encrypted, fail (high) when not, "could not verify" (medium) when indeterminate', () => {
     const out = evaluateS3Encryption([
-      { name: 'a', encrypted: true, encryptionDetermined: true, publicAccessDetermined: true, bucketBpa: null },
-      { name: 'b', encrypted: false, encryptionDetermined: true, publicAccessDetermined: true, bucketBpa: null },
+      {
+        name: 'a',
+        encrypted: true,
+        encryptionDetermined: true,
+        publicAccessDetermined: true,
+        bucketBpa: null,
+      },
+      {
+        name: 'b',
+        encrypted: false,
+        encryptionDetermined: true,
+        publicAccessDetermined: true,
+        bucketBpa: null,
+      },
       // read error → indeterminate → "could not verify" (not a false high, not silently dropped)
-      { name: 'c', encrypted: false, encryptionDetermined: false, publicAccessDetermined: true, bucketBpa: null },
+      {
+        name: 'c',
+        encrypted: false,
+        encryptionDetermined: false,
+        publicAccessDetermined: true,
+        bucketBpa: null,
+      },
     ]);
     expect(out).toHaveLength(3);
     expect(out[0]!.kind).toBe('pass');
@@ -185,7 +219,13 @@ describe('AWS S3 evaluators', () => {
 
   it('encryption: all-indeterminate buckets do not pass silently', () => {
     const out = evaluateS3Encryption([
-      { name: 'x', encrypted: false, encryptionDetermined: false, publicAccessDetermined: true, bucketBpa: null },
+      {
+        name: 'x',
+        encrypted: false,
+        encryptionDetermined: false,
+        publicAccessDetermined: true,
+        bucketBpa: null,
+      },
     ]);
     expect(out).toHaveLength(1);
     expect(out[0]!.kind).toBe('fail');
@@ -195,8 +235,20 @@ describe('AWS S3 evaluators', () => {
   it('public access: bucket-level all-blocked passes, missing fails', () => {
     const out = evaluateS3PublicAccess(
       [
-        { name: 'a', encrypted: false, encryptionDetermined: true, publicAccessDetermined: true, bucketBpa: ALL_BLOCKED },
-        { name: 'b', encrypted: false, encryptionDetermined: true, publicAccessDetermined: true, bucketBpa: null },
+        {
+          name: 'a',
+          encrypted: false,
+          encryptionDetermined: true,
+          publicAccessDetermined: true,
+          bucketBpa: ALL_BLOCKED,
+        },
+        {
+          name: 'b',
+          encrypted: false,
+          encryptionDetermined: true,
+          publicAccessDetermined: true,
+          bucketBpa: null,
+        },
       ],
       null,
     );
@@ -205,10 +257,338 @@ describe('AWS S3 evaluators', () => {
 
   it('public access: account-level BPA covers buckets lacking bucket config', () => {
     const out = evaluateS3PublicAccess(
-      [{ name: 'b', encrypted: false, encryptionDetermined: true, publicAccessDetermined: true, bucketBpa: null }],
+      [
+        {
+          name: 'b',
+          encrypted: false,
+          encryptionDetermined: true,
+          publicAccessDetermined: true,
+          bucketBpa: null,
+        },
+      ],
       ALL_BLOCKED,
     );
     expect(out[0]!.kind).toBe('pass');
+  });
+
+  it('public access: a non-permission read failure surfaces the real error instead of claiming a missing permission', () => {
+    const out = evaluateS3PublicAccess(
+      [
+        {
+          name: 'b',
+          encrypted: false,
+          encryptionDetermined: true,
+          publicAccessDetermined: false,
+          bucketBpa: null,
+          publicAccessReadFailure: { error: 'TimeoutError: socket hang up', denied: false },
+        },
+      ],
+      null,
+    );
+    expect(out[0]!.kind).toBe('fail');
+    expect(out[0]!.severity).toBe('medium');
+    expect(out[0]!.evidence).toMatchObject({ readError: 'TimeoutError: socket hang up' });
+    expect(out[0]!.description).toContain('TimeoutError: socket hang up');
+    // must NOT send the customer on a permissions hunt for a transient failure
+    expect(out[0]!.remediation).not.toContain('Grant s3:GetBucketPublicAccessBlock');
+    expect(out[0]!.remediation).toMatch(/re-run/i);
+  });
+
+  it('public access: an AccessDenied read failure keeps the grant-permission remediation and records the error', () => {
+    const out = evaluateS3PublicAccess(
+      [
+        {
+          name: 'b',
+          encrypted: false,
+          encryptionDetermined: true,
+          publicAccessDetermined: false,
+          bucketBpa: null,
+          publicAccessReadFailure: { error: 'AccessDenied: Access Denied', denied: true },
+        },
+      ],
+      null,
+    );
+    expect(out[0]!.kind).toBe('fail');
+    expect(out[0]!.remediation).toContain('Grant s3:GetBucketPublicAccessBlock');
+    expect(out[0]!.evidence).toMatchObject({ readError: 'AccessDenied: Access Denied' });
+  });
+
+  it('public access: indeterminate without failure detail keeps the legacy permission hint', () => {
+    const out = evaluateS3PublicAccess(
+      [
+        {
+          name: 'b',
+          encrypted: false,
+          encryptionDetermined: true,
+          publicAccessDetermined: false,
+          bucketBpa: null,
+        },
+      ],
+      null,
+    );
+    expect(out[0]!.kind).toBe('fail');
+    expect(out[0]!.remediation).toContain('Grant s3:GetBucketPublicAccessBlock');
+  });
+
+  it('encryption: read failures carry the real error and remediation matches the failure kind', () => {
+    const out = evaluateS3Encryption([
+      {
+        name: 'transient',
+        encrypted: false,
+        encryptionDetermined: false,
+        publicAccessDetermined: true,
+        bucketBpa: null,
+        encryptionReadFailure: { error: 'TimeoutError: socket hang up', denied: false },
+      },
+      {
+        name: 'denied',
+        encrypted: false,
+        encryptionDetermined: false,
+        publicAccessDetermined: true,
+        bucketBpa: null,
+        encryptionReadFailure: { error: 'AccessDenied: Access Denied', denied: true },
+      },
+    ]);
+    expect(out[0]!.evidence).toMatchObject({ readError: 'TimeoutError: socket hang up' });
+    expect(out[0]!.remediation).not.toContain('Grant s3:GetEncryptionConfiguration');
+    expect(out[0]!.remediation).toMatch(/re-run/i);
+    expect(out[1]!.remediation).toContain('Grant s3:GetEncryptionConfiguration');
+    expect(out[1]!.evidence).toMatchObject({ readError: 'AccessDenied: Access Denied' });
+  });
+});
+
+describe('gatherBuckets — per-bucket region routing', () => {
+  type FakeClient = {
+    send: (cmd: {
+      constructor: { name: string };
+      input: Record<string, unknown>;
+    }) => Promise<unknown>;
+  };
+  const asS3 = (c: FakeClient) => c as unknown as import('@aws-sdk/client-s3').S3Client;
+
+  const BPA_OK = {
+    PublicAccessBlockConfiguration: {
+      BlockPublicAcls: true,
+      IgnorePublicAcls: true,
+      BlockPublicPolicy: true,
+      RestrictPublicBuckets: true,
+    },
+  };
+
+  it('routes reads for cross-region buckets to that region client (customer bug: cross-region 301 dependence)', async () => {
+    const calls: Array<{ client: string; bucket: unknown }> = [];
+    const defaultClient: FakeClient = {
+      send: async (cmd) => {
+        if (cmd.constructor.name === 'ListBucketsCommand') {
+          return {
+            Buckets: [
+              { Name: 'local-bucket', BucketRegion: 'us-east-2' },
+              { Name: 'remote-bucket', BucketRegion: 'us-east-1' },
+            ],
+          };
+        }
+        calls.push({ client: 'default', bucket: cmd.input.Bucket });
+        return BPA_OK;
+      },
+    };
+    const remoteClient: FakeClient = {
+      send: async (cmd) => {
+        calls.push({ client: 'us-east-1', bucket: cmd.input.Bucket });
+        return BPA_OK;
+      },
+    };
+
+    const requestedRegions: string[] = [];
+    const buckets = await gatherBuckets(asS3(defaultClient), {
+      encryption: false,
+      publicAccess: true,
+      clientForRegion: (region) => {
+        requestedRegions.push(region);
+        return region === 'us-east-1' ? asS3(remoteClient) : asS3(defaultClient);
+      },
+    });
+
+    expect(buckets).toHaveLength(2);
+    expect(buckets.every((b) => b.publicAccessDetermined)).toBe(true);
+    expect(calls).toEqual([
+      { client: 'default', bucket: 'local-bucket' },
+      { client: 'us-east-1', bucket: 'remote-bucket' },
+    ]);
+    expect(requestedRegions).toEqual(['us-east-2', 'us-east-1']);
+  });
+
+  it('falls back to the legacy ListBuckets (no regions, default client) when MaxBuckets is rejected', async () => {
+    let sawLegacyList = false;
+    const client: FakeClient = {
+      send: async (cmd) => {
+        if (cmd.constructor.name === 'ListBucketsCommand') {
+          if (cmd.input.MaxBuckets) {
+            const err = new Error('MaxBuckets not supported');
+            err.name = 'InvalidArgument';
+            throw err;
+          }
+          sawLegacyList = true;
+          return { Buckets: [{ Name: 'b1' }] };
+        }
+        return BPA_OK;
+      },
+    };
+
+    const buckets = await gatherBuckets(asS3(client), {
+      encryption: false,
+      publicAccess: true,
+      clientForRegion: () => {
+        throw new Error('must not be called when bucket region is unknown');
+      },
+    });
+
+    expect(sawLegacyList).toBe(true);
+    expect(buckets).toEqual([
+      {
+        name: 'b1',
+        encrypted: false,
+        encryptionDetermined: true,
+        encryptionReadFailure: undefined,
+        bucketBpa: {
+          blockPublicAcls: true,
+          ignorePublicAcls: true,
+          blockPublicPolicy: true,
+          restrictPublicBuckets: true,
+        },
+        publicAccessDetermined: true,
+        publicAccessReadFailure: undefined,
+      },
+    ]);
+  });
+
+  it('paginates ListBuckets via ContinuationToken', async () => {
+    const client: FakeClient = {
+      send: async (cmd) => {
+        if (cmd.constructor.name === 'ListBucketsCommand') {
+          return cmd.input.ContinuationToken
+            ? { Buckets: [{ Name: 'page2', BucketRegion: 'us-east-2' }] }
+            : {
+                Buckets: [{ Name: 'page1', BucketRegion: 'us-east-2' }],
+                ContinuationToken: 'next',
+              };
+        }
+        return BPA_OK;
+      },
+    };
+
+    const buckets = await gatherBuckets(asS3(client), {
+      encryption: false,
+      publicAccess: true,
+    });
+    expect(buckets.map((b) => b.name)).toEqual(['page1', 'page2']);
+  });
+
+  it('records the read failure and keeps going when a per-bucket read throws', async () => {
+    const client: FakeClient = {
+      send: async (cmd) => {
+        if (cmd.constructor.name === 'ListBucketsCommand') {
+          return { Buckets: [{ Name: 'bad' }, { Name: 'good' }] };
+        }
+        if (cmd.input.Bucket === 'bad') {
+          const err = new Error('socket hang up');
+          err.name = 'TimeoutError';
+          throw err;
+        }
+        return BPA_OK;
+      },
+    };
+
+    const logs: string[] = [];
+    const buckets = await gatherBuckets(asS3(client), {
+      encryption: false,
+      publicAccess: true,
+      log: (m) => logs.push(m),
+    });
+    expect(buckets[0]).toMatchObject({
+      name: 'bad',
+      publicAccessDetermined: false,
+      publicAccessReadFailure: { error: 'TimeoutError: socket hang up', denied: false },
+    });
+    expect(buckets[1]!.publicAccessDetermined).toBe(true);
+    expect(logs.some((m) => m.includes('TimeoutError: socket hang up'))).toBe(true);
+  });
+});
+
+describe('toReadFailure — read-error classification', () => {
+  it('classifies AccessDenied by error name', () => {
+    const err = new Error('Access Denied');
+    err.name = 'AccessDenied';
+    expect(toReadFailure(err)).toEqual({
+      error: 'AccessDenied: Access Denied',
+      denied: true,
+      regionDisabled: false,
+    });
+  });
+
+  it('classifies 403 by http status even with a generic name', () => {
+    const err = Object.assign(new Error('nope'), {
+      name: 'S3ServiceException',
+      $metadata: { httpStatusCode: 403 },
+    });
+    expect(toReadFailure(err).denied).toBe(true);
+  });
+
+  it('treats network/timeout errors as not denied', () => {
+    const err = new Error('socket hang up');
+    err.name = 'TimeoutError';
+    expect(toReadFailure(err)).toEqual({
+      error: 'TimeoutError: socket hang up',
+      denied: false,
+      regionDisabled: false,
+    });
+  });
+
+  it('stringifies non-Error throwables', () => {
+    expect(toReadFailure('boom')).toEqual({ error: 'boom', denied: false, regionDisabled: false });
+  });
+
+  it('classifies opted-out region errors as regionDisabled, not transient', () => {
+    const optIn = new Error('region is not opted in');
+    optIn.name = 'OptInRequired';
+    expect(toReadFailure(optIn)).toMatchObject({ denied: false, regionDisabled: true });
+
+    // OptInRequired arrives as HTTP 403 in the real SDK — the status check
+    // must NOT win over the region classification (cubic finding on #3087)
+    const optIn403 = Object.assign(new Error('not subscribed to this region'), {
+      name: 'OptInRequired',
+      $metadata: { httpStatusCode: 403 },
+    });
+    expect(toReadFailure(optIn403)).toMatchObject({ denied: false, regionDisabled: true });
+
+    const authFailure = new Error('AWS was not able to validate the provided access credentials');
+    authFailure.name = 'AuthFailure';
+    expect(toReadFailure(authFailure)).toMatchObject({ denied: false, regionDisabled: true });
+  });
+});
+
+describe('combineReadFailures / remediationForReadFailure', () => {
+  const denied = { error: 'AccessDenied: nope', denied: true };
+  const transient = { error: 'TimeoutError: hang', denied: false };
+  const disabled = { error: 'OptInRequired: not opted in', denied: false, regionDisabled: true };
+
+  it('combine: any denied wins; regionDisabled only when ALL are', () => {
+    expect(combineReadFailures([])).toBeUndefined();
+    expect(combineReadFailures([transient, denied])!.denied).toBe(true);
+    expect(combineReadFailures([disabled, disabled])).toMatchObject({
+      regionDisabled: true,
+      denied: false,
+    });
+    // mixed disabled + transient must NOT advise removing a region
+    expect(combineReadFailures([disabled, transient])!.regionDisabled).toBe(false);
+  });
+
+  it('remediation: grant hint only for denied (or missing detail); region message for disabled; re-run otherwise', () => {
+    const grant = 'Grant x:Read to the role.';
+    expect(remediationForReadFailure(undefined, grant)).toBe(grant);
+    expect(remediationForReadFailure(denied, grant)).toBe(grant);
+    expect(remediationForReadFailure(disabled, grant)).toMatch(/disabled or not opted in/i);
+    expect(remediationForReadFailure(transient, grant)).toMatch(/re-run/i);
+    expect(remediationForReadFailure(transient, grant)).not.toContain(grant);
   });
 });
 
@@ -240,7 +620,11 @@ describe('AWS EC2 security-group evaluator', () => {
 
   it('flags all-protocols (-1) open as critical', () => {
     const out = evaluateSecurityGroups([
-      { groupId: 'sg-2', region: 'us-east-1', permissions: [{ ipProtocol: '-1', cidrs: ['0.0.0.0/0'] }] },
+      {
+        groupId: 'sg-2',
+        region: 'us-east-1',
+        permissions: [{ ipProtocol: '-1', cidrs: ['0.0.0.0/0'] }],
+      },
     ]);
     expect(out[0]!.severity).toBe('critical');
   });
@@ -276,8 +660,20 @@ describe('AWS EC2 security-group evaluator', () => {
 describe('AWS RDS evaluators', () => {
   it('encryption: pass when encrypted, fail (high) when not', () => {
     const out = evaluateRdsEncryption([
-      { id: 'db1', region: 'us-east-1', encrypted: true, backupRetentionDays: 7, engine: 'postgres' },
-      { id: 'db2', region: 'us-east-1', encrypted: false, backupRetentionDays: 7, engine: 'postgres' },
+      {
+        id: 'db1',
+        region: 'us-east-1',
+        encrypted: true,
+        backupRetentionDays: 7,
+        engine: 'postgres',
+      },
+      {
+        id: 'db2',
+        region: 'us-east-1',
+        encrypted: false,
+        backupRetentionDays: 7,
+        engine: 'postgres',
+      },
     ]);
     expect(out[0]!.kind).toBe('pass');
     expect(out[1]!.severity).toBe('high');
@@ -285,17 +681,41 @@ describe('AWS RDS evaluators', () => {
 
   it('backups: pass when retention > 0, fail when 0, skip Aurora (cluster-level)', () => {
     const out = evaluateRdsBackups([
-      { id: 'db1', region: 'us-east-1', encrypted: true, backupRetentionDays: 7, engine: 'postgres' },
+      {
+        id: 'db1',
+        region: 'us-east-1',
+        encrypted: true,
+        backupRetentionDays: 7,
+        engine: 'postgres',
+      },
       { id: 'db2', region: 'us-east-1', encrypted: true, backupRetentionDays: 0, engine: 'mysql' },
-      { id: 'aur', region: 'us-east-1', encrypted: true, backupRetentionDays: 0, engine: 'aurora-mysql' },
+      {
+        id: 'aur',
+        region: 'us-east-1',
+        encrypted: true,
+        backupRetentionDays: 0,
+        engine: 'aurora-mysql',
+      },
     ]);
     expect(kinds(out)).toEqual(['pass', 'fail']); // aurora excluded, not failed
   });
 
   it('cluster encryption: Aurora evaluated at cluster level (pass/fail)', () => {
     const out = evaluateRdsClusterEncryption([
-      { id: 'c1', region: 'us-east-1', encrypted: true, backupRetentionDays: 7, engine: 'aurora-postgresql' },
-      { id: 'c2', region: 'us-east-1', encrypted: false, backupRetentionDays: 7, engine: 'aurora-mysql' },
+      {
+        id: 'c1',
+        region: 'us-east-1',
+        encrypted: true,
+        backupRetentionDays: 7,
+        engine: 'aurora-postgresql',
+      },
+      {
+        id: 'c2',
+        region: 'us-east-1',
+        encrypted: false,
+        backupRetentionDays: 7,
+        engine: 'aurora-mysql',
+      },
     ]);
     expect(out[0]!.kind).toBe('pass');
     expect(out[1]!.kind).toBe('fail');
@@ -304,8 +724,20 @@ describe('AWS RDS evaluators', () => {
 
   it('cluster backups: Aurora retention evaluated at cluster level (pass/fail)', () => {
     const out = evaluateRdsClusterBackups([
-      { id: 'c1', region: 'us-east-1', encrypted: true, backupRetentionDays: 7, engine: 'aurora-mysql' },
-      { id: 'c2', region: 'us-east-1', encrypted: true, backupRetentionDays: 0, engine: 'aurora-mysql' },
+      {
+        id: 'c1',
+        region: 'us-east-1',
+        encrypted: true,
+        backupRetentionDays: 7,
+        engine: 'aurora-mysql',
+      },
+      {
+        id: 'c2',
+        region: 'us-east-1',
+        encrypted: true,
+        backupRetentionDays: 0,
+        engine: 'aurora-mysql',
+      },
     ]);
     expect(out[0]!.kind).toBe('pass');
     expect(out[1]!.kind).toBe('fail');
@@ -315,12 +747,36 @@ describe('AWS RDS evaluators', () => {
 describe('AWS KMS rotation evaluator', () => {
   it('evaluates eligible keys; unreadable rotation status → could-not-verify (not dropped)', () => {
     const out = evaluateKmsRotation([
-      { keyId: 'sym-on', region: 'us-east-1', rotationEligible: true, rotationStatusKnown: true, rotationEnabled: true },
-      { keyId: 'sym-off', region: 'us-east-1', rotationEligible: true, rotationStatusKnown: true, rotationEnabled: false },
+      {
+        keyId: 'sym-on',
+        region: 'us-east-1',
+        rotationEligible: true,
+        rotationStatusKnown: true,
+        rotationEnabled: true,
+      },
+      {
+        keyId: 'sym-off',
+        region: 'us-east-1',
+        rotationEligible: true,
+        rotationStatusKnown: true,
+        rotationEnabled: false,
+      },
       // RSA/HMAC/etc. — not rotation-eligible → no finding
-      { keyId: 'rsa', region: 'us-east-1', rotationEligible: false, rotationStatusKnown: false, rotationEnabled: false },
+      {
+        keyId: 'rsa',
+        region: 'us-east-1',
+        rotationEligible: false,
+        rotationStatusKnown: false,
+        rotationEnabled: false,
+      },
       // eligible but status unreadable → "could not verify" (masking a permission gap as clean would be wrong)
-      { keyId: 'unknown', region: 'us-east-1', rotationEligible: true, rotationStatusKnown: false, rotationEnabled: false },
+      {
+        keyId: 'unknown',
+        region: 'us-east-1',
+        rotationEligible: true,
+        rotationStatusKnown: false,
+        rotationEnabled: false,
+      },
     ]);
     expect(out).toHaveLength(3);
     expect(out[0]!.kind).toBe('pass');
@@ -332,11 +788,66 @@ describe('AWS KMS rotation evaluator', () => {
 
   it('does not pass silently when rotation status is unreadable for all eligible keys', () => {
     const out = evaluateKmsRotation([
-      { keyId: 'k1', region: 'us-east-1', rotationEligible: true, rotationStatusKnown: false, rotationEnabled: false },
+      {
+        keyId: 'k1',
+        region: 'us-east-1',
+        rotationEligible: true,
+        rotationStatusKnown: false,
+        rotationEnabled: false,
+      },
     ]);
     expect(out).toHaveLength(1);
     expect(out[0]!.kind).toBe('fail');
     expect(out[0]!.title).toMatch(/Could not verify/);
+  });
+});
+
+describe('KMS rotation read-failure gating', () => {
+  it('transient rotation-status failure surfaces readError and avoids the permission claim', () => {
+    const out = evaluateKmsRotation([
+      {
+        keyId: 'k1',
+        region: 'us-east-1',
+        rotationEligible: true,
+        rotationStatusKnown: false,
+        rotationEnabled: false,
+        rotationReadFailure: { error: 'ThrottlingException: Rate exceeded', denied: false },
+      },
+    ]);
+    expect(out[0]!.kind).toBe('fail');
+    expect(out[0]!.evidence).toMatchObject({ readError: 'ThrottlingException: Rate exceeded' });
+    expect(out[0]!.remediation).not.toContain('Grant kms:GetKeyRotationStatus');
+    expect(out[0]!.remediation).toMatch(/re-run/i);
+  });
+
+  it('denied rotation-status failure keeps the grant remediation', () => {
+    const out = evaluateKmsRotation([
+      {
+        keyId: 'k1',
+        region: 'us-east-1',
+        rotationEligible: true,
+        rotationStatusKnown: false,
+        rotationEnabled: false,
+        rotationReadFailure: {
+          error: 'AccessDeniedException: no kms:GetKeyRotationStatus',
+          denied: true,
+        },
+      },
+    ]);
+    expect(out[0]!.remediation).toContain('Grant kms:GetKeyRotationStatus');
+  });
+
+  it('without failure detail the legacy permission hint is kept', () => {
+    const out = evaluateKmsRotation([
+      {
+        keyId: 'k1',
+        region: 'us-east-1',
+        rotationEligible: true,
+        rotationStatusKnown: false,
+        rotationEnabled: false,
+      },
+    ]);
+    expect(out[0]!.remediation).toContain('Grant kms:GetKeyRotationStatus');
   });
 });
 
@@ -381,6 +892,38 @@ describe('AWS CloudTrail evaluator', () => {
     expect(out[0]!.kind).toBe('fail');
     expect(out[0]!.title).toMatch(/Could not verify/);
   });
+
+  it('status-read failure: transient error surfaces readError and does not claim a missing permission', () => {
+    const out = evaluateCloudTrail([
+      {
+        name: 't1',
+        multiRegion: true,
+        logValidation: true,
+        logging: false,
+        loggingKnown: false,
+        statusReadFailure: { error: 'TimeoutError: socket hang up', denied: false },
+      },
+    ]);
+    expect(out[0]!.evidence).toMatchObject({ readError: 'TimeoutError: socket hang up' });
+    expect(out[0]!.description).toContain('TimeoutError: socket hang up');
+    expect(out[0]!.remediation).not.toContain('Grant cloudtrail:GetTrailStatus');
+    expect(out[0]!.remediation).toMatch(/re-run/i);
+  });
+
+  it('status-read failure: AccessDenied keeps the grant-permission remediation', () => {
+    const out = evaluateCloudTrail([
+      {
+        name: 't1',
+        multiRegion: true,
+        logValidation: true,
+        logging: false,
+        loggingKnown: false,
+        statusReadFailure: { error: 'AccessDeniedException: nope', denied: true },
+      },
+    ]);
+    expect(out[0]!.remediation).toContain('Grant cloudtrail:GetTrailStatus');
+    expect(out[0]!.evidence).toMatchObject({ readError: 'AccessDeniedException: nope' });
+  });
 });
 
 describe('IAM/CloudTrail outcomes carry evidence (so the UI shows "View Evidence")', () => {
@@ -389,9 +932,7 @@ describe('IAM/CloudTrail outcomes carry evidence (so the UI shows "View Evidence
 
   it('every password-policy outcome has evidence (none / weak / strong)', () => {
     expect(evaluatePasswordPolicy(null).every(hasEvidence)).toBe(true);
-    expect(
-      evaluatePasswordPolicy({ MinimumPasswordLength: 8 }).every(hasEvidence),
-    ).toBe(true);
+    expect(evaluatePasswordPolicy({ MinimumPasswordLength: 8 }).every(hasEvidence)).toBe(true);
     expect(
       evaluatePasswordPolicy({
         MinimumPasswordLength: 14,
@@ -418,26 +959,332 @@ describe('IAM/CloudTrail outcomes carry evidence (so the UI shows "View Evidence
     ).toBe(true);
   });
 
-  it('the "No CloudTrail configured" outcome has evidence', () => {
-    const out = evaluateCloudTrail([]);
+  it('the "No CloudTrail trail found" outcome has evidence incl. scanned regions', () => {
+    const out = evaluateCloudTrail([], { scannedRegions: ['us-east-1', 'eu-west-1'] });
     expect(out).toHaveLength(1);
-    expect(out[0]!.title).toMatch(/No CloudTrail configured/);
+    expect(out[0]!.title).toMatch(/No CloudTrail trail found/);
+    expect(out[0]!.evidence).toMatchObject({
+      trailsFound: 0,
+      scannedRegions: ['us-east-1', 'eu-west-1'],
+    });
     expect(hasEvidence(out[0]!)).toBe(true);
   });
 
   it('pass/fail evidence carries the determining value (S3 encryption, KMS rotation)', () => {
     const enc = evaluateS3Encryption([
-      { name: 'enc', encrypted: true, encryptionDetermined: true, publicAccessDetermined: true, bucketBpa: null },
-      { name: 'plain', encrypted: false, encryptionDetermined: true, publicAccessDetermined: true, bucketBpa: null },
+      {
+        name: 'enc',
+        encrypted: true,
+        encryptionDetermined: true,
+        publicAccessDetermined: true,
+        bucketBpa: null,
+      },
+      {
+        name: 'plain',
+        encrypted: false,
+        encryptionDetermined: true,
+        publicAccessDetermined: true,
+        bucketBpa: null,
+      },
     ]);
     expect(enc[0]!.evidence?.encrypted).toBe(true);
     expect(enc[1]!.evidence?.encrypted).toBe(false);
 
     const rot = evaluateKmsRotation([
-      { keyId: 'on', region: 'us-east-1', rotationEligible: true, rotationStatusKnown: true, rotationEnabled: true },
-      { keyId: 'off', region: 'us-east-1', rotationEligible: true, rotationStatusKnown: true, rotationEnabled: false },
+      {
+        keyId: 'on',
+        region: 'us-east-1',
+        rotationEligible: true,
+        rotationStatusKnown: true,
+        rotationEnabled: true,
+      },
+      {
+        keyId: 'off',
+        region: 'us-east-1',
+        rotationEligible: true,
+        rotationStatusKnown: true,
+        rotationEnabled: false,
+      },
     ]);
     expect(rot[0]!.evidence?.rotationEnabled).toBe(true);
     expect(rot[1]!.evidence?.rotationEnabled).toBe(false);
+  });
+});
+
+// ── AWS account attribution (multi-account findings) ───────────────────────
+
+function captureCtx(credentials: Record<string, unknown>, checkId?: string) {
+  const passed: Array<{ description: string; evidence?: Record<string, unknown> }> = [];
+  const failed: Array<{ description: string; evidence?: Record<string, unknown> }> = [];
+  const ctx = {
+    credentials,
+    checkId,
+    pass: (r: { description: string; evidence?: Record<string, unknown> }) => passed.push(r),
+    fail: (r: { description: string; evidence?: Record<string, unknown> }) => failed.push(r),
+  } as unknown as CheckContext;
+  return { ctx, passed, failed };
+}
+
+const PASS_OUTCOME: CheckOutcome = {
+  kind: 'pass',
+  title: 'Default encryption enabled: my-bucket',
+  description: 'Bucket "my-bucket" has default encryption enabled.',
+  resourceType: 'aws-s3-bucket',
+  resourceId: 'my-bucket',
+  evidence: { bucket: 'my-bucket', encrypted: true },
+};
+
+describe('awsAccountIdFromCtx', () => {
+  it('extracts the 12-digit account id from the role ARN', () => {
+    expect(
+      awsAccountIdFromCtx({
+        credentials: { roleArn: 'arn:aws:iam::123456789012:role/CompAIAuditor' },
+      } as unknown as CheckContext),
+    ).toBe('123456789012');
+  });
+
+  it('returns null when the role ARN is missing or malformed', () => {
+    expect(awsAccountIdFromCtx({ credentials: {} } as unknown as CheckContext)).toBeNull();
+    expect(
+      awsAccountIdFromCtx({
+        credentials: { roleArn: 'not-an-arn' },
+      } as unknown as CheckContext),
+    ).toBeNull();
+  });
+});
+
+describe('emitOutcomes — attributes findings to the AWS account', () => {
+  it('stamps the account id into evidence and the visible description', () => {
+    const { ctx, passed } = captureCtx({
+      roleArn: 'arn:aws:iam::123456789012:role/CompAIAuditor',
+    });
+    emitOutcomes(ctx, [PASS_OUTCOME]);
+    expect(passed).toHaveLength(1);
+    expect(passed[0]!.evidence?.awsAccountId).toBe('123456789012');
+    expect(passed[0]!.evidence?.bucket).toBe('my-bucket'); // original evidence preserved
+    expect(passed[0]!.description).toContain('(AWS account 123456789012)');
+  });
+
+  it('attributes a fail outcome too', () => {
+    const { ctx, failed } = captureCtx({
+      roleArn: 'arn:aws:iam::999988887777:role/x',
+    });
+    emitOutcomes(ctx, [{ ...PASS_OUTCOME, kind: 'fail', severity: 'high' }]);
+    expect(failed[0]!.evidence?.awsAccountId).toBe('999988887777');
+    expect(failed[0]!.description).toContain('(AWS account 999988887777)');
+  });
+
+  it('leaves findings unattributed for key-auth connections (no role ARN)', () => {
+    const { ctx, passed } = captureCtx({
+      access_key_id: 'AKIA',
+      secret_access_key: 'secret',
+    });
+    emitOutcomes(ctx, [PASS_OUTCOME]);
+    expect(passed[0]!.evidence?.awsAccountId).toBeUndefined();
+    expect(passed[0]!.description).toBe(PASS_OUTCOME.description); // unchanged
+  });
+
+  it("includes the customer's connection name alongside the account when set", () => {
+    const { ctx, passed } = captureCtx({
+      roleArn: 'arn:aws:iam::123456789012:role/CompAIAuditor',
+      connectionName: 'Production AWS',
+    });
+    emitOutcomes(ctx, [PASS_OUTCOME]);
+    expect(passed[0]!.evidence?.awsConnectionName).toBe('Production AWS');
+    expect(passed[0]!.description).toContain('(AWS account 123456789012 — Production AWS)');
+  });
+
+  it('stamps a stable findingKey of `${checkId}-${resourceId}` so findings can be excepted', () => {
+    const { ctx, passed } = captureCtx(
+      { roleArn: 'arn:aws:iam::123456789012:role/CompAIAuditor' },
+      'aws-s3-public-access',
+    );
+    emitOutcomes(ctx, [PASS_OUTCOME]); // resourceId = 'my-bucket'
+    expect(passed[0]!.evidence?.findingKey).toBe('aws-s3-public-access-my-bucket');
+    // Account attribution still applied alongside.
+    expect(passed[0]!.evidence?.awsAccountId).toBe('123456789012');
+  });
+
+  it('stamps findingKey even for key-auth connections with no account id (the un-exceptable bug)', () => {
+    const { ctx, passed } = captureCtx(
+      { access_key_id: 'AKIA', secret_access_key: 'secret' },
+      'aws-s3-public-access',
+    );
+    emitOutcomes(ctx, [PASS_OUTCOME]);
+    expect(passed[0]!.evidence?.findingKey).toBe('aws-s3-public-access-my-bucket');
+    expect(passed[0]!.evidence?.awsAccountId).toBeUndefined();
+  });
+
+  it('omits findingKey when the runner did not set ctx.checkId', () => {
+    const { ctx, passed } = captureCtx({
+      roleArn: 'arn:aws:iam::123456789012:role/CompAIAuditor',
+    });
+    emitOutcomes(ctx, [PASS_OUTCOME]);
+    expect(passed[0]!.evidence?.findingKey).toBeUndefined();
+  });
+});
+
+describe('account-level findings carry AWS account attribution (cubic finding on CS-533)', () => {
+  it('resolveAwsSessionOrFail failures are stamped with the account from the role ARN', async () => {
+    const failed: Array<{ description: string; evidence?: Record<string, unknown> }> = [];
+    const ctx = {
+      credentials: {
+        roleArn: 'arn:aws:iam::123456789012:role/x',
+        externalId: 'eid',
+        regions: ['us-east-1'],
+        connectionName: 'Prod AWS',
+        __resolvedSessionError: 'assume failed for test',
+      },
+      fail: (r: { description: string; evidence?: Record<string, unknown> }) => failed.push(r),
+      pass: () => {},
+      log: () => {},
+    } as unknown as Parameters<typeof resolveAwsSessionOrFail>[0];
+
+    const session = await resolveAwsSessionOrFail(ctx);
+    expect(session).toBeNull();
+    expect(failed).toHaveLength(1);
+    expect(failed[0]!.evidence).toMatchObject({
+      awsAccountId: '123456789012',
+      awsConnectionName: 'Prod AWS',
+      error: 'assume failed for test',
+    });
+    expect(failed[0]!.description).toContain('AWS account 123456789012');
+  });
+});
+
+describe('AWS environment separation', () => {
+  it('classifyVpcEnv: env tag wins, then Name tag, incl. underscore', () => {
+    expect(classifyVpcEnv([{ Key: 'Environment', Value: 'production' }])).toBe('production');
+    expect(classifyVpcEnv([{ Key: 'Name', Value: 'prod-vpc' }])).toBe('production');
+    expect(classifyVpcEnv([{ Key: 'Name', Value: 'vpc_dev' }])).toBe('development');
+  });
+
+  it('classifyVpcEnv: ignores non-env tags (no fabricated environment)', () => {
+    expect(classifyVpcEnv([{ Key: 'team', Value: 'dev-team' }])).toBeNull();
+    expect(classifyVpcEnv(undefined)).toBeNull();
+  });
+
+  it('classifyVpcEnv: honors customer-configured aliases', () => {
+    const aliasesConfig = parseEnvironmentAliases({
+      environment_aliases: 'release=production, preview=staging',
+    });
+    expect(
+      classifyVpcEnvWithAliases({
+        tags: [{ Key: 'Name', Value: 'app-release' }],
+        aliases: aliasesConfig.aliases,
+      }),
+    ).toBe('production');
+    expect(
+      classifyVpcEnvWithAliases({
+        tags: [{ Key: 'Environment', Value: 'preview' }],
+        aliases: aliasesConfig.aliases,
+      }),
+    ).toBe('staging');
+  });
+
+  it('exposes environment aliases as an AWS connection variable', () => {
+    expect(awsManifest.variables?.some((v) => v.id === 'environment_aliases')).toBe(true);
+  });
+
+  it('passes on production + non-production, without claiming cross-account isolation', () => {
+    const out = evaluateEnvironmentSeparation([
+      { vpcId: 'vpc-1', region: 'us-east-1', environment: 'production' },
+      { vpcId: 'vpc-2', region: 'us-east-1', environment: 'development' },
+    ]);
+    expect(out).toHaveLength(1);
+    expect(out[0]!.kind).toBe('pass');
+    expect(out[0]!.description).toMatch(/not cross-account isolation/);
+  });
+
+  it('fails when only non-production environments are present (no production)', () => {
+    const out = evaluateEnvironmentSeparation([
+      { vpcId: 'vpc-1', region: 'us-east-1', environment: 'development' },
+      { vpcId: 'vpc-2', region: 'us-east-1', environment: 'staging' },
+    ]);
+    expect(out).toHaveLength(1);
+    expect(out[0]!.kind).toBe('fail');
+  });
+
+  it('fails (low) with guidance when only one environment is detected', () => {
+    const out = evaluateEnvironmentSeparation([
+      { vpcId: 'vpc-1', region: 'us-east-1', environment: 'production' },
+    ]);
+    expect(out).toHaveLength(1);
+    expect(out[0]!.kind).toBe('fail');
+    expect(out[0]!.severity).toBe('low');
+    expect(out[0]!.remediation).toMatch(/separate AWS account per environment/);
+  });
+
+  it('fails when no VPC can be classified', () => {
+    const out = evaluateEnvironmentSeparation([
+      { vpcId: 'vpc-1', region: 'us-east-1', environment: null },
+      { vpcId: 'vpc-2', region: 'us-east-1', environment: null },
+    ]);
+    expect(out[0]!.kind).toBe('fail');
+  });
+
+  it('fails clearly when production is detected but another VPC is unclassified', () => {
+    const out = evaluateEnvironmentSeparation([
+      { vpcId: 'vpc-1', region: 'us-east-1', environment: 'production' },
+      { vpcId: 'vpc-2', region: 'us-east-1', environment: null },
+    ]);
+    expect(out).toHaveLength(1);
+    expect(out[0]!.kind).toBe('fail');
+    expect(out[0]!.description).toMatch(/1 VPC\(s\) were unclassified/);
+    expect(out[0]!.evidence).toMatchObject({ unclassifiedVpcCount: 1 });
+  });
+
+  it('fails (low) with guidance when there are no non-default VPCs', () => {
+    const out = evaluateEnvironmentSeparation([]);
+    expect(out).toHaveLength(1);
+    expect(out[0]!.kind).toBe('fail');
+    expect(out[0]!.severity).toBe('low');
+    expect(out[0]!.evidence).toMatchObject({ vpcCount: 0 });
+  });
+});
+
+describe('buildEnvironmentSeparationOutcomes — region failures vs verdict (cubic finding)', () => {
+  const failure = { error: 'AccessDenied: ec2:DescribeVpcs', denied: true };
+  const regionFailures = [{ region: 'eu-west-1', failure }];
+
+  it('does not pass when some regions could not be read, even if scanned regions show separation', () => {
+    const out = buildEnvironmentSeparationOutcomes(
+      [
+        { vpcId: 'vpc-1', region: 'us-east-1', environment: 'production' },
+        { vpcId: 'vpc-2', region: 'us-east-1', environment: 'development' },
+      ],
+      regionFailures,
+    );
+    expect(out).toHaveLength(1);
+    expect(out[0]!.kind).toBe('fail');
+    expect(out[0]!.title).toMatch(/Could not verify VPCs in some regions/);
+  });
+
+  it('surfaces the region failure alongside an UNconfirmed verdict (both negative)', () => {
+    const out = buildEnvironmentSeparationOutcomes(
+      [{ vpcId: 'vpc-1', region: 'us-east-1', environment: 'production' }],
+      regionFailures,
+    );
+    expect(out.length).toBeGreaterThanOrEqual(2);
+    expect(out.every((o) => o.kind === 'fail')).toBe(true);
+    expect(out.some((o) => /Could not verify VPCs in some regions/.test(o.title))).toBe(true);
+  });
+
+  it('returns only the region-failure finding when zero VPCs were read', () => {
+    const out = buildEnvironmentSeparationOutcomes([], regionFailures);
+    expect(out).toHaveLength(1);
+    expect(out[0]!.title).toMatch(/Could not verify VPCs in some regions/);
+  });
+
+  it('with no region failures, returns the separation verdict unchanged', () => {
+    const out = buildEnvironmentSeparationOutcomes(
+      [
+        { vpcId: 'vpc-1', region: 'us-east-1', environment: 'production' },
+        { vpcId: 'vpc-2', region: 'us-east-1', environment: 'staging' },
+      ],
+      [],
+    );
+    expect(out).toHaveLength(1);
+    expect(out[0]!.kind).toBe('pass');
   });
 });

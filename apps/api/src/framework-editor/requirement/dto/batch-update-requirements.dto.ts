@@ -2,12 +2,15 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsArray,
+  IsInt,
   IsNotEmpty,
   IsString,
   IsOptional,
   MaxLength,
+  Min,
   ValidateNested,
 } from 'class-validator';
+import { REQUIREMENT_DESCRIPTION_MAX_LENGTH } from '../../constants';
 
 class BatchUpdateRequirementItem {
   @ApiProperty()
@@ -30,7 +33,7 @@ class BatchUpdateRequirementItem {
   @ApiProperty()
   @IsString()
   @IsOptional()
-  @MaxLength(5000)
+  @MaxLength(REQUIREMENT_DESCRIPTION_MAX_LENGTH)
   description?: string;
 
   @ApiProperty()
@@ -38,6 +41,13 @@ class BatchUpdateRequirementItem {
   @IsOptional()
   @MaxLength(255)
   requirementFamily?: string;
+
+  // Nullable so a batch update can clear an order back to "unset".
+  @ApiProperty({ required: false, nullable: true })
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  sortOrder?: number | null;
 }
 
 export class BatchUpdateRequirementsDto {

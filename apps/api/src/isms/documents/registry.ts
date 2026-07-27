@@ -1,0 +1,113 @@
+import type { IsmsDocumentType } from '@db';
+import type { ZodTypeAny } from 'zod';
+import type { IsmsExportSection } from '../utils/export-shared';
+import { buildContextSections } from './context';
+import { buildInterestedPartiesSections } from './interested-parties';
+import { buildRequirementsSections } from './requirements';
+import { buildObjectivesSections } from './objectives';
+import { buildRolesSections } from './roles';
+import { buildMonitoringSections } from './monitoring';
+import {
+  buildInternalAuditSections,
+  deriveInternalAuditNarrative,
+  internalAuditNarrativeSchema,
+} from './internal-audit';
+import {
+  deriveManagementReviewNarrative,
+  managementReviewNarrativeSchema,
+} from './management-review';
+import { buildManagementReviewSections } from './management-review-sections';
+import {
+  buildScopeSections,
+  deriveScopeNarrative,
+  ismsScopeNarrativeSchema,
+} from './scope';
+import {
+  buildLeadershipSections,
+  deriveLeadershipNarrative,
+  leadershipNarrativeSchema,
+} from './leadership';
+import {
+  buildRiskMethodologySections,
+  deriveRiskMethodologyNarrative,
+  riskMethodologyNarrativeSchema,
+} from './risk-methodology';
+import { buildRiskTreatmentPlanSections } from './risk-treatment-plan';
+import type { DocumentExportInput, IsmsPlatformData } from './types';
+
+/** Document types whose content is a singleton narrative stored in version.narrative. */
+const NARRATIVE_TYPES: IsmsDocumentType[] = [
+  'isms_scope',
+  'leadership_commitment',
+  'risk_assessment_methodology',
+];
+
+const EXPORT_SECTION_BUILDERS: Record<
+  IsmsDocumentType,
+  (input: DocumentExportInput) => IsmsExportSection[]
+> = {
+  context_of_organization: buildContextSections,
+  interested_parties_register: buildInterestedPartiesSections,
+  interested_parties_requirements: buildRequirementsSections,
+  objectives_plan: buildObjectivesSections,
+  roles_and_responsibilities: buildRolesSections,
+  monitoring: buildMonitoringSections,
+  internal_audit: buildInternalAuditSections,
+  management_review: buildManagementReviewSections,
+  isms_scope: buildScopeSections,
+  leadership_commitment: buildLeadershipSections,
+  risk_assessment_methodology: buildRiskMethodologySections,
+  risk_treatment_plan: buildRiskTreatmentPlanSections,
+};
+
+export function buildExportSections({
+  type,
+  input,
+}: {
+  type: IsmsDocumentType;
+  input: DocumentExportInput;
+}): IsmsExportSection[] {
+  return EXPORT_SECTION_BUILDERS[type](input);
+}
+
+/**
+ * Zod schema validating the narrative payload for each document type that
+ * stores one. Covers the singleton documents plus the Internal Audit and
+ * Management Review documents, whose narratives hold only the Programme /
+ * Procedure paragraph (their audits/reviews live in their own registers, so
+ * they are NOT narrative types).
+ */
+export function narrativeSchemaForType(
+  type: IsmsDocumentType,
+): ZodTypeAny | null {
+  if (type === 'isms_scope') return ismsScopeNarrativeSchema;
+  if (type === 'leadership_commitment') return leadershipNarrativeSchema;
+  if (type === 'internal_audit') return internalAuditNarrativeSchema;
+  if (type === 'management_review') return managementReviewNarrativeSchema;
+  if (type === 'risk_assessment_methodology') {
+    return riskMethodologyNarrativeSchema;
+  }
+  return null;
+}
+
+/** Derive the default narrative payload for a document type that stores one. */
+export function deriveNarrativeForType({
+  type,
+  data,
+}: {
+  type: IsmsDocumentType;
+  data: IsmsPlatformData;
+}): Record<string, unknown> | null {
+  if (type === 'isms_scope') return deriveScopeNarrative(data);
+  if (type === 'leadership_commitment') return deriveLeadershipNarrative(data);
+  if (type === 'internal_audit') return deriveInternalAuditNarrative(data);
+  if (type === 'management_review') return deriveManagementReviewNarrative(data);
+  if (type === 'risk_assessment_methodology') {
+    return deriveRiskMethodologyNarrative(data);
+  }
+  return null;
+}
+
+export function isNarrativeType(type: IsmsDocumentType): boolean {
+  return NARRATIVE_TYPES.includes(type);
+}

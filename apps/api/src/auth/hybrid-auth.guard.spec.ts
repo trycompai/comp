@@ -25,12 +25,20 @@ jest.mock('./auth.server', () => ({
 // (device-agent style) to bind the organization for the MCP OAuth path.
 const mockUserFindUnique = jest.fn();
 const mockMemberFindMany = jest.fn();
+const mockMemberFindFirst = jest.fn();
+const mockOrgFindUnique = jest.fn();
 const mockMcpBindingFindUnique = jest.fn();
 const mockOrgRoleFindMany = jest.fn();
 jest.mock('@db', () => ({
   db: {
     user: { findUnique: (...args: unknown[]) => mockUserFindUnique(...args) },
-    member: { findMany: (...args: unknown[]) => mockMemberFindMany(...args) },
+    member: {
+      findMany: (...args: unknown[]) => mockMemberFindMany(...args),
+      findFirst: (...args: unknown[]) => mockMemberFindFirst(...args),
+    },
+    organization: {
+      findUnique: (...args: unknown[]) => mockOrgFindUnique(...args),
+    },
     mcpOrgBinding: {
       findUnique: (...args: unknown[]) => mockMcpBindingFindUnique(...args),
     },
@@ -38,6 +46,14 @@ jest.mock('@db', () => ({
       findMany: (...args: unknown[]) => mockOrgRoleFindMany(...args),
     },
   },
+}));
+
+// Service-token validation is a pure lookup; mock it so tests can present a
+// valid token and reach the x-user-id acting-member resolution.
+const mockResolveServiceByToken = jest.fn();
+jest.mock('./service-token.config', () => ({
+  resolveServiceByToken: (...args: unknown[]) =>
+    mockResolveServiceByToken(...args),
 }));
 
 // Mock @trycompai/auth — the app-access gate reads BUILT_IN_ROLE_PERMISSIONS to
@@ -360,5 +376,88 @@ describe('HybridAuthGuard — MCP OAuth path', () => {
     });
 
     await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
+  });
+});
+
+describe('HybridAuthGuard — service token x-user-id acting member', () => {
+  let guard: HybridAuthGuard;
+  let reflector: Reflector;
+
+  const createContext = (
+    headers: Record<string, string>,
+  ): { context: ExecutionContext; request: Record<string, unknown> } => {
+    const request: Record<string, unknown> = { headers };
+    const context = {
+      switchToHttp: () => ({ getRequest: () => request }),
+      getHandler: () => jest.fn(),
+      getClass: () => jest.fn(),
+    } as unknown as ExecutionContext;
+    return { context, request };
+  };
+
+  const svcHeaders = (userId?: string): Record<string, string> => ({
+    'x-service-token': 'valid_service_token',
+    'x-organization-id': 'org_1',
+    ...(userId ? { 'x-user-id': userId } : {}),
+  });
+
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        HybridAuthGuard,
+        {
+          provide: ApiKeyService,
+          useValue: { extractApiKey: jest.fn(), validateApiKey: jest.fn() },
+        },
+        Reflector,
+      ],
+    }).compile();
+    guard = module.get<HybridAuthGuard>(HybridAuthGuard);
+    reflector = module.get<Reflector>(Reflector);
+    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(false);
+    // Valid service token + existing org so we reach the x-user-id block.
+    mockResolveServiceByToken.mockReturnValue({
+      definition: { name: 'Trigger.dev' },
+    });
+    mockOrgFindUnique.mockResolvedValue({ id: 'org_1' });
+    mockMemberFindFirst.mockResolvedValue(null);
+  });
+
+  it('attributes an ACTIVE member: sets request.userId + memberId, scoped to active memberships', async () => {
+    mockMemberFindFirst.mockResolvedValue({
+      id: 'mem_active',
+      userId: 'usr_active',
+    });
+
+    const { context, request } = createContext(svcHeaders('usr_active'));
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+
+    expect(request.userId).toBe('usr_active');
+    expect(request.memberId).toBe('mem_active');
+    // The lookup must exclude deactivated/inactive memberships.
+    expect(mockMemberFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          userId: 'usr_active',
+          organizationId: 'org_1',
+          deactivated: false,
+          isActive: true,
+        }),
+      }),
+    );
+  });
+
+  it('does NOT attribute a deactivated/inactive member (no userId/memberId set)', async () => {
+    // The active-only filter yields no row for an offboarded member.
+    mockMemberFindFirst.mockResolvedValue(null);
+
+    const { context, request } = createContext(svcHeaders('usr_offboarded'));
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+
+    expect(request.userId).toBeUndefined();
+    expect(request.memberId).toBeUndefined();
+    // Auth still succeeds as a service token, just with no acting user.
+    expect(request.isServiceToken).toBe(true);
   });
 });

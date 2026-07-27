@@ -4,3 +4,4 @@ export { ec2SecurityGroupsCheck } from './ec2';
 export { rdsEncryptionCheck, rdsBackupsCheck } from './rds';
 export { kmsKeyRotationCheck } from './kms';
 export { cloudTrailEnabledCheck } from './cloudtrail';
+export { environmentSeparationCheck } from './environment-separation';

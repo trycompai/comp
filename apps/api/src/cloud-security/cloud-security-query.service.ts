@@ -3,7 +3,8 @@ import { db } from '@db';
 import { getManifest } from '@trycompai/integration-platform';
 import { sanitizeEvidence } from './evidence-sanitizer';
 import { getLegacyFindings } from './cloud-security-query.legacy';
-import { normalizeCheckId } from './check-definition.utils';
+import { resolveCheckKey } from './check-definition.utils';
+import { loadActiveExceptionSet } from './finding-exceptions';
 import type {
   CloudFinding,
   CloudProvider,
@@ -15,6 +16,19 @@ import type {
 export type { CloudFinding, CloudProvider, CloudProviderLatestRun };
 
 const CLOUD_PROVIDER_SLUGS = ['aws', 'gcp', 'azure'] as const;
+
+// The cloud-security scan persists exactly one run per connection under this
+// coarse, run-level checkId (`storeFindings` in cloud-security.service.ts). The
+// SAME connection also accumulates OTHER IntegrationCheckRun rows on different
+// schedules — per-task evidence checks (checkId = manifest check id, taskId set,
+// written ~06:00 UTC) and the on-connect "All Checks (Auto)" run (checkId
+// 'all'), each holding only a handful of results. The latest-run lookups below
+// MUST scope to these scan runs; otherwise a later per-task run shadows the
+// full daily scan and the Cloud Tests dashboard shows a fraction of the
+// findings (CS-702).
+const CLOUD_SCAN_CHECK_IDS = CLOUD_PROVIDER_SLUGS.map(
+  (slug) => `${slug}-security-scan`,
+);
 
 /** Extract project ID from a GCP resource path like //iam.googleapis.com/projects/my-proj/... */
 function extractProjectIdFromResource(
@@ -198,36 +212,19 @@ export class CloudSecurityQueryService {
     if (options.includeExceptions) return combined;
 
     // Filter out findings under an active (non-revoked, non-expired)
-    // FindingException. Looked up in one query keyed by org so the cost
-    // stays constant regardless of finding count.
-    const activeExceptionKeys = await this.loadActiveExceptionKeys(organizationId);
-    if (activeExceptionKeys.size === 0) return combined;
+    // FindingException, via the shared exception set so this view stays matched
+    // with the task-check status/display (one source of truth).
+    const exceptions = await loadActiveExceptionSet(organizationId);
+    if (exceptions.size === 0) return combined;
 
     return combined.filter((finding) => {
       if (!finding.checkKey || !finding.resourceId) return true;
-      const key = `${finding.connectionId}::${finding.checkKey}::${finding.resourceId}`;
-      return !activeExceptionKeys.has(key);
+      return !exceptions.has(
+        finding.connectionId,
+        finding.checkKey,
+        finding.resourceId,
+      );
     });
-  }
-
-  /**
-   * Return the set of (connectionId, checkId, resourceId) tuples that have
-   * an active exception in this org. One DB query per getFindings call.
-   */
-  private async loadActiveExceptionKeys(
-    organizationId: string,
-  ): Promise<Set<string>> {
-    const active = await db.findingException.findMany({
-      where: {
-        organizationId,
-        revokedAt: null,
-        OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
-      },
-      select: { connectionId: true, checkId: true, resourceId: true },
-    });
-    return new Set(
-      active.map((e) => `${e.connectionId}::${e.checkId}::${e.resourceId}`),
-    );
   }
 
   private async getLatestRunsByConnection(
@@ -238,6 +235,9 @@ export class CloudSecurityQueryService {
     const runs = await db.integrationCheckRun.findMany({
       where: {
         connectionId: { in: connectionIds },
+        // Only the full cloud-security scan run — not later per-task / 'all'
+        // runs on the same connection (see CLOUD_SCAN_CHECK_IDS).
+        checkId: { in: CLOUD_SCAN_CHECK_IDS },
         status: { in: ['success', 'failed'] },
       },
       orderBy: { completedAt: 'desc' },
@@ -301,6 +301,9 @@ export class CloudSecurityQueryService {
     const latestRuns = await db.integrationCheckRun.findMany({
       where: {
         connectionId: { in: connectionIds },
+        // Only the full cloud-security scan run — not later per-task / 'all'
+        // runs on the same connection (see CLOUD_SCAN_CHECK_IDS).
+        checkId: { in: CLOUD_SCAN_CHECK_IDS },
         status: { in: ['success', 'failed'] },
       },
       orderBy: { completedAt: 'desc' },
@@ -364,9 +367,13 @@ export class CloudSecurityQueryService {
         resourceId: result.resourceId ?? null,
         resourceType: result.resourceType ?? null,
         checkId: checkRun?.checkId ?? null,
-        checkKey: findingKey
-          ? normalizeCheckId(findingKey, result.resourceId)
-          : null,
+        // Same fallback as the exception resolver so a finding marked as an
+        // exception is also the one suppressed from this list.
+        checkKey: resolveCheckKey({
+          findingKey,
+          resourceId: result.resourceId,
+          runCheckId: checkRun?.checkId ?? null,
+        }),
         evidence: sanitizeEvidence(result.evidence ?? null),
         projectDisplayName: (() => {
           if (projectDisplayNameFromEvidence) {

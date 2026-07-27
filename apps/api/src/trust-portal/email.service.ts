@@ -37,8 +37,16 @@ export class TrustEmailService {
     organizationName: string;
     expiresAt: Date;
     portalUrl: string;
+    ndaBypassed?: boolean;
   }): Promise<void> {
-    const { toEmail, toName, organizationName, expiresAt, portalUrl } = params;
+    const {
+      toEmail,
+      toName,
+      organizationName,
+      expiresAt,
+      portalUrl,
+      ndaBypassed,
+    } = params;
 
     const { id } = await triggerEmail({
       to: toEmail,
@@ -48,6 +56,7 @@ export class TrustEmailService {
         organizationName,
         expiresAt,
         portalUrl,
+        ndaBypassed,
       }),
       trustPortal: true,
     });

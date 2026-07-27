@@ -48,15 +48,27 @@ export class FrameworkSyncService {
         return { syncOperationId: null, instanceId: instance.id };
       }
 
-      const [currentVersion, targetVersion] = await Promise.all([
+      const [pinnedVersion, targetVersion] = await Promise.all([
         instance.currentVersionId
           ? tx.frameworkVersion.findUnique({ where: { id: instance.currentVersionId } })
           : null,
         tx.frameworkVersion.findUnique({ where: { id: params.targetVersionId } }),
       ]);
       if (!targetVersion) throw new NotFoundException('Target version not found');
+
+      // Unpinned instances (no currentVersion) diff from the framework's
+      // earliest published version so they can still adopt updates. applySync
+      // sets currentVersionId at the end, healing the unpinned state.
+      const currentVersion =
+        pinnedVersion ??
+        (await tx.frameworkVersion.findFirst({
+          where: { frameworkId: instance.frameworkId! },
+          orderBy: { publishedAt: 'asc' },
+        }));
       if (!currentVersion) {
-        throw new BadRequestException('Instance is not on any version; backfill v1.0.0 first');
+        throw new BadRequestException(
+          'Framework has no published version to sync from',
+        );
       }
       if (currentVersion.frameworkId !== instance.frameworkId) {
         throw new BadRequestException('Version / framework mismatch');
