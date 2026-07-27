@@ -96,6 +96,7 @@ jobs:
         env:
           EXTENSION_DIR: ${{ env.EXTENSION_DIR }}
           VERSION: ${{ steps.version.outputs.version }}
+          OAUTH_CLIENT_ID: ${{ secrets.SECURITY_QUESTIONNAIRE_EXTENSION_GOOGLE_OAUTH_CLIENT_ID }}
         run: |
           node -e "
             const fs = require('fs');
@@ -104,9 +105,14 @@ jobs:
             if (manifest.version !== process.env.VERSION) {
               throw new Error(\`Expected manifest version ${process.env.VERSION}, got ${manifest.version}\`);
             }
-            if (!manifest.oauth2?.client_id) {
-              throw new Error('Missing oauth2.client_id in production manifest');
+            // Google OAuth is optional. When the client id secret is set the
+            // manifest must carry it; without it the extension ships with the
+            // guided Sheets paste flow instead of direct Sheets API writes.
+            const wantsOAuth = Boolean(process.env.OAUTH_CLIENT_ID);
+            if (wantsOAuth && !manifest.oauth2?.client_id) {
+              throw new Error('OAuth client id was provided but is missing from the built manifest');
             }
+            console.log('Google Sheets API insertion:', wantsOAuth ? 'enabled' : 'disabled (guided paste)');
           "
 
       - name: Package extension
@@ -129,10 +135,11 @@ jobs:
           REFRESH_TOKEN: ${{ secrets.CHROME_WEB_STORE_REFRESH_TOKEN }}
           PUBLISHER_ID: ${{ secrets.CHROME_WEB_STORE_PUBLISHER_ID }}
           EXTENSION_ID: ${{ secrets.SECURITY_QUESTIONNAIRE_EXTENSION_ID }}
-          OAUTH_CLIENT_ID: ${{ secrets.SECURITY_QUESTIONNAIRE_EXTENSION_GOOGLE_OAUTH_CLIENT_ID }}
         run: |
+          # SECURITY_QUESTIONNAIRE_EXTENSION_GOOGLE_OAUTH_CLIENT_ID is intentionally
+          # not required — it only enables direct Google Sheets API insertion.
           missing=0
-          for name in CLIENT_ID CLIENT_SECRET REFRESH_TOKEN PUBLISHER_ID EXTENSION_ID OAUTH_CLIENT_ID; do
+          for name in CLIENT_ID CLIENT_SECRET REFRESH_TOKEN PUBLISHER_ID EXTENSION_ID; do
             if [ -z "${!name}" ]; then
               echo "::error::Missing required secret: $name"
               missing=1
