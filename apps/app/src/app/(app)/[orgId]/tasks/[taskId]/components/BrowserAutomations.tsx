@@ -299,12 +299,6 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
     [profiles],
   );
 
-  // Loading state — connections load with the automations; rendering before
-  // they arrive would flash the "no connections" states below.
-  if (automations.isLoading || profilesLoading) {
-    return null;
-  }
-
   // Execution live view
   if (execution.isExecuting && execution.liveViewUrl) {
     const runningAutomation = automations.automations.find(
@@ -354,11 +348,15 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
     );
   }
 
-  // Everything below resolves connections from the profiles list — if that
-  // list failed to load and we have nothing cached, rendering on an empty list
-  // would misresolve (empty states invite reconnecting; the composer/list
-  // treat connected vendors as missing). Show the failure and offer a retry.
-  // The connect/auth flows above stay reachable — they don't need the list.
+  // Everything below resolves connections from the profiles list, so it waits
+  // for the load and surfaces a failure — while the flows above (execution,
+  // connect, auth) stay reachable during it, since they don't need the list.
+  // Rendering the states below early would flash "no connections" or
+  // misresolve (empty states invite reconnecting; the composer/list treat
+  // connected vendors as missing).
+  if (automations.isLoading || profilesLoading) {
+    return null;
+  }
   if (profilesError && profiles.length === 0) {
     return <ConnectionsErrorState onRetry={() => void fetchProfiles()} />;
   }

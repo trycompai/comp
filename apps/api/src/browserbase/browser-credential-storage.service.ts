@@ -6,7 +6,7 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { db } from '@db';
-import type { ItemField } from '@1password/sdk';
+import type { Item, ItemField } from '@1password/sdk';
 import {
   getOnePasswordClient,
   isOnePasswordConfigured,
@@ -136,9 +136,11 @@ export class BrowserCredentialStorageService {
 
   /**
    * Replace the fields of a connection's existing login item, optionally
-   * carrying over its stored TOTP field. Returns false (instead of throwing)
-   * when the item can't be read or written, so the caller can create a
-   * replacement item.
+   * carrying over its stored TOTP field. Returns false only when the item
+   * can't be READ (e.g. it was deleted directly in 1Password), so the caller
+   * creates a replacement. A write failure propagates instead: the item still
+   * exists, and falling back to a replacement would orphan it and repoint the
+   * profile — the request should fail and the retry hit the same item.
    */
   private async updateExistingLoginItem({
     client,
@@ -155,25 +157,27 @@ export class BrowserCredentialStorageService {
     fields: ItemField[];
     keepStoredTotp: boolean;
   }): Promise<boolean> {
+    let item: Item;
     try {
-      const item = await client.items.get(vaultId, itemId);
-      const storedTotp = keepStoredTotp
-        ? item.fields.find(
-            (field) =>
-              field.title === TOTP_FIELD_TITLE && field.value.trim().length > 0,
-          )
-        : undefined;
-      item.title = title;
-      item.fields = storedTotp ? [...fields, storedTotp] : fields;
-      await client.items.put(item);
-      return true;
+      item = await client.items.get(vaultId, itemId);
     } catch (error) {
       this.logger.warn(
-        'Could not update the existing 1Password item; creating a replacement',
+        'Could not read the existing 1Password item; creating a replacement',
         { error: error instanceof Error ? error.message : String(error) },
       );
       return false;
     }
+
+    const storedTotp = keepStoredTotp
+      ? item.fields.find(
+          (field) =>
+            field.title === TOTP_FIELD_TITLE && field.value.trim().length > 0,
+        )
+      : undefined;
+    item.title = title;
+    item.fields = storedTotp ? [...fields, storedTotp] : fields;
+    await client.items.put(item);
+    return true;
   }
 
   /**

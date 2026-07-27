@@ -268,6 +268,29 @@ describe('BrowserCredentialStorageService — TOTP', () => {
       expect(totpFields[0].value).toBe('NEW-SEED');
     });
 
+    it('propagates a write failure instead of creating a replacement', async () => {
+      findFirst.mockResolvedValue(storedProfile());
+      itemsGet.mockResolvedValue({
+        title: 'old title',
+        fields: [field('username'), field('password')],
+      });
+      itemsPut.mockRejectedValue(new Error('1Password service unavailable'));
+
+      await expect(
+        service.storeProfileCredentials({
+          organizationId: 'org_1',
+          profileId: 'bap_1',
+          username: 'user',
+          password: 'pass',
+        }),
+      ).rejects.toThrow('1Password service unavailable');
+
+      // The item still exists — a replacement would orphan it and repoint the
+      // profile, so neither the create path nor the DB update may run.
+      expect(itemsCreate).not.toHaveBeenCalled();
+      expect(update).not.toHaveBeenCalled();
+    });
+
     it('creates a replacement item when the stored one is unreadable', async () => {
       findFirst.mockResolvedValue(storedProfile());
       itemsGet.mockRejectedValue(new Error('item not found'));
