@@ -3,11 +3,22 @@ import { browser } from 'wxt/browser';
 export function bindAnswerAutosave(params: {
   root: ParentNode;
   tabId: number | null;
+  onError?(message: string): void;
 }): void {
   params.root.querySelectorAll('[data-answer-for]').forEach((element) => {
     if (!(element instanceof HTMLTextAreaElement)) return;
     element.addEventListener('change', () => {
-      void saveTextareaAnswer({ tabId: params.tabId, textarea: element });
+      // A dropped autosave loses the user's edit, so it has to be visible
+      // rather than an unhandled rejection in the console.
+      void saveTextareaAnswer({ tabId: params.tabId, textarea: element }).catch(
+        (error: unknown) => {
+          params.onError?.(
+            error instanceof Error
+              ? `Could not save your edit: ${error.message}`
+              : 'Could not save your edit.',
+          );
+        },
+      );
     });
   });
 }

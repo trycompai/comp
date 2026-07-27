@@ -24,7 +24,12 @@ export function parseGvizTable(text: string): GvizTable | null {
   const end = text.lastIndexOf('}');
   if (start < 0 || end <= start) return null;
 
-  const parsed: unknown = JSON.parse(text.slice(start, end + 1));
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text.slice(start, end + 1));
+  } catch {
+    return null;
+  }
   if (!isRecord(parsed) || !isRecord(parsed.table)) return null;
   return parsed.table;
 }

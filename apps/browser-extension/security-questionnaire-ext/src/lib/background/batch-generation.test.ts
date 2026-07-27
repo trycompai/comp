@@ -99,6 +99,43 @@ describe('generateQueueItemsInBatches', () => {
     expect(generateAnswer).not.toHaveBeenCalled();
   });
 
+  it('applies results to the stored queue, not a stale snapshot', async () => {
+    const items = [item({ id: 'a' }), item({ id: 'b' })];
+    let stored = queueWith(items);
+
+    // The user approves an answer in the side panel while generation runs.
+    generateAnswer.mockImplementationOnce(async (params: { question: string }) => {
+      stored = {
+        ...stored,
+        items: stored.items.map((entry) =>
+          entry.id === 'b'
+            ? { ...entry, status: 'approved', answer: 'signed off', edited: true }
+            : entry,
+        ),
+      };
+      return {
+        questionIndex: 0,
+        question: params.question,
+        answer: 'generated answer',
+        sources: [],
+      };
+    });
+
+    const result = await generateQueueItemsInBatches({
+      auth: { selectedOrganizationId: 'org_a' },
+      concurrency: 1,
+      queue: stored,
+      loadQueue: async () => stored,
+      saveQueue: async (next) => {
+        stored = next;
+      },
+    });
+
+    const b = result.items.find((entry) => entry.id === 'b');
+    expect(b?.status).toBe('approved');
+    expect(b?.answer).toBe('signed off');
+  });
+
   it('flags an item when generation fails instead of leaving it generating', async () => {
     generateAnswer.mockRejectedValueOnce(new Error('API is down'));
     const result = await runBatch([item({ id: 'a', status: 'pending' })]);

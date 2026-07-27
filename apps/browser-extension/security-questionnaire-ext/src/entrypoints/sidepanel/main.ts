@@ -87,7 +87,7 @@ function render(message = statusMessage): void {
 }
 
 function bindEvents(): void {
-  bindAnswerAutosave({ root: appRoot, tabId: activeTabId });
+  bindAnswerAutosave({ root: appRoot, tabId: activeTabId, onError: setStatus });
   appRoot.querySelectorAll('[data-action]').forEach((element) => {
     element.addEventListener('click', (event) => {
       const target = event.currentTarget;

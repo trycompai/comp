@@ -91,7 +91,12 @@ async function fetchTable(params: {
   url: string;
   parse: (text: string) => GvizTable | null;
 }): Promise<GvizTable | null> {
-  const response = await params.fetcher(params.url, { credentials: 'include' });
-  if (!response.ok) return null;
-  return params.parse(await response.text());
+  try {
+    const response = await params.fetcher(params.url, { credentials: 'include' });
+    if (!response.ok) return null;
+    return params.parse(await response.text());
+  } catch {
+    // One endpoint failing must not abort the fallback chain.
+    return null;
+  }
 }

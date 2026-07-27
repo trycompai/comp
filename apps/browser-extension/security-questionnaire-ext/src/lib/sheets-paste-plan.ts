@@ -61,12 +61,11 @@ export function buildSheetPastePlan(
 function parseSheetTarget(answer: SheetAnswer): SheetTarget[] {
   const match = answer.fieldId.match(/^sheet:([^:]+):(\d+):(\d+)$/);
   if (!match) return [];
-  return [{
-    ...answer,
-    gid: match[1],
-    row: Number(match[2]),
-    col: Number(match[3]),
-  }];
+  const row = Number(match[2]);
+  const col = Number(match[3]);
+  // A1 notation is 1-based; row or column 0 would produce a malformed range.
+  if (row < 1 || col < 1) return [];
+  return [{ ...answer, gid: match[1], row, col }];
 }
 
 function getRange(params: {

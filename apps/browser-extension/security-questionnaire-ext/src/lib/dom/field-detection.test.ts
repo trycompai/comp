@@ -2,6 +2,17 @@ import { describe, expect, it } from 'vitest';
 import { detectQuestionFields } from './field-detection';
 
 describe('detectQuestionFields', () => {
+  it('does not treat an answer-style statement as a question', () => {
+    document.body.innerHTML = `
+      <label for="a">We encrypt all customer data at rest and in transit.</label>
+      <textarea id="a"></textarea>
+    `;
+
+    const fields = detectQuestionFields(document, { visibleOnly: false });
+
+    expect(fields).toHaveLength(0);
+  });
+
   it('extracts a question from an associated label', () => {
     document.body.innerHTML = `
       <label for="encrypt">Do you encrypt customer data at rest?</label>

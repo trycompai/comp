@@ -1,9 +1,13 @@
 import type { QuestionQueueItem, TabQuestionQueue } from './types';
 
+function hasAnswerText(item: QuestionQueueItem): boolean {
+  return (item.answer?.trim().length ?? 0) > 0;
+}
+
 export function approveGeneratedItems(queue: TabQuestionQueue): TabQuestionQueue {
   return approveMatchingGeneratedItems({
     queue,
-    matches: (item) => Boolean(item.answer),
+    matches: hasAnswerText,
   });
 }
 
@@ -12,7 +16,7 @@ export function approveHighConfidenceItems(
 ): TabQuestionQueue {
   return approveMatchingGeneratedItems({
     queue,
-    matches: (item) => item.confidence === 'high' && Boolean(item.answer),
+    matches: (item) => item.confidence === 'high' && hasAnswerText(item),
   });
 }
 

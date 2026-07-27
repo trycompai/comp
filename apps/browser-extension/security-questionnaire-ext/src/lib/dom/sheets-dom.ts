@@ -81,5 +81,10 @@ function parsePositiveInteger(value: string | null): number | null {
 
 function parseGid(hash: string): string {
   const match = hash.match(/(?:^|[&#])gid=([^&]+)/);
-  return match?.[1] ? decodeURIComponent(match[1]) : '0';
+  if (!match?.[1]) return '0';
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return '0';
+  }
 }

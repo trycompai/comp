@@ -30,6 +30,7 @@ export async function generateQueueItemsInBatches(params: {
   auth: { selectedOrganizationId: string };
   concurrency?: number;
   queue: TabQuestionQueue;
+  loadQueue?: () => Promise<TabQuestionQueue>;
   saveQueue(queue: TabQuestionQueue): Promise<void>;
 }): Promise<TabQuestionQueue> {
   const candidates = params.queue.items.filter(isBatchCandidate);
@@ -41,8 +42,22 @@ export async function generateQueueItemsInBatches(params: {
   });
   await params.saveQueue(queue);
 
-  let writeQueue: Promise<void> = Promise.resolve();
   const indexedItems = queue.items;
+  // Generation is slow and the user keeps editing and approving while it runs.
+  // Each result is applied to the freshly stored queue inside a serialized
+  // section, so a long-running request cannot write back a stale snapshot.
+  let writeQueue: Promise<void> = Promise.resolve();
+  const commit = (
+    apply: (current: TabQuestionQueue) => TabQuestionQueue,
+  ): Promise<void> => {
+    writeQueue = writeQueue.then(async () => {
+      const current = params.loadQueue ? await params.loadQueue() : queue;
+      queue = apply(current);
+      await params.saveQueue(queue);
+    });
+    return writeQueue;
+  };
+
   await runConcurrent({
     concurrency: params.concurrency ?? DEFAULT_GENERATE_CONCURRENCY,
     items: candidates,
@@ -54,10 +69,16 @@ export async function generateQueueItemsInBatches(params: {
         questionIndex,
         totalQuestions: indexedItems.length,
       });
-      queue = applyGeneratedAnswer({ queue, itemId: item.id, answer });
-      const snapshot = queue;
-      writeQueue = writeQueue.then(() => params.saveQueue(snapshot));
-      await writeQueue;
+      await commit((current) => {
+        const existing = current.items.find((entry) => entry.id === item.id);
+        // We marked this item `generating`. If it no longer is, the user
+        // edited or approved it while the request was in flight — their
+        // version wins over the answer we just received.
+        if (existing && (existing.status !== 'generating' || existing.edited)) {
+          return current;
+        }
+        return applyGeneratedAnswer({ queue: current, itemId: item.id, answer });
+      });
     },
   });
   await writeQueue;

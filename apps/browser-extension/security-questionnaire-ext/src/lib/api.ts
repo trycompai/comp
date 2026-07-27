@@ -46,7 +46,13 @@ const GeneratedAnswerSchema = z.object({
 async function readJson(response: Response): Promise<unknown> {
   const text = await response.text();
   if (!text) return null;
-  return JSON.parse(text);
+  try {
+    return JSON.parse(text);
+  } catch {
+    // Gateways and proxies answer with HTML on failure. Returning null lets the
+    // caller report the HTTP status instead of a bare SyntaxError.
+    return null;
+  }
 }
 
 function getErrorMessage(data: unknown, fallback: string): string {

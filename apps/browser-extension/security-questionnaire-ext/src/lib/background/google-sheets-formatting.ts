@@ -50,7 +50,7 @@ export function buildSheetFormattingRequests(params: {
   targets: SheetApiTarget[];
 }): SheetBatchUpdateRequest[] {
   const sheetId = Number(params.gid);
-  if (!Number.isSafeInteger(sheetId)) return [];
+  if (!Number.isSafeInteger(sheetId) || sheetId < 0) return [];
 
   return [
     ...buildColumnWidthRequests({ sheetId, targets: params.targets }),

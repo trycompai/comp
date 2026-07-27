@@ -8,6 +8,7 @@ export function parseDetectedQuestion(value: unknown): DetectedQuestion[] {
   if (
     !isRecord(value) ||
     typeof value.id !== 'string' ||
+    value.id.length === 0 ||
     typeof value.question !== 'string' ||
     typeof value.value !== 'string' ||
     typeof value.isEmpty !== 'boolean' ||

@@ -5,7 +5,6 @@ export type ContentRequest =
   | { type: 'comp:collect-questions' }
   | { type: 'comp:ensure-inline-buttons' }
   | { type: 'comp:scan-visible-questions' }
-  | { type: 'comp:generate-visible-page' }
   | { type: 'comp:set-detection-enabled'; enabled: boolean }
   | { type: 'comp:insert-answers'; answers: InsertAnswerRequest[] }
   | { type: 'comp:focus-question'; fieldId: string };
@@ -21,7 +20,6 @@ export function parseContentRequest(value: unknown): ContentRequest | null {
   if (value.type === 'comp:collect-questions') return { type: value.type };
   if (value.type === 'comp:ensure-inline-buttons') return { type: value.type };
   if (value.type === 'comp:scan-visible-questions') return { type: value.type };
-  if (value.type === 'comp:generate-visible-page') return { type: value.type };
   if (
     value.type === 'comp:set-detection-enabled' &&
     typeof value.enabled === 'boolean'

@@ -7,11 +7,13 @@ export async function detectSheetQuestionsForPage(params: {
   location: Location;
   root: ParentNode;
 }): Promise<DetectedQuestion[]> {
+  // A failed round trip to the background must still fall through to the
+  // local page and DOM detection below.
   const response = await sendRuntimeMessage({
     type: 'comp:detect-sheet-questions',
     pathname: params.location.pathname,
     hash: params.location.hash,
-  });
+  }).catch(() => null);
   if (isSheetQuestionsResponse(response) && response.questions.length > 0) {
     return response.questions;
   }

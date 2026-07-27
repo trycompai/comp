@@ -224,11 +224,14 @@ function scoreQuestionCell(text: string): number {
 
 function isQuestionHeader(value: string | undefined): boolean {
   const text = value?.trim() ?? '';
-  return Boolean(
-    text.length > 0 &&
-      text.length <= 48 &&
-      /question|requirement|control|prompt|description/i.test(text),
-  );
+  if (text.length === 0 || text.length > 48) return false;
+  // A header is a short column label ("Control", "Requirement description").
+  // Questionnaire rows routinely contain the same words — "Are security
+  // controls documented?" — and treating those as headers drops them from
+  // detection, so require the shape of a label rather than a sentence.
+  if (text.includes('?')) return false;
+  if (text.split(/\s+/).length > 3) return false;
+  return /question|requirement|control|prompt|description/i.test(text);
 }
 
 function hasQuestionnaireHeaders(values: string[]): boolean {

@@ -10,6 +10,7 @@ type MockResponse = Partial<Response> & {
   body?: unknown;
   headers: Record<string, string>;
   statusCode?: number;
+  varied: string[];
 };
 
 const extensionOrigin =
@@ -40,7 +41,12 @@ function createRequest(params: {
 function createResponse(): MockResponse {
   const response = {
     headers: {},
+    varied: [],
   } as MockResponse;
+  response.vary = jest.fn().mockImplementation((field: string) => {
+    response.varied.push(field);
+    return response;
+  });
   response.setHeader = jest
     .fn()
     .mockImplementation((name: string, value: string) => {
@@ -181,6 +187,28 @@ describe('corsOriginMiddleware', () => {
     expect(response.headers['Access-Control-Allow-Origin']).toBe(
       'https://app.trycomp.ai',
     );
+    expect(response.varied).toContain('Origin');
     expect(next).toHaveBeenCalled();
+  });
+
+  it('varies on origin even when the origin is rejected, so caches cannot mix responses', async () => {
+    jest.mocked(isTrustedOrigin).mockResolvedValue(false);
+    const request = createRequest({
+      method: 'GET',
+      origin: 'https://evil.example',
+      path: '/v1/controls',
+    });
+    const response = createResponse();
+    const next = jest.fn();
+
+    runCors({ request, response, next });
+    await flushPromises();
+
+    expect(response.headers['Access-Control-Allow-Origin']).toBeUndefined();
+    expect(response.varied).toEqual([
+      'Origin',
+      'Access-Control-Request-Headers',
+      'Access-Control-Request-Method',
+    ]);
   });
 });

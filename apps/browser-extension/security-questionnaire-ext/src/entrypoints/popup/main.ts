@@ -1,5 +1,6 @@
 import { browser } from 'wxt/browser';
 import { compMarkSvg } from '../../lib/brand';
+import { getHost } from '../sidepanel/active-tab';
 import {
   getResponseError,
   isOkResponse,
@@ -183,14 +184,6 @@ async function collectQuestions(tabId: number): Promise<void> {
 async function getActiveTab(): Promise<Browser.tabs.Tab | null> {
   const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
   return tab ?? null;
-}
-
-function getHost(url: string): string {
-  try {
-    return new URL(url).host;
-  } catch {
-    return 'current page';
-  }
 }
 
 function escapeHtml(value: string): string {

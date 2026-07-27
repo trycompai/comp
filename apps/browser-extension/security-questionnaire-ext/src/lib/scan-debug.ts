@@ -1,17 +1,10 @@
 import type { ScanDebug, ScanDebugStep } from './types';
-import { isRecord } from './message-utils';
+import { isQuestionnaireSurface, isRecord } from './message-utils';
 
 export function getScanDebug(value: unknown): ScanDebug | null {
   if (!isRecord(value) || !isRecord(value.debug)) return null;
   const debug = value.debug;
-  if (
-    debug.surface !== 'sheets' &&
-    debug.surface !== 'docs' &&
-    debug.surface !== 'forms' &&
-    debug.surface !== 'generic'
-  ) {
-    return null;
-  }
+  if (!isQuestionnaireSurface(debug.surface)) return null;
   if (
     typeof debug.source !== 'string' ||
     typeof debug.questionCount !== 'number' ||

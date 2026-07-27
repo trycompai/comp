@@ -151,6 +151,7 @@ async function generateAll(tabId: number): Promise<BackgroundResponse> {
   const updated = await generateQueueItemsInBatches({
     auth,
     queue,
+    loadQueue: () => requireQueue(tabId),
     saveQueue: saveQueueAndNotify,
   });
   return { ok: true, count: updated.items.length, queue: updated };

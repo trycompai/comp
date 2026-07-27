@@ -18,7 +18,7 @@ export async function collectQuestions(tabId: number): Promise<string> {
   const response = await sendCollectMessage(tabId);
   if (isCountResponse(response)) {
     if (response.count > 0) return '';
-    return sheetScan?.message ?? formatDebugResponse(response);
+    return sheetScan?.message || formatDebugResponse(response);
   }
   if (!shouldRetryWithInjectedScript(response)) return getResponseError(response);
 

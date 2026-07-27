@@ -12,6 +12,18 @@ function getHeaderValue(value: string | string[] | undefined): string | null {
   return null;
 }
 
+/**
+ * These responses differ per origin and per requested headers/method, so any
+ * cache in front of the API must key on them. This is set for every request
+ * the middleware sees, including rejected ones — otherwise a cached response
+ * without CORS headers can be replayed to an allowed origin.
+ */
+function setVaryHeaders(response: Response): void {
+  response.vary('Origin');
+  response.vary('Access-Control-Request-Headers');
+  response.vary('Access-Control-Request-Method');
+}
+
 function setCorsHeaders(params: {
   request: Request;
   response: Response;
@@ -48,6 +60,7 @@ export function corsOriginMiddleware(
   response: Response,
   next: NextFunction,
 ): void {
+  setVaryHeaders(response);
   const origin = getHeaderValue(request.headers.origin);
   const requestedMethod = getHeaderValue(
     request.headers['access-control-request-method'],

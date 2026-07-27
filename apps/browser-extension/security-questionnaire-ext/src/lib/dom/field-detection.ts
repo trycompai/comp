@@ -263,9 +263,16 @@ function isGenericAnswerLabel(value: string): boolean {
   return /^(answer|your answer|short answer|long answer|paragraph)$/i.test(value);
 }
 
+// Answer text reuses the same vocabulary as the questions it answers, so the
+// keyword fallback below would happily classify a filled-in answer as a new
+// question. Statements announce themselves in the first few words.
+const STATEMENT_OPENERS =
+  /^\s*(yes\b|no\b|n\/a\b|not applicable\b|we\s|we've|our\s|the (company|organization|organisation)\s|all\s|there (is|are)\s)/i;
+
 function isQuestionnairePrompt(value: string): boolean {
   if (value.length < 6) return false;
   if (value.includes('?')) return true;
+  if (STATEMENT_OPENERS.test(value)) return false;
   if (
     /^(are|can|confirm|describe|detail|do|does|explain|have|has|how|identify|is|list|outline|provide|what|where|which|who|will)\b/i
       .test(value)

@@ -29,6 +29,11 @@ describe('buildSheetPastePlan', () => {
     expect(planFor('First line\nsecond\tline')).toBe('First line second line');
   });
 
+  it('rejects zero row or column, which are not valid A1 coordinates', () => {
+    expect(buildSheetPastePlan([{ fieldId: 'sheet:0:0:3', answer: 'x' }])).toBeNull();
+    expect(buildSheetPastePlan([{ fieldId: 'sheet:0:3:0', answer: 'x' }])).toBeNull();
+  });
+
   it('leaves empty cells empty rather than quoting them', () => {
     const plan = buildSheetPastePlan([
       { fieldId: 'sheet:0:1:1', answer: 'yes' },

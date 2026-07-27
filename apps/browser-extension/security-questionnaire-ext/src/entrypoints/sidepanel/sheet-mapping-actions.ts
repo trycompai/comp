@@ -25,20 +25,26 @@ export async function handleSheetMappingChange(params: {
     return;
   }
 
-  const mapping = params.state.queue.sheetMapping ??
+  let mapping = params.state.queue.sheetMapping ??
     createDefaultSheetMapping(identity);
-  const draft = await showSheetMappingDialog(
-    renderSheetMappingDialog(mapping),
-  );
-  if (!draft) return;
 
-  const response = await browser.runtime.sendMessage({
-    type: 'comp:set-sheet-mapping',
-    mapping: createManualSheetMapping({ identity, draft }),
-  });
-  if (!isOkResponse(response)) {
+  // Reopen the dialog with what the user typed when the save fails, so a
+  // transient error does not throw away their column mapping.
+  for (;;) {
+    const draft = await showSheetMappingDialog(
+      renderSheetMappingDialog(mapping),
+    );
+    if (!draft) return;
+
+    const nextMapping = createManualSheetMapping({ identity, draft });
+    const response = await browser.runtime.sendMessage({
+      type: 'comp:set-sheet-mapping',
+      mapping: nextMapping,
+    });
+    if (isOkResponse(response)) break;
+
     params.setStatus(getResponseError(response));
-    return;
+    mapping = nextMapping;
   }
 
   await params.refreshFromPage();

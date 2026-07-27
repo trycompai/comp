@@ -26,6 +26,30 @@ const secondQuestion: DetectedQuestion = {
 };
 
 describe('queue approval reducers', () => {
+  it('does not approve an answer that is only whitespace', () => {
+    const queue = applyGeneratedAnswer({
+      queue: syncDetectedQuestions({
+        queue: null,
+        tabId: 1,
+        url: 'https://vendor.example/security',
+        host: 'vendor.example',
+        surface: 'generic',
+        organizationId: 'org_a',
+        questions: [firstQuestion],
+      }),
+      itemId: 'field-1',
+      answer: {
+        questionIndex: 0,
+        question: firstQuestion.question,
+        answer: '   ',
+        sources: [],
+      },
+    });
+
+    const approved = approveGeneratedItems(queue);
+    expect(approved.items[0].status).not.toBe('approved');
+  });
+
   it('approves all generated answers with text', () => {
     const queue = withGeneratedAnswers();
 

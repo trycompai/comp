@@ -21,7 +21,12 @@ export function isQueueResponse(
 export function isItemResponse(
   value: unknown,
 ): value is { ok: true; item: QuestionQueueItem; queue: TabQuestionQueue } {
-  return isRecord(value) && value.ok === true && isRecord(value.item);
+  return (
+    isRecord(value) &&
+    value.ok === true &&
+    isRecord(value.item) &&
+    isRecord(value.queue)
+  );
 }
 
 export function isSheetPasteResponse(
