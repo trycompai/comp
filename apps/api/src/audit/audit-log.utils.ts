@@ -4,6 +4,7 @@ import {
   COMMENT_ENTITY_TYPE_MAP,
   MEMBER_REF_FIELDS,
   SENSITIVE_KEYS,
+  SENSITIVE_KEY_PATTERN,
 } from './audit-log.constants';
 
 export type AuditContextOverride = {
@@ -328,12 +329,27 @@ export function buildDescription(
   }
 }
 
+function isSensitiveKey(key: string): boolean {
+  return SENSITIVE_KEYS.has(key) || SENSITIVE_KEY_PATTERN.test(key);
+}
+
 function sanitizeValue(key: string, value: unknown): unknown {
-  if (SENSITIVE_KEYS.has(key)) return '[REDACTED]';
+  if (isSensitiveKey(key)) return '[REDACTED]';
   if (value instanceof Date) return value.toISOString();
-  if (value && typeof value === 'object' && !Array.isArray(value))
-    return '[Object]';
+  // Arrays are logged rather than summarized, so a secret in a generically-named
+  // field inside an array element (e.g. `extraFields: [{ label, value }]`) would
+  // otherwise land in the log verbatim. Keep primitive elements (ids, scopes,
+  // tags) but summarize object/array elements as '[Object]' — the same way a
+  // nested object is hidden below.
+  if (Array.isArray(value)) return value.map(summarizeArrayItem);
+  if (value && typeof value === 'object') return '[Object]';
   return value;
+}
+
+function summarizeArrayItem(item: unknown): unknown {
+  if (item instanceof Date) return item.toISOString();
+  if (item && typeof item === 'object') return '[Object]';
+  return item;
 }
 
 export function buildChanges(
