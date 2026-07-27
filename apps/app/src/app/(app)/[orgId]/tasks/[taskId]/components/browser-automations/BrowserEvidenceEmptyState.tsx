@@ -1,5 +1,6 @@
 'use client';
 
+import { usePermissions } from '@/hooks/use-permissions';
 import { Button } from '@trycompai/design-system';
 
 const STEPS = [
@@ -30,13 +31,17 @@ export function BrowserEvidenceEmptyState({
   isStartingAuth,
   onConnect,
 }: BrowserEvidenceEmptyStateProps) {
+  // Connecting a vendor goes through the integration:create flow — don't offer
+  // the action to users who'd only hit a 403.
+  const { hasPermission } = usePermissions();
+  const canConnect = hasPermission('integration', 'create');
   return (
     <div className="overflow-hidden rounded-lg border border-border bg-card">
       <div className="border-b border-border px-6 py-5">
         <div className="flex items-center gap-2.5">
-          <span className="text-lg font-medium tracking-tight text-foreground">
+          <h3 className="text-lg font-medium tracking-tight text-foreground">
             Browser evidence
-          </span>
+          </h3>
           <span className="rounded-sm bg-muted px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
             Not set up
           </span>
@@ -68,14 +73,20 @@ export function BrowserEvidenceEmptyState({
             </div>
           ))}
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <Button onClick={onConnect} loading={isStartingAuth} disabled={isStartingAuth}>
-            Connect a vendor login
-          </Button>
-          <span className="text-xs text-muted-foreground">
-            Takes about a minute — you&apos;ll watch the AI sign in.
-          </span>
-        </div>
+        {canConnect ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <Button onClick={onConnect} loading={isStartingAuth} disabled={isStartingAuth}>
+              Connect a vendor login
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              Takes about a minute — you&apos;ll watch the AI sign in.
+            </span>
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            Ask an admin to connect a vendor login to set up browser evidence.
+          </p>
+        )}
       </div>
     </div>
   );
