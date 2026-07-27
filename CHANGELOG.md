@@ -1,3 +1,17 @@
+# [3.110.0](https://github.com/trycompai/comp/compare/v3.109.0...v3.110.0) (2026-07-27)
+
+
+### Bug Fixes
+
+* **app:** make invite modal manual rows scrollable so action buttons stay visible ([#3510](https://github.com/trycompai/comp/issues/3510)) ([9926408](https://github.com/trycompai/comp/commit/99264081bcb5e9389b79d05f1c733fa23a193a56))
+* **audit:** stop logging read endpoints as mutations + name task-item events ([#3508](https://github.com/trycompai/comp/issues/3508)) ([3f9e1cf](https://github.com/trycompai/comp/commit/3f9e1cfe69e71c1611a4f1a4a47a4f792ee7071e))
+* **audit:** stop plaintext secrets leaking into the audit log ([#3512](https://github.com/trycompai/comp/issues/3512)) ([55a48fb](https://github.com/trycompai/comp/commit/55a48fb0abc2a419970356914979575735f076b1))
+
+
+### Features
+
+* **api:** email org owners/admins when a portal access request is submitted (CS-522) ([#3494](https://github.com/trycompai/comp/issues/3494)) ([258ce45](https://github.com/trycompai/comp/commit/258ce4570ec6b949ff29746310cdbf6d0b90181b))
+
 # [3.109.0](https://github.com/trycompai/comp/compare/v3.108.2...v3.109.0) (2026-07-27)
 
 
