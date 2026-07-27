@@ -1,10 +1,6 @@
 import { db } from '@db';
-import { orgParticipantMemberWhereForFlag } from '../../utils/org-participation';
 import { logger, tags, task } from '@trigger.dev/sdk';
 import { BrowserbaseService } from '../../browserbase/browserbase.service';
-import { triggerEmail } from '../../email/trigger-email';
-import { TaskStatusChangedEmail } from '../../email/templates/task-status-changed';
-import { isUserUnsubscribed } from '@trycompai/email';
 
 const browserbaseService = new BrowserbaseService();
 
@@ -28,169 +24,26 @@ export function shouldMarkTaskDoneAfterBrowserRun(input: {
 }
 
 /**
- * Send email notifications for task status change
+ * Whether a non-passing run means the task is genuinely no longer satisfied, so
+ * we should flip it to `failed`. A `fail` verdict = the control regressed;
+ * `needsReauth` = we can no longer sign in. An infra-only failure (timeout,
+ * model unavailable, …) has neither — that's "couldn't verify", not "control
+ * failed", so we leave the task alone and let it retry on the next tick.
  */
-async function sendTaskStatusChangeEmails(params: {
-  organizationId: string;
-  taskId: string;
-  taskTitle: string;
-  oldStatus: string;
-  newStatus: 'done' | 'failed';
-}) {
-  const { organizationId, taskId, taskTitle, oldStatus, newStatus } = params;
-
-  try {
-    // Use the shared participation rule so this path stays aligned with the
-    // other task notifiers: internal (platform-operated) orgs include platform
-    // admins; other orgs exclude them.
-    const organization = await db.organization.findUnique({
-      where: { id: organizationId },
-      select: { name: true, isInternal: true },
-    });
-    const participantWhere = orgParticipantMemberWhereForFlag(
-      organization?.isInternal ?? false,
-    );
-    const [task, allMembers] = await Promise.all([
-      db.task.findUnique({
-        where: { id: taskId },
-        select: {
-          assignee: {
-            select: {
-              user: {
-                select: {
-                  id: true,
-                  name: true,
-                  email: true,
-                },
-              },
-            },
-          },
-        },
-      }),
-      db.member.findMany({
-        where: {
-          organizationId,
-          deactivated: false,
-          ...participantWhere,
-        },
-        select: {
-          role: true,
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
-        },
-      }),
-    ]);
-
-    const organizationName = organization?.name ?? 'your organization';
-    const appUrl =
-      process.env.NEXT_PUBLIC_APP_URL ||
-      process.env.BETTER_AUTH_URL ||
-      'https://app.trycomp.ai';
-    const taskUrl = `${appUrl}/${organizationId}/tasks/${taskId}`;
-
-    // Filter for admins/owners
-    const adminMembers = allMembers.filter(
-      (member) =>
-        member.role &&
-        (member.role.includes('admin') || member.role.includes('owner')),
-    );
-
-    // Build recipient list: assignee + admins
-    const recipientMap = new Map<
-      string,
-      { id: string; name: string; email: string }
-    >();
-
-    // Add assignee
-    if (task?.assignee?.user?.id && task.assignee.user.email) {
-      recipientMap.set(task.assignee.user.id, {
-        id: task.assignee.user.id,
-        name:
-          task.assignee.user.name?.trim() ||
-          task.assignee.user.email?.trim() ||
-          'User',
-        email: task.assignee.user.email,
-      });
-    }
-
-    // Add admin members
-    for (const member of adminMembers) {
-      if (member.user?.id && member.user.email) {
-        recipientMap.set(member.user.id, {
-          id: member.user.id,
-          name: member.user.name?.trim() || member.user.email?.trim() || 'User',
-          email: member.user.email,
-        });
-      }
-    }
-
-    const recipients = Array.from(recipientMap.values());
-
-    // Send emails to each recipient
-    await Promise.allSettled(
-      recipients.map(async (recipient) => {
-        // Check if user is unsubscribed
-        const isUnsubscribed = await isUserUnsubscribed(
-          db,
-          recipient.email,
-          'taskAssignments',
-          organizationId,
-        );
-
-        if (isUnsubscribed) {
-          logger.info(
-            `Skipping notification: user ${recipient.email} is unsubscribed from task assignments`,
-          );
-          return;
-        }
-
-        try {
-          await triggerEmail({
-            to: recipient.email,
-            subject: `Task "${taskTitle}" status changed to ${newStatus}`,
-            react: TaskStatusChangedEmail({
-              toName: recipient.name,
-              toEmail: recipient.email,
-              taskTitle,
-              oldStatus: oldStatus.charAt(0).toUpperCase() + oldStatus.slice(1),
-              newStatus: newStatus === 'failed' ? 'Failed' : 'Done',
-              changedByName: 'Automation',
-              organizationName,
-              taskUrl,
-            }),
-            system: true,
-          });
-
-          logger.info(`Status change email sent to ${recipient.email}`);
-        } catch (error) {
-          logger.error(
-            `Failed to send status change email to ${recipient.email}`,
-            {
-              error: error instanceof Error ? error.message : 'Unknown error',
-            },
-          );
-        }
-      }),
-    );
-
-    logger.info(
-      `Sent ${recipients.length} status change notifications for task ${taskId} (status: ${newStatus})`,
-    );
-  } catch (error) {
-    logger.error('Failed to send task status change emails', {
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
-  }
+export function shouldMarkTaskFailedAfterBrowserRun(input: {
+  evaluationStatus?: 'pass' | 'fail';
+  needsReauth?: boolean;
+}): boolean {
+  return input.evaluationStatus === 'fail' || input.needsReauth === true;
 }
 
 /**
  * Worker task that runs a single browser automation.
- * Triggered by the orchestrator (browser-automations-schedule).
+ *
+ * Triggered by the per-org runner (run-org-browser-automations), which waits on
+ * a batch of these and sends ONE bundled failure email per org. This worker's
+ * job is only to run the automation and flip the task's status; notifications
+ * are the runner's responsibility (mirrors the integration check worker).
  */
 export const runBrowserAutomation = task({
   id: 'run-browser-automation',
@@ -248,6 +101,10 @@ export const runBrowserAutomation = task({
       organizationId,
     );
 
+    // Whether THIS run flipped the task into `failed` (transition only). The
+    // per-org bundled failure email (next change) reports only these.
+    let statusChangedToFailed = false;
+
     if (result.success) {
       logger.info(`Automation ${automationId} completed successfully`, {
         runId: result.runId,
@@ -302,32 +159,36 @@ export const runBrowserAutomation = task({
         evaluationStatus: result.evaluationStatus,
       });
 
-      // Mark task as failed if auth issue
-      if (result.needsReauth) {
-        // Get current status before updating
+      // A real control failure (verdict `fail`) or a broken connection
+      // (`needsReauth`) means the task is no longer satisfied — flip it to
+      // `failed` so the dashboard reflects reality instead of keeping a stale
+      // `done`. An infra-only failure (timeout, model unavailable, …) is left
+      // alone (see shouldMarkTaskFailedAfterBrowserRun) so it retries next tick.
+      if (
+        shouldMarkTaskFailedAfterBrowserRun({
+          evaluationStatus: result.evaluationStatus,
+          needsReauth: result.needsReauth,
+        })
+      ) {
         const taskBeforeUpdate = await db.task.findUnique({
           where: { id: taskId },
           select: { status: true },
         });
         const oldStatus = taskBeforeUpdate?.status ?? 'todo';
 
-        await db.task.update({
-          where: { id: taskId },
-          data: { status: 'failed' },
-        });
-
-        // Only send email notifications if status actually changed
+        // Transition only: don't re-flip / re-report a task that's already
+        // failed. The per-org runner (run-org-browser-automations) collects
+        // these transitions and sends one bundled failure email — covering both
+        // `needs_reauth` and control-regressed (`evaluation fail`) cases.
         if (oldStatus !== 'failed') {
-          await sendTaskStatusChangeEmails({
-            organizationId,
-            taskId,
-            taskTitle,
-            oldStatus,
-            newStatus: 'failed',
+          await db.task.update({
+            where: { id: taskId },
+            data: { status: 'failed' },
           });
+          statusChangedToFailed = true;
         } else {
           logger.info(
-            `Skipping notification: task ${taskId} was already in failed status`,
+            `Task ${taskId} was already in failed status; not re-reporting`,
           );
         }
       }
@@ -357,6 +218,11 @@ export const runBrowserAutomation = task({
       error: result.error,
       needsReauth: result.needsReauth,
       failureCode: result.failureCode,
+      // Consumed by the per-org bundled failure email (next change).
+      taskId,
+      taskTitle,
+      evaluationStatus: result.evaluationStatus,
+      statusChangedToFailed,
     };
   },
 });

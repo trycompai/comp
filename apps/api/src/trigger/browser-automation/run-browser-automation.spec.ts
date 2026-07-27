@@ -22,7 +22,10 @@ jest.mock('@trycompai/email', () => ({
   isUserUnsubscribed: jest.fn().mockResolvedValue(false),
 }));
 
-import { shouldMarkTaskDoneAfterBrowserRun } from './run-browser-automation';
+import {
+  shouldMarkTaskDoneAfterBrowserRun,
+  shouldMarkTaskFailedAfterBrowserRun,
+} from './run-browser-automation';
 
 describe('shouldMarkTaskDoneAfterBrowserRun', () => {
   it('allows screenshot-only automations to complete tasks', () => {
@@ -50,5 +53,25 @@ describe('shouldMarkTaskDoneAfterBrowserRun', () => {
         evaluationStatus: 'fail',
       }),
     ).toBe(false);
+  });
+});
+
+describe('shouldMarkTaskFailedAfterBrowserRun', () => {
+  it('fails the task when the control regressed (verdict fail)', () => {
+    expect(shouldMarkTaskFailedAfterBrowserRun({ evaluationStatus: 'fail' })).toBe(true);
+  });
+
+  it('fails the task when the connection needs reconnect', () => {
+    expect(shouldMarkTaskFailedAfterBrowserRun({ needsReauth: true })).toBe(true);
+  });
+
+  it('leaves the task alone on an infra-only failure (could not verify)', () => {
+    // No verdict and not a reauth issue → timeout / model unavailable / etc.
+    expect(shouldMarkTaskFailedAfterBrowserRun({})).toBe(false);
+    expect(shouldMarkTaskFailedAfterBrowserRun({ needsReauth: false })).toBe(false);
+  });
+
+  it('does not fail the task on a passing verdict', () => {
+    expect(shouldMarkTaskFailedAfterBrowserRun({ evaluationStatus: 'pass' })).toBe(false);
   });
 });
