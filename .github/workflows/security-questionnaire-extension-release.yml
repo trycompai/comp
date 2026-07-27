@@ -2,6 +2,14 @@ name: Security Questionnaire Extension Release
 
 on:
   workflow_dispatch:
+    inputs:
+      publish_target:
+        description: 'Who receives this release'
+        type: choice
+        default: trustedTesters
+        options:
+          - trustedTesters
+          - default
   push:
     branches:
       - release
@@ -130,16 +138,15 @@ jobs:
 
       - name: Validate Chrome Web Store secrets
         env:
-          CLIENT_ID: ${{ secrets.CHROME_WEB_STORE_CLIENT_ID }}
-          CLIENT_SECRET: ${{ secrets.CHROME_WEB_STORE_CLIENT_SECRET }}
-          REFRESH_TOKEN: ${{ secrets.CHROME_WEB_STORE_REFRESH_TOKEN }}
-          PUBLISHER_ID: ${{ secrets.CHROME_WEB_STORE_PUBLISHER_ID }}
+          SERVICE_ACCOUNT_JSON: ${{ secrets.CHROME_WEB_STORE_SERVICE_ACCOUNT_JSON }}
           EXTENSION_ID: ${{ secrets.SECURITY_QUESTIONNAIRE_EXTENSION_ID }}
         run: |
           # SECURITY_QUESTIONNAIRE_EXTENSION_GOOGLE_OAUTH_CLIENT_ID is intentionally
           # not required — it only enables direct Google Sheets API insertion.
+          # CHROME_WEB_STORE_PUBLISHER_ID is unused by the v1.1 API but kept as a
+          # secret for the eventual v2 migration.
           missing=0
-          for name in CLIENT_ID CLIENT_SECRET REFRESH_TOKEN PUBLISHER_ID EXTENSION_ID; do
+          for name in SERVICE_ACCOUNT_JSON EXTENSION_ID; do
             if [ -z "${!name}" ]; then
               echo "::error::Missing required secret: $name"
               missing=1
@@ -152,15 +159,37 @@ jobs:
       - name: Get Chrome Web Store access token
         id: token
         env:
-          CLIENT_ID: ${{ secrets.CHROME_WEB_STORE_CLIENT_ID }}
-          CLIENT_SECRET: ${{ secrets.CHROME_WEB_STORE_CLIENT_SECRET }}
-          REFRESH_TOKEN: ${{ secrets.CHROME_WEB_STORE_REFRESH_TOKEN }}
+          SERVICE_ACCOUNT_JSON: ${{ secrets.CHROME_WEB_STORE_SERVICE_ACCOUNT_JSON }}
         run: |
+          # Service account JWT bearer flow. Unlike a refresh token this does not
+          # expire and is not tied to an individual Google account.
+          ASSERTION=$(node -e "
+            const crypto = require('crypto');
+            const key = JSON.parse(process.env.SERVICE_ACCOUNT_JSON);
+            const encode = (value) =>
+              Buffer.from(JSON.stringify(value))
+                .toString('base64url');
+            const issuedAt = Math.floor(Date.now() / 1000);
+            const payload = {
+              iss: key.client_email,
+              scope: 'https://www.googleapis.com/auth/chromewebstore',
+              aud: 'https://oauth2.googleapis.com/token',
+              iat: issuedAt,
+              exp: issuedAt + 3600,
+            };
+            const signingInput =
+              encode({ alg: 'RS256', typ: 'JWT' }) + '.' + encode(payload);
+            const signature = crypto
+              .createSign('RSA-SHA256')
+              .update(signingInput)
+              .sign(key.private_key)
+              .toString('base64url');
+            process.stdout.write(signingInput + '.' + signature);
+          ")
+
           RESPONSE=$(curl -fsS "https://oauth2.googleapis.com/token" \
-            -d "client_secret=$CLIENT_SECRET" \
-            -d "grant_type=refresh_token" \
-            -d "refresh_token=$REFRESH_TOKEN" \
-            -d "client_id=$CLIENT_ID")
+            --data-urlencode "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer" \
+            --data-urlencode "assertion=$ASSERTION")
 
           ACCESS_TOKEN=$(RESPONSE="$RESPONSE" node -e "
             const response = JSON.parse(process.env.RESPONSE);
@@ -171,27 +200,34 @@ jobs:
           echo "::add-mask::$ACCESS_TOKEN"
           echo "access_token=$ACCESS_TOKEN" >> "$GITHUB_OUTPUT"
 
+      # The v2 API is not yet served for this publisher — every v2 route returns
+      # 404 while the v1.1 API works with the same service account token. v1.1
+      # is supported until 2026-10-15; revisit before then.
       - name: Upload package to Chrome Web Store
         id: upload
         env:
           ACCESS_TOKEN: ${{ steps.token.outputs.access_token }}
           EXTENSION_ID: ${{ secrets.SECURITY_QUESTIONNAIRE_EXTENSION_ID }}
-          PUBLISHER_ID: ${{ secrets.CHROME_WEB_STORE_PUBLISHER_ID }}
           ZIP_PATH: ${{ env.EXTENSION_DIR }}/dist/${{ steps.version.outputs.zip_name }}
         run: |
           RESPONSE=$(curl -fsS \
             -H "Authorization: Bearer $ACCESS_TOKEN" \
-            -H "Content-Type: application/zip" \
-            -X POST \
+            -H "x-goog-api-version: 2" \
+            -X PUT \
             -T "$ZIP_PATH" \
-            "https://chromewebstore.googleapis.com/upload/v2/publishers/$PUBLISHER_ID/items/$EXTENSION_ID:upload")
+            "https://www.googleapis.com/upload/chromewebstore/v1.1/items/$EXTENSION_ID")
 
           echo "$RESPONSE"
           UPLOAD_STATE=$(RESPONSE="$RESPONSE" node -e "
             const response = JSON.parse(process.env.RESPONSE);
             const state = response.uploadState;
-            if (state !== 'SUCCEEDED' && state !== 'IN_PROGRESS') {
-              throw new Error(\`Chrome upload failed with state ${state || 'unknown'}\`);
+            if (state !== 'SUCCESS' && state !== 'IN_PROGRESS') {
+              const details = (response.itemError || [])
+                .map((entry) => entry.error_detail)
+                .join('; ');
+              throw new Error(
+                \`Chrome upload failed with state \${state || 'unknown'}\${details ? ': ' + details : ''}\`,
+              );
             }
             process.stdout.write(state);
           ")
@@ -203,28 +239,29 @@ jobs:
         env:
           ACCESS_TOKEN: ${{ steps.token.outputs.access_token }}
           EXTENSION_ID: ${{ secrets.SECURITY_QUESTIONNAIRE_EXTENSION_ID }}
-          PUBLISHER_ID: ${{ secrets.CHROME_WEB_STORE_PUBLISHER_ID }}
         run: |
           for attempt in $(seq 1 30); do
             RESPONSE=$(curl -fsS \
               -H "Authorization: Bearer $ACCESS_TOKEN" \
-              "https://chromewebstore.googleapis.com/v2/publishers/$PUBLISHER_ID/items/$EXTENSION_ID:fetchStatus")
+              -H "x-goog-api-version: 2" \
+              "https://www.googleapis.com/chromewebstore/v1.1/items/$EXTENSION_ID?projection=DRAFT")
 
-            echo "$RESPONSE"
             STATE=$(RESPONSE="$RESPONSE" node -e "
               const response = JSON.parse(process.env.RESPONSE);
-              process.stdout.write(response.lastAsyncUploadState || 'UNKNOWN');
+              process.stdout.write(response.uploadState || 'UNKNOWN');
             ")
+            echo "Upload state: $STATE"
 
-            if [ "$STATE" = "SUCCEEDED" ]; then
+            if [ "$STATE" = "SUCCESS" ]; then
               exit 0
             fi
-            if [ "$STATE" = "FAILED" ]; then
+            if [ "$STATE" = "FAILURE" ]; then
               echo "::error::Chrome Web Store async upload failed"
+              echo "$RESPONSE"
               exit 1
             fi
 
-            echo "Upload still $STATE; waiting before retry $attempt"
+            echo "Still $STATE; waiting before retry $attempt"
             sleep 10
           done
 
@@ -235,16 +272,32 @@ jobs:
         env:
           ACCESS_TOKEN: ${{ steps.token.outputs.access_token }}
           EXTENSION_ID: ${{ secrets.SECURITY_QUESTIONNAIRE_EXTENSION_ID }}
-          PUBLISHER_ID: ${{ secrets.CHROME_WEB_STORE_PUBLISHER_ID }}
+          PUBLISH_TARGET: ${{ inputs.publish_target || 'trustedTesters' }}
         run: |
+          echo "Publishing to: $PUBLISH_TARGET"
           RESPONSE=$(curl -fsS \
             -H "Authorization: Bearer $ACCESS_TOKEN" \
-            -H "Content-Type: application/json" \
+            -H "x-goog-api-version: 2" \
+            -H "Content-Length: 0" \
             -X POST \
-            -d '{"publishType":"DEFAULT_PUBLISH","blockOnWarnings":true}' \
-            "https://chromewebstore.googleapis.com/v2/publishers/$PUBLISHER_ID/items/$EXTENSION_ID:publish")
+            "https://www.googleapis.com/chromewebstore/v1.1/items/$EXTENSION_ID/publish?publishTarget=$PUBLISH_TARGET")
 
           echo "$RESPONSE"
+          RESPONSE="$RESPONSE" node -e "
+            const response = JSON.parse(process.env.RESPONSE);
+            const statuses = response.status || [];
+            const failed = statuses.filter(
+              (entry) => entry !== 'OK' && entry !== 'PUBLISHED_WITH_FRICTION_WARNING',
+            );
+            if (failed.length > 0) {
+              throw new Error(
+                'Publish rejected: ' +
+                  failed.join(', ') +
+                  ' — ' +
+                  (response.statusDetail || []).join('; '),
+              );
+            }
+          "
 
       - name: Tag published extension version
         env:
