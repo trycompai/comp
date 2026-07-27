@@ -443,6 +443,45 @@ describe('AuditLogInterceptor', () => {
     });
   });
 
+  it('logs the action but never the payload for the secret resource', (done) => {
+    // Reading audit logs needs only app:read; the secret manager's plaintext
+    // `value` must not be diffed into the log where an auditor (no secret:read)
+    // could read it.
+    jest.spyOn(reflector, 'getAllAndOverride').mockImplementation((key) => {
+      if (key === PERMISSIONS_KEY) {
+        return [{ resource: 'secret', actions: ['create'] }];
+      }
+      if (key === SKIP_AUDIT_LOG_KEY) return false;
+      return undefined;
+    });
+
+    const context = createMockExecutionContext({
+      method: 'POST',
+      url: '/v1/secrets',
+      params: {},
+      body: { name: 'STRIPE_KEY', value: 'sk_live_super_secret' },
+    });
+    const handler = createMockCallHandler({ id: 'sec_1' });
+
+    interceptor.intercept(context, handler).subscribe({
+      next: () => {
+        setTimeout(() => {
+          expect(mockCreate).toHaveBeenCalled();
+          // The action is recorded...
+          expect(mockCreate).toHaveBeenCalledWith(
+            expect.objectContaining({
+              data: expect.objectContaining({ description: 'Created secret' }),
+            }),
+          );
+          // ...but the plaintext value never appears anywhere in the row.
+          const persisted = JSON.stringify(mockCreate.mock.calls[0][0]);
+          expect(persisted).not.toContain('sk_live_super_secret');
+          done();
+        }, 50);
+      },
+    });
+  });
+
   it('should skip requests without userId', (done) => {
     jest.spyOn(reflector, 'getAllAndOverride').mockImplementation((key) => {
       if (key === PERMISSIONS_KEY) {

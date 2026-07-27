@@ -15,6 +15,7 @@ import { AUDIT_READ_KEY, SKIP_AUDIT_LOG_KEY } from './skip-audit-log.decorator';
 import {
   MEMBER_REF_FIELDS,
   MUTATION_METHODS,
+  REDACT_BODY_RESOURCES,
   RESOURCE_TO_ENTITY_TYPE,
 } from './audit-log.constants';
 import {
@@ -268,6 +269,12 @@ export class AuditLogInterceptor implements NestInterceptor {
               } else if (relationMappingResult) {
                 changes = relationMappingResult.changes;
                 descriptionOverride ??= relationMappingResult.description;
+              } else if (REDACT_BODY_RESOURCES.has(resource)) {
+                // Credential resources (e.g. the secret manager) carry their
+                // secret in a generically-named field. Diffing the body would
+                // land plaintext in a store readable with only app:read, which
+                // bypasses <resource>:read. Record the action, not the payload.
+                changes = null;
               } else {
                 changes = requestBody
                   ? buildChanges(requestBody, previousValues, memberNames)
