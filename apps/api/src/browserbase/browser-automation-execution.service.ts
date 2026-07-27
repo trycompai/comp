@@ -6,8 +6,15 @@ import {
 } from '@nestjs/common';
 import { db } from '@db';
 import { BrowserAuthProfileService } from './browser-auth-profile.service';
-import { BrowserAutomationRunStoreService } from './browser-automation-run-store.service';
 import { failedBrowserEvidenceRunResult } from './browser-automation-run-result';
+import { BrowserAutomationRunStoreService } from './browser-automation-run-store.service';
+import { stepsForRun } from './browser-automation-step-results';
+import { BrowserAutomationStepRunnerService } from './browser-automation-step-runner.service';
+import {
+  createEvidenceTimeline,
+  type BrowserRunLivePhase,
+  type EvidenceTimelineStep,
+} from './browser-evidence-step-timeline';
 import {
   BrowserEvidenceRunnerService,
   type BrowserEvidenceRunResult,
@@ -17,6 +24,7 @@ import { BrowserbaseSessionService } from './browserbase-session.service';
 @Injectable()
 export class BrowserAutomationExecutionService {
   private readonly logger = new Logger(BrowserAutomationExecutionService.name);
+  private readonly stepRunner: BrowserAutomationStepRunnerService;
 
   constructor(
     private readonly sessions: BrowserbaseSessionService = new BrowserbaseSessionService(),
@@ -27,7 +35,15 @@ export class BrowserAutomationExecutionService {
       sessions,
     ),
     private readonly runs: BrowserAutomationRunStoreService = new BrowserAutomationRunStoreService(),
-  ) {}
+  ) {
+    // Built here (not injected) so it reuses these exact profile/runner/run
+    // instances — including the spied ones in unit tests.
+    this.stepRunner = new BrowserAutomationStepRunnerService(
+      this.profiles,
+      this.runner,
+      this.runs,
+    );
+  }
 
   async startAutomationWithLiveView(
     automationId: string,
@@ -37,10 +53,19 @@ export class BrowserAutomationExecutionService {
       automationId,
       organizationId,
     });
-    const profile = await this.profiles.resolveProfileForTarget({
+    // Open the live session on the SAME profile the run's first step will use,
+    // so the session's cookies match the login the runner authenticates as
+    // (resolving by targetUrl alone could pick a different profile than step 0).
+    const steps = stepsForRun(automation);
+    const profile = await this.stepRunner.resolveStepProfile({
       organizationId,
-      targetUrl: automation.targetUrl,
+      step: steps[0],
     });
+    if (!profile) {
+      throw new NotFoundException(
+        'No connection is bound to this automation. Connect one, then run again.',
+      );
+    }
     const run = await this.runs.createRun({
       automationId,
       profileId: profile.id,
@@ -57,7 +82,7 @@ export class BrowserAutomationExecutionService {
         startedAt: run.startedAt,
         result,
       });
-      await this.applyProfileResult({
+      await this.stepRunner.applyProfileResult({
         organizationId,
         profileId: profile.id,
         result,
@@ -71,6 +96,8 @@ export class BrowserAutomationExecutionService {
     runId: string,
     sessionId: string,
     organizationId: string,
+    /** Live activity timeline, surfaced to the Run live view via realtime. */
+    onSteps?: (steps: EvidenceTimelineStep[]) => void,
   ) {
     const automation = await this.getRunnableAutomation({
       automationId,
@@ -86,6 +113,7 @@ export class BrowserAutomationExecutionService {
       targetUrl: automation.targetUrl,
       profileId: run.profileId ?? undefined,
     });
+    const timeline = createEvidenceTimeline(onSteps);
     let result: BrowserEvidenceRunResult;
     try {
       result = await this.runner.executeEvidenceOnSession({
@@ -105,6 +133,7 @@ export class BrowserAutomationExecutionService {
           vaultExternalItemRef: profile.vaultExternalItemRef,
           vaultConnectionId: profile.vaultConnectionId,
         },
+        onLog: (entry) => timeline.step(entry.message),
         beforeExecution: () =>
           this.runs.assertRunIsStillActive({ runId, automationId }),
       });
@@ -114,12 +143,73 @@ export class BrowserAutomationExecutionService {
       result = failedBrowserEvidenceRunResult(error);
     }
 
+    timeline.finish(
+      result.success
+        ? 'done'
+        : result.status === 'blocked' || result.needsReauth
+          ? 'warn'
+          : 'fail',
+    );
+
     await this.runs.finishRun({ runId, startedAt: run.startedAt, result });
-    await this.applyProfileResult({
+    await this.stepRunner.applyProfileResult({
       organizationId,
       profileId: profile.id,
       result,
     });
+    return this.toRunResponse({ runId, result });
+  }
+
+  /**
+   * The interactive "Run" — executes the FULL step sequence (every vendor), with
+   * step 0 running on the pre-opened live session (so it's watchable) and later
+   * vendors each in their own session. Streams a combined step timeline. This is
+   * what start-live + execute-live drives, so clicking Run no longer stops after
+   * the first vendor.
+   */
+  async executeAutomationLive(
+    automationId: string,
+    runId: string,
+    sessionId: string,
+    organizationId: string,
+    onSteps?: (steps: EvidenceTimelineStep[]) => void,
+    onLiveView?: (url: string) => void,
+    onLivePhase?: (phase: BrowserRunLivePhase) => void,
+  ) {
+    const automation = await this.getRunnableAutomation({
+      automationId,
+      organizationId,
+    });
+    const run = await this.runs.getActiveRun({ runId, automationId });
+    const steps = stepsForRun(automation);
+    const firstProfile = await this.stepRunner.resolveStepProfile({
+      organizationId,
+      step: steps[0],
+    });
+
+    let result: BrowserEvidenceRunResult;
+    try {
+      result = await this.stepRunner.runSteps({
+        organizationId,
+        taskId: automation.taskId,
+        automationId,
+        runId,
+        steps,
+        firstProfile,
+        firstSessionId: sessionId,
+        onSteps,
+        onLiveView,
+        onLivePhase,
+      });
+    } catch (error) {
+      // A failure in step bookkeeping / profile-health must still finalize the
+      // parent run — otherwise it's stuck in `running` forever.
+      if (this.isTerminalReplayError(error)) throw error;
+      this.logger.error('Browser automation live run failed', error);
+      result = failedBrowserEvidenceRunResult(error);
+    }
+
+    await this.runs.finishRun({ runId, startedAt: run.startedAt, result });
     return this.toRunResponse({ runId, result });
   }
 
@@ -128,105 +218,37 @@ export class BrowserAutomationExecutionService {
       automationId,
       organizationId,
     });
-    const profile = await this.profiles.resolveProfileForTarget({
+    const steps = stepsForRun(automation);
+
+    // Attribute the run to the first step's connection.
+    const firstProfile = await this.stepRunner.resolveStepProfile({
       organizationId,
-      targetUrl: automation.targetUrl,
+      step: steps[0],
     });
     const run = await this.runs.createRun({
       automationId,
-      profileId: profile.id,
+      profileId: firstProfile?.id,
     });
-
-    if (profile.status !== 'verified') {
-      const result = this.profileBlockedResult(profile.status);
-      await this.runs.finishRun({
-        runId: run.id,
-        startedAt: run.startedAt,
-        result,
-      });
-      return this.toRunResponse({ runId: run.id, result });
-    }
 
     let result: BrowserEvidenceRunResult;
     try {
-      result = await this.runner.runEvidence({
+      result = await this.stepRunner.runSteps({
         organizationId,
         taskId: automation.taskId,
         automationId,
         runId: run.id,
-        targetUrl: automation.targetUrl,
-        instruction: automation.instruction,
-        evaluationCriteria: automation.evaluationCriteria,
-        profile: {
-          id: profile.id,
-          hostname: profile.hostname,
-          contextId: profile.contextId,
-          vaultProvider: profile.vaultProvider,
-          vaultExternalItemRef: profile.vaultExternalItemRef,
-          vaultConnectionId: profile.vaultConnectionId,
-        },
+        steps,
+        firstProfile,
       });
     } catch (error) {
-      this.logger.error('Browser evidence runner failed', error);
+      // Always finalize the run we created — a bookkeeping failure must not leave
+      // it stuck in `running` (the orchestrator would never retry it).
+      this.logger.error('Browser automation run failed', error);
       result = failedBrowserEvidenceRunResult(error);
     }
-    await this.runs.finishRun({
-      runId: run.id,
-      startedAt: run.startedAt,
-      result,
-    });
-    await this.applyProfileResult({
-      organizationId,
-      profileId: profile.id,
-      result,
-    });
+
+    await this.runs.finishRun({ runId: run.id, startedAt: run.startedAt, result });
     return this.toRunResponse({ runId: run.id, result });
-  }
-
-  private async applyProfileResult(input: {
-    organizationId: string;
-    profileId: string;
-    result: BrowserEvidenceRunResult;
-  }) {
-    if (input.result.failureCode === 'needs_reauth') {
-      await this.profiles.markNeedsReauth({
-        organizationId: input.organizationId,
-        profileId: input.profileId,
-        reason: input.result.blockedReason,
-      });
-    }
-
-    if (
-      input.result.failureCode === 'captcha_blocked' ||
-      input.result.failureCode === 'needs_user_action'
-    ) {
-      await this.profiles.markBlocked({
-        organizationId: input.organizationId,
-        profileId: input.profileId,
-        reason:
-          input.result.blockedReason ??
-          input.result.error ??
-          'User action is required before this automation can run.',
-      });
-    }
-  }
-
-  private profileBlockedResult(status: string): BrowserEvidenceRunResult {
-    const needsUserAction = status === 'blocked';
-    return {
-      success: false,
-      status: 'blocked',
-      error: needsUserAction
-        ? 'This browser profile is blocked. Resolve the blocked state before running automations.'
-        : 'This browser profile is not verified. Reconnect it before running automations.',
-      needsReauth: !needsUserAction,
-      failureCode: needsUserAction ? 'needs_user_action' : 'needs_reauth',
-      failureStage: 'auth',
-      blockedReason: needsUserAction
-        ? 'Browser profile is blocked.'
-        : 'Browser profile is not verified.',
-      logs: [],
-    };
   }
 
   private toRunResponse(input: {
@@ -257,6 +279,7 @@ export class BrowserAutomationExecutionService {
         task: {
           select: { title: true, description: true, organizationId: true },
         },
+        steps: { orderBy: { order: 'asc' } },
       },
     });
     if (
