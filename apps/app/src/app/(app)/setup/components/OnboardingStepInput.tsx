@@ -537,6 +537,7 @@ const normalizeVendorName = (name: string): string => {
 // leaving just the bare domain for display/validation
 export const cleanDomainInput = (raw: string): string => {
   return raw
+    .trim()
     .replace(/^(https?:\/\/)+/gi, '')
     .replace(/^(www\.)+/gi, '')
     .trim()
