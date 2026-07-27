@@ -1,6 +1,7 @@
 import { TaskFrequency } from '@trycompai/db';
 import {
   filterDueAutomations,
+  groupAutomationsByOrg,
   limitAutomationBatch,
 } from './run-browser-automations-schedule';
 
@@ -28,8 +29,11 @@ jest.mock('@trigger.dev/sdk', () => ({
   },
 }));
 
-jest.mock('./run-browser-automation', () => ({
-  runBrowserAutomation: { batchTrigger: jest.fn() },
+// The schedule now dispatches per-org runners; stub it so importing the
+// orchestrator doesn't load the real runner (which evaluates queue()/task() and
+// pulls in the integration email chain at module load).
+jest.mock('./run-org-browser-automations', () => ({
+  runOrgBrowserAutomations: { batchTrigger: jest.fn() },
 }));
 
 const atUtc = (iso: string) => new Date(`${iso}T00:00:00.000Z`);
@@ -212,5 +216,62 @@ describe('limitAutomationBatch', () => {
     });
 
     expect(limited.map((automation) => automation.id)).toEqual(['ba_good']);
+  });
+});
+
+describe('groupAutomationsByOrg', () => {
+  const automations = [
+    {
+      id: 'ba_1',
+      name: 'GitHub login',
+      taskId: 'tsk_1',
+      task: { organizationId: 'org_1' },
+    },
+    {
+      id: 'ba_2',
+      name: 'GitLab login',
+      taskId: 'tsk_2',
+      task: { organizationId: 'org_1' },
+    },
+    {
+      id: 'ba_3',
+      name: 'Datadog login',
+      taskId: 'tsk_3',
+      task: { organizationId: 'org_2' },
+    },
+  ];
+
+  it('groups automations into one entry per org and attaches the org name', () => {
+    const groups = groupAutomationsByOrg({
+      automations,
+      orgNameById: new Map([
+        ['org_1', 'Acme'],
+        ['org_2', 'Globex'],
+      ]),
+    });
+
+    expect(groups).toHaveLength(2);
+    const org1 = groups.find((g) => g.organizationId === 'org_1');
+    expect(org1?.organizationName).toBe('Acme');
+    expect(org1?.automations.map((a) => a.automationId)).toEqual([
+      'ba_1',
+      'ba_2',
+    ]);
+    expect(org1?.automations[0]).toEqual({
+      automationId: 'ba_1',
+      automationName: 'GitHub login',
+      taskId: 'tsk_1',
+    });
+    const org2 = groups.find((g) => g.organizationId === 'org_2');
+    expect(org2?.automations.map((a) => a.automationId)).toEqual(['ba_3']);
+  });
+
+  it('falls back to a generic org name when one is missing', () => {
+    const groups = groupAutomationsByOrg({
+      automations: [automations[0]],
+      orgNameById: new Map(),
+    });
+
+    expect(groups[0]?.organizationName).toBe('your organization');
   });
 });

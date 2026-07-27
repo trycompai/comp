@@ -1,3 +1,17 @@
+## [3.108.2](https://github.com/trycompai/comp/compare/v3.108.1...v3.108.2) (2026-07-26)
+
+
+### Bug Fixes
+
+* **app:** use the GA gemini-3.1-flash-lite slug ([ec646ed](https://github.com/trycompai/comp/commit/ec646ed7b1b016de785eefee724e51f4c9690a07))
+
+## [3.108.1](https://github.com/trycompai/comp/compare/v3.108.0...v3.108.1) (2026-07-24)
+
+
+### Bug Fixes
+
+* **app:** stop left-nav rail tooltips flickering on hover (CS-773) ([#3502](https://github.com/trycompai/comp/issues/3502)) ([e7ce85c](https://github.com/trycompai/comp/commit/e7ce85c0481e4a97cced3cf281072fe060eafeef))
+
 # [3.108.0](https://github.com/trycompai/comp/compare/v3.107.0...v3.108.0) (2026-07-24)
 
 
