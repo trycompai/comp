@@ -98,4 +98,45 @@ describe('BrowserEvidenceRunnerService', () => {
     const call = jest.mocked(executeBrowserEvidence).mock.calls[0];
     expect(call?.[0].input).not.toHaveProperty('credentialMaterial');
   });
+
+  it('signals the imminent teardown before closing a fresh session', async () => {
+    const sessions = new BrowserbaseSessionService();
+    jest.spyOn(sessions, 'createSessionWithContext').mockResolvedValue({
+      sessionId: 'sess_new',
+      liveViewUrl: 'https://live.example/sess_new',
+    });
+    const closeSpy = jest
+      .spyOn(sessions, 'closeSession')
+      .mockResolvedValue(undefined);
+
+    jest.mocked(executeBrowserEvidence).mockResolvedValue({
+      success: true,
+      finalUrl: 'https://example.com/final',
+      logs: [],
+    });
+
+    const service = new BrowserEvidenceRunnerService(
+      sessions,
+      new BrowserbaseScreenshotService(),
+    );
+
+    const onSessionClosing = jest.fn();
+    await service.runEvidence({
+      organizationId: 'org_1',
+      automationId: 'bau_1',
+      runId: 'bar_1',
+      targetUrl: 'https://example.com',
+      instruction: 'collect evidence',
+      profile: { id: 'bap_1', hostname: 'example.com', contextId: 'ctx_1' },
+      onSessionClosing,
+    });
+
+    expect(onSessionClosing).toHaveBeenCalledTimes(1);
+    expect(closeSpy).toHaveBeenCalledWith('sess_new');
+    // Must fire BEFORE the close, so the UI can cover the iframe before the live
+    // session's socket drops (the whole point of the transition overlay).
+    expect(onSessionClosing.mock.invocationCallOrder[0]).toBeLessThan(
+      closeSpy.mock.invocationCallOrder[0],
+    );
+  });
 });

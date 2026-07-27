@@ -11,6 +11,7 @@ const mockDb = {
   frameworkEditorFramework: { findUnique: jest.fn() },
   ismsProfile: { findUnique: jest.fn() },
   ismsInterestedParty: { findMany: jest.fn() },
+  riskAcceptance: { findMany: jest.fn() },
 };
 
 jest.mock('@db', () => ({ db: mockDb }));
@@ -55,6 +56,7 @@ function seedDb({
   });
   mockDb.ismsProfile.findUnique.mockResolvedValue({ answers: {} });
   mockDb.ismsInterestedParty.findMany.mockResolvedValue(parties);
+  mockDb.riskAcceptance.findMany.mockResolvedValue([]);
 }
 
 beforeEach(() => {

@@ -187,6 +187,8 @@ describe('IsmsService ensureSetup', () => {
           { type: 'monitoring' },
           { type: 'internal_audit' },
           { type: 'management_review' },
+          { type: 'risk_assessment_methodology' },
+          { type: 'risk_treatment_plan' },
         ])
         .mockResolvedValueOnce([
           {
@@ -334,9 +336,9 @@ describe('IsmsService ensureSetup', () => {
         await service.ensureSetup(dto);
 
         expect(mockDb.ismsDocument.createMany).toHaveBeenCalledTimes(1);
-        // 1 template-driven + 9 definition fallbacks: a type shipped before its
+        // 1 template-driven + 11 definition fallbacks: a type shipped before its
         // template seed re-runs (e.g. monitoring, CS-723) still provisions.
-        expect(createManyData()).toHaveLength(10);
+        expect(createManyData()).toHaveLength(12);
         expect(createManyData()[0]).toMatchObject({
           type: 'context_of_organization',
           title: 'Context of the Organization',
@@ -420,9 +422,9 @@ describe('IsmsService ensureSetup', () => {
 
         await service.ensureSetup(dto);
 
-        // objectives (template) + 8 definition fallbacks; the existing
+        // objectives (template) + 10 definition fallbacks; the existing
         // context_of_organization is skipped.
-        expect(createManyData()).toHaveLength(9);
+        expect(createManyData()).toHaveLength(11);
         expect(createManyData()[0].type).toBe('objectives_plan');
         expect(
           createManyData().map((doc: { type: string }) => doc.type),
@@ -523,6 +525,8 @@ describe('IsmsService ensureSetup', () => {
             { type: 'monitoring' },
             { type: 'internal_audit' },
             { type: 'management_review' },
+            { type: 'risk_assessment_methodology' },
+            { type: 'risk_treatment_plan' },
           ])
           .mockResolvedValueOnce([]);
 

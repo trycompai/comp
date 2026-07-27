@@ -47,6 +47,7 @@ model Organization {
   members                            Member[]
   policy                             Policy[]
   risk                               Risk[]
+  riskAcceptances                    RiskAcceptance[]
   vendors                            Vendor[]
   tasks                              Task[]
   taskItems                          TaskItem[]

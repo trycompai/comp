@@ -17,6 +17,7 @@ import { VendorResearchBadges, VendorResearchLinks } from './VendorResearchSecti
 import { VendorResearchFeed } from './VendorResearchFeed';
 import { VendorInherentRiskChart } from './VendorInherentRiskChart';
 import { VendorResidualRiskChart } from './VendorResidualRiskChart';
+import { ResidualAcceptanceCard } from '@/components/risks/acceptance/ResidualAcceptanceCard';
 import { TreatmentPlanTab } from '@/components/risks/treatment-plan/TreatmentPlanTab';
 import type { Member, RiskTreatmentType, User, Vendor } from '@db';
 import { CommentEntityType } from '@db';
@@ -534,6 +535,20 @@ export function VendorDetailTabs({
                 regenRun={regenRun}
                 onRegenSettled={handleRegenSettled}
               />
+              <div className="mt-6">
+                <ResidualAcceptanceCard
+                  kind="vendor"
+                  subjectId={resolvedVendor.id}
+                  residualLikelihood={resolvedVendor.residualProbability}
+                  residualImpact={resolvedVendor.residualImpact}
+                  ownerId={resolvedVendor.assigneeId}
+                  acceptorOptions={assignees.map((member) => ({
+                    id: member.id,
+                    name: member.user?.name ?? member.user?.email ?? 'Unknown',
+                  }))}
+                  canUpdate={canUpdate}
+                />
+              </div>
             </TabsContent>
             )}
 

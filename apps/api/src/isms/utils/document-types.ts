@@ -60,6 +60,20 @@ export const ISMS_TYPE_DEFINITIONS: IsmsTypeDefinition[] = [
       'The ISMS governance roles, their responsibilities and authorities, and the members who hold them (ISO 27001 clause 5.3).',
   },
   {
+    type: 'risk_assessment_methodology',
+    clause: '6.1.2',
+    title: 'Risk Assessment Methodology',
+    description:
+      'How information-security risks are identified, analysed and evaluated — the scales, risk level matrix, acceptance thresholds and treatment options used (ISO 27001 clause 6.1.2).',
+  },
+  {
+    type: 'risk_treatment_plan',
+    clause: '6.1.3',
+    title: 'Risk Treatment Plan',
+    description:
+      'The treatment, controls, owner, residual risk state and owner acceptance for every risk in the Risk Register and every vendor risk (ISO 27001 clause 6.1.3).',
+  },
+  {
     type: 'objectives_plan',
     clause: '6.2',
     title: 'Information Security Objectives and Plan',

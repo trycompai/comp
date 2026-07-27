@@ -276,6 +276,11 @@ export async function runDerivation({
     await generateNarrative({ tx, documentId, type, data });
     return;
   }
+  if (type === 'risk_treatment_plan') {
+    // Nothing is stored on generate: the plan renders live from the Risk
+    // Register + Vendors at export/snapshot time (loadRiskTreatmentExtras).
+    return;
+  }
   if (isNarrativeType(type)) {
     await generateNarrative({ tx, documentId, type, data });
     return;

@@ -22,6 +22,10 @@ import {
   mapReviews,
   type ManagementReviewExtras,
 } from '../documents/management-review-export-data';
+import {
+  loadRiskTreatmentExtras,
+  type RiskTreatmentExtras,
+} from '../documents/risk-treatment-export-data';
 import type {
   DocumentExportInput,
   IsmsOrgProfile,
@@ -165,6 +169,18 @@ export async function resolveManagementReviewExtras(
   });
 }
 
+/** The Risk Treatment Plan (6.1.3) reads the Risk Register + vendors; other types don't. */
+export async function resolveRiskTreatmentExtras(
+  document: LoadedExportDocument,
+  client?: Prisma.TransactionClient,
+): Promise<RiskTreatmentExtras | undefined> {
+  if (document.type !== 'risk_treatment_plan') return undefined;
+  return loadRiskTreatmentExtras({
+    organizationId: document.organizationId,
+    client,
+  });
+}
+
 function formatDateYmd(date: Date | null): string | null {
   return date ? date.toISOString().slice(0, 10) : null;
 }
@@ -204,6 +220,7 @@ export function buildExportInput({
   monitoringExtras,
   internalAuditExtras,
   managementReviewExtras,
+  riskTreatmentExtras,
 }: {
   document: LoadedExportDocument;
   orgProfile?: IsmsOrgProfile;
@@ -211,6 +228,7 @@ export function buildExportInput({
   monitoringExtras?: MonitoringExtras;
   internalAuditExtras?: InternalAuditExtras;
   managementReviewExtras?: ManagementReviewExtras;
+  riskTreatmentExtras?: RiskTreatmentExtras;
 }): DocumentExportInput {
   return {
     contextIssues: document.contextIssues.map((issue) => ({
@@ -251,6 +269,7 @@ export function buildExportInput({
     reviews: managementReviewExtras
       ? mapReviews(document.reviews, managementReviewExtras)
       : undefined,
+    riskTreatment: riskTreatmentExtras,
   };
 }
 
@@ -275,6 +294,7 @@ export async function buildDraftSnapshot(
   const internalAuditExtras = await resolveInternalAuditExtras(document);
   const managementReviewExtras =
     await resolveManagementReviewExtras(document);
+  const riskTreatmentExtras = await resolveRiskTreatmentExtras(document);
   const input = buildExportInput({
     document,
     orgProfile,
@@ -282,6 +302,7 @@ export async function buildDraftSnapshot(
     monitoringExtras,
     internalAuditExtras,
     managementReviewExtras,
+    riskTreatmentExtras,
   });
   const metadata = buildExportMetadata({
     type: document.type,

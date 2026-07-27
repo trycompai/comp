@@ -1,3 +1,30 @@
+## [3.108.2](https://github.com/trycompai/comp/compare/v3.108.1...v3.108.2) (2026-07-26)
+
+
+### Bug Fixes
+
+* **app:** use the GA gemini-3.1-flash-lite slug ([ec646ed](https://github.com/trycompai/comp/commit/ec646ed7b1b016de785eefee724e51f4c9690a07))
+
+## [3.108.1](https://github.com/trycompai/comp/compare/v3.108.0...v3.108.1) (2026-07-24)
+
+
+### Bug Fixes
+
+* **app:** stop left-nav rail tooltips flickering on hover (CS-773) ([#3502](https://github.com/trycompai/comp/issues/3502)) ([e7ce85c](https://github.com/trycompai/comp/commit/e7ce85c0481e4a97cced3cf281072fe060eafeef))
+
+# [3.108.0](https://github.com/trycompai/comp/compare/v3.107.0...v3.108.0) (2026-07-24)
+
+
+### Bug Fixes
+
+* **device-registration:** set source to device_agent when agent adopts intune device ([#3495](https://github.com/trycompai/comp/issues/3495)) ([1071066](https://github.com/trycompai/comp/commit/10710666c51251ce8c5ab7bd5d16e0073861ac9b))
+* **risks:** cs-727 deploy-review fixes (acceptance race, approval drift baseline, error surfacing) ([#3497](https://github.com/trycompai/comp/issues/3497)) ([7446c89](https://github.com/trycompai/comp/commit/7446c89b3fdfdccf3392858e8e308cec30e85aec))
+
+
+### Features
+
+* **risks:** risk acceptance events + ISMS 6.1.2 methodology and 6.1.3 treatment plan documents (CS-727) ([#3493](https://github.com/trycompai/comp/issues/3493)) ([8c4b358](https://github.com/trycompai/comp/commit/8c4b358ea5a170538e5097f1a28874fd5d470826))
+
 # [3.107.0](https://github.com/trycompai/comp/compare/v3.106.0...v3.107.0) (2026-07-22)
 
 
