@@ -14,14 +14,16 @@ export const TrustAccessControllerGetFaqsV1Request$zodSchema: z.ZodType<
   ),
 });
 
-export type Faq = {
+export type TrustAccessControllerGetFaqsV1Faq = {
   id?: string | undefined;
   question?: string | undefined;
   answer?: string | undefined;
   order?: number | undefined;
 };
 
-export const Faq$zodSchema: z.ZodType<Faq> = z.object({
+export const TrustAccessControllerGetFaqsV1Faq$zodSchema: z.ZodType<
+  TrustAccessControllerGetFaqsV1Faq
+> = z.object({
   answer: z.string().optional(),
   id: z.string().optional(),
   order: z.number().optional(),
@@ -32,11 +34,12 @@ export const Faq$zodSchema: z.ZodType<Faq> = z.object({
  * FAQs retrieved successfully
  */
 export type TrustAccessControllerGetFaqsV1Response = {
-  faqs?: Array<Faq> | null | undefined;
+  faqs?: Array<TrustAccessControllerGetFaqsV1Faq> | null | undefined;
 };
 
 export const TrustAccessControllerGetFaqsV1Response$zodSchema: z.ZodType<
   TrustAccessControllerGetFaqsV1Response
 > = z.object({
-  faqs: z.array(z.lazy(() => Faq$zodSchema)).nullable().optional(),
+  faqs: z.array(z.lazy(() => TrustAccessControllerGetFaqsV1Faq$zodSchema))
+    .nullable().optional(),
 }).describe("FAQs retrieved successfully");

@@ -6,6 +6,26 @@ import * as z from "zod";
 import { ClosedEnum } from "../types/enums.js";
 
 /**
+ * How the request was authenticated
+ */
+export const OrganizationControllerUpdateOrganizationV1AuthType = {
+  ApiKey: "api-key",
+  Session: "session",
+} as const;
+/**
+ * How the request was authenticated
+ */
+export type OrganizationControllerUpdateOrganizationV1AuthType = ClosedEnum<
+  typeof OrganizationControllerUpdateOrganizationV1AuthType
+>;
+
+export const OrganizationControllerUpdateOrganizationV1AuthType$zodSchema = z
+  .enum([
+    "api-key",
+    "session",
+  ]).describe("How the request was authenticated");
+
+/**
  * Organization update data
  */
 export type OrganizationControllerUpdateOrganizationV1Request = {
@@ -15,27 +35,37 @@ export type OrganizationControllerUpdateOrganizationV1Request = {
   metadata?: string | undefined;
   website?: string | undefined;
   onboardingCompleted?: boolean | undefined;
-  hasAccess?: boolean | undefined;
   fleetDmLabelId?: number | undefined;
   isFleetSetupCompleted?: boolean | undefined;
   primaryColor?: string | undefined;
   advancedModeEnabled?: boolean | undefined;
   backgroundCheckStepEnabled?: boolean | undefined;
+  evidenceApprovalEnabled?: boolean | undefined;
+  deviceAgentStepEnabled?: boolean | undefined;
+  securityTrainingStepEnabled?: boolean | undefined;
+  whistleblowerReportEnabled?: boolean | undefined;
+  accessRequestFormEnabled?: boolean | undefined;
 };
 
 export const OrganizationControllerUpdateOrganizationV1Request$zodSchema:
   z.ZodType<OrganizationControllerUpdateOrganizationV1Request> = z.object({
+    accessRequestFormEnabled: z.boolean().optional().describe(
+      "Whether the trust-portal access request form is enabled.",
+    ),
     advancedModeEnabled: z.boolean().optional().describe(
       "Whether advanced mode is enabled for the organization",
     ),
     backgroundCheckStepEnabled: z.boolean().optional().describe(
       "Whether the background-check step is required during member onboarding. Set to false to turn off the \"Require background checks\" setting; true to require it.",
     ),
+    deviceAgentStepEnabled: z.boolean().optional().describe(
+      "Whether the device-agent step is enabled during member onboarding.",
+    ),
+    evidenceApprovalEnabled: z.boolean().optional().describe(
+      "Whether evidence requires approval before it is accepted.",
+    ),
     fleetDmLabelId: z.int().optional().describe(
       "FleetDM label ID for device management",
-    ),
-    hasAccess: z.boolean().optional().describe(
-      "Whether organization has access to the platform",
     ),
     isFleetSetupCompleted: z.boolean().optional().describe(
       "Whether FleetDM setup is completed",
@@ -51,8 +81,14 @@ export const OrganizationControllerUpdateOrganizationV1Request$zodSchema:
     primaryColor: z.string().optional().describe(
       "Organization primary color in hex format",
     ),
+    securityTrainingStepEnabled: z.boolean().optional().describe(
+      "Whether the security-training step is enabled during member onboarding.",
+    ),
     slug: z.string().optional().describe("Organization slug"),
     website: z.string().optional().describe("Organization website URL"),
+    whistleblowerReportEnabled: z.boolean().optional().describe(
+      "Whether the whistleblower reporting feature is enabled.",
+    ),
   }).describe("Organization update data");
 
 /**
@@ -95,26 +131,6 @@ export const OrganizationControllerUpdateOrganizationV1BadRequestResponseBody$zo
     z.object({
       message: z.string().optional(),
     }).describe("Bad Request - Invalid update data");
-
-/**
- * How the request was authenticated
- */
-export const OrganizationControllerUpdateOrganizationV1AuthType = {
-  ApiKey: "api-key",
-  Session: "session",
-} as const;
-/**
- * How the request was authenticated
- */
-export type OrganizationControllerUpdateOrganizationV1AuthType = ClosedEnum<
-  typeof OrganizationControllerUpdateOrganizationV1AuthType
->;
-
-export const OrganizationControllerUpdateOrganizationV1AuthType$zodSchema = z
-  .enum([
-    "api-key",
-    "session",
-  ]).describe("How the request was authenticated");
 
 /**
  * Organization updated successfully

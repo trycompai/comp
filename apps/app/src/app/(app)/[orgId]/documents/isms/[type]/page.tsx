@@ -8,10 +8,15 @@ import { resolveUserPermissions } from '@/lib/permissions.server';
 import { auth } from '@/utils/auth';
 import { ContextOfOrganizationClient } from '../components/ContextOfOrganizationClient';
 import { InterestedPartiesClient } from '../components/InterestedPartiesClient';
+import { InternalAuditClient } from '../components/InternalAuditClient';
 import type { ApproverOption } from '../components/IsmsApprovalSection';
 import { LeadershipClient } from '../components/LeadershipClient';
+import { ManagementReviewClient } from '../components/ManagementReviewClient';
+import { MonitoringClient } from '../components/MonitoringClient';
 import { ObjectivesClient } from '../components/ObjectivesClient';
 import { RequirementsClient } from '../components/RequirementsClient';
+import { RiskMethodologyClient } from '../components/RiskMethodologyClient';
+import { RiskTreatmentPlanClient } from '../components/RiskTreatmentPlanClient';
 import { RolesClient } from '../components/RolesClient';
 import { ScopeClient } from '../components/ScopeClient';
 import {
@@ -32,6 +37,10 @@ interface IsmsDetailClientProps {
   approverOptions: ApproverOption[];
   /** All active members (for the Roles member pickers); superset of approvers. */
   memberOptions: ApproverOption[];
+  /** Internal Auditor holder(s) from Roles (5.3) — only for the 9.2 document. */
+  auditorOptions?: string[];
+  /** Top Management holder(s) from Roles (5.3) — only for the 9.3 document. */
+  chairOptions?: string[];
 }
 
 const ISMS_DETAIL_CLIENTS: Record<
@@ -43,8 +52,13 @@ const ISMS_DETAIL_CLIENTS: Record<
   interested_parties_requirements: RequirementsClient,
   objectives_plan: ObjectivesClient,
   roles_and_responsibilities: RolesClient,
+  monitoring: MonitoringClient,
+  internal_audit: InternalAuditClient,
+  management_review: ManagementReviewClient,
   isms_scope: ScopeClient,
   leadership_commitment: LeadershipClient,
+  risk_assessment_methodology: RiskMethodologyClient,
+  risk_treatment_plan: RiskTreatmentPlanClient,
 };
 
 interface FrameworkApiResponse {
@@ -161,6 +175,65 @@ export default async function IsmsDocumentPage({
     .map((p) => ({ id: p.id, name: p.user?.name ?? p.user?.email ?? 'Unknown' }))
     .sort((a, b) => a.name.localeCompare(b.name));
 
+  // The Internal Audit auditor dropdown is whoever Roles (5.3) says the
+  // Internal Auditor is — assigned members and/or the external firm. No
+  // defaulting on our part: an empty list means Roles is not configured yet.
+  let auditorOptions: string[] = [];
+  if (documentType === 'internal_audit') {
+    const rolesDoc = setupResult.data?.documents?.find(
+      (doc) => doc.type === 'roles_and_responsibilities',
+    );
+    if (rolesDoc) {
+      const rolesResult = await serverApi.get<IsmsDocumentData>(
+        `/v1/isms/documents/${rolesDoc.id}`,
+      );
+      const auditorRole = rolesResult.data?.roles?.find(
+        (role) => role.roleKey === 'internal_auditor',
+      );
+      const memberNames = new Map(memberOptions.map((m) => [m.id, m.name]));
+      const holders = (auditorRole?.assignments ?? [])
+        .map((assignment) => memberNames.get(assignment.memberId))
+        .filter((name): name is string => !!name);
+      const routeHolder = auditorRole?.auditRouteMemberId
+        ? memberNames.get(auditorRole.auditRouteMemberId)
+        : undefined;
+      const firm = auditorRole?.auditFirmName?.trim();
+      auditorOptions = [
+        ...new Set(
+          [...holders, routeHolder, firm].filter(
+            (name): name is string => !!name,
+          ),
+        ),
+      ];
+    }
+  }
+
+  // The Management Review chair dropdown is whoever Roles (5.3) says Top
+  // Management is. No defaulting on our part: an empty list means Roles is not
+  // configured yet (the server still resolves creation-time defaults itself).
+  let chairOptions: string[] = [];
+  if (documentType === 'management_review') {
+    const rolesDoc = setupResult.data?.documents?.find(
+      (doc) => doc.type === 'roles_and_responsibilities',
+    );
+    if (rolesDoc) {
+      const rolesResult = await serverApi.get<IsmsDocumentData>(
+        `/v1/isms/documents/${rolesDoc.id}`,
+      );
+      const topMgmtRole = rolesResult.data?.roles?.find(
+        (role) => role.roleKey === 'top_management',
+      );
+      const memberNames = new Map(memberOptions.map((m) => [m.id, m.name]));
+      chairOptions = [
+        ...new Set(
+          (topMgmtRole?.assignments ?? [])
+            .map((assignment) => memberNames.get(assignment.memberId))
+            .filter((name): name is string => !!name),
+        ),
+      ];
+    }
+  }
+
   const DetailClient = ISMS_DETAIL_CLIENTS[documentType];
 
   return (
@@ -173,6 +246,8 @@ export default async function IsmsDocumentPage({
         currentMemberId={currentMember?.id ?? null}
         approverOptions={approverOptions}
         memberOptions={memberOptions}
+        auditorOptions={auditorOptions}
+        chairOptions={chairOptions}
       />
     </PageLayout>
   );

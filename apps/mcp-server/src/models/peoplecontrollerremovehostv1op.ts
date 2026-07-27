@@ -5,6 +5,25 @@
 import * as z from "zod";
 import { ClosedEnum } from "../types/enums.js";
 
+/**
+ * How the request was authenticated
+ */
+export const PeopleControllerRemoveHostV1AuthType = {
+  ApiKey: "api-key",
+  Session: "session",
+} as const;
+/**
+ * How the request was authenticated
+ */
+export type PeopleControllerRemoveHostV1AuthType = ClosedEnum<
+  typeof PeopleControllerRemoveHostV1AuthType
+>;
+
+export const PeopleControllerRemoveHostV1AuthType$zodSchema = z.enum([
+  "api-key",
+  "session",
+]).describe("How the request was authenticated");
+
 export type PeopleControllerRemoveHostV1Request = {
   id: string;
   hostId: number;
@@ -55,25 +74,6 @@ export const PeopleControllerRemoveHostV1UnauthorizedResponseBody$zodSchema:
   }).describe(
     "Unauthorized - Invalid authentication, insufficient permissions, or not organization owner",
   );
-
-/**
- * How the request was authenticated
- */
-export const PeopleControllerRemoveHostV1AuthType = {
-  ApiKey: "api-key",
-  Session: "session",
-} as const;
-/**
- * How the request was authenticated
- */
-export type PeopleControllerRemoveHostV1AuthType = ClosedEnum<
-  typeof PeopleControllerRemoveHostV1AuthType
->;
-
-export const PeopleControllerRemoveHostV1AuthType$zodSchema = z.enum([
-  "api-key",
-  "session",
-]).describe("How the request was authenticated");
 
 /**
  * Host removed from Fleet successfully

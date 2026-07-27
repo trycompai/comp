@@ -125,13 +125,15 @@ function dataTable({
     ),
   });
   const bodyRows = table.rows.map(
-    (row) =>
+    (row, rowIndex) =>
       new TableRow({
         children: row.map((value, index) =>
           cell({
             text: value,
             bold: widths ? index === 0 : false,
             width: widths ? widths[index] : undefined,
+            // Per-cell background fills (the 6.1.2 risk level matrix).
+            fill: table.cellFills?.[rowIndex]?.[index] ?? undefined,
           }),
         ),
       }),

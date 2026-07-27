@@ -90,4 +90,48 @@ describe('summarizeLatestPerAccount', () => {
       hasSucceeded: false,
     });
   });
+
+  // CS-753: a check whose recent runs are all held server-side (hidden from
+  // the runs list) still RAN — "Last ran" must advance to the newest attempt,
+  // while counts/status keep reflecting the latest visible run.
+  it('advances lastRunAt to a newer held attempt without touching counts/status', () => {
+    const runs = [
+      makeRun({
+        id: 'a1',
+        connectionId: 'A',
+        status: 'failed',
+        passedCount: 34,
+        failedCount: 10,
+        createdAt: '2026-07-13T10:00:00Z',
+      }),
+    ];
+    const summary = summarizeLatestPerAccount(runs, [
+      { connectionId: 'A', checkId: 'aws-s3-encryption', lastAttemptAt: '2026-07-16T06:00:00Z' },
+    ]);
+    expect(summary.lastRunAt).toBe('2026-07-16T06:00:00Z');
+    // Results shown are still the latest VISIBLE run's.
+    expect(summary.passed).toBe(34);
+    expect(summary.failed).toBe(10);
+    expect(summary.hasFailed).toBe(true);
+  });
+
+  it('ignores attempts older than the latest visible run', () => {
+    const runs = [
+      makeRun({ id: 'a1', connectionId: 'A', createdAt: '2026-07-16T06:00:00Z' }),
+    ];
+    const summary = summarizeLatestPerAccount(runs, [
+      { connectionId: 'A', checkId: 'aws-s3-encryption', lastAttemptAt: '2026-07-13T06:00:00Z' },
+    ]);
+    expect(summary.lastRunAt).toBe('2026-07-16T06:00:00Z');
+  });
+
+  it('keeps "Not run yet" (null) when a check has only ever been held', () => {
+    // Held-only checks have no visible runs; their outcomes stay hidden by
+    // design, so the attempt timestamp alone must not fabricate a summary.
+    const summary = summarizeLatestPerAccount([], [
+      { connectionId: 'A', checkId: 'aws-s3-encryption', lastAttemptAt: '2026-07-16T06:00:00Z' },
+    ]);
+    expect(summary.lastRunAt).toBeNull();
+    expect(summary.accountCount).toBe(0);
+  });
 });

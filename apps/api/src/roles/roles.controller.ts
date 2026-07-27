@@ -304,6 +304,10 @@ export class RolesController {
     description: 'Forbidden - cannot grant permissions you do not have',
   })
   @ApiResponse({ status: 404, description: 'Role not found' })
+  @ApiResponse({
+    status: 409,
+    description: 'Role was modified by another request since it was read. Retry the update.',
+  })
   async updateRole(
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,

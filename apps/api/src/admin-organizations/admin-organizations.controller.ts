@@ -153,14 +153,20 @@ export class AdminOrganizationsController {
   @ApiQuery({
     name: 'take',
     required: false,
-    description: 'Number of logs to return (max 100, default 100)',
+    description: 'Number of logs to return (max 200, default 100)',
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    description: 'Number of logs to skip (default 0)',
   })
   async getAuditLogs(
     @Param('id') id: string,
     @Query('entityType') entityType?: string,
     @Query('take') take?: string,
+    @Query('offset') offset?: string,
   ) {
-    return this.service.getAuditLogs({ orgId: id, entityType, take });
+    return this.service.getAuditLogs({ orgId: id, entityType, take, offset });
   }
 
   @Get(':id/invitations')

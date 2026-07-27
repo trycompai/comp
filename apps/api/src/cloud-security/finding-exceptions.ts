@@ -1,6 +1,16 @@
 import { db } from '@db';
 
 /**
+ * Metadata about one active exception. Display surfaces use it to show the
+ * documented reason next to a suppressed finding and to offer revoke (which
+ * needs the row id) without a second query.
+ */
+export interface ActiveExceptionInfo {
+  id: string;
+  reason: string;
+}
+
+/**
  * The set of findings — keyed by (connectionId, checkId, resourceId) — that
  * currently have an ACTIVE exception (not revoked, not expired) for an org.
  *
@@ -24,9 +34,16 @@ export class ActiveExceptionSet {
    * every result row into memory.
    */
   private readonly resourceIdsByConnCheck: Map<string, Set<string>>;
+  /** Exception metadata per canonical key. Optional — evaluation-only callers
+   *  build the set from bare keys and never ask for it. */
+  private readonly infoByKey: ReadonlyMap<string, ActiveExceptionInfo>;
 
-  constructor(keys: Iterable<string>) {
+  constructor(
+    keys: Iterable<string>,
+    infoByKey?: ReadonlyMap<string, ActiveExceptionInfo>,
+  ) {
     this.keys = new Set(keys);
+    this.infoByKey = infoByKey ?? new Map();
     this.resourceIdsByConnCheck = new Map();
     for (const key of this.keys) {
       // key = `${connectionId}::${checkId}::${resourceId}`. A resourceId can
@@ -75,6 +92,23 @@ export class ActiveExceptionSet {
     );
     return ids ? Array.from(ids) : [];
   }
+
+  /**
+   * Metadata (row id + reason) of the active exception covering this finding,
+   * or null when none. Null also for sets built without metadata (bare keys) —
+   * `has()` stays the authority on whether a finding is excepted.
+   */
+  infoFor(
+    connectionId: string,
+    checkId: string,
+    resourceId: string,
+  ): ActiveExceptionInfo | null {
+    return (
+      this.infoByKey.get(
+        ActiveExceptionSet.key(connectionId, checkId, resourceId),
+      ) ?? null
+    );
+  }
 }
 
 /**
@@ -94,13 +128,22 @@ export async function loadActiveExceptionSet(
         revokedAt: null,
         OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
       },
-      select: { connectionId: true, checkId: true, resourceId: true },
+      select: {
+        id: true,
+        connectionId: true,
+        checkId: true,
+        resourceId: true,
+        reason: true,
+      },
     });
-    return new ActiveExceptionSet(
-      active.map((e) =>
+    const infoByKey = new Map<string, ActiveExceptionInfo>();
+    for (const e of active) {
+      infoByKey.set(
         ActiveExceptionSet.key(e.connectionId, e.checkId, e.resourceId),
-      ),
-    );
+        { id: e.id, reason: e.reason },
+      );
+    }
+    return new ActiveExceptionSet(infoByKey.keys(), infoByKey);
   } catch {
     return new ActiveExceptionSet([]);
   }

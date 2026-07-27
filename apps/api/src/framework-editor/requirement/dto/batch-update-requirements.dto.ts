@@ -10,6 +10,7 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
+import { REQUIREMENT_DESCRIPTION_MAX_LENGTH } from '../../constants';
 
 class BatchUpdateRequirementItem {
   @ApiProperty()
@@ -32,7 +33,7 @@ class BatchUpdateRequirementItem {
   @ApiProperty()
   @IsString()
   @IsOptional()
-  @MaxLength(10000)
+  @MaxLength(REQUIREMENT_DESCRIPTION_MAX_LENGTH)
   description?: string;
 
   @ApiProperty()

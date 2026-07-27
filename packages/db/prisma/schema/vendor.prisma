@@ -42,6 +42,7 @@ model Vendor {
   tasks                        Task[]
   findings                     Finding[]
   offboardingAccessRevocations OffboardingAccessRevocation[]
+  acceptances                  RiskAcceptance[] // risk-owner residual-risk acceptance events (6.1.3(f))
 
   @@index([organizationId])
   @@index([assigneeId])

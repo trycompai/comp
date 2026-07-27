@@ -50,15 +50,22 @@ export function selectEvidencePage<Page extends EvidencePageCandidate>({
   const openMatchesTarget = (page: Page) =>
     targetHostname !== null && safeHostname(page.url()) === targetHostname;
 
-  const newestMatchingNewPage = [...openPages]
-    .reverse()
-    .find((page) => page !== initialPage && openMatchesTarget(page));
+  const reversed = [...openPages].reverse();
+
+  // A new tab that matches the entered host (a popup straight to the target).
+  const newestMatchingNewPage = reversed.find(
+    (page) => page !== initialPage && openMatchesTarget(page),
+  );
   if (newestMatchingNewPage) return newestMatchingNewPage;
 
-  if (!isClosed(initialPage)) return initialPage;
+  // The instruction often navigates to a DIFFERENT host than the entered URL
+  // (e.g. AWS console vs the sign-in host), commonly in a new tab. Prefer the
+  // newest non-initial page over the (now stale) initial one, so the screenshot
+  // matches where the agent actually ended up — not the starting/homepage tab.
+  const newestNonInitial = reversed.find((page) => page !== initialPage);
+  if (newestNonInitial) return newestNonInitial;
 
-  const newestMatchingPage = [...openPages].reverse().find(openMatchesTarget);
-  if (newestMatchingPage) return newestMatchingPage;
+  if (!isClosed(initialPage)) return initialPage;
 
   return openPages.at(-1) ?? null;
 }

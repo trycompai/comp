@@ -113,8 +113,6 @@ export function SOATableRow({
                   isApplicable={displayIsApplicable}
                   justification={justificationValue}
                   isPendingApproval={isPendingApproval}
-                  isControl7={isControl7}
-                  isFullyRemote={isFullyRemote}
                   organizationId={organizationId}
                   onUpdate={onUpdate}
                 />

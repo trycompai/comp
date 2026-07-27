@@ -63,6 +63,7 @@ const snapshot = {
   hasTrainingProgram: true,
   wizardAnswers: {},
   partiesFingerprint: '',
+  riskTreatmentFingerprint: '',
 };
 
 const versionService = {

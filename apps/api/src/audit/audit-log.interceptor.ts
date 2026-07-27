@@ -10,6 +10,7 @@ import { AuditLogEntityType, db, Prisma } from '@db';
 import { Observable, from, switchMap, tap } from 'rxjs';
 import { PERMISSIONS_KEY, RequiredPermission } from '../auth/permission.guard';
 import { AuthenticatedRequest } from '../auth/types';
+import { ActingUserResolver } from '../auth/acting-user.service';
 import { AUDIT_READ_KEY, SKIP_AUDIT_LOG_KEY } from './skip-audit-log.decorator';
 import {
   MEMBER_REF_FIELDS,
@@ -39,7 +40,10 @@ import {
 export class AuditLogInterceptor implements NestInterceptor {
   private readonly logger = new Logger(AuditLogInterceptor.name);
 
-  constructor(private readonly reflector: Reflector) {}
+  constructor(
+    private readonly reflector: Reflector,
+    private readonly actingUser: ActingUserResolver,
+  ) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
@@ -66,12 +70,30 @@ export class AuditLogInterceptor implements NestInterceptor {
       return next.handle();
     }
 
-    const { organizationId, userId, memberId, impersonatedBy } = request;
-    if (!organizationId || !userId) {
+    const { organizationId, impersonatedBy } = request;
+    if (!organizationId) {
       return next.handle();
     }
 
     const { resource, actions } = requiredPermissions[0];
+
+    // Read-only endpoints that use a mutation HTTP verb (e.g. `POST .../list` or
+    // `POST .../status` that carry a filter body) declare exactly `['read']`.
+    // The method-derived verb below would log them as "Created X" on every page
+    // load, so skip them — a required permission of only `read` is definitionally
+    // not a mutation. `@AuditRead` opts a read endpoint back into logging.
+    // Only skip when EVERY declared permission is read-only: an endpoint with
+    // multiple requirements (e.g. [read, create]) still performs a mutation.
+    if (
+      !isAuditRead &&
+      requiredPermissions.every(
+        (permission) =>
+          permission.actions.length === 1 && permission.actions[0] === 'read',
+      )
+    ) {
+      return next.handle();
+    }
+
     // Derive the actual action from the HTTP method rather than using the first
     // permission action. This is important when a controller declares multiple
     // actions (e.g. ['create','read','update','delete']) at the class level.
@@ -114,11 +136,49 @@ export class AuditLogInterceptor implements NestInterceptor {
       };
     });
 
-    return from(safePreFlightPromise).pipe(
-      switchMap(({ previousValues, memberNames, relationMappingResult }) =>
+    // Resolve who to attribute this mutation to. Session / service-token-acting
+    // callers already have req.userId (zero-cost). API-key callers don't — resolve
+    // the responsible user (key creator, else org owner) so the action is still
+    // audited and attributed to a real person instead of being silently dropped.
+    const actorPromise: Promise<{
+      userId: string | null;
+      memberId: string | undefined;
+      // Provenance marker for non-session callers (e.g. `via API key "CI"`),
+      // recorded in the audit trail so an owner-fallback / creator attribution
+      // isn't mistaken for the user personally acting in a session.
+      callerLabel: string | undefined;
+    }> = request.userId
+      ? Promise.resolve({
+          userId: request.userId,
+          memberId: request.memberId,
+          callerLabel: undefined,
+        })
+      : this.actingUser
+          .resolve(request, organizationId)
+          .then((a) => ({
+            userId: a.userId,
+            memberId: a.memberId,
+            callerLabel: a.callerLabel,
+          }))
+          .catch((err) => {
+            this.logger.error('Audit actor resolution failed', err);
+            return {
+              userId: null,
+              memberId: undefined,
+              callerLabel: undefined,
+            };
+          });
+
+    return from(Promise.all([safePreFlightPromise, actorPromise])).pipe(
+      switchMap(([{ previousValues, memberNames, relationMappingResult }, actor]) =>
         next.handle().pipe(
           tap({
             next: (responseBody) => {
+              // No attributable user (e.g. an org with zero owner-role members).
+              // Skip logging rather than persist a null userId FK — mirrors the
+              // resolver's soft-failure contract.
+              if (!actor.userId) return;
+
               const commentCtx = extractCommentContext(
                 request.url,
                 method,
@@ -216,8 +276,8 @@ export class AuditLogInterceptor implements NestInterceptor {
 
               void this.persist(
                 organizationId,
-                userId,
-                memberId,
+                actor.userId,
+                actor.memberId,
                 method,
                 request.url,
                 resource,
@@ -228,6 +288,7 @@ export class AuditLogInterceptor implements NestInterceptor {
                 commentCtx,
                 descriptionOverride,
                 impersonatedBy,
+                actor.callerLabel,
               ).catch((err) => {
                 this.logger.error('Failed to create audit log entry', err);
               });
@@ -293,6 +354,7 @@ export class AuditLogInterceptor implements NestInterceptor {
     commentContext: AuditContextOverride | null,
     descriptionOverride: string | null,
     impersonatedBy?: string,
+    callerLabel?: string,
   ): Promise<void> {
     const entityType =
       commentContext?.entityType ?? RESOURCE_TO_ENTITY_TYPE[resource] ?? null;
@@ -317,6 +379,16 @@ export class AuditLogInterceptor implements NestInterceptor {
     if (impersonatedBy) {
       auditData.impersonatedBy = impersonatedBy;
     }
+    // Record automated-caller provenance (e.g. 'via API key "CI Pipeline"') so an
+    // owner-fallback / key-creator attribution isn't read as the user personally
+    // acting in a session — preserves non-repudiation of the audit trail.
+    if (callerLabel) {
+      auditData.via = callerLabel;
+    }
+
+    const finalDescription = `${impersonatedBy ? '[Impersonated] ' : ''}${description}${
+      callerLabel ? ` [${callerLabel}]` : ''
+    }`;
 
     await db.auditLog.create({
       data: {
@@ -325,9 +397,7 @@ export class AuditLogInterceptor implements NestInterceptor {
         memberId: memberId ?? null,
         entityType,
         entityId,
-        description: impersonatedBy
-          ? `[Impersonated] ${description}`
-          : description,
+        description: finalDescription,
         data: auditData as Prisma.InputJsonValue,
       },
     });

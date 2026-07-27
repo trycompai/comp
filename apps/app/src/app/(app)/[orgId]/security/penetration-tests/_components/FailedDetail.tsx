@@ -1,8 +1,8 @@
 'use client';
 
+import type { PentestRun } from '@/lib/security/penetration-tests-client';
 import { Button } from '@trycompai/design-system';
 import { Renew, Warning } from '@trycompai/design-system/icons';
-import type { PentestRun } from '@/lib/security/penetration-tests-client';
 import { formatReportDate } from '../lib';
 import { StatusPill } from './StatusPill';
 
@@ -20,13 +20,9 @@ export function FailedDetail({ run, onRetry }: FailedDetailProps) {
         <header className="space-y-3">
           <div className="flex items-center gap-3">
             <StatusPill status={run.status} />
-            <span className="font-mono text-xs text-muted-foreground">
-              {run.id}
-            </span>
+            <span className="font-mono text-xs text-muted-foreground">{run.id}</span>
           </div>
-          <h1 className="truncate text-[26px] font-medium tracking-[-0.02em]">
-            {run.targetUrl}
-          </h1>
+          <h1 className="truncate text-[26px] font-medium tracking-[-0.02em]">{run.targetUrl}</h1>
           <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted-foreground">
             <span>Started {formatReportDate(run.createdAt)}</span>
             <span>Failed {formatReportDate(run.updatedAt)}</span>
@@ -40,21 +36,9 @@ export function FailedDetail({ run, onRetry }: FailedDetailProps) {
               <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-destructive">
                 Run error
               </div>
-              <p className="font-mono text-sm text-destructive">{reason}</p>
+              <p className="text-sm leading-relaxed text-destructive">{reason}</p>
             </div>
           </div>
-        </div>
-
-        <div className="rounded-[var(--radius)] border border-border p-5">
-          <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-            Common causes
-          </div>
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-            <li>Target resolves to a non-routable IP (VPN not connected)</li>
-            <li>Your IP wasn't allowlisted on the target's WAF / CDN</li>
-            <li>Authentication flow requires credentials the scanner wasn't given</li>
-            <li>Workflow exceeded the runtime cap (typically ~12 hours)</li>
-          </ul>
         </div>
 
         {onRetry ? (

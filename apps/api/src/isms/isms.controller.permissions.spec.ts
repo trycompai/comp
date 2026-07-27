@@ -54,6 +54,9 @@ describe('IsmsController permission metadata', () => {
     expect(permissionsFor('drift')).toEqual([
       { resource: 'evidence', actions: ['read'] },
     ]);
+    expect(permissionsFor('riskTreatment')).toEqual([
+      { resource: 'evidence', actions: ['read'] },
+    ]);
     expect(permissionsFor('getVersions')).toEqual([
       { resource: 'evidence', actions: ['read'] },
     ]);

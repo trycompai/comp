@@ -27,14 +27,6 @@ export const TaskResponseDtoStatus$zodSchema = z.enum([
 ]).describe("Task status");
 
 /**
- * Task template ID
- */
-export type TaskTemplateId = {};
-
-export const TaskTemplateId$zodSchema: z.ZodType<TaskTemplateId> = z.object({})
-  .describe("Task template ID");
-
-/**
  * Cadence for running the integration check attached to this task
  */
 export const IntegrationScheduleFrequency = {
@@ -58,6 +50,14 @@ export const IntegrationScheduleFrequency$zodSchema = z.enum([
   "quarterly",
   "yearly",
 ]).describe("Cadence for running the integration check attached to this task");
+
+/**
+ * Task template ID
+ */
+export type TaskTemplateId = {};
+
+export const TaskTemplateId$zodSchema: z.ZodType<TaskTemplateId> = z.object({})
+  .describe("Task template ID");
 
 /**
  * Last successful integration check run timestamp

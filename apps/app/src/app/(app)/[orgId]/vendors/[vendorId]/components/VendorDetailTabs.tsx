@@ -7,7 +7,7 @@ import { VendorNewsLoadingPlaceholder } from '@/components/vendor-risk-assessmen
 import { parseVendorRiskAssessmentDescription } from '@/components/vendor-risk-assessment/parse-vendor-risk-assessment-description';
 import { Comments } from '@/components/comments/Comments';
 import { RecentAuditLogs } from '@/components/RecentAuditLogs';
-import { useAuditLogs } from '@/hooks/use-audit-logs';
+import { usePaginatedAuditLogs } from '@/hooks/use-audit-logs';
 import { TaskItems } from '@/components/task-items/TaskItems';
 import { useTaskItems, useTaskItemActions } from '@/hooks/use-task-items';
 import { useVendor, useVendorActions, type VendorResponse } from '@/hooks/use-vendors';
@@ -17,6 +17,7 @@ import { VendorResearchBadges, VendorResearchLinks } from './VendorResearchSecti
 import { VendorResearchFeed } from './VendorResearchFeed';
 import { VendorInherentRiskChart } from './VendorInherentRiskChart';
 import { VendorResidualRiskChart } from './VendorResidualRiskChart';
+import { ResidualAcceptanceCard } from '@/components/risks/acceptance/ResidualAcceptanceCard';
 import { TreatmentPlanTab } from '@/components/risks/treatment-plan/TreatmentPlanTab';
 import type { Member, RiskTreatmentType, User, Vendor } from '@db';
 import { CommentEntityType } from '@db';
@@ -534,6 +535,20 @@ export function VendorDetailTabs({
                 regenRun={regenRun}
                 onRegenSettled={handleRegenSettled}
               />
+              <div className="mt-6">
+                <ResidualAcceptanceCard
+                  kind="vendor"
+                  subjectId={resolvedVendor.id}
+                  residualLikelihood={resolvedVendor.residualProbability}
+                  residualImpact={resolvedVendor.residualImpact}
+                  ownerId={resolvedVendor.assigneeId}
+                  acceptorOptions={assignees.map((member) => ({
+                    id: member.id,
+                    name: member.user?.name ?? member.user?.email ?? 'Unknown',
+                  }))}
+                  canUpdate={canUpdate}
+                />
+              </div>
             </TabsContent>
             )}
 
@@ -649,6 +664,17 @@ export function VendorDetailTabs({
 function VendorActivitySection({ vendorId, taskItemIds }: { vendorId: string; taskItemIds: string[] }) {
   const entityIds = [vendorId, ...taskItemIds].join(',');
   const entityTypes = taskItemIds.length > 0 ? 'vendor,task' : 'vendor';
-  const { logs } = useAuditLogs({ entityType: entityTypes, entityId: entityIds });
-  return <RecentAuditLogs logs={logs} />;
+  const { logs, total, hasMore, loadMore, isLoadingMore } = usePaginatedAuditLogs({
+    entityType: entityTypes,
+    entityId: entityIds,
+  });
+  return (
+    <RecentAuditLogs
+      logs={logs}
+      total={total}
+      hasMore={hasMore}
+      onLoadMore={loadMore}
+      isLoadingMore={isLoadingMore}
+    />
+  );
 }

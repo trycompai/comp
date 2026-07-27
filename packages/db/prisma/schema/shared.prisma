@@ -13,9 +13,17 @@ model ApiKey {
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   organizationId String
 
+  // Member (org membership) that created this key. Nullable: legacy keys predate
+  // this column, and SetNull keeps the org's keys alive if the creator's
+  // membership is removed. Used by ActingUserResolver to attribute
+  // API-key-initiated mutations to the real creator instead of the org owner.
+  createdByMemberId String?
+  createdBy         Member? @relation("ApiKeyCreatedBy", fields: [createdByMemberId], references: [id], onDelete: SetNull)
+
   @@index([organizationId])
   @@index([key])
   @@index([keyPrefix])
+  @@index([createdByMemberId])
 }
 
 model AuditLog {
