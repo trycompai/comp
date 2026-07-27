@@ -38,6 +38,22 @@ export function shouldMarkTaskFailedAfterBrowserRun(input: {
 }
 
 /**
+ * Task statuses a scheduled run must NEVER overwrite — deliberate human
+ * decisions. `not_relevant` is set by a person (with a justification) to exclude
+ * the task from compliance; an automation flipping it to done/failed would
+ * silently destroy that decision. Mirrors the codebase norm (cloud-security
+ * skips `not_relevant` as "user intent"). Single source of truth for both the
+ * exported guard and the atomic status-update WHERE clauses below.
+ */
+export const AUTOMATION_PROTECTED_TASK_STATUSES = ['not_relevant'] as const;
+
+export function isTaskStatusProtectedFromAutomation(status: string): boolean {
+  return (AUTOMATION_PROTECTED_TASK_STATUSES as readonly string[]).includes(
+    status,
+  );
+}
+
+/**
  * Worker task that runs a single browser automation.
  *
  * Triggered by the per-org runner (run-org-browser-automations), which waits on
@@ -120,36 +136,36 @@ export const runBrowserAutomation = task({
       ) {
         const currentTask = await db.task.findUnique({
           where: { id: taskId },
-          select: { status: true, frequency: true },
+          select: { frequency: true },
         });
 
-        if (currentTask && currentTask.status !== 'done') {
-          let reviewDate: Date | undefined;
-          if (currentTask.frequency) {
-            reviewDate = new Date();
-            switch (currentTask.frequency) {
-              case 'monthly':
-                reviewDate.setMonth(reviewDate.getMonth() + 1);
-                break;
-              case 'quarterly':
-                reviewDate.setMonth(reviewDate.getMonth() + 3);
-                break;
-              case 'yearly':
-                reviewDate.setFullYear(reviewDate.getFullYear() + 1);
-                break;
-            }
+        let reviewDate: Date | undefined;
+        if (currentTask?.frequency) {
+          reviewDate = new Date();
+          switch (currentTask.frequency) {
+            case 'monthly':
+              reviewDate.setMonth(reviewDate.getMonth() + 1);
+              break;
+            case 'quarterly':
+              reviewDate.setMonth(reviewDate.getMonth() + 3);
+              break;
+            case 'yearly':
+              reviewDate.setFullYear(reviewDate.getFullYear() + 1);
+              break;
           }
-
-          await db.task.update({
-            where: { id: taskId },
-            data: {
-              status: 'done',
-              ...(reviewDate ? { reviewDate } : {}),
-            },
-          });
-
-          logger.info(`Task ${taskId} marked as done`);
         }
+
+        // Atomic: flip to done only if it isn't already done and isn't a
+        // protected human status — the guard is in the WHERE, so a concurrent
+        // `not_relevant` action can't be clobbered between a read and the write.
+        const doneUpdate = await db.task.updateMany({
+          where: {
+            id: taskId,
+            status: { notIn: ['done', ...AUTOMATION_PROTECTED_TASK_STATUSES] },
+          },
+          data: { status: 'done', ...(reviewDate ? { reviewDate } : {}) },
+        });
+        if (doneUpdate.count > 0) logger.info(`Task ${taskId} marked as done`);
       }
     } else {
       logger.error(`Automation ${automationId} failed`, {
@@ -170,21 +186,19 @@ export const runBrowserAutomation = task({
           needsReauth: result.needsReauth,
         })
       ) {
-        const taskBeforeUpdate = await db.task.findUnique({
-          where: { id: taskId },
-          select: { status: true },
+        // Atomic transition: flip to failed only if it isn't already failed and
+        // isn't a protected human status (e.g. `not_relevant`). The guard lives
+        // in the WHERE so a concurrent human action can't be overwritten between
+        // a read and the write; count > 0 means THIS run caused the transition
+        // (which drives the per-org bundled failure email).
+        const failedUpdate = await db.task.updateMany({
+          where: {
+            id: taskId,
+            status: { notIn: ['failed', ...AUTOMATION_PROTECTED_TASK_STATUSES] },
+          },
+          data: { status: 'failed' },
         });
-        const oldStatus = taskBeforeUpdate?.status ?? 'todo';
-
-        // Transition only: don't re-flip / re-report a task that's already
-        // failed. The per-org runner (run-org-browser-automations) collects
-        // these transitions and sends one bundled failure email — covering both
-        // `needs_reauth` and control-regressed (`evaluation fail`) cases.
-        if (oldStatus !== 'failed') {
-          await db.task.update({
-            where: { id: taskId },
-            data: { status: 'failed' },
-          });
+        if (failedUpdate.count > 0) {
           statusChangedToFailed = true;
         } else {
           logger.info(
