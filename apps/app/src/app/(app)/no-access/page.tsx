@@ -36,8 +36,8 @@ export default async function NoAccess() {
         <div className="flex flex-col text-center">
           <p>
             Your current role doesn&apos;t have access to the app. If you&apos;re looking for the employee portal, go to{' '}
-            <Link href="https://portal.trycomp.ai" className="text-primary underline">
-              portal.trycomp.ai
+            <Link href={process.env.NEXT_PUBLIC_PORTAL_URL ?? "https://comp-portal.dctrl.ai"} className="text-primary underline">
+              {process.env.NEXT_PUBLIC_PORTAL_URL?.replace(/^https?:\/\//, "") ?? "comp-portal.dctrl.ai"}
             </Link>
             .
           </p>

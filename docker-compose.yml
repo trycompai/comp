@@ -31,6 +31,7 @@ services:
       args:
         NEXT_PUBLIC_BETTER_AUTH_URL: ${BETTER_AUTH_URL}
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_PORTAL_URL: ${BETTER_AUTH_URL_PORTAL}
     ports:
       - '3001:3000'
     env_file:
@@ -59,6 +60,10 @@ services:
       PGSSLMODE: disable
       NODE_EXTRA_CA_CERTS: ""
       DATABASE_URL: postgresql://comp:comp@comp-postgres:5432/comp?sslmode=disable
+      PORTAL_URL: https://comp-portal.dctrl.ai
+      NEXT_PUBLIC_PORTAL_URL: https://comp-portal.dctrl.ai
+      TRUST_APP_URL: https://comp-portal.dctrl.ai
+      NEXT_PUBLIC_APP_URL: https://comp-app.dctrl.ai
     volumes:
       - ./apps/api/.env:/app/.env:ro
     restart: unless-stopped
@@ -98,7 +103,42 @@ services:
       timeout: 10s
       retries: 3
     logging: *default-logging
+
+  minio:
+    image: minio/minio:latest
+    container_name: comp-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - minio_data:/data
+    restart: unless-stopped
+    logging: *default-logging
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      for i in 1 2 3 4 5 6 7 8 9 10; do
+        mc alias set local http://minio:9000 minioadmin minioadmin && break;
+        sleep 2;
+      done &&
+      mc mb -p local/comp || true &&
+      echo bucket ready
+      "
+    restart: 'no'
+    logging: *default-logging
+
 networks:
   default:
     name: comp_network
     external: true
+
+volumes:
+  minio_data:

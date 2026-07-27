@@ -1,3 +1,4 @@
+import { getPortalBaseUrl } from '../lib/get-portal-base-url';
 import {
   Body,
   Button,
@@ -61,7 +62,7 @@ export const PolicyAcknowledgmentDigestEmail = ({
   if (!firstOrg) return null;
 
   const portalBase = (
-    process.env.NEXT_PUBLIC_PORTAL_URL ?? 'https://portal.trycomp.ai'
+    getPortalBaseUrl()
   ).replace(/\/+$/, '');
   const subjectText = computePolicyAcknowledgmentDigestSubject(orgsWithPolicies);
   const isMultiOrg = orgsWithPolicies.length > 1;
