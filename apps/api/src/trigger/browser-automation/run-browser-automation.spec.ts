@@ -2,7 +2,7 @@ jest.mock('@db', () => ({
   db: {
     browserAutomation: { findUnique: jest.fn(), update: jest.fn() },
     browserAutomationRun: { create: jest.fn() },
-    task: { findUnique: jest.fn(), update: jest.fn() },
+    task: { findUnique: jest.fn(), update: jest.fn(), updateMany: jest.fn() },
     organization: { findUnique: jest.fn() },
     member: { findMany: jest.fn() },
   },
