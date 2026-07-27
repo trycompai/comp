@@ -168,6 +168,129 @@ describe('BrowserCredentialStorageService — TOTP', () => {
     });
   });
 
+  describe('storeProfileCredentials — re-save with an existing item', () => {
+    let itemsCreate: jest.Mock;
+
+    const storedProfile = () =>
+      profile({ displayName: 'GitHub', hostname: 'github.com' });
+
+    beforeEach(() => {
+      itemsCreate = jest.fn().mockResolvedValue({ id: 'item-2' });
+      mockGetClient.mockResolvedValue({
+        vaults: {
+          list: jest.fn().mockResolvedValue([]),
+          create: jest.fn().mockResolvedValue({ id: 'vault-2' }),
+        },
+        items: { get: itemsGet, put: itemsPut, create: itemsCreate },
+      });
+      mockLoadModule.mockResolvedValue({
+        ItemCategory: { Login: 'Login' },
+        ItemFieldType: { Text: 'Text', Concealed: 'Concealed', Totp: 'Totp' },
+      });
+      update.mockResolvedValue({});
+    });
+
+    it('updates the existing item in place instead of creating an orphan', async () => {
+      findFirst.mockResolvedValue(storedProfile());
+      itemsGet.mockResolvedValue({
+        title: 'old title',
+        fields: [field('username', 'old-user'), field('password', 'old-pass')],
+      });
+
+      await service.storeProfileCredentials({
+        organizationId: 'org_1',
+        profileId: 'bap_1',
+        username: 'new-user',
+        password: 'new-pass',
+      });
+
+      expect(itemsCreate).not.toHaveBeenCalled();
+      const written = itemsPut.mock.calls[0][0];
+      expect(written.title).toBe('GitHub (github.com)');
+      expect(
+        written.fields.find((f: Field) => f.title === 'username')?.value,
+      ).toBe('new-user');
+      expect(
+        written.fields.find((f: Field) => f.title === 'password')?.value,
+      ).toBe('new-pass');
+      // The op:// reference is stable — the update must not repoint it.
+      expect(update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.not.objectContaining({
+            vaultExternalItemRef: expect.anything(),
+          }),
+        }),
+      );
+    });
+
+    it('keeps the stored TOTP seed when the re-save has no new one', async () => {
+      findFirst.mockResolvedValue(storedProfile());
+      itemsGet.mockResolvedValue({
+        title: 'old title',
+        fields: [field('username'), field(TOTP_FIELD_TITLE, 'STORED-SEED')],
+      });
+
+      await service.storeProfileCredentials({
+        organizationId: 'org_1',
+        profileId: 'bap_1',
+        username: 'user',
+        password: 'pass',
+      });
+
+      const written = itemsPut.mock.calls[0][0];
+      const totpFields = written.fields.filter(
+        (f: Field) => f.title === TOTP_FIELD_TITLE,
+      );
+      expect(totpFields).toHaveLength(1);
+      expect(totpFields[0].value).toBe('STORED-SEED');
+    });
+
+    it('replaces the stored TOTP seed when the re-save provides a new one', async () => {
+      findFirst.mockResolvedValue(storedProfile());
+      itemsGet.mockResolvedValue({
+        title: 'old title',
+        fields: [field('username'), field(TOTP_FIELD_TITLE, 'STORED-SEED')],
+      });
+
+      await service.storeProfileCredentials({
+        organizationId: 'org_1',
+        profileId: 'bap_1',
+        username: 'user',
+        password: 'pass',
+        totpSeed: 'NEW-SEED',
+      });
+
+      const written = itemsPut.mock.calls[0][0];
+      const totpFields = written.fields.filter(
+        (f: Field) => f.title === TOTP_FIELD_TITLE,
+      );
+      expect(totpFields).toHaveLength(1);
+      expect(totpFields[0].value).toBe('NEW-SEED');
+    });
+
+    it('creates a replacement item when the stored one is unreadable', async () => {
+      findFirst.mockResolvedValue(storedProfile());
+      itemsGet.mockRejectedValue(new Error('item not found'));
+
+      await service.storeProfileCredentials({
+        organizationId: 'org_1',
+        profileId: 'bap_1',
+        username: 'user',
+        password: 'pass',
+      });
+
+      expect(itemsPut).not.toHaveBeenCalled();
+      expect(itemsCreate).toHaveBeenCalled();
+      expect(update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            vaultExternalItemRef: buildItemReference('vault-2', 'item-2'),
+          }),
+        }),
+      );
+    });
+  });
+
   describe('clearProfileTotp', () => {
     it('drops the TOTP field and writes the item back', async () => {
       findFirst.mockResolvedValue(profile());
