@@ -16588,6 +16588,12 @@ paths:
           description: "Number of logs to return (max 100, default 50)"
           schema:
             type: "string"
+        - name: "offset"
+          required: false
+          in: "query"
+          description: "Number of logs to skip (default 0)"
+          schema:
+            type: "string"
       responses:
         "200":
           description: ""

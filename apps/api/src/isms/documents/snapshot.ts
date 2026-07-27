@@ -109,6 +109,13 @@ const TYPE_DRIFT_SOURCES: Record<IsmsDocumentType, Array<keyof DiffMap>> = {
     'wizardAnswers',
   ],
   leadership_commitment: ['organizationName', 'wizardAnswers'],
+  // The methodology (6.1.2) is customer-owned templated text once seeded; its
+  // scales/matrix render from fixed platform constants. Never platform-stale.
+  risk_assessment_methodology: [],
+  // The RTP (6.1.3) renders straight from the Risk Register + vendor risk
+  // fields + acceptance events; any of those changing means the approved plan
+  // "may be out of date" (the ticket's drift signal).
+  risk_treatment_plan: ['riskTreatment'],
 };
 
 interface DiffMap {
@@ -124,6 +131,7 @@ interface DiffMap {
   organizationName: boolean;
   wizardAnswers: boolean;
   parties: boolean;
+  riskTreatment: boolean;
 }
 
 function computeChanges({
@@ -157,6 +165,8 @@ function computeChanges({
       current.wizardAnswers,
     ),
     parties: previous.partiesFingerprint !== current.partiesFingerprint,
+    riskTreatment:
+      previous.riskTreatmentFingerprint !== current.riskTreatmentFingerprint,
   };
 }
 
@@ -210,6 +220,7 @@ export function parsePlatformSnapshot(
     hasTrainingProgram: record.hasTrainingProgram === true,
     wizardAnswers: parseStoredAnswers(record.wizardAnswers),
     partiesFingerprint: toStr(record.partiesFingerprint, ''),
+    riskTreatmentFingerprint: toStr(record.riskTreatmentFingerprint, ''),
   };
 }
 

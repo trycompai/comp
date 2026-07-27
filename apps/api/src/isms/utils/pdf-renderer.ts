@@ -113,6 +113,20 @@ export function renderIsmsPdf({
 
   const renderTable = (table: IsmsExportTable) => {
     const threeCol = table.headers.length === 3;
+    const cellFills = table.cellFills;
+    // Never let a header word break mid-word ("Acceptanc/e"): floor each
+    // column at its header's longest word. Wide tables (the 6.1.3 plan has 10
+    // columns) otherwise get squeezed below the header width by autotable's
+    // content-proportional sizing.
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(9);
+    const headerMinWidths: Record<number, { minCellWidth: number }> = {};
+    table.headers.forEach((header, index) => {
+      const longestWord = header
+        .split(/\s+/)
+        .reduce((max, word) => Math.max(max, pdf.getTextWidth(word)), 0);
+      headerMinWidths[index] = { minCellWidth: longestWord + 2.2 * 2 + 0.5 };
+    });
     autoTable(pdf, {
       startY: y,
       margin: { left: margin, right: margin, bottom: 16 },
@@ -140,7 +154,16 @@ export function renderIsmsPdf({
             1: { cellWidth: 56 },
             2: { cellWidth: contentWidth - 88 },
           }
-        : {},
+        : headerMinWidths,
+      // Per-cell background fills (the 6.1.2 risk level matrix). Fills are
+      // light pastels, so the default ink text stays legible.
+      didParseCell: cellFills
+        ? (data) => {
+            if (data.section !== 'body') return;
+            const fill = cellFills[data.row.index]?.[data.column.index];
+            if (fill) data.cell.styles.fillColor = accentColor(fill);
+          }
+        : undefined,
     });
     y = finalY() + 4;
   };

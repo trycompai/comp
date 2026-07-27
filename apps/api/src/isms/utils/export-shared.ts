@@ -79,6 +79,12 @@ export interface IsmsExportParagraph {
 export interface IsmsExportTable {
   headers: string[];
   rows: string[][];
+  /**
+   * Optional per-cell background fills, aligned with `rows` (hex without '#',
+   * null = default). Used by the 6.1.2 risk level matrix; both renderers keep
+   * the default ink color, so fills must stay light enough for black text.
+   */
+  cellFills?: (string | null)[][];
 }
 
 export const DOCX_MIME_TYPE =

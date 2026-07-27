@@ -220,6 +220,7 @@ model Member {
   approvedIsmsDocuments            IsmsDocument[]           @relation("IsmsDocumentApprover") // ISMS documents where this member is an approver
   publishedIsmsVersions            IsmsDocumentVersion[]    @relation("IsmsDocumentVersionPublisher") // ISMS document versions this member published
   risks                            Risk[]
+  riskAcceptances                  RiskAcceptance[] // acceptance events this member recorded as acceptor
   tasks                            Task[]
   vendors                          Vendor[]
   comments                         Comment[]

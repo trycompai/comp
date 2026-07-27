@@ -11,6 +11,8 @@ export type IsmsDocumentType =
   | 'isms_scope'
   | 'leadership_commitment'
   | 'roles_and_responsibilities'
+  | 'risk_assessment_methodology'
+  | 'risk_treatment_plan'
   | 'objectives_plan'
   | 'monitoring'
   | 'internal_audit'
@@ -452,6 +454,66 @@ export interface IsmsDriftResult {
   changedSources: string[];
 }
 
+/**
+ * Narrative shape for the Risk Assessment Methodology document (6.1.2).
+ * Mirrors riskMethodologyNarrativeSchema in the API — every field is
+ * customer-editable seeded text; scale/option labels and the 5x5 matrix render
+ * from fixed constants because they describe how the platform actually
+ * computes risk levels.
+ */
+export interface IsmsRiskMethodologyNarrative {
+  purpose: string;
+  scope: string;
+  approach: string;
+  likelihoodDescriptions: string[];
+  impactDescriptions: string[];
+  acceptanceThresholds: string[];
+  treatmentOptions: string[];
+  responsibilities: string;
+  frequency: string;
+  documentation: string;
+}
+
+/** How a risk's / vendor's latest acceptance stands relative to its live residual rating. */
+export type IsmsAcceptanceState = 'accepted' | 'awaiting' | 'stale';
+
+/** One Risk Register row of the Risk Treatment Plan (6.1.3), resolved server-side. */
+export interface IsmsRiskTreatmentRow {
+  reference: string;
+  title: string;
+  category: string;
+  inherentLevel: string;
+  treatment: string;
+  controls: string;
+  ownerName: string;
+  residualLevel: string;
+  acceptance: string;
+  acceptanceState: IsmsAcceptanceState;
+  status: string;
+}
+
+/** One vendor row of the Risk Treatment Plan's supplier table. */
+export interface IsmsVendorTreatmentRow {
+  name: string;
+  category: string;
+  inherentLevel: string;
+  treatment: string;
+  controls: string;
+  ownerName: string;
+  residualLevel: string;
+  acceptance: string;
+  acceptanceState: IsmsAcceptanceState;
+  status: string;
+}
+
+/** GET /v1/isms/documents/:id/risk-treatment response. */
+export interface IsmsRiskTreatmentData {
+  risks: IsmsRiskTreatmentRow[];
+  vendors: IsmsVendorTreatmentRow[];
+  /** Submit-readiness messages (server-computed); empty = ready to submit. */
+  validationMessages: string[];
+}
+
 /** Display metadata for each foundational-document card, keyed by type. */
 export interface IsmsTypeMeta {
   type: IsmsDocumentType;
@@ -508,6 +570,22 @@ export const ISMS_TYPE_META: IsmsTypeMeta[] = [
     detailRouteEnabled: true,
   },
   {
+    type: 'risk_assessment_methodology',
+    clause: '6.1.2',
+    title: 'Risk Assessment Methodology',
+    description:
+      'How risks are identified, analysed and evaluated — the scales, risk level matrix, acceptance thresholds and treatment options.',
+    detailRouteEnabled: true,
+  },
+  {
+    type: 'risk_treatment_plan',
+    clause: '6.1.3',
+    title: 'Risk Treatment Plan',
+    description:
+      'The treatment, controls, owner, residual state and owner acceptance for every risk — rendered from the Risk Register and Vendors.',
+    detailRouteEnabled: true,
+  },
+  {
     type: 'objectives_plan',
     clause: '6.2',
     title: 'Information Security Objectives and Plan',
@@ -548,6 +626,8 @@ export const ISMS_SLUG_TO_TYPE: Record<string, IsmsDocumentType> = {
   scope: 'isms_scope',
   leadership: 'leadership_commitment',
   roles: 'roles_and_responsibilities',
+  'risk-methodology': 'risk_assessment_methodology',
+  'risk-treatment-plan': 'risk_treatment_plan',
   objectives: 'objectives_plan',
   monitoring: 'monitoring',
   'internal-audit': 'internal_audit',
@@ -562,6 +642,8 @@ const ISMS_TYPE_TO_SLUG: Record<IsmsDocumentType, string> = {
   isms_scope: 'scope',
   leadership_commitment: 'leadership',
   roles_and_responsibilities: 'roles',
+  risk_assessment_methodology: 'risk-methodology',
+  risk_treatment_plan: 'risk-treatment-plan',
   objectives_plan: 'objectives',
   monitoring: 'monitoring',
   internal_audit: 'internal-audit',

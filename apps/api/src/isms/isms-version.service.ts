@@ -19,6 +19,7 @@ import {
   resolveManagementReviewExtras,
   resolveMonitoringExtras,
   resolveOrgProfile,
+  resolveRiskTreatmentExtras,
   resolveRolesExtras,
   type IsmsExportSnapshot,
   type LoadedExportDocument,
@@ -80,6 +81,7 @@ export class IsmsVersionService {
       document,
       tx,
     );
+    const riskTreatmentExtras = await resolveRiskTreatmentExtras(document, tx);
     const input = buildExportInput({
       document,
       orgProfile,
@@ -87,6 +89,7 @@ export class IsmsVersionService {
       monitoringExtras,
       internalAuditExtras,
       managementReviewExtras,
+      riskTreatmentExtras,
     });
     const metadata = buildExportMetadata({
       type: document.type,

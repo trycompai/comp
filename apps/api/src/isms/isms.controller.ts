@@ -224,6 +224,26 @@ export class IsmsController {
     return this.contextService.drift({ documentId: id, organizationId });
   }
 
+  @Get('documents/:id/risk-treatment')
+  @RequirePermission('evidence', 'read')
+  @ApiOperation({
+    summary: "The Risk Treatment Plan's rows (Clause 6.1.3)",
+    description:
+      'Returns the organisational and supplier risk rows the Risk Treatment Plan renders (from the Risk Register and Vendors, with acceptance state per row) plus its submit-readiness messages.',
+  })
+  @ApiOkResponse({
+    description: 'Risk + vendor treatment rows and readiness messages',
+  })
+  async riskTreatment(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+  ) {
+    return this.ismsService.getRiskTreatmentData({
+      documentId: id,
+      organizationId,
+    });
+  }
+
   @Get('documents/:id/versions')
   @RequirePermission('evidence', 'read')
   @ApiOperation({
