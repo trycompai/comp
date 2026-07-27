@@ -10,6 +10,7 @@ import { tasks } from '@trigger.dev/sdk';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
+import { SkipAuditLog } from '../audit/skip-audit-log.decorator';
 import { SendEmailDto } from './dto/send-email.dto';
 import { SendBatchEmailDto } from './dto/send-batch-email.dto';
 import type { sendEmailTask } from '../trigger/email/send-email';
@@ -24,6 +25,9 @@ export class EmailController {
   @Post('send')
   @HttpCode(200)
   @RequirePermission('email', 'send')
+  // The body carries rendered `html` (magic-links / OTP) and full attachment
+  // bytes — never worth diffing into the audit log, and readable with app:read.
+  @SkipAuditLog()
   @ApiOperation({
     summary: 'Send an email via the centralized Trigger task (internal)',
   })
@@ -46,6 +50,7 @@ export class EmailController {
   @Post('send-batch')
   @HttpCode(200)
   @RequirePermission('email', 'send')
+  @SkipAuditLog()
   @ApiOperation({
     summary: 'Send a batch of emails via the centralized Trigger task (internal)',
   })

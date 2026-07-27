@@ -381,6 +381,107 @@ describe('AuditLogInterceptor', () => {
     });
   });
 
+  it('should skip read endpoints that use a mutation verb (POST with read-only permission)', (done) => {
+    // e.g. POST /v1/trust-portal/documents/list — a list/status read that uses
+    // POST to carry a filter body. It declares `read`, so it must not be logged
+    // as "Created trust".
+    jest.spyOn(reflector, 'getAllAndOverride').mockImplementation((key) => {
+      if (key === PERMISSIONS_KEY) {
+        return [{ resource: 'trust', actions: ['read'] }];
+      }
+      if (key === SKIP_AUDIT_LOG_KEY) return false;
+      return undefined;
+    });
+
+    const context = createMockExecutionContext({
+      method: 'POST',
+      url: '/v1/trust-portal/documents/list',
+      params: {},
+      body: { organizationId: 'org_123' },
+    });
+    const handler = createMockCallHandler([]);
+
+    interceptor.intercept(context, handler).subscribe({
+      next: () => {
+        setTimeout(() => {
+          expect(mockCreate).not.toHaveBeenCalled();
+          done();
+        }, 50);
+      },
+    });
+  });
+
+  it('still logs when only ONE of several declared permissions is read-only', (done) => {
+    // A POST that declares [read, create] is a real mutation — the read
+    // requirement must not suppress the audit entry.
+    jest.spyOn(reflector, 'getAllAndOverride').mockImplementation((key) => {
+      if (key === PERMISSIONS_KEY) {
+        return [
+          { resource: 'trust', actions: ['read'] },
+          { resource: 'policy', actions: ['create'] },
+        ];
+      }
+      if (key === SKIP_AUDIT_LOG_KEY) return false;
+      return undefined;
+    });
+
+    const context = createMockExecutionContext({
+      method: 'POST',
+      url: '/v1/something',
+      params: {},
+      body: { organizationId: 'org_123' },
+    });
+    const handler = createMockCallHandler({ id: 'ent_new' });
+
+    interceptor.intercept(context, handler).subscribe({
+      next: () => {
+        setTimeout(() => {
+          expect(mockCreate).toHaveBeenCalled();
+          done();
+        }, 50);
+      },
+    });
+  });
+
+  it('logs the action but never the payload for the secret resource', (done) => {
+    // Reading audit logs needs only app:read; the secret manager's plaintext
+    // `value` must not be diffed into the log where an auditor (no secret:read)
+    // could read it.
+    jest.spyOn(reflector, 'getAllAndOverride').mockImplementation((key) => {
+      if (key === PERMISSIONS_KEY) {
+        return [{ resource: 'secret', actions: ['create'] }];
+      }
+      if (key === SKIP_AUDIT_LOG_KEY) return false;
+      return undefined;
+    });
+
+    const context = createMockExecutionContext({
+      method: 'POST',
+      url: '/v1/secrets',
+      params: {},
+      body: { name: 'STRIPE_KEY', value: 'sk_live_super_secret' },
+    });
+    const handler = createMockCallHandler({ id: 'sec_1' });
+
+    interceptor.intercept(context, handler).subscribe({
+      next: () => {
+        setTimeout(() => {
+          expect(mockCreate).toHaveBeenCalled();
+          // The action is recorded...
+          expect(mockCreate).toHaveBeenCalledWith(
+            expect.objectContaining({
+              data: expect.objectContaining({ description: 'Created secret' }),
+            }),
+          );
+          // ...but the plaintext value never appears anywhere in the row.
+          const persisted = JSON.stringify(mockCreate.mock.calls[0][0]);
+          expect(persisted).not.toContain('sk_live_super_secret');
+          done();
+        }, 50);
+      },
+    });
+  });
+
   it('should skip requests without userId', (done) => {
     jest.spyOn(reflector, 'getAllAndOverride').mockImplementation((key) => {
       if (key === PERMISSIONS_KEY) {

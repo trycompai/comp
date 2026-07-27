@@ -541,7 +541,7 @@ export const vendorRiskAssessmentTask: Task<
               memberId: creatorMember.id,
               entityType: 'task',
               entityId: verifyTaskItemId,
-              description: 'created this task',
+              description: `Created task "${VERIFY_RISK_ASSESSMENT_TASK_TITLE}"`,
               data: {
                 action: 'created',
                 taskItemId: verifyTaskItemId,
@@ -651,7 +651,7 @@ export const vendorRiskAssessmentTask: Task<
             memberId: creatorMemberId,
             entityType: 'task',
             entityId: verifyTaskItemId,
-            description: 'created this task',
+            description: `Created task "${VERIFY_RISK_ASSESSMENT_TASK_TITLE}"`,
             data: {
               action: 'created',
               taskItemId: verifyTaskItemId,
