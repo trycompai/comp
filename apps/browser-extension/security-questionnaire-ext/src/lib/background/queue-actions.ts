@@ -208,12 +208,24 @@ async function generateAnswerForItem(params: {
   questionIndex: number;
   totalQuestions: number;
 }): Promise<GeneratedAnswer> {
-  return generateAnswer({
-    organizationId: params.auth.selectedOrganizationId,
-    question: params.question,
-    questionIndex: params.questionIndex,
-    totalQuestions: params.totalQuestions,
-  });
+  try {
+    return await generateAnswer({
+      organizationId: params.auth.selectedOrganizationId,
+      question: params.question,
+      questionIndex: params.questionIndex,
+      totalQuestions: params.totalQuestions,
+    });
+  } catch (error) {
+    // Return a failed answer rather than throwing, so the caller still writes a
+    // terminal status and the item cannot be stranded in `generating`.
+    return {
+      questionIndex: params.questionIndex,
+      question: params.question,
+      answer: null,
+      sources: [],
+      error: error instanceof Error ? error.message : 'Unable to generate answer.',
+    };
+  }
 }
 
 async function getInsertConfirmation(

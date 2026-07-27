@@ -89,6 +89,9 @@ export function isStaticTrustedOrigin(origin: string): boolean {
 
   try {
     const url = new URL(origin);
+    // Only the explicit DEFAULT_TRUSTED_ORIGINS entries above may be plain
+    // HTTP (localhost). The wildcard suffix match is HTTPS-only.
+    if (url.protocol !== 'https:') return false;
     return (
       url.hostname.endsWith('.trycomp.ai') ||
       url.hostname.endsWith('.staging.trycomp.ai') ||

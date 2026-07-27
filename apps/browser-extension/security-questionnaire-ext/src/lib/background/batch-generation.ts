@@ -7,10 +7,24 @@ import {
 import type {
   GeneratedAnswer,
   QuestionQueueItem,
+  QueueStatus,
   TabQuestionQueue,
 } from '../types';
 
 const DEFAULT_GENERATE_CONCURRENCY = 4;
+
+// Generate-all must not overwrite work the user already curated: approved
+// answers and manual edits are only replaced by an explicit single regenerate.
+const SKIPPED_BATCH_STATUSES = new Set<QueueStatus>([
+  'inserted',
+  'generating',
+  'approved',
+]);
+
+function isBatchCandidate(item: QuestionQueueItem): boolean {
+  if (SKIPPED_BATCH_STATUSES.has(item.status)) return false;
+  return !item.edited;
+}
 
 export async function generateQueueItemsInBatches(params: {
   auth: { selectedOrganizationId: string };
@@ -18,9 +32,7 @@ export async function generateQueueItemsInBatches(params: {
   queue: TabQuestionQueue;
   saveQueue(queue: TabQuestionQueue): Promise<void>;
 }): Promise<TabQuestionQueue> {
-  const candidates = params.queue.items.filter(
-    (item) => item.status !== 'inserted' && item.status !== 'generating',
-  );
+  const candidates = params.queue.items.filter(isBatchCandidate);
   if (candidates.length === 0) return params.queue;
 
   let queue = markCandidatesGenerating({

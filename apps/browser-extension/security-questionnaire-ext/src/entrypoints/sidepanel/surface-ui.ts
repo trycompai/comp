@@ -19,6 +19,11 @@ export function footerButtonLabel(params: {
   answerCount: number;
   surface: Surface;
 }): string {
+  if (params.surface === 'docs') {
+    return params.answerCount > 0
+      ? `Copy ${params.answerCount} answers`
+      : 'Generate answers to copy';
+  }
   if (params.surface === 'sheets') {
     if (extensionConfig.googleSheetsApiEnabled) {
       return params.approved > 0
@@ -34,7 +39,7 @@ export function footerButtonLabel(params: {
 }
 
 export function footerAction(surface: Surface): string {
-  return surface === 'docs' ? 'copy-sheet-answers' : 'insert-approved';
+  return surface === 'docs' ? 'copy-answers' : 'insert-approved';
 }
 
 export function footerDisabled(params: {
@@ -42,6 +47,8 @@ export function footerDisabled(params: {
   answerCount: number;
   surface: Surface;
 }): string {
-  if (params.surface === 'docs') return 'disabled';
+  // Docs has no insertion path, so the footer copies instead of inserting and
+  // gates on generated answers rather than approvals.
+  if (params.surface === 'docs') return params.answerCount === 0 ? 'disabled' : '';
   return params.approved === 0 ? 'disabled' : '';
 }

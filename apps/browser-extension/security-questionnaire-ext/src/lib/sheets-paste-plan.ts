@@ -92,5 +92,15 @@ function columnName(column: number): string {
 }
 
 function escapeTsvCell(value: string): string {
-  return value.replace(/\r?\n/g, ' ').replace(/\t/g, ' ').trim();
+  const flattened = value.replace(/\r?\n/g, ' ').replace(/\t/g, ' ').trim();
+  return neutralizeFormula(flattened);
+}
+
+// Sheets evaluates a pasted cell as a formula when it starts with one of these.
+// Answers legitimately start with "-" (bullet lists), so prefix rather than strip.
+const FORMULA_PREFIXES = ['=', '+', '-', '@'];
+
+function neutralizeFormula(value: string): string {
+  if (!FORMULA_PREFIXES.includes(value[0])) return value;
+  return `'${value}`;
 }

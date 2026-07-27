@@ -7,6 +7,7 @@ import {
   isPanelStateResponse,
   isQueueResponse,
 } from '../../lib/response-guards';
+import { buildAnswersClipboardText } from '../../lib/answers-clipboard';
 import type { DomainConfirmationRequest, PanelState } from '../../lib/types';
 import {
   bindAnswerAutosave,
@@ -119,6 +120,7 @@ async function handleAction(target: HTMLElement): Promise<void> {
   if (action === 'generate-all') await runQueueAction({ type: 'comp:generate-all' });
   if (action === 'approve-all') await runQueueAction({ type: 'comp:approve-all-generated' });
   if (action === 'insert-approved') await handleInsertApproved();
+  if (action === 'copy-answers') await handleCopyAnswers();
   if (action === 'change-sheet-mapping') {
     await handleSheetMappingChange({
       state,
@@ -252,6 +254,22 @@ async function handleDomainConfirmation(
 async function closePanel(): Promise<void> {
   if (!activeTabId) return;
   await browser.sidePanel.close({ tabId: activeTabId }).catch(() => window.close());
+}
+
+async function handleCopyAnswers(): Promise<void> {
+  await saveAllVisibleAnswers({ root: appRoot, tabId: activeTabId });
+  await refreshState();
+  const text = buildAnswersClipboardText(state?.queue.items ?? []);
+  if (!text) {
+    setStatus('Generate answers before copying.');
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    setStatus('Answers copied. Paste them into the document.');
+  } catch {
+    setStatus('Unable to copy answers to the clipboard.');
+  }
 }
 
 function setStatus(message: string): void {

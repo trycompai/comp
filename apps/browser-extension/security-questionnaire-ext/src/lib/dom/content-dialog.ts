@@ -7,7 +7,9 @@ export function confirmDomainInContent(
     const host = document.createElement('div');
     host.dataset.compSqRoot = 'true';
     document.body.appendChild(host);
-    const shadow = host.attachShadow({ mode: 'open' });
+    // Closed so the host page cannot reach into the dialog and drive the
+    // confirmation controls on the user's behalf.
+    const shadow = host.attachShadow({ mode: 'closed' });
     shadow.innerHTML = `
       <style>${dialogStyles}</style>
       <div class="backdrop" role="presentation"></div>

@@ -128,8 +128,11 @@ async function handleSingleGenerate(fieldId: string): Promise<void> {
 
   setInlineButtonState(button, 'busy');
   activePreview?.close();
-  activePreview = new InlinePreview(button);
-  activePreview.showLoading(candidate.question);
+  // Held locally so a generate started later cannot render its result into
+  // this field's preview, or close a preview it no longer owns.
+  const preview = new InlinePreview(button);
+  activePreview = preview;
+  preview.showLoading(candidate.question);
 
   try {
     const queue = await syncDetectedQuestions();
@@ -139,11 +142,15 @@ async function handleSingleGenerate(fieldId: string): Promise<void> {
       itemId: fieldId,
     });
     if (!isItemResponse(response)) throw new Error(getResponseError(response));
-    activePreview.showResult(response.item, {
+    if (activePreview !== preview) {
+      setInlineButtonState(button, 'idle');
+      return;
+    }
+    preview.showResult(response.item, {
       onDismiss: () => setInlineButtonState(button, 'idle'),
       onRegenerate: () => void handleSingleGenerate(fieldId),
       onInsert: (answer) => {
-        void insertInlineAnswer({ queue, item: response.item, answer, button })
+        void insertInlineAnswer({ queue, item: response.item, answer, button, preview })
           .catch((error: unknown) => {
             window.alert(error instanceof Error ? error.message : 'Unable to insert answer');
             setInlineButtonState(button, 'idle');
@@ -151,7 +158,7 @@ async function handleSingleGenerate(fieldId: string): Promise<void> {
       },
     });
   } catch (error) {
-    activePreview?.close();
+    if (activePreview === preview) preview.close();
     window.alert(error instanceof Error ? error.message : 'Unable to generate answer');
     setInlineButtonState(button, 'idle');
   }
@@ -162,6 +169,7 @@ async function insertInlineAnswer(params: {
   item: QuestionQueueItem;
   answer: string;
   button: HTMLElement;
+  preview: InlinePreview;
 }): Promise<void> {
   const editResponse = await sendRuntimeMessage({
     type: 'comp:edit-queue-item',
@@ -176,7 +184,7 @@ async function insertInlineAnswer(params: {
     itemId: params.item.id,
   });
   if (!isCountResponse(response)) throw new Error(getResponseError(response));
-  activePreview?.close();
+  params.preview.close();
   setInlineButtonState(params.button, 'inserted');
 }
 
