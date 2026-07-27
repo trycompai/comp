@@ -455,56 +455,58 @@ export function InviteMembersModal({
               </TabsList>
 
               <TabsContent value="manual" className="space-y-4 pt-4">
-                {fields.map((item, index) => (
-                  <div key={item.id} className="flex items-start gap-2">
-                    <FormField
-                      control={form.control}
-                      name={`manualInvites.${index}.email`}
-                      render={({ field }) => (
-                        <FormItem className="flex-1">
-                          {index === 0 && <FormLabel>{'Email'}</FormLabel>}
-                          <FormControl>
-                            <Input
-                              className="h-10"
-                              placeholder={'Enter email address'}
-                              {...field}
-                              value={field.value || ''}
+                <div className="max-h-[280px] space-y-3 overflow-y-auto px-1">
+                  {fields.map((item, index) => (
+                    <div key={item.id} className="flex items-start gap-2">
+                      <FormField
+                        control={form.control}
+                        name={`manualInvites.${index}.email`}
+                        render={({ field }) => (
+                          <FormItem className="flex-1">
+                            {index === 0 && <FormLabel>{'Email'}</FormLabel>}
+                            <FormControl>
+                              <Input
+                                className="h-10"
+                                placeholder={'Enter email address'}
+                                {...field}
+                                value={field.value || ''}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Controller
+                        control={form.control}
+                        name={`manualInvites.${index}.roles`}
+                        render={({ field: { onChange, value }, fieldState: { error } }) => (
+                          <FormItem className="w-[200px]">
+                            {index === 0 && <FormLabel>{'Role'}</FormLabel>}
+                            <MultiRoleCombobox
+                              selectedRoles={value || []}
+                              onSelectedRolesChange={onChange}
+                              allowedRoles={normalizedAllowedRoles}
+                              customRoles={customRoles}
+                              placeholder={'Select a role'}
                             />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Controller
-                      control={form.control}
-                      name={`manualInvites.${index}.roles`}
-                      render={({ field: { onChange, value }, fieldState: { error } }) => (
-                        <FormItem className="w-[200px]">
-                          {index === 0 && <FormLabel>{'Role'}</FormLabel>}
-                          <MultiRoleCombobox
-                            selectedRoles={value || []}
-                            onSelectedRolesChange={onChange}
-                            allowedRoles={normalizedAllowedRoles}
-                            customRoles={customRoles}
-                            placeholder={'Select a role'}
-                          />
-                          <FormMessage>{error?.message}</FormMessage>
-                        </FormItem>
-                      )}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => fields.length > 1 && remove(index)}
-                      disabled={fields.length <= 1}
-                      className={`mt-${index === 0 ? '6' : '0'} self-center ${fields.length <= 1 ? 'cursor-not-allowed opacity-50' : ''}`}
-                      aria-label="Remove invite"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
+                            <FormMessage>{error?.message}</FormMessage>
+                          </FormItem>
+                        )}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => fields.length > 1 && remove(index)}
+                        disabled={fields.length <= 1}
+                        className={`mt-${index === 0 ? '6' : '0'} self-center ${fields.length <= 1 ? 'cursor-not-allowed opacity-50' : ''}`}
+                        aria-label="Remove invite"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
                 <Button
                   type="button"
                   variant="outline"
