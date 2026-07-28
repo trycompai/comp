@@ -26,9 +26,11 @@ export class TaskItemAuditService {
           memberId: params.memberId,
           entityType: 'task',
           entityId: params.taskItemId,
+          // Name the task so the entry is unambiguous in the org-wide activity
+          // feed (not just a single task's own timeline).
           description: params.viaApiKey
-            ? 'created this task (via API key)'
-            : 'created this task',
+            ? `Created task "${params.taskTitle}" (via API key)`
+            : `Created task "${params.taskTitle}"`,
           data: {
             action: 'created',
             taskItemId: params.taskItemId,
@@ -115,8 +117,8 @@ export class TaskItemAuditService {
           entityType: 'task',
           entityId: params.taskItemId,
           description: params.viaApiKey
-            ? 'deleted this task (via API key)'
-            : 'deleted this task',
+            ? `Deleted task "${params.taskTitle}" (via API key)`
+            : `Deleted task "${params.taskTitle}"`,
           data: {
             action: 'deleted',
             taskItemId: params.taskItemId,

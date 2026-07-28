@@ -35,6 +35,9 @@ function makeSessions(extract: jest.Mock, act: jest.Mock) {
     ensureActivePage: jest.fn().mockResolvedValue(page),
     safeCloseStagehand: jest.fn().mockResolvedValue(undefined),
     closeSession: jest.fn().mockResolvedValue(undefined),
+    getActivePageLiveViewUrl: jest
+      .fn()
+      .mockResolvedValue('https://live-view/current'),
   };
 }
 
@@ -170,6 +173,31 @@ describe('BrowserCredentialSigninService', () => {
     expect(result.isLoggedIn).toBe(false);
     expect(result.failure).toBe('needs_2fa');
     expect(profiles.markNeedsReauth).toHaveBeenCalledTimes(1);
+  });
+
+  it('re-points the live view after the sign-in attempt so a 2FA take-over sees the right tab', async () => {
+    const extract = jest
+      .fn()
+      .mockResolvedValueOnce({ state: 'unknown' })
+      .mockResolvedValue({ state: 'needs_2fa' });
+    const sessions = makeSessions(extract, jest.fn().mockResolvedValue(undefined));
+    const profiles = makeProfiles(profile);
+    withCredentials({ username: 'user@x.com', password: 'secret' }); // no code → manual 2FA
+    const onLiveView = jest.fn();
+    const service = new BrowserCredentialSigninService(
+      sessions as unknown as BrowserbaseSessionService,
+      profiles as unknown as BrowserAuthProfileService,
+    );
+
+    const promise = service.signInWithStoredCredentials({ ...input, onLiveView });
+    await jest.runAllTimersAsync();
+    const result = await promise;
+
+    expect(result.failure).toBe('needs_2fa');
+    // Emitted after navigateToSignIn AND again after the sign-in attempt — so the
+    // iframe follows to the 2FA page instead of staying on the pre-submit login
+    // tab (the reported "your turn, but I can't see the code field" bug).
+    expect(onLiveView.mock.calls.length).toBeGreaterThanOrEqual(2);
   });
 
   it('throws when the profile does not exist', async () => {

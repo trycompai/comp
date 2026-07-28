@@ -1,3 +1,25 @@
+## [3.110.1](https://github.com/trycompai/comp/compare/v3.110.0...v3.110.1) (2026-07-28)
+
+
+### Bug Fixes
+
+* **api:** follow the live view to the 2FA page during connect sign-in ([#3516](https://github.com/trycompai/comp/issues/3516)) ([e61243f](https://github.com/trycompai/comp/commit/e61243f367b0454fe180f7b40a3e8138d6931b96))
+* **app:** prompt to connect when creating an automation with no connection ([2b1dcad](https://github.com/trycompai/comp/commit/2b1dcad809a707ed998b95e8602912f9fa90d6f8))
+
+# [3.110.0](https://github.com/trycompai/comp/compare/v3.109.0...v3.110.0) (2026-07-27)
+
+
+### Bug Fixes
+
+* **app:** make invite modal manual rows scrollable so action buttons stay visible ([#3510](https://github.com/trycompai/comp/issues/3510)) ([9926408](https://github.com/trycompai/comp/commit/99264081bcb5e9389b79d05f1c733fa23a193a56))
+* **audit:** stop logging read endpoints as mutations + name task-item events ([#3508](https://github.com/trycompai/comp/issues/3508)) ([3f9e1cf](https://github.com/trycompai/comp/commit/3f9e1cfe69e71c1611a4f1a4a47a4f792ee7071e))
+* **audit:** stop plaintext secrets leaking into the audit log ([#3512](https://github.com/trycompai/comp/issues/3512)) ([55a48fb](https://github.com/trycompai/comp/commit/55a48fb0abc2a419970356914979575735f076b1))
+
+
+### Features
+
+* **api:** email org owners/admins when a portal access request is submitted (CS-522) ([#3494](https://github.com/trycompai/comp/issues/3494)) ([258ce45](https://github.com/trycompai/comp/commit/258ce4570ec6b949ff29746310cdbf6d0b90181b))
+
 # [3.109.0](https://github.com/trycompai/comp/compare/v3.108.2...v3.109.0) (2026-07-27)
 
 
