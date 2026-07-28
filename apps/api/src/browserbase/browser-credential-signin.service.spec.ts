@@ -175,6 +175,24 @@ describe('BrowserCredentialSigninService', () => {
     expect(profiles.markNeedsReauth).toHaveBeenCalledTimes(1);
   });
 
+  it('classifies the verification method for a take-over so the UI can guide the user', async () => {
+    // 1) already-signed-in check → not in; 2) post-sign-in outcome → needs_2fa;
+    // 3) how the page verifies → a passkey the user can switch away from.
+    const extract = jest
+      .fn()
+      .mockResolvedValueOnce({ state: 'unknown' })
+      .mockResolvedValueOnce({ state: 'needs_2fa' })
+      .mockResolvedValueOnce({ method: 'passkey' });
+    const sessions = makeSessions(extract, jest.fn().mockResolvedValue(undefined));
+    const profiles = makeProfiles(profile);
+    withCredentials({ username: 'user@x.com', password: 'secret' }); // no totpCode
+
+    const result = await run(sessions, profiles);
+
+    expect(result.failure).toBe('needs_2fa');
+    expect(result.twoFactorMethod).toBe('passkey');
+  });
+
   it('re-points the live view after the sign-in attempt so a 2FA take-over sees the right tab', async () => {
     const extract = jest
       .fn()

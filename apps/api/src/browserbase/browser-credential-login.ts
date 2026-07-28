@@ -111,17 +111,16 @@ export async function performCredentialLogin({
     await delay(2000);
   }
 
-  // Some vendors (e.g. GitHub) default the two-factor step to a passkey /
-  // security-key prompt, which we can't use. If we've landed on one, switch to
-  // the authenticator-app option so a 6-digit code field is actually shown — for
-  // us to fill a stored code, or for the user to type one during take-over.
-  // Best-effort; a no-op when the page isn't a passkey prompt.
-  await stagehand.act(
-    "If this page is asking to authenticate with a passkey or security key (for example a 'Use passkey' button) instead of a code, switch to the authenticator app: click 'More options', then 'Use authenticator app', 'Enter a two-factor code', 'Use a security code', or a similar option so a six-digit code field appears. If a code field is already visible, or this is not a two-factor page, do nothing.",
-  );
-  await delay(1500);
-
   if (credentials.totpCode) {
+    // We have a code to enter. Some vendors (e.g. GitHub) default the two-factor
+    // step to a passkey / security key, which we can't use — switch to the
+    // authenticator-app method first so a six-digit code field appears, then fill
+    // it. Best-effort; a no-op when a code field is already shown. Vendor-agnostic:
+    // the model recognizes the prompt and the "use another method" control itself.
+    await stagehand.act(
+      "If this page is asking for a passkey or security key instead of a code, switch to the authenticator app: click 'More options', then 'Use authenticator app', 'Enter a two-factor code', 'Use a security code', or a similar option so a six-digit code field appears. If a code field is already visible, or this is not a two-factor page, do nothing.",
+    );
+    await delay(1500);
     log('Entering one-time passcode.');
     await stagehand.act(
       'If a one-time passcode, two-factor, or verification code field is shown, enter %code% into it. If no such field is present, do nothing.',
@@ -132,6 +131,69 @@ export async function performCredentialLogin({
       'If there is a button to submit or verify the code, click it. Otherwise do nothing.',
     );
     await delay(2000);
+  } else {
+    // No stored code — if a two-factor step blocks us, a human takes over. Don't
+    // pick a method for them: if the page defaults to a passkey / security key
+    // (which can't be used here), just REVEAL the other options so they can choose
+    // the one they can actually complete (authenticator app, SMS, email). We never
+    // select a method — the choice is theirs. Best-effort no-op otherwise.
+    await stagehand.act(
+      "If this page is asking for a passkey or security key, reveal the other sign-in methods by clicking 'More options', 'Try another way', 'Use a different method', or a similar control — but do NOT select any specific method. If a verification-code field or the list of options is already visible, or this is not a two-factor page, do nothing.",
+    );
+    await delay(1500);
+  }
+}
+
+/**
+ * How a verification step is asking the user to prove identity, so a take-over
+ * UI can give exact guidance:
+ * - `code`         — a one-time / authenticator / SMS / email code can be entered.
+ * - `passkey`      — a passkey / security key is requested, but another method
+ *                    (a code) can be chosen instead.
+ * - `passkey_only` — a passkey / security key is the ONLY option; can't be
+ *                    completed in the automated browser.
+ * - `other`        — a different verification (device approval, CAPTCHA, or an
+ *                    email/SMS link to click).
+ */
+export type TwoFactorMethod = 'code' | 'passkey' | 'passkey_only' | 'other';
+
+/**
+ * Reads a verification page and classifies HOW it wants the user to verify, so
+ * the connect flow can tell them exactly what to do during a take-over. Runs
+ * only when a human take-over is imminent (a small extra cost on that path).
+ * Never throws — an unreadable or unexpected page degrades to 'other'.
+ */
+export async function classifyTwoFactorMethod(
+  stagehand: Stagehand,
+): Promise<TwoFactorMethod> {
+  try {
+    const { method } = await stagehand.extract(
+      'This page is a sign-in verification step. Classify how it is asking the ' +
+        'user to verify, and whether another method can be chosen. Return exactly one:\n' +
+        '"code" — a one-time / authenticator / SMS / email verification CODE can be ' +
+        'entered right now (a code field is visible);\n' +
+        '"passkey" — it is asking for a passkey or security key, AND there is a way to ' +
+        "switch to another method (a 'More options', 'Try another way', or 'use a code' control);\n" +
+        '"passkey_only" — it is asking for a passkey or security key and NO other method ' +
+        'is offered;\n' +
+        '"other" — a different verification (a device approval/notification, a CAPTCHA, ' +
+        'or an email/SMS link to click).',
+      z.object({
+        method: z.enum(['code', 'passkey', 'passkey_only', 'other']),
+      }),
+    );
+    // Guard against a non-conforming value (e.g. a mocked/edge response) so the
+    // return type always holds.
+    if (
+      method === 'code' ||
+      method === 'passkey' ||
+      method === 'passkey_only'
+    ) {
+      return method;
+    }
+    return 'other';
+  } catch {
+    return 'other';
   }
 }
 

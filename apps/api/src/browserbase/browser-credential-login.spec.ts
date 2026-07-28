@@ -1,4 +1,5 @@
 import {
+  classifyTwoFactorMethod,
   performCredentialLogin,
   reloginWithStoredCredentials,
   safeOriginAndPath,
@@ -68,19 +69,19 @@ describe('performCredentialLogin', () => {
     }
   });
 
-  it('switches a passkey / security-key prompt to the authenticator-code method', async () => {
+  it('switches a passkey prompt to the authenticator-code method when a code is stored', async () => {
     const stagehand = makeStagehand();
 
     const promise = performCredentialLogin({
       stagehand: stagehand as unknown as Stagehand,
-      credentials: { username: 'alice', password: 'pw' }, // no stored code → take-over
+      credentials: { username: 'alice', password: 'pw', totpCode: '424242' },
       log: jest.fn(),
     });
     await jest.runAllTimersAsync();
     await promise;
 
-    // A best-effort step switches to the code method when a vendor defaults 2FA
-    // to a passkey, so a 6-digit field is actually shown (for us or the user).
+    // With a code to fill and no human present, we auto-switch off a passkey so
+    // the code field appears, then enter the stored code.
     const calls = stagehand.act.mock.calls as [string, unknown?][];
     const switchCall = calls.find(
       ([instruction]) =>
@@ -88,6 +89,66 @@ describe('performCredentialLogin', () => {
         instruction.includes('authenticator app'),
     );
     expect(switchCall).toBeDefined();
+  });
+
+  it('reveals other sign-in methods without choosing one when a passkey blocks a take-over', async () => {
+    const stagehand = makeStagehand();
+
+    const promise = performCredentialLogin({
+      stagehand: stagehand as unknown as Stagehand,
+      credentials: { username: 'alice', password: 'pw' }, // no stored code → human take-over
+      log: jest.fn(),
+    });
+    await jest.runAllTimersAsync();
+    await promise;
+
+    // With no code to fill, a human takes over — we only surface the other
+    // methods and never pick one, so the user chooses what they can complete.
+    const calls = stagehand.act.mock.calls as [string, unknown?][];
+    const revealCall = calls.find(
+      ([instruction]) =>
+        instruction.includes('passkey') &&
+        instruction.includes('More options') &&
+        instruction.includes('do NOT select'),
+    );
+    expect(revealCall).toBeDefined();
+    // And it must NOT force the authenticator method (that would pick for them).
+    const forcedSwitch = calls.find(([instruction]) =>
+      instruction.includes('switch to the authenticator app'),
+    );
+    expect(forcedSwitch).toBeUndefined();
+  });
+});
+
+describe('classifyTwoFactorMethod', () => {
+  const makeStagehandWithExtract = (result: unknown) =>
+    ({ extract: jest.fn().mockResolvedValue(result) }) as unknown as Stagehand;
+
+  it('returns the classified method for each valid response', async () => {
+    for (const method of [
+      'code',
+      'passkey',
+      'passkey_only',
+      'other',
+    ] as const) {
+      await expect(
+        classifyTwoFactorMethod(makeStagehandWithExtract({ method })),
+      ).resolves.toBe(method);
+    }
+  });
+
+  it('degrades to "other" for a non-conforming or missing value', async () => {
+    // Wrong shape (e.g. an outcome payload) — must not leak undefined.
+    await expect(
+      classifyTwoFactorMethod(makeStagehandWithExtract({ state: 'needs_2fa' })),
+    ).resolves.toBe('other');
+  });
+
+  it('degrades to "other" when extraction throws', async () => {
+    const stagehand = {
+      extract: jest.fn().mockRejectedValue(new Error('boom')),
+    } as unknown as Stagehand;
+    await expect(classifyTwoFactorMethod(stagehand)).resolves.toBe('other');
   });
 });
 

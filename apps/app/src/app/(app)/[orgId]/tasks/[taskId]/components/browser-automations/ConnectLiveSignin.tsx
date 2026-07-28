@@ -9,6 +9,42 @@ import { StepList, type SignInStep } from './StepList';
 /** ai = automation drives; 2fa = user enters a code; finish = user completes it. */
 export type LiveSigninVariant = 'ai' | '2fa' | 'finish';
 
+/** How the blocked verification step wants the user to verify (mirrors the API). */
+export type TwoFactorMethod = 'code' | 'passkey' | 'passkey_only' | 'other';
+
+/**
+ * Exact take-over guidance for the 2fa panel, tailored to what the page is
+ * actually asking for — so we never tell someone to "enter the code" when the
+ * page is showing a passkey prompt, and we say plainly when a passkey-only login
+ * can't be automated. `showConfirm` is false when there's nothing for the user
+ * to complete here.
+ */
+function twoFactorCopy(method: TwoFactorMethod | undefined): {
+  heading: string;
+  body: string;
+  showConfirm: boolean;
+} {
+  if (method === 'passkey') {
+    return {
+      heading: 'Switch to a code method',
+      body: "This site is asking for a passkey or security key, which can't be used here. In the live browser, click “More options” or “Try another way”, choose your authenticator app, SMS, or email, enter the code, then confirm.",
+      showConfirm: true,
+    };
+  }
+  if (method === 'passkey_only') {
+    return {
+      heading: 'Passkey-only login',
+      body: "This login only offers a passkey or security key, which can't be completed in the automated browser. To automate it, add a code-based method (authenticator app, SMS, or email) to this account, then reconnect.",
+      showConfirm: false,
+    };
+  }
+  return {
+    heading: 'Enter the code in the page',
+    body: 'Type the 6-digit code from your authenticator app (or the SMS/email code) into the live browser, then confirm. Passkeys can’t be used here.',
+    showConfirm: true,
+  };
+}
+
 interface ConnectLiveSigninProps {
   host: string;
   liveViewUrl: string | null;
@@ -20,6 +56,8 @@ interface ConnectLiveSigninProps {
   isConfirming?: boolean;
   /** Sign-in just succeeded — show a brief confirmation before moving on. */
   success?: boolean;
+  /** How the verification step wants the user to verify — tailors the 2fa copy. */
+  twoFactorMethod?: TwoFactorMethod;
 }
 
 function StatusPill({ variant }: { variant: LiveSigninVariant }) {
@@ -66,10 +104,14 @@ export function ConnectLiveSignin({
   onConfirm,
   isConfirming = false,
   success = false,
+  twoFactorMethod,
 }: ConnectLiveSigninProps) {
   // Gate the ring on the iframe's load so it appears with the page, not before.
   const [loaded, setLoaded] = useState(false);
   useEffect(() => setLoaded(false), [liveViewUrl]);
+
+  // Tailor the take-over instructions to what the page is actually asking for.
+  const guidance = twoFactorCopy(twoFactorMethod);
 
   return (
     <div className="relative overflow-hidden rounded-lg border border-border bg-card">
@@ -159,19 +201,20 @@ export function ConnectLiveSignin({
                 background: 'color-mix(in oklab, var(--warning) 10%, transparent)',
               }}
             >
-              <div className="mb-1 text-[12.5px] text-foreground">Enter the code in the page</div>
+              <div className="mb-1 text-[12.5px] text-foreground">{guidance.heading}</div>
               <div className="mb-2.5 text-[11.5px] leading-normal text-muted-foreground">
-                Type the 6-digit code from your authenticator app into the live browser
-                (passkeys can’t be used here). Then confirm.
+                {guidance.body}
               </div>
-              <Button
-                onClick={onConfirm}
-                loading={isConfirming}
-                disabled={!liveViewUrl || isConfirming}
-                width="full"
-              >
-                I&apos;ve entered it — continue
-              </Button>
+              {guidance.showConfirm && (
+                <Button
+                  onClick={onConfirm}
+                  loading={isConfirming}
+                  disabled={!liveViewUrl || isConfirming}
+                  width="full"
+                >
+                  I&apos;ve entered it — continue
+                </Button>
+              )}
             </div>
           )}
 
