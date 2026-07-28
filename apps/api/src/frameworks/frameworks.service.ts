@@ -179,7 +179,9 @@ export class FrameworksService {
               control: {
                 include: {
                   frameworkPolicyLinks: {
-                    where: { policy: { archivedAt: null } },
+                    where: {
+                      policy: { archivedAt: null, isArchived: false },
+                    },
                     include: {
                       policy: {
                         select: { id: true, name: true, status: true },
@@ -305,7 +307,7 @@ export class FrameworksService {
                 frameworkPolicyLinks: {
                   where: {
                     frameworkInstanceId,
-                    policy: { archivedAt: null },
+                    policy: { archivedAt: null, isArchived: false },
                   },
                   include: {
                     policy: {
@@ -863,7 +865,7 @@ export class FrameworksService {
               frameworkPolicyLinks: {
                 where: {
                   frameworkInstanceId,
-                  policy: { archivedAt: null },
+                  policy: { archivedAt: null, isArchived: false },
                 },
                 include: {
                   policy: {

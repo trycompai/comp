@@ -713,14 +713,17 @@ describe('PoliciesController', () => {
   });
 
   describe('removePolicyControl', () => {
-    it('should disconnect control from policy and return success', async () => {
+    it('disconnects the control and severs framework join rows even with NO implicit m2m link (CS-780 join-only case)', async () => {
+      // A framework-scoped link (LinkPolicySheet on a framework control page) creates
+      // ONLY a FrameworkControlPolicyLink — no implicit m2m row. Unlinking must still
+      // sever the join row, or the policy keeps showing against the control. The delete
+      // must fire unconditionally (not gated on an m2m link existing).
       const { db } = require('@db');
-      db.policy.findUnique.mockResolvedValue({ controls: [] });
       db.policy.update.mockResolvedValue({});
+      db.frameworkControlPolicyLink.deleteMany.mockResolvedValue({ count: 1 });
       db.$transaction.mockImplementation(async (callback: (tx: unknown) => Promise<unknown>) =>
         callback({
           policy: {
-            findUnique: db.policy.findUnique,
             update: db.policy.update,
           },
           frameworkControlPolicyLink: {
@@ -744,7 +747,53 @@ describe('PoliciesController', () => {
           },
         },
       });
+      expect(db.frameworkControlPolicyLink.deleteMany).toHaveBeenCalledWith({
+        where: {
+          controlId: 'ctrl_1',
+          policyId: 'pol_1',
+          frameworkInstance: { organizationId: orgId },
+        },
+      });
       expect(result.success).toBe(true);
+    });
+
+    it('deletes framework links for ALL framework instances (platform + custom), not just custom (CS-780)', async () => {
+      // Regression: the control<->policy join row on a PLATFORM framework
+      // instance lives in FrameworkControlPolicyLink, which the platform
+      // framework/control detail pages read directly. Restricting the delete to
+      // custom frameworks (customFrameworkId: { not: null }) left the policy
+      // still showing against the control after it was unlinked.
+      const { db } = require('@db');
+      db.policy.findUnique.mockResolvedValue({ controls: [{ id: 'ctrl_1' }] });
+      db.policy.update.mockResolvedValue({});
+      db.frameworkControlPolicyLink.deleteMany.mockResolvedValue({ count: 1 });
+      db.$transaction.mockImplementation(
+        async (callback: (tx: unknown) => Promise<unknown>) =>
+          callback({
+            policy: {
+              findUnique: db.policy.findUnique,
+              update: db.policy.update,
+            },
+            frameworkControlPolicyLink: {
+              deleteMany: db.frameworkControlPolicyLink.deleteMany,
+            },
+          }),
+      );
+
+      await controller.removePolicyControl(
+        'pol_1',
+        'ctrl_1',
+        orgId,
+        mockAuthContext,
+      );
+
+      expect(db.frameworkControlPolicyLink.deleteMany).toHaveBeenCalledWith({
+        where: {
+          controlId: 'ctrl_1',
+          policyId: 'pol_1',
+          frameworkInstance: { organizationId: orgId },
+        },
+      });
     });
   });
 

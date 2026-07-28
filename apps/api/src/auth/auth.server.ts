@@ -27,6 +27,22 @@ import {
   resolveMicrosoftEmail,
   type MicrosoftEmailClaims,
 } from './microsoft-email';
+import {
+  getBetterAuthTrustedOrigins,
+  isStaticTrustedOrigin,
+} from './origin-policy';
+
+export {
+  getBetterAuthTrustedOrigins,
+  getCompExtensionTrustedOrigins,
+  getTrustedOrigins,
+  isChromeExtensionOrigin,
+  isCompExtensionAllowedRoute,
+  isCompExtensionOrigin,
+  isCompExtensionOriginAllowedForRequest,
+  isStaticTrustedOrigin,
+  isStaticTrustedOriginForRequest,
+} from './origin-policy';
 
 const MAGIC_LINK_EXPIRES_IN_SECONDS = 60 * 60; // 1 hour
 
@@ -43,55 +59,6 @@ function getCookieDomain(): string | undefined {
     return '.trycomp.ai';
   }
   return undefined;
-}
-
-/**
- * Get trusted origins for CORS/auth
- */
-export function getTrustedOrigins(): string[] {
-  const origins = process.env.AUTH_TRUSTED_ORIGINS;
-  if (origins) {
-    return origins.split(',').map((o) => o.trim());
-  }
-
-  return [
-    'http://localhost:3000',
-    'http://localhost:3002',
-    'http://localhost:3333',
-    'http://localhost:3004',
-    'http://localhost:3008',
-    'https://app.trycomp.ai',
-    'https://portal.trycomp.ai',
-    'https://api.trycomp.ai',
-    'https://app.staging.trycomp.ai',
-    'https://portal.staging.trycomp.ai',
-    'https://api.staging.trycomp.ai',
-    'https://dev.trycomp.ai',
-    'https://framework-editor.trycomp.ai',
-  ];
-}
-
-/**
- * Check if an origin matches a known trusted pattern (static list + subdomains).
- * This is a fast synchronous check that doesn't hit the DB.
- */
-export function isStaticTrustedOrigin(origin: string): boolean {
-  const trustedOrigins = getTrustedOrigins();
-  if (trustedOrigins.includes(origin)) {
-    return true;
-  }
-
-  try {
-    const url = new URL(origin);
-    return (
-      url.hostname.endsWith('.trycomp.ai') ||
-      url.hostname.endsWith('.staging.trycomp.ai') ||
-      url.hostname.endsWith('.trust.inc') ||
-      url.hostname === 'trust.inc'
-    );
-  } catch {
-    return false;
-  }
 }
 
 // ── Custom domain lookup via Redis cache ─────────────────────────────────────
@@ -295,7 +262,7 @@ export const auth = betterAuth({
   // after OAuth processing, better-auth redirects to the correct app.
   // Cross-subdomain cookies (.trycomp.ai) ensure the session works everywhere.
   baseURL: process.env.BASE_URL || 'http://localhost:3333',
-  trustedOrigins: getTrustedOrigins(),
+  trustedOrigins: getBetterAuthTrustedOrigins(),
   emailAndPassword: {
     // Not used — apps sign in via magic link, email OTP, and OAuth.
     enabled: false,

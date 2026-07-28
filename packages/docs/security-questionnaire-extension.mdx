@@ -1,0 +1,75 @@
+---
+title: 'Security Questionnaire Extension'
+description: 'Answer security questionnaires directly on the vendor''s page — the Chrome extension drafts answers from your Comp AI policies and inserts the ones you approve.'
+---
+
+The Comp AI Security Questionnaire extension brings questionnaire answering to wherever the questionnaire actually lives. Instead of exporting a vendor's portal into a spreadsheet, answering it in Comp AI, and copying everything back, the extension finds the questions on the page you're already on, drafts answers from your own policies, and inserts the ones you approve.
+
+It is a companion to [Security Questionnaire](/security-questionnaire) in the app, and draws on the same knowledge: your policies, context entries, knowledge base documents, and questions you've answered before.
+
+## Why it's useful
+
+- **It works where the questionnaire is.** Vendor portals, plain web forms, Google Forms and Google Sheets — no export/import round trip.
+- **It drafts from what you've already written.** Answers come from your organization's policies and prior answers, not from generic boilerplate.
+- **Nothing is inserted without you.** Every draft is editable and every insertion is an explicit action.
+- **It tells you when it doesn't know.** Questions with no supporting material are flagged **Needs review** rather than answered with a guess.
+
+## Install
+
+1. Install **Comp AI Security Questionnaire** from the Chrome Web Store.
+2. Pin it to your toolbar so the icon is always visible.
+3. Sign in to Comp AI in the same browser. The extension uses your existing session — there is no separate login.
+
+## Answering a questionnaire
+
+1. Open the questionnaire in your browser.
+2. Click the Comp AI icon, then open the side panel. Every question the extension detected is listed there.
+3. The first time you use the extension on a new site, confirm which Comp AI workspace applies. This keeps answers from one customer's workspace out of another's.
+4. Choose **Generate** for a single question, or generate the whole list at once.
+5. Review each draft. Edit anything you want to change, then **Approve** it.
+6. Choose **Insert approved** to write your approved answers back into the page.
+
+Each answer shows a confidence level and the number of sources behind it. Low-confidence and **Needs review** answers are worth a closer look before you approve them.
+
+<Note>
+  Generating again over the whole list will not overwrite answers you have
+  edited or approved. To replace one of those, regenerate that specific
+  question.
+</Note>
+
+## Google Sheets
+
+When a questionnaire arrives as a spreadsheet, the extension asks which columns to use — a question column and an answer column, plus the row range. Confirm the mapping once and it is remembered for that sheet.
+
+Approved answers are then written into the answer column, in the rows the questions came from.
+
+## Google Forms and Google Docs
+
+**Google Forms** works like any other web form: an inline Comp AI button appears next to each answer field, and approved answers are inserted directly.
+
+**Google Docs** does not support reliable automated insertion, so the extension collects your approved answers and copies them to the clipboard for you to paste in.
+
+## Switching workspaces
+
+The active workspace is shown at the top of the side panel. If you switch it, any generated-but-not-yet-inserted drafts are cleared and you will be asked to confirm the site again. This is deliberate — it prevents one organization's answers from being pasted into another organization's questionnaire.
+
+## Permissions
+
+The extension asks for access to the websites you visit. Security questionnaires are hosted on many different vendor domains and there is no fixed list to allow, so it needs to be able to look at the page you open.
+
+In practice:
+
+- It examines pages to locate questionnaire fields.
+- The only page content sent to Comp AI is the text of a question you ask it to answer.
+- It does not send page contents or browsing history.
+- Answers are written into the page only when you choose to insert them.
+
+## Troubleshooting
+
+**No questions detected.** Not every layout is recognized. Use **Refresh scan** in the side panel after the page has fully loaded. Questions rendered inside a nested frame may not be reachable.
+
+**"Extension context invalidated."** The extension was reloaded or updated while the tab was open. Refresh the tab.
+
+**An answer says "Needs review — no knowledge-base match."** Comp AI has nothing to base that answer on. Add the relevant policy or a knowledge base document, or answer that question manually.
+
+**Sign-in problems.** Confirm you are signed in to Comp AI in the same browser profile, then reopen the side panel.

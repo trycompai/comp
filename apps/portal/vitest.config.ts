@@ -16,8 +16,12 @@ export default defineConfig({
     exclude: ['node_modules', 'dist', '.next'],
   },
   resolve: {
-    // Mirror the tsconfig `@/*` path alias so tests can import via `@/...`.
+    // Mirror the tsconfig path aliases so tests can import via `@/...` and the
+    // `@db`/`@db/server` prisma aliases. `@db/server` must precede `@db` so the
+    // more specific alias wins. (Modules importing prisma are mocked in tests.)
     alias: {
+      '@db/server': resolve(__dirname, './prisma/server'),
+      '@db': resolve(__dirname, './prisma'),
       '@': resolve(__dirname, './src'),
     },
   },
