@@ -165,6 +165,32 @@ describe('generateQueueItemsInBatches', () => {
     );
   });
 
+  it('leaves a failed question retryable instead of stuck generating', async () => {
+    let stored = queueWith([item({ id: 'a' })]);
+    let saveCount = 0;
+
+    await expect(
+      generateQueueItemsInBatches({
+        auth: { selectedOrganizationId: 'org_a' },
+        concurrency: 1,
+        queue: stored,
+        loadQueue: async () => stored,
+        saveQueue: async (next) => {
+          saveCount += 1;
+          if (saveCount === 2) throw new Error('storage unavailable');
+          stored = next;
+        },
+      }),
+    ).rejects.toThrow('could not be saved');
+
+    const failed = stored.items.find((entry) => entry.id === 'a');
+    expect(failed?.status).not.toBe('generating');
+    // A later Generate All must pick it up again.
+    generateAnswer.mockClear();
+    await runBatch(stored.items);
+    expect(generatedIds()).toEqual(['a']);
+  });
+
   it('flags an item when generation fails instead of leaving it generating', async () => {
     generateAnswer.mockRejectedValueOnce(new Error('API is down'));
     const result = await runBatch([item({ id: 'a', status: 'pending' })]);
