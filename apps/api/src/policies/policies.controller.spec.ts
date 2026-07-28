@@ -746,6 +746,45 @@ describe('PoliciesController', () => {
       });
       expect(result.success).toBe(true);
     });
+
+    it('deletes framework links for ALL framework instances (platform + custom), not just custom (CS-780)', async () => {
+      // Regression: the control<->policy join row on a PLATFORM framework
+      // instance lives in FrameworkControlPolicyLink, which the platform
+      // framework/control detail pages read directly. Restricting the delete to
+      // custom frameworks (customFrameworkId: { not: null }) left the policy
+      // still showing against the control after it was unlinked.
+      const { db } = require('@db');
+      db.policy.findUnique.mockResolvedValue({ controls: [{ id: 'ctrl_1' }] });
+      db.policy.update.mockResolvedValue({});
+      db.frameworkControlPolicyLink.deleteMany.mockResolvedValue({ count: 1 });
+      db.$transaction.mockImplementation(
+        async (callback: (tx: unknown) => Promise<unknown>) =>
+          callback({
+            policy: {
+              findUnique: db.policy.findUnique,
+              update: db.policy.update,
+            },
+            frameworkControlPolicyLink: {
+              deleteMany: db.frameworkControlPolicyLink.deleteMany,
+            },
+          }),
+      );
+
+      await controller.removePolicyControl(
+        'pol_1',
+        'ctrl_1',
+        orgId,
+        mockAuthContext,
+      );
+
+      expect(db.frameworkControlPolicyLink.deleteMany).toHaveBeenCalledWith({
+        where: {
+          controlId: 'ctrl_1',
+          policyId: 'pol_1',
+          frameworkInstance: { organizationId: orgId },
+        },
+      });
+    });
   });
 
   describe('getPolicyVersions', () => {

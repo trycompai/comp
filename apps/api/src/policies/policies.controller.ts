@@ -1018,14 +1018,16 @@ export class PoliciesController {
         data: { controls: { disconnect: { id: controlId } } },
       });
       if (before?.controls.length) {
+        // Sever the control<->policy association on EVERY framework instance
+        // (platform and custom). Platform-framework control/detail pages read
+        // these join rows directly (not the implicit m2m), so restricting the
+        // delete to custom frameworks left the policy still showing against the
+        // control after it was unlinked. Scope to the org for tenant isolation.
         await tx.frameworkControlPolicyLink.deleteMany({
           where: {
             controlId,
             policyId: id,
-            frameworkInstance: {
-              organizationId,
-              customFrameworkId: { not: null },
-            },
+            frameworkInstance: { organizationId },
           },
         });
       }
