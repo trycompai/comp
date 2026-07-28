@@ -27,6 +27,12 @@ vi.mock('./PolicyDownloadSheet', () => ({
     open ? <div data-testid="policy-download-sheet" /> : null,
 }));
 
+// Mock BulkUploadPoliciesSheet — only renders when open
+vi.mock('./BulkUploadPoliciesSheet', () => ({
+  BulkUploadPoliciesSheet: ({ open }: { open: boolean }) =>
+    open ? <div data-testid="bulk-upload-sheet" /> : null,
+}));
+
 // Mock api client
 vi.mock('@/lib/api-client', () => ({
   api: { get: vi.fn() },
@@ -88,6 +94,47 @@ describe('PolicyPageActions', () => {
 
       expect(screen.getByTestId('policy-download-sheet')).toBeInTheDocument();
     });
+
+    it('renders the Bulk upload button when user has policy:create', () => {
+      render(<PolicyPageActions policies={basePolicies} />);
+
+      expect(
+        screen.getByRole('button', { name: /bulk upload/i }),
+      ).toBeInTheDocument();
+    });
+
+    it('opens the bulk upload sheet when Bulk upload is clicked', async () => {
+      const user = userEvent.setup();
+      render(<PolicyPageActions policies={basePolicies} />);
+
+      await user.click(screen.getByRole('button', { name: /bulk upload/i }));
+
+      expect(screen.getByTestId('bulk-upload-sheet')).toBeInTheDocument();
+    });
+  });
+
+  describe('policy:create without policy:update', () => {
+    beforeEach(() => {
+      // Bulk upload also attaches a PDF (needs policy:update); create alone
+      // would leave orphan draft policies, so the button must be hidden.
+      setMockPermissions({ policy: ['read', 'create'] });
+    });
+
+    it('does not render the Bulk upload button without policy:update', () => {
+      render(<PolicyPageActions policies={basePolicies} />);
+
+      expect(
+        screen.queryByRole('button', { name: /bulk upload/i }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('still renders the Create Policy button', () => {
+      render(<PolicyPageActions policies={basePolicies} />);
+
+      expect(
+        screen.getByRole('button', { name: /create policy/i }),
+      ).toBeInTheDocument();
+    });
   });
 
   describe('auditor permissions (no policy:create)', () => {
@@ -100,6 +147,14 @@ describe('PolicyPageActions', () => {
 
       expect(
         screen.queryByRole('button', { name: /create policy/i }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('does not render the Bulk upload button', () => {
+      render(<PolicyPageActions policies={basePolicies} />);
+
+      expect(
+        screen.queryByRole('button', { name: /bulk upload/i }),
       ).not.toBeInTheDocument();
     });
 

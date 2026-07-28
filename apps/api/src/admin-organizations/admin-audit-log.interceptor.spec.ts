@@ -54,6 +54,8 @@ jest.mock('@db', () => ({
 jest.mock('../audit/audit-log.constants', () => ({
   MUTATION_METHODS: new Set(['POST', 'PATCH', 'PUT', 'DELETE']),
   SENSITIVE_KEYS: new Set(['password', 'token']),
+  SENSITIVE_KEY_PATTERN:
+    /secret|password|passphrase|credential|token|api[_-]?key|private[_-]?key|totp|access[_-]?key/i,
 }));
 
 function buildContext(overrides: {
@@ -255,6 +257,28 @@ describe('AdminAuditLogInterceptor', () => {
           const changes = callData.data.changes;
           expect(changes.status).toBeDefined();
           expect(changes.password).toBeUndefined();
+          done();
+        }, 50);
+      },
+    });
+  });
+
+  it('sanitizes credential-shaped keys the exact list misses (clientSecret)', (done) => {
+    mockPolicyFind.mockResolvedValue({ name: 'Test' });
+
+    const ctx = buildContext({
+      method: 'PATCH',
+      url: '/v1/admin/organizations/org_1/policies/pol_1',
+      params: { orgId: 'org_1' },
+      body: { status: 'published', clientSecret: 'leak_me' },
+    });
+
+    interceptor.intercept(ctx, nextHandler).subscribe({
+      complete: () => {
+        setTimeout(() => {
+          const changes = mockCreate.mock.calls[0][0].data.data.changes;
+          expect(changes.status).toBeDefined();
+          expect(changes.clientSecret).toBeUndefined();
           done();
         }, 50);
       },

@@ -1,4 +1,5 @@
 import type { AwsCommandStep, FixPlan } from './ai-remediation.prompt';
+import { logGroupNameFromArn } from './providers/aws/cloudwatch.adapter';
 
 /**
  * Maps an AWS service prefix (as it appears in `AwsCommandStep.service`)
@@ -40,6 +41,18 @@ const EC2_SECURITY_GROUP_COMMANDS = new Set([
 ]);
 const S3_ACL_COMMANDS = new Set(['PutBucketAclCommand']);
 const S3_ACL_PERMISSIONS = new Set(['s3:PutBucketAcl']);
+const CREATE_LOG_GROUP_COMMAND = 'CreateLogGroupCommand';
+const CLOUDTRAIL_SERVICE = 'cloudtrail';
+/**
+ * Commands that operate on a CloudTrail trail. A step whose `service` is
+ * CloudTrail — or that runs one of these commands — is what marks a plan as the
+ * CloudTrail→CloudWatch Logs integration fix, the ONLY remediation the
+ * `aws-cloudtrail-logs` default is correct for.
+ */
+const CLOUDTRAIL_TRAIL_COMMANDS = new Set([
+  'CreateTrailCommand',
+  'UpdateTrailCommand',
+]);
 
 export interface NormalizeFixPlanContext {
   resourceId?: string | null;
@@ -73,7 +86,9 @@ function normalizeStepList(
   securityGroupId: string | null,
 ): AwsCommandStep[] {
   return backfillSecurityGroupParams(
-    removeUnsupportedS3AclSteps(backfillServiceLinkedRoleParams(steps)),
+    backfillLogGroupName(
+      removeUnsupportedS3AclSteps(backfillServiceLinkedRoleParams(steps)),
+    ),
     securityGroupId,
   );
 }
@@ -167,4 +182,97 @@ function inferServiceLinkedRolePrincipal(
     }
   }
   return null;
+}
+
+/**
+ * Backfill `logGroupName` on `CreateLogGroupCommand` steps the AI left empty.
+ *
+ * The "CloudTrail not integrated with CloudWatch Logs" remediation has to MINT
+ * a brand-new log group — the finding carries no existing log-group name
+ * (none exists yet), so the model must invent one. When it omits/empties
+ * `logGroupName`, AWS rejects the call with "Member must not be null / value
+ * null at logGroupName", the single step-repair fails, and the whole auto-fix
+ * silently falls back to manual steps. This is the same failure class as the
+ * SLR `AWSServiceName` backfill above.
+ *
+ * Resolve the name deterministically: prefer the log group the plan's trail
+ * step already targets (parsed from its `CloudWatchLogsLogGroupArn`) so the
+ * group we create matches what UpdateTrail links to; otherwise fall back to the
+ * canonical default. Only a missing/empty value is filled — a name the AI
+ * supplied is left untouched.
+ *
+ * Scope: this ONLY runs for the CloudTrail integration plan itself (detected by
+ * a CloudTrail trail step). Other logging remediations (SSM Session Manager,
+ * Step Functions, Transfer Family, …) also mint a log group via
+ * `CreateLogGroupCommand`, but each references it under its own name — stamping
+ * them with `aws-cloudtrail-logs` would create a group that doesn't match the
+ * sibling step that consumes it.
+ */
+function backfillLogGroupName(steps: AwsCommandStep[]): AwsCommandStep[] {
+  const needsBackfill = steps.some(
+    (step) =>
+      step.command === CREATE_LOG_GROUP_COMMAND &&
+      !hasNonEmptyString(step.params?.logGroupName),
+  );
+  if (!needsBackfill || !isCloudTrailIntegrationPlan(steps)) return steps;
+
+  // Only backfill the name we can DERIVE from the log-group ARN the trail step
+  // actually links to — that guarantees the group we create matches what
+  // UpdateTrail points at, i.e. a COMPLETE integration. If no step carries a
+  // parseable CloudWatchLogsLogGroupArn, nothing in the plan will link the trail
+  // to the group, so inventing a default name would create an orphan log group
+  // and report a FALSE success on a still-non-compliant finding (CS-787 cubic P1).
+  // Leave it unfilled instead: the CreateLogGroup step then fails REQUIRED_PARAMS
+  // validation and the fix falls back honestly rather than pretending it worked.
+  const resolved = inferCloudTrailLogGroupName(steps);
+  if (!resolved) return steps;
+
+  return steps.map((step) => {
+    if (
+      step.command !== CREATE_LOG_GROUP_COMMAND ||
+      hasNonEmptyString(step.params?.logGroupName)
+    ) {
+      return step;
+    }
+    return {
+      ...step,
+      params: { ...(step.params ?? {}), logGroupName: resolved },
+    };
+  });
+}
+
+/**
+ * True when the plan operates on a CloudTrail trail — the signal that a minted
+ * log group is destined for CloudTrail delivery and the `aws-cloudtrail-logs`
+ * default (the name the console proposes for trail log delivery) is correct.
+ * Keyed on the CloudTrail SDK client suffix or a trail command so it also
+ * matches plans that only create/update the trail without a parseable ARN.
+ */
+function isCloudTrailIntegrationPlan(steps: AwsCommandStep[]): boolean {
+  return steps.some(
+    (step) =>
+      step.service === CLOUDTRAIL_SERVICE ||
+      CLOUDTRAIL_TRAIL_COMMANDS.has(step.command),
+  );
+}
+
+/**
+ * Derive the CloudWatch Logs log-group NAME the plan's CloudTrail step points
+ * at, from any step carrying a `CloudWatchLogsLogGroupArn`. Keeps the created
+ * log group consistent with the trail integration. Returns null when no step
+ * references a parseable log-group ARN.
+ */
+function inferCloudTrailLogGroupName(steps: AwsCommandStep[]): string | null {
+  for (const step of steps) {
+    const arn = step.params?.CloudWatchLogsLogGroupArn;
+    if (typeof arn === 'string') {
+      const name = logGroupNameFromArn(arn);
+      if (name) return name;
+    }
+  }
+  return null;
+}
+
+function hasNonEmptyString(value: unknown): boolean {
+  return typeof value === 'string' && value.trim().length > 0;
 }

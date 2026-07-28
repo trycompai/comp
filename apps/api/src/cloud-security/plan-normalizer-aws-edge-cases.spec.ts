@@ -143,3 +143,199 @@ describe('normalizeFixPlan — AWS remediation edge cases', () => {
     expect(result.fixSteps[0].params).toEqual({ GroupName: 'default' });
   });
 });
+
+// CS-787: the "CloudTrail not integrated with CloudWatch Logs" auto-fix mints a
+// new log group, so the AI must invent the name. When it omits/empties
+// logGroupName, AWS rejects CreateLogGroup with "Member must not be null" and
+// the whole fix falls back to manual steps. The normalizer must guarantee a
+// valid name.
+describe('normalizeFixPlan — CreateLogGroup logGroupName backfill (CS-787)', () => {
+  const createLogGroupStep = (params: Record<string, unknown>): AwsCommandStep =>
+    makeStep({ service: 'logs', command: 'CreateLogGroupCommand', params });
+
+  const updateTrailStep = (logGroupArn: string): AwsCommandStep =>
+    makeStep({
+      service: 'cloudtrail',
+      command: 'UpdateTrailCommand',
+      params: {
+        Name: 'compai-trail',
+        CloudWatchLogsLogGroupArn: logGroupArn,
+        CloudWatchLogsRoleArn:
+          'arn:aws:iam::123456789012:role/CompAI-CloudTrailDelivery',
+      },
+    });
+
+  // A CloudTrail trail step with NO usable log-group ARN: the plan is still a
+  // CloudTrail integration fix, but there is nothing to derive the name from and
+  // nothing that will link the trail to a group. The normalizer must NOT invent a
+  // name here — doing so would create an orphan log group and report a false
+  // success on a still-non-compliant finding (CS-787). It leaves the step unfilled
+  // so REQUIRED_PARAMS validation rejects it and the fix fails honestly.
+  const updateTrailStepMissingArn = (): AwsCommandStep =>
+    makeStep({
+      service: 'cloudtrail',
+      command: 'UpdateTrailCommand',
+      params: { Name: 'compai-trail' },
+    });
+
+  it('leaves an OMITTED logGroupName unfilled when no trail ARN exists (no orphan group / false success — CS-787)', () => {
+    const plan = makePlan({
+      fixSteps: [createLogGroupStep({}), updateTrailStepMissingArn()],
+    });
+
+    const result = normalizeFixPlan(plan);
+
+    // Nothing to link the trail to → do NOT invent a name; leave it for
+    // REQUIRED_PARAMS validation to reject rather than create an orphan group.
+    expect(result.fixSteps[0].params.logGroupName).toBeUndefined();
+  });
+
+  it('leaves a blank logGroupName unchanged when no trail ARN exists', () => {
+    const plan = makePlan({
+      fixSteps: [
+        createLogGroupStep({ logGroupName: '   ' }),
+        updateTrailStepMissingArn(),
+      ],
+    });
+
+    const result = normalizeFixPlan(plan);
+
+    expect(result.fixSteps[0].params.logGroupName).toBe('   ');
+  });
+
+  it('derives the name from the trail step ARN so CreateLogGroup matches what UpdateTrail links to', () => {
+    const plan = makePlan({
+      fixSteps: [
+        createLogGroupStep({ logGroupName: '' }),
+        updateTrailStep(
+          'arn:aws:logs:us-east-1:123456789012:log-group:/compai/cloudtrail:*',
+        ),
+      ],
+    });
+
+    const result = normalizeFixPlan(plan);
+
+    expect(result.fixSteps[0].params.logGroupName).toBe('/compai/cloudtrail');
+  });
+
+  it('preserves a logGroupName the AI already supplied', () => {
+    const plan = makePlan({
+      fixSteps: [
+        createLogGroupStep({ logGroupName: 'my-custom-cloudtrail-lg' }),
+        updateTrailStep(
+          'arn:aws:logs:us-east-1:123456789012:log-group:something-else:*',
+        ),
+      ],
+    });
+
+    const result = normalizeFixPlan(plan);
+
+    expect(result.fixSteps[0].params.logGroupName).toBe(
+      'my-custom-cloudtrail-lg',
+    );
+  });
+
+  it('also backfills a CreateLogGroup step that appears in rollback steps (from the trail ARN)', () => {
+    const plan = makePlan({
+      rollbackSteps: [
+        createLogGroupStep({}),
+        updateTrailStep(
+          'arn:aws:logs:us-east-1:123456789012:log-group:/compai/cloudtrail:*',
+        ),
+      ],
+    });
+
+    const result = normalizeFixPlan(plan);
+
+    expect(result.rollbackSteps[0].params.logGroupName).toBe('/compai/cloudtrail');
+  });
+
+  it('is a no-op for plans without a CreateLogGroup step', () => {
+    const plan = makePlan({
+      fixSteps: [
+        makeStep({ service: 's3', command: 'PutPublicAccessBlockCommand' }),
+      ],
+    });
+
+    const result = normalizeFixPlan(plan);
+
+    expect(result.fixSteps).toEqual(plan.fixSteps);
+  });
+
+  // The CloudTrail default must NOT leak into other logging remediations. Many
+  // findings mint a log group via CreateLogGroupCommand (Step Functions, SSM
+  // Session Manager, Transfer Family, …) but reference it under their own name;
+  // stamping them with `aws-cloudtrail-logs` would create a group that doesn't
+  // match the sibling step that consumes it.
+  it('does NOT inject the CloudTrail default into a Step Functions logging remediation', () => {
+    const plan = makePlan({
+      fixSteps: [
+        createLogGroupStep({}),
+        makeStep({
+          service: 'sfn',
+          command: 'UpdateStateMachineCommand',
+          params: {
+            stateMachineArn:
+              'arn:aws:states:us-east-1:123456789012:stateMachine:my-sm',
+            loggingConfiguration: {
+              level: 'ALL',
+              includeExecutionData: true,
+              destinations: [
+                {
+                  cloudWatchLogsLogGroup: {
+                    logGroupArn:
+                      'arn:aws:logs:us-east-1:123456789012:log-group:/aws/vendedlogs/states/my-sm:*',
+                  },
+                },
+              ],
+            },
+          },
+        }),
+      ],
+    });
+
+    const result = normalizeFixPlan(plan);
+
+    expect(result.fixSteps[0].params.logGroupName).toBeUndefined();
+  });
+
+  it('does NOT inject the CloudTrail default into an SSM Session Manager logging remediation', () => {
+    const plan = makePlan({
+      fixSteps: [
+        createLogGroupStep({}),
+        makeStep({
+          service: 'ssm',
+          command: 'UpdateDocumentCommand',
+          params: {
+            Name: 'SSM-SessionManagerRunShell',
+            Content: JSON.stringify({
+              inputs: { cloudWatchLogGroupName: '/aws/ssm/session-logs' },
+            }),
+          },
+        }),
+      ],
+    });
+
+    const result = normalizeFixPlan(plan);
+
+    expect(result.fixSteps[0].params.logGroupName).toBeUndefined();
+  });
+
+  it('leaves the name unfilled for a CloudTrail plan (detected via CreateTrailCommand) that carries no log-group ARN', () => {
+    const plan = makePlan({
+      fixSteps: [
+        createLogGroupStep({}),
+        makeStep({
+          service: 'cloudtrail',
+          command: 'CreateTrailCommand',
+          params: { Name: 'compai-trail', S3BucketName: 'compai-logs' },
+        }),
+      ],
+    });
+
+    const result = normalizeFixPlan(plan);
+
+    // No ARN anywhere → nothing links the trail to the group → don't invent a name.
+    expect(result.fixSteps[0].params.logGroupName).toBeUndefined();
+  });
+});

@@ -31,7 +31,9 @@ function isCustomReqOnInstance(
 
 const controlInclude = {
   policies: {
-    where: { archivedAt: null },
+    // Hide both sync-archived (archivedAt) and user-archived (isArchived)
+    // policies — matching the documented Policy visibility rule.
+    where: { archivedAt: null, isArchived: false },
     select: { status: true, id: true, name: true },
   },
   tasks: {
@@ -107,7 +109,7 @@ export class ControlsService {
     const control = await db.control.findUnique({
       where: { id: controlId, organizationId },
       include: {
-        policies: { where: { archivedAt: null } },
+        policies: { where: { archivedAt: null, isArchived: false } },
         tasks: { where: { archivedAt: null } },
         controlDocumentTypes: true,
         requirementsMapped: {
@@ -212,13 +214,13 @@ export class ControlsService {
     const control = await db.control.findUnique({
       where: { id: controlId, organizationId },
       include: {
-        policies: { where: { archivedAt: null } },
+        policies: { where: { archivedAt: null, isArchived: false } },
         tasks: { where: { archivedAt: null } },
         controlDocumentTypes: true,
         frameworkPolicyLinks: {
           where: {
             frameworkInstanceId,
-            policy: { archivedAt: null },
+            policy: { archivedAt: null, isArchived: false },
           },
           include: { policy: true },
         },

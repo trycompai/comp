@@ -11,6 +11,7 @@ import {
   BrowserAutomationsList,
   BrowserLiveView,
   ConnectVendorLoginFlow,
+  ConnectionsErrorState,
   EmptyWithContextState,
   InstructionComposer,
   type ConnectionRef,
@@ -62,7 +63,12 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
   // Hooks
   const context = useBrowserContext();
   const automations = useBrowserAutomations({ taskId });
-  const { profiles, fetchProfiles } = useBrowserProfiles();
+  const {
+    profiles,
+    fetchProfiles,
+    isLoading: profilesLoading,
+    isError: profilesError,
+  } = useBrowserProfiles();
   const {
     drafts,
     fetchDrafts,
@@ -293,11 +299,6 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
     [profiles],
   );
 
-  // Loading state
-  if (automations.isLoading) {
-    return null;
-  }
-
   // Execution live view
   if (execution.isExecuting && execution.liveViewUrl) {
     const runningAutomation = automations.automations.find(
@@ -347,6 +348,19 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
     );
   }
 
+  // Everything below resolves connections from the profiles list, so it waits
+  // for the load and surfaces a failure — while the flows above (execution,
+  // connect, auth) stay reachable during it, since they don't need the list.
+  // Rendering the states below early would flash "no connections" or
+  // misresolve (empty states invite reconnecting; the composer/list treat
+  // connected vendors as missing).
+  if (automations.isLoading || profilesLoading) {
+    return null;
+  }
+  if (profilesError && profiles.length === 0) {
+    return <ConnectionsErrorState onRetry={() => void fetchProfiles()} />;
+  }
+
   // Instruction composer (create/edit) — write, watch the AI test it, then save.
   if (composer.open && composerConnection) {
     return (
@@ -378,32 +392,38 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
   // connects here, `justConnected` advances to the "add your first automation"
   // state. Connections are org-level and reused, so connecting an already-connected
   // vendor simply reuses the saved session.
-  // A pending draft means the task is mid-setup — don't drop back to first-run.
-  if (
-    !isManualTask &&
-    automations.automations.length === 0 &&
-    !justConnected &&
-    drafts.length === 0
-  ) {
-    return (
-      <BrowserEvidenceEmptyState
-        isStartingAuth={context.isStartingAuth}
-        onConnect={() => setConnectOpen(true)}
+  // No saved automations yet.
+  if (!isManualTask && automations.automations.length === 0) {
+    // An automation can only be built on an existing connection — the composer
+    // opens on one. With no connection (and none just made — the profile list
+    // refetches a beat after connecting), "Create" would silently no-op because
+    // there's nothing to open the composer on, so prompt to connect first.
+    // Drafts are still surfaced above so they can be resumed either way.
+    const hasConnection = profiles.length > 0;
+    const draftsStrip = drafts.length > 0 && (
+      <DraftsStrip
+        drafts={drafts}
+        profiles={profiles}
+        onContinue={handleContinueDraft}
+        onDelete={handleDeleteDraft}
       />
     );
-  }
 
-  // No saved automations yet, but a connection and/or a draft exists — prompt to
-  // create the first one, with any drafts pinned above to resume.
-  if (!isManualTask && automations.automations.length === 0) {
+    if (!hasConnection && !justConnected) {
+      return (
+        <>
+          {draftsStrip}
+          <BrowserEvidenceEmptyState
+            isStartingAuth={context.isStartingAuth}
+            onConnect={() => setConnectOpen(true)}
+          />
+        </>
+      );
+    }
+
     return (
       <>
-        <DraftsStrip
-          drafts={drafts}
-          profiles={profiles}
-          onContinue={handleContinueDraft}
-          onDelete={handleDeleteDraft}
-        />
+        {draftsStrip}
         <EmptyWithContextState
           onCreateClick={() => setComposer({ open: true, mode: 'create' })}
         />

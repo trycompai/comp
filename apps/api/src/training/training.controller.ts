@@ -109,6 +109,29 @@ export class TrainingController {
     return result;
   }
 
+  @Post('send-hipaa-completion-email')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('training', 'update')
+  @ApiOperation({
+    summary: 'Send HIPAA training completion email with certificate',
+    description:
+      'Checks if the member has completed the HIPAA Security Awareness Training. If so, sends an email with the HIPAA training certificate attached.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Email sent or reason why it was not sent',
+    type: SendTrainingCompletionResponseDto,
+  })
+  async sendHipaaTrainingCompletionEmail(
+    @OrganizationId() organizationId: string,
+    @Body() dto: SendTrainingCompletionDto,
+  ): Promise<SendTrainingCompletionResponseDto> {
+    return this.trainingService.sendHipaaCompletionEmailIfComplete(
+      dto.memberId,
+      organizationId,
+    );
+  }
+
   @Post('generate-certificate')
   @HttpCode(HttpStatus.OK)
   @RequirePermission('training', 'read')

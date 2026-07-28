@@ -1,0 +1,328 @@
+name: Security Questionnaire Extension Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish_target:
+        description: 'Who receives this release'
+        type: choice
+        default: trustedTesters
+        options:
+          - trustedTesters
+          - default
+  push:
+    branches:
+      - release
+    paths:
+      - '.github/workflows/security-questionnaire-extension-release.yml'
+      - 'apps/browser-extension/security-questionnaire-ext/**'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: security-questionnaire-extension-release
+  cancel-in-progress: false
+
+env:
+  EXTENSION_DIR: apps/browser-extension/security-questionnaire-ext
+  EXTENSION_TAG_PREFIX: security-questionnaire-ext-v
+  WXT_PUBLIC_API_BASE_URL: https://api.trycomp.ai
+  WXT_PUBLIC_APP_BASE_URL: https://app.trycomp.ai
+
+jobs:
+  release:
+    name: Publish Chrome extension
+    if: ${{ github.ref == 'refs/heads/release' }}
+    runs-on: warp-ubuntu-latest-arm64-4x
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile --ignore-scripts
+
+      - name: Compute next extension version
+        id: version
+        run: |
+          LATEST_TAG=$(git tag -l "${EXTENSION_TAG_PREFIX}*" --sort=-v:refname | grep -E "^${EXTENSION_TAG_PREFIX}[0-9]+\.[0-9]+\.[0-9]+$" | head -1)
+
+          if [ -z "$LATEST_TAG" ]; then
+            NEXT_VERSION="0.1.0"
+          else
+            CURRENT_VERSION="${LATEST_TAG#${EXTENSION_TAG_PREFIX}}"
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+            NEXT_VERSION="$MAJOR.$MINOR.$((PATCH + 1))"
+          fi
+
+          TAG_NAME="${EXTENSION_TAG_PREFIX}${NEXT_VERSION}"
+          echo "version=$NEXT_VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"
+          echo "zip_name=security-questionnaire-extension-${NEXT_VERSION}.zip" >> "$GITHUB_OUTPUT"
+
+          echo "--- Extension version ---"
+          echo "Latest tag: ${LATEST_TAG:-none}"
+          echo "Next version: $NEXT_VERSION"
+          echo "Tag name: $TAG_NAME"
+
+      - name: Set extension package version
+        working-directory: ${{ env.EXTENSION_DIR }}
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          node -e "
+            const fs = require('fs');
+            const path = 'package.json';
+            const pkg = JSON.parse(fs.readFileSync(path, 'utf8'));
+            pkg.version = process.env.VERSION;
+            fs.writeFileSync(path, JSON.stringify(pkg, null, 2) + '\n');
+          "
+
+      - name: Typecheck extension
+        run: bun run --filter '@trycompai/security-questionnaire-extension' typecheck
+
+      - name: Test extension
+        run: bun run --filter '@trycompai/security-questionnaire-extension' test
+
+      - name: Build production extension
+        env:
+          WXT_GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.SECURITY_QUESTIONNAIRE_EXTENSION_GOOGLE_OAUTH_CLIENT_ID }}
+        run: bun run --filter '@trycompai/security-questionnaire-extension' build
+
+      - name: Verify manifest version
+        env:
+          EXTENSION_DIR: ${{ env.EXTENSION_DIR }}
+          VERSION: ${{ steps.version.outputs.version }}
+          OAUTH_CLIENT_ID: ${{ secrets.SECURITY_QUESTIONNAIRE_EXTENSION_GOOGLE_OAUTH_CLIENT_ID }}
+        run: |
+          node -e "
+            const fs = require('fs');
+            const manifestPath = process.env.EXTENSION_DIR + '/dist/chrome-mv3/manifest.json';
+            const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+            if (manifest.version !== process.env.VERSION) {
+              throw new Error(
+                'Expected manifest version ' + process.env.VERSION +
+                  ', got ' + manifest.version,
+              );
+            }
+            // Google OAuth is optional. When the client id secret is set the
+            // manifest must carry it; without it the extension ships with the
+            // guided Sheets paste flow instead of direct Sheets API writes.
+            const wantsOAuth = Boolean(process.env.OAUTH_CLIENT_ID);
+            if (wantsOAuth && !manifest.oauth2?.client_id) {
+              throw new Error('OAuth client id was provided but is missing from the built manifest');
+            }
+            console.log('Google Sheets API insertion:', wantsOAuth ? 'enabled' : 'disabled (guided paste)');
+
+            // The build silently falls back to localhost when the public URLs
+            // are unset, so refuse to publish a package pointed at a dev host.
+            const hosts = manifest.host_permissions || [];
+            const localhost = hosts.filter((host) => host.includes('localhost'));
+            if (localhost.length > 0) {
+              throw new Error(
+                'Refusing to publish: manifest still points at ' + localhost.join(', '),
+              );
+            }
+            if (!hosts.some((host) => host.startsWith('https://api.trycomp.ai'))) {
+              throw new Error(
+                'Refusing to publish: manifest is missing the production API host',
+              );
+            }
+          "
+
+      - name: Package extension
+        working-directory: ${{ env.EXTENSION_DIR }}/dist/chrome-mv3
+        env:
+          ZIP_NAME: ${{ steps.version.outputs.zip_name }}
+        run: zip -r "../$ZIP_NAME" .
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-questionnaire-extension-${{ steps.version.outputs.version }}
+          path: ${{ env.EXTENSION_DIR }}/dist/${{ steps.version.outputs.zip_name }}
+          if-no-files-found: error
+
+      - name: Validate Chrome Web Store secrets
+        env:
+          SERVICE_ACCOUNT_JSON: ${{ secrets.CHROME_WEB_STORE_SERVICE_ACCOUNT_JSON }}
+          EXTENSION_ID: ${{ secrets.SECURITY_QUESTIONNAIRE_EXTENSION_ID }}
+        run: |
+          # SECURITY_QUESTIONNAIRE_EXTENSION_GOOGLE_OAUTH_CLIENT_ID is intentionally
+          # not required — it only enables direct Google Sheets API insertion.
+          # CHROME_WEB_STORE_PUBLISHER_ID is unused by the v1.1 API but kept as a
+          # secret for the eventual v2 migration.
+          missing=0
+          for name in SERVICE_ACCOUNT_JSON EXTENSION_ID; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Missing required secret: $name"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Get Chrome Web Store access token
+        id: token
+        env:
+          SERVICE_ACCOUNT_JSON: ${{ secrets.CHROME_WEB_STORE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          # Service account JWT bearer flow. Unlike a refresh token this does not
+          # expire and is not tied to an individual Google account.
+          ASSERTION=$(node -e "
+            const crypto = require('crypto');
+            const key = JSON.parse(process.env.SERVICE_ACCOUNT_JSON);
+            const encode = (value) =>
+              Buffer.from(JSON.stringify(value))
+                .toString('base64url');
+            const issuedAt = Math.floor(Date.now() / 1000);
+            const payload = {
+              iss: key.client_email,
+              scope: 'https://www.googleapis.com/auth/chromewebstore',
+              aud: 'https://oauth2.googleapis.com/token',
+              iat: issuedAt,
+              exp: issuedAt + 3600,
+            };
+            const signingInput =
+              encode({ alg: 'RS256', typ: 'JWT' }) + '.' + encode(payload);
+            const signature = crypto
+              .createSign('RSA-SHA256')
+              .update(signingInput)
+              .sign(key.private_key)
+              .toString('base64url');
+            process.stdout.write(signingInput + '.' + signature);
+          ")
+
+          RESPONSE=$(curl -fsS "https://oauth2.googleapis.com/token" \
+            --data-urlencode "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer" \
+            --data-urlencode "assertion=$ASSERTION")
+
+          ACCESS_TOKEN=$(RESPONSE="$RESPONSE" node -e "
+            const response = JSON.parse(process.env.RESPONSE);
+            if (!response.access_token) throw new Error('No access_token returned');
+            process.stdout.write(response.access_token);
+          ")
+
+          echo "::add-mask::$ACCESS_TOKEN"
+          echo "access_token=$ACCESS_TOKEN" >> "$GITHUB_OUTPUT"
+
+      # The v2 API is not yet served for this publisher — every v2 route returns
+      # 404 while the v1.1 API works with the same service account token. v1.1
+      # is supported until 2026-10-15; revisit before then.
+      - name: Upload package to Chrome Web Store
+        id: upload
+        env:
+          ACCESS_TOKEN: ${{ steps.token.outputs.access_token }}
+          EXTENSION_ID: ${{ secrets.SECURITY_QUESTIONNAIRE_EXTENSION_ID }}
+          ZIP_PATH: ${{ env.EXTENSION_DIR }}/dist/${{ steps.version.outputs.zip_name }}
+        run: |
+          RESPONSE=$(curl -fsS \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -H "x-goog-api-version: 2" \
+            -X PUT \
+            -T "$ZIP_PATH" \
+            "https://www.googleapis.com/upload/chromewebstore/v1.1/items/$EXTENSION_ID")
+
+          echo "$RESPONSE"
+          UPLOAD_STATE=$(RESPONSE="$RESPONSE" node -e "
+            const response = JSON.parse(process.env.RESPONSE);
+            const state = response.uploadState;
+            if (state !== 'SUCCESS' && state !== 'IN_PROGRESS') {
+              const details = (response.itemError || [])
+                .map((entry) => entry.error_detail)
+                .join('; ');
+              throw new Error(
+                \`Chrome upload failed with state \${state || 'unknown'}\${details ? ': ' + details : ''}\`,
+              );
+            }
+            process.stdout.write(state);
+          ")
+
+          echo "upload_state=$UPLOAD_STATE" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for async Chrome Web Store upload
+        if: ${{ steps.upload.outputs.upload_state == 'IN_PROGRESS' }}
+        env:
+          ACCESS_TOKEN: ${{ steps.token.outputs.access_token }}
+          EXTENSION_ID: ${{ secrets.SECURITY_QUESTIONNAIRE_EXTENSION_ID }}
+        run: |
+          for attempt in $(seq 1 30); do
+            RESPONSE=$(curl -fsS \
+              -H "Authorization: Bearer $ACCESS_TOKEN" \
+              -H "x-goog-api-version: 2" \
+              "https://www.googleapis.com/chromewebstore/v1.1/items/$EXTENSION_ID?projection=DRAFT")
+
+            STATE=$(RESPONSE="$RESPONSE" node -e "
+              const response = JSON.parse(process.env.RESPONSE);
+              process.stdout.write(response.uploadState || 'UNKNOWN');
+            ")
+            echo "Upload state: $STATE"
+
+            if [ "$STATE" = "SUCCESS" ]; then
+              exit 0
+            fi
+            if [ "$STATE" = "FAILURE" ]; then
+              echo "::error::Chrome Web Store async upload failed"
+              echo "$RESPONSE"
+              exit 1
+            fi
+
+            echo "Still $STATE; waiting before retry $attempt"
+            sleep 10
+          done
+
+          echo "::error::Timed out waiting for Chrome Web Store async upload"
+          exit 1
+
+      - name: Publish Chrome Web Store item
+        env:
+          ACCESS_TOKEN: ${{ steps.token.outputs.access_token }}
+          EXTENSION_ID: ${{ secrets.SECURITY_QUESTIONNAIRE_EXTENSION_ID }}
+          PUBLISH_TARGET: ${{ inputs.publish_target || 'trustedTesters' }}
+        run: |
+          echo "Publishing to: $PUBLISH_TARGET"
+          RESPONSE=$(curl -fsS \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -H "x-goog-api-version: 2" \
+            -H "Content-Length: 0" \
+            -X POST \
+            "https://www.googleapis.com/chromewebstore/v1.1/items/$EXTENSION_ID/publish?publishTarget=$PUBLISH_TARGET")
+
+          echo "$RESPONSE"
+          RESPONSE="$RESPONSE" node -e "
+            const response = JSON.parse(process.env.RESPONSE);
+            const statuses = response.status || [];
+            const failed = statuses.filter(
+              (entry) => entry !== 'OK' && entry !== 'PUBLISHED_WITH_FRICTION_WARNING',
+            );
+            if (failed.length > 0) {
+              throw new Error(
+                'Publish rejected: ' +
+                  failed.join(', ') +
+                  ' — ' +
+                  (response.statusDetail || []).join('; '),
+              );
+            }
+          "
+
+      - name: Tag published extension version
+        env:
+          TAG_NAME: ${{ steps.version.outputs.tag_name }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG_NAME" -m "Security questionnaire extension v$VERSION"
+          git push origin "$TAG_NAME"
