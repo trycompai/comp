@@ -22,6 +22,7 @@ import {
   buildOrgVaultTitle,
   parseItemReference,
 } from './onepassword-credential-item';
+import { normalizeTotpSecret } from './browser-totp-secret';
 
 export interface StoreProfileCredentialsInput {
   organizationId: string;
@@ -297,9 +298,14 @@ export class BrowserCredentialStorageService {
         'Credential storage is not configured for this environment.',
       );
     }
-    const seed = input.totpSeed.trim();
+    // Validate + normalize server-side (the client's check is only for UX): a
+    // direct API caller must not be able to overwrite a working seed with a
+    // rotating one-time code or junk, which would silently break unattended 2FA.
+    const seed = normalizeTotpSecret(input.totpSeed);
     if (!seed) {
-      throw new BadRequestException('An authenticator setup key is required.');
+      throw new BadRequestException(
+        'Enter a valid authenticator setup key (a Base32 secret or an otpauth:// URI), not a rotating one-time code.',
+      );
     }
 
     const profile = await this.findProfile(input);

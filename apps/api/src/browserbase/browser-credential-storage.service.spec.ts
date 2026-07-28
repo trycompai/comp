@@ -144,7 +144,7 @@ describe('BrowserCredentialStorageService — TOTP', () => {
       const result = await service.setProfileTotp({
         organizationId: 'org_1',
         profileId: 'bap_1',
-        totpSeed: '  NEW SEED  ',
+        totpSeed: '  jbsw y3dp ehpk 3pxp  ',
       });
 
       expect(result).toEqual({ configured: true });
@@ -153,7 +153,51 @@ describe('BrowserCredentialStorageService — TOTP', () => {
         (f: Field) => f.title === TOTP_FIELD_TITLE,
       );
       expect(totpFields).toHaveLength(1);
-      expect(totpFields[0]).toMatchObject({ fieldType: 'Totp', value: 'NEW SEED' });
+      // Stored normalized (formatting stripped, upper-cased) — the Base32 secret.
+      expect(totpFields[0]).toMatchObject({
+        fieldType: 'Totp',
+        value: 'JBSWY3DPEHPK3PXP',
+      });
+    });
+
+    it('accepts an otpauth:// URI verbatim', async () => {
+      findFirst.mockResolvedValue(profile());
+      itemsGet.mockResolvedValue({ fields: [field('username')] });
+      const uri = 'otpauth://totp/Acme:alice?secret=JBSWY3DPEHPK3PXP&issuer=Acme';
+
+      await service.setProfileTotp({
+        organizationId: 'org_1',
+        profileId: 'bap_1',
+        totpSeed: uri,
+      });
+
+      const written = itemsPut.mock.calls[0][0];
+      const totp = written.fields.find((f: Field) => f.title === TOTP_FIELD_TITLE);
+      expect(totp.value).toBe(uri);
+    });
+
+    it('rejects a rotating one-time code (would break unattended 2FA)', async () => {
+      await expect(
+        service.setProfileTotp({
+          organizationId: 'org_1',
+          profileId: 'bap_1',
+          totpSeed: '123 456',
+        }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      // Rejected before touching the vault or the DB.
+      expect(itemsGet).not.toHaveBeenCalled();
+      expect(itemsPut).not.toHaveBeenCalled();
+    });
+
+    it('rejects a malformed / too-short key', async () => {
+      await expect(
+        service.setProfileTotp({
+          organizationId: 'org_1',
+          profileId: 'bap_1',
+          totpSeed: 'not-a-real-key!!',
+        }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(itemsPut).not.toHaveBeenCalled();
     });
 
     it('rejects when the connection has no stored login', async () => {
@@ -163,7 +207,7 @@ describe('BrowserCredentialStorageService — TOTP', () => {
         service.setProfileTotp({
           organizationId: 'org_1',
           profileId: 'bap_1',
-          totpSeed: 'SEED',
+          totpSeed: 'JBSWY3DPEHPK3PXP', // valid seed → reaches the no-login check
         }),
       ).rejects.toBeInstanceOf(BadRequestException);
       expect(itemsPut).not.toHaveBeenCalled();
