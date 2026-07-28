@@ -259,12 +259,19 @@ export class BrowserCredentialSigninService {
       await record(outcome, FAILURE_REASON[outcome]);
       finish('warn');
 
-      // A human is about to take over a verification step — read HOW the page
-      // wants them to verify (enter a code, switch off a passkey, or a
-      // passkey-only login we can't automate) so the UI gives exact guidance.
+      // A human is about to take over — read HOW the page wants them to verify
+      // (enter a code, switch off a passkey, or a passkey-only login we can't
+      // automate) so the UI gives exact guidance. We also classify on 'unknown'
+      // because a passkey prompt (e.g. GitHub's webauthn step, which asks for a
+      // key rather than a code) can land there; the classifier degrades to
+      // 'other' for a genuinely non-verification page, so the panel stays generic.
       // Best-effort: undefined just falls back to the generic take-over copy.
       let twoFactorMethod: TwoFactorMethod | undefined;
-      if (outcome === 'needs_2fa' || outcome === 'challenge') {
+      if (
+        outcome === 'needs_2fa' ||
+        outcome === 'challenge' ||
+        outcome === 'unknown'
+      ) {
         twoFactorMethod = await classifyTwoFactorMethod(activeStagehand);
       }
       return { isLoggedIn: false, failure: outcome, twoFactorMethod };

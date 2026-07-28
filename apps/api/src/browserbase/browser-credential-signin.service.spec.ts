@@ -193,6 +193,24 @@ describe('BrowserCredentialSigninService', () => {
     expect(result.twoFactorMethod).toBe('passkey');
   });
 
+  it('classifies a passkey prompt that lands as an unclear outcome (GitHub webauthn)', async () => {
+    // GitHub's passkey step asks for a key, not a code, so the outcome classifier
+    // can return 'unknown' — we still read the method so the panel guides the user.
+    const extract = jest
+      .fn()
+      .mockResolvedValueOnce({ state: 'unknown' })
+      .mockResolvedValueOnce({ state: 'unknown' })
+      .mockResolvedValueOnce({ method: 'passkey' });
+    const sessions = makeSessions(extract, jest.fn().mockResolvedValue(undefined));
+    const profiles = makeProfiles(profile);
+    withCredentials({ username: 'user@x.com', password: 'secret' });
+
+    const result = await run(sessions, profiles);
+
+    expect(result.failure).toBe('unknown');
+    expect(result.twoFactorMethod).toBe('passkey');
+  });
+
   it('re-points the live view after the sign-in attempt so a 2FA take-over sees the right tab', async () => {
     const extract = jest
       .fn()
