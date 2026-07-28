@@ -100,19 +100,21 @@ export function ConnectVendorLoginFlow({
     (failure?: string, method?: TwoFactorMethod) => {
       setSigninRun(null);
       setTakeoverMethod(method);
-      toast.info(
-        method === 'passkey_only'
-          ? "This login requires a passkey, which can't be completed here."
-          : failure === 'needs_2fa'
-            ? 'Enter your two-factor code to finish the sign-in.'
-            : 'Finish the sign-in in the browser.',
-      );
       // Trust an explicit classification: a passkey/code step is a "your turn"
       // 2FA take-over, while 'other' (device approval, CAPTCHA, link) uses the
       // generic finish panel. Only when no method was detected do we fall back to
       // the raw failure code.
       const is2fa =
         method === undefined ? failure === 'needs_2fa' : method !== 'other';
+      // Toast and panel derive from the SAME decision, so they never contradict
+      // (e.g. a toast saying "enter your code" over a "finish sign-in" panel).
+      toast.info(
+        method === 'passkey_only'
+          ? "This login requires a passkey, which can't be completed here."
+          : is2fa
+            ? 'Enter your two-factor code to finish the sign-in.'
+            : 'Finish the sign-in in the browser.',
+      );
       setTakeoverVariant(is2fa ? '2fa' : 'finish');
       setStep('takeover');
     },
