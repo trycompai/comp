@@ -3,6 +3,7 @@ import { env } from '@/env.mjs';
 import useSWR from 'swr';
 import { toast } from 'sonner';
 import { useCallback } from 'react';
+import { useParams } from 'next/navigation';
 
 const API_URL = env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
 
@@ -31,25 +32,32 @@ export function useTrainingCompletions({
 
   const completions = Array.isArray(data) ? data : [];
 
+  const params = useParams();
+  const organizationId =
+    typeof params?.orgId === 'string' ? params.orgId : '';
+
   const markVideoComplete = useCallback(
     async (videoId: string) => {
       try {
         await mutate(
           async (current) => {
-            const res = await fetch(
-              `${API_URL}/v1/training/completions/${videoId}/complete`,
-              {
-                method: 'POST',
-                credentials: 'include',
-              },
-            );
+            // Portal self-service: goes through the portal API route (session +
+            // membership), NOT the RBAC-gated NestJS endpoint, so employees on
+            // custom roles without `portal:update` can still complete training.
+            const res = await fetch('/api/portal/complete-training', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({ videoId, organizationId }),
+            });
 
             if (!res.ok) {
               throw new Error('Failed to mark video as completed');
             }
 
-            const updatedRecord: EmployeeTrainingVideoCompletion =
-              await res.json();
+            const { data: updatedRecord }: {
+              data: EmployeeTrainingVideoCompletion;
+            } = await res.json();
 
             if (!Array.isArray(current)) return [updatedRecord];
 
@@ -67,7 +75,7 @@ export function useTrainingCompletions({
         toast.error('Failed to mark video as completed');
       }
     },
-    [mutate],
+    [mutate, organizationId],
   );
 
   return {
