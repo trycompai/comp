@@ -122,15 +122,15 @@ export async function classifyTwoFactorMethod(
         'user to verify, and whether another method can be chosen. Return exactly one:\n' +
         '"code" — a one-time / authenticator / SMS / email verification CODE can be ' +
         'entered right now (a code field is visible);\n' +
-        '"passkey" — it is asking for a passkey or security key, AND there is a way to ' +
-        "switch to another method (a 'More options', 'Try another way', or 'use a code' control);\n" +
-        '"passkey_only" — it is asking for a passkey or security key and NO other method ' +
-        'is offered;\n' +
-        '"other" — a different verification (a device approval/notification, a CAPTCHA, ' +
-        'or an email/SMS link to click).\n' +
-        'Only choose "passkey" or "passkey_only" when the page explicitly asks for a ' +
-        'passkey or security key; a device approval, push notification, or email/SMS ' +
-        'link is "other".',
+        '"passkey" — it is asking for a passkey or security key, AND a CODE-based method ' +
+        '(an authenticator app, SMS, or email code) can be chosen instead;\n' +
+        '"passkey_only" — it is asking for a passkey or security key with no usable ' +
+        'alternative;\n' +
+        '"other" — anything else, INCLUDING a passkey / security-key prompt whose only ' +
+        'alternative is a device approval, push notification, or email/SMS LINK (not a ' +
+        'code), and standalone CAPTCHA / device-approval / link steps.\n' +
+        'Only "code" and "passkey" imply a code the user can enter; do not pick them ' +
+        'unless a code can actually be entered.',
       z.object({
         method: z.enum(['code', 'passkey', 'passkey_only', 'other']),
       }),
