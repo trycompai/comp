@@ -111,7 +111,10 @@ jobs:
             const manifestPath = process.env.EXTENSION_DIR + '/dist/chrome-mv3/manifest.json';
             const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
             if (manifest.version !== process.env.VERSION) {
-              throw new Error(\`Expected manifest version ${process.env.VERSION}, got ${manifest.version}\`);
+              throw new Error(
+                'Expected manifest version ' + process.env.VERSION +
+                  ', got ' + manifest.version,
+              );
             }
             // Google OAuth is optional. When the client id secret is set the
             // manifest must carry it; without it the extension ships with the
