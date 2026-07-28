@@ -124,6 +124,21 @@ jobs:
               throw new Error('OAuth client id was provided but is missing from the built manifest');
             }
             console.log('Google Sheets API insertion:', wantsOAuth ? 'enabled' : 'disabled (guided paste)');
+
+            // The build silently falls back to localhost when the public URLs
+            // are unset, so refuse to publish a package pointed at a dev host.
+            const hosts = manifest.host_permissions || [];
+            const localhost = hosts.filter((host) => host.includes('localhost'));
+            if (localhost.length > 0) {
+              throw new Error(
+                'Refusing to publish: manifest still points at ' + localhost.join(', '),
+              );
+            }
+            if (!hosts.some((host) => host.startsWith('https://api.trycomp.ai'))) {
+              throw new Error(
+                'Refusing to publish: manifest is missing the production API host',
+              );
+            }
           "
 
       - name: Package extension

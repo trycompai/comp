@@ -55,8 +55,9 @@ export default defineConfig({
     name: 'Comp AI Security Questionnaire',
     description:
       'Generate and insert security questionnaire answers from Comp AI.',
+    // No activeTab: the <all_urls> host permission already covers every page
+    // the extension touches, and the store rejects redundant permissions.
     permissions: [
-      'activeTab',
       'clipboardWrite',
       ...(googleOAuthClientId ? ['identity'] : []),
       'scripting',
