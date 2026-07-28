@@ -1,3 +1,5 @@
+import type { GeneralTrainingVideoId } from '@trycompai/company';
+
 /**
  * Represents a training video resource that can be used
  * for user education and compliance training.
@@ -14,6 +16,15 @@ export interface TrainingVideo {
   /** Full URL to access the video */
   url: string;
 }
+
+/**
+ * A rendered video whose ID is one the training-completion paths actually
+ * accept. `@trycompai/company` owns the canonical ID list, shared with the
+ * NestJS training service and the portal's complete-training route.
+ */
+type CanonicalTrainingVideo = Omit<TrainingVideo, 'id'> & {
+  id: GeneralTrainingVideoId;
+};
 
 export const trainingVideos: readonly TrainingVideo[] = [
   {
@@ -51,4 +62,4 @@ export const trainingVideos: readonly TrainingVideo[] = [
     youtubeId: 'Clvfkm6azDs',
     url: 'https://www.youtube.com/watch?v=Clvfkm6azDs',
   },
-] as const;
+] as const satisfies readonly CanonicalTrainingVideo[];

@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   completionFindMany: vi.fn(),
   logger: vi.fn(),
   fetch: vi.fn(),
+  afterTasks: [] as Array<() => unknown>,
   env: {
     SERVICE_TOKEN_PORTAL: undefined as string | undefined,
     NEXT_PUBLIC_API_URL: 'http://api.test',
@@ -45,6 +46,25 @@ vi.mock('@/env.mjs', () => ({ env: mocks.env }));
 vi.mock('@/utils/logger', () => ({ logger: mocks.logger }));
 vi.stubGlobal('fetch', mocks.fetch);
 
+// The route defers the completion email with `after` so it runs once the
+// response has been sent. Capture the deferred task instead of running it, so
+// tests can prove the response does NOT wait on the email and then drive the
+// email path explicitly.
+vi.mock('next/server', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('next/server')>();
+  return {
+    ...actual,
+    after: (task: () => unknown) => {
+      mocks.afterTasks.push(task);
+    },
+  };
+});
+
+/** Runs whatever the route deferred, mimicking Next flushing `after` tasks. */
+async function flushAfterTasks(): Promise<void> {
+  await Promise.all(mocks.afterTasks.splice(0).map((task) => task()));
+}
+
 import { POST } from './route';
 
 function makeRequest(body: unknown): NextRequest {
@@ -67,6 +87,7 @@ function makeRawRequest(raw: string): NextRequest {
 describe('POST /api/portal/complete-training', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.afterTasks.length = 0;
     mocks.env.SERVICE_TOKEN_PORTAL = undefined;
   });
 
@@ -203,9 +224,7 @@ describe('POST /api/portal/complete-training', () => {
   it('rejects an unknown video ID', async () => {
     mocks.getSession.mockResolvedValue({ user: { id: 'user_1' } });
 
-    const res = await POST(
-      makeRequest({ videoId: 'not-a-real-video', organizationId: 'org_1' }),
-    );
+    const res = await POST(makeRequest({ videoId: 'not-a-real-video', organizationId: 'org_1' }));
 
     expect(res.status).toBe(400);
     expect(mocks.memberFindFirst).not.toHaveBeenCalled();
@@ -227,9 +246,7 @@ describe('POST /api/portal/complete-training', () => {
     // No HIPAA framework instance for this org.
     mocks.frameworkInstanceFindFirst.mockResolvedValue(null);
 
-    const res = await POST(
-      makeRequest({ videoId: 'hipaa-sat-1', organizationId: 'org_1' }),
-    );
+    const res = await POST(makeRequest({ videoId: 'hipaa-sat-1', organizationId: 'org_1' }));
 
     expect(res.status).toBe(400);
     expect(mocks.frameworkInstanceFindFirst).toHaveBeenCalledWith({
@@ -257,9 +274,7 @@ describe('POST /api/portal/complete-training', () => {
     };
     mocks.completionUpsert.mockResolvedValue(record);
 
-    const res = await POST(
-      makeRequest({ videoId: 'hipaa-sat-1', organizationId: 'org_1' }),
-    );
+    const res = await POST(makeRequest({ videoId: 'hipaa-sat-1', organizationId: 'org_1' }));
 
     expect(res.status).toBe(200);
     expect(mocks.completionUpsert).toHaveBeenCalledWith({
@@ -300,15 +315,24 @@ describe('POST /api/portal/complete-training', () => {
     // dev-only `logger` util would have swallowed it outside development).
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    const res = await POST(
-      makeRequest({ videoId: 'hipaa-sat-1', organizationId: 'org_1' }),
-    );
+    const res = await POST(makeRequest({ videoId: 'hipaa-sat-1', organizationId: 'org_1' }));
 
     // Completion is persisted regardless — the email is best-effort.
     expect(res.status).toBe(200);
+    // ...and the response did not wait on it: the API call that renders the
+    // certificate and sends the mail only happens once `after` is flushed.
+    expect(mocks.fetch).not.toHaveBeenCalled();
+
+    await flushAfterTasks();
+
     expect(mocks.fetch).toHaveBeenCalledWith(
       'http://api.test/v1/training/send-hipaa-completion-email',
-      expect.objectContaining({ method: 'POST' }),
+      // The request is bounded: Node's fetch otherwise waits ~5 minutes, which
+      // would keep the invocation alive long after the response was sent.
+      expect.objectContaining({
+        method: 'POST',
+        signal: expect.any(AbortSignal),
+      }),
     );
     // The HTTP failure must surface (in prod too), not be swallowed as success.
     expect(errorSpy).toHaveBeenCalledWith(
