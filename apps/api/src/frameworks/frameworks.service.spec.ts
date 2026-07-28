@@ -37,6 +37,9 @@ jest.mock('@db', () => ({
       findMany: jest.fn(),
       update: jest.fn(),
     },
+    evidenceFormSetting: {
+      findMany: jest.fn(),
+    },
   },
   // The frameworks-timeline helper imports FindingType (a Prisma enum) at module
   // load. Stub it so the spec file can be evaluated without the real client.
@@ -102,6 +105,36 @@ describe('FrameworksService', () => {
       const result = await service.findAll('org_1');
 
       expect(result).toEqual([]);
+    });
+
+    // Regression (CS-780): archived policies (isArchived=true) kept counting
+    // toward Framework Progress because the control policy links were filtered
+    // on archivedAt only. The include must also exclude isArchived policies.
+    it('excludes user-archived policies from controls when includeControls is set', async () => {
+      (mockDb.frameworkInstance.findMany as jest.Mock).mockResolvedValue([]);
+      (mockDb.evidenceFormSetting.findMany as jest.Mock).mockResolvedValue([]);
+
+      await service.findAll('org_1', { includeControls: true });
+
+      expect(mockDb.frameworkInstance.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          include: expect.objectContaining({
+            requirementsMapped: expect.objectContaining({
+              include: expect.objectContaining({
+                control: expect.objectContaining({
+                  include: expect.objectContaining({
+                    frameworkPolicyLinks: expect.objectContaining({
+                      where: {
+                        policy: { archivedAt: null, isArchived: false },
+                      },
+                    }),
+                  }),
+                }),
+              }),
+            }),
+          }),
+        }),
+      );
     });
   });
 
