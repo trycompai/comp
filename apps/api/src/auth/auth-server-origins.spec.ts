@@ -61,7 +61,7 @@ describe('getTrustedOrigins', () => {
 
 describe('COMP_EXTENSION_TRUSTED_ORIGINS', () => {
   const extensionOrigin =
-    'chrome-extension://panomgbokjppnleifmpcnpchjgpcngan';
+    'chrome-extension://abcdefghijklmnopabcdefghijklmnop';
 
   beforeEach(() => {
     process.env.COMP_EXTENSION_TRUSTED_ORIGINS = extensionOrigin;
@@ -141,9 +141,9 @@ describe('isStaticTrustedOrigin', () => {
   });
 
   it('should reject unknown origins', () => {
-    expect(isStaticTrustedOrigin('https://evil.com')).toBe(false);
+    expect(isStaticTrustedOrigin('https://untrusted.example')).toBe(false);
     expect(
-      isStaticTrustedOrigin('https://trycomp.ai.evil.com'),
+      isStaticTrustedOrigin('https://trycomp.ai.untrusted.example'),
     ).toBe(false);
   });
 
