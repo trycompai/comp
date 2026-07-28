@@ -4,7 +4,13 @@ import * as opClient from './onepassword-client';
 import { TOTP_FIELD_TITLE, buildItemReference } from './onepassword-credential-item';
 
 jest.mock('@db', () => ({
-  db: { browserAuthProfile: { findFirst: jest.fn(), update: jest.fn() } },
+  db: {
+    browserAuthProfile: {
+      findFirst: jest.fn(),
+      update: jest.fn(),
+      findMany: jest.fn(),
+    },
+  },
 }));
 jest.mock('./onepassword-client');
 
@@ -12,6 +18,7 @@ jest.mock('./onepassword-client');
 const { db } = require('@db');
 const findFirst = db.browserAuthProfile.findFirst as jest.Mock;
 const update = db.browserAuthProfile.update as jest.Mock;
+const findMany = db.browserAuthProfile.findMany as jest.Mock;
 
 const mockConfigured = opClient.isOnePasswordConfigured as jest.Mock;
 const mockGetClient = opClient.getOnePasswordClient as jest.Mock;
@@ -95,6 +102,38 @@ describe('BrowserCredentialStorageService — TOTP', () => {
     });
   });
 
+  describe('getOrgTotpStatuses', () => {
+    it('reports configured per connection and omits an unreadable item (not "off")', async () => {
+      findMany.mockResolvedValue([
+        { id: 'bap_1', vaultExternalItemRef: buildItemReference('v', 'i1') },
+        { id: 'bap_2', vaultExternalItemRef: buildItemReference('v', 'i2') },
+        { id: 'bap_3', vaultExternalItemRef: buildItemReference('v', 'i3') },
+      ]);
+      itemsGet.mockImplementation((_vaultId: string, itemId: string) => {
+        if (itemId === 'i1')
+          return Promise.resolve({ fields: [field(TOTP_FIELD_TITLE, 'SEED')] });
+        if (itemId === 'i2')
+          return Promise.resolve({ fields: [field('username')] });
+        return Promise.reject(new Error('unreadable')); // one bad item must not fail the batch
+      });
+
+      const result = await service.getOrgTotpStatuses('org_1');
+
+      // bap_3 is absent, not false — the UI shows it as "unknown", never at-risk.
+      expect(result).toEqual({ bap_1: true, bap_2: false });
+      expect('bap_3' in result).toBe(false);
+    });
+
+    it('returns {} when the org has no password connections', async () => {
+      findMany.mockResolvedValue([]);
+
+      const result = await service.getOrgTotpStatuses('org_1');
+
+      expect(result).toEqual({});
+      expect(itemsGet).not.toHaveBeenCalled();
+    });
+  });
+
   describe('setProfileTotp', () => {
     it('replaces any existing TOTP field and writes the item back', async () => {
       findFirst.mockResolvedValue(profile());
@@ -105,7 +144,7 @@ describe('BrowserCredentialStorageService — TOTP', () => {
       const result = await service.setProfileTotp({
         organizationId: 'org_1',
         profileId: 'bap_1',
-        totpSeed: '  NEW SEED  ',
+        totpSeed: '  jbsw y3dp ehpk 3pxp  ',
       });
 
       expect(result).toEqual({ configured: true });
@@ -114,7 +153,51 @@ describe('BrowserCredentialStorageService — TOTP', () => {
         (f: Field) => f.title === TOTP_FIELD_TITLE,
       );
       expect(totpFields).toHaveLength(1);
-      expect(totpFields[0]).toMatchObject({ fieldType: 'Totp', value: 'NEW SEED' });
+      // Stored normalized (formatting stripped, upper-cased) — the Base32 secret.
+      expect(totpFields[0]).toMatchObject({
+        fieldType: 'Totp',
+        value: 'JBSWY3DPEHPK3PXP',
+      });
+    });
+
+    it('accepts an otpauth:// URI verbatim', async () => {
+      findFirst.mockResolvedValue(profile());
+      itemsGet.mockResolvedValue({ fields: [field('username')] });
+      const uri = 'otpauth://totp/Acme:alice?secret=JBSWY3DPEHPK3PXP&issuer=Acme';
+
+      await service.setProfileTotp({
+        organizationId: 'org_1',
+        profileId: 'bap_1',
+        totpSeed: uri,
+      });
+
+      const written = itemsPut.mock.calls[0][0];
+      const totp = written.fields.find((f: Field) => f.title === TOTP_FIELD_TITLE);
+      expect(totp.value).toBe(uri);
+    });
+
+    it('rejects a rotating one-time code (would break unattended 2FA)', async () => {
+      await expect(
+        service.setProfileTotp({
+          organizationId: 'org_1',
+          profileId: 'bap_1',
+          totpSeed: '123 456',
+        }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      // Rejected before touching the vault or the DB.
+      expect(itemsGet).not.toHaveBeenCalled();
+      expect(itemsPut).not.toHaveBeenCalled();
+    });
+
+    it('rejects a malformed / too-short key', async () => {
+      await expect(
+        service.setProfileTotp({
+          organizationId: 'org_1',
+          profileId: 'bap_1',
+          totpSeed: 'not-a-real-key!!',
+        }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(itemsPut).not.toHaveBeenCalled();
     });
 
     it('rejects when the connection has no stored login', async () => {
@@ -124,7 +207,7 @@ describe('BrowserCredentialStorageService — TOTP', () => {
         service.setProfileTotp({
           organizationId: 'org_1',
           profileId: 'bap_1',
-          totpSeed: 'SEED',
+          totpSeed: 'JBSWY3DPEHPK3PXP', // valid seed → reaches the no-login check
         }),
       ).rejects.toBeInstanceOf(BadRequestException);
       expect(itemsPut).not.toHaveBeenCalled();
