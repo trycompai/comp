@@ -279,6 +279,19 @@ export function ProviderDetailView({
           onAddAccount={() => void handleConnect()}
         />
 
+        {/* Inline add-account form (shown when clicking "+ Add" while already
+            connected). Must stay inside the Stack right below the hero —
+            rendered after it, the form lands under the whole services grid and
+            the "+ Add" button looks dead. */}
+        {showAddAccount && isConnected && (
+          <EmptyStateOnboarding
+            provider={provider}
+            orgId={orgId}
+            onConnected={() => setShowAddAccount(false)}
+            onOAuthConnect={handleConnect}
+          />
+        )}
+
         <IntegrationEvidenceTasks provider={provider} taskTemplates={taskTemplates} orgId={orgId} />
 
         {selectedConnectionRequiresReconnect && (
@@ -345,8 +358,7 @@ export function ProviderDetailView({
                   const projectNames: Record<string, string> = {};
                   for (const pid of next) {
                     const p = allProjects.find((proj) => proj.id === pid) as
-                      | { id: string; name: string; number?: string }
-                      | undefined;
+                      { id: string; name: string; number?: string } | undefined;
                     if (p) {
                       projectNames[pid] = p.name;
                       if (p.number) projectNames[p.number] = p.name;
@@ -446,16 +458,6 @@ export function ProviderDetailView({
           connectionId={selectedConnection.id}
           provider={provider}
           orgId={orgId}
-        />
-      )}
-
-      {/* Inline add-account form (shown when clicking "+ Add" while already connected) */}
-      {showAddAccount && isConnected && (
-        <EmptyStateOnboarding
-          provider={provider}
-          orgId={orgId}
-          onConnected={() => setShowAddAccount(false)}
-          onOAuthConnect={handleConnect}
         />
       )}
 
