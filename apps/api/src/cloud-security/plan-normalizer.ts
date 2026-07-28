@@ -42,13 +42,6 @@ const EC2_SECURITY_GROUP_COMMANDS = new Set([
 const S3_ACL_COMMANDS = new Set(['PutBucketAclCommand']);
 const S3_ACL_PERMISSIONS = new Set(['s3:PutBucketAcl']);
 const CREATE_LOG_GROUP_COMMAND = 'CreateLogGroupCommand';
-/**
- * Fallback CloudWatch Logs log-group name for the CloudTrail→CloudWatch
- * integration fix when the AI omits it and the plan carries no target ARN to
- * derive it from. Matches the name the AWS console itself proposes when you
- * turn on CloudWatch Logs delivery for a trail.
- */
-const DEFAULT_CLOUDTRAIL_LOG_GROUP_NAME = 'aws-cloudtrail-logs';
 const CLOUDTRAIL_SERVICE = 'cloudtrail';
 /**
  * Commands that operate on a CloudTrail trail. A step whose `service` is
@@ -223,8 +216,16 @@ function backfillLogGroupName(steps: AwsCommandStep[]): AwsCommandStep[] {
   );
   if (!needsBackfill || !isCloudTrailIntegrationPlan(steps)) return steps;
 
-  const resolved =
-    inferCloudTrailLogGroupName(steps) ?? DEFAULT_CLOUDTRAIL_LOG_GROUP_NAME;
+  // Only backfill the name we can DERIVE from the log-group ARN the trail step
+  // actually links to — that guarantees the group we create matches what
+  // UpdateTrail points at, i.e. a COMPLETE integration. If no step carries a
+  // parseable CloudWatchLogsLogGroupArn, nothing in the plan will link the trail
+  // to the group, so inventing a default name would create an orphan log group
+  // and report a FALSE success on a still-non-compliant finding (CS-787 cubic P1).
+  // Leave it unfilled instead: the CreateLogGroup step then fails REQUIRED_PARAMS
+  // validation and the fix falls back honestly rather than pretending it worked.
+  const resolved = inferCloudTrailLogGroupName(steps);
+  if (!resolved) return steps;
 
   return steps.map((step) => {
     if (

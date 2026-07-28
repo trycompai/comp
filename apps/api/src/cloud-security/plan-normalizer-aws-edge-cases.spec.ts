@@ -166,9 +166,11 @@ describe('normalizeFixPlan — CreateLogGroup logGroupName backfill (CS-787)', (
     });
 
   // A CloudTrail trail step with NO usable log-group ARN: the plan is still a
-  // CloudTrail integration fix (so the default name applies) but there is
-  // nothing to derive the name from — the realistic shape when the AI drops
-  // both the log-group name and the ARN linkage.
+  // CloudTrail integration fix, but there is nothing to derive the name from and
+  // nothing that will link the trail to a group. The normalizer must NOT invent a
+  // name here — doing so would create an orphan log group and report a false
+  // success on a still-non-compliant finding (CS-787). It leaves the step unfilled
+  // so REQUIRED_PARAMS validation rejects it and the fix fails honestly.
   const updateTrailStepMissingArn = (): AwsCommandStep =>
     makeStep({
       service: 'cloudtrail',
@@ -176,17 +178,19 @@ describe('normalizeFixPlan — CreateLogGroup logGroupName backfill (CS-787)', (
       params: { Name: 'compai-trail' },
     });
 
-  it('defaults an OMITTED logGroupName to aws-cloudtrail-logs so AWS does not reject the create', () => {
+  it('leaves an OMITTED logGroupName unfilled when no trail ARN exists (no orphan group / false success — CS-787)', () => {
     const plan = makePlan({
       fixSteps: [createLogGroupStep({}), updateTrailStepMissingArn()],
     });
 
     const result = normalizeFixPlan(plan);
 
-    expect(result.fixSteps[0].params.logGroupName).toBe('aws-cloudtrail-logs');
+    // Nothing to link the trail to → do NOT invent a name; leave it for
+    // REQUIRED_PARAMS validation to reject rather than create an orphan group.
+    expect(result.fixSteps[0].params.logGroupName).toBeUndefined();
   });
 
-  it('defaults a blank logGroupName to aws-cloudtrail-logs', () => {
+  it('leaves a blank logGroupName unchanged when no trail ARN exists', () => {
     const plan = makePlan({
       fixSteps: [
         createLogGroupStep({ logGroupName: '   ' }),
@@ -196,7 +200,7 @@ describe('normalizeFixPlan — CreateLogGroup logGroupName backfill (CS-787)', (
 
     const result = normalizeFixPlan(plan);
 
-    expect(result.fixSteps[0].params.logGroupName).toBe('aws-cloudtrail-logs');
+    expect(result.fixSteps[0].params.logGroupName).toBe('   ');
   });
 
   it('derives the name from the trail step ARN so CreateLogGroup matches what UpdateTrail links to', () => {
@@ -231,16 +235,19 @@ describe('normalizeFixPlan — CreateLogGroup logGroupName backfill (CS-787)', (
     );
   });
 
-  it('also backfills a CreateLogGroup step that appears in rollback steps', () => {
+  it('also backfills a CreateLogGroup step that appears in rollback steps (from the trail ARN)', () => {
     const plan = makePlan({
-      rollbackSteps: [createLogGroupStep({}), updateTrailStepMissingArn()],
+      rollbackSteps: [
+        createLogGroupStep({}),
+        updateTrailStep(
+          'arn:aws:logs:us-east-1:123456789012:log-group:/compai/cloudtrail:*',
+        ),
+      ],
     });
 
     const result = normalizeFixPlan(plan);
 
-    expect(result.rollbackSteps[0].params.logGroupName).toBe(
-      'aws-cloudtrail-logs',
-    );
+    expect(result.rollbackSteps[0].params.logGroupName).toBe('/compai/cloudtrail');
   });
 
   it('is a no-op for plans without a CreateLogGroup step', () => {
@@ -314,7 +321,7 @@ describe('normalizeFixPlan — CreateLogGroup logGroupName backfill (CS-787)', (
     expect(result.fixSteps[0].params.logGroupName).toBeUndefined();
   });
 
-  it('applies the default for a CloudTrail plan detected via CreateTrailCommand', () => {
+  it('leaves the name unfilled for a CloudTrail plan (detected via CreateTrailCommand) that carries no log-group ARN', () => {
     const plan = makePlan({
       fixSteps: [
         createLogGroupStep({}),
@@ -328,6 +335,7 @@ describe('normalizeFixPlan — CreateLogGroup logGroupName backfill (CS-787)', (
 
     const result = normalizeFixPlan(plan);
 
-    expect(result.fixSteps[0].params.logGroupName).toBe('aws-cloudtrail-logs');
+    // No ARN anywhere → nothing links the trail to the group → don't invent a name.
+    expect(result.fixSteps[0].params.logGroupName).toBeUndefined();
   });
 });
