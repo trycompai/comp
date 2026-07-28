@@ -68,6 +68,11 @@ describe('bulkUploadPoliciesViaApi', () => {
       name: 'Data Retention',
       content: [],
     });
+    expect(post).toHaveBeenNthCalledWith(4, '/v1/policies/pol_2/pdf', {
+      fileName: 'Data Retention.PDF',
+      fileType: 'application/pdf',
+      fileData: 'ZmFrZQ==',
+    });
   });
 
   it('records the failure and skips the PDF attach when policy creation fails, still processing later files', async () => {
