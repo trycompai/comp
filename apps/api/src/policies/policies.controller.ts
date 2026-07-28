@@ -1007,30 +1007,26 @@ export class PoliciesController {
     @AuthContext() authContext: AuthContextType,
   ) {
     await db.$transaction(async (tx) => {
-      const before = await tx.policy.findUnique({
-        where: { id, organizationId },
-        select: {
-          controls: { where: { id: controlId }, select: { id: true } },
-        },
-      });
+      // Disconnect the implicit m2m link (used by custom-framework/direct policy
+      // lists). Scoped by { id, organizationId }, so a foreign or missing policy
+      // aborts the transaction here before anything is severed (tenant isolation).
       await tx.policy.update({
         where: { id, organizationId },
         data: { controls: { disconnect: { id: controlId } } },
       });
-      if (before?.controls.length) {
-        // Sever the control<->policy association on EVERY framework instance
-        // (platform and custom). Platform-framework control/detail pages read
-        // these join rows directly (not the implicit m2m), so restricting the
-        // delete to custom frameworks left the policy still showing against the
-        // control after it was unlinked. Scope to the org for tenant isolation.
-        await tx.frameworkControlPolicyLink.deleteMany({
-          where: {
-            controlId,
-            policyId: id,
-            frameworkInstance: { organizationId },
-          },
-        });
-      }
+      // ALWAYS sever the explicit control<->policy join rows on every framework
+      // instance (platform + custom), org-scoped. Framework-scoped links create
+      // ONLY a FrameworkControlPolicyLink (no implicit m2m), so gating this on the
+      // m2m link existing left those links un-severable — the policy kept showing
+      // against the control (the same CS-780 contradiction). deleteMany is
+      // idempotent (no match → 0 rows), so running it unconditionally is safe.
+      await tx.frameworkControlPolicyLink.deleteMany({
+        where: {
+          controlId,
+          policyId: id,
+          frameworkInstance: { organizationId },
+        },
+      });
     });
 
     return {

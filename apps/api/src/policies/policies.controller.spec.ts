@@ -713,14 +713,17 @@ describe('PoliciesController', () => {
   });
 
   describe('removePolicyControl', () => {
-    it('should disconnect control from policy and return success', async () => {
+    it('disconnects the control and severs framework join rows even with NO implicit m2m link (CS-780 join-only case)', async () => {
+      // A framework-scoped link (LinkPolicySheet on a framework control page) creates
+      // ONLY a FrameworkControlPolicyLink — no implicit m2m row. Unlinking must still
+      // sever the join row, or the policy keeps showing against the control. The delete
+      // must fire unconditionally (not gated on an m2m link existing).
       const { db } = require('@db');
-      db.policy.findUnique.mockResolvedValue({ controls: [] });
       db.policy.update.mockResolvedValue({});
+      db.frameworkControlPolicyLink.deleteMany.mockResolvedValue({ count: 1 });
       db.$transaction.mockImplementation(async (callback: (tx: unknown) => Promise<unknown>) =>
         callback({
           policy: {
-            findUnique: db.policy.findUnique,
             update: db.policy.update,
           },
           frameworkControlPolicyLink: {
@@ -742,6 +745,13 @@ describe('PoliciesController', () => {
           controls: {
             disconnect: { id: 'ctrl_1' },
           },
+        },
+      });
+      expect(db.frameworkControlPolicyLink.deleteMany).toHaveBeenCalledWith({
+        where: {
+          controlId: 'ctrl_1',
+          policyId: 'pol_1',
+          frameworkInstance: { organizationId: orgId },
         },
       });
       expect(result.success).toBe(true);
