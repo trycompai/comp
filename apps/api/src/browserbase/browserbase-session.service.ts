@@ -26,6 +26,15 @@ export const CAPTURE_VIEWPORT: BrowserViewport = { width: 1920, height: 1080 };
 // reconnect): the page renders larger in the embedded live view, so forms are
 // easier to read and fill. Capture runs stay on CAPTURE_VIEWPORT.
 export const INTERACTIVE_VIEWPORT: BrowserViewport = { width: 1280, height: 800 };
+
+// How long a human-facing session may live before Browserbase auto-ends it.
+// Without an explicit timeout the session uses the project default (short), so
+// the live view dies mid-take-over — e.g. while a user fetches their
+// authenticator and types a 2FA code. 15 minutes gives ample take-over headroom;
+// the connect flow still closes the session promptly when the user finishes or
+// cancels, so this only bounds an abandoned session. Headless capture runs keep
+// the short default (no human is waiting).
+export const INTERACTIVE_SESSION_TIMEOUT_SECONDS = 15 * 60;
 // Model behind extract()/act() (reading pages, verdicts, form fills). Separate
 // from the navigation (CUA) model and configurable via env; default unchanged.
 const STAGEHAND_MODEL =
@@ -109,6 +118,11 @@ export class BrowserbaseSessionService {
     // need their cookies saved). Read-only flows (login analysis) pass false so
     // they never retain cookies in a throwaway context.
     persist: boolean = true,
+    // Seconds before Browserbase auto-ends the session. Omit for the project
+    // default (short — fine for headless runs). Interactive flows that hand the
+    // browser to a person pass a generous value so the live view survives a
+    // take-over (e.g. entering a 2FA code).
+    timeoutSeconds?: number,
   ): Promise<{ sessionId: string; liveViewUrl: string }> {
     const bb = this.getBrowserbase();
 
@@ -133,6 +147,7 @@ export class BrowserbaseSessionService {
             viewport: { width: viewport.width, height: viewport.height },
           },
           keepAlive: true,
+          ...(timeoutSeconds ? { timeout: timeoutSeconds } : {}),
         }),
     });
 

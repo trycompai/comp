@@ -194,6 +194,34 @@ describe('BrowserbaseSessionService', () => {
     expect(debugSession).toHaveBeenCalledTimes(2);
   });
 
+  it('forwards a session timeout only when one is given (interactive take-over headroom)', async () => {
+    jest.useFakeTimers();
+    const service = new BrowserbaseSessionService();
+    const createSession = jest.fn().mockResolvedValue({ id: 'session_1' });
+    const debugSession = jest.fn().mockResolvedValue({
+      debuggerFullscreenUrl: 'https://live.browserbase.test/session_1',
+    });
+    jest
+      .spyOn(service, 'getBrowserbase')
+      .mockReturnValue(mockBrowserbaseClient({ createSession, debugSession }));
+
+    // Interactive flow: the generous timeout is forwarded to Browserbase.
+    const interactive = service.createSessionWithContext('ctx_1', undefined, true, 900);
+    await jest.advanceTimersByTimeAsync(250);
+    await interactive;
+    expect(createSession).toHaveBeenLastCalledWith(
+      expect.objectContaining({ timeout: 900 }),
+    );
+
+    // Headless default: no timeout key — the session uses the project default.
+    const headless = service.createSessionWithContext('ctx_1');
+    await jest.advanceTimersByTimeAsync(250);
+    await headless;
+    expect(createSession).toHaveBeenLastCalledWith(
+      expect.not.objectContaining({ timeout: expect.anything() }),
+    );
+  });
+
   it('resolves the session connect URL via the identity-encoded client', async () => {
     jest.useFakeTimers();
     const service = new BrowserbaseSessionService();
