@@ -28,10 +28,28 @@ describe('normalizeTotpSecret', () => {
     expect(normalizeTotpSecret('JBSWY3DPEHPK3PX0')).toBeNull();
   });
 
+  it('strips trailing Base32 padding when validating length', () => {
+    // 16 significant chars + padding is still a valid seed; padding is preserved.
+    expect(normalizeTotpSecret('JBSWY3DPEHPK3PXP===')).toBe('JBSWY3DPEHPK3PXP===');
+    // Padding must not count toward the minimum length.
+    expect(normalizeTotpSecret('JBSWY3DP========')).toBeNull();
+  });
+
   it('rejects empty / missing input', () => {
     expect(normalizeTotpSecret('')).toBeNull();
     expect(normalizeTotpSecret('   ')).toBeNull();
     expect(normalizeTotpSecret(undefined)).toBeNull();
     expect(normalizeTotpSecret(null)).toBeNull();
+  });
+
+  it('rejects an absurdly long input without heavy backtracking', () => {
+    // A pathological ReDoS-style input for a `=+$` pattern — must fail fast on
+    // the length bound, not churn.
+    const evil = '='.repeat(50000) + 'A';
+    const start = Date.now();
+    expect(normalizeTotpSecret(evil)).toBeNull();
+    // Generous bound (real work here is sub-millisecond) — a regression to
+    // catastrophic backtracking would take seconds.
+    expect(Date.now() - start).toBeLessThan(1000);
   });
 });
