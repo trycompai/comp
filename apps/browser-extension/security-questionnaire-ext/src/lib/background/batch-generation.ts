@@ -89,15 +89,17 @@ export async function generateQueueItemsInBatches(params: {
         failedWrites.push(item.id);
         // The item is still marked `generating` in storage, and that status is
         // excluded from batch candidates — leaving it there would make every
-        // later Generate All skip the question for good. Put it back so the
-        // user can retry.
+        // later Generate All skip the question for good. Restore the status it
+        // had before this batch (captured in `candidates`, which is read before
+        // anything is marked generating) so a transient write failure does not
+        // also discard the question's previous state.
         await commit((current) => {
           const existing = current.items.find((entry) => entry.id === item.id);
           if (existing?.status !== 'generating') return current;
           return updateQueueItemStatus({
             queue: current,
             itemId: item.id,
-            status: 'pending',
+            status: item.status,
           });
         }).catch(() => undefined);
       });

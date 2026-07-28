@@ -185,10 +185,36 @@ describe('generateQueueItemsInBatches', () => {
 
     const failed = stored.items.find((entry) => entry.id === 'a');
     expect(failed?.status).not.toBe('generating');
+    expect(failed?.status).toBe('pending');
     // A later Generate All must pick it up again.
     generateAnswer.mockClear();
     await runBatch(stored.items);
     expect(generatedIds()).toEqual(['a']);
+  });
+
+  it('restores the prior status rather than downgrading it to pending', async () => {
+    let stored = queueWith([
+      item({ id: 'a', status: 'generated', answer: 'previous answer' }),
+    ]);
+    let saveCount = 0;
+
+    await expect(
+      generateQueueItemsInBatches({
+        auth: { selectedOrganizationId: 'org_a' },
+        concurrency: 1,
+        queue: stored,
+        loadQueue: async () => stored,
+        saveQueue: async (next) => {
+          saveCount += 1;
+          if (saveCount === 2) throw new Error('storage unavailable');
+          stored = next;
+        },
+      }),
+    ).rejects.toThrow('could not be saved');
+
+    const failed = stored.items.find((entry) => entry.id === 'a');
+    expect(failed?.status).toBe('generated');
+    expect(failed?.answer).toBe('previous answer');
   });
 
   it('flags an item when generation fails instead of leaving it generating', async () => {
