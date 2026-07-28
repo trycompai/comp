@@ -111,6 +111,16 @@ export async function performCredentialLogin({
     await delay(2000);
   }
 
+  // Some vendors (e.g. GitHub) default the two-factor step to a passkey /
+  // security-key prompt, which we can't use. If we've landed on one, switch to
+  // the authenticator-app option so a 6-digit code field is actually shown — for
+  // us to fill a stored code, or for the user to type one during take-over.
+  // Best-effort; a no-op when the page isn't a passkey prompt.
+  await stagehand.act(
+    "If this page is asking to authenticate with a passkey or security key (for example a 'Use passkey' button) instead of a code, switch to the authenticator app: click 'More options', then 'Use authenticator app', 'Enter a two-factor code', 'Use a security code', or a similar option so a six-digit code field appears. If a code field is already visible, or this is not a two-factor page, do nothing.",
+  );
+  await delay(1500);
+
   if (credentials.totpCode) {
     log('Entering one-time passcode.');
     await stagehand.act(
