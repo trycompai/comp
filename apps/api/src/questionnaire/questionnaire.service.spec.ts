@@ -590,6 +590,7 @@ describe('QuestionnaireService', () => {
       expect(result.answer).toBe('A1');
       expect(saveGeneratedAnswer).toHaveBeenCalledWith({
         questionnaireId: 'q1',
+        organizationId: 'org_1',
         questionIndex: 0,
         answer: 'A1',
         sources: [],
