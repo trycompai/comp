@@ -41,7 +41,7 @@ describe('isStaticTrustedOrigin', () => {
   });
 
   it('rejects unrelated and malformed origins', () => {
-    expect(isStaticTrustedOrigin('https://trycomp.ai.evil.example')).toBe(false);
+    expect(isStaticTrustedOrigin('https://trycomp.ai.untrusted.example')).toBe(false);
     expect(isStaticTrustedOrigin('https://nottrust.inc')).toBe(false);
     expect(isStaticTrustedOrigin('not-a-url')).toBe(false);
     expect(isStaticTrustedOrigin('')).toBe(false);
