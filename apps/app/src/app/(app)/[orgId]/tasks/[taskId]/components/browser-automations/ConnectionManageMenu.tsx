@@ -16,10 +16,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@trycompai/design-system';
-import { apiClient } from '@/lib/api-client';
 import { useState } from 'react';
-import { toast } from 'sonner';
-import { MakePermanentSheet } from '../../../../settings/browser-connection/components/MakePermanentSheet';
 import type { BrowserAuthProfile } from '../../hooks/types';
 import { useConnectionActions } from '../../hooks/useConnectionActions';
 import { normalizeUrl } from './connect-url';
@@ -34,7 +31,6 @@ export function ConnectionManageMenu({ profile, onChanged }: ConnectionManageMen
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [removeOpen, setRemoveOpen] = useState(false);
-  const [totpOpen, setTotpOpen] = useState(false);
   const initialUrl = profile.lastAuthCheckUrl ?? `https://${profile.hostname}`;
   const [name, setName] = useState(profile.displayName);
   const [url, setUrl] = useState(initialUrl);
@@ -61,24 +57,6 @@ export function ConnectionManageMenu({ profile, onChanged }: ConnectionManageMen
 
   const handleRemove = async () => {
     if (await removeConnection(profile.id)) setRemoveOpen(false);
-  };
-
-  // Store the authenticator key so this connection stays signed in on its own.
-  // The sheet shows its own success screen; return whether it saved.
-  const handleSaveTotp = async (
-    connection: { id: string },
-    totpSeed: string,
-  ): Promise<boolean> => {
-    const res = await apiClient.post(
-      `/v1/browserbase/profiles/${connection.id}/totp`,
-      { totpSeed },
-    );
-    if (res.error) {
-      toast.error(res.error || 'Could not save the authenticator key.');
-      return false;
-    }
-    onChanged?.();
-    return true;
   };
 
   return (
@@ -137,20 +115,6 @@ export function ConnectionManageMenu({ profile, onChanged }: ConnectionManageMen
               >
                 Edit connection
               </button>
-              {/* Password connections can store a 2FA key so they stay signed in
-                  unattended; SSO connections have no stored login to attach to. */}
-              {profile.vaultExternalItemRef && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setOpen(false);
-                    setTotpOpen(true);
-                  }}
-                  className="rounded-sm px-2 py-1.5 text-left text-sm text-foreground hover:bg-muted"
-                >
-                  Keep signed in (2FA)
-                </button>
-              )}
               <button
                 type="button"
                 onClick={() => {
@@ -188,13 +152,6 @@ export function ConnectionManageMenu({ profile, onChanged }: ConnectionManageMen
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <MakePermanentSheet
-        connection={profile}
-        open={totpOpen}
-        onOpenChange={setTotpOpen}
-        onSave={handleSaveTotp}
-      />
     </>
   );
 }

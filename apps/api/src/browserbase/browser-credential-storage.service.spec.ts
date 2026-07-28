@@ -103,7 +103,7 @@ describe('BrowserCredentialStorageService — TOTP', () => {
   });
 
   describe('getOrgTotpStatuses', () => {
-    it('reports configured per connection, degrading an unreadable item to false', async () => {
+    it('reports configured per connection and omits an unreadable item (not "off")', async () => {
       findMany.mockResolvedValue([
         { id: 'bap_1', vaultExternalItemRef: buildItemReference('v', 'i1') },
         { id: 'bap_2', vaultExternalItemRef: buildItemReference('v', 'i2') },
@@ -119,7 +119,9 @@ describe('BrowserCredentialStorageService — TOTP', () => {
 
       const result = await service.getOrgTotpStatuses('org_1');
 
-      expect(result).toEqual({ bap_1: true, bap_2: false, bap_3: false });
+      // bap_3 is absent, not false — the UI shows it as "unknown", never at-risk.
+      expect(result).toEqual({ bap_1: true, bap_2: false });
+      expect('bap_3' in result).toBe(false);
     });
 
     it('returns {} when the org has no password connections', async () => {

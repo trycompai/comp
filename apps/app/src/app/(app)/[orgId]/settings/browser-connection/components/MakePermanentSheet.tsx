@@ -82,11 +82,24 @@ export function MakePermanentSheet({
       setError(problem);
       return;
     }
+    // Store the normalized Base32 value (formatting spaces/hyphens stripped) — the
+    // exact string we validated — so later code generation isn't fed a spaced key.
+    const normalized = seed.replace(/[\s-]/g, '');
     setError('');
     setPhase('working');
-    const ok = await onSave(connection, seed.trim());
-    // A failure toasts in the parent; drop back to the form so they can retry.
-    setPhase(ok ? 'success' : 'form');
+    try {
+      const ok = await onSave(connection, normalized);
+      if (ok) {
+        setPhase('success');
+        return;
+      }
+      // The parent surfaced why it failed — drop back so they can retry.
+      setPhase('form');
+    } catch {
+      // Never strand the sheet on "Saving…" if the save rejects.
+      setPhase('form');
+      setError('Something went wrong saving the key. Please try again.');
+    }
   };
 
   return (

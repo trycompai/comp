@@ -91,6 +91,20 @@ describe('MakePermanentSheet', () => {
     ).toBeInTheDocument();
   });
 
+  it('recovers to the form (with an error) if the save throws', async () => {
+    const onSave = vi.fn().mockRejectedValue(new Error('network'));
+    render(<MakePermanentSheet {...base} onSave={onSave} />);
+
+    fireEvent.change(screen.getByPlaceholderText(/JBSW/i), {
+      target: { value: 'JBSWY3DPEHPK3PXP' },
+    });
+    fireEvent.click(screen.getByText('Save key'));
+
+    // Not stranded on the working spinner — back on the form with an error.
+    await waitFor(() => expect(screen.getByText('Save key')).toBeInTheDocument());
+    expect(screen.getByText(/went wrong saving the key/i)).toBeInTheDocument();
+  });
+
   it('returns to the form when the save fails', async () => {
     const onSave = vi.fn().mockResolvedValue(false);
     render(<MakePermanentSheet {...base} onSave={onSave} />);

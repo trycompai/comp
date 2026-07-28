@@ -111,34 +111,59 @@ export function ConnectionsTable({
       {visible.map((connection) => {
         const vendorName = connection.displayName || connection.hostname;
         const isPassword = methodOf(connection) === 'password';
+        // Definite states (no TOTP needed): a paused / blocked / never-verified
+        // session needs reconnect; SSO can't be renewed unattended.
         const isReconnect =
-          connection.status === 'needs_reauth' || connection.status === 'blocked';
-        // Only password, non-reconnect rows are ambiguous until statuses load.
-        const loading =
-          isPassword &&
-          !isReconnect &&
-          statusesLoading &&
-          !(connection.id in totpStatuses);
+          connection.status === 'needs_reauth' ||
+          connection.status === 'blocked' ||
+          connection.status === 'unverified';
+        // TOTP presence only decides the badge for a verified password connection.
+        const totpDependent = isPassword && !isReconnect;
+        const known = connection.id in totpStatuses;
+        const loading = totpDependent && statusesLoading && !known;
+        // Loaded, but this connection's status wasn't returned (a read failed) —
+        // show "unavailable" and don't prompt to add a key we can't confirm is
+        // missing (that would risk overwriting an existing one).
+        const unknown = totpDependent && !statusesLoading && !known;
+
         const state = permanenceStateOf({
           connection,
           totpConfigured: totpStatuses[connection.id] ?? false,
         });
         const meta = permanenceMeta(state);
-        const methodLabel =
-          state === 'permanent'
+        const methodLabel = !isPassword
+          ? 'SSO'
+          : state === 'permanent'
             ? 'Password + authenticator'
-            : isPassword
-              ? 'Password'
-              : 'SSO';
-        const line = [connection.loginIdentity || null, methodLabel, lastVerified(connection)]
+            : 'Password';
+        const line = [
+          connection.loginIdentity || null,
+          methodLabel,
+          lastVerified(connection),
+        ]
           .filter(Boolean)
           .join(' · ');
-        const hint = permanenceHint({
-          state,
-          vendorName,
-          blockedReason: connection.blockedReason,
-        });
-        const hintMuted = state === 'permanent' || state === 'sso';
+
+        const badge = loading
+          ? { text: 'Checking…', color: 'var(--muted-foreground)', bg: 'var(--muted)' }
+          : unknown
+            ? {
+                text: 'Status unavailable',
+                color: 'var(--muted-foreground)',
+                bg: 'var(--muted)',
+              }
+            : { text: meta.badge, color: meta.color, bg: meta.bg };
+        const hint = unknown
+          ? 'Couldn’t check the 2FA status — reopen this page or try again.'
+          : permanenceHint({
+              state,
+              vendorName,
+              blockedReason: connection.blockedReason,
+            });
+        const hintMuted = unknown || state === 'permanent' || state === 'sso';
+        const showMakePermanent =
+          canManage && !loading && !unknown && meta.action === 'key';
+        const showReconnect = canManage && meta.action === 'reconnect';
 
         return (
           <div
@@ -152,25 +177,19 @@ export function ConnectionsTable({
             <div className="min-w-0 flex-1 basis-[280px]">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-[13px] text-foreground">{vendorName}</span>
-                {loading ? (
-                  <span className="inline-flex items-center gap-1.5 rounded-sm bg-muted px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                    Checking…
-                  </span>
-                ) : (
-                  <span
-                    className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-sm px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em]"
-                    style={{ background: meta.bg, color: meta.color }}
-                  >
-                    <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                    {meta.badge}
-                  </span>
-                )}
+                <span
+                  className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-sm px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em]"
+                  style={{ background: badge.bg, color: badge.color }}
+                >
+                  {!loading && <span className="h-1.5 w-1.5 rounded-full bg-current" />}
+                  {badge.text}
+                </span>
               </div>
               <div className="mt-0.5 truncate text-[12px] text-muted-foreground">{line}</div>
               {!loading && hint && (
                 <div
                   className="mt-1.5 max-w-[560px] text-[12px] leading-snug"
-                  style={{ color: hintMuted ? 'var(--muted-foreground)' : meta.color }}
+                  style={{ color: hintMuted ? 'var(--muted-foreground)' : badge.color }}
                 >
                   {hint}
                 </div>
@@ -178,12 +197,12 @@ export function ConnectionsTable({
             </div>
 
             <div className="ml-auto flex flex-none items-center gap-2 pt-0.5">
-              {canManage && !loading && meta.action === 'key' && (
+              {showMakePermanent && (
                 <Button size="sm" variant="outline" onClick={() => onMakePermanent(connection)}>
                   Make permanent
                 </Button>
               )}
-              {canManage && meta.action === 'reconnect' && (
+              {showReconnect && (
                 <Button
                   size="sm"
                   onClick={() => onReconnect(connection)}

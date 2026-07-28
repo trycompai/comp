@@ -120,6 +120,22 @@ describe('ConnectionsTable — permanence states', () => {
     expect(screen.queryByText('Make permanent')).not.toBeInTheDocument();
   });
 
+  it('shows "Status unavailable" (not at-risk) when the status could not be read', () => {
+    // Loaded (not loading) but this connection is absent from the map → unknown.
+    render(
+      <ConnectionsTable
+        {...base}
+        connections={[connection()]}
+        totpStatuses={{}}
+        statusesLoading={false}
+      />,
+    );
+    expect(screen.getByText('Status unavailable')).toBeInTheDocument();
+    // Must not prompt to add a key we can't confirm is missing.
+    expect(screen.queryByText('Make permanent')).not.toBeInTheDocument();
+    expect(screen.queryByText('Signed in for now')).not.toBeInTheDocument();
+  });
+
   it('hides mutation actions for a view-only user but keeps Manage', () => {
     render(
       <ConnectionsTable

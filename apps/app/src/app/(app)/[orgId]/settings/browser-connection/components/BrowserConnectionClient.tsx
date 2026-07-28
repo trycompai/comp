@@ -36,7 +36,7 @@ const CONNECT_FLOW_KEY = 'org-connections';
  * the profile API for rename / change-login / remove.
  */
 export function BrowserConnectionClient({
-  organizationId: _organizationId,
+  organizationId,
   initialProfiles = [],
 }: BrowserConnectionClientProps) {
   const { hasPermission } = usePermissions();
@@ -65,18 +65,18 @@ export function BrowserConnectionClient({
     statuses: totpStatuses,
     isLoading: totpStatusesLoading,
     mutate: mutateTotpStatuses,
-  } = useTotpStatuses(hasPasswordConnection);
+  } = useTotpStatuses(hasPasswordConnection, organizationId);
 
   // Password connections that work now but will pause when the vendor next asks
-  // for a code — the ones "Make permanent" fixes.
+  // for a code — the ones "Make permanent" fixes. Only count connections whose
+  // status came back as a definite "no key" (present and false); a missing entry
+  // is unknown (read failed), not at-risk, so we don't nudge on bad data.
   const atRisk = useMemo(
     () =>
       profiles.filter(
         (c) =>
-          permanenceStateOf({
-            connection: c,
-            totpConfigured: totpStatuses[c.id] ?? false,
-          }) === 'atrisk',
+          totpStatuses[c.id] === false &&
+          permanenceStateOf({ connection: c, totpConfigured: false }) === 'atrisk',
       ),
     [profiles, totpStatuses],
   );
@@ -102,10 +102,13 @@ export function BrowserConnectionClient({
   const handleFlowDone = useCallback(
     (message: string) => {
       void fetchProfiles();
+      // A new/reconnected connection may have just gained a key — refresh the
+      // batch status so its row doesn't show a stale "at risk".
+      void mutateTotpStatuses();
       setFlow(null);
       toast.success(message);
     },
-    [fetchProfiles],
+    [fetchProfiles, mutateTotpStatuses],
   );
 
   // Always start the shared flow from a clean slate on this page.
@@ -233,7 +236,9 @@ export function BrowserConnectionClient({
         toast.error(res.error || 'Could not save the authenticator key.');
         return false;
       }
-      await mutateTotpStatuses();
+      // The POST succeeded — refresh the row states, but never fail the save if
+      // the refresh does (that would strand the sheet on "Saving…").
+      await mutateTotpStatuses().catch(() => undefined);
       return true;
     },
     [mutateTotpStatuses],

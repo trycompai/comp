@@ -209,11 +209,15 @@ export class BrowserCredentialStorageService {
 
   /**
    * Automatic-2FA status for every password connection in an org, keyed by
-   * profile id, so the connections list can show which sign-ins will keep running
+   * profile id, so the connections list can show which sign-ins keep running
    * unattended and which may pause. Read live from the vault (same source of
-   * truth as the single-connection status) in parallel, in one round-trip. A
-   * connection whose item can't be read is reported as `false` rather than
-   * failing the whole batch. Returns {} when storage isn't configured.
+   * truth as the single-connection status) with bounded concurrency so a large
+   * org doesn't fan out unbounded 1Password requests.
+   *
+   * A connection whose item can't be read is OMITTED from the map — never
+   * reported as `false` — so a throttle or transient failure surfaces as
+   * "unknown" in the UI rather than a false "no 2FA / at-risk" that would invite
+   * overwriting a key. Returns {} when storage isn't configured.
    */
   async getOrgTotpStatuses(
     organizationId: string,
@@ -236,16 +240,28 @@ export class BrowserCredentialStorageService {
       return {};
     }
 
-    const entries = await Promise.all(
-      profiles.map(async (profile) => {
-        const configured = await this.readItemTotpConfigured(
-          client,
-          profile.vaultExternalItemRef,
-        ).catch(() => false);
-        return [profile.id, configured] as const;
-      }),
-    );
-    return Object.fromEntries(entries);
+    const CONCURRENCY = 5;
+    const statuses: Record<string, boolean> = {};
+    for (let i = 0; i < profiles.length; i += CONCURRENCY) {
+      const results = await Promise.all(
+        profiles.slice(i, i + CONCURRENCY).map(async (profile) => {
+          try {
+            const configured = await this.readItemTotpConfigured(
+              client,
+              profile.vaultExternalItemRef,
+            );
+            return [profile.id, configured] as const;
+          } catch {
+            // Omit — the UI treats a missing id as "unknown", not "off".
+            return null;
+          }
+        }),
+      );
+      for (const entry of results) {
+        if (entry) statuses[entry[0]] = entry[1];
+      }
+    }
+    return statuses;
   }
 
   /**

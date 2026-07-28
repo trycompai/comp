@@ -81,7 +81,13 @@ export function permanenceStateOf(args: {
   totpConfigured: boolean;
 }): PermanenceState {
   const { connection, totpConfigured } = args;
-  if (connection.status === 'needs_reauth' || connection.status === 'blocked') {
+  // A never-verified session is also "reconnect" — it hasn't signed in yet, so a
+  // stored key doesn't make it renewable and it must not read as "stays signed in".
+  if (
+    connection.status === 'needs_reauth' ||
+    connection.status === 'blocked' ||
+    connection.status === 'unverified'
+  ) {
     return 'reconnect';
   }
   if (methodOf(connection) === 'sso') return 'sso';
