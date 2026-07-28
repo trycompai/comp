@@ -39,7 +39,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const body = await req.json();
+  // req.json() throws on a malformed/empty body. Catch it so the contract stays
+  // a 400 "Invalid request body" instead of leaking an unhandled 500.
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+  }
+
   const parsed = schema.safeParse(body);
 
   if (!parsed.success) {
@@ -86,15 +94,20 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  let record = await db.employeeTrainingVideoCompletion.findFirst({
-    where: { videoId, memberId: member.id },
+  // Upsert on the (memberId, videoId) unique constraint. A find-then-create
+  // flow races under concurrent requests — both callers see no row, both
+  // create, and the second trips the unique constraint and 500s. The upsert is
+  // atomic; the empty update leaves an existing row untouched.
+  let record = await db.employeeTrainingVideoCompletion.upsert({
+    where: { memberId_videoId: { memberId: member.id, videoId } },
+    create: { videoId, memberId: member.id, completedAt: new Date() },
+    update: {},
   });
 
-  if (!record) {
-    record = await db.employeeTrainingVideoCompletion.create({
-      data: { videoId, memberId: member.id, completedAt: new Date() },
-    });
-  } else if (!record.completedAt) {
+  // A row can pre-exist with completedAt: null (video tracked but not finished).
+  // Stamp it now, but never re-stamp an already-completed video so the recorded
+  // completion time stays the first completion.
+  if (!record.completedAt) {
     record = await db.employeeTrainingVideoCompletion.update({
       where: { id: record.id },
       data: { completedAt: new Date() },

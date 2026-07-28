@@ -11,8 +11,7 @@ const mocks = vi.hoisted(() => ({
   getSession: vi.fn(),
   memberFindFirst: vi.fn(),
   frameworkInstanceFindFirst: vi.fn(),
-  completionFindFirst: vi.fn(),
-  completionCreate: vi.fn(),
+  completionUpsert: vi.fn(),
   completionUpdate: vi.fn(),
   completionFindMany: vi.fn(),
   logger: vi.fn(),
@@ -32,8 +31,7 @@ vi.mock('@db/server', () => ({
     member: { findFirst: mocks.memberFindFirst },
     frameworkInstance: { findFirst: mocks.frameworkInstanceFindFirst },
     employeeTrainingVideoCompletion: {
-      findFirst: mocks.completionFindFirst,
-      create: mocks.completionCreate,
+      upsert: mocks.completionUpsert,
       update: mocks.completionUpdate,
       findMany: mocks.completionFindMany,
     },
@@ -57,6 +55,15 @@ function makeRequest(body: unknown): NextRequest {
   });
 }
 
+// Sends a raw (unserialized) body so we can exercise the malformed-JSON path.
+function makeRawRequest(raw: string): NextRequest {
+  return new NextRequest('http://localhost/api/portal/complete-training', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: raw,
+  });
+}
+
 describe('POST /api/portal/complete-training', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -69,7 +76,21 @@ describe('POST /api/portal/complete-training', () => {
     const res = await POST(makeRequest({ videoId: 'sat-1', organizationId: 'org_1' }));
 
     expect(res.status).toBe(401);
-    expect(mocks.completionCreate).not.toHaveBeenCalled();
+    expect(mocks.completionUpsert).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when the request body is not valid JSON', async () => {
+    mocks.getSession.mockResolvedValue({ user: { id: 'user_1' } });
+
+    // A malformed body makes req.json() throw. Before the fix that surfaced as
+    // an unhandled 500; the contract is a 400 "Invalid request body".
+    const res = await POST(makeRawRequest('{ not: valid json'));
+
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.error).toBe('Invalid request body');
+    expect(mocks.memberFindFirst).not.toHaveBeenCalled();
+    expect(mocks.completionUpsert).not.toHaveBeenCalled();
   });
 
   it('returns 403 when the user is not a member of the organization', async () => {
@@ -79,7 +100,7 @@ describe('POST /api/portal/complete-training', () => {
     const res = await POST(makeRequest({ videoId: 'sat-1', organizationId: 'org_1' }));
 
     expect(res.status).toBe(403);
-    expect(mocks.completionCreate).not.toHaveBeenCalled();
+    expect(mocks.completionUpsert).not.toHaveBeenCalled();
   });
 
   it('marks training complete for a member whose role lacks portal:update', async () => {
@@ -93,14 +114,13 @@ describe('POST /api/portal/complete-training', () => {
       role: 'custom-role-without-portal-update',
       deactivated: false,
     });
-    mocks.completionFindFirst.mockResolvedValue(null);
     const record = {
       id: 'etvc_1',
       videoId: 'sat-1',
       memberId: 'mem_1',
       completedAt: new Date('2026-07-24T00:00:00.000Z'),
     };
-    mocks.completionCreate.mockResolvedValue(record);
+    mocks.completionUpsert.mockResolvedValue(record);
 
     const res = await POST(makeRequest({ videoId: 'sat-1', organizationId: 'org_1' }));
 
@@ -113,8 +133,13 @@ describe('POST /api/portal/complete-training', () => {
     expect(mocks.memberFindFirst).toHaveBeenCalledWith({
       where: { userId: 'user_1', organizationId: 'org_1', deactivated: false },
     });
-    expect(mocks.completionCreate).toHaveBeenCalledWith({
-      data: expect.objectContaining({ videoId: 'sat-1', memberId: 'mem_1' }),
+    // Regression guard for the concurrent-completion race: the write must be a
+    // single atomic upsert keyed by the (memberId, videoId) unique constraint,
+    // never a find-then-create that two callers can both fall through and 500.
+    expect(mocks.completionUpsert).toHaveBeenCalledWith({
+      where: { memberId_videoId: { memberId: 'mem_1', videoId: 'sat-1' } },
+      create: expect.objectContaining({ videoId: 'sat-1', memberId: 'mem_1' }),
+      update: {},
     });
   });
 
@@ -127,7 +152,8 @@ describe('POST /api/portal/complete-training', () => {
       role: 'employee',
       deactivated: false,
     });
-    mocks.completionFindFirst.mockResolvedValue({
+    // Upsert returns the pre-existing, already-stamped row.
+    mocks.completionUpsert.mockResolvedValue({
       id: 'etvc_1',
       videoId: 'sat-1',
       memberId: 'mem_1',
@@ -137,8 +163,41 @@ describe('POST /api/portal/complete-training', () => {
     const res = await POST(makeRequest({ videoId: 'sat-1', organizationId: 'org_1' }));
 
     expect(res.status).toBe(200);
-    expect(mocks.completionCreate).not.toHaveBeenCalled();
+    // completedAt is already set, so the follow-up stamp must not run.
     expect(mocks.completionUpdate).not.toHaveBeenCalled();
+  });
+
+  it('stamps a pre-existing record whose completedAt is still null', async () => {
+    mocks.getSession.mockResolvedValue({ user: { id: 'user_1' } });
+    mocks.memberFindFirst.mockResolvedValue({
+      id: 'mem_1',
+      userId: 'user_1',
+      organizationId: 'org_1',
+      role: 'employee',
+      deactivated: false,
+    });
+    // Upsert finds the row but it was never finished (completedAt: null).
+    mocks.completionUpsert.mockResolvedValue({
+      id: 'etvc_1',
+      videoId: 'sat-1',
+      memberId: 'mem_1',
+      completedAt: null,
+    });
+    mocks.completionUpdate.mockResolvedValue({
+      id: 'etvc_1',
+      videoId: 'sat-1',
+      memberId: 'mem_1',
+      completedAt: new Date('2026-07-24T00:00:00.000Z'),
+    });
+
+    const res = await POST(makeRequest({ videoId: 'sat-1', organizationId: 'org_1' }));
+
+    expect(res.status).toBe(200);
+    // The null completedAt is stamped via a follow-up update keyed by id.
+    expect(mocks.completionUpdate).toHaveBeenCalledWith({
+      where: { id: 'etvc_1' },
+      data: expect.objectContaining({ completedAt: expect.any(Date) }),
+    });
   });
 
   it('rejects an unknown video ID', async () => {
@@ -177,7 +236,7 @@ describe('POST /api/portal/complete-training', () => {
       where: { organizationId: 'org_1', framework: { name: 'HIPAA' } },
       select: { id: true },
     });
-    expect(mocks.completionCreate).not.toHaveBeenCalled();
+    expect(mocks.completionUpsert).not.toHaveBeenCalled();
   });
 
   it('marks hipaa-sat-1 complete when the org has the HIPAA framework', async () => {
@@ -190,22 +249,23 @@ describe('POST /api/portal/complete-training', () => {
       deactivated: false,
     });
     mocks.frameworkInstanceFindFirst.mockResolvedValue({ id: 'frm_1' });
-    mocks.completionFindFirst.mockResolvedValue(null);
     const record = {
       id: 'etvc_hipaa',
       videoId: 'hipaa-sat-1',
       memberId: 'mem_1',
       completedAt: new Date('2026-07-24T00:00:00.000Z'),
     };
-    mocks.completionCreate.mockResolvedValue(record);
+    mocks.completionUpsert.mockResolvedValue(record);
 
     const res = await POST(
       makeRequest({ videoId: 'hipaa-sat-1', organizationId: 'org_1' }),
     );
 
     expect(res.status).toBe(200);
-    expect(mocks.completionCreate).toHaveBeenCalledWith({
-      data: expect.objectContaining({ videoId: 'hipaa-sat-1', memberId: 'mem_1' }),
+    expect(mocks.completionUpsert).toHaveBeenCalledWith({
+      where: { memberId_videoId: { memberId: 'mem_1', videoId: 'hipaa-sat-1' } },
+      create: expect.objectContaining({ videoId: 'hipaa-sat-1', memberId: 'mem_1' }),
+      update: {},
     });
   });
 
@@ -224,8 +284,7 @@ describe('POST /api/portal/complete-training', () => {
       deactivated: false,
     });
     mocks.frameworkInstanceFindFirst.mockResolvedValue({ id: 'frm_1' });
-    mocks.completionFindFirst.mockResolvedValue(null);
-    mocks.completionCreate.mockResolvedValue({
+    mocks.completionUpsert.mockResolvedValue({
       id: 'etvc_hipaa',
       videoId: 'hipaa-sat-1',
       memberId: 'mem_1',
