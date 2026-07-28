@@ -95,6 +95,24 @@ export class BrowserAuthProfilesController {
     )) as BrowserAuthProfileResponseDto[];
   }
 
+  // Declared before the `profiles/:profileId/...` routes so its static path is
+  // never captured as a profileId.
+  @Get('profiles/totp-statuses')
+  @RequirePermission('integration', 'read')
+  @ApiOperation({
+    summary: 'Automatic-2FA status for all password connections',
+    description:
+      'Reports, per connection, whether an authenticator setup key is stored — so the connections list can show which sign-ins keep running unattended and which may pause. Read live from the vault in one round-trip.',
+  })
+  @ApiResponse({ status: 200 })
+  async getOrgTotpStatuses(
+    @OrganizationId() organizationId: string,
+  ): Promise<{ statuses: Record<string, boolean> }> {
+    const statuses =
+      await this.credentialStorageService.getOrgTotpStatuses(organizationId);
+    return { statuses };
+  }
+
   @Post('profiles/resolve')
   @RequirePermission('integration', 'create')
   @ApiOperation({

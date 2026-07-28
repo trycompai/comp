@@ -195,22 +195,75 @@ export class BrowserCredentialStorageService {
     const profile = await this.findProfile(input);
     const ref = profile.vaultExternalItemRef;
     if (!ref) return { configured: false };
-    const { vaultId, itemId } = parseItemReference(ref);
-    if (!vaultId || !itemId) return { configured: false };
 
     try {
       const client = await getOnePasswordClient();
-      const item = await client.items.get(vaultId, itemId);
-      const configured = item.fields.some(
-        (field) => field.title === TOTP_FIELD_TITLE && field.value.trim().length > 0,
-      );
-      return { configured };
+      return { configured: await this.readItemTotpConfigured(client, ref) };
     } catch (error) {
       this.logger.warn('Failed to read TOTP status from 1Password', {
         error: error instanceof Error ? error.message : String(error),
       });
       return { configured: false };
     }
+  }
+
+  /**
+   * Automatic-2FA status for every password connection in an org, keyed by
+   * profile id, so the connections list can show which sign-ins will keep running
+   * unattended and which may pause. Read live from the vault (same source of
+   * truth as the single-connection status) in parallel, in one round-trip. A
+   * connection whose item can't be read is reported as `false` rather than
+   * failing the whole batch. Returns {} when storage isn't configured.
+   */
+  async getOrgTotpStatuses(
+    organizationId: string,
+  ): Promise<Record<string, boolean>> {
+    if (!isOnePasswordConfigured()) return {};
+
+    const profiles = await db.browserAuthProfile.findMany({
+      where: { organizationId, vaultExternalItemRef: { not: null } },
+      select: { id: true, vaultExternalItemRef: true },
+    });
+    if (profiles.length === 0) return {};
+
+    let client: OnePasswordClient;
+    try {
+      client = await getOnePasswordClient();
+    } catch (error) {
+      this.logger.warn('Failed to open 1Password client for TOTP statuses', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return {};
+    }
+
+    const entries = await Promise.all(
+      profiles.map(async (profile) => {
+        const configured = await this.readItemTotpConfigured(
+          client,
+          profile.vaultExternalItemRef,
+        ).catch(() => false);
+        return [profile.id, configured] as const;
+      }),
+    );
+    return Object.fromEntries(entries);
+  }
+
+  /**
+   * Whether a 1Password login item holds a non-empty authenticator setup key.
+   * Throws if the item can't be read — callers decide whether to degrade to
+   * `false` (batch) or log-and-return-false (single).
+   */
+  private async readItemTotpConfigured(
+    client: OnePasswordClient,
+    ref: string | null,
+  ): Promise<boolean> {
+    if (!ref) return false;
+    const { vaultId, itemId } = parseItemReference(ref);
+    if (!vaultId || !itemId) return false;
+    const item = await client.items.get(vaultId, itemId);
+    return item.fields.some(
+      (field) => field.title === TOTP_FIELD_TITLE && field.value.trim().length > 0,
+    );
   }
 
   /**

@@ -4,7 +4,13 @@ import * as opClient from './onepassword-client';
 import { TOTP_FIELD_TITLE, buildItemReference } from './onepassword-credential-item';
 
 jest.mock('@db', () => ({
-  db: { browserAuthProfile: { findFirst: jest.fn(), update: jest.fn() } },
+  db: {
+    browserAuthProfile: {
+      findFirst: jest.fn(),
+      update: jest.fn(),
+      findMany: jest.fn(),
+    },
+  },
 }));
 jest.mock('./onepassword-client');
 
@@ -12,6 +18,7 @@ jest.mock('./onepassword-client');
 const { db } = require('@db');
 const findFirst = db.browserAuthProfile.findFirst as jest.Mock;
 const update = db.browserAuthProfile.update as jest.Mock;
+const findMany = db.browserAuthProfile.findMany as jest.Mock;
 
 const mockConfigured = opClient.isOnePasswordConfigured as jest.Mock;
 const mockGetClient = opClient.getOnePasswordClient as jest.Mock;
@@ -91,6 +98,36 @@ describe('BrowserCredentialStorageService — TOTP', () => {
       });
 
       expect(result).toEqual({ configured: false });
+      expect(itemsGet).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getOrgTotpStatuses', () => {
+    it('reports configured per connection, degrading an unreadable item to false', async () => {
+      findMany.mockResolvedValue([
+        { id: 'bap_1', vaultExternalItemRef: buildItemReference('v', 'i1') },
+        { id: 'bap_2', vaultExternalItemRef: buildItemReference('v', 'i2') },
+        { id: 'bap_3', vaultExternalItemRef: buildItemReference('v', 'i3') },
+      ]);
+      itemsGet.mockImplementation((_vaultId: string, itemId: string) => {
+        if (itemId === 'i1')
+          return Promise.resolve({ fields: [field(TOTP_FIELD_TITLE, 'SEED')] });
+        if (itemId === 'i2')
+          return Promise.resolve({ fields: [field('username')] });
+        return Promise.reject(new Error('unreadable')); // one bad item must not fail the batch
+      });
+
+      const result = await service.getOrgTotpStatuses('org_1');
+
+      expect(result).toEqual({ bap_1: true, bap_2: false, bap_3: false });
+    });
+
+    it('returns {} when the org has no password connections', async () => {
+      findMany.mockResolvedValue([]);
+
+      const result = await service.getOrgTotpStatuses('org_1');
+
+      expect(result).toEqual({});
       expect(itemsGet).not.toHaveBeenCalled();
     });
   });
