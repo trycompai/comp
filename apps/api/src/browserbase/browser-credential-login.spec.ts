@@ -67,6 +67,28 @@ describe('performCredentialLogin', () => {
       expect(instruction).not.toContain('424242');
     }
   });
+
+  it('switches a passkey / security-key prompt to the authenticator-code method', async () => {
+    const stagehand = makeStagehand();
+
+    const promise = performCredentialLogin({
+      stagehand: stagehand as unknown as Stagehand,
+      credentials: { username: 'alice', password: 'pw' }, // no stored code → take-over
+      log: jest.fn(),
+    });
+    await jest.runAllTimersAsync();
+    await promise;
+
+    // A best-effort step switches to the code method when a vendor defaults 2FA
+    // to a passkey, so a 6-digit field is actually shown (for us or the user).
+    const calls = stagehand.act.mock.calls as [string, unknown?][];
+    const switchCall = calls.find(
+      ([instruction]) =>
+        instruction.includes('passkey') &&
+        instruction.includes('authenticator app'),
+    );
+    expect(switchCall).toBeDefined();
+  });
 });
 
 describe('reloginWithStoredCredentials', () => {
