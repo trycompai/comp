@@ -22,6 +22,13 @@ export function PolicyPageActions({ policies }: PolicyPageActionsProps) {
   const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
   const { hasPermission } = usePermissions();
 
+  // Bulk upload creates a draft policy AND attaches a PDF, so it needs both
+  // policy:create (create step) and policy:update (attach step). Gating on
+  // create alone lets create-only users spawn empty draft policies whose PDF
+  // attach then 403s, leaving orphan drafts.
+  const canBulkUpload =
+    hasPermission('policy', 'create') && hasPermission('policy', 'update');
+
   const handleOpenDownloadSheet = () => setIsDownloadSheetOpen(true);
 
   const handleCreatePolicy = () => {
@@ -42,7 +49,7 @@ export function PolicyPageActions({ policies }: PolicyPageActionsProps) {
             Download All
           </Button>
         )}
-        {hasPermission('policy', 'create') && (
+        {canBulkUpload && (
           <Button
             variant="outline"
             iconLeft={<Upload />}

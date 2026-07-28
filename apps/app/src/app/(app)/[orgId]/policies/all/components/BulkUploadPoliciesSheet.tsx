@@ -1,5 +1,7 @@
 'use client';
 
+import { useApi } from '@/hooks/use-api';
+import { bulkUploadPoliciesViaApi } from '@/lib/policies-bulk-upload';
 import {
   Button,
   cn,
@@ -26,10 +28,9 @@ interface BulkUploadPoliciesSheetProps {
   onOpenChange: (open: boolean) => void;
 }
 
-interface BulkUploadResponse {
-  createdCount?: number;
-  failedCount?: number;
-  error?: string;
+/** Stable per-file identity used for de-dupe, error mapping, and retry. */
+function fileKey(file: { name: string; size: number }): string {
+  return `${file.name}:${file.size}`;
 }
 
 function readFileAsBase64(file: File): Promise<string> {
@@ -47,11 +48,15 @@ export function BulkUploadPoliciesSheet({
   onOpenChange,
 }: BulkUploadPoliciesSheetProps) {
   const router = useRouter();
+  const api = useApi();
   const [files, setFiles] = useState<File[]>([]);
+  // Per-file upload errors, keyed by name+size, surfaced inline after an upload.
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [isUploading, setIsUploading] = useState(false);
 
   const resetAndClose = () => {
     setFiles([]);
+    setErrors({});
     onOpenChange(false);
   };
 
@@ -59,10 +64,10 @@ export function BulkUploadPoliciesSheet({
     if (accepted.length === 0) return;
     setFiles((prev) => {
       // De-dupe by name+size so re-dropping the same file doesn't stack.
-      const seen = new Set(prev.map((f) => `${f.name}:${f.size}`));
+      const seen = new Set(prev.map(fileKey));
       const merged = [...prev];
       for (const f of accepted) {
-        const key = `${f.name}:${f.size}`;
+        const key = fileKey(f);
         if (!seen.has(key)) {
           seen.add(key);
           merged.push(f);
@@ -77,57 +82,65 @@ export function BulkUploadPoliciesSheet({
   };
 
   const handleRemove = (index: number) => {
+    const removed = files[index];
     setFiles((prev) => prev.filter((_, i) => i !== index));
+    if (removed) {
+      setErrors((prev) => {
+        const key = fileKey(removed);
+        if (!(key in prev)) return prev;
+        const rest = { ...prev };
+        delete rest[key];
+        return rest;
+      });
+    }
   };
 
   const handleUpload = async () => {
     if (files.length === 0) return;
     setIsUploading(true);
+    setErrors({});
     try {
-      const payload = await Promise.all(
-        files.map(async (file) => ({
-          fileName: file.name,
-          fileType: file.type || 'application/pdf',
-          fileData: await readFileAsBase64(file),
-        })),
-      );
+      // Upload straight to the NestJS API from the browser (like the
+      // single-policy PDF upload) so the PDFs never pass through the Next.js
+      // route's body limit, processed with bounded concurrency.
+      const { results, createdCount, failedCount } =
+        await bulkUploadPoliciesViaApi({
+          post: api.post,
+          files,
+          readFileAsBase64,
+        });
 
-      const response = await fetch('/api/policies/bulk-upload', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ files: payload }),
-      });
-
-      const data = (await response
-        .json()
-        .catch(() => null)) as BulkUploadResponse | null;
-
-      if (!response.ok) {
-        toast.error(data?.error || 'Failed to upload policies.');
-        return;
+      if (createdCount > 0) {
+        toast.success(
+          `Imported ${createdCount} ${
+            createdCount === 1 ? 'policy' : 'policies'
+          }${failedCount > 0 ? ` — ${failedCount} failed` : ''}.`,
+        );
+        router.refresh();
       }
 
-      const created = data?.createdCount ?? 0;
-      const failed = data?.failedCount ?? 0;
-
-      if (created === 0) {
-        toast.error(data?.error || 'No policies were imported.');
-        return;
-      }
-
-      toast.success(
-        `Imported ${created} ${created === 1 ? 'policy' : 'policies'}${
-          failed > 0 ? ` — ${failed} failed` : ''
-        }.`,
-      );
-      router.refresh();
-      if (failed > 0) {
-        // Partial success: keep the sheet open so the user can retry the rest.
-        setFiles([]);
-      } else {
+      if (failedCount === 0) {
         resetAndClose();
+        return;
       }
+
+      // Keep only the failed files (matched by name+size) with their error so
+      // the user can review what went wrong and retry just those.
+      const failedErrors: Record<string, string> = {};
+      for (const r of results) {
+        if (r.status === 'failed') {
+          failedErrors[`${r.fileName}:${r.fileSize}`] =
+            r.error ?? 'Upload failed.';
+        }
+      }
+      if (createdCount === 0) {
+        toast.error(
+          results.find((r) => r.status === 'failed')?.error ||
+            'No policies were imported.',
+        );
+      }
+      setErrors(failedErrors);
+      setFiles((prev) => prev.filter((f) => fileKey(f) in failedErrors));
     } catch {
       toast.error('Failed to upload policies.');
     } finally {
@@ -191,29 +204,45 @@ export function BulkUploadPoliciesSheet({
 
             {files.length > 0 && (
               <div className="flex flex-col gap-1">
-                {files.map((file, index) => (
-                  <div
-                    key={`${file.name}:${file.size}`}
-                    className="flex items-center gap-2 rounded-sm border px-3 py-2"
-                  >
-                    <DocumentPdf
-                      size={16}
-                      className="text-muted-foreground shrink-0"
-                    />
-                    <span className="flex-1 truncate text-sm" title={file.name}>
-                      {file.name}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleRemove(index)}
-                      disabled={isUploading}
-                      className="text-muted-foreground hover:text-foreground disabled:opacity-50"
-                      aria-label={`Remove ${file.name}`}
+                {files.map((file, index) => {
+                  const error = errors[fileKey(file)];
+                  return (
+                    <div
+                      key={fileKey(file)}
+                      className={cn(
+                        'flex flex-col gap-1 rounded-sm border px-3 py-2',
+                        error && 'border-destructive/50',
+                      )}
                     >
-                      <TrashCan size={16} />
-                    </button>
-                  </div>
-                ))}
+                      <div className="flex items-center gap-2">
+                        <DocumentPdf
+                          size={16}
+                          className="text-muted-foreground shrink-0"
+                        />
+                        <span
+                          className="flex-1 truncate text-sm"
+                          title={file.name}
+                        >
+                          {file.name}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemove(index)}
+                          disabled={isUploading}
+                          className="text-muted-foreground hover:text-foreground disabled:opacity-50"
+                          aria-label={`Remove ${file.name}`}
+                        >
+                          <TrashCan size={16} />
+                        </button>
+                      </div>
+                      {error && (
+                        <span className="text-destructive pl-6 text-xs">
+                          {error}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </Stack>

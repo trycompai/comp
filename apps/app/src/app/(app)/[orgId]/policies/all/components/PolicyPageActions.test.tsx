@@ -113,6 +113,30 @@ describe('PolicyPageActions', () => {
     });
   });
 
+  describe('policy:create without policy:update', () => {
+    beforeEach(() => {
+      // Bulk upload also attaches a PDF (needs policy:update); create alone
+      // would leave orphan draft policies, so the button must be hidden.
+      setMockPermissions({ policy: ['read', 'create'] });
+    });
+
+    it('does not render the Bulk upload button without policy:update', () => {
+      render(<PolicyPageActions policies={basePolicies} />);
+
+      expect(
+        screen.queryByRole('button', { name: /bulk upload/i }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('still renders the Create Policy button', () => {
+      render(<PolicyPageActions policies={basePolicies} />);
+
+      expect(
+        screen.getByRole('button', { name: /create policy/i }),
+      ).toBeInTheDocument();
+    });
+  });
+
   describe('auditor permissions (no policy:create)', () => {
     beforeEach(() => {
       setMockPermissions(AUDITOR_PERMISSIONS);
