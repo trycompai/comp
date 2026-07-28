@@ -1,132 +1,157 @@
-/**
- * Tests for the getTrustedOrigins / isTrustedOrigin logic.
- *
- * Because auth.server.ts has side effects at module load time (better-auth
- * initialization, DB connections, validateSecurityConfig), we test the logic
- * in isolation rather than importing the module directly.
- */
+import {
+  getBetterAuthTrustedOrigins,
+  getCompExtensionTrustedOrigins,
+  getTrustedOrigins,
+  isChromeExtensionOrigin,
+  isCompExtensionOriginAllowedForRequest,
+  isStaticTrustedOrigin,
+} from './origin-policy';
 
-function getTrustedOriginsLogic(
-  authTrustedOrigins: string | undefined,
-): string[] {
-  if (authTrustedOrigins) {
-    return authTrustedOrigins.split(',').map((o) => o.trim());
+function restoreEnv(name: string, value: string | undefined): void {
+  if (value === undefined) {
+    delete process.env[name];
+    return;
   }
-
-  return [
-    'http://localhost:3000',
-    'http://localhost:3002',
-    'http://localhost:3333',
-    'https://app.trycomp.ai',
-    'https://portal.trycomp.ai',
-    'https://api.trycomp.ai',
-    'https://app.staging.trycomp.ai',
-    'https://portal.staging.trycomp.ai',
-    'https://api.staging.trycomp.ai',
-    'https://dev.trycomp.ai',
-  ];
+  process.env[name] = value;
 }
 
-/**
- * Mirror of isStaticTrustedOrigin from auth.server.ts for isolated testing.
- * The full isTrustedOrigin is async (checks DB for custom domains) —
- * that path is tested via integration tests.
- */
-function isStaticTrustedOriginLogic(
-  origin: string,
-  trustedOrigins: string[],
-): boolean {
-  if (trustedOrigins.includes(origin)) {
-    return true;
-  }
+const originalAuthTrustedOrigins = process.env.AUTH_TRUSTED_ORIGINS;
+const originalExtensionTrustedOrigins =
+  process.env.COMP_EXTENSION_TRUSTED_ORIGINS;
 
-  try {
-    const url = new URL(origin);
-    return (
-      url.hostname.endsWith('.trycomp.ai') ||
-      url.hostname.endsWith('.staging.trycomp.ai') ||
-      url.hostname.endsWith('.trust.inc') ||
-      url.hostname === 'trust.inc'
-    );
-  } catch {
-    return false;
-  }
-}
+beforeEach(() => {
+  delete process.env.AUTH_TRUSTED_ORIGINS;
+  delete process.env.COMP_EXTENSION_TRUSTED_ORIGINS;
+});
+
+afterAll(() => {
+  restoreEnv('AUTH_TRUSTED_ORIGINS', originalAuthTrustedOrigins);
+  restoreEnv(
+    'COMP_EXTENSION_TRUSTED_ORIGINS',
+    originalExtensionTrustedOrigins,
+  );
+});
 
 describe('getTrustedOrigins', () => {
   it('should return env-configured origins when AUTH_TRUSTED_ORIGINS is set', () => {
-    const origins = getTrustedOriginsLogic('https://a.com, https://b.com');
-    expect(origins).toEqual(['https://a.com', 'https://b.com']);
+    process.env.AUTH_TRUSTED_ORIGINS = 'https://a.com, https://b.com';
+
+    expect(getTrustedOrigins()).toEqual(['https://a.com', 'https://b.com']);
   });
 
   it('should return hardcoded origins when AUTH_TRUSTED_ORIGINS is not set', () => {
-    const origins = getTrustedOriginsLogic(undefined);
+    const origins = getTrustedOrigins();
+
     expect(origins).toContain('https://app.trycomp.ai');
   });
 
   it('should never include wildcard origin', () => {
-    const origins = getTrustedOriginsLogic(undefined);
+    const origins = getTrustedOrigins();
+
     expect(origins.every((o: string) => o !== '*' && o !== 'true')).toBe(true);
   });
 
   it('should trim whitespace from comma-separated origins', () => {
-    const origins = getTrustedOriginsLogic(
-      '  https://a.com  ,  https://b.com  ',
-    );
-    expect(origins).toEqual(['https://a.com', 'https://b.com']);
+    process.env.AUTH_TRUSTED_ORIGINS =
+      '  https://a.com  ,  https://b.com  ';
+
+    expect(getTrustedOrigins()).toEqual(['https://a.com', 'https://b.com']);
+  });
+});
+
+describe('COMP_EXTENSION_TRUSTED_ORIGINS', () => {
+  const extensionOrigin =
+    'chrome-extension://panomgbokjppnleifmpcnpchjgpcngan';
+
+  beforeEach(() => {
+    process.env.COMP_EXTENSION_TRUSTED_ORIGINS = extensionOrigin;
+  });
+
+  it('should parse first-party extension origins separately', () => {
+    expect(getCompExtensionTrustedOrigins()).toEqual([extensionOrigin]);
+  });
+
+  it('should include extension origins only in better-auth trusted origins', () => {
+    expect(getBetterAuthTrustedOrigins()).toContain(extensionOrigin);
+    expect(getTrustedOrigins()).not.toContain(extensionOrigin);
+  });
+
+  it('should allow extension origins only on extension routes', () => {
+    expect(
+      isCompExtensionOriginAllowedForRequest({
+        method: 'POST',
+        origin: extensionOrigin,
+        path: '/v1/questionnaire/answer-single',
+      }),
+    ).toBe(true);
+    expect(
+      isCompExtensionOriginAllowedForRequest({
+        method: 'GET',
+        origin: extensionOrigin,
+        path: '/v1/controls',
+      }),
+    ).toBe(false);
+  });
+
+  it('should reject wrong methods on extension paths', () => {
+    expect(
+      isCompExtensionOriginAllowedForRequest({
+        method: 'POST',
+        origin: extensionOrigin,
+        path: '/v1/auth/me',
+      }),
+    ).toBe(false);
+  });
+
+  it('should reject allowed paths from unknown extension origins', () => {
+    expect(
+      isCompExtensionOriginAllowedForRequest({
+        method: 'POST',
+        origin: 'chrome-extension://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        path: '/v1/questionnaire/answer-single',
+      }),
+    ).toBe(false);
+  });
+
+  it('should identify Chrome extension origins', () => {
+    expect(isChromeExtensionOrigin(extensionOrigin)).toBe(true);
+    expect(isChromeExtensionOrigin('https://app.trycomp.ai')).toBe(false);
   });
 });
 
 describe('isStaticTrustedOrigin', () => {
-  const defaults = getTrustedOriginsLogic(undefined);
-
   it('should allow static trusted origins', () => {
-    expect(isStaticTrustedOriginLogic('https://app.trycomp.ai', defaults)).toBe(
-      true,
-    );
+    expect(isStaticTrustedOrigin('https://app.trycomp.ai')).toBe(true);
   });
 
   it('should allow trust portal subdomains of trycomp.ai', () => {
-    expect(
-      isStaticTrustedOriginLogic('https://security.trycomp.ai', defaults),
-    ).toBe(true);
-    expect(
-      isStaticTrustedOriginLogic('https://acme.trycomp.ai', defaults),
-    ).toBe(true);
+    expect(isStaticTrustedOrigin('https://security.trycomp.ai')).toBe(true);
+    expect(isStaticTrustedOrigin('https://acme.trycomp.ai')).toBe(true);
   });
 
   it('should allow trust portal subdomains of staging.trycomp.ai', () => {
     expect(
-      isStaticTrustedOriginLogic(
-        'https://security.staging.trycomp.ai',
-        defaults,
-      ),
+      isStaticTrustedOrigin('https://security.staging.trycomp.ai'),
     ).toBe(true);
   });
 
   it('should allow trust.inc and its subdomains', () => {
-    expect(isStaticTrustedOriginLogic('https://trust.inc', defaults)).toBe(
-      true,
-    );
-    expect(isStaticTrustedOriginLogic('https://acme.trust.inc', defaults)).toBe(
-      true,
-    );
+    expect(isStaticTrustedOrigin('https://trust.inc')).toBe(true);
+    expect(isStaticTrustedOrigin('https://acme.trust.inc')).toBe(true);
   });
 
   it('should reject unknown origins', () => {
-    expect(isStaticTrustedOriginLogic('https://evil.com', defaults)).toBe(
-      false,
-    );
+    expect(isStaticTrustedOrigin('https://evil.com')).toBe(false);
     expect(
-      isStaticTrustedOriginLogic('https://trycomp.ai.evil.com', defaults),
+      isStaticTrustedOrigin('https://trycomp.ai.evil.com'),
     ).toBe(false);
   });
 
   it('should handle invalid origins gracefully', () => {
-    expect(isStaticTrustedOriginLogic('not-a-url', defaults)).toBe(false);
+    expect(isStaticTrustedOrigin('not-a-url')).toBe(false);
   });
 
-  it('main.ts should use isTrustedOrigin for CORS', () => {
+  it('main.ts should use path-aware CORS middleware', () => {
     const fs = require('fs');
     const path = require('path');
     const mainTs = fs.readFileSync(
@@ -134,9 +159,10 @@ describe('isStaticTrustedOrigin', () => {
       'utf-8',
     ) as string;
     expect(mainTs).not.toContain('origin: true');
-    expect(mainTs).toContain('isTrustedOrigin');
+    expect(mainTs).not.toContain('app.enableCors');
+    expect(mainTs).toContain('app.use(corsOriginMiddleware)');
     expect(mainTs).toContain(
-      "import { isTrustedOrigin } from './auth/auth.server'",
+      "import { corsOriginMiddleware } from './auth/cors-origin.middleware'",
     );
   });
 });
