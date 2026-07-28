@@ -49,6 +49,17 @@ const CREATE_LOG_GROUP_COMMAND = 'CreateLogGroupCommand';
  * turn on CloudWatch Logs delivery for a trail.
  */
 const DEFAULT_CLOUDTRAIL_LOG_GROUP_NAME = 'aws-cloudtrail-logs';
+const CLOUDTRAIL_SERVICE = 'cloudtrail';
+/**
+ * Commands that operate on a CloudTrail trail. A step whose `service` is
+ * CloudTrail — or that runs one of these commands — is what marks a plan as the
+ * CloudTrail→CloudWatch Logs integration fix, the ONLY remediation the
+ * `aws-cloudtrail-logs` default is correct for.
+ */
+const CLOUDTRAIL_TRAIL_COMMANDS = new Set([
+  'CreateTrailCommand',
+  'UpdateTrailCommand',
+]);
 
 export interface NormalizeFixPlanContext {
   resourceId?: string | null;
@@ -196,6 +207,13 @@ function inferServiceLinkedRolePrincipal(
  * group we create matches what UpdateTrail links to; otherwise fall back to the
  * canonical default. Only a missing/empty value is filled — a name the AI
  * supplied is left untouched.
+ *
+ * Scope: this ONLY runs for the CloudTrail integration plan itself (detected by
+ * a CloudTrail trail step). Other logging remediations (SSM Session Manager,
+ * Step Functions, Transfer Family, …) also mint a log group via
+ * `CreateLogGroupCommand`, but each references it under its own name — stamping
+ * them with `aws-cloudtrail-logs` would create a group that doesn't match the
+ * sibling step that consumes it.
  */
 function backfillLogGroupName(steps: AwsCommandStep[]): AwsCommandStep[] {
   const needsBackfill = steps.some(
@@ -203,7 +221,7 @@ function backfillLogGroupName(steps: AwsCommandStep[]): AwsCommandStep[] {
       step.command === CREATE_LOG_GROUP_COMMAND &&
       !hasNonEmptyString(step.params?.logGroupName),
   );
-  if (!needsBackfill) return steps;
+  if (!needsBackfill || !isCloudTrailIntegrationPlan(steps)) return steps;
 
   const resolved =
     inferCloudTrailLogGroupName(steps) ?? DEFAULT_CLOUDTRAIL_LOG_GROUP_NAME;
@@ -220,6 +238,21 @@ function backfillLogGroupName(steps: AwsCommandStep[]): AwsCommandStep[] {
       params: { ...(step.params ?? {}), logGroupName: resolved },
     };
   });
+}
+
+/**
+ * True when the plan operates on a CloudTrail trail — the signal that a minted
+ * log group is destined for CloudTrail delivery and the `aws-cloudtrail-logs`
+ * default (the name the console proposes for trail log delivery) is correct.
+ * Keyed on the CloudTrail SDK client suffix or a trail command so it also
+ * matches plans that only create/update the trail without a parseable ARN.
+ */
+function isCloudTrailIntegrationPlan(steps: AwsCommandStep[]): boolean {
+  return steps.some(
+    (step) =>
+      step.service === CLOUDTRAIL_SERVICE ||
+      CLOUDTRAIL_TRAIL_COMMANDS.has(step.command),
+  );
 }
 
 /**
