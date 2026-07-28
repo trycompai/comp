@@ -296,6 +296,10 @@ describe('POST /api/portal/complete-training', () => {
       statusText: 'Internal Server Error',
     });
 
+    // The failure is logged via console.error so it is visible in PRODUCTION (the
+    // dev-only `logger` util would have swallowed it outside development).
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
     const res = await POST(
       makeRequest({ videoId: 'hipaa-sat-1', organizationId: 'org_1' }),
     );
@@ -306,10 +310,12 @@ describe('POST /api/portal/complete-training', () => {
       'http://api.test/v1/training/send-hipaa-completion-email',
       expect.objectContaining({ method: 'POST' }),
     );
-    // The HTTP failure must surface to the logger, not be swallowed as success.
-    expect(mocks.logger).toHaveBeenCalledWith(
+    // The HTTP failure must surface (in prod too), not be swallowed as success.
+    expect(errorSpy).toHaveBeenCalledWith(
       'Error triggering training completion email',
       expect.objectContaining({ memberId: 'mem_1' }),
     );
+
+    errorSpy.mockRestore();
   });
 });

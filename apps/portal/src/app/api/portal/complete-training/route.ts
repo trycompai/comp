@@ -2,7 +2,6 @@ import { auth } from '@/app/lib/auth';
 import { env } from '@/env.mjs';
 import { HIPAA_TRAINING_ID } from '@/lib/data/hipaa-training-content';
 import { trainingVideos } from '@/lib/data/training-videos';
-import { logger } from '@/utils/logger';
 import { db } from '@db/server';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -170,7 +169,11 @@ async function sendCompletionEmailIfComplete({
       });
     }
   } catch (error) {
-    logger('Error triggering training completion email', {
+    // Use console.error, NOT the dev-only `logger` — a failed completion email is a
+    // real operational error we must see in production (the `logger` util no-ops
+    // outside development, which silently swallowed these failures).
+    // eslint-disable-next-line no-console
+    console.error('Error triggering training completion email', {
       error: error instanceof Error ? error.message : String(error),
       memberId,
     });
