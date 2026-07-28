@@ -350,6 +350,7 @@ export class QuestionnaireService {
     if (result.success && result.answer && dto.questionnaireId) {
       await saveGeneratedAnswer({
         questionnaireId: dto.questionnaireId,
+        organizationId: dto.organizationId,
         questionIndex: dto.questionIndex,
         answer: result.answer,
         sources: result.sources,
@@ -565,6 +566,7 @@ export class QuestionnaireService {
    */
   async saveGeneratedAnswerPublic(params: {
     questionnaireId: string;
+    organizationId: string;
     questionIndex: number;
     answer: string;
     sources?: AnswerQuestionResult['sources'];
