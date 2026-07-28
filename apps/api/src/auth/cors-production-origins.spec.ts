@@ -15,7 +15,7 @@ const PORTAL = 'https://portal.trycomp.ai';
 const SUBDOMAIN = 'https://anything.trycomp.ai';
 // A customer's own trust-portal domain: not a trycomp.ai host, so it is only
 // ever allowed by the Redis/DB-backed lookup inside isTrustedOrigin.
-const CUSTOM_DOMAIN = 'https://trust.acmecorp.com';
+const CUSTOM_DOMAIN = 'https://trust.example.com';
 
 function createRequest(origin: string): Partial<Request> {
   return { method: 'GET', path: '/v1/controls', headers: { origin } };
@@ -66,7 +66,7 @@ describe('production origins still pass CORS', () => {
     const next: NextFunction = jest.fn();
 
     corsOriginMiddleware(
-      createRequest('https://evil.example') as Request,
+      createRequest('https://untrusted.example') as Request,
       response as Response,
       next,
     );

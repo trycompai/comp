@@ -14,7 +14,7 @@ type MockResponse = Partial<Response> & {
 };
 
 const extensionOrigin =
-  'chrome-extension://panomgbokjppnleifmpcnpchjgpcngan';
+  'chrome-extension://abcdefghijklmnopabcdefghijklmnop';
 
 function createRequest(params: {
   method: string;
@@ -216,7 +216,7 @@ describe('corsOriginMiddleware', () => {
     jest.mocked(isTrustedOrigin).mockResolvedValue(false);
     const request = createRequest({
       method: 'GET',
-      origin: 'https://evil.example',
+      origin: 'https://untrusted.example',
       path: '/v1/controls',
     });
     const response = createResponse();
