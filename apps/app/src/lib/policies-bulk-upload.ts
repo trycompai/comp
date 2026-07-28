@@ -44,6 +44,14 @@ export interface PolicyBulkUploadResult {
  */
 export const DEFAULT_UPLOAD_CONCURRENCY = 3;
 
+/**
+ * Stable per-file identity (name + size). Shared with the UI so the map of
+ * already-created draft ids lines up with the files being retried.
+ */
+export function bulkUploadFileKey(file: { name: string; size: number }): string {
+  return `${file.name}:${file.size}`;
+}
+
 /** Derive a policy name from a file name by stripping the `.pdf` extension. */
 function derivePolicyName(fileName: string): string {
   const stripped = fileName.replace(/\.pdf$/i, '').trim();
@@ -63,10 +71,12 @@ async function uploadOnePolicy({
   post,
   readFileAsBase64,
   file,
+  existingPolicyId,
 }: {
   post: ApiPost;
   readFileAsBase64: ReadFileAsBase64;
   file: File;
+  existingPolicyId?: string;
 }): Promise<PolicyBulkUploadItemResult> {
   const base = { fileName: file.name, fileSize: file.size };
 
@@ -79,19 +89,25 @@ async function uploadOnePolicy({
     return { ...base, status: 'failed', error: `Failed to read ${file.name}` };
   }
 
-  const createRes = await post('/v1/policies', {
-    name: derivePolicyName(file.name),
-    content: [],
-  });
-  const policyId = extractPolicyId(createRes.data);
+  // Reuse the draft a previous attempt already created (its PDF attach failed)
+  // rather than creating a fresh one — retrying must not leave orphan/duplicate
+  // drafts behind. Only create when there's no draft to reuse.
+  let policyId = existingPolicyId;
+  if (!policyId) {
+    const createRes = await post('/v1/policies', {
+      name: derivePolicyName(file.name),
+      content: [],
+    });
+    policyId = extractPolicyId(createRes.data);
 
-  if (createRes.error || !policyId) {
-    return {
-      ...base,
-      status: 'failed',
-      error: createRes.error || 'Failed to create policy',
-      httpStatus: createRes.status,
-    };
+    if (createRes.error || !policyId) {
+      return {
+        ...base,
+        status: 'failed',
+        error: createRes.error || 'Failed to create policy',
+        httpStatus: createRes.status,
+      };
+    }
   }
 
   const attachRes = await post(`/v1/policies/${policyId}/pdf`, {
@@ -131,17 +147,23 @@ async function uploadOnePolicy({
  * them and never touches the database directly. Files are processed
  * independently so a single bad document doesn't abort the rest of the
  * migration; outcomes are reported per file, in input order.
+ *
+ * When retrying, pass `existingPolicyIds` (file key → id of a draft a prior
+ * attempt already created but couldn't attach a PDF to) so those files skip
+ * creation and only re-attach, avoiding orphan/duplicate drafts.
  */
 export async function bulkUploadPoliciesViaApi({
   post,
   files,
   readFileAsBase64,
   concurrency = DEFAULT_UPLOAD_CONCURRENCY,
+  existingPolicyIds,
 }: {
   post: ApiPost;
   files: File[];
   readFileAsBase64: ReadFileAsBase64;
   concurrency?: number;
+  existingPolicyIds?: Record<string, string>;
 }): Promise<PolicyBulkUploadResult> {
   const results: PolicyBulkUploadItemResult[] = new Array(files.length);
   let next = 0;
@@ -152,10 +174,12 @@ export async function bulkUploadPoliciesViaApi({
     while (next < files.length) {
       const index = next;
       next += 1;
+      const file = files[index];
       results[index] = await uploadOnePolicy({
         post,
         readFileAsBase64,
-        file: files[index],
+        file,
+        existingPolicyId: existingPolicyIds?.[bulkUploadFileKey(file)],
       });
     }
   };

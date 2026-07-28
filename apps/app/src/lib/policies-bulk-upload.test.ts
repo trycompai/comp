@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { bulkUploadPoliciesViaApi } from './policies-bulk-upload';
+import {
+  bulkUploadFileKey,
+  bulkUploadPoliciesViaApi,
+} from './policies-bulk-upload';
 
 /** Build a real File so name/size/type behave like the browser. */
 function file(name: string): File {
@@ -126,6 +129,61 @@ describe('bulkUploadPoliciesViaApi', () => {
       error: 'File too large',
       httpStatus: 400,
     });
+  });
+
+  it('reuses an existing draft id on retry instead of creating a duplicate policy', async () => {
+    // Only the attach is mocked — a create call would consume nothing and the
+    // assertions below would catch it.
+    post.mockResolvedValueOnce({ data: { success: true }, status: 200 });
+
+    const f = file('Retry.pdf');
+    const result = await bulkUploadPoliciesViaApi({
+      post,
+      readFileAsBase64,
+      files: [f],
+      concurrency: 1,
+      existingPolicyIds: { [bulkUploadFileKey(f)]: 'pol_existing' },
+    });
+
+    expect(result.createdCount).toBe(1);
+    expect(result.results[0]).toEqual({
+      fileName: 'Retry.pdf',
+      fileSize: 3,
+      status: 'created',
+      policyId: 'pol_existing',
+    });
+    // No new draft created — went straight to attaching onto the existing one.
+    expect(post).toHaveBeenCalledTimes(1);
+    expect(post).toHaveBeenCalledWith(
+      '/v1/policies/pol_existing/pdf',
+      expect.objectContaining({ fileName: 'Retry.pdf' }),
+    );
+    expect(post).not.toHaveBeenCalledWith('/v1/policies', expect.anything());
+  });
+
+  it('keeps reusing the same draft when a retried attach fails again', async () => {
+    post.mockResolvedValueOnce({ error: 'still failing', status: 400 });
+
+    const f = file('Retry.pdf');
+    const result = await bulkUploadPoliciesViaApi({
+      post,
+      readFileAsBase64,
+      files: [f],
+      concurrency: 1,
+      existingPolicyIds: { [bulkUploadFileKey(f)]: 'pol_existing' },
+    });
+
+    // Failure still reports the reused id so the next retry reuses it again.
+    expect(result.results[0]).toEqual({
+      fileName: 'Retry.pdf',
+      fileSize: 3,
+      status: 'failed',
+      policyId: 'pol_existing',
+      error: 'still failing',
+      httpStatus: 400,
+    });
+    expect(post).toHaveBeenCalledTimes(1);
+    expect(post).not.toHaveBeenCalledWith('/v1/policies', expect.anything());
   });
 
   it('fails a file without hitting the API when its bytes cannot be read', async () => {

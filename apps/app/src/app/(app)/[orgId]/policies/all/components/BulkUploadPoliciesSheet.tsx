@@ -1,7 +1,10 @@
 'use client';
 
 import { useApi } from '@/hooks/use-api';
-import { bulkUploadPoliciesViaApi } from '@/lib/policies-bulk-upload';
+import {
+  bulkUploadFileKey as fileKey,
+  bulkUploadPoliciesViaApi,
+} from '@/lib/policies-bulk-upload';
 import {
   Button,
   cn,
@@ -28,11 +31,6 @@ interface BulkUploadPoliciesSheetProps {
   onOpenChange: (open: boolean) => void;
 }
 
-/** Stable per-file identity used for de-dupe, error mapping, and retry. */
-function fileKey(file: { name: string; size: number }): string {
-  return `${file.name}:${file.size}`;
-}
-
 function readFileAsBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -52,11 +50,17 @@ export function BulkUploadPoliciesSheet({
   const [files, setFiles] = useState<File[]>([]);
   // Per-file upload errors, keyed by name+size, surfaced inline after an upload.
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // Drafts created by a previous attempt whose PDF attach failed, keyed by
+  // name+size. A retry reuses these ids instead of creating duplicate drafts.
+  const [policyIdsByFile, setPolicyIdsByFile] = useState<
+    Record<string, string>
+  >({});
   const [isUploading, setIsUploading] = useState(false);
 
   const resetAndClose = () => {
     setFiles([]);
     setErrors({});
+    setPolicyIdsByFile({});
     onOpenChange(false);
   };
 
@@ -85,13 +89,15 @@ export function BulkUploadPoliciesSheet({
     const removed = files[index];
     setFiles((prev) => prev.filter((_, i) => i !== index));
     if (removed) {
-      setErrors((prev) => {
-        const key = fileKey(removed);
+      const key = fileKey(removed);
+      const dropKey = (prev: Record<string, string>) => {
         if (!(key in prev)) return prev;
         const rest = { ...prev };
         delete rest[key];
         return rest;
-      });
+      };
+      setErrors(dropKey);
+      setPolicyIdsByFile(dropKey);
     }
   };
 
@@ -108,6 +114,9 @@ export function BulkUploadPoliciesSheet({
           post: api.post,
           files,
           readFileAsBase64,
+          // Reuse drafts left behind by earlier failed attaches so a retry
+          // doesn't spawn duplicate/orphan drafts.
+          existingPolicyIds: policyIdsByFile,
         });
 
       if (createdCount > 0) {
@@ -125,12 +134,15 @@ export function BulkUploadPoliciesSheet({
       }
 
       // Keep only the failed files (matched by name+size) with their error so
-      // the user can review what went wrong and retry just those.
+      // the user can review what went wrong and retry just those. Remember any
+      // draft that was created before its attach failed so the retry reuses it.
       const failedErrors: Record<string, string> = {};
+      const nextPolicyIds: Record<string, string> = {};
       for (const r of results) {
         if (r.status === 'failed') {
-          failedErrors[`${r.fileName}:${r.fileSize}`] =
-            r.error ?? 'Upload failed.';
+          const key = fileKey({ name: r.fileName, size: r.fileSize });
+          failedErrors[key] = r.error ?? 'Upload failed.';
+          if (r.policyId) nextPolicyIds[key] = r.policyId;
         }
       }
       if (createdCount === 0) {
@@ -140,6 +152,7 @@ export function BulkUploadPoliciesSheet({
         );
       }
       setErrors(failedErrors);
+      setPolicyIdsByFile(nextPolicyIds);
       setFiles((prev) => prev.filter((f) => fileKey(f) in failedErrors));
     } catch {
       toast.error('Failed to upload policies.');
@@ -156,7 +169,17 @@ export function BulkUploadPoliciesSheet({
   return (
     <Sheet
       open={open}
-      onOpenChange={(next) => (next ? onOpenChange(true) : resetAndClose())}
+      onOpenChange={(next) => {
+        if (next) {
+          onOpenChange(true);
+          return;
+        }
+        // Block closing while an upload is in flight: closing runs
+        // resetAndClose, which would wipe the failed-file retry state out from
+        // under requests that are still running.
+        if (isUploading) return;
+        resetAndClose();
+      }}
     >
       <SheetContent>
         <SheetHeader>
