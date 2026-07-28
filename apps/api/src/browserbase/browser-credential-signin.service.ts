@@ -1,10 +1,12 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { BrowserbaseSessionService } from './browserbase-session.service';
 import { BrowserAuthProfileService } from './browser-auth-profile.service';
+import { signInAndClassify } from './browser-credential-login';
 import {
   classifyLoginOutcome,
-  signInAndClassify,
-} from './browser-credential-login';
+  classifyTwoFactorMethod,
+  type TwoFactorMethod,
+} from './browser-login-classifier';
 import { navigateToSignIn } from './browser-login-navigation';
 import { resolveBrowserCredentialVaultAdapter } from './browser-credential-vault.factory';
 
@@ -46,6 +48,13 @@ export interface AutoSignInResult {
    * (e.g. sites whose root always shows a login form).
    */
   homeUrl?: string;
+  /**
+   * For a take-over (not signed in): HOW the verification step wants the user to
+   * verify, so the UI can give exact guidance — enter a code, switch off a
+   * passkey, or that a passkey-only login can't be automated. Omitted when the
+   * page couldn't be classified.
+   */
+  twoFactorMethod?: TwoFactorMethod;
 }
 
 const FAILURE_REASON: Record<AutoSignInFailure, string> = {
@@ -218,6 +227,18 @@ export class BrowserCredentialSigninService {
         // back to the one detected + stored at connect time.
         usernameLabel: input.usernameLabel ?? profile.identifierLabel ?? undefined,
       });
+      // The sign-in attempt navigated — often to a 2FA / verification page, and
+      // sometimes in a new tab. Re-point the live view at the tab the classifier
+      // just judged (same newest-tab selection it used), so a take-over — e.g.
+      // typing the 2FA code — happens on the page the user actually sees. Without
+      // this the iframe stays on the pre-submit login tab and the code field is
+      // invisible, which is exactly the "your turn, but I can't see the field"
+      // state users hit.
+      await this.streamActiveLiveView(
+        activeStagehand,
+        input.sessionId,
+        input.onLiveView,
+      );
       step('Checking whether that worked');
 
       if (outcome === 'logged_in') {
@@ -237,7 +258,23 @@ export class BrowserCredentialSigninService {
       });
       await record(outcome, FAILURE_REASON[outcome]);
       finish('warn');
-      return { isLoggedIn: false, failure: outcome };
+
+      // A human is about to take over — read HOW the page wants them to verify
+      // (enter a code, switch off a passkey, or a passkey-only login we can't
+      // automate) so the UI gives exact guidance. We also classify on 'unknown'
+      // because a passkey prompt (e.g. GitHub's webauthn step, which asks for a
+      // key rather than a code) can land there; the classifier degrades to
+      // 'other' for a genuinely non-verification page, so the panel stays generic.
+      // Best-effort: undefined just falls back to the generic take-over copy.
+      let twoFactorMethod: TwoFactorMethod | undefined;
+      if (
+        outcome === 'needs_2fa' ||
+        outcome === 'challenge' ||
+        outcome === 'unknown'
+      ) {
+        twoFactorMethod = await classifyTwoFactorMethod(activeStagehand);
+      }
+      return { isLoggedIn: false, failure: outcome, twoFactorMethod };
     } catch (error) {
       // An unexpected error (session/navigation/model failure) is exactly the
       // kind of thing a "can't connect" ticket is about — record it, then let

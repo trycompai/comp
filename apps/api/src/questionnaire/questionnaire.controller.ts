@@ -174,8 +174,13 @@ export class QuestionnaireController {
 
   @Post('answer-single')
   @RequirePermission('questionnaire', 'update')
-  @ApiOperation({ summary: 'Answer a single questionnaire question' })
+  @ApiOperation({
+    summary: 'Answer a single questionnaire question',
+    description:
+      'Generate one questionnaire answer from the active organization knowledge base. Omit questionnaireId for webpage-only drafts that should not be saved.',
+  })
   @ApiConsumes('application/json')
+  @ApiBody({ type: AnswerSingleQuestionDto })
   @ApiOkResponse({
     description: 'Generated single answer result',
     schema: {
@@ -728,6 +733,7 @@ export class QuestionnaireController {
               try {
                 await this.questionnaireService.saveGeneratedAnswerPublic({
                   questionnaireId: dto.questionnaireId,
+                  organizationId: dto.organizationId,
                   questionIndex: qa.index,
                   answer: result.answer,
                   sources: result.sources,
