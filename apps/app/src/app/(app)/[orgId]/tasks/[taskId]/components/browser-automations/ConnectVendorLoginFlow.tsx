@@ -107,9 +107,12 @@ export function ConnectVendorLoginFlow({
             ? 'Enter your two-factor code to finish the sign-in.'
             : 'Finish the sign-in in the browser.',
       );
-      // A passkey/code verification step is a "your turn" 2FA take-over; other
-      // challenges (device approval, CAPTCHA, link) use the generic finish panel.
-      const is2fa = failure === 'needs_2fa' || (!!method && method !== 'other');
+      // Trust an explicit classification: a passkey/code step is a "your turn"
+      // 2FA take-over, while 'other' (device approval, CAPTCHA, link) uses the
+      // generic finish panel. Only when no method was detected do we fall back to
+      // the raw failure code.
+      const is2fa =
+        method === undefined ? failure === 'needs_2fa' : method !== 'other';
       setTakeoverVariant(is2fa ? '2fa' : 'finish');
       setStep('takeover');
     },

@@ -1,12 +1,12 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { BrowserbaseSessionService } from './browserbase-session.service';
 import { BrowserAuthProfileService } from './browser-auth-profile.service';
+import { signInAndClassify } from './browser-credential-login';
 import {
   classifyLoginOutcome,
   classifyTwoFactorMethod,
-  signInAndClassify,
   type TwoFactorMethod,
-} from './browser-credential-login';
+} from './browser-login-classifier';
 import { navigateToSignIn } from './browser-login-navigation';
 import { resolveBrowserCredentialVaultAdapter } from './browser-credential-vault.factory';
 

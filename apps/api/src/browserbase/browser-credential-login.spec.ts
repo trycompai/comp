@@ -1,8 +1,6 @@
 import {
-  classifyTwoFactorMethod,
   performCredentialLogin,
   reloginWithStoredCredentials,
-  safeOriginAndPath,
 } from './browser-credential-login';
 import type { BrowserCredentialVaultAdapter } from './credential-vault';
 import type { BrowserbaseSessionService } from './browserbase-session.service';
@@ -81,14 +79,19 @@ describe('performCredentialLogin', () => {
     await promise;
 
     // With a code to fill and no human present, we auto-switch off a passkey so
-    // the code field appears, then enter the stored code.
+    // the code field appears, then enter the stored code. Reaching the code field
+    // can take two clicks, and act() does one thing per call, so it's two steps:
+    // first reveal the other options, then choose the authenticator/code method.
     const calls = stagehand.act.mock.calls as [string, unknown?][];
-    const switchCall = calls.find(
+    const revealCall = calls.find(
       ([instruction]) =>
-        instruction.includes('passkey') &&
-        instruction.includes('authenticator app'),
+        instruction.includes('passkey') && instruction.includes('More options'),
     );
-    expect(switchCall).toBeDefined();
+    const selectCall = calls.find(([instruction]) =>
+      instruction.includes('authenticator app'),
+    );
+    expect(revealCall).toBeDefined();
+    expect(selectCall).toBeDefined();
   });
 
   it('reveals other sign-in methods without choosing one when a passkey blocks a take-over', async () => {
@@ -112,43 +115,11 @@ describe('performCredentialLogin', () => {
         instruction.includes('do NOT select'),
     );
     expect(revealCall).toBeDefined();
-    // And it must NOT force the authenticator method (that would pick for them).
-    const forcedSwitch = calls.find(([instruction]) =>
-      instruction.includes('switch to the authenticator app'),
+    // And it must NOT pick a method for them (no authenticator-app selection).
+    const forcedSelect = calls.find(([instruction]) =>
+      instruction.includes('authenticator app'),
     );
-    expect(forcedSwitch).toBeUndefined();
-  });
-});
-
-describe('classifyTwoFactorMethod', () => {
-  const makeStagehandWithExtract = (result: unknown) =>
-    ({ extract: jest.fn().mockResolvedValue(result) }) as unknown as Stagehand;
-
-  it('returns the classified method for each valid response', async () => {
-    for (const method of [
-      'code',
-      'passkey',
-      'passkey_only',
-      'other',
-    ] as const) {
-      await expect(
-        classifyTwoFactorMethod(makeStagehandWithExtract({ method })),
-      ).resolves.toBe(method);
-    }
-  });
-
-  it('degrades to "other" for a non-conforming or missing value', async () => {
-    // Wrong shape (e.g. an outcome payload) — must not leak undefined.
-    await expect(
-      classifyTwoFactorMethod(makeStagehandWithExtract({ state: 'needs_2fa' })),
-    ).resolves.toBe('other');
-  });
-
-  it('degrades to "other" when extraction throws', async () => {
-    const stagehand = {
-      extract: jest.fn().mockRejectedValue(new Error('boom')),
-    } as unknown as Stagehand;
-    await expect(classifyTwoFactorMethod(stagehand)).resolves.toBe('other');
+    expect(forcedSelect).toBeUndefined();
   });
 });
 
@@ -267,26 +238,5 @@ describe('reloginWithStoredCredentials', () => {
 
     expect(result.isLoggedIn).toBe(false);
     expect(result.reason).toMatch(/user action/i);
-  });
-});
-
-describe('safeOriginAndPath (keeps auth secrets out of the LLM prompt)', () => {
-  it('drops the query and fragment (OAuth code/state/tokens)', () => {
-    expect(
-      safeOriginAndPath(
-        'https://login.example.com/callback?code=SECRET&state=xyz#access_token=abc',
-      ),
-    ).toBe('https://login.example.com/callback');
-  });
-
-  it('drops userinfo', () => {
-    expect(safeOriginAndPath('https://user:pass@example.com/app')).toBe(
-      'https://example.com/app',
-    );
-  });
-
-  it('returns empty string for an unparseable or empty URL', () => {
-    expect(safeOriginAndPath('not a url')).toBe('');
-    expect(safeOriginAndPath('')).toBe('');
   });
 });
