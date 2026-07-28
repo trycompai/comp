@@ -2,11 +2,12 @@
 
 import { CreatePolicySheet } from '@/components/sheets/create-policy-sheet';
 import { usePermissions } from '@/hooks/use-permissions';
-import { Add, Download } from '@trycompai/design-system/icons';
+import { Add, Download, Upload } from '@trycompai/design-system/icons';
 import type { Policy } from '@db';
 import { Button, HStack } from '@trycompai/design-system';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
+import { BulkUploadPoliciesSheet } from './BulkUploadPoliciesSheet';
 import { PolicyDownloadSheet } from './PolicyDownloadSheet';
 
 interface PolicyPageActionsProps {
@@ -18,6 +19,7 @@ export function PolicyPageActions({ policies }: PolicyPageActionsProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isDownloadSheetOpen, setIsDownloadSheetOpen] = useState(false);
+  const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
   const { hasPermission } = usePermissions();
 
   const handleOpenDownloadSheet = () => setIsDownloadSheetOpen(true);
@@ -41,12 +43,25 @@ export function PolicyPageActions({ policies }: PolicyPageActionsProps) {
           </Button>
         )}
         {hasPermission('policy', 'create') && (
+          <Button
+            variant="outline"
+            iconLeft={<Upload />}
+            onClick={() => setIsBulkUploadOpen(true)}
+          >
+            Bulk upload
+          </Button>
+        )}
+        {hasPermission('policy', 'create') && (
           <Button iconLeft={<Add />} onClick={handleCreatePolicy}>
             Create Policy
           </Button>
         )}
       </HStack>
       <CreatePolicySheet />
+      <BulkUploadPoliciesSheet
+        open={isBulkUploadOpen}
+        onOpenChange={setIsBulkUploadOpen}
+      />
       <PolicyDownloadSheet
         open={isDownloadSheetOpen}
         onOpenChange={setIsDownloadSheetOpen}
