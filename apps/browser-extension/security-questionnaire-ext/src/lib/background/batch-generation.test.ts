@@ -136,6 +136,35 @@ describe('generateQueueItemsInBatches', () => {
     expect(b?.answer).toBe('signed off');
   });
 
+  it('keeps persisting later answers after one write fails', async () => {
+    const items = [item({ id: 'a' }), item({ id: 'b' }), item({ id: 'c' })];
+    let stored = queueWith(items);
+    let saveCount = 0;
+
+    await expect(
+      generateQueueItemsInBatches({
+        auth: { selectedOrganizationId: 'org_a' },
+        concurrency: 1,
+        queue: stored,
+        loadQueue: async () => stored,
+        saveQueue: async (next) => {
+          saveCount += 1;
+          // Fail the first per-item write (the initial "generating" save is #1).
+          if (saveCount === 2) throw new Error('storage unavailable');
+          stored = next;
+        },
+      }),
+    ).rejects.toThrow('could not be saved for 1 question');
+
+    // b and c must still have been written despite a's failure.
+    expect(stored.items.find((entry) => entry.id === 'b')?.answer).toBe(
+      'generated answer',
+    );
+    expect(stored.items.find((entry) => entry.id === 'c')?.answer).toBe(
+      'generated answer',
+    );
+  });
+
   it('flags an item when generation fails instead of leaving it generating', async () => {
     generateAnswer.mockRejectedValueOnce(new Error('API is down'));
     const result = await runBatch([item({ id: 'a', status: 'pending' })]);

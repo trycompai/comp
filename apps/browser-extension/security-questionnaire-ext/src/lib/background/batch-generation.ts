@@ -43,6 +43,7 @@ export async function generateQueueItemsInBatches(params: {
   await params.saveQueue(queue);
 
   const indexedItems = queue.items;
+  const failedWrites: string[] = [];
   // Generation is slow and the user keeps editing and approving while it runs.
   // Each result is applied to the freshly stored queue inside a serialized
   // section, so a long-running request cannot write back a stale snapshot.
@@ -50,12 +51,16 @@ export async function generateQueueItemsInBatches(params: {
   const commit = (
     apply: (current: TabQuestionQueue) => TabQuestionQueue,
   ): Promise<void> => {
-    writeQueue = writeQueue.then(async () => {
+    const result = writeQueue.then(async () => {
       const current = params.loadQueue ? await params.loadQueue() : queue;
       queue = apply(current);
       await params.saveQueue(queue);
     });
-    return writeQueue;
+    // The chain must survive a failed write. Without this, one rejected save
+    // leaves `writeQueue` permanently rejected and every later answer in the
+    // batch is computed but silently never persisted.
+    writeQueue = result.catch(() => undefined);
+    return result;
   };
 
   await runConcurrent({
@@ -69,6 +74,8 @@ export async function generateQueueItemsInBatches(params: {
         questionIndex,
         totalQuestions: indexedItems.length,
       });
+      // Collected rather than thrown: runConcurrent propagates a throwing
+      // worker, which would abandon every question still queued behind it.
       await commit((current) => {
         const existing = current.items.find((entry) => entry.id === item.id);
         // We marked this item `generating`. If it no longer is, the user
@@ -78,10 +85,19 @@ export async function generateQueueItemsInBatches(params: {
           return current;
         }
         return applyGeneratedAnswer({ queue: current, itemId: item.id, answer });
+      }).catch(() => {
+        failedWrites.push(item.id);
       });
     },
   });
   await writeQueue;
+  // Everything that could be saved has been. Surface the rest instead of
+  // reporting a clean run that quietly lost answers.
+  if (failedWrites.length > 0) {
+    throw new Error(
+      `Generated answers could not be saved for ${failedWrites.length} question(s).`,
+    );
+  }
   return queue;
 }
 
