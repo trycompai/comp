@@ -1,20 +1,25 @@
 import { auth } from '@/app/lib/auth';
 import { env } from '@/env.mjs';
-import { HIPAA_TRAINING_ID } from '@/lib/data/hipaa-training-content';
-import { trainingVideos } from '@/lib/data/training-videos';
 import { db } from '@db/server';
-import { type NextRequest, NextResponse } from 'next/server';
+import {
+  GENERAL_TRAINING_VIDEO_IDS,
+  HIPAA_TRAINING_ID,
+  HIPAA_TRAINING_UNAVAILABLE_MESSAGE,
+  hipaaFrameworkInstanceWhere,
+  isTrainingVideoId,
+} from '@trycompai/company';
+import { after, type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-// Canonical training video IDs, derived from the same source the UI renders.
-const GENERAL_TRAINING_IDS = trainingVideos.map((v) => v.id);
-const VALID_VIDEO_IDS = new Set<string>([
-  ...GENERAL_TRAINING_IDS,
-  HIPAA_TRAINING_ID,
-]);
+// The completion email hits the NestJS API, which resolves the member, renders
+// a PDF certificate and calls the email provider — seconds of work. It runs
+// after the response (see `after` below), but still needs a bound: Node's fetch
+// waits ~5 minutes by default, which would pin the serverless invocation open
+// long after the employee has moved on.
+const COMPLETION_EMAIL_TIMEOUT_MS = 30_000;
 
 const schema = z.object({
   videoId: z.string().min(1),
@@ -58,7 +63,7 @@ export async function POST(req: NextRequest) {
 
   const { videoId, organizationId } = parsed.data;
 
-  if (!VALID_VIDEO_IDS.has(videoId)) {
+  if (!isTrainingVideoId(videoId)) {
     return NextResponse.json({ error: 'Invalid video ID' }, { status: 400 });
   }
 
@@ -76,20 +81,17 @@ export async function POST(req: NextRequest) {
   }
 
   // HIPAA training is only available to orgs that have the HIPAA framework
-  // enabled. Mirror the NestJS training service (markVideoComplete) so this
-  // route can't create HIPAA completion records — and trigger HIPAA
-  // certificate artifacts — for orgs the service would reject, which would
-  // desync the two completion paths.
+  // enabled. The eligibility rule is shared with the NestJS training service
+  // (markVideoComplete) so this route can't create HIPAA completion records —
+  // and trigger HIPAA certificate artifacts — for orgs the service would
+  // reject, which would desync the two completion paths.
   if (videoId === HIPAA_TRAINING_ID) {
     const hipaaInstance = await db.frameworkInstance.findFirst({
-      where: { organizationId, framework: { name: 'HIPAA' } },
+      where: hipaaFrameworkInstanceWhere(organizationId),
       select: { id: true },
     });
     if (!hipaaInstance) {
-      return NextResponse.json(
-        { error: 'HIPAA training is not available for this organization' },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: HIPAA_TRAINING_UNAVAILABLE_MESSAGE }, { status: 400 });
     }
   }
 
@@ -116,11 +118,19 @@ export async function POST(req: NextRequest) {
   // Best-effort: trigger the completion certificate email once the relevant
   // training is fully done. Reuses the NestJS email pipeline via the portal
   // service token, so we don't duplicate the certificate/email logic here.
-  await sendCompletionEmailIfComplete({
-    videoId,
-    memberId: member.id,
-    organizationId,
-  });
+  //
+  // Deferred with `after` so it runs once the response has been sent. The
+  // completion is already durable at this point, and the API call behind it
+  // renders a PDF certificate and talks to the email provider — awaiting that
+  // made the employee's click wait seconds on the happy path, and time out on
+  // the unhappy one, for work whose outcome they never see.
+  after(() =>
+    sendCompletionEmailIfComplete({
+      videoId,
+      memberId: member.id,
+      organizationId,
+    }),
+  );
 
   return NextResponse.json({ success: true, data: record });
 }
@@ -154,13 +164,13 @@ async function sendCompletionEmailIfComplete({
     const completed = await db.employeeTrainingVideoCompletion.findMany({
       where: {
         memberId,
-        videoId: { in: GENERAL_TRAINING_IDS },
+        videoId: { in: [...GENERAL_TRAINING_VIDEO_IDS] },
         completedAt: { not: null },
       },
       select: { id: true },
     });
 
-    if (completed.length === GENERAL_TRAINING_IDS.length) {
+    if (completed.length === GENERAL_TRAINING_VIDEO_IDS.length) {
       await triggerCompletionEmail({
         url: `${apiUrl}/v1/training/send-completion-email`,
         serviceToken,
@@ -199,6 +209,7 @@ async function triggerCompletionEmail({
       'x-organization-id': organizationId,
     },
     body: JSON.stringify({ memberId }),
+    signal: AbortSignal.timeout(COMPLETION_EMAIL_TIMEOUT_MS),
   });
 
   // fetch only rejects on network errors, never on a 4xx/5xx response. Without

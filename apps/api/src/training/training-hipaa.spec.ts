@@ -4,6 +4,9 @@ import { TrainingService } from './training.service';
 jest.mock('@db', () => ({
   db: {
     member: { findFirst: jest.fn(), findUnique: jest.fn() },
+    // markVideoComplete gates hipaa-sat-1 on the org having a HIPAA framework
+    // instance, so the HIPAA paths must be able to resolve one.
+    frameworkInstance: { findFirst: jest.fn() },
     employeeTrainingVideoCompletion: {
       findMany: jest.fn(),
       findFirst: jest.fn(),
@@ -36,6 +39,7 @@ describe('TrainingService — HIPAA training', () => {
 
   describe('markVideoComplete', () => {
     it('should accept hipaa-sat-1 as a valid training ID', async () => {
+      db.frameworkInstance.findFirst.mockResolvedValue({ id: 'frm_1' });
       db.member.findFirst.mockResolvedValue({
         id: 'mem_1',
         organizationId: 'org_1',
@@ -63,6 +67,19 @@ describe('TrainingService — HIPAA training', () => {
           completedAt: expect.any(Date),
         },
       });
+    });
+
+    // Mirrors the portal's complete-training route: the two completion paths
+    // must agree on which orgs may complete HIPAA training, or one can create
+    // records — and certificate artifacts — the other would have rejected.
+    it('should reject hipaa-sat-1 when the org has no HIPAA framework', async () => {
+      db.frameworkInstance.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.markVideoComplete('mem_1', 'org_1', 'hipaa-sat-1'),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(db.employeeTrainingVideoCompletion.create).not.toHaveBeenCalled();
     });
 
     it('should reject unknown training IDs', async () => {
