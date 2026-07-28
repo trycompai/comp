@@ -218,6 +218,18 @@ export class BrowserCredentialSigninService {
         // back to the one detected + stored at connect time.
         usernameLabel: input.usernameLabel ?? profile.identifierLabel ?? undefined,
       });
+      // The sign-in attempt navigated — often to a 2FA / verification page, and
+      // sometimes in a new tab. Re-point the live view at the tab the classifier
+      // just judged (same newest-tab selection it used), so a take-over — e.g.
+      // typing the 2FA code — happens on the page the user actually sees. Without
+      // this the iframe stays on the pre-submit login tab and the code field is
+      // invisible, which is exactly the "your turn, but I can't see the field"
+      // state users hit.
+      await this.streamActiveLiveView(
+        activeStagehand,
+        input.sessionId,
+        input.onLiveView,
+      );
       step('Checking whether that worked');
 
       if (outcome === 'logged_in') {

@@ -13,6 +13,7 @@ import {
 } from './browserbase-url';
 import {
   BrowserbaseSessionService,
+  INTERACTIVE_SESSION_TIMEOUT_SECONDS,
   INTERACTIVE_VIEWPORT,
 } from './browserbase-session.service';
 import { BrowserAuthProfileContextService } from './browser-auth-profile-context.service';
@@ -197,10 +198,14 @@ export class BrowserAuthProfileService {
     }
     const readyProfile = await this.profileContexts.ready(profile);
     // Human-facing session — use the smaller viewport so the sign-in page reads
-    // larger in the live view.
+    // larger in the live view, and a generous timeout so the session (and its
+    // live view) survives a 2FA take-over instead of dying on the project's
+    // short default.
     return this.sessions.createSessionWithContext(
       readyProfile.contextId,
       INTERACTIVE_VIEWPORT,
+      true,
+      INTERACTIVE_SESSION_TIMEOUT_SECONDS,
     );
   }
 
