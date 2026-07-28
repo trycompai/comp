@@ -35,6 +35,9 @@ function makeSessions(extract: jest.Mock, act: jest.Mock) {
     ensureActivePage: jest.fn().mockResolvedValue(page),
     safeCloseStagehand: jest.fn().mockResolvedValue(undefined),
     closeSession: jest.fn().mockResolvedValue(undefined),
+    getActivePageLiveViewUrl: jest
+      .fn()
+      .mockResolvedValue('https://live-view/current'),
   };
 }
 
@@ -170,6 +173,67 @@ describe('BrowserCredentialSigninService', () => {
     expect(result.isLoggedIn).toBe(false);
     expect(result.failure).toBe('needs_2fa');
     expect(profiles.markNeedsReauth).toHaveBeenCalledTimes(1);
+  });
+
+  it('classifies the verification method for a take-over so the UI can guide the user', async () => {
+    // 1) already-signed-in check → not in; 2) post-sign-in outcome → needs_2fa;
+    // 3) how the page verifies → a passkey the user can switch away from.
+    const extract = jest
+      .fn()
+      .mockResolvedValueOnce({ state: 'unknown' })
+      .mockResolvedValueOnce({ state: 'needs_2fa' })
+      .mockResolvedValueOnce({ method: 'passkey' });
+    const sessions = makeSessions(extract, jest.fn().mockResolvedValue(undefined));
+    const profiles = makeProfiles(profile);
+    withCredentials({ username: 'user@x.com', password: 'secret' }); // no totpCode
+
+    const result = await run(sessions, profiles);
+
+    expect(result.failure).toBe('needs_2fa');
+    expect(result.twoFactorMethod).toBe('passkey');
+  });
+
+  it('classifies a passkey prompt that lands as an unclear outcome (GitHub webauthn)', async () => {
+    // GitHub's passkey step asks for a key, not a code, so the outcome classifier
+    // can return 'unknown' — we still read the method so the panel guides the user.
+    const extract = jest
+      .fn()
+      .mockResolvedValueOnce({ state: 'unknown' })
+      .mockResolvedValueOnce({ state: 'unknown' })
+      .mockResolvedValueOnce({ method: 'passkey' });
+    const sessions = makeSessions(extract, jest.fn().mockResolvedValue(undefined));
+    const profiles = makeProfiles(profile);
+    withCredentials({ username: 'user@x.com', password: 'secret' });
+
+    const result = await run(sessions, profiles);
+
+    expect(result.failure).toBe('unknown');
+    expect(result.twoFactorMethod).toBe('passkey');
+  });
+
+  it('re-points the live view after the sign-in attempt so a 2FA take-over sees the right tab', async () => {
+    const extract = jest
+      .fn()
+      .mockResolvedValueOnce({ state: 'unknown' })
+      .mockResolvedValue({ state: 'needs_2fa' });
+    const sessions = makeSessions(extract, jest.fn().mockResolvedValue(undefined));
+    const profiles = makeProfiles(profile);
+    withCredentials({ username: 'user@x.com', password: 'secret' }); // no code → manual 2FA
+    const onLiveView = jest.fn();
+    const service = new BrowserCredentialSigninService(
+      sessions as unknown as BrowserbaseSessionService,
+      profiles as unknown as BrowserAuthProfileService,
+    );
+
+    const promise = service.signInWithStoredCredentials({ ...input, onLiveView });
+    await jest.runAllTimersAsync();
+    const result = await promise;
+
+    expect(result.failure).toBe('needs_2fa');
+    // Emitted after navigateToSignIn AND again after the sign-in attempt — so the
+    // iframe follows to the 2FA page instead of staying on the pre-submit login
+    // tab (the reported "your turn, but I can't see the code field" bug).
+    expect(onLiveView.mock.calls.length).toBeGreaterThanOrEqual(2);
   });
 
   it('throws when the profile does not exist', async () => {

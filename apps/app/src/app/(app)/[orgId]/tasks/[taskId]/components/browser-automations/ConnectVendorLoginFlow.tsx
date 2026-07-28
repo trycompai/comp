@@ -24,7 +24,11 @@ import { normalizeUrl, stripScheme } from './connect-url';
 import type { ConnectCaptureFormData } from './ConnectCaptureForm';
 import { ConnectFlowRail } from './ConnectFlowRail';
 import { ConnectFlowStage } from './ConnectFlowStage';
-import { ConnectLiveSignin, type LiveSigninVariant } from './ConnectLiveSignin';
+import {
+  ConnectLiveSignin,
+  type LiveSigninVariant,
+  type TwoFactorMethod,
+} from './ConnectLiveSignin';
 import type { ConnectMethodKind } from './ConnectMethodChooser';
 import type { SignInStep } from './StepList';
 
@@ -73,6 +77,11 @@ export function ConnectVendorLoginFlow({
     accessToken: string;
   } | null>(null);
   const [takeoverVariant, setTakeoverVariant] = useState<LiveSigninVariant>('finish');
+  // How the blocked verification wants the user to verify (code / passkey /
+  // passkey-only), so the take-over panel gives exact guidance.
+  const [takeoverMethod, setTakeoverMethod] = useState<
+    TwoFactorMethod | undefined
+  >(undefined);
   // The activity timeline, mirrored into flow state so it survives into the
   // take-over view after the run's realtime subscription is torn down.
   const [signinSteps, setSigninSteps] = useState<SignInStep[]>([]);
@@ -87,16 +96,28 @@ export function ConnectVendorLoginFlow({
     useSigninSession();
 
   // Hand the (still-open) browser to the user to finish the sign-in themselves.
-  const goToTakeover = useCallback((failure?: string) => {
-    setSigninRun(null);
-    toast.info(
-      failure === 'needs_2fa'
-        ? 'Enter your two-factor code to finish the sign-in.'
-        : 'Finish the sign-in in the browser.',
-    );
-    setTakeoverVariant(failure === 'needs_2fa' ? '2fa' : 'finish');
-    setStep('takeover');
-  }, []);
+  const goToTakeover = useCallback(
+    (failure?: string, method?: TwoFactorMethod) => {
+      setSigninRun(null);
+      setTakeoverMethod(method);
+      toast.info(
+        method === 'passkey_only'
+          ? "This login requires a passkey, which can't be completed here."
+          : failure === 'needs_2fa'
+            ? 'Enter your two-factor code to finish the sign-in.'
+            : 'Finish the sign-in in the browser.',
+      );
+      // Trust an explicit classification: a passkey/code step is a "your turn"
+      // 2FA take-over, while 'other' (device approval, CAPTCHA, link) uses the
+      // generic finish panel. Only when no method was detected do we fall back to
+      // the raw failure code.
+      const is2fa =
+        method === undefined ? failure === 'needs_2fa' : method !== 'other';
+      setTakeoverVariant(is2fa ? '2fa' : 'finish');
+      setStep('takeover');
+    },
+    [],
+  );
 
   // Analysis (browser + AI) runs as a background task. Watching run/error also
   // handles resume, where the run may already be complete on subscribe.
@@ -148,7 +169,12 @@ export function ConnectVendorLoginFlow({
 
     if (signinRunState.status === 'COMPLETED') {
       const output = signinRunState.output as
-        | { isLoggedIn?: boolean; failure?: string; homeUrl?: string }
+        | {
+            isLoggedIn?: boolean;
+            failure?: string;
+            homeUrl?: string;
+            twoFactorMethod?: TwoFactorMethod;
+          }
         | undefined;
 
       if (output?.isLoggedIn) {
@@ -163,7 +189,7 @@ export function ConnectVendorLoginFlow({
         toast.error("That username or password wasn't accepted — check and try again.");
         setStep('capture');
       } else {
-        goToTakeover(output?.failure);
+        goToTakeover(output?.failure, output?.twoFactorMethod);
       }
     } else if (FAILED_RUN_STATUSES.has(signinRunState.status)) {
       goToTakeover();
@@ -383,6 +409,7 @@ export function ConnectVendorLoginFlow({
         variant={variant}
         success={success}
         steps={signinSteps}
+        twoFactorMethod={takeoverMethod}
         onConfirm={
           step === 'signing-in' || success
             ? undefined

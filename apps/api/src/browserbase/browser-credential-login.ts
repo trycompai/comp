@@ -1,9 +1,12 @@
-import { z } from 'zod';
 import type {
   BrowserCredentialVaultAdapter,
   RuntimeCredentialMaterial,
 } from './credential-vault';
 import type { BrowserbaseSessionService } from './browserbase-session.service';
+import {
+  classifyLoginOutcome,
+  type SignInOutcome,
+} from './browser-login-classifier';
 
 type Stagehand = import('@browserbasehq/stagehand').Stagehand;
 type ActivePage = Awaited<
@@ -27,21 +30,6 @@ export interface CredentialLoginTarget {
 }
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-/**
- * Origin + path only — drops the query, fragment, and userinfo so secrets that
- * land in an auth redirect (OAuth `code`/`state`, tokens) are never forwarded to
- * the model. Returns '' for an unparseable URL.
- */
-export function safeOriginAndPath(rawUrl: string): string {
-  if (!rawUrl) return '';
-  try {
-    const url = new URL(rawUrl);
-    return `${url.origin}${url.pathname}`;
-  } catch {
-    return '';
-  }
-}
 
 /**
  * Drives an automated sign-in using stored credentials. Secret values are passed
@@ -112,6 +100,20 @@ export async function performCredentialLogin({
   }
 
   if (credentials.totpCode) {
+    // We have a code to enter. Some vendors (e.g. GitHub) default the two-factor
+    // step to a passkey / security key, which we can't use — switch to the
+    // authenticator/code method so a six-digit field appears, then fill it.
+    // Reaching a code field can take two clicks (expand the options, then choose
+    // the code method), and act() does ONE thing per call, so these are separate
+    // steps. Both are best-effort no-ops when a code field is already shown.
+    await stagehand.act(
+      "If this page is asking for a passkey or security key instead of a verification code, click a control that reveals the other sign-in options — 'More options', 'Try another way', 'Use a different method', or similar. If a code field or the list of options is already visible, or this is not a two-factor page, do nothing.",
+    );
+    await delay(1000);
+    await stagehand.act(
+      "If there is an option to verify using an authenticator app or a two-factor code — 'Use authenticator app', 'Enter a two-factor code', 'Use a security code', 'Authenticator app', or similar — click it so a six-digit code field appears. If a code field is already visible, do nothing.",
+    );
+    await delay(1500);
     log('Entering one-time passcode.');
     await stagehand.act(
       'If a one-time passcode, two-factor, or verification code field is shown, enter %code% into it. If no such field is present, do nothing.',
@@ -122,6 +124,16 @@ export async function performCredentialLogin({
       'If there is a button to submit or verify the code, click it. Otherwise do nothing.',
     );
     await delay(2000);
+  } else {
+    // No stored code — if a two-factor step blocks us, a human takes over. Don't
+    // pick a method for them: if the page defaults to a passkey / security key
+    // (which can't be used here), just REVEAL the other options so they can choose
+    // the one they can actually complete (authenticator app, SMS, email). We never
+    // select a method — the choice is theirs. Best-effort no-op otherwise.
+    await stagehand.act(
+      "If this page is asking for a passkey or security key, reveal the other sign-in methods by clicking 'More options', 'Try another way', 'Use a different method', or a similar control — but do NOT select any specific method. If a verification-code field or the list of options is already visible, or this is not a two-factor page, do nothing.",
+    );
+    await delay(1500);
   }
 }
 
@@ -220,66 +232,6 @@ async function runLoginAttempt({
   // wherever we land.
   await delay(1500);
   return sessions.ensureActivePage(stagehand);
-}
-
-export type SignInOutcome =
-  | 'logged_in'
-  | 'invalid_credentials'
-  | 'needs_2fa'
-  | 'challenge'
-  | 'unknown';
-
-/**
- * Reads the current page after a sign-in attempt and classifies the outcome, so
- * the connect flow can tell the user what happened and route them correctly.
- * Never throws — an unreadable page degrades to 'unknown'.
- */
-export async function classifyLoginOutcome(
-  stagehand: Stagehand,
-): Promise<SignInOutcome> {
-  try {
-    // Give the model where the browser actually is, so it can judge for itself
-    // whether we're on the real app or still on a sign-in / identity-provider
-    // page (it knows hosts like signin.aws.amazon.com or login.microsoftonline.com
-    // without us hardcoding URL patterns). A hint only — falls back to content.
-    let currentUrl = '';
-    try {
-      const pages = stagehand.context?.pages?.() ?? [];
-      const rawUrl = pages[pages.length - 1]?.url() ?? '';
-      // Only the origin + path is needed to judge "is this a sign-in page". Strip
-      // the query, fragment, and userinfo so OAuth codes / tokens / state that
-      // land in an auth redirect are never forwarded to the model.
-      currentUrl = safeOriginAndPath(rawUrl);
-    } catch {
-      // URL unavailable — classify from page content alone.
-    }
-    const { state } = await stagehand.extract(
-      (currentUrl ? `The browser is currently at this URL: ${currentUrl}\n\n` : '') +
-        'Classify this page after a sign-in attempt, using BOTH the page content AND the URL. ' +
-        'Return exactly one value: ' +
-        '"logged_in" — there is clear evidence the user is signed in to the actual application ' +
-        '(a dashboard, an account/avatar menu, or a "Sign out" control) AND the browser is on the ' +
-        'application itself. If the URL is a sign-in, login, SSO, or identity-provider page, or the ' +
-        'page is blank, loading, redirecting, or still shows a sign-in form or a "Sign in" / ' +
-        '"Log in" button, it is NOT logged_in; ' +
-        '"invalid_credentials" — it shows an incorrect username/email/password error; ' +
-        '"needs_2fa" — it asks for a two-factor, one-time, authenticator, or verification code; ' +
-        '"challenge" — it shows a CAPTCHA, a "verify it\'s you", a device-approval, or an email/SMS link step; ' +
-        '"unknown" — none of the above clearly apply.',
-      z.object({
-        state: z.enum([
-          'logged_in',
-          'invalid_credentials',
-          'needs_2fa',
-          'challenge',
-          'unknown',
-        ]),
-      }),
-    );
-    return state;
-  } catch {
-    return 'unknown';
-  }
 }
 
 /**

@@ -1,7 +1,6 @@
 import {
   performCredentialLogin,
   reloginWithStoredCredentials,
-  safeOriginAndPath,
 } from './browser-credential-login';
 import type { BrowserCredentialVaultAdapter } from './credential-vault';
 import type { BrowserbaseSessionService } from './browserbase-session.service';
@@ -66,6 +65,61 @@ describe('performCredentialLogin', () => {
       expect(instruction).not.toContain('alice');
       expect(instruction).not.toContain('424242');
     }
+  });
+
+  it('switches a passkey prompt to the authenticator-code method when a code is stored', async () => {
+    const stagehand = makeStagehand();
+
+    const promise = performCredentialLogin({
+      stagehand: stagehand as unknown as Stagehand,
+      credentials: { username: 'alice', password: 'pw', totpCode: '424242' },
+      log: jest.fn(),
+    });
+    await jest.runAllTimersAsync();
+    await promise;
+
+    // With a code to fill and no human present, we auto-switch off a passkey so
+    // the code field appears, then enter the stored code. Reaching the code field
+    // can take two clicks, and act() does one thing per call, so it's two steps:
+    // first reveal the other options, then choose the authenticator/code method.
+    const calls = stagehand.act.mock.calls as [string, unknown?][];
+    const revealCall = calls.find(
+      ([instruction]) =>
+        instruction.includes('passkey') && instruction.includes('More options'),
+    );
+    const selectCall = calls.find(([instruction]) =>
+      instruction.includes('authenticator app'),
+    );
+    expect(revealCall).toBeDefined();
+    expect(selectCall).toBeDefined();
+  });
+
+  it('reveals other sign-in methods without choosing one when a passkey blocks a take-over', async () => {
+    const stagehand = makeStagehand();
+
+    const promise = performCredentialLogin({
+      stagehand: stagehand as unknown as Stagehand,
+      credentials: { username: 'alice', password: 'pw' }, // no stored code → human take-over
+      log: jest.fn(),
+    });
+    await jest.runAllTimersAsync();
+    await promise;
+
+    // With no code to fill, a human takes over — we only surface the other
+    // methods and never pick one, so the user chooses what they can complete.
+    const calls = stagehand.act.mock.calls as [string, unknown?][];
+    const revealCall = calls.find(
+      ([instruction]) =>
+        instruction.includes('passkey') &&
+        instruction.includes('More options') &&
+        instruction.includes('do NOT select'),
+    );
+    expect(revealCall).toBeDefined();
+    // And it must NOT pick a method for them (no authenticator-app selection).
+    const forcedSelect = calls.find(([instruction]) =>
+      instruction.includes('authenticator app'),
+    );
+    expect(forcedSelect).toBeUndefined();
   });
 });
 
@@ -184,26 +238,5 @@ describe('reloginWithStoredCredentials', () => {
 
     expect(result.isLoggedIn).toBe(false);
     expect(result.reason).toMatch(/user action/i);
-  });
-});
-
-describe('safeOriginAndPath (keeps auth secrets out of the LLM prompt)', () => {
-  it('drops the query and fragment (OAuth code/state/tokens)', () => {
-    expect(
-      safeOriginAndPath(
-        'https://login.example.com/callback?code=SECRET&state=xyz#access_token=abc',
-      ),
-    ).toBe('https://login.example.com/callback');
-  });
-
-  it('drops userinfo', () => {
-    expect(safeOriginAndPath('https://user:pass@example.com/app')).toBe(
-      'https://example.com/app',
-    );
-  });
-
-  it('returns empty string for an unparseable or empty URL', () => {
-    expect(safeOriginAndPath('not a url')).toBe('');
-    expect(safeOriginAndPath('')).toBe('');
   });
 });
