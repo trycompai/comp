@@ -18,9 +18,11 @@ import {
 } from './browser-automations';
 import { BrowserEvidenceEmptyState } from './browser-automations/BrowserEvidenceEmptyState';
 import { DraftsStrip } from './browser-automations/DraftsStrip';
+import { ResumeConnectStrip } from './browser-automations/ResumeConnectStrip';
 import {
   clearConnectState,
   loadConnectState,
+  type PersistedConnectState,
 } from './browser-automations/connect-flow-storage';
 
 interface BrowserAutomationsProps {
@@ -58,6 +60,10 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
   // Whether the user just connected within THIS task — org-level connection
   // status must not make a fresh task look already set up.
   const [justConnected, setJustConnected] = useState(false);
+  // A half-finished connect the user started and left — surfaced as a resumable
+  // strip (below) so it never blocks creating a new automation.
+  const [pendingConnect, setPendingConnect] =
+    useState<PersistedConnectState | null>(null);
   const authHostname = hostnameFromUrl(authUrl);
 
   // Hooks
@@ -123,6 +129,7 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
         ? 'password'
         : 'sso';
       clearConnectState(taskId);
+      setPendingConnect(null);
       setReconnectSeed({ url, mode });
       setConnectOpen(true);
     },
@@ -151,6 +158,7 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
       setAuthUrl(url);
       setJustConnected(true);
       clearConnectState(taskId);
+      setPendingConnect(null);
       context.checkContextStatus();
       // Load the fresh connection before opening the composer so it resolves the
       // just-connected vendor (not a stale profile). Keep the connect view up
@@ -163,15 +171,28 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
     [taskId, context, automations, fetchProfiles],
   );
 
-  // Connect a brand-new vendor (a new connection) — start the connect flow fresh.
-  const handleConnectAnother = useCallback(() => {
+  // Start a brand-new connect from scratch — clears any half-finished one so the
+  // flow doesn't resume into a stale draft.
+  const startFreshConnect = useCallback(() => {
     clearConnectState(taskId);
+    setPendingConnect(null);
     setConnectOpen(true);
+  }, [taskId]);
+  // Connect a brand-new vendor (a new connection) — same as starting fresh.
+  const handleConnectAnother = startFreshConnect;
+
+  // Resume the half-finished connect (the flow reads its saved state); discard
+  // simply drops it. Neither blocks creating a new automation.
+  const handleResumeConnect = useCallback(() => setConnectOpen(true), []);
+  const handleDiscardConnect = useCallback(() => {
+    clearConnectState(taskId);
+    setPendingConnect(null);
   }, [taskId]);
 
   // A reconnect verified — refresh the connection list; don't open the composer.
   const handleReconnected = useCallback(() => {
     clearConnectState(taskId);
+    setPendingConnect(null);
     setConnectOpen(false);
     setReconnectSeed(null);
     context.checkContextStatus();
@@ -181,6 +202,7 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
 
   const handleCancelConnect = useCallback(() => {
     clearConnectState(taskId);
+    setPendingConnect(null);
     setConnectOpen(false);
     setReconnectSeed(null);
   }, [taskId]);
@@ -242,10 +264,12 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
     automations.fetchAutomations();
   }, [automations, deleteDraft]);
 
-  // If a background analysis was in flight when the user navigated away, reopen
-  // the connect flow on return so it can resume instead of forcing a restart.
+  // A half-finished connect (analysis / method choice saved before the user
+  // left) is surfaced as a resumable strip below — NOT auto-reopened full-screen,
+  // which would trap the user in it instead of letting them create a new
+  // automation. They choose: resume it, or start a new one.
   useEffect(() => {
-    if (loadConnectState(taskId)) setConnectOpen(true);
+    setPendingConnect(loadConnectState(taskId));
   }, [taskId]);
 
   // Refresh the connection list whenever a connect/reconnect verifies.
@@ -298,6 +322,17 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
       })),
     [profiles],
   );
+
+  // Resumable "finish connecting" band for the normal views (not manual tasks).
+  // Only appears in the states below — the full-screen flows return before here.
+  const resumeStrip =
+    !isManualTask && pendingConnect ? (
+      <ResumeConnectStrip
+        host={hostnameFromUrl(pendingConnect.url)}
+        onResume={handleResumeConnect}
+        onDiscard={handleDiscardConnect}
+      />
+    ) : null;
 
   // Execution live view
   if (execution.isExecuting && execution.liveViewUrl) {
@@ -412,10 +447,11 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
     if (!hasConnection && !justConnected) {
       return (
         <>
+          {resumeStrip}
           {draftsStrip}
           <BrowserEvidenceEmptyState
             isStartingAuth={context.isStartingAuth}
-            onConnect={() => setConnectOpen(true)}
+            onConnect={startFreshConnect}
           />
         </>
       );
@@ -423,6 +459,7 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
 
     return (
       <>
+        {resumeStrip}
         {draftsStrip}
         <EmptyWithContextState
           onCreateClick={() => setComposer({ open: true, mode: 'create' })}
@@ -434,7 +471,9 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
   // List of automations (disable creation for manual tasks, but allow editing).
   // Drafts render inside the section (under the header) so they clearly belong.
   return (
-    <BrowserAutomationsList
+    <>
+      {resumeStrip}
+      <BrowserAutomationsList
       automations={automations.automations}
       profiles={profiles}
       runningAutomationId={execution.runningAutomationId}
@@ -450,6 +489,7 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
       drafts={drafts}
       onContinueDraft={handleContinueDraft}
       onDeleteDraft={handleDeleteDraft}
-    />
+      />
+    </>
   );
 }
