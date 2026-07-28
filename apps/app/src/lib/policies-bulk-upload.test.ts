@@ -136,6 +136,38 @@ describe('bulkUploadPoliciesViaApi', () => {
     });
   });
 
+  it('isolates a THROWN post() as a failed row (preserving the draft id) instead of rejecting the whole batch', async () => {
+    post
+      .mockResolvedValueOnce({ data: { id: 'pol_1' }, status: 201 }) // create succeeds
+      .mockRejectedValueOnce(new Error('network down')) // attach THROWS
+      .mockResolvedValueOnce({ data: { id: 'pol_2' }, status: 201 }) // next file create
+      .mockResolvedValueOnce({ data: { success: true }, status: 200 }); // next file attach
+
+    const result = await bulkUploadPoliciesViaApi({
+      post,
+      readFileAsBase64,
+      files: [file('Throws.pdf'), file('Ok.pdf')],
+      concurrency: 1,
+    });
+
+    expect(result.createdCount).toBe(1);
+    expect(result.failedCount).toBe(1);
+    // The thrown file becomes a failed row that PRESERVES its created draft id, so a
+    // retry reuses that draft instead of orphaning it — the batch is not rejected.
+    expect(result.results[0]).toEqual({
+      fileName: 'Throws.pdf',
+      fileSize: 3,
+      status: 'failed',
+      policyId: 'pol_1',
+      error: 'network down',
+    });
+    // The later file still processed — one thrown call did not abort the batch.
+    expect(result.results[1]).toMatchObject({
+      fileName: 'Ok.pdf',
+      status: 'created',
+    });
+  });
+
   it('reuses an existing draft id on retry instead of creating a duplicate policy', async () => {
     // Only the attach is mocked — a create call would consume nothing and the
     // assertions below would catch it.

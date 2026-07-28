@@ -93,40 +93,54 @@ async function uploadOnePolicy({
   // rather than creating a fresh one — retrying must not leave orphan/duplicate
   // drafts behind. Only create when there's no draft to reuse.
   let policyId = existingPolicyId;
-  if (!policyId) {
-    const createRes = await post('/v1/policies', {
-      name: derivePolicyName(file.name),
-      content: [],
-    });
-    policyId = extractPolicyId(createRes.data);
+  try {
+    if (!policyId) {
+      const createRes = await post('/v1/policies', {
+        name: derivePolicyName(file.name),
+        content: [],
+      });
+      policyId = extractPolicyId(createRes.data);
 
-    if (createRes.error || !policyId) {
+      if (createRes.error || !policyId) {
+        return {
+          ...base,
+          status: 'failed',
+          error: createRes.error || 'Failed to create policy',
+          httpStatus: createRes.status,
+        };
+      }
+    }
+
+    const attachRes = await post(`/v1/policies/${policyId}/pdf`, {
+      fileName: file.name,
+      fileType: file.type || 'application/pdf',
+      fileData,
+    });
+
+    if (attachRes.error) {
       return {
         ...base,
         status: 'failed',
-        error: createRes.error || 'Failed to create policy',
-        httpStatus: createRes.status,
+        policyId,
+        error: attachRes.error,
+        httpStatus: attachRes.status,
       };
     }
-  }
 
-  const attachRes = await post(`/v1/policies/${policyId}/pdf`, {
-    fileName: file.name,
-    fileType: file.type || 'application/pdf',
-    fileData,
-  });
-
-  if (attachRes.error) {
+    return { ...base, status: 'created', policyId };
+  } catch (err) {
+    // A thrown post() (a custom ApiPost, or the network layer) must NOT reject the
+    // whole batch — that would discard every created-draft id and make a retry
+    // create duplicate drafts, breaking this function's documented per-file
+    // isolation + retry guarantee. Isolate it as a failed row and preserve any
+    // policyId so a retry reuses the existing draft instead of orphaning it.
     return {
       ...base,
       status: 'failed',
       policyId,
-      error: attachRes.error,
-      httpStatus: attachRes.status,
+      error: err instanceof Error ? err.message : `Failed to upload ${file.name}`,
     };
   }
-
-  return { ...base, status: 'created', policyId };
 }
 
 /**
