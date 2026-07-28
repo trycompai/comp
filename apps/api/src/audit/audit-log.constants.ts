@@ -17,7 +17,30 @@ export const SENSITIVE_KEYS = new Set([
   'credentials',
   'privateKey',
   'private_key',
+  // Authenticator (TOTP) material — a reusable MFA secret. Must never land in
+  // the audit log in cleartext (browser-connection credential endpoints accept
+  // `totpSeed`; the runtime carries `totpCode`).
+  'totpSeed',
+  'totpCode',
 ]);
+
+/**
+ * Fallback pattern for credential-ish field names the exact-match set misses
+ * (e.g. `clientSecret`, `secretAccessKey`, `aws_secret_access_key`). Matched
+ * case-insensitively against key names anywhere in the audited body, so new
+ * credential fields are redacted without having to enumerate every name.
+ */
+export const SENSITIVE_KEY_PATTERN =
+  /secret|password|passphrase|credential|token|api[_-]?key|private[_-]?key|totp|access[_-]?key/i;
+
+/**
+ * Resources whose request body must never be diffed into the audit log at all —
+ * the field carrying the secret is generically named (e.g. the secret manager's
+ * `value`) so key-based redaction can't catch it, and reading audit logs needs
+ * only `app:read`. For these we log the action (Created/Updated/Deleted) with no
+ * payload, keeping plaintext out of a store that bypasses `secret:read`.
+ */
+export const REDACT_BODY_RESOURCES = new Set(['secret']);
 
 export const RESOURCE_TO_ENTITY_TYPE: Record<
   string,

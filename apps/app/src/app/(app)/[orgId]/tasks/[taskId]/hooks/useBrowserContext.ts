@@ -7,6 +7,7 @@ import type {
   AuthStatusResponse,
   BrowserAuthProfile,
   BrowserContextStatus,
+  BrowserLoginCredentials,
   NavigateResponse,
   ResolveAuthProfileResponse,
   SessionResponse,
@@ -22,8 +23,17 @@ export function useBrowserContext() {
   const [showAuthFlow, setShowAuthFlow] = useState(false);
 
   const checkContextStatus = useCallback(async () => {
+    // On a failed fetch, don't drop a known-good context to "no-context" (which
+    // shows the connect empty-state). Keep an existing context; only a first
+    // load with nothing yet falls back to "no-context".
+    const keepOrNoContext = () =>
+      setStatus((prev) => (prev === 'has-context' ? prev : 'no-context'));
     try {
       const res = await apiClient.get<BrowserAuthProfile[]>('/v1/browserbase/profiles');
+      if (res.error) {
+        keepOrNoContext();
+        return;
+      }
       if (res.data) {
         const verifiedProfile = res.data.find((profile) => profile.status === 'verified');
         if (verifiedProfile) {
@@ -41,11 +51,11 @@ export function useBrowserContext() {
         setStatus('no-context');
       }
     } catch {
-      setStatus('no-context');
+      keepOrNoContext();
     }
   }, []);
 
-  const startAuth = useCallback(async (url: string) => {
+  const startAuth = useCallback(async (url: string, credentials?: BrowserLoginCredentials) => {
     let startedSessionId: string | null = null;
     try {
       setIsStartingAuth(true);
@@ -58,6 +68,24 @@ export function useBrowserContext() {
         throw new Error(profileRes.error || 'Failed to create auth profile');
       }
       setProfileId(profileRes.data.profile.id);
+
+      // Store the login so scheduled and manual runs can sign in on their own.
+      // Failure here is non-fatal — the user can still connect manually below.
+      if (credentials?.username && credentials?.password) {
+        const credRes = await apiClient.post(
+          `/v1/browserbase/profiles/${profileRes.data.profile.id}/credentials`,
+          {
+            username: credentials.username,
+            password: credentials.password,
+            totpSeed: credentials.totpSeed?.trim() || undefined,
+          },
+        );
+        if (credRes.error) {
+          toast.warning(
+            "Saved the site, but couldn't store the login for automatic sign-in. You can still connect manually.",
+          );
+        }
+      }
 
       const sessionRes = await apiClient.post<SessionResponse>(
         `/v1/browserbase/profiles/${profileRes.data.profile.id}/session`,

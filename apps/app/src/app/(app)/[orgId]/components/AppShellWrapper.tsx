@@ -27,7 +27,6 @@ import {
   AppShellNavbar,
   AppShellRail,
   AppShellAIChatTrigger,
-  AppShellRailItem,
   AppShellSidebar,
   AppShellSidebarHeader,
   AppShellUserMenu,
@@ -54,6 +53,7 @@ import { TrustSidebar } from '../trust/components/TrustSidebar';
 import { getAppShellSearchGroups } from './app-shell-search-groups';
 import { AppSidebar } from './AppSidebar';
 import { ConditionalOnboardingTracker } from './ConditionalOnboardingTracker';
+import { ShellRailNavItem } from './ShellRailNavItem';
 
 interface AppShellWrapperProps {
   children: React.ReactNode;
@@ -340,30 +340,5 @@ function AppShellWrapperContent({
         </AppShellBody>
       </AppShell>
     </TooltipProvider>
-  );
-}
-
-function ShellRailNavItem({
-  href,
-  isActive,
-  icon,
-  label,
-}: {
-  href: string;
-  isActive: boolean;
-  icon: React.ReactNode;
-  label: string;
-}) {
-  const railItemId = `app-shell-rail-${label.toLowerCase()}`;
-
-  return (
-    <Link href={href}>
-      <AppShellRailItem
-        isActive={isActive}
-        icon={icon}
-        id={railItemId}
-        label={label}
-      />
-    </Link>
   );
 }

@@ -1,15 +1,21 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { db } from '@db';
+import { db, Prisma } from '@db';
 import {
   defaultProfileDisplayName,
   normalizeHostnameFromUrl,
   normalizeLoginIdentity,
 } from './browserbase-url';
-import { BrowserbaseSessionService } from './browserbase-session.service';
+import {
+  BrowserbaseSessionService,
+  INTERACTIVE_SESSION_TIMEOUT_SECONDS,
+  INTERACTIVE_VIEWPORT,
+} from './browserbase-session.service';
 import { BrowserAuthProfileContextService } from './browser-auth-profile-context.service';
 import {
   BrowserbaseOrgContextService,
@@ -22,13 +28,14 @@ export interface AuthProfileInput {
   url: string;
   displayName?: string;
   loginIdentity?: string;
-  vaultProvider?: string;
-  vaultExternalItemRef?: string;
-  vaultConnectionId?: string;
+  // Vault references are set server-side only (by the credentials endpoint) into
+  // the org's own vault — never accepted from the caller here.
 }
 
 @Injectable()
 export class BrowserAuthProfileService {
+  private readonly logger = new Logger(BrowserAuthProfileService.name);
+
   constructor(
     private readonly sessions: BrowserbaseSessionService = new BrowserbaseSessionService(),
     private readonly orgContexts: BrowserbaseOrgContextService = new BrowserbaseOrgContextService(
@@ -41,10 +48,33 @@ export class BrowserAuthProfileService {
   ) {}
 
   async listProfiles(organizationId: string) {
-    return db.browserAuthProfile.findMany({
-      where: { organizationId },
-      orderBy: [{ hostname: 'asc' }, { updatedAt: 'desc' }],
-    });
+    const [profiles, automations] = await Promise.all([
+      db.browserAuthProfile.findMany({
+        where: { organizationId },
+        orderBy: [{ hostname: 'asc' }, { updatedAt: 'desc' }],
+      }),
+      db.browserAutomation.findMany({
+        where: { task: { organizationId } },
+        select: { targetUrl: true },
+      }),
+    ]);
+
+    // Automations bind to a connection by hostname (not a FK), so tally per host.
+    const countByHost = new Map<string, number>();
+    for (const { targetUrl } of automations) {
+      let host: string;
+      try {
+        host = normalizeHostnameFromUrl(targetUrl);
+      } catch {
+        continue; // skip malformed targetUrls rather than fail the whole list
+      }
+      countByHost.set(host, (countByHost.get(host) ?? 0) + 1);
+    }
+
+    return profiles.map((profile) => ({
+      ...profile,
+      automationCount: countByHost.get(profile.hostname) ?? 0,
+    }));
   }
 
   async getProfile({
@@ -90,9 +120,6 @@ export class BrowserAuthProfileService {
             input.displayName?.trim() || defaultProfileDisplayName(hostname),
           contextId: PENDING_CONTEXT_ID,
           lastAuthCheckUrl: input.url,
-          vaultProvider: input.vaultProvider,
-          vaultExternalItemRef: input.vaultExternalItemRef,
-          vaultConnectionId: input.vaultConnectionId,
         },
       });
       const profile = await this.profileContexts.initialize({
@@ -134,6 +161,13 @@ export class BrowserAuthProfileService {
       if (!profile) {
         throw new NotFoundException('Browser auth profile not found');
       }
+      // An explicitly selected connection must match the target host — otherwise
+      // its stored credentials would be filled on an unrelated site (credential
+      // exfiltration). The by-host branch below matches by construction.
+      this.assertUrlMatchesProfileHostname({
+        url: input.targetUrl,
+        profileHostname: profile.hostname,
+      });
       return this.profileContexts.ready(profile);
     }
 
@@ -163,7 +197,16 @@ export class BrowserAuthProfileService {
       throw new NotFoundException('Browser auth profile not found');
     }
     const readyProfile = await this.profileContexts.ready(profile);
-    return this.sessions.createSessionWithContext(readyProfile.contextId);
+    // Human-facing session — use the smaller viewport so the sign-in page reads
+    // larger in the live view, and a generous timeout so the session (and its
+    // live view) survives a 2FA take-over instead of dying on the project's
+    // short default.
+    return this.sessions.createSessionWithContext(
+      readyProfile.contextId,
+      INTERACTIVE_VIEWPORT,
+      true,
+      INTERACTIVE_SESSION_TIMEOUT_SECONDS,
+    );
   }
 
   async verifyProfileSession(input: {
@@ -206,6 +249,71 @@ export class BrowserAuthProfileService {
     return { profile: updated, auth };
   }
 
+  async markVerified(input: { organizationId: string; profileId: string }) {
+    const profile = await this.getProfile(input);
+    if (!profile) {
+      throw new NotFoundException('Browser auth profile not found');
+    }
+
+    // Always refresh lastVerifiedAt on a successful sign-in — even when the
+    // profile is already `verified` — so "last verified" reflects the most
+    // recent successful authentication rather than the first one.
+    return db.browserAuthProfile.update({
+      where: { id: profile.id },
+      data: {
+        status: 'verified',
+        lastVerifiedAt: new Date(),
+        blockedReason: null,
+      },
+    });
+  }
+
+  async updateProfile(input: {
+    organizationId: string;
+    profileId: string;
+    displayName?: string;
+    url?: string;
+  }) {
+    const profile = await this.getProfile(input);
+    if (!profile) {
+      throw new NotFoundException('Browser auth profile not found');
+    }
+
+    const data: Prisma.BrowserAuthProfileUpdateInput = {};
+
+    const name = input.displayName?.trim();
+    if (name) data.displayName = name;
+
+    if (input.url !== undefined) {
+      data.lastAuthCheckUrl = input.url;
+      // A different hostname means the saved session no longer applies — the
+      // connection must be re-established. (Hostname is the connection identity,
+      // so we don't reassign it here.)
+      try {
+        if (normalizeHostnameFromUrl(input.url) !== profile.hostname) {
+          data.status = 'needs_reauth';
+          data.blockedReason = 'Sign-in URL changed — reconnect required.';
+        }
+      } catch {
+        // Ignore an unparseable URL — leave status untouched.
+      }
+    }
+
+    return db.browserAuthProfile.update({
+      where: { id: profile.id },
+      data,
+    });
+  }
+
+  async deleteProfile(input: { organizationId: string; profileId: string }) {
+    const profile = await this.getProfile(input);
+    if (!profile) {
+      throw new NotFoundException('Browser auth profile not found');
+    }
+    await db.browserAuthProfile.delete({ where: { id: profile.id } });
+    return { success: true, profile };
+  }
+
   async markNeedsReauth(input: {
     organizationId: string;
     profileId: string;
@@ -244,6 +352,38 @@ export class BrowserAuthProfileService {
     });
   }
 
+  /**
+   * Persist the outcome of the most recent connect/sign-in attempt on the
+   * connection, so a "can't connect" support ticket can be diagnosed from the
+   * row alone rather than from ephemeral Trigger.dev logs. Purely diagnostic —
+   * it does NOT change `status` (the mark* methods own that). Best-effort: scoped
+   * by org (no cross-tenant write), never throws on a missing row, and swallows
+   * failures so logging can never break the sign-in flow.
+   */
+  async recordSignInAttempt(input: {
+    organizationId: string;
+    profileId: string;
+    outcome: string;
+    detail?: string | null;
+  }): Promise<void> {
+    try {
+      await db.browserAuthProfile.updateMany({
+        where: { id: input.profileId, organizationId: input.organizationId },
+        data: {
+          lastSignInOutcome: input.outcome,
+          lastSignInDetail: input.detail ?? null,
+          lastSignInAt: new Date(),
+        },
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Failed to record sign-in outcome for profile ${input.profileId}: ${
+          error instanceof Error ? error.message : 'unknown error'
+        }`,
+      );
+    }
+  }
+
   async getOrCreateOrgContext(
     organizationId: string,
   ): Promise<{ contextId: string; isNew: boolean }> {
@@ -256,7 +396,7 @@ export class BrowserAuthProfileService {
     return this.orgContexts.getOrgContext(organizationId);
   }
 
-  private assertUrlMatchesProfileHostname(input: {
+  assertUrlMatchesProfileHostname(input: {
     url: string;
     profileHostname: string;
   }): void {
@@ -272,6 +412,57 @@ export class BrowserAuthProfileService {
         'Verification URL must match the browser auth profile hostname.',
       );
     }
+  }
+
+  /**
+   * Tenant guard: a Browserbase context belongs to an org only if a profile (or
+   * the legacy org-level context row) for that org points at it. Blocks acting on
+   * another org's context via a raw session/context endpoint (cross-tenant IDOR).
+   */
+  async assertContextOwnedByOrg(input: {
+    organizationId: string;
+    contextId: string;
+  }): Promise<void> {
+    const [profile, orgContext] = await Promise.all([
+      db.browserAuthProfile.findFirst({
+        where: {
+          organizationId: input.organizationId,
+          contextId: input.contextId,
+        },
+        select: { id: true },
+      }),
+      db.browserbaseContext.findFirst({
+        where: {
+          organizationId: input.organizationId,
+          contextId: input.contextId,
+        },
+        select: { id: true },
+      }),
+    ]);
+    if (!profile && !orgContext) {
+      throw new ForbiddenException(
+        'This browser context does not belong to your organization.',
+      );
+    }
+  }
+
+  /**
+   * Tenant guard for a live session: resolve the session's context and confirm
+   * that context belongs to the caller's org. Returns the resolved contextId.
+   */
+  async assertSessionOwnedByOrg(input: {
+    organizationId: string;
+    sessionId: string;
+  }): Promise<string> {
+    const contextId = await this.sessions.getSessionContextId(input.sessionId);
+    if (!contextId) {
+      throw new ForbiddenException('Could not verify the browser session.');
+    }
+    await this.assertContextOwnedByOrg({
+      organizationId: input.organizationId,
+      contextId,
+    });
+    return contextId;
   }
 
   private async assertSessionMatchesProfile(input: {

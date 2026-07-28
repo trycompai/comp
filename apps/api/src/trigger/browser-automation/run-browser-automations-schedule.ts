@@ -1,6 +1,9 @@
 import { db, TaskFrequency } from '@db';
 import { logger, schedules } from '@trigger.dev/sdk';
-import { runBrowserAutomation } from './run-browser-automation';
+import {
+  runOrgBrowserAutomations,
+  type OrgBrowserAutomation,
+} from './run-org-browser-automations';
 import { isDueToday } from '../shared/is-due-today';
 import { normalizeHostnameFromUrl } from '../../browserbase/browserbase-url';
 
@@ -86,9 +89,60 @@ export function limitAutomationBatch<
   return selected;
 }
 
+/** One org's worth of scheduled automations, ready for the per-org runner. */
+export interface OrgAutomationGroup {
+  organizationId: string;
+  organizationName: string;
+  automations: OrgBrowserAutomation[];
+}
+
+/**
+ * Group the flat, already-capped automation list into one entry per org,
+ * attaching each org's display name. Pure + exported for unit testing. This is
+ * what lets failures bundle into a single email per org (one runner → one email)
+ * instead of one independent run per automation. Mirrors groupTasksByOrg in the
+ * integration orchestrator.
+ */
+export function groupAutomationsByOrg<
+  T extends {
+    id: string;
+    name: string;
+    taskId: string;
+    task: { organizationId: string };
+  },
+>({
+  automations,
+  orgNameById,
+}: {
+  automations: T[];
+  orgNameById: Map<string, string>;
+}): OrgAutomationGroup[] {
+  const byOrg = new Map<string, OrgAutomationGroup>();
+  for (const a of automations) {
+    const organizationId = a.task.organizationId;
+    let group = byOrg.get(organizationId);
+    if (!group) {
+      group = {
+        organizationId,
+        organizationName:
+          orgNameById.get(organizationId) ?? 'your organization',
+        automations: [],
+      };
+      byOrg.set(organizationId, group);
+    }
+    group.automations.push({
+      automationId: a.id,
+      automationName: a.name,
+      taskId: a.taskId,
+    });
+  }
+  return Array.from(byOrg.values());
+}
+
 /**
  * Daily scheduled task (orchestrator) that finds all enabled browser automations
- * and triggers individual runs for each.
+ * and dispatches one per-org runner for each org, which runs that org's
+ * automations and sends a single bundled failure email.
  */
 export const browserAutomationsSchedule = schedules.task({
   id: 'browser-automations-schedule',
@@ -169,46 +223,61 @@ export const browserAutomationsSchedule = schedules.task({
       );
     }
 
-    // Build payloads for batch triggering
-    const triggerPayloads = limitedAutomations.map((automation) => ({
-      payload: {
-        automationId: automation.id,
-        automationName: automation.name,
-        organizationId: automation.task.organizationId,
-        taskId: automation.taskId,
-      },
-    }));
+    // Group the capped list into one runner per org so this org's failures
+    // bundle into a single email (mirrors the integration orchestrator).
+    const orgIds = [
+      ...new Set(limitedAutomations.map((a) => a.task.organizationId)),
+    ];
+    const orgs = await db.organization.findMany({
+      where: { id: { in: orgIds } },
+      select: { id: true, name: true },
+    });
+    const orgNameById = new Map(orgs.map((o) => [o.id, o.name] as const));
 
-    // Trigger in batches of 500
-    const BATCH_SIZE = 500;
-    let totalTriggered = 0;
+    const orgGroups = groupAutomationsByOrg({
+      automations: limitedAutomations,
+      orgNameById,
+    });
+
+    // Dispatch per-org runners (fire-and-forget). Each runner internally waits
+    // on its own automation runs and sends one bundled failure email.
+    const ORG_BATCH_SIZE = 100;
+    const triggerPayloads = orgGroups.map((g) => ({ payload: g }));
+    let orgsTriggered = 0;
+    let automationsTriggered = 0;
 
     try {
-      for (let i = 0; i < triggerPayloads.length; i += BATCH_SIZE) {
-        const batch = triggerPayloads.slice(i, i + BATCH_SIZE);
-        await runBrowserAutomation.batchTrigger(batch);
-        totalTriggered += batch.length;
+      for (let i = 0; i < triggerPayloads.length; i += ORG_BATCH_SIZE) {
+        const batch = triggerPayloads.slice(i, i + ORG_BATCH_SIZE);
+        await runOrgBrowserAutomations.batchTrigger(batch);
+        orgsTriggered += batch.length;
+        automationsTriggered += batch.reduce(
+          (n, p) => n + p.payload.automations.length,
+          0,
+        );
 
         logger.info(
-          `Triggered batch ${Math.floor(i / BATCH_SIZE) + 1}: ${batch.length} automations`,
+          `Triggered org batch ${Math.floor(i / ORG_BATCH_SIZE) + 1}: ${batch.length} org(s)`,
         );
       }
 
-      logger.info(`Triggered ${totalTriggered} browser automation runs`);
+      logger.info(
+        `Triggered ${orgsTriggered} org runner(s) covering ${automationsTriggered} automation(s)`,
+      );
 
       return {
         success: true,
-        automationsTriggered: totalTriggered,
+        automationsTriggered,
       };
     } catch (error) {
       logger.error('Failed to trigger browser automations', {
         error: error instanceof Error ? error.message : String(error),
-        triggeredBeforeError: totalTriggered,
+        triggeredBeforeError: automationsTriggered,
       });
 
       return {
         success: false,
-        automationsTriggered: totalTriggered,
+        automationsTriggered,
         error: error instanceof Error ? error.message : String(error),
       };
     }
