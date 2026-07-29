@@ -19,6 +19,7 @@ jest.mock('@db', () => ({
       create: jest.fn(),
       update: jest.fn(),
       findMany: jest.fn(),
+      deleteMany: jest.fn(),
     },
     session: {
       delete: jest.fn(),

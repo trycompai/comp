@@ -53,8 +53,16 @@ describe('computeDeviceStatusMap', () => {
   it('returns compliant when all agent devices for a member are compliant', () => {
     const map = computeDeviceStatusMap({
       agentDevices: [
-        makeAgentDevice({ memberId: 'mem_1', complianceStatus: 'compliant' }),
-        makeAgentDevice({ memberId: 'mem_1', complianceStatus: 'compliant' }),
+        makeAgentDevice({
+          memberId: 'mem_1',
+          hostname: 'laptop',
+          complianceStatus: 'compliant',
+        }),
+        makeAgentDevice({
+          memberId: 'mem_1',
+          hostname: 'desktop',
+          complianceStatus: 'compliant',
+        }),
       ],
       fleetHosts: [],
       complianceMemberIds: ['mem_1'],
@@ -65,8 +73,16 @@ describe('computeDeviceStatusMap', () => {
   it('returns non-compliant when any agent device is non_compliant', () => {
     const map = computeDeviceStatusMap({
       agentDevices: [
-        makeAgentDevice({ memberId: 'mem_1', complianceStatus: 'compliant' }),
-        makeAgentDevice({ memberId: 'mem_1', complianceStatus: 'non_compliant' }),
+        makeAgentDevice({
+          memberId: 'mem_1',
+          hostname: 'laptop',
+          complianceStatus: 'compliant',
+        }),
+        makeAgentDevice({
+          memberId: 'mem_1',
+          hostname: 'desktop',
+          complianceStatus: 'non_compliant',
+        }),
       ],
       fleetHosts: [],
       complianceMemberIds: ['mem_1'],
@@ -93,9 +109,14 @@ describe('computeDeviceStatusMap', () => {
   it('returns stale when a compliant and a stale device are mixed', () => {
     const map = computeDeviceStatusMap({
       agentDevices: [
-        makeAgentDevice({ memberId: 'mem_1', complianceStatus: 'compliant' }),
         makeAgentDevice({
           memberId: 'mem_1',
+          hostname: 'laptop',
+          complianceStatus: 'compliant',
+        }),
+        makeAgentDevice({
+          memberId: 'mem_1',
+          hostname: 'desktop',
           complianceStatus: 'stale',
           daysSinceLastCheckIn: 8,
         }),
@@ -111,10 +132,15 @@ describe('computeDeviceStatusMap', () => {
       agentDevices: [
         makeAgentDevice({
           memberId: 'mem_1',
+          hostname: 'laptop',
           complianceStatus: 'stale',
           daysSinceLastCheckIn: 10,
         }),
-        makeAgentDevice({ memberId: 'mem_1', complianceStatus: 'non_compliant' }),
+        makeAgentDevice({
+          memberId: 'mem_1',
+          hostname: 'desktop',
+          complianceStatus: 'non_compliant',
+        }),
       ],
       fleetHosts: [],
       complianceMemberIds: ['mem_1'],
@@ -127,11 +153,13 @@ describe('computeDeviceStatusMap', () => {
       agentDevices: [
         makeAgentDevice({
           memberId: 'mem_1',
+          hostname: 'laptop',
           complianceStatus: 'stale',
           daysSinceLastCheckIn: 10,
         }),
         makeAgentDevice({
           memberId: 'mem_1',
+          hostname: 'desktop',
           complianceStatus: 'stale',
           daysSinceLastCheckIn: 20,
         }),
@@ -219,6 +247,105 @@ describe('computeDeviceStatusMap', () => {
       complianceMemberIds: ['mem_1'],
     });
     expect(map.mem_1).toBe('non-compliant');
+  });
+
+  it('ignores the superseded duplicate row for a machine (CS-791)', () => {
+    // Two rows for ONE machine: the original went stale once registration moved
+    // the agent's check-ins to the newer row. Rolling both up worst-wins read
+    // "Missing" on People while the employee's Device tab — which takes the
+    // newest installedAt row — read "Compliant". Only the newest row counts.
+    const map = computeDeviceStatusMap({
+      agentDevices: [
+        makeAgentDevice({
+          memberId: 'mem_1',
+          hostname: 'seans-macbook.local',
+          serialNumber: 'ABC123',
+          installedAt: '2026-01-10T00:00:00.000Z',
+          complianceStatus: 'stale',
+          daysSinceLastCheckIn: 30,
+        }),
+        makeAgentDevice({
+          memberId: 'mem_1',
+          hostname: 'seans-macbook.local',
+          serialNumber: null,
+          installedAt: '2026-06-02T00:00:00.000Z',
+          complianceStatus: 'compliant',
+        }),
+      ],
+      fleetHosts: [],
+      complianceMemberIds: ['mem_1'],
+    });
+    expect(map.mem_1).toBe('compliant');
+  });
+
+  it('ignores the superseded duplicate whichever order it arrives in', () => {
+    const map = computeDeviceStatusMap({
+      agentDevices: [
+        makeAgentDevice({
+          memberId: 'mem_1',
+          hostname: 'seans-macbook.local',
+          installedAt: '2026-06-02T00:00:00.000Z',
+          complianceStatus: 'compliant',
+        }),
+        makeAgentDevice({
+          memberId: 'mem_1',
+          hostname: 'Seans-MacBook.local',
+          installedAt: '2026-01-10T00:00:00.000Z',
+          complianceStatus: 'non_compliant',
+        }),
+      ],
+      fleetHosts: [],
+      complianceMemberIds: ['mem_1'],
+    });
+    expect(map.mem_1).toBe('compliant');
+  });
+
+  it('does not let one member’s duplicate hide another member’s machine', () => {
+    // The dedupe key is per member: two people can share a hostname.
+    const map = computeDeviceStatusMap({
+      agentDevices: [
+        makeAgentDevice({
+          memberId: 'mem_1',
+          hostname: 'laptop',
+          installedAt: '2026-06-02T00:00:00.000Z',
+          complianceStatus: 'compliant',
+        }),
+        makeAgentDevice({
+          memberId: 'mem_2',
+          hostname: 'laptop',
+          installedAt: '2026-01-10T00:00:00.000Z',
+          complianceStatus: 'non_compliant',
+        }),
+      ],
+      fleetHosts: [],
+      complianceMemberIds: ['mem_1', 'mem_2'],
+    });
+    expect(map).toEqual({ mem_1: 'compliant', mem_2: 'non-compliant' });
+  });
+
+  it('lets the agent row win over an imported row for the same machine', () => {
+    // The imported row is filtered out before the dedupe, so it can never
+    // shadow the agent row and drop the member to not-installed.
+    const map = computeDeviceStatusMap({
+      agentDevices: [
+        makeAgentDevice({
+          memberId: 'mem_1',
+          hostname: 'laptop',
+          installedAt: '2026-06-02T00:00:00.000Z',
+          source: 'integration',
+          complianceStatus: 'stale',
+        }),
+        makeAgentDevice({
+          memberId: 'mem_1',
+          hostname: 'laptop',
+          installedAt: '2026-01-10T00:00:00.000Z',
+          complianceStatus: 'compliant',
+        }),
+      ],
+      fleetHosts: [],
+      complianceMemberIds: ['mem_1'],
+    });
+    expect(map.mem_1).toBe('compliant');
   });
 
   it('ignores devices for members not in the compliance set', () => {

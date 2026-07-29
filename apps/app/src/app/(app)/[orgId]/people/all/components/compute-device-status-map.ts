@@ -3,11 +3,34 @@ import type { DeviceWithChecks, Host } from '../../devices/types';
 export type MemberDeviceStatus = 'compliant' | 'non-compliant' | 'stale' | 'not-installed';
 
 /**
+ * One row per physical machine, newest `installedAt` wins.
+ *
+ * A machine can end up with more than one Device row — a serial read that failed
+ * once, a `fallback:` serial, an integration row the agent adopted — and only the
+ * newest of them keeps receiving check-ins, so the older ones freeze and turn
+ * stale. Rolling those up worst-wins is what made People read "Missing" for a
+ * machine the employee's Device tab read as compliant: that page takes the newest
+ * `installedAt` agent row, so both views have to pick the same row to agree.
+ */
+function newestPerMachine(devices: DeviceWithChecks[]): DeviceWithChecks[] {
+  const byMachine = new Map<string, DeviceWithChecks>();
+  for (const d of devices) {
+    const key = `${d.memberId ?? ''}:${d.hostname.toLowerCase()}`;
+    const prev = byMachine.get(key);
+    if (!prev || new Date(d.installedAt) > new Date(prev.installedAt)) {
+      byMachine.set(key, d);
+    }
+  }
+  return [...byMachine.values()];
+}
+
+/**
  * Roll-up per-member device compliance for the People table.
  *
  * Rules (in order of precedence):
  * 1. Every member in `complianceMemberIds` starts as `not-installed`.
- * 2. For each agent device with a memberId in the set, the member's roll-up is
+ * 2. For each machine (see `newestPerMachine`) with a memberId in the set, the
+ *    member's roll-up is
  *    `non-compliant` > `stale` > `compliant`:
  *      - Any device with `complianceStatus === 'non_compliant'` → member is
  *        `'non-compliant'`.
@@ -34,11 +57,13 @@ export function computeDeviceStatusMap({
   }
 
   const agentRollup = new Map<string, MemberDeviceStatus>();
-  for (const d of agentDevices) {
-    // Integration-imported devices carry no compliance data, so they must not
-    // set a member's status (it would falsely read non-compliant/stale) nor
-    // suppress the richer Fleet fallback below. Only true agent devices count.
-    if (d.source !== 'device_agent') continue;
+  // Integration-imported devices carry no compliance data, so they must not set
+  // a member's status (it would falsely read non-compliant/stale) nor suppress
+  // the richer Fleet fallback below. Only true agent devices count — and they are
+  // filtered before the dedupe so an imported row never shadows the agent row for
+  // the same machine.
+  const agentRows = agentDevices.filter((d) => d.source === 'device_agent');
+  for (const d of newestPerMachine(agentRows)) {
     if (!d.memberId || !complianceSet.has(d.memberId)) continue;
 
     const prev = agentRollup.get(d.memberId);
