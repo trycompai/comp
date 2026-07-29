@@ -1,3 +1,26 @@
+# [3.111.0](https://github.com/trycompai/comp/compare/v3.110.1...v3.111.0) (2026-07-29)
+
+
+### Bug Fixes
+
+* **api:** classify the take-over method on an unclear outcome too ([539fdba](https://github.com/trycompai/comp/commit/539fdbafa3fa471e8a87ea444999805423bd45b3))
+* **api:** only classify a switchable passkey when a code method exists ([#3528](https://github.com/trycompai/comp/issues/3528)) ([0d79093](https://github.com/trycompai/comp/commit/0d79093f23fc13128b030650aaad30a9fd1be133))
+* **app:** make a half-finished connect resumable, not a forced full-screen step ([#3525](https://github.com/trycompai/comp/issues/3525)) ([b1afcae](https://github.com/trycompai/comp/commit/b1afcae1fa780a39f5050412f0dbdd9504626b09))
+* **cloud-security:** add missing logGroupName to CreateLogGroup remediation ([#3515](https://github.com/trycompai/comp/issues/3515)) ([76ae56c](https://github.com/trycompai/comp/commit/76ae56cd19314cfae0219bd1409a3e45fa3d67c5))
+* harden sign-in classification + align take-over messaging ([#3527](https://github.com/trycompai/comp/issues/3527)) ([914cb1e](https://github.com/trycompai/comp/commit/914cb1ed1b63896ddf81ee5d008cc39851f887bf))
+* **integrations:** wrap aws add account form in dialog and scroll into view ([#3526](https://github.com/trycompai/comp/issues/3526)) ([07e91ae](https://github.com/trycompai/comp/commit/07e91ae4076c780c50f481be6760d6f99f6d9151)), closes [#418](https://github.com/trycompai/comp/issues/418)
+* make the 2FA take-over universal — tailor guidance to what the page asks for ([#3520](https://github.com/trycompai/comp/issues/3520)) ([b12f3fe](https://github.com/trycompai/comp/commit/b12f3fe8c0f97998f1c97502e44a8700c479e5b7))
+* **policies:** remove archived policies from framework controls after unlinking ([#3513](https://github.com/trycompai/comp/issues/3513)) ([d639df2](https://github.com/trycompai/comp/commit/d639df28b47a9c0e868efde0b9935f1040904c28))
+* **training:** defer completion email and share canonical training IDs ([#3529](https://github.com/trycompai/comp/issues/3529)) ([fecb556](https://github.com/trycompai/comp/commit/fecb5566ce18fdf0bff9897e11ee809faf91047b))
+* **training:** remove rbac gate from mark-complete endpoint ([#3501](https://github.com/trycompai/comp/issues/3501)) ([8c5e98f](https://github.com/trycompai/comp/commit/8c5e98fd1d726f07d7199ea094f8666de3acff53)), closes [#3455](https://github.com/trycompai/comp/issues/3455)
+
+
+### Features
+
+* connection longevity + one-click 'Make permanent' 2FA ([#3524](https://github.com/trycompai/comp/issues/3524)) ([7345e3c](https://github.com/trycompai/comp/commit/7345e3ce0f37924543f56ee3a8b17a5907508e4c))
+* **policies:** add bulk upload for policy migration ([#3514](https://github.com/trycompai/comp/issues/3514)) ([1940f06](https://github.com/trycompai/comp/commit/1940f067566a102312699968502740129e05b205))
+* **security-questionnaire:** add browser extension ([#3064](https://github.com/trycompai/comp/issues/3064)) ([e678421](https://github.com/trycompai/comp/commit/e678421c76dc9861275f4b853cc8d2ea70559654))
+
 ## [3.110.1](https://github.com/trycompai/comp/compare/v3.110.0...v3.110.1) (2026-07-28)
 
 
