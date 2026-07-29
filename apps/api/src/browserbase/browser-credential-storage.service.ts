@@ -22,6 +22,7 @@ import {
   buildOrgVaultTitle,
   parseItemReference,
 } from './onepassword-credential-item';
+import { normalizeTotpSecret } from './browser-totp-secret';
 
 export interface StoreProfileCredentialsInput {
   organizationId: string;
@@ -195,22 +196,91 @@ export class BrowserCredentialStorageService {
     const profile = await this.findProfile(input);
     const ref = profile.vaultExternalItemRef;
     if (!ref) return { configured: false };
-    const { vaultId, itemId } = parseItemReference(ref);
-    if (!vaultId || !itemId) return { configured: false };
 
     try {
       const client = await getOnePasswordClient();
-      const item = await client.items.get(vaultId, itemId);
-      const configured = item.fields.some(
-        (field) => field.title === TOTP_FIELD_TITLE && field.value.trim().length > 0,
-      );
-      return { configured };
+      return { configured: await this.readItemTotpConfigured(client, ref) };
     } catch (error) {
       this.logger.warn('Failed to read TOTP status from 1Password', {
         error: error instanceof Error ? error.message : String(error),
       });
       return { configured: false };
     }
+  }
+
+  /**
+   * Automatic-2FA status for every password connection in an org, keyed by
+   * profile id, so the connections list can show which sign-ins keep running
+   * unattended and which may pause. Read live from the vault (same source of
+   * truth as the single-connection status) with bounded concurrency so a large
+   * org doesn't fan out unbounded 1Password requests.
+   *
+   * A connection whose item can't be read is OMITTED from the map — never
+   * reported as `false` — so a throttle or transient failure surfaces as
+   * "unknown" in the UI rather than a false "no 2FA / at-risk" that would invite
+   * overwriting a key. Returns {} when storage isn't configured.
+   */
+  async getOrgTotpStatuses(
+    organizationId: string,
+  ): Promise<Record<string, boolean>> {
+    if (!isOnePasswordConfigured()) return {};
+
+    const profiles = await db.browserAuthProfile.findMany({
+      where: { organizationId, vaultExternalItemRef: { not: null } },
+      select: { id: true, vaultExternalItemRef: true },
+    });
+    if (profiles.length === 0) return {};
+
+    let client: OnePasswordClient;
+    try {
+      client = await getOnePasswordClient();
+    } catch (error) {
+      this.logger.warn('Failed to open 1Password client for TOTP statuses', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return {};
+    }
+
+    const CONCURRENCY = 5;
+    const statuses: Record<string, boolean> = {};
+    for (let i = 0; i < profiles.length; i += CONCURRENCY) {
+      const results = await Promise.all(
+        profiles.slice(i, i + CONCURRENCY).map(async (profile) => {
+          try {
+            const configured = await this.readItemTotpConfigured(
+              client,
+              profile.vaultExternalItemRef,
+            );
+            return [profile.id, configured] as const;
+          } catch {
+            // Omit — the UI treats a missing id as "unknown", not "off".
+            return null;
+          }
+        }),
+      );
+      for (const entry of results) {
+        if (entry) statuses[entry[0]] = entry[1];
+      }
+    }
+    return statuses;
+  }
+
+  /**
+   * Whether a 1Password login item holds a non-empty authenticator setup key.
+   * Throws if the item can't be read — callers decide whether to degrade to
+   * `false` (batch) or log-and-return-false (single).
+   */
+  private async readItemTotpConfigured(
+    client: OnePasswordClient,
+    ref: string | null,
+  ): Promise<boolean> {
+    if (!ref) return false;
+    const { vaultId, itemId } = parseItemReference(ref);
+    if (!vaultId || !itemId) return false;
+    const item = await client.items.get(vaultId, itemId);
+    return item.fields.some(
+      (field) => field.title === TOTP_FIELD_TITLE && field.value.trim().length > 0,
+    );
   }
 
   /**
@@ -228,9 +298,14 @@ export class BrowserCredentialStorageService {
         'Credential storage is not configured for this environment.',
       );
     }
-    const seed = input.totpSeed.trim();
+    // Validate + normalize server-side (the client's check is only for UX): a
+    // direct API caller must not be able to overwrite a working seed with a
+    // rotating one-time code or junk, which would silently break unattended 2FA.
+    const seed = normalizeTotpSecret(input.totpSeed);
     if (!seed) {
-      throw new BadRequestException('An authenticator setup key is required.');
+      throw new BadRequestException(
+        'Enter a valid authenticator setup key (a Base32 secret or an otpauth:// URI), not a rotating one-time code.',
+      );
     }
 
     const profile = await this.findProfile(input);

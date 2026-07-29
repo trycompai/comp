@@ -5,12 +5,15 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { db } from '@db';
+import {
+  GENERAL_TRAINING_VIDEO_IDS as GENERAL_TRAINING_IDS,
+  HIPAA_TRAINING_ID,
+  HIPAA_TRAINING_UNAVAILABLE_MESSAGE,
+  hipaaFrameworkInstanceWhere,
+  isTrainingVideoId,
+} from '@trycompai/company';
 import { TrainingEmailService } from './training-email.service';
 import { TrainingCertificatePdfService } from './training-certificate-pdf.service';
-
-const GENERAL_TRAINING_IDS = ['sat-1', 'sat-2', 'sat-3', 'sat-4', 'sat-5'];
-const HIPAA_TRAINING_ID = 'hipaa-sat-1';
-const ALL_TRAINING_IDS = [...GENERAL_TRAINING_IDS, HIPAA_TRAINING_ID];
 
 @Injectable()
 export class TrainingService {
@@ -40,19 +43,17 @@ export class TrainingService {
     organizationId: string,
     videoId: string,
   ) {
-    if (!ALL_TRAINING_IDS.includes(videoId)) {
+    if (!isTrainingVideoId(videoId)) {
       throw new BadRequestException(`Invalid video ID: ${videoId}`);
     }
 
     if (videoId === HIPAA_TRAINING_ID) {
       const hipaaInstance = await db.frameworkInstance.findFirst({
-        where: { organizationId, framework: { name: 'HIPAA' } },
+        where: hipaaFrameworkInstanceWhere(organizationId),
         select: { id: true },
       });
       if (!hipaaInstance) {
-        throw new BadRequestException(
-          'HIPAA training is not available for this organization',
-        );
+        throw new BadRequestException(HIPAA_TRAINING_UNAVAILABLE_MESSAGE);
       }
     }
 
@@ -116,7 +117,7 @@ export class TrainingService {
     const completions = await db.employeeTrainingVideoCompletion.findMany({
       where: {
         memberId,
-        videoId: { in: GENERAL_TRAINING_IDS },
+        videoId: { in: [...GENERAL_TRAINING_IDS] },
         completedAt: { not: null },
       },
     });
@@ -140,7 +141,7 @@ export class TrainingService {
     const completions = await db.employeeTrainingVideoCompletion.findMany({
       where: {
         memberId,
-        videoId: { in: GENERAL_TRAINING_IDS },
+        videoId: { in: [...GENERAL_TRAINING_IDS] },
         completedAt: { not: null },
       },
       orderBy: { completedAt: 'desc' },

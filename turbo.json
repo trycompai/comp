@@ -21,6 +21,7 @@
         "AUTH_SECRET",
         "AUTH_TRUSTED_ORIGINS",
         "BETTER_AUTH_SECRET",
+        "COMP_EXTENSION_TRUSTED_ORIGINS",
         "DATABASE_URL",
         "DISCORD_WEBHOOK_URL",
         "DUB_API_KEY",

@@ -166,6 +166,12 @@ export const REQUIRED_PARAMS: Record<string, readonly string[]> = {
   PutBucketPolicyCommand: ['Bucket', 'Policy'],
   CreateTrailCommand: ['Name', 'S3BucketName'],
   PutMetricFilterCommand: ['logGroupName', 'filterName', 'metricTransformations'],
+  // A CreateLogGroup with no name is rejected by AWS with an opaque "Member must
+  // not be null" error, silently failing the whole remediation (CS-787). Fail
+  // fast with a clear message here. This covers CloudTrail AND every sibling
+  // remediation that mints a log group (Step Functions, SSM Session Manager,
+  // Transfer Family), which the CloudTrail-only name backfill deliberately skips.
+  CreateLogGroupCommand: ['logGroupName'],
 };
 
 /**

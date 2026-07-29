@@ -39,6 +39,30 @@ describe('validatePlanSteps — REQUIRED_PARAMS', () => {
     );
   });
 
+  it('reports a clear error when CreateLogGroupCommand is missing logGroupName (CS-787 fail-fast)', () => {
+    const errors = validatePlanSteps([
+      step({ service: 'logs', command: 'CreateLogGroupCommand', params: {} }),
+    ]);
+    expect(errors).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(
+          /CreateLogGroupCommand\): Required param "logGroupName" is missing or empty/,
+        ),
+      ]),
+    );
+  });
+
+  it('does NOT error when CreateLogGroupCommand has a logGroupName', () => {
+    const errors = validatePlanSteps([
+      step({
+        service: 'logs',
+        command: 'CreateLogGroupCommand',
+        params: { logGroupName: 'aws-cloudtrail-logs' },
+      }),
+    ]);
+    expect(errors.filter((e) => e.includes('logGroupName'))).toHaveLength(0);
+  });
+
   it('does NOT error when AWSServiceName is populated', () => {
     const errors = validatePlanSteps([
       step({

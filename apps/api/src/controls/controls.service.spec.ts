@@ -214,6 +214,74 @@ describe('ControlsService', () => {
     });
   });
 
+  // Regression (CS-780): user-archived policies (isArchived=true, archivedAt
+  // still null) kept showing against controls/frameworks because the reads
+  // filtered on archivedAt only. Policy.isArchived must ALSO be excluded.
+  describe('archived policy visibility', () => {
+    const orgId = 'org_1';
+    const controlId = 'ctrl_1';
+
+    beforeEach(() => {
+      mockDb.evidenceFormSetting.findMany.mockResolvedValue([]);
+      mockDb.evidenceSubmission.groupBy.mockResolvedValue([]);
+    });
+
+    it('findOne (no framework) excludes user-archived policies', async () => {
+      mockDb.control.findUnique.mockResolvedValue({
+        id: controlId,
+        organizationId: orgId,
+        policies: [],
+        tasks: [],
+        controlDocumentTypes: [],
+        requirementsMapped: [],
+      });
+
+      await service.findOne(controlId, orgId);
+
+      expect(mockDb.control.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({
+          include: expect.objectContaining({
+            policies: { where: { archivedAt: null, isArchived: false } },
+          }),
+        }),
+      );
+    });
+
+    it('findOne (framework context) excludes user-archived policies on direct and framework-scoped links', async () => {
+      mockDb.frameworkInstance.findUnique.mockResolvedValue({
+        id: 'fi_1',
+        customFrameworkId: null,
+      });
+      mockDb.control.findUnique.mockResolvedValue({
+        id: controlId,
+        organizationId: orgId,
+        policies: [],
+        tasks: [],
+        controlDocumentTypes: [],
+        frameworkPolicyLinks: [],
+        frameworkTaskLinks: [],
+        frameworkDocumentLinks: [],
+        requirementsMapped: [],
+      });
+
+      await service.findOne(controlId, orgId, 'fi_1');
+
+      expect(mockDb.control.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({
+          include: expect.objectContaining({
+            policies: { where: { archivedAt: null, isArchived: false } },
+            frameworkPolicyLinks: expect.objectContaining({
+              where: {
+                frameworkInstanceId: 'fi_1',
+                policy: { archivedAt: null, isArchived: false },
+              },
+            }),
+          }),
+        }),
+      );
+    });
+  });
+
   describe('linkPolicies', () => {
     const { syncDirectLinksToCustomFrameworks } = jest.requireMock(
       './sync-custom-framework-links',

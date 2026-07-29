@@ -3,6 +3,7 @@ import { BrowserAutomationCrudService } from './browser-automation-crud.service'
 import { BrowserAutomationExecutionService } from './browser-automation-execution.service';
 import { BrowserAutomationRunStoreService } from './browser-automation-run-store.service';
 import { BrowserAuthProfilesController } from './browser-auth-profiles.controller';
+import { BrowserAuthTotpController } from './browser-auth-totp.controller';
 import { BrowserAuthProfileContextService } from './browser-auth-profile-context.service';
 import { BrowserAuthProfileService } from './browser-auth-profile.service';
 import { BrowserEvidenceRunnerService } from './browser-evidence-runner.service';
@@ -22,7 +23,11 @@ import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [AuthModule],
-  controllers: [BrowserbaseController, BrowserAuthProfilesController],
+  controllers: [
+    BrowserbaseController,
+    BrowserAuthProfilesController,
+    BrowserAuthTotpController,
+  ],
   providers: [
     BrowserbaseService,
     BrowserbaseSessionService,
