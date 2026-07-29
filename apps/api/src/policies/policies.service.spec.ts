@@ -27,6 +27,7 @@ jest.mock('@db', () => ({
       createMany: jest.fn(),
     },
     $transaction: jest.fn(),
+    $executeRaw: jest.fn(),
   },
   Frequency: {
     monthly: 'monthly',
@@ -95,6 +96,7 @@ const { db } = require('@db') as {
     member: { findMany: jest.Mock; findFirst: jest.Mock };
     auditLog: { createMany: jest.Mock };
     $transaction: jest.Mock;
+    $executeRaw: jest.Mock;
   };
 };
 
@@ -1092,11 +1094,15 @@ describe('PoliciesService', () => {
       { type: 'paragraph', content: [{ type: 'text', text: 'MCP rewrite' }] },
     ];
 
-    const mockTransactionTx = () => {
+    const mockTransactionTx = (
+      txFindUnique: jest.Mock = db.policyVersion.findUnique,
+    ) => {
       db.$transaction.mockImplementation(
         async (callback: (tx: unknown) => Promise<unknown>) => {
           const tx = {
+            $executeRaw: db.$executeRaw,
             policyVersion: {
+              findUnique: txFindUnique,
               findFirst: db.policyVersion.findFirst,
               create: db.policyVersion.create,
               update: db.policyVersion.update,
@@ -1162,6 +1168,59 @@ describe('PoliciesService', () => {
       const policyUpdate = db.policy.update.mock.calls[0][0];
       expect(policyUpdate.data.content).toEqual(newContent);
       expect(policyUpdate.data.draftContent).toEqual(newContent);
+    });
+
+    // The guards and the writes both key off status / currentVersionId, so they
+    // must run against state read inside the locked transaction. Validating a
+    // pre-transaction snapshot let a publish that committed in between pass the
+    // "still a draft" check, and the edit then overwrote the version — and the
+    // live Policy.content — that had just gone live.
+    it('rejects the edit when a concurrent publish promoted the version before the transaction', async () => {
+      const stalePolicy = {
+        id: policyId,
+        organizationId,
+        status: 'draft',
+        currentVersionId: 'pv_1',
+        pendingVersionId: null,
+      };
+      // Read outside the transaction: pv_1 is still the current version of a
+      // draft policy. The locked read inside the transaction waits for the
+      // concurrent publish to commit and sees pv_1 already published.
+      db.policyVersion.findUnique.mockResolvedValue({
+        id: 'pv_1',
+        policyId,
+        policy: stalePolicy,
+      });
+      const txFindUnique = jest.fn().mockResolvedValue({
+        id: 'pv_1',
+        policyId,
+        policy: { ...stalePolicy, status: 'published' },
+      });
+      mockTransactionTx(txFindUnique);
+
+      await expect(
+        service.updateVersionContent(policyId, 'pv_1', organizationId, {
+          content: newContent,
+        }),
+      ).rejects.toThrow(/Cannot edit the published version/);
+
+      expect(db.policyVersion.update).not.toHaveBeenCalled();
+      expect(db.policy.update).not.toHaveBeenCalled();
+    });
+
+    it('row-locks the policy row inside the transaction before validating', async () => {
+      mockVersion();
+      mockTransactionTx();
+
+      await service.updateVersionContent(policyId, 'pv_2', organizationId, {
+        content: newContent,
+      });
+
+      expect(db.$executeRaw).toHaveBeenCalledTimes(1);
+      const [fragments, ...values] = db.$executeRaw.mock.calls[0];
+      expect(fragments.join('?')).toContain('FOR UPDATE');
+      // Org-scoped, so the lock can never be taken on another tenant's row.
+      expect(values).toEqual([policyId, organizationId]);
     });
 
     it('does not wipe the stored draft when the payload carries no content', async () => {

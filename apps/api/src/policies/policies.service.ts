@@ -859,51 +859,57 @@ export class PoliciesService {
     organizationId: string,
     dto: UpdateVersionContentDto,
   ) {
-    const version = await db.policyVersion.findUnique({
-      where: { id: versionId },
-      include: {
-        policy: {
-          select: {
-            id: true,
-            organizationId: true,
-            status: true,
-            currentVersionId: true,
-            pendingVersionId: true,
-          },
-        },
-      },
-    });
-
-    if (
-      !version ||
-      version.policy.id !== policyId ||
-      version.policy.organizationId !== organizationId
-    ) {
-      throw new NotFoundException('Version not found');
-    }
-
-    // Cannot edit the current version unless the policy is in draft status
-    // This covers both 'published' and 'needs_review' states
-    if (
-      version.id === version.policy.currentVersionId &&
-      version.policy.status !== 'draft'
-    ) {
-      throw new BadRequestException(
-        'Cannot edit the published version. Create a new version to make changes.',
-      );
-    }
-
-    if (version.id === version.policy.pendingVersionId) {
-      throw new BadRequestException(
-        'Cannot edit a version that is pending approval.',
-      );
-    }
-
     const processedContent = JSON.parse(
       JSON.stringify(dto.content ?? []),
     ) as Prisma.InputJsonValue[];
 
     await db.$transaction(async (tx) => {
+      // Lock the policy row, then read its state inside the transaction. Both
+      // the guards and the writes below key off status / currentVersionId, so a
+      // publish or promotion committing in between would let this edit land on
+      // a version that has since become the live one.
+      await tx.$executeRaw`SELECT id FROM "Policy" WHERE id = ${policyId} AND "organizationId" = ${organizationId} FOR UPDATE`;
+
+      const version = await tx.policyVersion.findUnique({
+        where: { id: versionId },
+        include: {
+          policy: {
+            select: {
+              id: true,
+              organizationId: true,
+              status: true,
+              currentVersionId: true,
+              pendingVersionId: true,
+            },
+          },
+        },
+      });
+
+      if (
+        !version ||
+        version.policy.id !== policyId ||
+        version.policy.organizationId !== organizationId
+      ) {
+        throw new NotFoundException('Version not found');
+      }
+
+      // Cannot edit the current version unless the policy is in draft status
+      // This covers both 'published' and 'needs_review' states
+      if (
+        version.id === version.policy.currentVersionId &&
+        version.policy.status !== 'draft'
+      ) {
+        throw new BadRequestException(
+          'Cannot edit the published version. Create a new version to make changes.',
+        );
+      }
+
+      if (version.id === version.policy.pendingVersionId) {
+        throw new BadRequestException(
+          'Cannot edit a version that is pending approval.',
+        );
+      }
+
       await tx.policyVersion.update({
         where: { id: versionId },
         data: { content: processedContent },
