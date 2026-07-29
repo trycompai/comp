@@ -27,23 +27,32 @@ export async function acceptPolicyForMember({
 }): Promise<PolicyAcceptanceResult> {
   const policy = await db.policy.findFirst({
     where: { id: policyId, organizationId: member.organizationId },
-    select: { id: true, name: true, signedBy: true, currentVersionId: true },
+    select: { id: true, name: true, currentVersionId: true },
   });
 
   if (!policy) {
     return 'not-found';
   }
 
-  if (policy.signedBy.includes(member.id)) {
-    return 'already-signed';
-  }
-
-  await db.$transaction([
-    db.policy.update({
-      where: { id: policy.id },
+  const accepted = await db.$transaction(async (tx) => {
+    // The signature is claimed with a conditional update instead of a
+    // read-then-write check: Postgres re-evaluates the `NOT has` filter after
+    // taking the row lock, so a concurrent accept of the same policy matches
+    // zero rows rather than appending a second signature and a second log.
+    const { count } = await tx.policy.updateMany({
+      where: {
+        id: policy.id,
+        organizationId: member.organizationId,
+        NOT: { signedBy: { has: member.id } },
+      },
       data: { signedBy: { push: member.id } },
-    }),
-    db.auditLog.create({
+    });
+
+    if (count === 0) {
+      return false;
+    }
+
+    await tx.auditLog.create({
       data: {
         organizationId: member.organizationId,
         userId,
@@ -59,8 +68,10 @@ export async function acceptPolicyForMember({
           policyVersionId: policy.currentVersionId,
         },
       },
-    }),
-  ]);
+    });
 
-  return 'accepted';
+    return true;
+  });
+
+  return accepted ? 'accepted' : 'already-signed';
 }

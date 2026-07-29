@@ -46,7 +46,8 @@ export async function POST(req: NextRequest) {
 
   try {
     await Promise.all(
-      policyIds.map((policyId) =>
+      // Deduplicated so a repeated id does not race itself into two acceptances.
+      [...new Set(policyIds)].map((policyId) =>
         acceptPolicyForMember({ policyId, member, userId: session.user.id }),
       ),
     );
