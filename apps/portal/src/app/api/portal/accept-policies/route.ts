@@ -1,4 +1,5 @@
 import { auth } from '@/app/lib/auth';
+import { acceptPolicyForMember } from '@/lib/policy-acceptance';
 import { db } from '@db/server';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -44,25 +45,11 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const updatePromises = policyIds.map(async (policyId) => {
-      const policy = await db.policy.findUnique({
-        where: { id: policyId },
-      });
-
-      if (policy && !policy.signedBy.includes(memberId)) {
-        return db.policy.update({
-          where: { id: policyId },
-          data: {
-            signedBy: {
-              push: memberId,
-            },
-          },
-        });
-      }
-      return null;
-    });
-
-    await Promise.all(updatePromises);
+    await Promise.all(
+      policyIds.map((policyId) =>
+        acceptPolicyForMember({ policyId, member, userId: session.user.id }),
+      ),
+    );
 
     return NextResponse.json({ success: true });
   } catch (error) {

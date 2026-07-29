@@ -1,4 +1,5 @@
 import { auth } from '@/app/lib/auth';
+import { acceptPolicyForMember } from '@/lib/policy-acceptance';
 import { db } from '@db/server';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -40,25 +41,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Member not found' }, { status: 404 });
   }
 
-  const policy = await db.policy.findUnique({
-    where: { id: policyId },
+  const result = await acceptPolicyForMember({
+    policyId,
+    member,
+    userId: session.user.id,
   });
 
-  if (!policy) {
+  if (result === 'not-found') {
     return NextResponse.json({ error: 'Policy not found' }, { status: 404 });
   }
 
-  // Check if user has already signed this policy
-  if (policy.signedBy.includes(member.id)) {
+  if (result === 'already-signed') {
     return NextResponse.json({ success: true, alreadySigned: true });
   }
-
-  await db.policy.update({
-    where: { id: policyId },
-    data: {
-      signedBy: [...policy.signedBy, member.id],
-    },
-  });
 
   return NextResponse.json({ success: true });
 }
