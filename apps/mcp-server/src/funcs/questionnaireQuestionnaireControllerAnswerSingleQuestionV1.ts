@@ -3,11 +3,16 @@
  */
 
 import { CompAiCore } from "../core.js";
+import { encodeJSON } from "../lib/encodings.js";
 import { compactMap } from "../lib/primitives.js";
+import { safeParse } from "../lib/schemas.js";
 import { RequestOptions } from "../lib/sdks.js";
 import { extractSecurity, resolveGlobalSecurity } from "../lib/security.js";
 import { pathToFunc } from "../lib/url.js";
-import { AnswerSingleQuestionDto } from "../models/answersinglequestiondto.js";
+import {
+  AnswerSingleQuestionDto,
+  AnswerSingleQuestionDto$zodSchema,
+} from "../models/answersinglequestiondto.js";
 import { APIError } from "../models/errors/apierror.js";
 import {
   ConnectionError,
@@ -30,7 +35,7 @@ import { Result } from "../types/fp.js";
  */
 export function questionnaireQuestionnaireControllerAnswerSingleQuestionV1(
   client$: CompAiCore,
-  _request: AnswerSingleQuestionDto,
+  request: AnswerSingleQuestionDto,
   options?: RequestOptions,
 ): APIPromise<
   Result<
@@ -46,14 +51,14 @@ export function questionnaireQuestionnaireControllerAnswerSingleQuestionV1(
 > {
   return new APIPromise($do(
     client$,
-    _request,
+    request,
     options,
   ));
 }
 
 async function $do(
   client$: CompAiCore,
-  _request: AnswerSingleQuestionDto,
+  request: AnswerSingleQuestionDto,
   options?: RequestOptions,
 ): Promise<
   [
@@ -70,6 +75,16 @@ async function $do(
     APICall,
   ]
 > {
+  const parsed$ = safeParse(
+    request,
+    (value$) => AnswerSingleQuestionDto$zodSchema.parse(value$),
+    "Input validation failed",
+  );
+  if (!parsed$.ok) {
+    return [parsed$, { status: "invalid" }];
+  }
+  const payload$ = parsed$.value;
+  const body$ = encodeJSON("body", payload$, { explode: true });
   const path$ = pathToFunc("/v1/questionnaire/answer-single")();
 
   const headers$ = new Headers(compactMap({
@@ -104,6 +119,7 @@ async function $do(
     baseURL: options?.serverURL,
     path: path$,
     headers: headers$,
+    body: body$,
     userAgent: client$._options.userAgent,
     timeoutMs: options?.timeoutMs || client$._options.timeoutMs
       || 120000,
