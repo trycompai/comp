@@ -1054,11 +1054,10 @@ export class PoliciesService {
       }
 
       await db.$transaction(async (tx) => {
-        await tx.policyVersion.update({
-          where: { id: sourceVersion.id },
-          data: { publishedById: memberId },
-        });
-
+        // Policy row first, then the version row. Every path that writes both
+        // (updateById, updateVersionContent, acceptChanges) takes the locks in
+        // this order; taking them the other way round here deadlocks against a
+        // concurrent edit that already holds the policy lock.
         await tx.policy.update({
           where: { id: policyId },
           data: {
@@ -1078,6 +1077,11 @@ export class PoliciesService {
             // Clear signatures — employees must re-acknowledge new content
             signedBy: [],
           },
+        });
+
+        await tx.policyVersion.update({
+          where: { id: sourceVersion.id },
+          data: { publishedById: memberId },
         });
       });
 
@@ -1353,13 +1357,9 @@ export class PoliciesService {
     const memberId = await this.getMemberId(organizationId, userId);
 
     await db.$transaction(async (tx) => {
-      // Update the version with the publisher
-      await tx.policyVersion.update({
-        where: { id: version.id },
-        data: { publishedById: memberId },
-      });
-
-      // Publish the pending version
+      // Publish the pending version. Policy row first, then the version row —
+      // same lock order as every other path that writes both, so a concurrent
+      // version edit (which locks the policy first) cannot deadlock with this.
       await tx.policy.update({
         where: { id: policyId },
         data: {
@@ -1374,6 +1374,12 @@ export class PoliciesService {
           // Clear signatures — employees must re-acknowledge new content
           signedBy: [],
         },
+      });
+
+      // Stamp the version with the publisher
+      await tx.policyVersion.update({
+        where: { id: version.id },
+        data: { publishedById: memberId },
       });
     });
 

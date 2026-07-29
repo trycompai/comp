@@ -720,6 +720,32 @@ describe('PoliciesService', () => {
       expect(policyUpdateArg.data.signedBy).toEqual([]);
     });
 
+    // Same lock order as updateVersionContent / publishVersion: Policy row
+    // first, then PolicyVersion. Approving while someone edits a version is a
+    // realistic race, and the opposite order deadlocks (Postgres 40P01).
+    it('writes the policy row before the version row (single lock order)', async () => {
+      db.policy.findUnique.mockResolvedValueOnce(buildPendingPolicy());
+      db.policyVersion.findUnique.mockResolvedValueOnce({
+        id: 'ver_1',
+        version: 2,
+        content: [{ type: 'paragraph' }],
+      });
+      db.member.findFirst.mockResolvedValueOnce({ id: 'mem_caller' });
+      db.member.findMany.mockResolvedValueOnce([]);
+      mockTransactionTx();
+
+      await service.acceptChanges(
+        'pol_1',
+        'org_abc',
+        { approverId: 'mem_approver' },
+        'usr_caller',
+      );
+
+      expect(db.policy.update.mock.invocationCallOrder[0]).toBeLessThan(
+        db.policyVersion.update.mock.invocationCallOrder[0],
+      );
+    });
+
     it('succeeds when called via session impersonation — caller userId differs from approverId', async () => {
       // Simulates an admin impersonating the assigned approver:
       // the impersonated session's userId belongs to the approver, but
@@ -1346,6 +1372,34 @@ describe('PoliciesService', () => {
         where: { id: 'pv_target' },
         data: { publishedById: 'mem_caller' },
       });
+    });
+
+    // updateVersionContent locks the Policy row (SELECT ... FOR UPDATE) before
+    // it writes the version, so publishing must take the same locks in the same
+    // order — Policy then PolicyVersion. The reverse order is an ABBA deadlock:
+    // Postgres aborts one of the two transactions with a 40P01.
+    it('writes the policy row before the version row (single lock order)', async () => {
+      db.member.findFirst.mockResolvedValueOnce({ id: 'mem_caller' });
+      db.policy.findUnique.mockResolvedValueOnce(buildPolicy());
+      db.policyVersion.findUnique.mockResolvedValueOnce({
+        id: 'pv_target',
+        policyId,
+        content: versionContent,
+        version: 7,
+        pdfUrl: null,
+      });
+      mockTransactionTx();
+
+      await service.publishVersion(
+        policyId,
+        organizationId,
+        { versionId: 'pv_target' },
+        userId,
+      );
+
+      expect(db.policy.update.mock.invocationCallOrder[0]).toBeLessThan(
+        db.policyVersion.update.mock.invocationCallOrder[0],
+      );
     });
 
     it('sets displayFormat to EDITOR when the published version has no PDF', async () => {
