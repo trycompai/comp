@@ -245,10 +245,11 @@ For users who cannot install the agent on their device, manual evidence of devic
 
     **Minimum Password Length**
 
-    1. Native macOS UI doesn't enforce this; requires **Terminal** or **MDM**.
-    2. `pwpolicy -setglobalpolicy "minChars=8"`
-    3. If set via Terminal, take a screenshot of the command output confirming the policy.
-    4. If enforced by MDM (Jamf, Intune, etc.), screenshot the compliance screen from the MDM portal.
+    1. Native macOS UI doesn't enforce this; requires **MDM** or **Terminal**.
+    2. If enforced by MDM (Jamf, Intune, etc.), deploy a **Passcode** payload with a minimum length of 8, then screenshot the compliance screen from the MDM portal.
+    3. Without MDM, an administrator sets the global account policies: `sudo pwpolicy -setaccountpolicies <file>`. This **replaces** all existing policies, so keep the built-in FileVault policy in the file.
+    4. Verify with `pwpolicy getaccountpolicies` — it should show `policyAttributePassword matches '.{8,}+'`. Take a screenshot of that output.
+    5. `pwpolicy -setglobalpolicy "minChars=8"` is deprecated and **not** enforced by macOS, so it is not accepted as evidence.
 
     **Automatic Security Updates**
 

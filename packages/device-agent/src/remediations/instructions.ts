@@ -21,13 +21,14 @@ const MACOS_INSTRUCTIONS: Record<DeviceCheckType, InstructionSet> = {
     ],
   },
   password_policy: {
-    description: 'Set a minimum password length of 8 characters',
+    description: 'Enforce a minimum password length of 8 characters',
     steps: [
-      'An administrator password will be required to apply this setting',
-      'Click "Fix" to set the policy, or apply it manually:',
-      'Open Terminal',
-      'Run: sudo pwpolicy -setglobalpolicy "minChars=8"',
-      'Enter your administrator password when prompted',
+      'macOS only enforces the minimum length set in its global account policies — System Settings cannot set it',
+      'Managed devices: ask your IT administrator to deploy a Passcode payload with a minimum length of 8 via your MDM (Jamf, Kandji, Intune, …)',
+      'Unmanaged devices: an administrator has to set the global account policies with: sudo pwpolicy -setaccountpolicies <file>',
+      'That command replaces every existing policy, so the file must also keep the built-in FileVault policy',
+      "Verify with: pwpolicy getaccountpolicies — it should show policyAttributePassword matches '.{8,}+'",
+      'Note: sudo pwpolicy -setglobalpolicy "minChars=8" is deprecated and is not enforced by macOS',
     ],
   },
   disk_encryption: {
