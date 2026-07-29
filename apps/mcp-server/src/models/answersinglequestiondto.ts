@@ -4,8 +4,28 @@
 
 import * as z from "zod";
 
-export type AnswerSingleQuestionDto = {};
+export type AnswerSingleQuestionDto = {
+  question: string;
+  questionIndex: number;
+  totalQuestions: number;
+  organizationId: string;
+  questionnaireId?: string | undefined;
+};
 
 export const AnswerSingleQuestionDto$zodSchema: z.ZodType<
   AnswerSingleQuestionDto
-> = z.object({});
+> = z.object({
+  organizationId: z.string().describe(
+    "Organization ID for validation. The API uses the authenticated active organization and overwrites this value server-side.",
+  ),
+  question: z.string().describe("Security questionnaire question to answer."),
+  questionIndex: z.number().describe(
+    "Zero-based index of this question in the questionnaire or page batch.",
+  ),
+  questionnaireId: z.string().optional().describe(
+    "Optional questionnaire record to save the generated answer into. Omit for webpage-only answer generation.",
+  ),
+  totalQuestions: z.number().describe(
+    "Total number of questions in the current questionnaire or page batch.",
+  ),
+});
