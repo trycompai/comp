@@ -1,6 +1,7 @@
 import { ValidationPipe } from '@nestjs/common';
 import { CreatePolicyDto } from './create-policy.dto';
 import { UpdatePolicyDto } from './update-policy.dto';
+import { UpdateVersionContentDto } from './version.dto';
 
 /**
  * Regression test for the MCP/public-API policy content serialization bug.
@@ -59,6 +60,20 @@ describe('Policy DTO content serialization (ValidationPipe)', () => {
 
     expect(result.content).toEqual(TIPTAP_NODES);
     expect(result.content[1]).toMatchObject({ type: 'paragraph' });
+    expect(result.content).not.toEqual([[], []]);
+  });
+
+  // PATCH /v1/policies/:id/versions/:versionId (MCP: update-policy-version-content).
+  // The controller reads req.body today, but this DTO is the published body
+  // schema — if it is ever wired to @Body() its transform must survive the pipe.
+  it('preserves structured TipTap content on UpdateVersionContentDto', async () => {
+    const result = await pipe.transform(
+      { content: TIPTAP_NODES },
+      { type: 'body', metatype: UpdateVersionContentDto },
+    );
+
+    expect(result.content).toEqual(TIPTAP_NODES);
+    expect(result.content[0]).toMatchObject({ type: 'heading' });
     expect(result.content).not.toEqual([[], []]);
   });
 

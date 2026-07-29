@@ -42,9 +42,13 @@ export class UpdateVersionContentDto {
     type: 'array',
     items: { type: 'object', additionalProperties: true },
   })
-  @Transform(({ value }) => value) // Preserve raw JSON, don't let class-transformer mangle it
   @IsArray()
-  @Transform(({ value }) => value)
+  // Return the raw source value. Under the global ValidationPipe's implicit
+  // conversion, class-transformer coerces each TipTap node toward the reflected
+  // Array design-type of `content`, mangling `[{...}, {...}]` into `[[], []]`.
+  // The transform runs after that coercion, so `value` is already mangled —
+  // `obj.content` is the untouched original. Do not revert this to `value`.
+  @Transform(({ obj }) => obj.content)
   content: unknown[];
 }
 
