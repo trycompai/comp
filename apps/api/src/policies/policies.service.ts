@@ -410,6 +410,16 @@ export class PoliciesService {
 
       if (contentValue) {
         updatePayload.content = contentValue;
+        // Keep the working draft in lockstep with the live content. Callers of
+        // this endpoint (MCP, API consumers) send a single content payload —
+        // leaving draftContent on the previous text both shows a phantom
+        // "unpublished changes" banner and makes the next publish
+        // (POST :id/versions/publish with no versionId, which snapshots
+        // draftContent) revert the content that was just written. An empty
+        // array carries no text, so it must never wipe the stored draft.
+        if (contentValue.length > 0) {
+          updatePayload.draftContent = contentValue;
+        }
       }
 
       // All reads and writes in one transaction to prevent concurrent publish bypass
@@ -893,9 +903,30 @@ export class PoliciesService {
       JSON.stringify(dto.content ?? []),
     ) as Prisma.InputJsonValue[];
 
-    await db.policyVersion.update({
-      where: { id: versionId },
-      data: { content: processedContent },
+    await db.$transaction(async (tx) => {
+      await tx.policyVersion.update({
+        where: { id: versionId },
+        data: { content: processedContent },
+      });
+
+      // Mirror the edit onto the Policy row. draftContent is the working draft
+      // everywhere else — the "unpublished changes" banner compares it against
+      // content, and publishing without a versionId snapshots it — so leaving
+      // it on the previous text makes the next publish revert this edit.
+      // Policy.content only moves when the edited version IS the live one,
+      // which the guard above allows only while the policy is a draft. An empty
+      // payload carries no text, so it must never wipe the stored draft.
+      if (processedContent.length > 0) {
+        await tx.policy.update({
+          where: { id: policyId },
+          data: {
+            draftContent: processedContent,
+            ...(version.id === version.policy.currentVersionId && {
+              content: processedContent,
+            }),
+          },
+        });
+      }
     });
 
     return { versionId };

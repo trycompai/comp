@@ -314,6 +314,119 @@ describe('PoliciesService', () => {
       expect(updateArg.data.signedBy).toEqual([]);
     });
 
+    // CS-722: a content update on a DRAFT policy wrote `content` but left
+    // `draftContent` on the previous text. The stale draft then reported
+    // "unpublished changes" in the UI, and publishing without a versionId
+    // snapshots draftContent — silently reverting the rewrite that just landed.
+    it('syncs draftContent with content when updating a draft policy', async () => {
+      const orgId = 'org_abc';
+      const newContent = [
+        { type: 'paragraph', content: [{ type: 'text', text: 'rewritten body' }] },
+      ];
+      const existing = {
+        id: 'pol_1',
+        organizationId: orgId,
+        status: 'draft',
+        pendingVersionId: null,
+        approverId: null,
+        frequency: 'yearly',
+        pdfUrl: null,
+      };
+
+      db.$transaction.mockImplementation(async (callback: (tx: unknown) => Promise<unknown>) => {
+        const tx = {
+          policy: { findFirst: db.policy.findFirst, update: db.policy.update },
+          policyVersion: { update: db.policyVersion.update },
+        };
+        return callback(tx);
+      });
+      db.policy.findFirst.mockResolvedValueOnce(existing);
+      db.policy.update.mockResolvedValueOnce({
+        id: 'pol_1',
+        name: 'Test Policy',
+        status: 'draft',
+        currentVersionId: 'pv_1',
+      });
+
+      await service.updateById('pol_1', orgId, { content: newContent } as never);
+
+      const updateArg = db.policy.update.mock.calls[0][0];
+      expect(updateArg.data.content).toEqual(newContent);
+      expect(updateArg.data.draftContent).toEqual(newContent);
+      // Still a draft — draft content updates must not auto-publish.
+      expect(updateArg.data.status).toBeUndefined();
+      expect(db.policyVersion.create).not.toHaveBeenCalled();
+      // The current (draft) version snapshot stays in sync too.
+      expect(db.policyVersion.update).toHaveBeenCalledWith({
+        where: { id: 'pv_1' },
+        data: { content: newContent },
+      });
+    });
+
+    it('keeps the updated content when the caller then publishes without a versionId', async () => {
+      // The reported loss: update-policy followed by publish-policy-version with
+      // no versionId used to snapshot the stale draftContent, so the published
+      // version came back with the pre-update text.
+      const orgId = 'org_abc';
+      const oldContent = [
+        { type: 'paragraph', content: [{ type: 'text', text: 'old body' }] },
+      ];
+      const newContent = [
+        { type: 'paragraph', content: [{ type: 'text', text: 'rewritten body' }] },
+      ];
+
+      db.$transaction.mockImplementation(async (callback: (tx: unknown) => Promise<unknown>) => {
+        const tx = {
+          policy: { findFirst: db.policy.findFirst, update: db.policy.update },
+          policyVersion: {
+            findFirst: db.policyVersion.findFirst,
+            create: db.policyVersion.create,
+            update: db.policyVersion.update,
+          },
+        };
+        return callback(tx);
+      });
+      db.policy.findFirst.mockResolvedValueOnce({
+        id: 'pol_1',
+        organizationId: orgId,
+        status: 'draft',
+        pendingVersionId: null,
+        approverId: null,
+        frequency: 'yearly',
+        pdfUrl: null,
+      });
+      db.policy.update.mockResolvedValueOnce({
+        id: 'pol_1',
+        name: 'Test Policy',
+        status: 'draft',
+        currentVersionId: 'pv_1',
+      });
+
+      await service.updateById('pol_1', orgId, { content: newContent } as never);
+
+      // Round-trip the row the update just wrote into the publish call.
+      const written = db.policy.update.mock.calls[0][0].data;
+      db.member.findFirst.mockResolvedValueOnce({ id: 'mem_caller' });
+      db.policy.findUnique.mockResolvedValueOnce({
+        id: 'pol_1',
+        organizationId: orgId,
+        content: written.content ?? oldContent,
+        draftContent: written.draftContent ?? oldContent,
+        pdfUrl: null,
+        frequency: 'yearly',
+        pendingVersionId: null,
+        approverId: null,
+        versions: [],
+      });
+      db.policyVersion.findFirst.mockResolvedValueOnce({ version: 1 });
+      db.policyVersion.create.mockResolvedValueOnce({ id: 'pv_2', version: 2 });
+
+      await service.publishVersion('pol_1', orgId, {}, 'usr_caller');
+
+      const createArg = db.policyVersion.create.mock.calls[0][0];
+      expect(createArg.data.content).toEqual(newContent);
+    });
+
     // Auto-route: content update on a non-draft policy creates a new
     // PolicyVersion and publishes it, rather than mutating the published
     // version's content in place. This lets MCP/API consumers say
@@ -962,6 +1075,138 @@ describe('PoliciesService', () => {
       await expect(
         service.createVersion(policyId, organizationId, {}, userId),
       ).rejects.toBeInstanceOf(NotFoundException);
+    });
+  });
+
+  // CS-722: editing a version wrote PolicyVersion.content only, leaving the
+  // Policy row on the previous text. get-policy then read back the stale
+  // content ("the write didn't land"), and publishing without a versionId
+  // snapshotted the stale draftContent — reverting the edit.
+  describe('updateVersionContent', () => {
+    const policyId = 'pol_1';
+    const organizationId = 'org_abc';
+    const oldContent = [
+      { type: 'paragraph', content: [{ type: 'text', text: 'old body' }] },
+    ];
+    const newContent = [
+      { type: 'paragraph', content: [{ type: 'text', text: 'MCP rewrite' }] },
+    ];
+
+    const mockTransactionTx = () => {
+      db.$transaction.mockImplementation(
+        async (callback: (tx: unknown) => Promise<unknown>) => {
+          const tx = {
+            policyVersion: {
+              findFirst: db.policyVersion.findFirst,
+              create: db.policyVersion.create,
+              update: db.policyVersion.update,
+            },
+            policy: { update: db.policy.update },
+          };
+          return callback(tx);
+        },
+      );
+    };
+
+    const mockVersion = (policyOverrides: Record<string, unknown> = {}) =>
+      db.policyVersion.findUnique.mockResolvedValueOnce({
+        id: 'pv_2',
+        policyId,
+        policy: {
+          id: policyId,
+          organizationId,
+          status: 'published',
+          currentVersionId: 'pv_1',
+          pendingVersionId: null,
+          ...policyOverrides,
+        },
+      });
+
+    it('stages the edited content in Policy.draftContent without touching the live content', async () => {
+      mockVersion();
+      mockTransactionTx();
+
+      await service.updateVersionContent(policyId, 'pv_2', organizationId, {
+        content: newContent,
+      });
+
+      expect(db.policyVersion.update).toHaveBeenCalledWith({
+        where: { id: 'pv_2' },
+        data: { content: newContent },
+      });
+      const policyUpdate = db.policy.update.mock.calls[0][0];
+      expect(policyUpdate.where).toEqual({ id: policyId });
+      expect(policyUpdate.data.draftContent).toEqual(newContent);
+      // The published body only moves when the version is published.
+      expect(policyUpdate.data.content).toBeUndefined();
+    });
+
+    it('also syncs Policy.content when the edited version is the live draft version', async () => {
+      db.policyVersion.findUnique.mockResolvedValueOnce({
+        id: 'pv_1',
+        policyId,
+        policy: {
+          id: policyId,
+          organizationId,
+          status: 'draft',
+          currentVersionId: 'pv_1',
+          pendingVersionId: null,
+        },
+      });
+      mockTransactionTx();
+
+      await service.updateVersionContent(policyId, 'pv_1', organizationId, {
+        content: newContent,
+      });
+
+      const policyUpdate = db.policy.update.mock.calls[0][0];
+      expect(policyUpdate.data.content).toEqual(newContent);
+      expect(policyUpdate.data.draftContent).toEqual(newContent);
+    });
+
+    it('does not wipe the stored draft when the payload carries no content', async () => {
+      mockVersion();
+      mockTransactionTx();
+
+      await service.updateVersionContent(policyId, 'pv_2', organizationId, {
+        content: [],
+      });
+
+      expect(db.policy.update).not.toHaveBeenCalled();
+    });
+
+    it('keeps the edit when the caller then publishes without a versionId (MCP flow)', async () => {
+      // The tool sequence Claude is steered into: create-policy-version →
+      // update-policy-version-content → publish-policy-version. Without the
+      // draftContent sync, the publish snapshotted the pre-edit text.
+      mockVersion();
+      mockTransactionTx();
+
+      await service.updateVersionContent(policyId, 'pv_2', organizationId, {
+        content: newContent,
+      });
+
+      // Round-trip the row the edit just wrote into the publish call.
+      const written = db.policy.update.mock.calls[0][0].data;
+      db.member.findFirst.mockResolvedValueOnce({ id: 'mem_caller' });
+      db.policy.findUnique.mockResolvedValueOnce({
+        id: policyId,
+        organizationId,
+        content: oldContent,
+        draftContent: written.draftContent ?? oldContent,
+        pdfUrl: null,
+        frequency: null,
+        pendingVersionId: null,
+        approverId: null,
+        versions: [],
+      });
+      db.policyVersion.findFirst.mockResolvedValueOnce({ version: 2 });
+      db.policyVersion.create.mockResolvedValueOnce({ id: 'pv_3', version: 3 });
+
+      await service.publishVersion(policyId, organizationId, {}, 'usr_caller');
+
+      const createArg = db.policyVersion.create.mock.calls[0][0];
+      expect(createArg.data.content).toEqual(newContent);
     });
   });
 
