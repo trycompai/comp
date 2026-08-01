@@ -44,20 +44,17 @@ try {
     !BUCKET_NAME ||
     !APP_AWS_REGION
   ) {
-    logger.error(
-      '[S3] AWS S3 credentials or configuration missing. Check environment variables.',
-    );
-    throw new Error(
-      'AWS S3 credentials or configuration missing. Check environment variables.',
+    logger.warn(
+      '[S3] AWS S3 credentials or configuration missing. S3 operations will fail until credentials are configured.',
     );
   }
 
   s3ClientInstance = new S3Client({
     endpoint: APP_AWS_ENDPOINT || undefined,
-    region: APP_AWS_REGION,
+    region: APP_AWS_REGION || 'us-east-1',
     credentials: {
-      accessKeyId: APP_AWS_ACCESS_KEY_ID,
-      secretAccessKey: APP_AWS_SECRET_ACCESS_KEY,
+      accessKeyId: APP_AWS_ACCESS_KEY_ID || '',
+      secretAccessKey: APP_AWS_SECRET_ACCESS_KEY || '',
     },
     forcePathStyle: !!APP_AWS_ENDPOINT,
   });

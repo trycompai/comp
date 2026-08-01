@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "dependencies": {
     "@upstash/redis": "^1.34.2",
+    "ioredis": "^5.4.1",
     "server-only": "0.0.1"
   },
   "devDependencies": {

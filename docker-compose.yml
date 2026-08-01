@@ -6,57 +6,167 @@ x-logging: &default-logging
     compress: 'true'
 
 services:
+  localstack:
+    image: docker.io/localstack/localstack:3
+    platform: linux/arm64
+    environment:
+      SERVICES: s3
+      DEBUG: '0'
+      PERSISTENCE: '0'
+    ports:
+      - '4566:4566'
+    volumes:
+      - localstack_data:/var/lib/localstack
+      - ./.localstack/init/ready.d:/etc/localstack/init/ready.d
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f http://localhost:4566/_localstack/health || exit 1']
+      interval: 5s
+      timeout: 5s
+      retries: 24
+    logging: *default-logging
+
+  postgres:
+    image: docker.io/library/postgres:16-alpine
+    platform: linux/arm64
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: comp
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d comp']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    logging: *default-logging
+
   migrator:
     build:
       context: .
       dockerfile: Dockerfile
       target: migrator
-    env_file:
-      - packages/db/.env
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/comp?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
     logging: *default-logging
+
   seeder:
     build:
       context: .
       dockerfile: Dockerfile
       target: migrator
-    env_file:
-      - packages/db/.env
-    command: sh -lc "bunx prisma generate --schema=node_modules/@trycompai/db/dist/schema.prisma && bun packages/db/prisma/seed/seed.js"
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/comp?sslmode=disable
+    command: ['npx', 'tsx', 'packages/db/prisma/seed/seed.ts']
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
     logging: *default-logging
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile.multistage
+      target: production
+    ports:
+      - '3333:3333'
+    env_file:
+      - apps/api/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
+      localstack:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD-SHELL', 'wget --no-verbose --tries=1 --spider http://localhost:3333/v1/health || exit 1']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    logging: *default-logging
+
+  redis:
+    image: docker.io/library/redis:7-alpine
+    platform: linux/arm64
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD-SHELL', 'redis-cli ping | grep PONG']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    logging: *default-logging
+
   app:
     build:
       context: .
       dockerfile: Dockerfile
       target: app
       args:
-        NEXT_PUBLIC_BETTER_AUTH_URL: ${BETTER_AUTH_URL}
+        NEXT_PUBLIC_BETTER_AUTH_URL: http://localhost:3000
+        NEXT_PUBLIC_PORTAL_URL: http://localhost:3002
+        NEXT_PUBLIC_API_URL: http://localhost:3333
+        NEXT_PUBLIC_POSTHOG_HOST: /ingest
+        NEXT_PUBLIC_POSTHOG_KEY: ''
+        NEXT_PUBLIC_IS_DUB_ENABLED: 'false'
     ports:
       - '3000:3000'
     env_file:
       - apps/app/.env
+    environment:
+      HOSTNAME: 0.0.0.0
+      BACKEND_API_URL: http://api:3333
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - api
+      - redis
     restart: unless-stopped
     healthcheck:
-      test: ['CMD-SHELL', 'curl -f http://localhost:3000/api/health || exit 1']
+      test: ['CMD-SHELL', 'node -e "fetch(\"http://localhost:3000/api/health\").then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"']
       interval: 30s
       timeout: 10s
-      retries: 3
-    command: sh -lc "node apps/app/server.js"
+      retries: 5
+      start_period: 30s
     logging: *default-logging
+
   portal:
     build:
       context: .
       dockerfile: Dockerfile
       target: portal
       args:
-        NEXT_PUBLIC_BETTER_AUTH_URL: ${BETTER_AUTH_URL_PORTAL}
+        NEXT_PUBLIC_BETTER_AUTH_URL: http://localhost:3002
     ports:
       - '3002:3000'
     env_file:
       - apps/portal/.env
+    environment:
+      HOSTNAME: 0.0.0.0
+      BACKEND_API_URL: http://api:3333
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - api
+      - redis
     restart: unless-stopped
     healthcheck:
-      test: ['CMD-SHELL', 'curl -f http://localhost:3000/ || exit 1']
+      test: ['CMD-SHELL', 'node -e "fetch(\"http://localhost:3000/\").then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"']
       interval: 30s
       timeout: 10s
-      retries: 3
+      retries: 5
+      start_period: 30s
     logging: *default-logging
+
+volumes:
+  postgres_data:
+  localstack_data:
+  redis_data:

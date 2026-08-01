@@ -17,11 +17,21 @@ function isLocalhostUrl(connectionString: string): boolean {
   }
 }
 
+// Explicit sslmode=disable means the operator intends a plaintext connection
+// (e.g. a local/self-hosted Postgres without TLS). Treat it like localhost.
+function hasSslModeDisable(connectionString: string): boolean {
+  try {
+    return new URL(connectionString).searchParams.get('sslmode') === 'disable';
+  } catch {
+    return false;
+  }
+}
+
 export function resolveSslConfig(
   databaseUrl: string,
   env: Partial<NodeJS.ProcessEnv> = process.env,
 ): SslConfig {
-  if (isLocalhostUrl(databaseUrl)) return undefined;
+  if (isLocalhostUrl(databaseUrl) || hasSslModeDisable(databaseUrl)) return undefined;
   if (env.PRISMA_ALLOW_INSECURE_TLS === '1') return { rejectUnauthorized: false };
   // Verified TLS via Node's default trust store, which includes Amazon Root
   // CA 1 — where AWS RDS Proxy chains terminate. Hostname check is skipped

@@ -3,9 +3,9 @@ import { z } from 'zod';
 
 const awsConfigSchema = z.object({
   region: z.string().default('us-east-1'),
-  accessKeyId: z.string().min(1, 'AWS_ACCESS_KEY_ID is required'),
-  secretAccessKey: z.string().min(1, 'AWS_SECRET_ACCESS_KEY is required'),
-  bucketName: z.string().min(1, 'AWS_BUCKET_NAME is required'),
+  accessKeyId: z.string().default(''),
+  secretAccessKey: z.string().default(''),
+  bucketName: z.string().default(''),
   endpoint: z.string().optional(),
 });
 

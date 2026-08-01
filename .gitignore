@@ -5,6 +5,8 @@ node_modules
 .pnp
 .pnp.js
 
+.localstack/
+
 .idea/
 .superpowers/
 docs/superpowers/

@@ -186,6 +186,29 @@ const ORIGINAL_RUN_LINEAGE: RunLineage = {
   retryOfProviderRunId: null,
 };
 
+function createUnconfiguredMacedClient(): MacedClient {
+  const client: MacedClient = Object.create(MacedClient.prototype);
+  const fail = async () => {
+    throw new Error(
+      'MACED_API_KEY is not configured. Set MACED_API_KEY to enable penetration testing.',
+    );
+  };
+  Object.defineProperty(client, 'pentests', {
+    value: {
+      list: fail,
+      create: fail,
+      get: fail,
+      progress: fail,
+      issues: fail,
+      events: fail,
+      report: fail,
+      reportPdf: fail,
+    },
+    enumerable: false,
+  });
+  return client;
+}
+
 @Injectable()
 export class SecurityPenetrationTestsService {
   private readonly logger = new Logger(SecurityPenetrationTestsService.name);
@@ -197,8 +220,11 @@ export class SecurityPenetrationTestsService {
   ) {
     const apiKey = process.env.MACED_API_KEY;
     if (!apiKey) {
-      // Throw at construction so the app fails loudly on boot, not on first request.
-      throw new Error('MACED_API_KEY is required to start the pentest module');
+      this.logger.warn(
+        'MACED_API_KEY is not configured. Penetration testing features will fail until it is set.',
+      );
+      this.macedClient = createUnconfiguredMacedClient();
+      return;
     }
     this.macedClient = createMacedClient({
       apiKey,

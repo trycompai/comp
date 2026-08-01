@@ -46,6 +46,8 @@ const config: NextConfig = {
     '@trycompai/ui',
     '@carbon/icons-react',
     '@trycompai/company',
+    '@trigger.dev/sdk',
+    '@trigger.dev/react-hooks',
   ],
   images: {
     remotePatterns: [

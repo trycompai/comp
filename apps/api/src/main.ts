@@ -8,6 +8,7 @@ import * as express from 'express';
 import helmet from 'helmet';
 import path from 'path';
 import { AppModule } from './app.module';
+import { initLocalTriggerRuntime } from './trigger/register-local-triggers';
 import { initTracing, shutdownTracing } from './inference-tracing';
 import {
   applyPublicOpenApiMetadata,
@@ -36,6 +37,9 @@ function describeServer(baseUrl: string): string {
 
 async function bootstrap(): Promise<void> {
   await initTracing();
+
+  // Register background tasks/schedules with the local in-process trigger shim.
+  initLocalTriggerRuntime();
 
   // Disable body parser - required for better-auth NestJS integration
   // The library will re-add body parsers after handling auth routes

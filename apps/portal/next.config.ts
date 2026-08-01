@@ -11,6 +11,8 @@ const config = {
     '@trycompai/design-system',
     '@carbon/icons-react',
     '@trycompai/company',
+    '@trigger.dev/sdk',
+    '@trigger.dev/react-hooks',
   ],
   images: {
     remotePatterns: [

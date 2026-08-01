@@ -1,0 +1,20 @@
+{
+  "name": "@trigger.dev/sdk",
+  "version": "4.4.3",
+  "description": "Local in-process replacement for @trigger.dev/sdk (no external task runner).",
+  "private": true,
+  "type": "commonjs",
+  "main": "src/index.js",
+  "types": "src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "require": "./src/index.js",
+      "import": "./src/index.js",
+      "default": "./src/index.js"
+    }
+  },
+  "dependencies": {
+    "pg": "^8.13.1"
+  }
+}

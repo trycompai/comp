@@ -24,9 +24,19 @@ function isLocalhostUrl(connectionString: string): boolean {
   }
 }
 
+// Explicit sslmode=disable means the operator intends a plaintext connection
+// (e.g. a local/self-hosted Postgres without TLS). Treat it like localhost.
+function hasSslModeDisable(connectionString: string): boolean {
+  try {
+    return new URL(connectionString).searchParams.get('sslmode') === 'disable';
+  } catch {
+    return false;
+  }
+}
+
 function createPrismaClient(): PrismaClient {
   const rawUrl = process.env.DATABASE_URL!;
-  const isLocalhost = isLocalhostUrl(rawUrl);
+  const isLocalhost = isLocalhostUrl(rawUrl) || hasSslModeDisable(rawUrl);
   // Strategy:
   // - Localhost: TLS off (typical dev Postgres has no cert).
   // - Remote with NODE_EXTRA_CA_CERTS set: verified TLS using that bundle
@@ -60,7 +70,7 @@ function createPrismaClient(): PrismaClient {
     );
   }
   // Strip sslmode from the connection string to avoid conflicts with the explicit ssl option
-  const url = ssl !== undefined ? stripSslMode(rawUrl) : rawUrl;
+  const url = stripSslMode(rawUrl);
   const adapter = new PrismaPg({ connectionString: url, ssl });
   return new PrismaClient({
     adapter,
