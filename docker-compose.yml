@@ -21,7 +21,7 @@ services:
       target: migrator
     env_file:
       - packages/db/.env
-    command: sh -lc "bunx prisma generate --schema=node_modules/@trycompai/db/dist/schema.prisma && bun packages/db/prisma/seed/seed.js"
+    command: sh -lc "tsx packages/db/prisma/seed/seed.ts"
     logging: *default-logging
   app:
     build:
@@ -30,17 +30,37 @@ services:
       target: app
       args:
         NEXT_PUBLIC_BETTER_AUTH_URL: ${BETTER_AUTH_URL}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_PORTAL_URL: ${BETTER_AUTH_URL_PORTAL}
     ports:
       - '3000:3000'
     env_file:
       - apps/app/.env
     restart: unless-stopped
     healthcheck:
-      test: ['CMD-SHELL', 'curl -f http://localhost:3000/api/health || exit 1']
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:3000/api/health || exit 1']
       interval: 30s
       timeout: 10s
       retries: 3
-    command: sh -lc "node apps/app/server.js"
+    command: sh -lc "node --max-old-space-size=8192 apps/app/server.js"
+    logging: *default-logging
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile.multistage
+      target: production
+    ports:
+      - '3333:3333'
+    env_file:
+      - apps/api/.env
+    volumes:
+      - ./apps/api/.env:/app/.env:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:3333/v1/health || exit 1']
+      interval: 30s
+      timeout: 10s
+      retries: 3
     logging: *default-logging
   portal:
     build:
@@ -49,14 +69,67 @@ services:
       target: portal
       args:
         NEXT_PUBLIC_BETTER_AUTH_URL: ${BETTER_AUTH_URL_PORTAL}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     ports:
       - '3002:3000'
     env_file:
       - apps/portal/.env
     restart: unless-stopped
     healthcheck:
-      test: ['CMD-SHELL', 'curl -f http://localhost:3000/ || exit 1']
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:3000/ || exit 1']
       interval: 30s
       timeout: 10s
       retries: 3
     logging: *default-logging
+  minio:
+    image: minio/minio:RELEASE.2025-01-20T14-49-07Z
+    profiles:
+      - minio
+    command: >
+      /bin/sh -c "
+      if [ -z "$$MINIO_ROOT_USER" ] || [ -z "$$MINIO_ROOT_PASSWORD" ]; then
+        echo 'MINIO_ROOT_USER and MINIO_ROOT_PASSWORD are required for the minio profile' >&2;
+        exit 1;
+      fi;
+      exec minio server /data --console-address ':9001'
+      "
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - minio_data:/data
+    restart: unless-stopped
+    logging: *default-logging
+  minio-init:
+    image: minio/mc:RELEASE.2025-01-17T23-25-50Z
+    profiles:
+      - minio
+    depends_on:
+      - minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      APP_AWS_BUCKET_NAME: ${APP_AWS_BUCKET_NAME}
+    entrypoint: >
+      /bin/sh -c "
+      set -e;
+      if [ -z "$$MINIO_ROOT_USER" ] || [ -z "$$MINIO_ROOT_PASSWORD" ] || [ -z "$$APP_AWS_BUCKET_NAME" ]; then
+        echo 'MINIO_ROOT_USER, MINIO_ROOT_PASSWORD, and APP_AWS_BUCKET_NAME are required for the minio profile' >&2;
+        exit 1;
+      fi;
+      for i in 1 2 3 4 5 6 7 8 9 10; do
+        mc alias set local http://minio:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD && break;
+        sleep 2;
+      done;
+      mc mb -p local/$$APP_AWS_BUCKET_NAME 2>/dev/null || true;
+      mc stat local/$$APP_AWS_BUCKET_NAME >/dev/null;
+      echo bucket $$APP_AWS_BUCKET_NAME ready
+      "
+    restart: 'no'
+    logging: *default-logging
+
+volumes:
+  minio_data:

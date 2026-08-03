@@ -677,9 +677,7 @@ export class PeopleInviteService {
   }
 
   private buildPortalUrl(organizationId: string): string {
-    const portalUrl =
-      process.env.NEXT_PUBLIC_PORTAL_URL ?? 'https://portal.trycomp.ai';
-    return `${portalUrl}/${organizationId}`;
+    return `${getPortalBaseUrl()}/${organizationId}`;
   }
 
   private buildInviteLink(invitationId: string): string {

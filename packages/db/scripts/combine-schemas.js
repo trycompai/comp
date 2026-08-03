@@ -62,7 +62,17 @@ function stripSslMode(connectionString: string): string {
 
 function createPrismaClient(): PrismaClient {
   const rawUrl = process.env.DATABASE_URL!;
-  const isLocalhost = /localhost|127\\.0\\.0\\.1|::1/.test(rawUrl);
+  let isLocalhost = false;
+  try {
+    const dbUrl = new URL(rawUrl);
+    isLocalhost =
+      dbUrl.searchParams.get('sslmode') === 'disable' ||
+      /^(localhost|127\\.0\\.0\\.1|::1)$/.test(
+        dbUrl.hostname.replace(/^\\[/, '').replace(/\\]$/, ''),
+      );
+  } catch {
+    // Malformed URL — treat as remote so TLS is not accidentally disabled.
+  }
   const hasCABundle = !!process.env.NODE_EXTRA_CA_CERTS;
   const ssl = isLocalhost ? undefined : hasCABundle ? true : { rejectUnauthorized: false };
   const url = ssl !== undefined ? stripSslMode(rawUrl) : rawUrl;

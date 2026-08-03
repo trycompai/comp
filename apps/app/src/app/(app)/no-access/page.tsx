@@ -4,6 +4,7 @@ import { serverApi } from '@/lib/api-server';
 import type { OrganizationFromMe } from '@/types';
 import { auth } from '@/utils/auth';
 import { headers } from 'next/headers';
+import { getPortalBaseUrl } from '@trycompai/email/lib/get-portal-base-url';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
@@ -26,6 +27,8 @@ export default async function NoAccess() {
   ]);
 
   const organizations = meRes.data?.organizations ?? [];
+  const portalBase = getPortalBaseUrl();
+  const portalLabel = portalBase.replace(/^https?:\/\//, '');
   const currentOrg = orgRes.data ?? null;
 
   return (
@@ -36,8 +39,8 @@ export default async function NoAccess() {
         <div className="flex flex-col text-center">
           <p>
             Your current role doesn&apos;t have access to the app. If you&apos;re looking for the employee portal, go to{' '}
-            <Link href="https://portal.trycomp.ai" className="text-primary underline">
-              portal.trycomp.ai
+            <Link href={portalBase} className="text-primary underline">
+              {portalLabel}
             </Link>
             .
           </p>

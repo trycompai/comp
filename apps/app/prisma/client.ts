@@ -13,8 +13,11 @@ function stripSslMode(connectionString: string): string {
 
 function isLocalhostUrl(connectionString: string): boolean {
   try {
-    const { hostname } = new URL(connectionString);
-    const stripped = hostname.replace(/^\[/, '').replace(/\]$/, '');
+    const url = new URL(connectionString);
+    if (url.searchParams.get('sslmode') === 'disable') {
+      return true;
+    }
+    const stripped = url.hostname.replace(/^\[/, '').replace(/\]$/, '');
     return LOCAL_HOSTNAMES.has(stripped);
   } catch {
     return false;
@@ -46,7 +49,7 @@ function createPrismaClient(): PrismaClient {
         : { checkServerIdentity: () => undefined };
 
   const url = ssl !== undefined ? stripSslMode(rawUrl) : rawUrl;
-  const adapter = new PrismaPg({ connectionString: url, ssl });
+  const adapter = new PrismaPg({ connectionString: url, ssl: ssl ?? false });
   return new PrismaClient({
     adapter,
     transactionOptions: {

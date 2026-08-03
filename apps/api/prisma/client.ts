@@ -13,9 +13,11 @@ function stripSslMode(connectionString: string): string {
 
 function isLocalhostUrl(connectionString: string): boolean {
   try {
-    const { hostname } = new URL(connectionString);
-    // Strip square brackets from IPv6 host form (e.g. [::1] → ::1)
-    const stripped = hostname.replace(/^\[/, '').replace(/\]$/, '');
+    const url = new URL(connectionString);
+    if (url.searchParams.get('sslmode') === 'disable') {
+      return true;
+    }
+    const stripped = url.hostname.replace(/^\[/, '').replace(/\]$/, '');
     return LOCAL_HOSTNAMES.has(stripped);
   } catch {
     // Malformed URL — be conservative and treat as remote so we don't
@@ -61,7 +63,7 @@ function createPrismaClient(): PrismaClient {
   }
   // Strip sslmode from the connection string to avoid conflicts with the explicit ssl option
   const url = ssl !== undefined ? stripSslMode(rawUrl) : rawUrl;
-  const adapter = new PrismaPg({ connectionString: url, ssl });
+  const adapter = new PrismaPg({ connectionString: url, ssl: ssl ?? false });
   return new PrismaClient({
     adapter,
     transactionOptions: {
