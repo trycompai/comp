@@ -186,6 +186,29 @@ const ORIGINAL_RUN_LINEAGE: RunLineage = {
   retryOfProviderRunId: null,
 };
 
+/**
+ * TEMPORARY — remove once the provider can scope a list to one Comp org.
+ *
+ * Every Comp organization shares a single MACED_API_KEY, so Maced's
+ * `GET /v1/pentests` is scoped to Comp as a whole rather than to the
+ * requesting org, and it pages at 50 by default. That made `listReports`
+ * intersect each org's rows against the 50 newest runs ACROSS THE ENTIRE
+ * customer base; anything older was dropped by the `if (!report) continue`
+ * join and disappeared from the customer's history (CS-803, CS-827, CS-831 —
+ * 180 of 230 runs and 84 orgs were affected when this was found).
+ *
+ * Asking for a page far larger than the total run count restores full history
+ * without touching the provider. This is a stopgap, not a fix: it fails again
+ * once Comp exceeds this many lifetime runs, and Convex over-fetches
+ * `limit * 4` documents to serve it, so do NOT raise this much further.
+ *
+ * The real fix is provider-side: `metadata.compOrganizationId` is already
+ * persisted on every run but lives in an unindexed JSON string. Promote it to
+ * an indexed column, filter the list by it, and this constant goes away along
+ * with the whole intersect-against-a-global-list approach.
+ */
+export const PROVIDER_LIST_LIMIT = 1000;
+
 @Injectable()
 export class SecurityPenetrationTestsService {
   private readonly logger = new Logger(SecurityPenetrationTestsService.name);
@@ -316,8 +339,11 @@ export class SecurityPenetrationTestsService {
       }
     }
 
+    // TEMPORARY: an explicit page size is required here — the provider's
+    // default of 50 is applied across ALL Comp orgs, not this one. See
+    // PROVIDER_LIST_LIMIT.
     const reports = await this.callMaced(
-      () => this.macedClient.pentests.list(),
+      () => this.macedClient.pentests.list({ limit: PROVIDER_LIST_LIMIT }),
       'listing penetration tests',
     );
     const reportById = new Map(reports.map((report) => [report.id, report]));

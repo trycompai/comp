@@ -7,7 +7,10 @@ import type { BillingEntitlementsService } from '../billing/billing-entitlements
 import type { CredentialVaultService } from '../integration-platform/services/credential-vault.service';
 import { CreatePenetrationTestDto } from './dto/create-penetration-test.dto';
 import type { PentestCreditsService } from './pentest-credits.service';
-import { SecurityPenetrationTestsService } from './security-penetration-tests.service';
+import {
+  PROVIDER_LIST_LIMIT,
+  SecurityPenetrationTestsService,
+} from './security-penetration-tests.service';
 
 const mockCredentialVaultService: jest.Mocked<
   Pick<CredentialVaultService, 'getDecryptedCredentials'>
@@ -238,13 +241,34 @@ describe('SecurityPenetrationTestsService', () => {
 
     const result = await service.listReports('org_123');
 
-    expect(getRequestUrl()).toBe('https://api.maced.ai/v1/pentests');
+    expect(getRequestUrl()).toBe(
+      `https://api.maced.ai/v1/pentests?limit=${PROVIDER_LIST_LIMIT}`,
+    );
     expect(result).toEqual([
       expect.objectContaining({
         id: 'run_123',
         status: 'completed',
       }),
     ]);
+  });
+
+  // Regression (CS-803 / CS-827 / CS-831). Every Comp customer shares one Maced
+  // API key, so the provider's list endpoint is scoped to Comp as a whole, not
+  // to the requesting org — and it defaults to the 50 newest runs across that
+  // entire shared bucket. Runs outside the window were dropped by the
+  // `if (!report) continue` join in listReports and vanished from the
+  // customer's history. Asking for no limit is what made that window 50.
+  it('asks the provider for more than its default page so older runs survive the join', async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify([]), { status: 200 }),
+    );
+
+    await service.listReports('org_123');
+
+    const requestedLimit = Number(
+      new URL(getRequestUrl()).searchParams.get('limit'),
+    );
+    expect(requestedLimit).toBeGreaterThan(50);
   });
 
   it('creates report payload with resolved webhook URL', async () => {
