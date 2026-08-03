@@ -8,7 +8,7 @@ import { getSignedUrl as _getSignedUrl } from '@aws-sdk/s3-request-presigner';
  * and @aws-sdk/s3-request-presigner even when pinned to the same version.
  * The runtime types are fully compatible — only the TypeScript class identity differs.
  */
-export const getSignedUrl = _getSignedUrl as unknown as (
+const _getSignedUrlTyped = _getSignedUrl as unknown as (
   client: S3Client,
   command: GetObjectCommand | PutObjectCommand,
   options?: { expiresIn?: number },
@@ -18,6 +18,8 @@ const APP_AWS_REGION = process.env.APP_AWS_REGION;
 const APP_AWS_ACCESS_KEY_ID = process.env.APP_AWS_ACCESS_KEY_ID;
 const APP_AWS_SECRET_ACCESS_KEY = process.env.APP_AWS_SECRET_ACCESS_KEY;
 const APP_AWS_ENDPOINT = process.env.APP_AWS_ENDPOINT;
+const APP_AWS_PUBLIC_ENDPOINT =
+  process.env.APP_AWS_PUBLIC_ENDPOINT || process.env.APP_AWS_ENDPOINT;
 
 export const BUCKET_NAME = process.env.APP_AWS_BUCKET_NAME;
 export const APP_AWS_ORG_ASSETS_BUCKET = process.env.APP_AWS_ORG_ASSETS_BUCKET;
@@ -39,6 +41,22 @@ export const s3Client = new S3Client({
   },
   forcePathStyle: !!APP_AWS_ENDPOINT,
 });
+
+const s3SigningClient = new S3Client({
+  endpoint: APP_AWS_PUBLIC_ENDPOINT || undefined,
+  region: APP_AWS_REGION!,
+  credentials: {
+    accessKeyId: APP_AWS_ACCESS_KEY_ID!,
+    secretAccessKey: APP_AWS_SECRET_ACCESS_KEY!,
+  },
+  forcePathStyle: !!APP_AWS_PUBLIC_ENDPOINT,
+});
+
+export const getSignedUrl = (
+  client: S3Client,
+  command: GetObjectCommand | PutObjectCommand,
+  options?: { expiresIn?: number },
+): Promise<string> => _getSignedUrlTyped(s3SigningClient, command, options);
 
 // Ensure BUCKET_NAME is exported and non-null checked if needed elsewhere explicitly
 if (!BUCKET_NAME && process.env.NODE_ENV === 'production') {
