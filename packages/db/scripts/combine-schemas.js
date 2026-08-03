@@ -71,7 +71,7 @@ function createPrismaClient(): PrismaClient {
         dbUrl.hostname.replace(/^\\[/, '').replace(/\\]$/, ''),
       );
   } catch {
-    isLocalhost = /localhost|127\\.0\\.0\\.1|::1/.test(rawUrl);
+    // Malformed URL — treat as remote so TLS is not accidentally disabled.
   }
   const hasCABundle = !!process.env.NODE_EXTRA_CA_CERTS;
   const ssl = isLocalhost ? undefined : hasCABundle ? true : { rejectUnauthorized: false };

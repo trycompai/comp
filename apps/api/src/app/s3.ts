@@ -41,7 +41,7 @@ const APP_AWS_REGION = process.env.APP_AWS_REGION;
 const APP_AWS_ACCESS_KEY_ID = process.env.APP_AWS_ACCESS_KEY_ID;
 const APP_AWS_SECRET_ACCESS_KEY = process.env.APP_AWS_SECRET_ACCESS_KEY;
 const APP_AWS_ENDPOINT = process.env.APP_AWS_ENDPOINT;
-/** Browser-reachable MinIO/S3 URL for presigned URLs. Falls back to APP_AWS_ENDPOINT. */
+/** Optional browser-reachable URL used to sign presigned URLs; when unset, presigning uses the caller-provided S3 client. */
 const APP_AWS_PUBLIC_ENDPOINT = process.env.APP_AWS_PUBLIC_ENDPOINT?.trim() || undefined;
 
 export const BUCKET_NAME = process.env.APP_AWS_BUCKET_NAME;

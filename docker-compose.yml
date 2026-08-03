@@ -112,7 +112,7 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-      APP_AWS_BUCKET_NAME: ${APP_AWS_BUCKET_NAME:?Set APP_AWS_BUCKET_NAME for the minio profile}
+      APP_AWS_BUCKET_NAME: ${APP_AWS_BUCKET_NAME}
     entrypoint: >
       /bin/sh -c "
       set -e;
