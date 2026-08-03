@@ -1,7 +1,7 @@
 import { logger, queue, schemaTask } from '@trigger.dev/sdk';
 import { z } from 'zod';
 import { sendHtmlEmail } from '../../email/email-transport';
-import { generateUnsubscribeToken } from '@trycompai/email';
+import { buildUnsubscribeHeaders } from '../../email/unsubscribe-headers';
 
 const emailQueue = queue({
   name: 'send-email',
@@ -42,14 +42,7 @@ export const sendEmailTask = schemaTask({
   }),
   run: async (params) => {
     try {
-      const apiBaseUrl =
-        process.env.NEXT_PUBLIC_API_URL || 'https://api.trycomp.ai';
-      const token = generateUnsubscribeToken(params.to);
-      const oneClickUrl = `${apiBaseUrl}/v1/email/unsubscribe?email=${encodeURIComponent(params.to)}&token=${encodeURIComponent(token)}`;
-      const headers: Record<string, string> = {
-        'List-Unsubscribe': `<${oneClickUrl}>`,
-        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-      };
+      const headers = buildUnsubscribeHeaders(params.to);
 
       const result = await sendHtmlEmail({
         to: params.to,

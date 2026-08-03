@@ -3,7 +3,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 
 const globalForPrisma = global as unknown as { prisma?: PrismaClient };
 
-const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1', 'comp-postgres']);
+const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1']);
 
 function stripSslMode(connectionString: string): string {
   const url = new URL(connectionString);
@@ -13,9 +13,11 @@ function stripSslMode(connectionString: string): string {
 
 function isLocalhostUrl(connectionString: string): boolean {
   try {
-    const { hostname } = new URL(connectionString);
-    // Strip square brackets from IPv6 host form (e.g. [::1] → ::1)
-    const stripped = hostname.replace(/^\[/, '').replace(/\]$/, '');
+    const url = new URL(connectionString);
+    if (url.searchParams.get('sslmode') === 'disable') {
+      return true;
+    }
+    const stripped = url.hostname.replace(/^\[/, '').replace(/\]$/, '');
     return LOCAL_HOSTNAMES.has(stripped);
   } catch {
     // Malformed URL — be conservative and treat as remote so we don't

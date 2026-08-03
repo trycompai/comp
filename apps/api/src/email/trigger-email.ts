@@ -1,7 +1,7 @@
 import { render } from '@react-email/render';
 import { tasks } from '@trigger.dev/sdk';
 import type { ReactElement } from 'react';
-import { generateUnsubscribeToken } from '@trycompai/email';
+import { buildUnsubscribeHeaders } from './unsubscribe-headers';
 import type { EmailChannel, sendEmailTask } from '../trigger/email/send-email';
 import type { EmailAttachment } from './resend';
 import { sendHtmlEmail } from './email-transport';
@@ -28,9 +28,11 @@ async function sendEmailDirect(params: {
   scheduledAt?: string;
   attachments?: EmailAttachment[];
 }): Promise<{ id: string }> {
-  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.trycomp.ai';
-  const token = generateUnsubscribeToken(params.to);
-  const oneClickUrl = `${apiBaseUrl}/v1/email/unsubscribe?email=${encodeURIComponent(params.to)}&token=${encodeURIComponent(token)}`;
+  if (params.scheduledAt) {
+    throw new Error(
+      'Scheduled email delivery requires Trigger.dev (TRIGGER_SECRET_KEY)',
+    );
+  }
 
   return sendHtmlEmail({
     to: params.to,
@@ -38,12 +40,8 @@ async function sendEmailDirect(params: {
     html: params.html,
     channel: params.channel,
     cc: params.cc,
-    scheduledAt: params.scheduledAt,
     attachments: params.attachments,
-    headers: {
-      'List-Unsubscribe': `<${oneClickUrl}>`,
-      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-    },
+    headers: buildUnsubscribeHeaders(params.to),
   });
 }
 

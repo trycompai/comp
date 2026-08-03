@@ -69,7 +69,7 @@ services:
       target: portal
       args:
         NEXT_PUBLIC_BETTER_AUTH_URL: ${BETTER_AUTH_URL_PORTAL}
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL_PORTAL}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     ports:
       - '3002:3000'
     env_file:
@@ -82,13 +82,13 @@ services:
       retries: 3
     logging: *default-logging
   minio:
-    image: minio/minio:latest
+    image: minio/minio:RELEASE.2025-01-20T14-49-07Z
     profiles:
       - minio
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER for the minio profile}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD for the minio profile}
     ports:
       - '9000:9000'
       - '9001:9001'
@@ -97,22 +97,25 @@ services:
     restart: unless-stopped
     logging: *default-logging
   minio-init:
-    image: minio/mc:latest
+    image: minio/mc:RELEASE.2025-01-17T23-25-50Z
     profiles:
       - minio
     depends_on:
       - minio
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER for the minio profile}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD for the minio profile}
+      APP_AWS_BUCKET_NAME: ${APP_AWS_BUCKET_NAME:?Set APP_AWS_BUCKET_NAME for the minio profile}
     entrypoint: >
       /bin/sh -c "
+      set -e;
       for i in 1 2 3 4 5 6 7 8 9 10; do
         mc alias set local http://minio:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD && break;
         sleep 2;
-      done &&
-      mc mb -p local/$${APP_AWS_BUCKET_NAME:-comp} || true &&
-      echo bucket ready
+      done;
+      mc mb -p local/$$APP_AWS_BUCKET_NAME 2>/dev/null || true;
+      mc stat local/$$APP_AWS_BUCKET_NAME >/dev/null;
+      echo bucket $$APP_AWS_BUCKET_NAME ready
       "
     restart: 'no'
     logging: *default-logging

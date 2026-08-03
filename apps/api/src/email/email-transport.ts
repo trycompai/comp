@@ -64,12 +64,20 @@ function resolveSmtpTransport() {
   });
 }
 
+/** Trigger.dev serializes attachment bytes as base64 strings in task payloads. */
+function attachmentContent(content: Buffer | string): Buffer {
+  if (Buffer.isBuffer(content)) {
+    return content;
+  }
+  return Buffer.from(content, 'base64');
+}
+
 function normalizeAttachments(
   attachments?: EmailAttachment[],
 ): Mail.Attachment[] | undefined {
   return attachments?.map((att) => ({
     filename: att.filename,
-    content: att.content,
+    content: attachmentContent(att.content),
     contentType: att.contentType,
   }));
 }
@@ -105,7 +113,12 @@ async function sendViaBunMail(params: {
   });
 
   const body = (await response.json().catch(() => null)) as
-    | { success?: boolean; data?: { id?: string }; error?: string; message?: string }
+    | {
+        success?: boolean;
+        data?: { id?: string };
+        error?: string;
+        message?: string;
+      }
     | null;
 
   if (!response.ok || !body?.success) {
@@ -179,6 +192,16 @@ async function sendViaResend(params: {
   return { id: data?.id ?? 'resend' };
 }
 
+function needsRichEmailFeatures(params: {
+  attachments?: EmailAttachment[];
+  scheduledAt?: string;
+  headers?: Record<string, string>;
+}): boolean {
+  return Boolean(
+    params.attachments?.length || params.scheduledAt || params.headers,
+  );
+}
+
 export async function sendHtmlEmail(params: {
   to: string;
   subject: string;
@@ -197,7 +220,7 @@ export async function sendHtmlEmail(params: {
     process.env.SMTP_FROM ??
     process.env.RESEND_FROM_SYSTEM ??
     process.env.RESEND_FROM_DEFAULT;
-  const toAddress = process.env.RESEND_TO_TEST ?? params.to;
+  const toAddress = params.to;
 
   if (!fromAddress) {
     throw new Error(
@@ -208,7 +231,9 @@ export async function sendHtmlEmail(params: {
     throw new Error('Missing TO address in environment variables');
   }
 
-  if (isBunMailConfigured()) {
+  const richFeatures = needsRichEmailFeatures(params);
+
+  if (isBunMailConfigured() && !richFeatures) {
     return sendViaBunMail({
       from: fromAddress,
       to: toAddress,
@@ -216,6 +241,35 @@ export async function sendHtmlEmail(params: {
       html: params.html,
       cc: params.cc,
     });
+  }
+
+  if (isBunMailConfigured() && richFeatures) {
+    if (isSmtpConfigured()) {
+      return sendViaSmtp({
+        from: fromAddress,
+        to: toAddress,
+        subject: params.subject,
+        html: params.html,
+        cc: params.cc,
+        headers: params.headers,
+        attachments: params.attachments,
+      });
+    }
+    if (resend) {
+      return sendViaResend({
+        from: fromAddress,
+        to: toAddress,
+        subject: params.subject,
+        html: params.html,
+        cc: params.cc,
+        headers: params.headers,
+        scheduledAt: params.scheduledAt,
+        attachments: params.attachments,
+      });
+    }
+    throw new Error(
+      'BunMail cannot send attachments, scheduled delivery, or custom headers; configure SMTP_HOST or RESEND_API_KEY',
+    );
   }
 
   if (isSmtpConfigured()) {

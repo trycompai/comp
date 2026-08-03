@@ -107,10 +107,10 @@ const handleDownload = async (req: NextRequest, isHead: boolean) => {
 
     await kv.del(`download:${token}`);
 
-    const bytes = await s3Response.Body.transformToByteArray();
+    const webStream = s3Response.Body.transformToWebStream();
 
-    return new NextResponse(Buffer.from(bytes), {
-      headers: buildResponseHeaders(target, bytes.length),
+    return new NextResponse(webStream, {
+      headers: buildResponseHeaders(target, s3Response.ContentLength ?? null),
     });
   } catch (error) {
     logger('Error serving device agent download', {

@@ -61,9 +61,7 @@ export const PolicyAcknowledgmentDigestEmail = ({
   const [firstOrg] = orgsWithPolicies;
   if (!firstOrg) return null;
 
-  const portalBase = (
-    getPortalBaseUrl()
-  ).replace(/\/+$/, '');
+  const portalBase = getPortalBaseUrl();
   const subjectText = computePolicyAcknowledgmentDigestSubject(orgsWithPolicies);
   const isMultiOrg = orgsWithPolicies.length > 1;
 
