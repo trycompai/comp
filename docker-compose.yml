@@ -31,13 +31,11 @@ services:
       args:
         NEXT_PUBLIC_BETTER_AUTH_URL: ${BETTER_AUTH_URL}
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_PORTAL_URL: ${BETTER_AUTH_URL_PORTAL}
     ports:
-      - '3001:3000'
+      - '3000:3000'
     env_file:
       - apps/app/.env
-    environment:
-      PGSSLMODE: disable
-      DATABASE_URL: postgresql://comp:comp@comp-postgres:5432/comp?sslmode=disable
     restart: unless-stopped
     healthcheck:
       test: ['CMD-SHELL', 'wget -qO- http://localhost:3000/api/health || exit 1']
@@ -55,10 +53,6 @@ services:
       - '3333:3333'
     env_file:
       - apps/api/.env
-    environment:
-      PGSSLMODE: disable
-      NODE_EXTRA_CA_CERTS: ""
-      DATABASE_URL: postgresql://comp:comp@comp-postgres:5432/comp?sslmode=disable
     volumes:
       - ./apps/api/.env:/app/.env:ro
     restart: unless-stopped
@@ -80,17 +74,6 @@ services:
       - '3002:3000'
     env_file:
       - apps/portal/.env
-    environment:
-      PGSSLMODE: disable
-      DATABASE_URL: postgresql://comp:comp@comp-postgres:5432/comp?sslmode=disable
-      MOCK_REDIS: "true"
-      FLEET_AGENT_BUCKET_NAME: comp
-      DEVICE_AGENT_S3_ENV: production
-      APP_AWS_ACCESS_KEY_ID: minioadmin
-      APP_AWS_SECRET_ACCESS_KEY: minioadmin
-      APP_AWS_BUCKET_NAME: comp
-      APP_AWS_REGION: us-east-1
-      APP_AWS_ENDPOINT: http://minio:9000
     restart: unless-stopped
     healthcheck:
       test: ['CMD-SHELL', 'wget -qO- http://localhost:3000/ || exit 1']
@@ -98,7 +81,41 @@ services:
       timeout: 10s
       retries: 3
     logging: *default-logging
-networks:
-  default:
-    name: comp_network
-    external: true
+  minio:
+    image: minio/minio:latest
+    profiles:
+      - minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - minio_data:/data
+    restart: unless-stopped
+    logging: *default-logging
+  minio-init:
+    image: minio/mc:latest
+    profiles:
+      - minio
+    depends_on:
+      - minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    entrypoint: >
+      /bin/sh -c "
+      for i in 1 2 3 4 5 6 7 8 9 10; do
+        mc alias set local http://minio:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD && break;
+        sleep 2;
+      done &&
+      mc mb -p local/$${APP_AWS_BUCKET_NAME:-comp} || true &&
+      echo bucket ready
+      "
+    restart: 'no'
+    logging: *default-logging
+
+volumes:
+  minio_data:

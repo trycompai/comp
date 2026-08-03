@@ -3,8 +3,6 @@ import { s3Client } from '@/utils/s3';
 import { GetObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
 import { client as kv } from '@trycompai/kv';
 import { type NextRequest, NextResponse } from 'next/server';
-import { Readable } from 'stream';
-
 import { DOWNLOAD_TARGETS } from './constants';
 import type { SupportedOS } from './types';
 
@@ -109,11 +107,10 @@ const handleDownload = async (req: NextRequest, isHead: boolean) => {
 
     await kv.del(`download:${token}`);
 
-    const s3Stream = s3Response.Body as Readable;
-    const webStream = Readable.toWeb(s3Stream) as unknown as ReadableStream;
+    const bytes = await s3Response.Body.transformToByteArray();
 
-    return new NextResponse(webStream, {
-      headers: buildResponseHeaders(target, s3Response.ContentLength ?? null),
+    return new NextResponse(Buffer.from(bytes), {
+      headers: buildResponseHeaders(target, bytes.length),
     });
   } catch (error) {
     logger('Error serving device agent download', {

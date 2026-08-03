@@ -1,3 +1,4 @@
+import { getPortalBaseUrl } from '../lib/get-portal-base-url';
 import {
   Body,
   Button,
@@ -28,7 +29,7 @@ export const AllPolicyNotificationEmail = ({
   organizationName,
   organizationId,
 }: Props) => {
-  const link = `${process.env.NEXT_PUBLIC_PORTAL_URL ?? 'https://portal.trycomp.ai'}/${organizationId}`;
+  const link = `${getPortalBaseUrl()}/${organizationId}`;
   const subjectText = 'Please review and accept the policies';
 
   return (
