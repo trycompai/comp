@@ -18,8 +18,7 @@ const APP_AWS_REGION = process.env.APP_AWS_REGION;
 const APP_AWS_ACCESS_KEY_ID = process.env.APP_AWS_ACCESS_KEY_ID;
 const APP_AWS_SECRET_ACCESS_KEY = process.env.APP_AWS_SECRET_ACCESS_KEY;
 const APP_AWS_ENDPOINT = process.env.APP_AWS_ENDPOINT;
-const APP_AWS_PUBLIC_ENDPOINT =
-  process.env.APP_AWS_PUBLIC_ENDPOINT || process.env.APP_AWS_ENDPOINT;
+const APP_AWS_PUBLIC_ENDPOINT = process.env.APP_AWS_PUBLIC_ENDPOINT?.trim() || undefined;
 
 export const BUCKET_NAME = process.env.APP_AWS_BUCKET_NAME;
 export const APP_AWS_ORG_ASSETS_BUCKET = process.env.APP_AWS_ORG_ASSETS_BUCKET;
@@ -42,21 +41,24 @@ export const s3Client = new S3Client({
   forcePathStyle: !!APP_AWS_ENDPOINT,
 });
 
-const s3SigningClient = new S3Client({
-  endpoint: APP_AWS_PUBLIC_ENDPOINT || undefined,
-  region: APP_AWS_REGION!,
-  credentials: {
-    accessKeyId: APP_AWS_ACCESS_KEY_ID!,
-    secretAccessKey: APP_AWS_SECRET_ACCESS_KEY!,
-  },
-  forcePathStyle: !!APP_AWS_PUBLIC_ENDPOINT,
-});
+const s3SigningClient = APP_AWS_PUBLIC_ENDPOINT
+  ? new S3Client({
+      endpoint: APP_AWS_PUBLIC_ENDPOINT,
+      region: APP_AWS_REGION!,
+      credentials: {
+        accessKeyId: APP_AWS_ACCESS_KEY_ID!,
+        secretAccessKey: APP_AWS_SECRET_ACCESS_KEY!,
+      },
+      forcePathStyle: true,
+    })
+  : null;
 
 export const getSignedUrl = (
   client: S3Client,
   command: GetObjectCommand | PutObjectCommand,
   options?: { expiresIn?: number },
-): Promise<string> => _getSignedUrlTyped(s3SigningClient, command, options);
+): Promise<string> =>
+  _getSignedUrlTyped(s3SigningClient ?? client, command, options);
 
 // Ensure BUCKET_NAME is exported and non-null checked if needed elsewhere explicitly
 if (!BUCKET_NAME && process.env.NODE_ENV === 'production') {

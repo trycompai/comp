@@ -85,10 +85,17 @@ services:
     image: minio/minio:RELEASE.2025-01-20T14-49-07Z
     profiles:
       - minio
-    command: server /data --console-address ":9001"
+    command: >
+      /bin/sh -c "
+      if [ -z "$$MINIO_ROOT_USER" ] || [ -z "$$MINIO_ROOT_PASSWORD" ]; then
+        echo 'MINIO_ROOT_USER and MINIO_ROOT_PASSWORD are required for the minio profile' >&2;
+        exit 1;
+      fi;
+      exec minio server /data --console-address ':9001'
+      "
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER for the minio profile}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD for the minio profile}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     ports:
       - '9000:9000'
       - '9001:9001'
@@ -103,12 +110,16 @@ services:
     depends_on:
       - minio
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER for the minio profile}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD for the minio profile}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
       APP_AWS_BUCKET_NAME: ${APP_AWS_BUCKET_NAME:?Set APP_AWS_BUCKET_NAME for the minio profile}
     entrypoint: >
       /bin/sh -c "
       set -e;
+      if [ -z "$$MINIO_ROOT_USER" ] || [ -z "$$MINIO_ROOT_PASSWORD" ] || [ -z "$$APP_AWS_BUCKET_NAME" ]; then
+        echo 'MINIO_ROOT_USER, MINIO_ROOT_PASSWORD, and APP_AWS_BUCKET_NAME are required for the minio profile' >&2;
+        exit 1;
+      fi;
       for i in 1 2 3 4 5 6 7 8 9 10; do
         mc alias set local http://minio:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD && break;
         sleep 2;

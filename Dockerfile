@@ -47,7 +47,11 @@ RUN cd packages/db && bun run build
 # Install Node.js (Bun's WASM engine has a known crash bug with Prisma 7's
 # query compiler - see https://github.com/prisma/prisma/issues/28805 and
 # https://github.com/oven-sh/bun/issues/17146). Run seed under Node instead.
-RUN bun add -g tsx@4.19.3
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates \
+    && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/* \
+    && bun add -g tsx@4.19.3
 
 CMD ["sh", "-lc", "cd packages/db && bunx prisma migrate deploy"]
 

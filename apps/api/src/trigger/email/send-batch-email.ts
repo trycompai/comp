@@ -1,7 +1,7 @@
 import { logger, queue, schemaTask } from '@trigger.dev/sdk';
 import { z } from 'zod';
 import { resend } from '../../email/resend';
-import { generateUnsubscribeToken } from '@trycompai/email';
+import { buildUnsubscribeHeaders } from '../../email/unsubscribe-headers';
 
 const RESEND_BATCH_LIMIT = 100;
 
@@ -41,8 +41,6 @@ export const sendBatchEmailTask = schemaTask({
     }
 
     const toTest = process.env.RESEND_TO_TEST;
-    const apiBaseUrl =
-      process.env.NEXT_PUBLIC_API_URL || 'https://api.trycomp.ai';
 
     let totalSent = 0;
     let totalFailed = 0;
@@ -50,22 +48,14 @@ export const sendBatchEmailTask = schemaTask({
     for (let i = 0; i < params.emails.length; i += RESEND_BATCH_LIMIT) {
       const chunk = params.emails.slice(i, i + RESEND_BATCH_LIMIT);
 
-      const payload = chunk.map((email) => {
-        const token = generateUnsubscribeToken(email.to);
-        const oneClickUrl = `${apiBaseUrl}/v1/email/unsubscribe?email=${encodeURIComponent(email.to)}&token=${encodeURIComponent(token)}`;
-
-        return {
-          from: email.from ?? fromDefault,
-          to: toTest ?? email.to,
-          cc: email.cc,
-          subject: email.subject,
-          html: email.html,
-          headers: {
-            'List-Unsubscribe': `<${oneClickUrl}>`,
-            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-          },
-        };
-      });
+      const payload = chunk.map((email) => ({
+        from: email.from ?? fromDefault,
+        to: toTest ?? email.to,
+        cc: email.cc,
+        subject: email.subject,
+        html: email.html,
+        headers: buildUnsubscribeHeaders(email.to),
+      }));
 
       const { data, error } = await resend.batch.send(payload, {
         batchValidation: 'permissive',

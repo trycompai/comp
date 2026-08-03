@@ -192,16 +192,6 @@ async function sendViaResend(params: {
   return { id: data?.id ?? 'resend' };
 }
 
-function needsRichEmailFeatures(params: {
-  attachments?: EmailAttachment[];
-  scheduledAt?: string;
-  headers?: Record<string, string>;
-}): boolean {
-  return Boolean(
-    params.attachments?.length || params.scheduledAt || params.headers,
-  );
-}
-
 export async function sendHtmlEmail(params: {
   to: string;
   subject: string;
@@ -231,9 +221,27 @@ export async function sendHtmlEmail(params: {
     throw new Error('Missing TO address in environment variables');
   }
 
-  const richFeatures = needsRichEmailFeatures(params);
+  if (params.scheduledAt) {
+    if (resend) {
+      return sendViaResend({
+        from: fromAddress,
+        to: toAddress,
+        subject: params.subject,
+        html: params.html,
+        cc: params.cc,
+        headers: params.headers,
+        scheduledAt: params.scheduledAt,
+        attachments: params.attachments,
+      });
+    }
+    throw new Error(
+      'Scheduled email delivery requires RESEND_API_KEY or Trigger.dev',
+    );
+  }
 
-  if (isBunMailConfigured() && !richFeatures) {
+  const hasAttachments = Boolean(params.attachments?.length);
+
+  if (isBunMailConfigured() && !hasAttachments) {
     return sendViaBunMail({
       from: fromAddress,
       to: toAddress,
@@ -243,7 +251,7 @@ export async function sendHtmlEmail(params: {
     });
   }
 
-  if (isBunMailConfigured() && richFeatures) {
+  if (isBunMailConfigured() && hasAttachments) {
     if (isSmtpConfigured()) {
       return sendViaSmtp({
         from: fromAddress,
@@ -263,12 +271,11 @@ export async function sendHtmlEmail(params: {
         html: params.html,
         cc: params.cc,
         headers: params.headers,
-        scheduledAt: params.scheduledAt,
         attachments: params.attachments,
       });
     }
     throw new Error(
-      'BunMail cannot send attachments, scheduled delivery, or custom headers; configure SMTP_HOST or RESEND_API_KEY',
+      'BunMail cannot send attachments; configure SMTP_HOST or RESEND_API_KEY',
     );
   }
 
