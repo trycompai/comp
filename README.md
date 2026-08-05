@@ -376,18 +376,6 @@ npm run build --workspace=@gideon-defender/ui
 npm run release:packages -- --dry-run
 ```
 
-## Contributors
-
-<a href="https://github.com/gideon-security/opencomp/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=gideon-security/opencomp" />
-</a>
-
-## Repo Activity
-
-![Alt](https://repobeats.axiom.co/api/embed/1371c2fe20e274ff1e0e8d4ca225455dea609cb9.svg 'Repobeats analytics image')
-
-<!-- LICENSE -->
-
 ## License
 
 Gideon, Inc. is a commercial enterprise offering a mix of open-source software and commercially licensed products. Some products are "Open Core" where the core technology (up-to 99%) is fully open source, licensed under [AGPLv3](https://opensource.org/license/agpl-v3) and the last 1% is covered under a commercial license (["/ee" Enterprise Edition"]).
