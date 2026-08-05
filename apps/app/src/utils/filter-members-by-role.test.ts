@@ -1,9 +1,9 @@
 import type { Member, User } from '@db';
 import { describe, expect, it, vi } from 'vitest';
 
-// Mock @/lib/permissions to avoid resolving @trycompai/auth in the test runtime.
+// Mock @/lib/permissions to avoid resolving @gideon-defender/auth in the test runtime.
 // The mock mirrors the real helpers: parseRolesString splits the comma list and
-// isBuiltInRole checks against the built-in role names from @trycompai/auth.
+// isBuiltInRole checks against the built-in role names from @gideon-defender/auth.
 const BUILT_IN_ROLES = new Set(['owner', 'admin', 'auditor', 'employee', 'contractor']);
 
 vi.mock('@/lib/permissions', () => ({
@@ -33,6 +33,11 @@ function makeMember(overrides: { id: string; role: string | null }): Member & { 
     jobTitle: null,
     isActive: true,
     deactivated: false,
+    backgroundCheckExempt: false,
+    backgroundCheckExemptReason: null,
+    backgroundCheckExemptJustification: null,
+    onboardDate: null,
+    offboardDate: null,
     externalUserId: null,
     externalUserSource: null,
     fleetDmLabelId: null,
@@ -51,7 +56,7 @@ function makeMember(overrides: { id: string; role: string | null }): Member & { 
       banExpires: null,
       twoFactorEnabled: false,
     },
-  } as Member & { user: User };
+  } as unknown as Member & { user: User };
 }
 
 describe('filterMembersByOwnerOrAdmin', () => {

@@ -1,12 +1,12 @@
 'use client';
 
-import { Button } from '@trycompai/ui';
+import { Button } from '@gideon-defender/ui';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@trycompai/ui/dropdown-menu';
+} from '@gideon-defender/ui/dropdown-menu';
 import { Laptop, MoreHorizontal } from 'lucide-react';
 import { usePermissions } from '@/hooks/use-permissions';
 import { Host } from '../types';

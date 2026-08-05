@@ -90,7 +90,7 @@ export const mockDb = {
 // import { vi } from 'vitest';
 //
 // // Mock db module before any other imports
-// vi.mock('@trycompai/db', async () => {
+// vi.mock('@gideon-defender/db', async () => {
 //   const { mockDb } = await import('@/test-utils/mocks/db');
 //   return { db: mockDb };
 // });

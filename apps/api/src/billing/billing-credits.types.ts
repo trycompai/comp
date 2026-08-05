@@ -3,7 +3,7 @@ import {
   getBillingSkuProductKey,
   type BillingProductKey,
   type BillingSkuKey,
-} from '@trycompai/billing';
+} from '@gideon-defender/billing';
 
 export type BillingCreditEventType =
   | 'grant'

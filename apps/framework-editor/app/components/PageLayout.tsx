@@ -7,8 +7,8 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '@trycompai/ui/breadcrumb';
-import { Skeleton } from '@trycompai/ui/skeleton';
+} from '@gideon-defender/ui/breadcrumb';
+import { Skeleton } from '@gideon-defender/ui/skeleton';
 import { Fragment } from 'react';
 
 interface PageLayoutProps {

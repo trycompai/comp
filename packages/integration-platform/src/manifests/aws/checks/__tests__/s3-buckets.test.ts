@@ -4,7 +4,7 @@ import {
   ListBucketsCommand,
   type S3Client,
 } from '@aws-sdk/client-s3';
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, it } from 'vitest';
 import { gatherBuckets } from '../s3-buckets';
 
 interface BpaResponse {

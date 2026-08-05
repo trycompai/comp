@@ -1,15 +1,15 @@
 'use client';
 
-import { Badge } from '@trycompai/ui/badge';
-import { Button } from '@trycompai/ui/button';
-import { Checkbox } from '@trycompai/ui/checkbox';
+import { Badge } from '@gideon-defender/ui/badge';
+import { Button } from '@gideon-defender/ui/button';
+import { Checkbox } from '@gideon-defender/ui/checkbox';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
+} from '@gideon-defender/ui/dialog';
 import {
   Check,
   Copy,

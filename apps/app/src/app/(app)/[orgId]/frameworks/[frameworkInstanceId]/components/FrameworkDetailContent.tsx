@@ -4,7 +4,7 @@ import { useFrameworkInstance } from '@/hooks/use-framework-instance';
 import { usePermissions } from '@/hooks/use-permissions';
 import { getFrameworkAggregatePercent } from '@/lib/control-compliance';
 import type { FrameworkUpdateStatus } from '@/types/framework-versioning';
-import { useFeatureFlag } from '@trycompai/analytics';
+import { useFeatureFlag } from '@gideon-defender/analytics';
 import {
   Button,
   PageHeader,
@@ -21,7 +21,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@trycompai/ui/dropdown-menu';
+} from '@gideon-defender/ui/dropdown-menu';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useMemo, useState } from 'react';

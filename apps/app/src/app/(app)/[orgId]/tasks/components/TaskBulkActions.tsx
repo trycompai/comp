@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@trycompai/ui/button';
+import { Button } from '@gideon-defender/ui/button';
 import { Pencil, X } from 'lucide-react';
 
 interface TaskBulkActionsProps {

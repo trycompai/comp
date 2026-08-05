@@ -10,7 +10,7 @@ import {
   getAwsCloudShellScript,
   getAwsRemediationScript,
   normalizeAwsEnvironment,
-} from '@trycompai/integration-platform';
+} from '@gideon-defender/integration-platform';
 import { ArrowRight, Shield } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';

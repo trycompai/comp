@@ -9,7 +9,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
+} from '@gideon-defender/ui/dialog';
 import { formatDistanceToNow } from 'date-fns';
 import { Copy, ExternalLink, Loader2 } from 'lucide-react';
 import { useState } from 'react';

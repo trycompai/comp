@@ -3,15 +3,15 @@
 import type { JSONContent } from '@tiptap/react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import { useMemo, useEffect, useRef, useCallback, useState } from 'react';
-import { createMentionExtension, type MentionUser } from '@trycompai/ui/editor';
-import { FileAttachment } from '@trycompai/ui/editor/extensions/file-attachment';
+import { createMentionExtension, type MentionUser } from '@gideon-defender/ui/editor';
+import { FileAttachment } from '@gideon-defender/ui/editor/extensions/file-attachment';
 import { useDebouncedCallback } from 'use-debounce';
-import { defaultExtensions } from '@trycompai/ui/editor/extensions';
-import { Textarea } from '@trycompai/ui/textarea';
+import { defaultExtensions } from '@gideon-defender/ui/editor/extensions';
+import { Textarea } from '@gideon-defender/ui/textarea';
 import { toast } from 'sonner';
 import { Attachment } from '@trycompai/design-system/icons';
 import { Loader2 } from 'lucide-react';
-import { Button } from '@trycompai/ui/button';
+import { Button } from '@gideon-defender/ui/button';
 import { useAttachments } from '@/hooks/use-attachments';
 
 interface TaskRichDescriptionFieldProps {

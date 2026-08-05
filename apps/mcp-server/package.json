@@ -1,5 +1,5 @@
 {
-  "name": "@trycompai/mcp-server",
+  "name": "@gideon-defender/mcp-server",
   "version": "0.2.5",
   "author": "Comp AI",
   "type": "module",
@@ -10,12 +10,12 @@
     "directory": "apps/mcp-server"
   },
   "bin": {
-    "@trycompai/mcp-server": "bin/mcp-server.js",
+    "@gideon-defender/mcp-server": "bin/mcp-server.js",
     "mcp": "bin/mcp-server.js"
   },
   "scripts": {
-    "build": "bun i && bun src/mcp-server/build.mts && tsc",
-    "mcpb:build": "bun i && bun src/mcp-server/build.mts --pack && tsc",
+    "build": "npm ci && tsx src/mcp-server/build.mts && tsc",
+    "mcpb:build": "npm ci && tsx src/mcp-server/build.mts --pack && tsc",
     "check": "npm run lint",
     "lint": "eslint --cache --max-warnings=0 src",
     "prepublishOnly": "npm run build"
@@ -34,12 +34,12 @@
   "devDependencies": {
     "@anthropic-ai/mcpb": "^1.2.0",
     "@eslint/js": "^9.26.0",
-    "@types/bun": "^1.2.13",
     "@types/express": "^5.0.1",
     "@types/node": "^18.19.3",
-    "bun": "^1.2.12",
+    "esbuild": "^0.25.0",
     "eslint": "^9.26.0",
     "globals": "^16.0.0",
+    "tsx": "^4.19.0",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.31.1"
   }

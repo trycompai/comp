@@ -1,6 +1,6 @@
 'use client';
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@gideon-defender/ui/tabs';
 import { useState } from 'react';
 import { GrantsTab } from './grants-tab';
 import { RequestsTab } from './request-tab';

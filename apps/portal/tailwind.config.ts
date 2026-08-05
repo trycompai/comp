@@ -1,12 +1,12 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Config } from 'tailwindcss';
-import uiConfig from '@trycompai/ui/tailwind.config';
+import uiConfig from '@gideon-defender/ui/tailwind.config';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /**
- * Portal uses the same Tailwind theme as @trycompai/ui so that UI components
+ * Portal uses the same Tailwind theme as @gideon-defender/ui so that UI components
  * (Dialog, Button, etc.) get correct utilities and design tokens.
  * Content paths are resolved from this config file so they work regardless
  * of cwd (e.g. when build runs from monorepo root).

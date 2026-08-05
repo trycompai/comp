@@ -9,8 +9,8 @@ type EditorSizeStyle = CSSProperties & {
   '--editor-min-height': string;
   '--editor-height': string;
 };
-import { defaultExtensions } from '@trycompai/ui/editor/extensions';
-import { createMentionExtension, type MentionUser, validateAndFixTipTapContent } from '@trycompai/ui/editor';
+import { defaultExtensions } from '@gideon-defender/ui/editor/extensions';
+import { createMentionExtension, type MentionUser, validateAndFixTipTapContent } from '@gideon-defender/ui/editor';
 import { useOrganizationMembers } from '@/hooks/use-organization-members';
 
 interface CommentContentViewProps {

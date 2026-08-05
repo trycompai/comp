@@ -18,11 +18,11 @@ vi.mock('./AddFrameworkModal', () => ({
   AddFrameworkModal: () => <div data-testid="add-framework-modal" />,
 }));
 
-vi.mock('@trycompai/ui/dialog', () => ({
+vi.mock('@gideon-defender/ui/dialog', () => ({
   Dialog: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
-vi.mock('@trycompai/ui/scroll-area', () => ({
+vi.mock('@gideon-defender/ui/scroll-area', () => ({
   ScrollArea: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   ),
@@ -46,6 +46,7 @@ const baseProps = {
   allFrameworks: [],
   frameworksWithCompliance: [],
   organizationId: 'org_123',
+  overallComplianceScore: 0,
 };
 
 describe('FrameworksOverview permission gating', () => {

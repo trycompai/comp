@@ -2,7 +2,7 @@
 
 import { useOrganizationMutations } from '@/hooks/use-organization-mutations';
 import { usePermissions } from '@/hooks/use-permissions';
-import { Button } from '@trycompai/ui/button';
+import { Button } from '@gideon-defender/ui/button';
 import {
   Card,
   CardContent,
@@ -10,7 +10,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@trycompai/ui/card';
+} from '@gideon-defender/ui/card';
 import { ImagePlus, Loader2, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { useRef, useState } from 'react';

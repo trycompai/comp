@@ -8,8 +8,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@trycompai/ui/alert-dialog';
-import { Button } from '@trycompai/ui/button';
+} from '@gideon-defender/ui/alert-dialog';
+import { Button } from '@gideon-defender/ui/button';
 import { Checkbox, Label } from '@trycompai/design-system';
 import { useEffect, useState } from 'react';
 

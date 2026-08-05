@@ -16,11 +16,12 @@ vi.mock('@/hooks/use-permissions', () => ({
 }));
 
 // Mock useApi hook
-const mockUseSWR = vi.fn(() => ({
-  data: { data: { data: [], count: 0 } },
-  mutate: vi.fn(),
-  isValidating: false,
-}));
+type MockSwrResponse = {
+  data: { data: { data: unknown[]; count: number } };
+  mutate: ReturnType<typeof vi.fn>;
+  isValidating: boolean;
+};
+const mockUseSWR = vi.fn<() => MockSwrResponse>();
 vi.mock('@/hooks/use-api', () => ({
   useApi: () => ({
     useSWR: mockUseSWR,
@@ -126,8 +127,11 @@ const mockProvider = {
   integrationId: 'aws',
   name: 'AWS',
   displayName: 'AWS Production',
+  organizationId: 'org_123',
   status: 'active',
-  lastRunAt: '2024-01-01',
+  lastRunAt: null,
+  createdAt: new Date('2024-01-01T00:00:00Z'),
+  updatedAt: new Date('2024-01-01T00:00:00Z'),
   isLegacy: false,
   supportsMultipleConnections: false,
   requiredVariables: [],

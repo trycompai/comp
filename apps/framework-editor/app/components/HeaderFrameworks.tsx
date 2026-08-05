@@ -1,4 +1,4 @@
-import { Skeleton } from '@trycompai/ui/skeleton';
+import { Skeleton } from '@gideon-defender/ui/skeleton';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { ThemeToggle } from './theme-toggle';

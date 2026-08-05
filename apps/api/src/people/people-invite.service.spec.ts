@@ -41,7 +41,7 @@ jest.mock('@db', () => ({
   },
 }));
 
-jest.mock('@trycompai/auth', () => ({
+jest.mock('@gideon-defender/auth', () => ({
   BUILT_IN_ROLE_PERMISSIONS: {
     owner: {
       organization: ['read', 'update', 'delete'],
@@ -109,7 +109,7 @@ jest.mock('../email/templates/invite-member', () => ({
 const mockInvitePortalEmail = jest
   .fn()
   .mockReturnValue('mocked-portal-element');
-jest.mock('@trycompai/email', () => ({
+jest.mock('@gideon-defender/email', () => ({
   InvitePortalEmail: (...args: unknown[]) => mockInvitePortalEmail(...args),
 }));
 

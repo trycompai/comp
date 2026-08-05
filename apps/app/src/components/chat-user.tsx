@@ -1,4 +1,4 @@
-import { Avatar } from '@trycompai/ui/avatar';
+import { Avatar } from '@gideon-defender/ui/avatar';
 import Image from 'next/image';
 
 type Props = {

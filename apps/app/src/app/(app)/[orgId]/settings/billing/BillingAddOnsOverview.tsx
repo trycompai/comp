@@ -1,6 +1,6 @@
 'use client';
 
-import { getBillingSku, getBillingSkuProductKey } from '@trycompai/billing';
+import { getBillingSku, getBillingSkuProductKey } from '@gideon-defender/billing';
 import { Badge, Stack, Text, buttonVariants } from '@trycompai/design-system';
 import { ArrowRight } from '@trycompai/design-system/icons';
 import Link from 'next/link';

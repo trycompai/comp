@@ -1,7 +1,7 @@
 'use client';
 
-import { Checkbox } from '@trycompai/ui/checkbox';
-import { cn } from '@trycompai/ui/cn';
+import { Checkbox } from '@gideon-defender/ui/checkbox';
+import { cn } from '@gideon-defender/ui/cn';
 import type { FrameworkEditorFramework } from '@db';
 
 type FrameworkCardProps = {

@@ -20,7 +20,7 @@ jest.mock('./soa.service', () => ({
   SOAService: class MockSOAService {},
 }));
 
-jest.mock('@trycompai/auth', () => ({
+jest.mock('@gideon-defender/auth', () => ({
   statement: {},
   BUILT_IN_ROLE_PERMISSIONS: {},
 }));

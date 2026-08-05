@@ -10,7 +10,7 @@ import type { OrganizationFromMe } from '@/types';
 import { auth } from '@/utils/auth';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { db, Role } from '@db/server';
-import { OrganizationIdentifier, ServerFeatureFlagsProvider } from '@trycompai/analytics';
+import { OrganizationIdentifier, ServerFeatureFlagsProvider } from '@gideon-defender/analytics';
 import dynamic from 'next/dynamic';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';

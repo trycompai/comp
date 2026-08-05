@@ -1,5 +1,5 @@
 {
-  "name": "@trycompai/analytics",
+  "name": "@gideon-defender/analytics",
   "description": "Analytics utilities using PostHog for Comp AI",
   "version": "1.0.0",
   "dependencies": {

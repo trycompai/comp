@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { db } from '@db/server';
-import { BUILT_IN_ROLE_OBLIGATIONS } from '@trycompai/auth';
+import { BUILT_IN_ROLE_OBLIGATIONS } from '@gideon-defender/auth';
 import { getOrgIsInternal } from './org-participation';
 import { PLATFORM_ADMIN_ROLE, isOrgParticipant } from './org-participation-rule';
 import {

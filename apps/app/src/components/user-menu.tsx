@@ -1,5 +1,5 @@
 import { auth } from '@/utils/auth';
-import { Avatar, AvatarFallback, AvatarImageNext } from '@trycompai/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImageNext } from '@gideon-defender/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,7 +7,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@trycompai/ui/dropdown-menu';
+} from '@gideon-defender/ui/dropdown-menu';
 import { headers } from 'next/headers';
 import Link from 'next/link';
 import { SignOut } from './sign-out';

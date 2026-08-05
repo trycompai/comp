@@ -46,7 +46,7 @@ vi.mock('@trycompai/design-system', () => ({
   ),
 }));
 
-// The multi-select field pulls in @trycompai/ui MultipleSelector — not relevant
+// The multi-select field pulls in @gideon-defender/ui MultipleSelector — not relevant
 // to these select/boolean dropdown tests, so stub it out.
 vi.mock('./ConnectionVariableMultiSelect', () => ({
   ConnectionVariableMultiSelect: () => <div data-testid="multi-select" />,

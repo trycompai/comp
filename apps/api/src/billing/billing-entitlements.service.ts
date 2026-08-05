@@ -4,7 +4,7 @@ import {
   getBillingSkuKeysForProduct,
   type BillingProductKey,
   type BillingSkuKey,
-} from '@trycompai/billing';
+} from '@gideon-defender/billing';
 import { BillingCreditsService } from './billing-credits.service';
 import { refundIncludedUsageEvent } from './billing-included-usage-refunds';
 import {

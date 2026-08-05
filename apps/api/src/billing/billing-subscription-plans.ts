@@ -7,7 +7,7 @@ import {
   type BillingSku,
   type BillingSkuKey,
   getBillingSkuProductKey,
-} from '@trycompai/billing';
+} from '@gideon-defender/billing';
 import { BillingEntitlementsService } from './billing-entitlements.service';
 import { StripeService } from '../stripe/stripe.service';
 

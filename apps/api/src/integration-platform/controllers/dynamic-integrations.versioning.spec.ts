@@ -9,7 +9,7 @@ import { CheckRunRepository } from '../repositories/check-run.repository';
 import { DynamicManifestLoaderService } from '../services/dynamic-manifest-loader.service';
 
 jest.mock('@db', () => ({ db: {} }));
-jest.mock('@trycompai/integration-platform', () => ({
+jest.mock('@gideon-defender/integration-platform', () => ({
   validateIntegrationDefinition: jest.fn(),
   SyncDefinitionSchema: { parse: jest.fn() },
 }));

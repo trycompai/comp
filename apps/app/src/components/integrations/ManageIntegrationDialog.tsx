@@ -11,8 +11,8 @@ import {
   useIntegrationConnections,
   useIntegrationMutations,
 } from '@/hooks/use-integration-platform';
-import { Button } from '@trycompai/ui/button';
-import { ComboboxDropdown } from '@trycompai/ui/combobox-dropdown';
+import { Button } from '@gideon-defender/ui/button';
+import { ComboboxDropdown } from '@gideon-defender/ui/combobox-dropdown';
 import {
   Dialog,
   DialogContent,
@@ -20,18 +20,18 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
-import { Input } from '@trycompai/ui/input';
-import { Label } from '@trycompai/ui/label';
-import MultipleSelector from '@trycompai/ui/multiple-selector';
+} from '@gideon-defender/ui/dialog';
+import { Input } from '@gideon-defender/ui/input';
+import { Label } from '@gideon-defender/ui/label';
+import MultipleSelector from '@gideon-defender/ui/multiple-selector';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@trycompai/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/ui/tabs';
+} from '@gideon-defender/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@gideon-defender/ui/tabs';
 import { Key, Loader2, Settings, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { useParams } from 'next/navigation';

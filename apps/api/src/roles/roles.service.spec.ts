@@ -7,8 +7,8 @@ import {
 } from '@nestjs/common';
 import { RolesService } from './roles.service';
 
-// Mock @trycompai/auth to avoid ESM import issues with better-auth in Jest
-jest.mock('@trycompai/auth', () => {
+// Mock @gideon-defender/auth to avoid ESM import issues with better-auth in Jest
+jest.mock('@gideon-defender/auth', () => {
   const statement = {
     organization: ['read', 'update', 'delete'],
     member: ['create', 'read', 'update', 'delete'],

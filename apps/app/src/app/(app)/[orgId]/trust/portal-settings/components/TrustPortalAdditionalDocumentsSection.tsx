@@ -15,9 +15,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@trycompai/ui/alert-dialog';
-import { Button } from '@trycompai/ui/button';
-import { Card } from '@trycompai/ui/card';
+} from '@gideon-defender/ui/alert-dialog';
+import { Button } from '@gideon-defender/ui/button';
+import { Card } from '@gideon-defender/ui/card';
 import { Download, FileText, Trash2, Upload } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';

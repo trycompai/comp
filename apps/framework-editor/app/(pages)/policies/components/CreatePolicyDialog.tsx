@@ -27,7 +27,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@trycompai/ui';
+} from '@gideon-defender/ui';
 import { apiClient } from '@/app/lib/api-client';
 import { CreatePolicySchema, type CreatePolicySchemaType } from '../schemas';
 

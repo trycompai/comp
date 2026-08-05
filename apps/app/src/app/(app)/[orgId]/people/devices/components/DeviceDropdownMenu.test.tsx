@@ -30,14 +30,14 @@ vi.mock('../../all/components/RemoveDeviceAlert', () => ({
     open ? <div data-testid="remove-device-alert">Remove Alert</div> : null,
 }));
 
-// Mock @trycompai/ui components
-vi.mock('@trycompai/ui', () => ({
+// Mock @gideon-defender/ui components
+vi.mock('@gideon-defender/ui', () => ({
   Button: ({ children, ...props }: any) => (
     <button {...props}>{children}</button>
   ),
 }));
 
-vi.mock('@trycompai/ui/dropdown-menu', () => ({
+vi.mock('@gideon-defender/ui/dropdown-menu', () => ({
   DropdownMenu: ({ children }: any) => (
     <div data-testid="dropdown-menu">{children}</div>
   ),

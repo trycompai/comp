@@ -12,7 +12,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
+} from '@gideon-defender/ui/dialog';
 import {
   Button,
   Label,
@@ -23,7 +23,7 @@ import {
   getAwsCloudShellScript,
   getAwsRemediationScript,
   normalizeAwsEnvironment,
-} from '@trycompai/integration-platform';
+} from '@gideon-defender/integration-platform';
 import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';

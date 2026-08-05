@@ -1,4 +1,4 @@
-import type { BillingProductKey } from '@trycompai/billing';
+import type { BillingProductKey } from '@gideon-defender/billing';
 import type {
   BillingCreditBalanceSummary,
   BillingCreditEventSummary,

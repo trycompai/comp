@@ -13,7 +13,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@trycompai/ui/dropdown-menu';
+} from '@gideon-defender/ui/dropdown-menu';
 import { useState } from 'react';
 import { usePermissions } from '@/hooks/use-permissions';
 import {

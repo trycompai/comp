@@ -30,7 +30,7 @@ vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
-vi.mock('@trycompai/ui/button', () => ({
+vi.mock('@gideon-defender/ui/button', () => ({
   Button: ({
     children,
     onClick,

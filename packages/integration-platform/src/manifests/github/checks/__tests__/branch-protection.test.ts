@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, it } from 'vitest';
 import type { CheckContext } from '../../../../types';
 import type { GitHubBranchRule, GitHubRepo } from '../../types';
 import { branchProtectionCheck } from '../branch-protection';

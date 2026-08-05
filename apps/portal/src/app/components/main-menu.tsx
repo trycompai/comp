@@ -1,8 +1,8 @@
 'use client';
 
-import { cn } from '@trycompai/ui/cn';
-import { Icons } from '@trycompai/ui/icons';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
+import { cn } from '@gideon-defender/ui/cn';
+import { Icons } from '@gideon-defender/ui/icons';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@gideon-defender/ui/tooltip';
 import { Reorder, motion } from 'framer-motion';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';

@@ -2,9 +2,9 @@
 
 import { updateResidualRiskSchema } from '@/actions/schema';
 import { useRiskMutations } from '@/hooks/use-risk-mutations';
-import { Button } from '@trycompai/ui/button';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel } from '@trycompai/ui/form';
-import { Slider } from '@trycompai/ui/slider';
+import { Button } from '@gideon-defender/ui/button';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel } from '@gideon-defender/ui/form';
+import { Slider } from '@gideon-defender/ui/slider';
 import { Impact, Likelihood } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';

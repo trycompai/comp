@@ -435,7 +435,7 @@ Expected: both tests PASS.
 - [ ] **Step 2.5:** Typecheck API
 
 ```bash
-npx turbo run typecheck --filter=@trycompai/api
+npx turbo run typecheck --filter=@gideon-defender/api
 ```
 
 Expected: no errors.
@@ -916,7 +916,7 @@ Expected: all 5 tests PASS.
 # From the repo root
 ```
 
-Invoke the `audit-design-system` skill. Fix any `@trycompai/ui` or `lucide-react` imports it surfaces. Re-run the test suite after any edits.
+Invoke the `audit-design-system` skill. Fix any `@gideon-defender/ui` or `lucide-react` imports it surfaces. Re-run the test suite after any edits.
 
 - [ ] **Step 5.6:** Commit
 
@@ -1257,7 +1257,7 @@ And in the Overview body, after `<PolicyControlMappings ... />`:
 - [ ] **Step 7.2:** Typecheck the app
 
 ```bash
-npx turbo run typecheck --filter=@trycompai/app
+npx turbo run typecheck --filter=@gideon-defender/app
 ```
 
 Expected: no errors.
@@ -1295,7 +1295,7 @@ Inside the overview `TabsContent`, below the existing content:
 - [ ] **Step 8.2:** Typecheck the app
 
 ```bash
-npx turbo run typecheck --filter=@trycompai/app
+npx turbo run typecheck --filter=@gideon-defender/app
 ```
 
 Expected: no errors.
@@ -1314,7 +1314,7 @@ git commit -m "feat(app): render TaskPolicies on task overview"
 - [ ] **Step 9.1:** Full typecheck
 
 ```bash
-npx turbo run typecheck --filter=@trycompai/app --filter=@trycompai/api
+npx turbo run typecheck --filter=@gideon-defender/app --filter=@gideon-defender/api
 ```
 
 Expected: no errors.
@@ -1337,7 +1337,7 @@ Expected: all tests PASS.
 
 - [ ] **Step 9.4:** Manual smoke — policy → evidence
 
-Start the app (`bun run --filter '@trycompai/app' dev:no-trigger`) and the API (`bun run --filter '@trycompai/api' dev:no-trigger`). Log in, then:
+Start the app (`bun run --filter '@gideon-defender/app' dev:no-trigger`) and the API (`bun run --filter '@gideon-defender/api' dev:no-trigger`). Log in, then:
 
 1. Open a policy that already has mapped controls → see "Evidence Tasks" section below "Map Controls". Tasks are grouped by control.
 2. Click a task row → land on the task page, see "Policies" section listing the original policy.

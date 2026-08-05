@@ -8,11 +8,11 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
-} from '@trycompai/ui/command';
+} from '@gideon-defender/ui/command';
 import type { Role } from '@db'; // Assuming Role is from prisma
 import { Check } from 'lucide-react';
 
-import { cn } from '@trycompai/ui/cn';
+import { cn } from '@gideon-defender/ui/cn';
 import type { CustomRoleOption } from './MultiRoleCombobox';
 
 interface MultiRoleComboboxContentProps {

@@ -8,8 +8,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@trycompai/ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from '@trycompai/ui/avatar';
+} from '@gideon-defender/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@gideon-defender/ui/avatar';
 import {
   Dialog,
   DialogContent,
@@ -17,7 +17,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
+} from '@gideon-defender/ui/dialog';
 import type {
   TaskItem,
   TaskItemEntityType,

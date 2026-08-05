@@ -1,7 +1,7 @@
 'use client';
 
 import { confirmDiscardUnsavedChanges } from '@/app/lib/unsaved-changes';
-import { Tabs, TabsList, TabsTrigger } from '@trycompai/ui';
+import { Tabs, TabsList, TabsTrigger } from '@gideon-defender/ui';
 import Link from 'next/link';
 import { useParams, useSelectedLayoutSegment } from 'next/navigation';
 

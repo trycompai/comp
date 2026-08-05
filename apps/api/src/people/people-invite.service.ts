@@ -6,14 +6,14 @@ import {
 import { db } from '@db';
 import { triggerEmail } from '../email/trigger-email';
 import { InviteEmail } from '../email/templates/invite-member';
-import { InvitePortalEmail } from '@trycompai/email';
+import { InvitePortalEmail } from '@gideon-defender/email';
 import {
   BUILT_IN_ROLE_OBLIGATIONS,
   BUILT_IN_ROLE_PERMISSIONS,
   isRestrictedRole,
   parseRoleObligations,
   parseRolePermissions,
-} from '@trycompai/auth';
+} from '@gideon-defender/auth';
 import type { InviteItemDto } from './dto/invite-people.dto';
 import { checkAutoCompletePhases } from '../frameworks/frameworks-timeline.helper';
 import { TimelinesService } from '../timelines/timelines.service';

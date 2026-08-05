@@ -6,8 +6,8 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
-import { Button } from '@trycompai/ui/button';
+} from '@gideon-defender/ui/dialog';
+import { Button } from '@gideon-defender/ui/button';
 import { useApi } from '@/hooks/use-api';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';

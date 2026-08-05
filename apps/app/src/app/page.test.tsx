@@ -18,7 +18,7 @@ vi.mock('@/lib/api-server', () => ({
 // test doesn't pull the real Prisma client.
 vi.mock('@db/server', () => ({ db: {} }));
 
-// '@/lib/permissions' pulls in @trycompai/auth (a built package) and is only
+// '@/lib/permissions' pulls in @gideon-defender/auth (a built package) and is only
 // used past the zero-org redirects. Stub it so the test stays hermetic.
 vi.mock('@/lib/permissions', () => ({
   getDefaultRoute: vi.fn(() => '/'),

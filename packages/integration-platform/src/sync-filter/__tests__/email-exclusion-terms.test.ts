@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, it } from 'vitest';
 import { matchesSyncFilterTerms, parseSyncFilterTerms } from '../email-exclusion-terms';
 
 describe('parseSyncFilterTerms', () => {

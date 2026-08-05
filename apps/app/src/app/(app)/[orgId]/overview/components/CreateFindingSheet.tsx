@@ -21,8 +21,8 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@trycompai/ui/form';
-import { useMediaQuery } from '@trycompai/ui/hooks';
+} from '@gideon-defender/ui/form';
+import { useMediaQuery } from '@gideon-defender/ui/hooks';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Button,

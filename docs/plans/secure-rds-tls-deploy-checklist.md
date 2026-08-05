@@ -22,7 +22,7 @@ library` for every cold start.
 
 The `caBundleExtension` and `NODE_EXTRA_CA_CERTS` setup in `trigger.config.ts`
 remain as-is — Trigger.dev images bake the cert into
-`/app/certs/rds-global-bundle.pem`. The shared `@trycompai/db` client falls
+`/app/certs/rds-global-bundle.pem`. The shared `@gideon-defender/db` client falls
 through to verified TLS via the inline bundle either way.
 
 If `PRISMA_ALLOW_INSECURE_TLS` is still set as a leftover from earlier
@@ -41,8 +41,8 @@ still consults the env var, which is the correct path for that runtime.
 
 ## Downstream consumers (comp-private/apps/enterprise-api, etc.)
 
-After bumping `@trycompai/db` to a version that includes the inline bundle,
-consumers that import `resolveSslConfig` from `@trycompai/db/ssl-config`
+After bumping `@gideon-defender/db` to a version that includes the inline bundle,
+consumers that import `resolveSslConfig` from `@gideon-defender/db/ssl-config`
 automatically get verified TLS via the inline bundle — no env var required.
 They can drop their own `NODE_EXTRA_CA_CERTS` and `outputFileTracingIncludes`
 on the new version.

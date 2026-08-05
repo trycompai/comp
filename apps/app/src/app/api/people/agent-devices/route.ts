@@ -6,7 +6,7 @@ import type {
 import { getOrgIsInternal } from '@/lib/org-participation';
 import { requireApiPermission } from '@/lib/permissions.server';
 import { db } from '@db/server';
-import { daysSinceCheckIn, getDeviceComplianceStatus } from '@trycompai/utils/devices';
+import { daysSinceCheckIn, getDeviceComplianceStatus } from '@gideon-defender/utils/devices';
 import { NextResponse } from 'next/server';
 
 /** Maps the DB `DeviceSource` enum to the frontend source discriminant. */

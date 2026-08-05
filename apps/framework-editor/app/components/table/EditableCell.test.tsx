@@ -4,7 +4,7 @@ import { EditableCell } from './EditableCell';
 import { clearEditorSize, saveEditorSize } from './editor-size-storage';
 
 // The ui package ships untranspiled JSX in dist; stub the bits the cell uses.
-vi.mock('@trycompai/ui', () => ({
+vi.mock('@gideon-defender/ui', () => ({
   Button: ({
     children,
     variant: _v,

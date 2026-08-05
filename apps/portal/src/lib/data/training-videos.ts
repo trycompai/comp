@@ -1,4 +1,4 @@
-import type { GeneralTrainingVideoId } from '@trycompai/company';
+import type { GeneralTrainingVideoId } from '@gideon-defender/company';
 
 /**
  * Represents a training video resource that can be used
@@ -18,7 +18,7 @@ export interface TrainingVideo {
 }
 
 /**
- * Videos keyed by the canonical IDs that `@trycompai/company` owns, shared
+ * Videos keyed by the canonical IDs that `@gideon-defender/company` owns, shared
  * with the NestJS training service and the portal's complete-training route.
  *
  * Keying by the canonical union makes the lists exhaustive in BOTH directions:
@@ -28,7 +28,7 @@ export interface TrainingVideo {
  * unable to finish training, while a rendered video the API rejects would 400.
  *
  * The import is type-only on purpose: client components and a Trigger.dev task
- * import this file, and `@trycompai/company` requires `@trycompai/db` at
+ * import this file, and `@gideon-defender/company` requires `@gideon-defender/db` at
  * runtime.
  */
 const trainingVideosById: Record<GeneralTrainingVideoId, Omit<TrainingVideo, 'id'>> = {

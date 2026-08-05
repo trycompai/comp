@@ -1,10 +1,10 @@
 'use client';
 
 import { api } from '@/lib/api-client';
-import { Badge } from '@trycompai/ui/badge';
-import { Card, CardContent } from '@trycompai/ui/card';
-import { Input } from '@trycompai/ui/input';
-import { Label } from '@trycompai/ui/label';
+import { Badge } from '@gideon-defender/ui/badge';
+import { Card, CardContent } from '@gideon-defender/ui/card';
+import { Input } from '@gideon-defender/ui/input';
+import { Label } from '@gideon-defender/ui/label';
 import { Button } from '@trycompai/design-system';
 import {
   CheckmarkFilled,

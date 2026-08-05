@@ -1,4 +1,4 @@
-import { Icons } from '@trycompai/ui/icons';
+import { Icons } from '@gideon-defender/ui/icons';
 import Link from 'next/link';
 import { MainMenu } from './main-menu';
 

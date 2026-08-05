@@ -1,7 +1,7 @@
 'use client';
 
-import { SelectItem } from '@trycompai/ui/select';
-import { Spinner } from '@trycompai/ui/spinner';
+import { SelectItem } from '@gideon-defender/ui/select';
+import { Spinner } from '@gideon-defender/ui/spinner';
 import { AssignedUser } from './assigned-user';
 
 interface User {

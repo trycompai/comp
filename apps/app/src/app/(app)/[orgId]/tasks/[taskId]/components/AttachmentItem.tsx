@@ -8,9 +8,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@trycompai/ui/alert-dialog';
-import { Button } from '@trycompai/ui/button';
-import { cn } from '@trycompai/ui/cn';
+} from '@gideon-defender/ui/alert-dialog';
+import { Button } from '@gideon-defender/ui/button';
+import { cn } from '@gideon-defender/ui/cn';
 import type { Attachment, AttachmentType } from '@db';
 import { Loader2, Trash2 } from 'lucide-react';
 import React from 'react';

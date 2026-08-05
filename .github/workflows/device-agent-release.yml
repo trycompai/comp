@@ -97,13 +97,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          node-version: "22"
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: npm ci
 
       - name: Set package.json version
         env:
@@ -120,7 +120,7 @@ jobs:
           PORTAL_URL: ${{ needs.detect-version.outputs.portal_url }}
           API_URL: ${{ needs.detect-version.outputs.api_url }}
           AGENT_VERSION: ${{ needs.detect-version.outputs.version }}
-        run: bun run build
+        run: npm run build
 
       - name: Package macOS
         env:
@@ -131,7 +131,7 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AUTO_UPDATE_URL: ${{ needs.detect-version.outputs.auto_update_url }}
-        run: bun run package:mac
+        run: npm run package:mac
 
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
@@ -155,13 +155,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          node-version: "22"
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: npm ci
 
       - name: Set package.json version
         env:
@@ -179,13 +179,13 @@ jobs:
           PORTAL_URL: ${{ needs.detect-version.outputs.portal_url }}
           API_URL: ${{ needs.detect-version.outputs.api_url }}
           AGENT_VERSION: ${{ needs.detect-version.outputs.version }}
-        run: bun run build
+        run: npm run build
 
       - name: Package Windows (unsigned)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AUTO_UPDATE_URL: ${{ needs.detect-version.outputs.auto_update_url }}
-        run: bun run package:win
+        run: npm run package:win
 
       - name: Setup Java for CodeSignTool
         uses: actions/setup-java@v4
@@ -303,13 +303,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          node-version: "22"
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: npm ci
 
       - name: Set package.json version
         env:
@@ -326,13 +326,13 @@ jobs:
           PORTAL_URL: ${{ needs.detect-version.outputs.portal_url }}
           API_URL: ${{ needs.detect-version.outputs.api_url }}
           AGENT_VERSION: ${{ needs.detect-version.outputs.version }}
-        run: bun run build
+        run: npm run build
 
       - name: Package Linux
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AUTO_UPDATE_URL: ${{ needs.detect-version.outputs.auto_update_url }}
-        run: bun run package:linux
+        run: npm run package:linux
 
       - name: Upload Linux artifact
         uses: actions/upload-artifact@v4

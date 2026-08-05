@@ -1,7 +1,7 @@
 'use client';
 
-import { Icons } from '@trycompai/ui/icons';
-import { Input } from '@trycompai/ui/input';
+import { Icons } from '@gideon-defender/ui/icons';
+import { Input } from '@gideon-defender/ui/input';
 import { useQueryState } from 'nuqs';
 import { useHotkeys } from 'react-hotkeys-hook';
 

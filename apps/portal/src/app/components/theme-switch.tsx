@@ -10,7 +10,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@trycompai/ui/select';
+} from '@gideon-defender/ui/select';
 
 type Theme = 'dark' | 'system' | 'light';
 

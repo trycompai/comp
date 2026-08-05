@@ -2,7 +2,7 @@ jest.mock('@db', () => ({ db: {}, Prisma: {} }));
 
 const mockGetManifest = jest.fn();
 const mockRunAllChecks = jest.fn();
-jest.mock('@trycompai/integration-platform', () => ({
+jest.mock('@gideon-defender/integration-platform', () => ({
   getManifest: (...args: unknown[]) => mockGetManifest(...args),
   runAllChecks: (...args: unknown[]) => mockRunAllChecks(...args),
 }));

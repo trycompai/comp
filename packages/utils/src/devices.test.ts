@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   STALE_DEVICE_THRESHOLD_DAYS,
   daysSinceCheckIn,

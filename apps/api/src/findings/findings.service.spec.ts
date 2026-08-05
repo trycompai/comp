@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-jest.mock('@trycompai/company', () => ({
+jest.mock('@gideon-defender/company', () => ({
   toDbEvidenceFormType: (v: string) => v,
   toExternalEvidenceFormType: (v: string | null) => v,
 }));

@@ -23,57 +23,57 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          node-version: "22"
 
       - name: Cache dependencies
         uses: WarpBuilds/cache@v1
         with:
           path: |
-            ~/.bun/install/cache
+            ~/.npm
             node_modules
             apps/*/node_modules
             packages/*/node_modules
-          key: ${{ runner.os }}-bun-quick-${{ hashFiles('**/bun.lock') }}
+          key: ${{ runner.os }}-npm-quick-${{ hashFiles('package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-bun-quick-
-            ${{ runner.os }}-bun-
+            ${{ runner.os }}-npm-quick-
+            ${{ runner.os }}-npm-
 
       - name: Cache Next.js build
         uses: WarpBuilds/cache@v1
         with:
           path: |
             apps/app/.next/cache
-          key: ${{ runner.os }}-nextjs-quick-${{ hashFiles('**/bun.lock') }}-${{ hashFiles('apps/app/**/*.js', 'apps/app/**/*.jsx', 'apps/app/**/*.ts', 'apps/app/**/*.tsx') }}
+          key: ${{ runner.os }}-nextjs-quick-${{ hashFiles('package-lock.json') }}-${{ hashFiles('apps/app/**/*.js', 'apps/app/**/*.jsx', 'apps/app/**/*.ts', 'apps/app/**/*.tsx') }}
           restore-keys: |
-            ${{ runner.os }}-nextjs-quick-${{ hashFiles('**/bun.lock') }}-
+            ${{ runner.os }}-nextjs-quick-${{ hashFiles('package-lock.json') }}-
             ${{ runner.os }}-nextjs-quick-
             ${{ runner.os }}-nextjs-
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: npm ci
 
       - name: Generate Prisma Client
         run: |
           cd packages/db
-          bunx prisma generate
+          npx prisma generate
 
       - name: Type check
         run: |
           cd apps/app
-          bun run typecheck || true # Don't fail on type errors yet
+          npm run typecheck || true # Don't fail on type errors yet
 
       - name: Lint
         run: |
           cd apps/app
-          bun run lint || true # Don't fail on lint errors yet
+          npm run lint || true # Don't fail on lint errors yet
 
       - name: Run middleware tests (smoke test)
         run: |
           cd apps/app
-          bunx vitest middleware.test.ts --run
+          npx vitest middleware.test.ts --run
         env:
           CI: true
           AUTH_SECRET: test-auth-secret-for-ci
@@ -83,7 +83,7 @@ jobs:
         run: |
           cd apps/app
           # Quick build check without full optimization
-          bunx next build --experimental-build-mode=compile
+          npx next build --experimental-build-mode=compile
         env:
           SKIP_ENV_VALIDATION: true
           DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy

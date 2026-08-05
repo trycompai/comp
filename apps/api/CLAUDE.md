@@ -73,17 +73,17 @@ npx jest src/<module-name> --passWithNoTests
 npx jest --onlyChanged
 
 # Run all API tests (from repo root)
-npx turbo run test --filter=@trycompai/api
+npx turbo run test --filter=@gideon-defender/api
 
 # Type-check before committing
-npx turbo run typecheck --filter=@trycompai/api
+npx turbo run typecheck --filter=@gideon-defender/api
 ```
 
 ### Test Patterns
 
 ```typescript
 // Mock external dependencies
-jest.mock('@trycompai/db', () => ({
+jest.mock('@gideon-defender/db', () => ({
   db: {
     someTable: {
       findFirst: jest.fn(),
@@ -123,7 +123,7 @@ const module = await Test.createTestingModule({
 
 ### Database Access
 
-- Use Prisma via `@trycompai/db`
+- Use Prisma via `@gideon-defender/db`
 - Always scope queries by `organizationId` for multi-tenancy
 - Use transactions for operations that modify multiple records
 - **Reusing an integration check's results in a feature?** Use `CheckResultsService`
@@ -142,7 +142,7 @@ const module = await Test.createTestingModule({
 1. **Before coding**: Read existing code patterns in the module
 2. **During coding**: Follow established patterns, add types
 3. **After coding**:
-   - Run `npx turbo run typecheck --filter=@trycompai/api`
+   - Run `npx turbo run typecheck --filter=@gideon-defender/api`
    - Write and run tests: `npx jest src/<module>`
    - Commit with conventional commit message
 
@@ -150,10 +150,10 @@ const module = await Test.createTestingModule({
 
 ```bash
 # Start API in development
-npx turbo run dev --filter=@trycompai/api
+npx turbo run dev --filter=@gideon-defender/api
 
 # Type-check
-npx turbo run typecheck --filter=@trycompai/api
+npx turbo run typecheck --filter=@gideon-defender/api
 
 # Run specific test file
 npx jest src/roles/roles.service.spec.ts

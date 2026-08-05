@@ -1,15 +1,15 @@
 'use client';
 
 import type { CredentialField } from '@/hooks/use-integration-platform';
-import { ComboboxDropdown } from '@trycompai/ui/combobox-dropdown';
-import MultipleSelector from '@trycompai/ui/multiple-selector';
+import { ComboboxDropdown } from '@gideon-defender/ui/combobox-dropdown';
+import MultipleSelector from '@gideon-defender/ui/multiple-selector';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@trycompai/ui/select';
+} from '@gideon-defender/ui/select';
 import {
   Input,
   Textarea,

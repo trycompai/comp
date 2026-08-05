@@ -1,7 +1,7 @@
 'use client';
 
 import { useConnectionServices } from '@/hooks/use-integration-platform';
-import { Badge } from '@trycompai/ui/badge';
+import { Badge } from '@gideon-defender/ui/badge';
 import {
   Cloud,
   Database,

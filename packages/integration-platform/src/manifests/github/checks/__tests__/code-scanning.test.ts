@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, it } from 'vitest';
 import type { CheckContext } from '../../../../types';
 import type { GitHubRepo } from '../../types';
 import { codeScanningCheck } from '../code-scanning';

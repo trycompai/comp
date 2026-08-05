@@ -1,4 +1,4 @@
-import { cn } from '@trycompai/ui/cn';
+import { cn } from '@gideon-defender/ui/cn';
 
 /** Swatch + label; shared by read-only display and select items (policy table pattern). */
 export function ApplicableSwatchRow({ isApplicable }: { isApplicable: boolean | null }) {

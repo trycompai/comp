@@ -1,7 +1,7 @@
 'use client';
 
 import { apiClient } from '@/app/lib/api-client';
-import { Button } from '@trycompai/ui/button';
+import { Button } from '@gideon-defender/ui/button';
 import {
   Dialog,
   DialogClose,
@@ -10,7 +10,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
+} from '@gideon-defender/ui/dialog';
 import { FileUp } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useRef, useState } from 'react';

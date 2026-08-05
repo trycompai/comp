@@ -1,6 +1,6 @@
 'use client';
 
-import { Badge } from '@trycompai/ui/badge';
+import { Badge } from '@gideon-defender/ui/badge';
 import { usePermissions } from '@/hooks/use-permissions';
 import { Button, HStack, Stack, Text } from '@trycompai/design-system';
 import { Add, Close } from '@trycompai/design-system/icons';

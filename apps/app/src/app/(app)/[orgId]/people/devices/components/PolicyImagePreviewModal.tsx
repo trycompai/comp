@@ -7,7 +7,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
+} from '@gideon-defender/ui/dialog';
 import { CarouselControls } from './CarouselControls';
 import { PolicyImagePreview } from './PolicyImagePreview';
 

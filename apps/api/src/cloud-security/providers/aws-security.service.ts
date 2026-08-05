@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AssumeRoleCommand, STSClient } from '@aws-sdk/client-sts';
-import { retryAssume } from '@trycompai/integration-platform';
+import { retryAssume } from '@gideon-defender/integration-platform';
 import {
   CostExplorerClient,
   GetCostAndUsageCommand,

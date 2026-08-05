@@ -3,9 +3,9 @@
 import { DepartmentSelect } from '@/components/DepartmentSelect';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { useTaskTemplates } from '@/hooks/use-task-template-api';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
-import { useMediaQuery } from '@trycompai/ui/hooks';
-import MultipleSelector, { Option } from '@trycompai/ui/multiple-selector';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@gideon-defender/ui/form';
+import { useMediaQuery } from '@gideon-defender/ui/hooks';
+import MultipleSelector, { Option } from '@gideon-defender/ui/multiple-selector';
 import { Member, TaskFrequency, User } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {

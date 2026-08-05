@@ -28,7 +28,7 @@ vi.mock('./CommentContentView', () => ({
   CommentContentView: ({ content }: { content: string }) => <div>{content}</div>,
 }));
 
-vi.mock('@trycompai/ui/dropdown-menu', () => ({
+vi.mock('@gideon-defender/ui/dropdown-menu', () => ({
   DropdownMenu: ({ children }: any) => <div>{children}</div>,
   DropdownMenuTrigger: ({ children }: any) => <>{children}</>,
   DropdownMenuContent: ({ children }: any) => <div>{children}</div>,

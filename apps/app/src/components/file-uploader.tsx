@@ -7,10 +7,10 @@ import Dropzone, { type DropzoneProps, type FileRejection } from 'react-dropzone
 import { toast } from 'sonner';
 
 import { useControllableState } from '@/hooks/use-controllable-state';
-import { Button } from '@trycompai/ui/button';
-import { cn, formatBytes } from '@trycompai/ui/cn';
-import { Progress } from '@trycompai/ui/progress';
-import { ScrollArea } from '@trycompai/ui/scroll-area';
+import { Button } from '@gideon-defender/ui/button';
+import { cn, formatBytes } from '@gideon-defender/ui/cn';
+import { Progress } from '@gideon-defender/ui/progress';
+import { ScrollArea } from '@gideon-defender/ui/scroll-area';
 
 interface FileUploaderProps extends React.HTMLAttributes<HTMLDivElement> {
   /**

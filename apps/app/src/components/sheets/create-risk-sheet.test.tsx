@@ -16,7 +16,7 @@ vi.mock('@/hooks/use-permissions', () => ({
 }));
 
 // Mock useMediaQuery to default to desktop
-vi.mock('@trycompai/ui/hooks', () => ({
+vi.mock('@gideon-defender/ui/hooks', () => ({
   useMediaQuery: vi.fn(() => true),
 }));
 

@@ -2,8 +2,8 @@
 
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { getInitials } from '@/lib/utils';
-import { Avatar, AvatarFallback, AvatarImage } from '@trycompai/ui/avatar';
-import { Badge } from '@trycompai/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@gideon-defender/ui/avatar';
+import { Badge } from '@gideon-defender/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -11,13 +11,13 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
+} from '@gideon-defender/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@trycompai/ui/dropdown-menu';
+} from '@gideon-defender/ui/dropdown-menu';
 import { PolicyStatus, type Member, type Policy, type PolicyVersion, type User } from '@db';
 import {
   AlertDialog,

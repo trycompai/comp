@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'bun:test';
+import { describe, it, expect, afterEach } from 'vitest';
 import { resolveSslConfig } from './ssl-config';
+import { resolveConnectionString } from './client';
 
 describe('resolveSslConfig', () => {
   it('returns undefined for localhost', () => {
@@ -32,6 +33,36 @@ describe('resolveSslConfig', () => {
   it('treats malformed URLs as remote (defensive)', () => {
     const result = resolveSslConfig('not-a-valid-url', {});
     expect(result).toBeDefined();
-    expect(typeof (result as { checkServerIdentity: unknown }).checkServerIdentity).toBe('function');
+    expect(typeof (result as { checkServerIdentity: () => undefined }).checkServerIdentity).toBe('function');
+  });
+});
+
+describe('resolveConnectionString', () => {
+  const originalEnv = process.env;
+
+  afterEach(() => {
+    process.env = originalEnv;
+  });
+
+  it('returns the dedicated RLS URL when set', () => {
+    process.env = {
+      ...originalEnv,
+      DATABASE_URL: 'postgres://owner@db/main',
+      DATABASE_URL_TENANT: 'postgres://comp_app@db/main',
+    };
+    expect(resolveConnectionString('DATABASE_URL_TENANT')).toBe(
+      'postgres://comp_app@db/main',
+    );
+  });
+
+  it('falls back to DATABASE_URL when the dedicated URL is unset', () => {
+    process.env = {
+      ...originalEnv,
+      DATABASE_URL: 'postgres://owner@db/main',
+      DATABASE_URL_TENANT: undefined,
+    };
+    expect(resolveConnectionString('DATABASE_URL_TENANT')).toBe(
+      'postgres://owner@db/main',
+    );
   });
 });

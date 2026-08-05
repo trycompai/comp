@@ -3,7 +3,7 @@ import type { DisplayItem } from './filter-members';
 import type { MemberWithUser } from './TeamMembers';
 import type { Invitation } from '@db';
 
-// Mock @/lib/permissions to avoid resolving @trycompai/auth
+// Mock @/lib/permissions to avoid resolving @gideon-defender/auth
 vi.mock('@/lib/permissions', () => ({
   parseRolesString: (rolesStr: string | null | undefined): string[] => {
     if (!rolesStr) return [];

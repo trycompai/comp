@@ -1,10 +1,10 @@
 'use client';
 
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@trycompai/ui/accordion';
-import { Button } from '@trycompai/ui/button';
-import { Input } from '@trycompai/ui/input';
-import { Label } from '@trycompai/ui/label';
-import { Textarea } from '@trycompai/ui/textarea';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@gideon-defender/ui/accordion';
+import { Button } from '@gideon-defender/ui/button';
+import { Input } from '@gideon-defender/ui/input';
+import { Label } from '@gideon-defender/ui/label';
+import { Textarea } from '@gideon-defender/ui/textarea';
 import type { Context } from '@db';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';

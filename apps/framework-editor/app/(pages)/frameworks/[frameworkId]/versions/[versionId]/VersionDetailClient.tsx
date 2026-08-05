@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Button } from '@trycompai/ui';
+import { Button } from '@gideon-defender/ui';
 import { useFrameworkVersionDiff } from '../hooks/useFrameworkVersionDiff';
 import { VersionDiffView, hasAnyChanges } from '../components/VersionDiffView';
 

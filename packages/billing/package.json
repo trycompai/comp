@@ -1,5 +1,5 @@
 {
-  "name": "@trycompai/billing",
+  "name": "@gideon-defender/billing",
   "version": "1.0.0",
   "private": true,
   "exports": {
@@ -17,13 +17,14 @@
     "clean": "rm -rf .turbo node_modules",
     "format": "prettier --write .",
     "lint": "prettier --check .",
-    "test": "bun test src/*.test.ts",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "sideEffects": false,
   "devDependencies": {
-    "@trycompai/tsconfig": "workspace:*",
+    "@gideon-defender/tsconfig": "*",
     "tsup": "^8.5.0",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.7"
   }
 }

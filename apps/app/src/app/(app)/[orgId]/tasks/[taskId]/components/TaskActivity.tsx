@@ -1,9 +1,9 @@
 'use client';
 
-import { Avatar, AvatarFallback, AvatarImage } from '@trycompai/ui/avatar';
-import { Badge } from '@trycompai/ui/badge';
-import { Button } from '@trycompai/ui/button';
-import { cn } from '@trycompai/ui/cn';
+import { Avatar, AvatarFallback, AvatarImage } from '@gideon-defender/ui/avatar';
+import { Badge } from '@gideon-defender/ui/badge';
+import { Button } from '@gideon-defender/ui/button';
+import { cn } from '@gideon-defender/ui/cn';
 import type { AuditLog } from '@db';
 import { format } from 'date-fns';
 import { ChevronDown, ChevronUp } from 'lucide-react';

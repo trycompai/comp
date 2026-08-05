@@ -4,7 +4,7 @@ import {
   getBillingSkuProductKey,
   type BillingProductKey,
   type BillingSkuKey,
-} from '@trycompai/billing';
+} from '@gideon-defender/billing';
 import type Stripe from 'stripe';
 import type {
   AdminBillingPlan,

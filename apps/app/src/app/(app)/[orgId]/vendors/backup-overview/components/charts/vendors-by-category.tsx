@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@gideon-defender/ui/card';
 import { db, VendorCategory } from '@db/server';
 import { VendorCategoryChart } from './category-chart';
 

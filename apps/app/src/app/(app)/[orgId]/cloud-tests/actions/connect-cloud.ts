@@ -1,7 +1,7 @@
 'use server';
 
 import { encrypt } from '@/lib/encryption';
-import { getIntegrationHandler } from '@trycompai/integrations';
+import { getIntegrationHandler } from '@gideon-defender/integrations';
 import { db, Prisma } from '@db/server';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';

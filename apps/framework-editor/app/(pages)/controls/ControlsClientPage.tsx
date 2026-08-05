@@ -9,7 +9,7 @@ import {
   useReactTable,
   type SortingState,
 } from '@tanstack/react-table';
-import { Button } from '@trycompai/ui';
+import { Button } from '@gideon-defender/ui';
 import { ArrowDown, ArrowUp, ArrowUpDown, Link, Plus, Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import {

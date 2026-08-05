@@ -30,7 +30,7 @@ import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
-import { statement } from '@trycompai/auth';
+import { statement } from '@gideon-defender/auth';
 import { CreatePeopleDto } from './dto/create-people.dto';
 import { UpdatePeopleDto } from './dto/update-people.dto';
 import { BulkCreatePeopleDto } from './dto/bulk-create-people.dto';

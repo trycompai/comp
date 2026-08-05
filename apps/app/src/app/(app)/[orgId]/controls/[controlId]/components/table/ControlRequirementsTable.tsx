@@ -2,7 +2,7 @@
 
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 
-import { Table, TableBody, TableCell, TableRow } from '@trycompai/ui/table';
+import { Table, TableBody, TableCell, TableRow } from '@gideon-defender/ui/table';
 import type { FrameworkEditorRequirement, Policy, Task } from '@db';
 import { useParams, useRouter } from 'next/navigation';
 import { ControlRequirementsTableColumns } from './ControlRequirementsTableColumns';

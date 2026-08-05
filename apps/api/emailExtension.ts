@@ -8,12 +8,12 @@ import { existsSync } from 'node:fs';
 import { cp, mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
-const PACKAGE_NAME = '@trycompai/email';
+const PACKAGE_NAME = '@gideon-defender/email';
 
 /**
- * Custom Trigger.dev build extension for @trycompai/email workspace package.
+ * Custom Trigger.dev build extension for @gideon-defender/email workspace package.
  *
- * Since @trycompai/email is a workspace package (not published to npm),
+ * Since @gideon-defender/email is a workspace package (not published to npm),
  * we need to:
  * 1. Add an esbuild plugin to resolve the import path during build
  * 2. Copy the built dist files into the trigger.dev deployment
@@ -48,14 +48,14 @@ class EmailExtension implements BuildExtension {
     const resolvePlugin: Plugin = {
       name: 'resolve-email',
       setup(build) {
-        build.onResolve({ filter: /^@trycompai\/email$/ }, () => {
+        build.onResolve({ filter: /^@gideon-defender\/email$/ }, () => {
           return {
             path: resolve(packagePath, 'dist/index.js'),
           };
         });
 
         build.onResolve(
-          { filter: /^@trycompai\/email\// },
+          { filter: /^@gideon-defender\/email\// },
           (args) => {
             const subpath = args.path.replace(`${PACKAGE_NAME}/`, '');
             return {
@@ -83,7 +83,7 @@ class EmailExtension implements BuildExtension {
 
     const destPath = resolve(
       manifest.outputPath,
-      'node_modules/@trycompai/email',
+      'node_modules/@gideon-defender/email',
     );
     const destDistPath = resolve(destPath, 'dist');
 
@@ -97,7 +97,7 @@ class EmailExtension implements BuildExtension {
     }
 
     context.logger.log(
-      'Copied @trycompai/email to deployment bundle',
+      'Copied @gideon-defender/email to deployment bundle',
     );
   }
 

@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { db } from '@db';
-import type { SyncDevice } from '@trycompai/integration-platform';
+import type { SyncDevice } from '@gideon-defender/integration-platform';
 
 // ============================================================================
 // Types

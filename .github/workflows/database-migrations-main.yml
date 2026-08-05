@@ -16,17 +16,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v1
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          node-version: "22"
 
       - name: Install DB dependencies
         working-directory: packages/db
-        run: bun install --frozen-lockfile --ignore-scripts
+        run: npm ci --ignore-scripts
 
       - name: Apply database migrations
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL_DEV }}
         working-directory: packages/db
-        run: bunx prisma migrate deploy
+        run: npx prisma migrate deploy

@@ -64,10 +64,10 @@ jest.mock('@db', () => ({
   Prisma: {},
 }));
 
-// permission.guard (imported transitively via the interceptor) pulls @trycompai/auth,
+// permission.guard (imported transitively via the interceptor) pulls @gideon-defender/auth,
 // which loads better-auth's ESM subpaths. Mock it so the spec doesn't have to transform
 // them — we only need the permission metadata keys, not the real role tables.
-jest.mock('@trycompai/auth', () => ({
+jest.mock('@gideon-defender/auth', () => ({
   statement: {},
   BUILT_IN_ROLE_PERMISSIONS: {},
   RESTRICTED_ROLES: [],

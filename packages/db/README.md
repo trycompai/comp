@@ -1,4 +1,4 @@
-# @trycompai/db
+# @gideon-defender/db
 
 Database package for Comp AI.
 
@@ -11,13 +11,13 @@ Database package for Comp AI.
 ## Install
 
 ```bash
-bun add @trycompai/db
+npm install @gideon-defender/db
 ```
 
 ## Usage
 
 ```ts
-import { db } from '@trycompai/db';
+import { db } from '@gideon-defender/db';
 ```
 
 ## Notes

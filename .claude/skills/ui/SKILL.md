@@ -11,7 +11,7 @@ Original Cursor alwaysApply: `true`.
 ## Design System Priority
 
 1. **First choice:** `@trycompai/design-system`
-2. **Fallback:** `@trycompai/ui` only if DS doesn't have the component
+2. **Fallback:** `@gideon-defender/ui` only if DS doesn't have the component
 
 ```tsx
 // ✅ Design system
@@ -19,7 +19,7 @@ import { Button, Card, Input, Sheet, Badge } from '@trycompai/design-system';
 import { Add, Close, ArrowRight } from '@trycompai/design-system/icons';
 
 // ❌ Don't use when DS has it
-import { Button } from '@trycompai/ui/button';
+import { Button } from '@gideon-defender/ui/button';
 import { Plus } from 'lucide-react';
 ```
 

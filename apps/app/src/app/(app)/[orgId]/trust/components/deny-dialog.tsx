@@ -1,6 +1,6 @@
 import { useDenyAccessRequest } from '@/hooks/use-access-requests';
 import { usePermissions } from '@/hooks/use-permissions';
-import { Button } from '@trycompai/ui/button';
+import { Button } from '@gideon-defender/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -8,9 +8,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
-import { Field, FieldError, FieldLabel } from '@trycompai/ui/field';
-import { Textarea } from '@trycompai/ui/textarea';
+} from '@gideon-defender/ui/dialog';
+import { Field, FieldError, FieldLabel } from '@gideon-defender/ui/field';
+import { Textarea } from '@gideon-defender/ui/textarea';
 import { useForm } from '@tanstack/react-form';
 import { toast } from 'sonner';
 import * as z from 'zod';

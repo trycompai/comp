@@ -1,5 +1,5 @@
 {
-    "name": "@trycompai/framework-editor",
+    "name": "@gideon-defender/framework-editor",
     "dependencies": {
         "@hookform/resolvers": "^5.2.2",
         "@noble/ciphers": "^1.1.0",
@@ -10,9 +10,9 @@
         "@tanstack/react-table": "^8.21.3",
         "@tanstack/react-virtual": "^3.13.8",
         "@tiptap/react": "3.22.1",
-        "@trycompai/company": "workspace:*",
-        "@trycompai/db": "workspace:*",
-        "@trycompai/ui": "workspace:*",
+        "@gideon-defender/company": "*",
+        "@gideon-defender/db": "*",
+        "@gideon-defender/ui": "*",
         "better-auth": "^1.6.13",
         "framer-motion": "^12.23.9",
         "lucide-react": "^1.7.0",
@@ -49,7 +49,7 @@
         "db:generate": "find prisma/schema -name '*.prisma' ! -name 'schema.prisma' -delete && find ../../packages/db/prisma/schema -name '*.prisma' ! -name 'schema.prisma' -exec cp {} prisma/schema/ \\; && prisma generate --schema=prisma/schema && node ../../packages/db/scripts/fix-generated-extensions.js src/generated/prisma",
         "dev": "next dev --port 3004",
         "lint": "echo 'no lint configured'",
-        "prebuild": "bun run db:generate",
+        "prebuild": "npm run db:generate",
         "start": "next start",
         "test": "vitest run",
         "typecheck": "tsc --noEmit"

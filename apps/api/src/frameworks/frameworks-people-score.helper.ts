@@ -2,7 +2,7 @@ import { BackgroundCheckStatus, db } from '@db';
 import {
   GENERAL_TRAINING_VIDEO_IDS as GENERAL_TRAINING_IDS,
   HIPAA_TRAINING_ID,
-} from '@trycompai/company';
+} from '@gideon-defender/company';
 import { filterComplianceMembers } from '../utils/compliance-filters';
 
 const COMPLETED_BACKGROUND_CHECK_STATUSES = [

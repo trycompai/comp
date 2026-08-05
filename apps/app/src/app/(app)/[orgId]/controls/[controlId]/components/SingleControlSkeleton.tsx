@@ -1,6 +1,6 @@
-import { CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
+import { CardContent, CardHeader, CardTitle } from '@gideon-defender/ui/card';
 
-import { Card } from '@trycompai/ui/card';
+import { Card } from '@gideon-defender/ui/card';
 
 export const SingleControlSkeleton = () => {
   return (

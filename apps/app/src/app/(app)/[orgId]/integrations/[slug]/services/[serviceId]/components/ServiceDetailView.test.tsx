@@ -16,7 +16,7 @@ vi.mock('@/hooks/use-integration-platform', () => ({
 import type {
   ConnectionListItemResponse,
   IntegrationProviderResponse,
-} from '@trycompai/integration-platform';
+} from '@gideon-defender/integration-platform';
 import { ServiceDetailView } from './ServiceDetailView';
 
 const FIREWALL = 'Production Firewall & No-Public-Access Controls';

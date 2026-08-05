@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, it } from 'vitest';
 import { getAllManifests, getManifest } from '../../../registry';
 import { manifest as githubManifest } from '../../github';
 import { githubAppManifest } from '../index';

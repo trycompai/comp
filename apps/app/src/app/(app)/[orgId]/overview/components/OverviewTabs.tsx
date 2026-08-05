@@ -1,7 +1,7 @@
 'use client';
 
 import { useOrganizationFindings } from '@/hooks/use-findings-api';
-import { useFeatureFlag } from '@trycompai/analytics';
+import { useFeatureFlag } from '@gideon-defender/analytics';
 import { FindingStatus } from '@db';
 import { TabsList, TabsTrigger, Tabs } from '@trycompai/design-system';
 import Link from 'next/link';

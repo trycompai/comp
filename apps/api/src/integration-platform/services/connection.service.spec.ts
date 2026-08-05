@@ -16,7 +16,7 @@ jest.mock('@db', () => ({
   },
 }));
 
-jest.mock('@trycompai/integration-platform', () => ({
+jest.mock('@gideon-defender/integration-platform', () => ({
   getManifest: jest.fn(),
 }));
 

@@ -37,36 +37,36 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          node-version: "22"
 
       - name: Cache dependencies
         uses: WarpBuilds/cache@v1
         with:
           path: |
-            ~/.bun/install/cache
+            ~/.npm
             node_modules
             apps/*/node_modules
             packages/*/node_modules
-          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+          key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-bun-
+            ${{ runner.os }}-npm-
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: npm ci
 
       - name: Generate Prisma Client
         run: |
           cd packages/db
-          bunx prisma generate
+          npx prisma generate
 
       - name: Run unit tests for ${{ matrix.app }}
         run: |
           cd apps/${{ matrix.app }}
           if [ -f "vitest.config.mts" ] || [ -f "vitest.config.ts" ]; then
-            bun run test --run --reporter=json --reporter=default --outputFile=test-results.json
+            npm run test -- --run --reporter=json --reporter=default --outputFile=test-results.json
           else
             echo "No vitest config found, skipping tests for ${{ matrix.app }}"
           fi
@@ -109,7 +109,7 @@ jobs:
             testSummary += '- **Type errors**: Ensure TypeScript types are properly defined\n';
             testSummary += '- **Missing mocks**: Verify that external dependencies are properly mocked\n\n';
 
-            testSummary += '💡 **Tip**: Run `bun test` locally to debug the failing tests.\n';
+            testSummary += '💡 **Tip**: Run `npm test` locally to debug the failing tests.\n';
 
             // Create or update comment
             const { data: comments } = await github.rest.issues.listComments({

@@ -2,9 +2,9 @@
 
 import { updateInherentRiskSchema } from '@/actions/schema';
 import { useRiskActions } from '@/hooks/use-risks';
-import { Button } from '@trycompai/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel } from '@trycompai/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@trycompai/ui/select';
+import { Button } from '@gideon-defender/ui/button';
+import { Form, FormControl, FormField, FormItem, FormLabel } from '@gideon-defender/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@gideon-defender/ui/select';
 import { Impact, Likelihood } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';

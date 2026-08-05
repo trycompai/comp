@@ -3,7 +3,7 @@ import {
   meetingSubTypeValues,
   toDbEvidenceFormType,
   toExternalEvidenceFormType,
-} from '@trycompai/company';
+} from '@gideon-defender/company';
 import { db } from '@db';
 import { ISO27001_FRAMEWORK_NAMES } from '../soa/utils/constants';
 import { computePeopleScore } from './frameworks-people-score.helper';

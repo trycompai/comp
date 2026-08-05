@@ -2,7 +2,7 @@
 
 import { RecentAuditLogs } from '@/components/RecentAuditLogs';
 import { useAuditLogs } from '@/hooks/use-audit-logs';
-import { Button } from '@trycompai/ui/button';
+import { Button } from '@gideon-defender/ui/button';
 import type {
   EvidenceAutomation,
   EvidenceAutomationRun,

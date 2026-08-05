@@ -3,14 +3,14 @@
 import { useApi } from '@/hooks/use-api';
 import { useCommentActions } from '@/hooks/use-comments-api';
 import { useMentionableMembers } from '@/hooks/use-mentionable-members';
-import { Button } from '@trycompai/ui/button';
+import { Button } from '@gideon-defender/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@trycompai/ui/dropdown-menu';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
+} from '@gideon-defender/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@gideon-defender/ui/tooltip';
 import type { JSONContent } from '@tiptap/react';
 import {
   AlertDialog,

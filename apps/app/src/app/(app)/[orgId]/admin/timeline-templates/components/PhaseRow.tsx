@@ -3,8 +3,8 @@
 import type { FieldErrors, UseFormRegister } from 'react-hook-form';
 import { Button, Text } from '@trycompai/design-system';
 import { TrashCan } from '@trycompai/design-system/icons';
-import { Input } from '@trycompai/ui/input';
-import { Label } from '@trycompai/ui/label';
+import { Input } from '@gideon-defender/ui/input';
+import { Label } from '@gideon-defender/ui/label';
 import { COMPLETION_OPTIONS, type CompletionType } from './constants';
 
 interface PhaseFormValues {

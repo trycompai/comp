@@ -47,7 +47,7 @@ GOOGLE_SECRET=test-client-secret
 createdb comp_e2e_test
 
 # Run migrations on test database
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/comp_e2e_test bun db:push
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/comp_e2e_test npm run db:push
 ```
 
 ### 3. Authentication Options
@@ -68,22 +68,22 @@ DATABASE_URL=postgresql://postgres:postgres@localhost:5432/comp_e2e_test bun db:
 
 ```bash
 # Install Playwright browsers (one-time setup)
-bun run test:e2e:install
+npm run test:e2e:install
 
 # Run all E2E tests
-bun run test:e2e
+npm run test:e2e
 
 # Run tests in headed mode (see browser)
-bun run test:e2e:headed
+npm run test:e2e:headed
 
 # Debug tests interactively
-bun run test:e2e:debug
+npm run test:e2e:debug
 
 # Open Playwright UI
-bun run test:e2e:ui
+npm run test:e2e:ui
 
 # View test report
-bun run test:e2e:report
+npm run test:e2e:report
 ```
 
 ## Directory Structure
@@ -180,19 +180,19 @@ DATABASE_URL=postgresql://user:pass@localhost:5432/test_db
 1. **View trace**: Tests save traces on failure
 
    ```bash
-   bunx playwright show-trace trace.zip
+   npx playwright show-trace trace.zip
    ```
 
 2. **Debug mode**: Step through tests interactively
 
    ```bash
-   bun run test:e2e:debug
+   npm run test:e2e:debug
    ```
 
 3. **UI mode**: Visual test runner
 
    ```bash
-   bun run test:e2e:ui
+   npm run test:e2e:ui
    ```
 
 4. **Check artifacts**: Screenshots and videos in CI artifacts
@@ -229,8 +229,8 @@ The E2E workflow:
 
 ### Browser not installed
 
-- Run `bun run test:e2e:install`
-- Or install specific browser: `bunx playwright install chromium`
+- Run `npm run test:e2e:install`
+- Or install specific browser: `npx playwright install chromium`
 
 ## 📊 Viewing Test Results
 
@@ -244,4 +244,4 @@ See [TEST_RESULTS_VIEWING.md](./TEST_RESULTS_VIEWING.md) for detailed instructio
 
 ## 🔧 Debugging Tests
 
-bunx playwright test --ui
+npx playwright test --ui

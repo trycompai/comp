@@ -1,11 +1,11 @@
 'use client';
 
 import { usePermissions } from '@/hooks/use-permissions';
-import { Badge } from '@trycompai/ui/badge';
-import { Button } from '@trycompai/ui/button';
-import { cn } from '@trycompai/ui/cn';
-import { Icons } from '@trycompai/ui/icons';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
+import { Badge } from '@gideon-defender/ui/badge';
+import { Button } from '@gideon-defender/ui/button';
+import { cn } from '@gideon-defender/ui/cn';
+import { Icons } from '@gideon-defender/ui/icons';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@gideon-defender/ui/tooltip';
 import {
   ClipboardCheck,
   FileTextIcon,

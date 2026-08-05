@@ -32,7 +32,7 @@ vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
-vi.mock('@trycompai/ui/button', () => ({
+vi.mock('@gideon-defender/ui/button', () => ({
   Button: ({ children, disabled, onClick, type, ...props }: any) => (
     <button disabled={disabled} onClick={onClick} type={type} {...props}>
       {children}
@@ -40,7 +40,7 @@ vi.mock('@trycompai/ui/button', () => ({
   ),
 }));
 
-vi.mock('@trycompai/ui/dialog', () => ({
+vi.mock('@gideon-defender/ui/dialog', () => ({
   Dialog: ({ children, open }: any) => (open ? <div data-testid="dialog">{children}</div> : null),
   DialogContent: ({ children }: any) => <div>{children}</div>,
   DialogDescription: ({ children }: any) => <p>{children}</p>,
@@ -49,15 +49,15 @@ vi.mock('@trycompai/ui/dialog', () => ({
   DialogTitle: ({ children }: any) => <h2>{children}</h2>,
 }));
 
-vi.mock('@trycompai/ui/input', () => ({
+vi.mock('@gideon-defender/ui/input', () => ({
   Input: ({ ...props }: any) => <input {...props} />,
 }));
 
-vi.mock('@trycompai/ui/label', () => ({
+vi.mock('@gideon-defender/ui/label', () => ({
   Label: ({ children, ...props }: any) => <label {...props}>{children}</label>,
 }));
 
-vi.mock('@trycompai/ui/select', () => ({
+vi.mock('@gideon-defender/ui/select', () => ({
   Select: ({ children }: any) => <div>{children}</div>,
   SelectContent: ({ children }: any) => <div>{children}</div>,
   SelectItem: ({ children }: any) => <div>{children}</div>,
@@ -65,7 +65,7 @@ vi.mock('@trycompai/ui/select', () => ({
   SelectValue: ({ placeholder }: any) => <span>{placeholder}</span>,
 }));
 
-vi.mock('@trycompai/ui/textarea', () => ({
+vi.mock('@gideon-defender/ui/textarea', () => ({
   Textarea: (props: any) => <textarea {...props} />,
 }));
 

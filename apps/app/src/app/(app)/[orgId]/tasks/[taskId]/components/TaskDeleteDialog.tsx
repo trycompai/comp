@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@trycompai/ui/button';
+import { Button } from '@gideon-defender/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -8,7 +8,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
+} from '@gideon-defender/ui/dialog';
 import { Task } from '@db';
 import { Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';

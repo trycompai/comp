@@ -1,8 +1,8 @@
-# @trycompai/mcp-server
+# @gideon-defender/mcp-server
 
-Model Context Protocol (MCP) Server for the *@trycompai/mcp-server* API.
+Model Context Protocol (MCP) Server for the *@gideon-defender/mcp-server* API.
 
-[![Built by Speakeasy](https://img.shields.io/badge/Built_by-SPEAKEASY-374151?style=for-the-badge&labelColor=f3f4f6)](https://www.speakeasy.com/?utm_source=@trycompai/mcp-server&utm_campaign=mcp-typescript)
+[![Built by Speakeasy](https://img.shields.io/badge/Built_by-SPEAKEASY-374151?style=for-the-badge&labelColor=f3f4f6)](https://www.speakeasy.com/?utm_source=@gideon-defender/mcp-server&utm_campaign=mcp-typescript)
 [![License: MIT](https://img.shields.io/badge/LICENSE_//_MIT-3b5bdb?style=for-the-badge&labelColor=eff6ff)](https://opensource.org/licenses/MIT)
 
 
@@ -15,7 +15,7 @@ Comp AI API: Compliance automation API for SOC 2, ISO 27001, HIPAA, GDPR, eviden
 <!-- Start Table of Contents [toc] -->
 ## Table of Contents
 <!-- $toc-max-depth=2 -->
-* [@trycompai/mcp-server](#trycompaimcp-server)
+* [@gideon-defender/mcp-server](#trycompaimcp-server)
   * [Installation](#installation)
   * [Progressive Discovery](#progressive-discovery)
   * [Development](#development)
@@ -57,7 +57,7 @@ Or manually:
 {
   "command": "npx",
   "args": [
-    "@trycompai/mcp-server",
+    "@gideon-defender/mcp-server",
     "start",
     "--apikey",
     ""
@@ -71,7 +71,7 @@ Or manually:
 <summary>Claude Code CLI</summary>
 
 ```bash
-claude mcp add CompAi -- npx -y @trycompai/mcp-server start --apikey 
+claude mcp add CompAi -- npx -y @gideon-defender/mcp-server start --apikey 
 ```
 
 </details>
@@ -79,7 +79,7 @@ claude mcp add CompAi -- npx -y @trycompai/mcp-server start --apikey
 <summary>Gemini</summary>
 
 ```bash
-gemini mcp add CompAi -- npx -y @trycompai/mcp-server start --apikey 
+gemini mcp add CompAi -- npx -y @gideon-defender/mcp-server start --apikey 
 ```
 
 </details>
@@ -98,7 +98,7 @@ Refer to [Official Windsurf documentation](https://docs.windsurf.com/windsurf/ca
 {
   "command": "npx",
   "args": [
-    "@trycompai/mcp-server",
+    "@gideon-defender/mcp-server",
     "start",
     "--apikey",
     ""
@@ -123,7 +123,7 @@ Refer to [Official VS Code documentation](https://code.visualstudio.com/api/exte
 {
   "command": "npx",
   "args": [
-    "@trycompai/mcp-server",
+    "@gideon-defender/mcp-server",
     "start",
     "--apikey",
     ""
@@ -137,13 +137,13 @@ Refer to [Official VS Code documentation](https://code.visualstudio.com/api/exte
 To start the MCP server, run:
 
 ```bash
-npx @trycompai/mcp-server start --apikey 
+npx @gideon-defender/mcp-server start --apikey 
 ```
 
 For a full list of server arguments, run:
 
 ```
-npx @trycompai/mcp-server --help
+npx @gideon-defender/mcp-server --help
 ```
 
 </details>
@@ -161,7 +161,7 @@ To enable dynamic mode, pass the `--mode dynamic` flag when starting your server
   "mcpServers": {
     "CompAi": {
       "command": "npx",
-      "args": ["@trycompai/mcp-server", "start", "--mode", "dynamic"],
+      "args": ["@gideon-defender/mcp-server", "start", "--mode", "dynamic"],
       // ... other server arguments
     }
   }
@@ -258,4 +258,4 @@ If you prefer to publish manually, follow the [official publishing guide](https:
 While we value contributions to this MCP Server, the code is generated programmatically. Any manual changes added to internal files will be overwritten on the next generation. 
 We look forward to hearing your feedback. Feel free to open a PR or an issue with a proof of concept and we'll do our best to include it in a future release. 
 
-### MCP Server Created by [Speakeasy](https://www.speakeasy.com/?utm_source=@trycompai/mcp-server&utm_campaign=mcp-typescript)
+### MCP Server Created by [Speakeasy](https://www.speakeasy.com/?utm_source=@gideon-defender/mcp-server&utm_campaign=mcp-typescript)

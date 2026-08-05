@@ -69,8 +69,8 @@ Deploy tasks from your workstation (not inside Docker):
 
 ```bash
 cd apps/app
-bunx trigger.dev@latest login
-bunx trigger.dev@latest deploy
+npx trigger.dev@latest login
+npx trigger.dev@latest deploy
 ```
 
 ### Troubleshooting

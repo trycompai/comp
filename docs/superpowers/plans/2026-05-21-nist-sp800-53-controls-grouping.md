@@ -60,7 +60,7 @@ cd packages/db && DATABASE_URL="postgresql://postgres:postgres@localhost:5432/co
 - [ ] **Step 4: Verify typecheck**
 
 ```bash
-npx turbo run typecheck --filter=@trycompai/db
+npx turbo run typecheck --filter=@gideon-defender/db
 ```
 
 - [ ] **Step 5: Commit**
@@ -141,7 +141,7 @@ Check the existing update code — if it already spreads all DTO fields, `contro
 - [ ] **Step 4: Verify typecheck**
 
 ```bash
-npx turbo run typecheck --filter=@trycompai/api
+npx turbo run typecheck --filter=@gideon-defender/api
 ```
 
 - [ ] **Step 5: Commit**
@@ -205,7 +205,7 @@ If `controlTemplate` is not being destructured out, it flows through. No code ch
 - [ ] **Step 3: Verify typecheck**
 
 ```bash
-npx turbo run typecheck --filter=@trycompai/api
+npx turbo run typecheck --filter=@gideon-defender/api
 ```
 
 - [ ] **Step 4: Commit**
@@ -361,7 +361,7 @@ Remove the duplicated `PAGE_SIZE_OPTIONS`, `getStatusBadge`, and `ControlItem` f
 - [ ] **Step 3: Verify `FrameworkControls.tsx` still works**
 
 ```bash
-npx turbo run typecheck --filter=@trycompai/app
+npx turbo run typecheck --filter=@gideon-defender/app
 ```
 
 - [ ] **Step 4: Commit**
@@ -759,7 +759,7 @@ function ControlRow({
 - [ ] **Step 2: Verify typecheck**
 
 ```bash
-npx turbo run typecheck --filter=@trycompai/app
+npx turbo run typecheck --filter=@gideon-defender/app
 ```
 
 - [ ] **Step 3: Commit**
@@ -823,7 +823,7 @@ Replace lines 196-203 (the `<TabsContent value="controls">` block):
 - [ ] **Step 3: Verify typecheck**
 
 ```bash
-npx turbo run typecheck --filter=@trycompai/app
+npx turbo run typecheck --filter=@gideon-defender/app
 ```
 
 - [ ] **Step 4: Commit**
@@ -1030,13 +1030,13 @@ cd apps/api && npx jest --passWithNoTests
 
 ```bash
 cd /Users/mariano/code/comp/.worktrees/nist-sp800-53-readiness
-bun run --filter '@trycompai/app' dev:no-trigger
+bun run --filter '@gideon-defender/app' dev:no-trigger
 ```
 
 In a separate terminal:
 
 ```bash
-bun run --filter '@trycompai/api' dev:no-trigger
+bun run --filter '@gideon-defender/api' dev:no-trigger
 ```
 
 Test the following:

@@ -1,5 +1,5 @@
-import { decrypt } from '@trycompai/app/src/lib/encryption';
-import { type DecryptFunction, getIntegrationHandler } from '@trycompai/integrations';
+import { decrypt } from '@gideon-defender/app/src/lib/encryption';
+import { type DecryptFunction, getIntegrationHandler } from '@gideon-defender/integrations';
 import { db } from '@db/server';
 import { logger, schemaTask } from '@trigger.dev/sdk';
 import { z } from 'zod';

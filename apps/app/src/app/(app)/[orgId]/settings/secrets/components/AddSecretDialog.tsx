@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@trycompai/ui/button';
+import { Button } from '@gideon-defender/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -9,11 +9,11 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@trycompai/ui/dialog';
-import { Input } from '@trycompai/ui/input';
-import { Label } from '@trycompai/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@trycompai/ui/select';
-import { Textarea } from '@trycompai/ui/textarea';
+} from '@gideon-defender/ui/dialog';
+import { Input } from '@gideon-defender/ui/input';
+import { Label } from '@gideon-defender/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@gideon-defender/ui/select';
+import { Textarea } from '@gideon-defender/ui/textarea';
 import { usePermissions } from '@/hooks/use-permissions';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, Plus } from 'lucide-react';

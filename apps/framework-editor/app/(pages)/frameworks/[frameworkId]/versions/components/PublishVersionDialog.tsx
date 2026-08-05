@@ -17,7 +17,7 @@ import {
   FormMessage,
   Input,
   Textarea,
-} from '@trycompai/ui';
+} from '@gideon-defender/ui';
 import { useEffect, useState } from 'react';
 import { useForm, type ControllerRenderProps } from 'react-hook-form';
 import { toast } from 'sonner';

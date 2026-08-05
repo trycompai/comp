@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import useSWR from 'swr';
 import { z } from 'zod';
 
-import { Button } from '@trycompai/ui/button';
+import { Button } from '@gideon-defender/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -19,7 +19,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
+} from '@gideon-defender/ui/dialog';
 import {
   Form,
   FormControl,
@@ -28,10 +28,10 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@trycompai/ui/form';
-import { Input } from '@trycompai/ui/input';
-import { Checkbox } from '@trycompai/ui/checkbox';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/ui/tabs';
+} from '@gideon-defender/ui/form';
+import { Input } from '@gideon-defender/ui/input';
+import { Checkbox } from '@gideon-defender/ui/checkbox';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@gideon-defender/ui/tabs';
 import { MultiRoleCombobox } from './MultiRoleCombobox';
 
 // --- Constants for Roles ---

@@ -10,11 +10,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@trycompai/ui/alert-dialog';
-import { Button } from '@trycompai/ui/button';
-import { Card, CardContent, CardFooter } from '@trycompai/ui/card';
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@trycompai/ui/dialog';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
+} from '@gideon-defender/ui/alert-dialog';
+import { Button } from '@gideon-defender/ui/button';
+import { Card, CardContent, CardFooter } from '@gideon-defender/ui/card';
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@gideon-defender/ui/dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@gideon-defender/ui/tooltip';
 import { ExternalLink, Loader2, Maximize2, Trash } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';

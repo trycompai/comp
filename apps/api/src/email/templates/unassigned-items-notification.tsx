@@ -10,7 +10,7 @@ import {
   Tailwind,
   Text,
 } from '@react-email/components';
-import { getUnsubscribeUrl } from '@trycompai/email';
+import { getUnsubscribeUrl } from '@gideon-defender/email';
 import { Footer } from '../components/footer';
 import { Logo } from '../components/logo';
 

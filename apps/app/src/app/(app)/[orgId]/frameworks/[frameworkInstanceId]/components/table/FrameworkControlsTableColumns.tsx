@@ -1,7 +1,7 @@
 'use client';
 
 import { StatusIndicator, StatusType } from '@/components/status-indicator';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@gideon-defender/ui/tooltip';
 import type { Policy } from '@db';
 import type { ColumnDef } from '@tanstack/react-table';
 import Link from 'next/link';

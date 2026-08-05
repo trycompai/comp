@@ -1,8 +1,8 @@
 'use client';
 
-import { cn } from '@trycompai/ui/cn';
-import { Input } from '@trycompai/ui/input';
-import { Skeleton } from '@trycompai/ui/skeleton';
+import { cn } from '@gideon-defender/ui/cn';
+import { Input } from '@gideon-defender/ui/input';
+import { Skeleton } from '@gideon-defender/ui/skeleton';
 import type { Member, User } from '@db';
 import { Search } from 'lucide-react';
 import { useQueryState } from 'nuqs';

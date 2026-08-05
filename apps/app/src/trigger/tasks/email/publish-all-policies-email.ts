@@ -1,6 +1,6 @@
 import { db } from '@db/server';
-import { AllPolicyNotificationEmail } from '@trycompai/email';
-import { isUserUnsubscribed } from '@trycompai/email/lib/check-unsubscribe';
+import { AllPolicyNotificationEmail } from '@gideon-defender/email';
+import { isUserUnsubscribed } from '@gideon-defender/email/lib/check-unsubscribe';
 import { logger, queue, tags, task } from '@trigger.dev/sdk';
 import { sendEmailViaApi } from '../../lib/send-email-via-api';
 

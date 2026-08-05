@@ -300,7 +300,7 @@ Expected: **PASS** — all 6 tests green.
 
 - [ ] **Step 3: Typecheck**
 
-Run: `npx turbo run typecheck --filter=@trycompai/api`
+Run: `npx turbo run typecheck --filter=@gideon-defender/api`
 Expected: **No errors.**
 
 - [ ] **Step 4: Commit**
@@ -392,7 +392,7 @@ New:
 
 - [ ] **Step 3: Typecheck**
 
-Run: `npx turbo run typecheck --filter=@trycompai/api`
+Run: `npx turbo run typecheck --filter=@gideon-defender/api`
 Expected: **No errors.**
 
 - [ ] **Step 4: Verify existing screenshot tests still pass (if any) and overlay tests still pass**
@@ -581,7 +581,7 @@ Expected: **PASS** — all 4 tests green.
 
 - [ ] **Step 4: Typecheck**
 
-Run: `npx turbo run typecheck --filter=@trycompai/api`
+Run: `npx turbo run typecheck --filter=@gideon-defender/api`
 Expected: **No errors.**
 
 - [ ] **Step 5: Commit**
@@ -752,7 +752,7 @@ Expected: **PASS** — both tests green.
 
 - [ ] **Step 4: Typecheck**
 
-Run: `npx turbo run typecheck --filter=@trycompai/api`
+Run: `npx turbo run typecheck --filter=@gideon-defender/api`
 Expected: **No errors.**
 
 - [ ] **Step 5: Commit**
@@ -929,12 +929,12 @@ Expected: **PASS** — all 3 tests green.
 
 - [ ] **Step 5: Typecheck the app**
 
-Run: `npx turbo run typecheck --filter=@trycompai/app`
+Run: `npx turbo run typecheck --filter=@gideon-defender/app`
 Expected: **No errors.**
 
 - [ ] **Step 6: Run the design-system audit skill**
 
-Per `CLAUDE.md`, after any frontend edit run the `audit-design-system` skill on the modified file. If it flags `lucide-react` imports or legacy `@trycompai/ui` usage, migrate them in a follow-up task (do NOT expand scope here — only migrate icons/components that were part of the edited lines).
+Per `CLAUDE.md`, after any frontend edit run the `audit-design-system` skill on the modified file. If it flags `lucide-react` imports or legacy `@gideon-defender/ui` usage, migrate them in a follow-up task (do NOT expand scope here — only migrate icons/components that were part of the edited lines).
 
 - [ ] **Step 7: Commit**
 
@@ -974,8 +974,8 @@ rg -n "await stagehand\." apps/api/src/browserbase/browserbase.service.ts
 Start the API and app (if the user has local browserbase/anthropic credentials available; otherwise trigger a run against a URL that is likely to fail auth or timeout, e.g. a URL that redirects to login).
 
 ```bash
-npx turbo run dev --filter=@trycompai/api &
-npx turbo run dev --filter=@trycompai/app &
+npx turbo run dev --filter=@gideon-defender/api &
+npx turbo run dev --filter=@gideon-defender/app &
 ```
 
 Trigger an automation from the UI and watch the run land in `failed` status.
@@ -1035,7 +1035,7 @@ New:
 
 Run:
 ```bash
-npx turbo run typecheck --filter=@trycompai/api
+npx turbo run typecheck --filter=@gideon-defender/api
 cd apps/api && npx jest src/browserbase
 ```
 Expected: **PASS.**
@@ -1057,7 +1057,7 @@ git commit -m "fix(browserbase): surface user-readable error for timeouts and ge
 
 Run:
 ```bash
-npx turbo run typecheck --filter=@trycompai/api --filter=@trycompai/app
+npx turbo run typecheck --filter=@gideon-defender/api --filter=@gideon-defender/app
 ```
 Expected: **No errors.**
 
@@ -1077,7 +1077,7 @@ Expected: **No errors.**
 
 - [ ] **Step 4: Build the affected packages**
 
-Run: `bun run --filter '@trycompai/api' build && bun run --filter '@trycompai/app' build`
+Run: `bun run --filter '@gideon-defender/api' build && bun run --filter '@gideon-defender/app' build`
 Expected: **Both succeed.**
 
 - [ ] **Step 5: Smoke test the redirect endpoint**

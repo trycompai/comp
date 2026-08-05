@@ -3,10 +3,10 @@
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { VENDOR_STATUS_TYPES, VendorStatus } from '@/components/vendor-status';
 import { useVendorActions } from '@/hooks/use-vendors';
-import { Button } from '@trycompai/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
-import { Input } from '@trycompai/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@trycompai/ui/select';
+import { Button } from '@gideon-defender/ui/button';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@gideon-defender/ui/form';
+import { Input } from '@gideon-defender/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@gideon-defender/ui/select';
 import { Member, type User, type Vendor, VendorCategory } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';

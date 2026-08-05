@@ -1,4 +1,4 @@
-import { BUILT_IN_ROLE_PERMISSIONS } from '@trycompai/auth';
+import { BUILT_IN_ROLE_PERMISSIONS } from '@gideon-defender/auth';
 import { db } from '@db';
 
 /** Safely parse a custom role's stored permissions; malformed JSON → `{}` (never throws). */

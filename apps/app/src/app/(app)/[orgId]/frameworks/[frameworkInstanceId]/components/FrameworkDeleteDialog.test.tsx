@@ -41,8 +41,8 @@ vi.mock('sonner', () => ({
   toast: { info: vi.fn(), error: vi.fn(), success: vi.fn() },
 }));
 
-// Mock @trycompai/ui components
-vi.mock('@trycompai/ui/button', () => ({
+// Mock @gideon-defender/ui components
+vi.mock('@gideon-defender/ui/button', () => ({
   Button: ({ children, disabled, ...props }: any) => (
     <button disabled={disabled} {...props}>
       {children}
@@ -50,7 +50,7 @@ vi.mock('@trycompai/ui/button', () => ({
   ),
 }));
 
-vi.mock('@trycompai/ui/dialog', () => ({
+vi.mock('@gideon-defender/ui/dialog', () => ({
   Dialog: ({ children, open }: any) =>
     open ? <div data-testid="dialog">{children}</div> : null,
   DialogContent: ({ children }: any) => (
@@ -62,7 +62,7 @@ vi.mock('@trycompai/ui/dialog', () => ({
   DialogTitle: ({ children }: any) => <h2>{children}</h2>,
 }));
 
-vi.mock('@trycompai/ui/form', () => ({
+vi.mock('@gideon-defender/ui/form', () => ({
   Form: ({ children, ...props }: any) => (
     <div data-testid="form-provider" {...props}>
       {children}

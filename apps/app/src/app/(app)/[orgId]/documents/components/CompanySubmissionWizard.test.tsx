@@ -13,7 +13,7 @@ vi.mock('next/link', () => ({
   default: ({ children }: { children?: ReactNode }) => <a>{children}</a>,
 }));
 
-vi.mock('@trycompai/company', () => ({ meetingFields: () => [] }));
+vi.mock('@gideon-defender/company', () => ({ meetingFields: () => [] }));
 vi.mock('@/components/file-uploader', () => ({ FileUploader: () => null }));
 vi.mock('@/lib/api-client', () => ({ api: { post: vi.fn() } }));
 vi.mock('sonner', () => ({

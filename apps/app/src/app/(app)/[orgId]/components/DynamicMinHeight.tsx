@@ -1,6 +1,6 @@
 'use client';
 
-import { cn } from '@trycompai/ui/cn';
+import { cn } from '@gideon-defender/ui/cn';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 interface DynamicMinHeightProps {

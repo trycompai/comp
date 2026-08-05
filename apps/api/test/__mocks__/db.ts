@@ -1,5 +1,5 @@
 /**
- * Stub for @db and @trycompai/db — returns a Proxy-based mockDb.
+ * Stub for @db and @gideon-defender/db — returns a Proxy-based mockDb.
  * Any table / method access returns a jest.fn() so untouched entities
  * don't crash with "cannot read properties of undefined". Tests that need
  * specific return values still should override with their own jest.mock().

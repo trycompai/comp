@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { CardLiquidGlass } from '@trycompai/ui/card-liquid-glass';
+import { CardLiquidGlass } from '@gideon-defender/ui/card-liquid-glass';
 
 export default function PageCore({
   children,

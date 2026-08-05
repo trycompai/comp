@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, Text } from '@trycompai/design-system';
-import { Skeleton } from '@trycompai/ui/skeleton';
+import { Skeleton } from '@gideon-defender/ui/skeleton';
 
 export function VendorNewsLoadingPlaceholder() {
   return (

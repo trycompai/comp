@@ -4,10 +4,10 @@ import {
   MagicLinkEmail,
   OTPVerificationEmail,
   VerifyEmail,
-} from '@trycompai/email';
+} from '@gideon-defender/email';
 import { triggerEmail } from '../email/trigger-email';
 import { InviteEmail } from '../email/templates/invite-member';
-import { db } from '@db';
+import { db, serviceDb } from '@db';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import {
@@ -19,7 +19,7 @@ import {
   multiSession,
   organization,
 } from 'better-auth/plugins';
-import { ac, allRoles } from '@trycompai/auth';
+import { ac, allRoles } from '@gideon-defender/auth';
 import { createAuthMiddleware } from 'better-auth/api';
 import { Redis } from '@upstash/redis';
 import type { AccessControl } from 'better-auth/plugins/access';
@@ -66,20 +66,31 @@ function getCookieDomain(): string | undefined {
 const CORS_DOMAINS_CACHE_KEY = 'cors:custom-domains';
 const CORS_DOMAINS_CACHE_TTL_SECONDS = 5 * 60; // 5 minutes
 
-const corsRedisClient = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-});
+const hasUpstashConfig =
+  !!process.env.UPSTASH_REDIS_REST_URL &&
+  !!process.env.UPSTASH_REDIS_REST_TOKEN;
+
+// Only construct the client when Upstash is configured. Constructing it with
+// empty url/token makes every command retry with exponential backoff (~8s of
+// hangs per request) even though the URL is invalid.
+const corsRedisClient = hasUpstashConfig
+  ? new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL!,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+    })
+  : null;
 
 async function getCustomDomains(): Promise<Set<string>> {
   // Try Redis cache first (non-fatal if Redis is unavailable)
-  try {
-    const cached = await corsRedisClient.get<string[]>(CORS_DOMAINS_CACHE_KEY);
-    if (cached) {
-      return new Set(cached);
+  if (corsRedisClient) {
+    try {
+      const cached = await corsRedisClient.get<string[]>(CORS_DOMAINS_CACHE_KEY);
+      if (cached) {
+        return new Set(cached);
+      }
+    } catch (error) {
+      console.error('[CORS] Redis cache read failed, falling back to DB:', error);
     }
-  } catch (error) {
-    console.error('[CORS] Redis cache read failed, falling back to DB:', error);
   }
 
   // Cache miss or Redis unavailable — query DB
@@ -98,12 +109,14 @@ async function getCustomDomains(): Promise<Set<string>> {
       .filter((d): d is string => d !== null);
 
     // Best-effort cache update (don't lose DB results if Redis SET fails)
-    try {
-      await corsRedisClient.set(CORS_DOMAINS_CACHE_KEY, domains, {
-        ex: CORS_DOMAINS_CACHE_TTL_SECONDS,
-      });
-    } catch {
-      // Redis unavailable — continue without caching
+    if (corsRedisClient) {
+      try {
+        await corsRedisClient.set(CORS_DOMAINS_CACHE_KEY, domains, {
+          ex: CORS_DOMAINS_CACHE_TTL_SECONDS,
+        });
+      } catch {
+        // Redis unavailable — continue without caching
+      }
     }
 
     return new Set(domains);
@@ -253,7 +266,10 @@ validateSecurityConfig();
  * Cross-subdomain cookies (.trycomp.ai) ensure the session works on all apps.
  */
 export const auth = betterAuth({
-  database: prismaAdapter(db, {
+  // better-auth (sessions, members, org plugin, OAuth) runs as the service
+  // role (BYPASSRLS) so auth flow never needs a tenant context. When
+  // DATABASE_URL_SERVICE is unset this falls back to DATABASE_URL (no change).
+  database: prismaAdapter(serviceDb, {
     provider: 'postgresql',
   }),
   // baseURL must point to the API (e.g., https://api.trycomp.ai) so that

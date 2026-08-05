@@ -9,7 +9,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@trycompai/ui';
+} from '@gideon-defender/ui';
 import { useTransition } from 'react';
 import { toast } from 'sonner';
 import { apiClient } from '@/app/lib/api-client';

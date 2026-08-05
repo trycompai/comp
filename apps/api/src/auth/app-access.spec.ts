@@ -7,7 +7,7 @@ jest.mock('@db', () => ({
   },
 }));
 
-jest.mock('@trycompai/auth', () => ({
+jest.mock('@gideon-defender/auth', () => ({
   BUILT_IN_ROLE_PERMISSIONS: {
     owner: { app: ['read'] },
     admin: { app: ['read'] },

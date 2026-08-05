@@ -2,7 +2,7 @@
 
 import { useDnsStatus } from '@/hooks/use-dns-status';
 import { useDomain } from '@/hooks/use-domain';
-import { Button } from '@trycompai/ui/button';
+import { Button } from '@gideon-defender/ui/button';
 import {
   Card,
   CardContent,
@@ -10,10 +10,10 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@trycompai/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
-import { Input } from '@trycompai/ui/input';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
+} from '@gideon-defender/ui/card';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@gideon-defender/ui/form';
+import { Input } from '@gideon-defender/ui/input';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@gideon-defender/ui/tooltip';
 import { Alert, AlertDescription } from '@trycompai/design-system';
 import { CheckmarkFilled, Copy, Launch, Renew, WarningFilled } from '@trycompai/design-system/icons';
 import { zodResolver } from '@hookform/resolvers/zod';

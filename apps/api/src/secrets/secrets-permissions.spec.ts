@@ -8,7 +8,7 @@
  *
  * We mock the `better-auth/plugins/access` and
  * `better-auth/plugins/organization/access` ESM modules using their resolved
- * paths from inside `@trycompai/auth` (otherwise Jest would try to evaluate
+ * paths from inside `@gideon-defender/auth` (otherwise Jest would try to evaluate
  * the real `.mjs` files as CommonJS and crash). Then we import the role
  * definitions directly from `permissions.ts` — bypassing `server.ts`, which
  * pulls in the rest of better-auth.
@@ -16,7 +16,7 @@
 
 jest.mock(
   require.resolve('better-auth/plugins/access', {
-    paths: [require.resolve('@trycompai/auth')],
+    paths: [require.resolve('@gideon-defender/auth')],
   }),
   () => ({
     createAccessControl: (_stmt: Record<string, readonly string[]>) => ({
@@ -29,7 +29,7 @@ jest.mock(
 
 jest.mock(
   require.resolve('better-auth/plugins/organization/access', {
-    paths: [require.resolve('@trycompai/auth')],
+    paths: [require.resolve('@gideon-defender/auth')],
   }),
   () => ({
     defaultStatements: {
@@ -58,7 +58,7 @@ jest.mock(
 );
 
 // Import permissions.ts directly — going through the package barrel
-// (@trycompai/auth) would also load server.ts which pulls the entire
+// (@gideon-defender/auth) would also load server.ts which pulls the entire
 // better-auth surface and breaks the test.
 import {
   BUILT_IN_ROLE_PERMISSIONS,

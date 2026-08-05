@@ -52,7 +52,7 @@ jest.mock('better-auth/plugins/organization/access', () => ({
 import {
   BUILT_IN_ROLE_PERMISSIONS,
   BUILT_IN_ROLE_OBLIGATIONS,
-} from '@trycompai/auth';
+} from '@gideon-defender/auth';
 
 function hasPortalAccessForBuiltInRoles(roleString: string): boolean {
   const roles = roleString

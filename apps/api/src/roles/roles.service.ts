@@ -12,7 +12,7 @@ import {
   BUILT_IN_ROLE_PERMISSIONS,
   BUILT_IN_ROLE_OBLIGATIONS,
   type RoleObligations,
-} from '@trycompai/auth';
+} from '@gideon-defender/auth';
 import type { CreateRoleDto } from './dto/create-role.dto';
 import type { UpdateRoleDto } from './dto/update-role.dto';
 

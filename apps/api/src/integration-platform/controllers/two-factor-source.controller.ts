@@ -20,7 +20,7 @@ import { db } from '@db';
 import {
   TASK_TEMPLATES,
   type IntegrationCategory,
-} from '@trycompai/integration-platform';
+} from '@gideon-defender/integration-platform';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
 import { RequirePermission } from '../../auth/require-permission.decorator';

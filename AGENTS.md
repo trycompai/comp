@@ -2,12 +2,12 @@
 
 ## Tooling
 
-- **Package manager**: `bun` (never npm/yarn/pnpm)
-- **Build**: `bun run build` (uses turbo). Filter: `bun run --filter '@trycompai/app' build`
-- **Typecheck**: `bun run typecheck` or `bunx turbo run typecheck --filter=@trycompai/api`
-- **Tests (app)**: `cd apps/app && bunx vitest run`
-- **Tests (api)**: `cd apps/api && bunx jest src/<module> --passWithNoTests`
-- **Lint**: `bun run lint`
+- **Package manager**: `npm` (never bun/yarn/pnpm)
+- **Build**: `npm run build` (uses turbo). Filter: `npm run build --workspace=@gideon-defender/app`
+- **Typecheck**: `npm run typecheck` or `npx turbo run typecheck --filter=@gideon-defender/api`
+- **Tests (app)**: `cd apps/app && npx vitest run`
+- **Tests (api)**: `cd apps/api && npx jest src/<module> --passWithNoTests`
+- **Lint**: `npm run lint`
 
 ## Code Style
 
@@ -70,7 +70,7 @@ When an operation requires multiple API calls (e.g., S3 upload + PATCH), create 
 
 ## API Endpoint Contract (MCP-friendly)
 
-Every customer-facing endpoint in `apps/api/src/` flows into three systems: the OpenAPI spec (`packages/docs/openapi.json`), the MCP server published as `@trycompai/mcp-server` on npm, and the runtime `ValidationPipe`. The full contract is in [.claude/skills/api-endpoint-contract/SKILL.md](.claude/skills/api-endpoint-contract/SKILL.md) (auto-loaded by Claude) and [.cursor/rules/api-endpoint-contract.mdc](.cursor/rules/api-endpoint-contract.mdc) (auto-loaded by Cursor). The short version every body-accepting endpoint must follow:
+Every customer-facing endpoint in `apps/api/src/` flows into three systems: the OpenAPI spec (`packages/docs/openapi.json`), the MCP server published as `@gideon-defender/mcp-server` on npm, and the runtime `ValidationPipe`. The full contract is in [.claude/skills/api-endpoint-contract/SKILL.md](.claude/skills/api-endpoint-contract/SKILL.md) (auto-loaded by Claude) and [.cursor/rules/api-endpoint-contract.mdc](.cursor/rules/api-endpoint-contract.mdc) (auto-loaded by Cursor). The short version every body-accepting endpoint must follow:
 
 1. **DTOs are classes** — never interfaces, never inline `@Body() body: { ... }`. Interfaces are erased at runtime and produce empty MCP schemas.
 2. **Two decorator stacks per field** — `@ApiProperty` (or `@ApiPropertyOptional`) for the OpenAPI/MCP schema **and** class-validator (`@IsString`, `@IsOptional`, `@IsObject`, `@IsArray`, etc.) for the ValidationPipe. With only one stack, requests are rejected with *"property X should not exist"* or the MCP tool ships with empty input.
@@ -84,7 +84,7 @@ Every customer-facing endpoint in `apps/api/src/` flows into three systems: the 
 10. **SSE / binary responses** can't be consumed by MCP — disable the tool in `apps/mcp-server/.speakeasy/mcp-uploads-overlay.yaml` while keeping the HTTP endpoint for the web UI.
 11. **Every endpoint needs a meaningful `@ApiOperation({ summary, description })`** — required and **CI-enforced** (`openapi-docs.spec.ts` fails the build if a public op is missing one). The hosted MCP uses **dynamic toolsets**: the agent finds a tool by semantic-searching names + descriptions, so a missing/weak description makes the tool effectively undiscoverable. Write the description for the agent deciding whether to call the tool — what it does + when to use it.
 
-After adding an endpoint: `bun run --filter '@trycompai/api' dev` regenerates `packages/docs/openapi.json` on boot — **commit it with your PR**. The daily Speakeasy CI reads from that file; if it's stale, your endpoint never reaches MCP customers.
+After adding an endpoint: `npm run dev --workspace=@gideon-defender/api` regenerates `packages/docs/openapi.json` on boot — **commit it with your PR**. The daily Speakeasy CI reads from that file; if it's stale, your endpoint never reaches MCP customers.
 
 ## RBAC
 
@@ -124,13 +124,13 @@ Every customer-facing API endpoint MUST have:
 
 ## Design System
 
-- **Always prefer `@trycompai/design-system`** over `@trycompai/ui`. Check DS exports first.
-- `@trycompai/ui` is the legacy library being phased out — only use as last resort.
+- **Always prefer `@trycompai/design-system`** over `@gideon-defender/ui`. Check DS exports first.
+- `@gideon-defender/ui` is the legacy library being phased out — only use as last resort.
 - **Icons**: `@trycompai/design-system/icons` (Carbon icons), NOT `lucide-react`
 - **DS components that do NOT accept `className`**: `Text`, `Stack`, `HStack`, `Badge`, `Button` — wrap in `<div>` for custom styling
 - **Layout**: Use `PageLayout`, `PageHeader`, `Stack`, `HStack`, `Section`, `SettingGroup`
 - **Patterns**: Sheet (`Sheet > SheetContent > SheetHeader + SheetBody`), Drawer, Collapsible
-- **After editing any frontend component**: Run the `audit-design-system` skill to catch `@trycompai/ui` or `lucide-react` imports that should be migrated
+- **After editing any frontend component**: Run the `audit-design-system` skill to catch `@gideon-defender/ui` or `lucide-react` imports that should be migrated
 
 ## Data Fetching
 
@@ -147,13 +147,13 @@ Every customer-facing API endpoint MUST have:
 - **App tests**: Vitest + @testing-library/react (jsdom environment)
 - **API tests**: Jest with NestJS testing utilities
 - **Permission tests**: Test admin (write) and read-only user scenarios
-- **Run from package dir**: `cd apps/app && bunx vitest run` or `cd apps/api && bunx jest`
+- **Run from package dir**: `cd apps/app && npx vitest run` or `cd apps/api && npx jest`
 
 ## Database
 
 - **Schema**: `packages/db/prisma/schema/` (split into files per model)
 - **IDs**: Always use prefixed CUIDs: `@default(dbgenerated("generate_prefixed_cuid('prefix'::text)"))`
-- **Migrations**: `cd packages/db && bunx prisma migrate dev --name your_name`
+- **Migrations**: `cd packages/db && npx prisma migrate dev --name your_name`
 - **Multi-tenancy**: Always scope queries by `organizationId`
 - **Transactions**: Use for operations modifying multiple records
 

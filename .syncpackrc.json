@@ -4,8 +4,8 @@
   "semverGroups": [
     {
       "label": "Use exact versions for internal packages",
-      "packages": ["@trycompai/**"],
-      "dependencies": ["@trycompai/**"],
+      "packages": ["@gideon-defender/**"],
+      "dependencies": ["@gideon-defender/**"],
       "range": "workspace:*"
     }
   ],

@@ -3,8 +3,8 @@
 import { Check, ChevronsUpDown } from 'lucide-react';
 import * as React from 'react';
 
-import { Badge } from '@trycompai/ui/badge';
-import { cn } from '@trycompai/ui/cn';
+import { Badge } from '@gideon-defender/ui/badge';
+import { cn } from '@gideon-defender/ui/cn';
 import {
   Command,
   CommandEmpty,
@@ -13,8 +13,8 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
-} from '@trycompai/ui/command';
-import { Popover, PopoverContent, PopoverTrigger } from '@trycompai/ui/popover';
+} from '@gideon-defender/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@gideon-defender/ui/popover';
 
 type FacetedValue<Multiple extends boolean> = Multiple extends true ? string[] : string;
 

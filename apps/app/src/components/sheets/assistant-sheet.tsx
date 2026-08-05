@@ -1,9 +1,9 @@
 'use client';
 
-import { useMediaQuery } from '@trycompai/ui/hooks';
-import { Sheet, SheetContent } from '@trycompai/ui/sheet';
+import { useMediaQuery } from '@gideon-defender/ui/hooks';
+import { Sheet, SheetContent } from '@gideon-defender/ui/sheet';
 
-import { Drawer, DrawerContent, DrawerTitle } from '@trycompai/ui/drawer';
+import { Drawer, DrawerContent, DrawerTitle } from '@gideon-defender/ui/drawer';
 import '@/styles/editor.css';
 import { useQueryState } from 'nuqs';
 import Chat from '../ai/chat';

@@ -31,5 +31,5 @@ For each `P1`/`P2` finding, adversarially verify before acting: dispatch one `se
 
 - **Fix** confirmed `P1`/`P2` issues immediately (mirror the surrounding code; add a regression test for auth/attribution changes).
 - **Report** `P3`s and anything needing a product decision, with `severity · file:line · exploit/impact · fix`.
-- Run `bunx turbo run typecheck --filter=@trycompai/api --filter=@trycompai/app` after fixes.
+- Run `bunx turbo run typecheck --filter=@gideon-defender/api --filter=@gideon-defender/app` after fixes.
 - End with a one-line verdict: clean, or the highest-priority action remaining.

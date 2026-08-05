@@ -31,7 +31,7 @@ vi.mock('sonner', () => ({
   toast: { info: vi.fn(), error: vi.fn(), success: vi.fn() },
 }));
 
-vi.mock('@trycompai/ui/button', () => ({
+vi.mock('@gideon-defender/ui/button', () => ({
   Button: ({ children, disabled, ...props }: any) => (
     <button disabled={disabled} {...props}>
       {children}
@@ -39,7 +39,7 @@ vi.mock('@trycompai/ui/button', () => ({
   ),
 }));
 
-vi.mock('@trycompai/ui/dialog', () => ({
+vi.mock('@gideon-defender/ui/dialog', () => ({
   DialogContent: ({ children }: any) => (
     <div data-testid="dialog-content">{children}</div>
   ),

@@ -9,9 +9,9 @@ import {
   type ColumnDef,
   type SortingState,
 } from '@tanstack/react-table';
-import { Button } from '@trycompai/ui/button';
-import { Input } from '@trycompai/ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@trycompai/ui/table';
+import { Button } from '@gideon-defender/ui/button';
+import { Input } from '@gideon-defender/ui/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@gideon-defender/ui/table';
 import { PlusCircle, Search, TableIcon } from 'lucide-react';
 import { useMemo, useState, type ElementType, type ReactNode } from 'react';
 

@@ -8,12 +8,12 @@ import { OAuthCredentialsService } from './oauth-credentials.service';
 
 jest.mock('@db', () => ({ db: {} }));
 
-jest.mock('@trycompai/integration-platform', () => ({
+jest.mock('@gideon-defender/integration-platform', () => ({
   getManifest: jest.fn(),
   runAllChecks: jest.fn(),
 }));
 
-import { getManifest, runAllChecks } from '@trycompai/integration-platform';
+import { getManifest, runAllChecks } from '@gideon-defender/integration-platform';
 
 const mockedGetManifest = getManifest as jest.Mock;
 const mockedRunAllChecks = runAllChecks as jest.Mock;

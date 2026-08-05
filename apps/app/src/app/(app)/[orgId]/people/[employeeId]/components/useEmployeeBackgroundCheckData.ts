@@ -1,7 +1,7 @@
 'use client';
 
 import { apiClient } from '@/lib/api-client';
-import { getBillingSkuProductKey } from '@trycompai/billing';
+import { getBillingSkuProductKey } from '@gideon-defender/billing';
 import useSWR from 'swr';
 import type { BackgroundCheckBillingStatus, BackgroundCheckRecord } from './backgroundCheckTypes';
 

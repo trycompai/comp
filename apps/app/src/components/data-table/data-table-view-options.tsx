@@ -3,8 +3,8 @@
 import type { Table } from '@tanstack/react-table';
 import { Check, ChevronsUpDown, Settings2 } from 'lucide-react';
 
-import { Button } from '@trycompai/ui/button';
-import { cn } from '@trycompai/ui/cn';
+import { Button } from '@gideon-defender/ui/button';
+import { cn } from '@gideon-defender/ui/cn';
 import {
   Command,
   CommandEmpty,
@@ -12,8 +12,8 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from '@trycompai/ui/command';
-import { Popover, PopoverContent, PopoverTrigger } from '@trycompai/ui/popover';
+} from '@gideon-defender/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@gideon-defender/ui/popover';
 import * as React from 'react';
 
 interface DataTableViewOptionsProps<TData> {

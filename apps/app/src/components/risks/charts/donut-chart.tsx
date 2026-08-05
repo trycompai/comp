@@ -1,6 +1,6 @@
 'use client';
 
-import { ClientTooltip, TooltipTrigger } from '@trycompai/ui/chart-tooltip';
+import { ClientTooltip, TooltipTrigger } from '@gideon-defender/ui/chart-tooltip';
 import { type PieArcDatum, arc, pie } from 'd3';
 
 interface ChartItem {

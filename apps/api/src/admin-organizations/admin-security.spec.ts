@@ -59,7 +59,7 @@ jest.mock('@db', () => ({
   Prisma: {},
 }));
 
-jest.mock('@trycompai/auth', () => ({
+jest.mock('@gideon-defender/auth', () => ({
   RESTRICTED_ROLES: ['employee', 'contractor'],
   PRIVILEGED_ROLES: ['owner', 'admin', 'auditor'],
 }));
@@ -75,7 +75,7 @@ jest.mock('@trigger.dev/sdk', () => ({
   tasks: { trigger: jest.fn() },
 }));
 
-jest.mock('@trycompai/integration-platform', () => ({
+jest.mock('@gideon-defender/integration-platform', () => ({
   getAllManifests: jest.fn().mockReturnValue([]),
   getManifest: jest.fn(),
 }));

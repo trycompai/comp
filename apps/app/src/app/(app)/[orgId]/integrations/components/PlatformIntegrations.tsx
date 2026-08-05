@@ -10,18 +10,18 @@ import {
 import { api } from '@/lib/api-client';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useVendors } from '@/hooks/use-vendors';
-import { Badge } from '@trycompai/ui/badge';
-import { Button } from '@trycompai/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui/card';
+import { Badge } from '@gideon-defender/ui/badge';
+import { Button } from '@gideon-defender/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@gideon-defender/ui/card';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
-import { Skeleton } from '@trycompai/ui/skeleton';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
+} from '@gideon-defender/ui/dialog';
+import { Skeleton } from '@gideon-defender/ui/skeleton';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@gideon-defender/ui/tooltip';
 import {
   AlertCircle,
   AlertTriangle,

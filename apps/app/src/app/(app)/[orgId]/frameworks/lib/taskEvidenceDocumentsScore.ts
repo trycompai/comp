@@ -3,7 +3,7 @@ import {
   evidenceFormDefinitionList,
   meetingSubTypeValues,
   toDbEvidenceFormType,
-} from '@trycompai/company';
+} from '@gideon-defender/company';
 
 const SIX_MONTHS_MS = 6 * 30 * 24 * 60 * 60 * 1000;
 

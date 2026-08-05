@@ -2,7 +2,7 @@
 
 import { useConnectionServices } from '@/hooks/use-integration-platform';
 import { ChevronRight } from '@trycompai/design-system/icons';
-import { Badge } from '@trycompai/ui/badge';
+import { Badge } from '@gideon-defender/ui/badge';
 import Link from 'next/link';
 import {
   Cloud,

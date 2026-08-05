@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Input, ScrollArea } from '@trycompai/ui';
+import { Button, Input, ScrollArea } from '@gideon-defender/ui';
 import { ArrowLeft, Check, Loader2, Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
 

@@ -13,8 +13,8 @@ import {
 import { Request } from 'express';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { getManifest } from '@trycompai/integration-platform';
-import type { WebhookConfig } from '@trycompai/integration-platform';
+import { getManifest } from '@gideon-defender/integration-platform';
+import type { WebhookConfig } from '@gideon-defender/integration-platform';
 import { ConnectionRepository } from '../repositories/connection.repository';
 import { db, Prisma } from '@db';
 

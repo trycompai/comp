@@ -60,14 +60,14 @@ vi.mock('date-fns', () => ({
   format: () => 'Jan 1',
 }));
 
-// Mock @trycompai/ui components
-vi.mock('@trycompai/ui/avatar', () => ({
+// Mock @gideon-defender/ui components
+vi.mock('@gideon-defender/ui/avatar', () => ({
   Avatar: ({ children, ...props }: { children: React.ReactNode }) => <div {...props}>{children}</div>,
   AvatarFallback: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
   AvatarImage: () => null,
 }));
 
-vi.mock('@trycompai/ui/button', () => ({
+vi.mock('@gideon-defender/ui/button', () => ({
   Button: ({
     children,
     onClick,
@@ -89,7 +89,7 @@ vi.mock('@trycompai/ui/button', () => ({
   ),
 }));
 
-vi.mock('@trycompai/ui/dialog', () => ({
+vi.mock('@gideon-defender/ui/dialog', () => ({
   Dialog: ({ children, open }: { children: React.ReactNode; open: boolean }) =>
     open ? <div data-testid="dialog">{children}</div> : null,
   DialogContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
@@ -99,7 +99,7 @@ vi.mock('@trycompai/ui/dialog', () => ({
   DialogTitle: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
-vi.mock('@trycompai/ui/dropdown-menu', () => ({
+vi.mock('@gideon-defender/ui/dropdown-menu', () => ({
   DropdownMenu: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   DropdownMenuContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   DropdownMenuItem: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
@@ -114,17 +114,17 @@ vi.mock('@trycompai/ui/dropdown-menu', () => ({
   }) => <div data-disabled={disabled}>{children}</div>,
 }));
 
-vi.mock('@trycompai/ui/input', () => ({
+vi.mock('@gideon-defender/ui/input', () => ({
   Input: (props: any) => <input {...props} />,
 }));
 
-vi.mock('@trycompai/ui/label', () => ({
+vi.mock('@gideon-defender/ui/label', () => ({
   Label: ({ children, ...props }: { children: React.ReactNode }) => (
     <label {...props}>{children}</label>
   ),
 }));
 
-vi.mock('@trycompai/ui/select', () => ({
+vi.mock('@gideon-defender/ui/select', () => ({
   Select: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   SelectContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   SelectItem: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
@@ -132,7 +132,7 @@ vi.mock('@trycompai/ui/select', () => ({
   SelectValue: () => null,
 }));
 
-vi.mock('@trycompai/ui/textarea', () => ({
+vi.mock('@gideon-defender/ui/textarea', () => ({
   Textarea: (props: any) => <textarea {...props} />,
 }));
 

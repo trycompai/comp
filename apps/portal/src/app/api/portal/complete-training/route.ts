@@ -7,7 +7,7 @@ import {
   HIPAA_TRAINING_UNAVAILABLE_MESSAGE,
   hipaaFrameworkInstanceWhere,
   isTrainingVideoId,
-} from '@trycompai/company';
+} from '@gideon-defender/company';
 import { after, type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 

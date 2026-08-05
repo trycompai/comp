@@ -1,5 +1,5 @@
 {
-  "name": "@trycompai/integration-platform",
+  "name": "@gideon-defender/integration-platform",
   "version": "1.0.0",
   "private": true,
   "sideEffects": false,
@@ -33,9 +33,10 @@
     "dev": "tsc --watch",
     "format": "prettier --write .",
     "lint": "prettier --check .",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "verify": "bun run src/validators/manifest-validator.ts",
-    "generate:tasks": "bun run scripts/generate-task-types.ts"
+    "verify": "tsx src/validators/manifest-validator.ts",
+    "generate:tasks": "tsx scripts/generate-task-types.ts"
   },
   "dependencies": {
     "@aws-sdk/client-cloudtrail": "^3.943.0",
@@ -53,7 +54,9 @@
     "@types/node": "^24.0.3",
     "@types/react": "^19.1.6",
     "react": "^19.0.0",
-    "typescript": "^5.8.3"
+    "tsx": "^4.19.0",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.7"
   },
   "peerDependencies": {
     "react": "^19.0.0"

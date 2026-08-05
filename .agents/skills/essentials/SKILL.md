@@ -11,18 +11,18 @@ Original Cursor alwaysApply: `true`.
 
 ## Package Manager
 
-Use `bun`, never npm/yarn/pnpm.
+Use `npm`, never bun/yarn/pnpm.
 
 ```bash
-bun install          # Install deps
-bun add <pkg>        # Add package
-bun run <script>     # Run script
-bunx <cmd>           # Execute binary
+npm install          # Install deps
+npm install <pkg>    # Add package
+npm run <script>     # Run script
+npx <cmd>            # Execute binary
 ```
 
 ## Components
 
-**Use `@trycompai/design-system` first**, `@trycompai/ui` only as fallback.
+**Use `@trycompai/design-system` first**, `@gideon-defender/ui` only as fallback.
 
 ```tsx
 // ✅ Design system
@@ -30,7 +30,7 @@ import { Button, Card, Input, Select } from '@trycompai/design-system';
 import { Add, Close } from '@trycompai/design-system/icons';
 
 // ❌ Don't use when DS has the component
-import { Button } from '@trycompai/ui/button';
+import { Button } from '@gideon-defender/ui/button';
 import { Plus } from 'lucide-react';
 ```
 
@@ -101,8 +101,8 @@ import { useQueryState } from 'nuqs';
 **Always run checks after code changes:**
 
 ```bash
-bun run typecheck
-bun run lint
+npm run typecheck
+npm run lint
 ```
 
 Fix all errors before committing.

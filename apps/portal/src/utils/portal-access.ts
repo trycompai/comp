@@ -3,7 +3,7 @@ import {
   BUILT_IN_ROLE_PERMISSIONS,
   parseRoleObligations,
   parseRolePermissions,
-} from '@trycompai/auth';
+} from '@gideon-defender/auth';
 import { db } from '@db/server';
 
 export async function hasPortalAccess({

@@ -12,7 +12,7 @@ vi.mock('sonner', () => ({
 
 // Stub the dialog wrapper so we don't pull a real portal in jsdom. Render
 // children inline when `open`.
-vi.mock('@trycompai/ui/dialog', () => {
+vi.mock('@gideon-defender/ui/dialog', () => {
   const Pass = ({ children }: { children: React.ReactNode }) => <>{children}</>;
   return {
     Dialog: ({
@@ -35,7 +35,7 @@ vi.mock('@trycompai/ui/dialog', () => {
   };
 });
 
-vi.mock('@trycompai/ui/button', () => ({
+vi.mock('@gideon-defender/ui/button', () => ({
   Button: ({
     children,
     disabled,

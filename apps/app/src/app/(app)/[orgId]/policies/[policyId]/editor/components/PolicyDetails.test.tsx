@@ -132,14 +132,14 @@ vi.mock('@/components/editor/policy-editor', () => ({
 }));
 
 // Mock editor utils
-vi.mock('@trycompai/ui/editor', () => ({
+vi.mock('@gideon-defender/ui/editor', () => ({
   validateAndFixTipTapContent: (content: unknown) => ({ content }),
   SuggestionsExtension: { configure: () => ({}) },
   suggestionsPluginKey: { key: 'suggestions$' },
 }));
 
 // Mock DiffViewer
-vi.mock('@trycompai/ui/diff-viewer', () => ({
+vi.mock('@gideon-defender/ui/diff-viewer', () => ({
   DiffViewer: () => <div data-testid="diff-viewer" />,
 }));
 

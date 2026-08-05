@@ -22,7 +22,7 @@ jest.mock('../auth/auth.server', () => ({
   isStaticTrustedOrigin: () => false,
 }));
 
-jest.mock('@trycompai/auth', () => ({
+jest.mock('@gideon-defender/auth', () => ({
   statement: { trust: ['create', 'read', 'update', 'delete'] },
   BUILT_IN_ROLE_PERMISSIONS: {},
   RESTRICTED_ROLES: ['employee', 'contractor'],

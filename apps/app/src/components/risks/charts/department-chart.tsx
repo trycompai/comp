@@ -1,6 +1,6 @@
 'use client';
 
-import { ClientTooltip } from '@trycompai/ui/chart-tooltip';
+import { ClientTooltip } from '@gideon-defender/ui/chart-tooltip';
 import { format, max, scaleBand, scaleLinear } from 'd3';
 import { type CSSProperties } from 'react';
 

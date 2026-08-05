@@ -3,13 +3,13 @@
 import type { DynamicToolUIPart, ToolUIPart } from "ai";
 import type { ComponentProps, ReactNode } from "react";
 
-import { Badge } from "@trycompai/ui/badge";
+import { Badge } from "@gideon-defender/ui/badge";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@trycompai/ui/collapsible";
-import { cn } from "@trycompai/ui/cn";
+} from "@gideon-defender/ui/collapsible";
+import { cn } from "@gideon-defender/ui/cn";
 import {
   CheckCircleIcon,
   ChevronDownIcon,

@@ -47,11 +47,8 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-
       - name: Install dependencies
-        run: bun install --frozen-lockfile --ignore-scripts
+        run: npm ci --ignore-scripts
 
       - name: Compute next extension version
         id: version
@@ -90,15 +87,15 @@ jobs:
           "
 
       - name: Typecheck extension
-        run: bun run --filter '@trycompai/security-questionnaire-extension' typecheck
+        run: npm run typecheck --workspace=@gideon-defender/security-questionnaire-extension
 
       - name: Test extension
-        run: bun run --filter '@trycompai/security-questionnaire-extension' test
+        run: npm run test --workspace=@gideon-defender/security-questionnaire-extension
 
       - name: Build production extension
         env:
           WXT_GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.SECURITY_QUESTIONNAIRE_EXTENSION_GOOGLE_OAUTH_CLIENT_ID }}
-        run: bun run --filter '@trycompai/security-questionnaire-extension' build
+        run: npm run build --workspace=@gideon-defender/security-questionnaire-extension
 
       - name: Verify manifest version
         env:

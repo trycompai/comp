@@ -1,4 +1,4 @@
-import { cn } from '@trycompai/ui/cn';
+import { cn } from '@gideon-defender/ui/cn';
 
 // Define employee status types
 export const EMPLOYEE_STATUS_TYPES = ['active', 'inactive'] as const;

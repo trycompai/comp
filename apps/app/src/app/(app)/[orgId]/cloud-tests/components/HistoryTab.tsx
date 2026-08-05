@@ -2,7 +2,7 @@
 
 import { useApi } from '@/hooks/use-api';
 import { usePermissions } from '@/hooks/use-permissions';
-import { Button } from '@trycompai/ui/button';
+import { Button } from '@gideon-defender/ui/button';
 import { Loader2, ShieldCheck, RotateCcw, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { mutate as globalMutate } from 'swr';

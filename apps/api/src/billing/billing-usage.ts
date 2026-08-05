@@ -1,5 +1,5 @@
 import { db } from '@db';
-import { getBillingSkuProductKey } from '@trycompai/billing';
+import { getBillingSkuProductKey } from '@gideon-defender/billing';
 import type { BillingUsageRow } from './billing.types';
 
 type SubscriptionSummary = {

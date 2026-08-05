@@ -1,6 +1,6 @@
 'use client';
 
-import { Card } from '@trycompai/ui';
+import { Card } from '@gideon-defender/ui';
 import { Button } from '@trycompai/design-system';
 import type { Member, User } from '@db';
 

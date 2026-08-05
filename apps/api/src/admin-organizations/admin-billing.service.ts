@@ -8,7 +8,7 @@ import {
   getBillingSku,
   resolveBillingCatalogEnvironment,
   type BillingSkuKey,
-} from '@trycompai/billing';
+} from '@gideon-defender/billing';
 import { BillingCreditsService } from '../billing/billing-credits.service';
 import { BillingEntitlementsService } from '../billing/billing-entitlements.service';
 import { listBillingInvoices } from '../billing/billing-invoices';

@@ -24,7 +24,7 @@ import { DynamicManifestLoaderService } from '../services/dynamic-manifest-loade
 import {
   validateIntegrationDefinition,
   SyncDefinitionSchema,
-} from '@trycompai/integration-platform';
+} from '@gideon-defender/integration-platform';
 
 @ApiExcludeController()
 @Controller({ path: 'internal/dynamic-integrations', version: '1' })

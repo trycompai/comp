@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
-import { suggestionsPluginKey } from '@trycompai/ui/editor';
+import { suggestionsPluginKey } from '@gideon-defender/ui/editor';
 import { buildReplacementNodes, extendDeleteRangesToSections } from '../lib/apply-suggestion';
 import { buildPositionMap } from '../lib/build-position-map';
 import { computeSuggestionRanges } from '../lib/compute-suggestion-ranges';

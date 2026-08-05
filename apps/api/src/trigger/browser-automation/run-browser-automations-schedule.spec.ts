@@ -1,4 +1,4 @@
-import { TaskFrequency } from '@trycompai/db';
+import { TaskFrequency } from '@gideon-defender/db';
 import {
   filterDueAutomations,
   groupAutomationsByOrg,

@@ -1,7 +1,7 @@
 'use client';
 
 import { InherentRiskForm } from '@/app/(app)/[orgId]/vendors/[vendorId]/forms/risks/InherentRiskForm';
-import { useMediaQuery } from '@trycompai/ui/hooks';
+import { useMediaQuery } from '@gideon-defender/ui/hooks';
 import { Impact, Likelihood } from '@db';
 import {
   Drawer,

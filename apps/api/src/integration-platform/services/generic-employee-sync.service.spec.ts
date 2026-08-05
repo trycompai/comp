@@ -1,4 +1,4 @@
-import type { SyncEmployee } from '@trycompai/integration-platform';
+import type { SyncEmployee } from '@gideon-defender/integration-platform';
 
 const mockUserFindUnique = jest.fn();
 const mockUserCreate = jest.fn();
@@ -8,7 +8,7 @@ const mockMemberFindMany = jest.fn();
 const mockMemberUpdate = jest.fn();
 const mockOrgRoleFindMany = jest.fn();
 
-jest.mock('@trycompai/auth', () => ({
+jest.mock('@gideon-defender/auth', () => ({
   BUILT_IN_ROLE_PERMISSIONS: {
     owner: {},
     admin: {},

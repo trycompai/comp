@@ -10,7 +10,7 @@ export type PrismaExtensionOptions = {
   migrate?: boolean;
   directUrlEnvVarName?: string;
   /**
-   * The version of the @trycompai/db package to use
+   * The version of the @gideon-defender/db package to use
    */
   dbPackageVersion?: string;
 };
@@ -33,7 +33,7 @@ export class PrismaExtension implements BuildExtension {
   constructor(private options: PrismaExtensionOptions) {
     this.moduleExternals = [
       '@prisma/client',
-      '@trycompai/db',
+      '@gideon-defender/db',
     ];
   }
 
@@ -75,7 +75,7 @@ export class PrismaExtension implements BuildExtension {
       if (!resolution.path) {
         throw new Error(
           [
-            'PrismaExtension could not find the prisma schema. Make sure @trycompai/db is installed',
+            'PrismaExtension could not find the prisma schema. Make sure @gideon-defender/db is installed',
             `with version ${this.options.dbPackageVersion || 'latest'} and that its dist files are built.`,
             'Searched the following locations:',
             ...resolution.searched.map((candidate) => ` - ${candidate}`),
@@ -107,7 +107,7 @@ export class PrismaExtension implements BuildExtension {
     }
 
     context.logger.debug(
-      `PrismaExtension is generating the Prisma client for version ${version} from @trycompai/db package`,
+      `PrismaExtension is generating the Prisma client for version ${version} from @gideon-defender/db package`,
     );
 
     const commands: string[] = [];
@@ -170,7 +170,7 @@ export class PrismaExtension implements BuildExtension {
       env,
       dependencies: {
         prisma: version,
-        '@trycompai/db': this.options.dbPackageVersion || 'latest',
+        '@gideon-defender/db': this.options.dbPackageVersion || 'latest',
       },
     });
 
@@ -179,7 +179,7 @@ export class PrismaExtension implements BuildExtension {
       commands,
       dependencies: {
         prisma: version,
-        '@trycompai/db': this.options.dbPackageVersion || 'latest',
+        '@gideon-defender/db': this.options.dbPackageVersion || 'latest',
       },
       build: {
         env,
@@ -293,9 +293,9 @@ export class PrismaExtension implements BuildExtension {
       }
     };
 
-    // Strategy 1: Resolve @trycompai/db via Node module resolution (follows workspace symlinks)
+    // Strategy 1: Resolve @gideon-defender/db via Node module resolution (follows workspace symlinks)
     try {
-      const dbPkgJson = require.resolve('@trycompai/db/package.json', {
+      const dbPkgJson = require.resolve('@gideon-defender/db/package.json', {
         paths: [context.workingDir],
       });
       const dbRoot = dirname(dbPkgJson);

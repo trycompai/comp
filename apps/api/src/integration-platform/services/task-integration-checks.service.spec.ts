@@ -14,12 +14,12 @@ jest.mock('@db', () => ({
   },
 }));
 
-jest.mock('@trycompai/integration-platform', () => ({
+jest.mock('@gideon-defender/integration-platform', () => ({
   getManifest: jest.fn(),
 }));
 
 import { db } from '@db';
-import { getManifest } from '@trycompai/integration-platform';
+import { getManifest } from '@gideon-defender/integration-platform';
 
 const mockedGetManifest = getManifest as jest.MockedFunction<
   typeof getManifest

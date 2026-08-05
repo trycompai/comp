@@ -8,7 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
   Textarea,
-} from '@trycompai/ui';
+} from '@gideon-defender/ui';
 import { Maximize2 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { loadEditorSize, saveEditorSize, type EditorSize } from './editor-size-storage';

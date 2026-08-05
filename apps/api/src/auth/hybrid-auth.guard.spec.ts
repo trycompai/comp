@@ -56,9 +56,9 @@ jest.mock('./service-token.config', () => ({
     mockResolveServiceByToken(...args),
 }));
 
-// Mock @trycompai/auth — the app-access gate reads BUILT_IN_ROLE_PERMISSIONS to
+// Mock @gideon-defender/auth — the app-access gate reads BUILT_IN_ROLE_PERMISSIONS to
 // decide which roles grant app access. owner/admin/auditor do; employee does not.
-jest.mock('@trycompai/auth', () => ({
+jest.mock('@gideon-defender/auth', () => ({
   BUILT_IN_ROLE_PERMISSIONS: {
     owner: { app: ['read'] },
     admin: { app: ['read'] },

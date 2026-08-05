@@ -6,7 +6,7 @@ import type { AuditLogWithRelations } from '@/hooks/use-audit-logs';
 
 // Lightweight stand-ins for the design-system / ui primitives so the pager
 // buttons and rows are queryable in jsdom without pulling the real components.
-vi.mock('@trycompai/ui/avatar', () => ({
+vi.mock('@gideon-defender/ui/avatar', () => ({
   Avatar: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   AvatarImage: () => null,
   AvatarFallback: ({ children }: { children: ReactNode }) => <span>{children}</span>,

@@ -1,4 +1,4 @@
-import { TaskFrequency } from '@trycompai/db';
+import { TaskFrequency } from '@gideon-defender/db';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 

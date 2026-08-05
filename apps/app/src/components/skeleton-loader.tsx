@@ -1,5 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
-import { Skeleton } from '@trycompai/ui/skeleton';
+import { Card, CardContent, CardHeader, CardTitle } from '@gideon-defender/ui/card';
+import { Skeleton } from '@gideon-defender/ui/skeleton';
 
 interface Props {
   amount: number;

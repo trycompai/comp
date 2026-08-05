@@ -1,7 +1,7 @@
 'use client';
 
 import { authClient } from '@/app/lib/auth-client';
-import { Button, Icons } from '@trycompai/ui';
+import { Button, Icons } from '@gideon-defender/ui';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { ButtonIcon } from './button-icon';

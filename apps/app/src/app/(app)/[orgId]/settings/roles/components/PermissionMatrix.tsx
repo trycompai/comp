@@ -6,7 +6,7 @@ import {
   Switch,
   Text,
 } from '@trycompai/design-system';
-import { statement } from '@trycompai/auth';
+import { statement } from '@gideon-defender/auth';
 
 /** Access toggles — binary on/off permissions shown as switches above the matrix */
 const ACCESS_TOGGLES = [
@@ -56,7 +56,7 @@ const RESOURCE_SECTIONS: Array<{ label: string; keys: string[] }> = [
 ];
 
 /**
- * Resources available for permission assignment — derived from @trycompai/auth statement.
+ * Resources available for permission assignment — derived from @gideon-defender/auth statement.
  * Only includes resources that have a UI label (excludes internal ones like 'ac', 'team', 'app').
  */
 const RESOURCES = Object.keys(RESOURCE_LABELS)
@@ -83,7 +83,7 @@ type AccessLevel = 'none' | 'view' | 'edit';
 
 /**
  * Maps access levels to the actual permission actions for each resource.
- * Derived from the @trycompai/auth statement (single source of truth).
+ * Derived from the @gideon-defender/auth statement (single source of truth).
  * - view = ['read']
  * - edit = all actions the resource supports
  */

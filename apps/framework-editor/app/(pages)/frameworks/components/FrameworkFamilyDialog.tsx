@@ -2,7 +2,7 @@
 
 import { apiClient } from '@/app/lib/api-client';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Button } from '@trycompai/ui/button';
+import { Button } from '@gideon-defender/ui/button';
 import {
   Dialog,
   DialogClose,
@@ -11,17 +11,17 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
-import { Input } from '@trycompai/ui/input';
+} from '@gideon-defender/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@gideon-defender/ui/form';
+import { Input } from '@gideon-defender/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@trycompai/ui/select';
-import { Textarea } from '@trycompai/ui/textarea';
+} from '@gideon-defender/ui/select';
+import { Textarea } from '@gideon-defender/ui/textarea';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';

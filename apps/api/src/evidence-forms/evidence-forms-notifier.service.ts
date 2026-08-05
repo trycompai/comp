@@ -1,6 +1,6 @@
 import { db } from '@db';
 import { Injectable, Logger } from '@nestjs/common';
-import { isUserUnsubscribed } from '@trycompai/email';
+import { isUserUnsubscribed } from '@gideon-defender/email';
 import { triggerEmail } from '../email/trigger-email';
 import { EvidenceAccessRequestSubmittedEmail } from '../email/templates/evidence-access-request-submitted';
 

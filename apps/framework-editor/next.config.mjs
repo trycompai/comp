@@ -1,10 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: [
-    '@trycompai/ui',
+    '@gideon-defender/ui',
     '@trycompai/design-system',
-    '@trycompai/db',
-    '@trycompai/company',
+    '@gideon-defender/db',
+    '@gideon-defender/company',
     'better-auth',
     '@noble/ciphers',
     '@noble/hashes',

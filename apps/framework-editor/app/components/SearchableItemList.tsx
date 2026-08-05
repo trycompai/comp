@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle, Input } from '@trycompai/ui';
+import { Card, CardContent, CardHeader, CardTitle, Input } from '@gideon-defender/ui';
 import { useMemo, useState } from 'react';
 
 export interface SearchableItem {

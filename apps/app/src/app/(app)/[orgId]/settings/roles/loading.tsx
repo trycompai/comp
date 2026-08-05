@@ -1,6 +1,6 @@
 'use client';
 
-import { Skeleton } from '@trycompai/ui/skeleton';
+import { Skeleton } from '@gideon-defender/ui/skeleton';
 import {
   HStack,
   Stack,

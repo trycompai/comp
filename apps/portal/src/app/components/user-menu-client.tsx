@@ -1,13 +1,13 @@
 'use client';
 
-import { Avatar, AvatarFallback, AvatarImage } from '@trycompai/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@gideon-defender/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@trycompai/ui/dropdown-menu';
+} from '@gideon-defender/ui/dropdown-menu';
 import { Logout } from './logout';
 
 type UserMenuClientProps = {

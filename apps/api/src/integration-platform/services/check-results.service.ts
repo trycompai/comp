@@ -6,7 +6,7 @@ import {
   type IntegrationCheck,
   type IntegrationManifest,
   type TaskTemplateId,
-} from '@trycompai/integration-platform';
+} from '@gideon-defender/integration-platform';
 import { CheckRunRepository } from '../repositories/check-run.repository';
 import { ConnectionRepository } from '../repositories/connection.repository';
 

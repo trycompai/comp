@@ -2,7 +2,7 @@
 
 import { Button } from '@trycompai/design-system';
 import { Add } from '@trycompai/design-system/icons';
-import { Dialog } from '@trycompai/ui/dialog';
+import { Dialog } from '@gideon-defender/ui/dialog';
 import type { FrameworkEditorFramework } from '@db';
 import { useState } from 'react';
 import { usePermissions } from '@/hooks/use-permissions';

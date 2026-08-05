@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { Prisma, db } from '@db';
-import { getBillingSkuByStripePriceId } from '@trycompai/billing';
+import { getBillingSkuByStripePriceId } from '@gideon-defender/billing';
 import Stripe from 'stripe';
 import { StripeService } from '../stripe/stripe.service';
 import { BillingEntitlementsService } from './billing-entitlements.service';

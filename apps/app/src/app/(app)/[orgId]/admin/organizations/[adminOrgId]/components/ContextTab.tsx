@@ -19,9 +19,9 @@ import {
   Text,
 } from '@trycompai/design-system';
 import { Add, Edit } from '@trycompai/design-system/icons';
-import { Input } from '@trycompai/ui/input';
-import { Label } from '@trycompai/ui/label';
-import { Textarea } from '@trycompai/ui/textarea';
+import { Input } from '@gideon-defender/ui/input';
+import { Label } from '@gideon-defender/ui/label';
+import { Textarea } from '@gideon-defender/ui/textarea';
 import { useCallback, useEffect, useState } from 'react';
 
 interface ContextEntry {

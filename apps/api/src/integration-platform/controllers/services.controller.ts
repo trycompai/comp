@@ -12,7 +12,7 @@ import { PermissionGuard } from '../../auth/permission.guard';
 import { RequirePermission } from '../../auth/require-permission.decorator';
 import { OrganizationId } from '../../auth/auth-context.decorator';
 import { ConnectionService } from '../services/connection.service';
-import { getManifest } from '@trycompai/integration-platform';
+import { getManifest } from '@gideon-defender/integration-platform';
 
 @Controller({ path: 'integrations/connections', version: '1' })
 @ApiTags('Integrations')

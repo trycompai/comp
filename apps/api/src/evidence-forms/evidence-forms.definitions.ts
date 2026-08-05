@@ -1,4 +1,4 @@
-// Single source of truth: re-export from shared @trycompai/company package
+// Single source of truth: re-export from shared @gideon-defender/company package
 export {
   evidenceFormTypeSchema,
   evidenceFormFileSchema,
@@ -8,4 +8,4 @@ export {
   type EvidenceFormType,
   type EvidenceFormFieldDefinition,
   type EvidenceFormDefinition,
-} from '@trycompai/company';
+} from '@gideon-defender/company';

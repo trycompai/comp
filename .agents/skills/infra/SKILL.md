@@ -10,14 +10,14 @@ Original Cursor alwaysApply: `false`.
 
 ## Package Manager
 
-**Use `bun`, never npm/yarn/pnpm.**
+**Use `npm`, never bun/yarn/pnpm.**
 
 ```bash
-bun install              # Install deps
-bun add <pkg>            # Add package
-bun add -D <pkg>         # Add dev dependency
-bun run <script>         # Run script
-bunx <cmd>               # Execute binary
+npm install              # Install deps
+npm install <pkg>        # Add package
+npm install -D <pkg>     # Add dev dependency
+npm run <script>         # Run script
+npx <cmd>                # Execute binary
 ```
 
 ## Monorepo Structure
@@ -29,8 +29,8 @@ comp/
 │   ├── app/             # Next.js main app
 │   └── portal/          # Next.js portal
 ├── packages/
-│   ├── db/              # Prisma (@trycompai/db)
-│   ├── ui/              # Legacy UI (@trycompai/ui); prefer @trycompai/design-system
+│   ├── db/              # Prisma (@gideon-defender/db)
+│   ├── ui/              # Legacy UI (@gideon-defender/ui); prefer @trycompai/design-system
 │   └── ...
 ├── turbo.json
 └── package.json
@@ -40,15 +40,15 @@ comp/
 
 ```bash
 # Multi-package (via turbo)
-bun run build            # Build all
-bun run lint             # Lint all
-bun run typecheck        # Type check all
-bun run dev              # Dev all
+npm run build            # Build all
+npm run lint             # Lint all
+npm run typecheck        # Type check all
+npm run dev              # Dev all
 
 # Single package
-bun run -F apps/app dev
-bun run -F @trycompai/db prisma:generate
-turbo build --filter=@trycompai/ui
+npm run dev --workspace=apps/app
+npm run prisma:generate --workspace=@gideon-defender/db
+turbo build --filter=@gideon-defender/ui
 ```
 
 ## Importing Between Packages
@@ -56,7 +56,7 @@ turbo build --filter=@trycompai/ui
 ```tsx
 // ✅ Import from package name
 import { Button } from '@trycompai/design-system';
-import { prisma } from '@trycompai/db';
+import { prisma } from '@gideon-defender/db';
 
 // ❌ Never relative paths across packages
 import { Button } from '../../../packages/ui/src/button';
@@ -66,11 +66,11 @@ import { Button } from '../../../packages/ui/src/button';
 
 ```bash
 # To specific package
-bun add axios -F apps/app
-bun add -D vitest -F @trycompai/ui
+npm install axios --workspace=apps/app
+npm install -D vitest --workspace=@gideon-defender/ui
 
 # To root (dev tools only)
-bun add -D -w prettier typescript
+npm install -D -w prettier typescript
 ```
 
 ## After Code Changes
@@ -78,8 +78,8 @@ bun add -D -w prettier typescript
 **Always run checks:**
 
 ```bash
-bun run typecheck
-bun run lint
+npm run typecheck
+npm run lint
 ```
 
 Fix all errors before committing.
@@ -105,7 +105,7 @@ mkdir packages/my-package
 ```json
 // packages/my-package/package.json
 {
-  "name": "@trycompai/my-package",
+  "name": "@gideon-defender/my-package",
   "version": "0.0.0",
   "private": true,
   "main": "./src/index.ts",
@@ -119,7 +119,7 @@ mkdir packages/my-package
 ```json
 // packages/my-package/tsconfig.json
 {
-  "extends": "@trycompai/tsconfig/base.json",
+  "extends": "@gideon-defender/tsconfig/base.json",
   "include": ["src"]
 }
 ```

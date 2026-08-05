@@ -1,7 +1,7 @@
 'use client';
 
 import type { FrameworkEditorPolicyTemplate } from '@/db';
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui';
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@gideon-defender/ui';
 import { PencilIcon, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';

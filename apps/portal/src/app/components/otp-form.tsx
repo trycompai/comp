@@ -1,10 +1,10 @@
 'use client';
 
 import { authClient } from '@/app/lib/auth-client';
-import { Form, FormControl, FormField, FormItem, FormMessage } from '@trycompai/ui/form';
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@gideon-defender/ui/form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Button } from '@trycompai/ui/button';
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '@trycompai/ui/input-otp';
+import { Button } from '@gideon-defender/ui/button';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@gideon-defender/ui/input-otp';
 import { Spinner } from '@trycompai/design-system';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';

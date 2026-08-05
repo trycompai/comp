@@ -1,6 +1,6 @@
 ---
 name: api-endpoint-contract
-description: The contract every new or modified API endpoint must follow so it is correct for the public OpenAPI spec, the MCP server (npm @trycompai/mcp-server), the ValidationPipe, and the docs. Triggers on "new endpoint", "add API", "new DTO", "@Body", "@RequirePermission", "MCP tool", "edit controller in apps/api", "OpenAPI", or whenever editing controllers under apps/api/src/.
+description: The contract every new or modified API endpoint must follow so it is correct for the public OpenAPI spec, the MCP server (npm @gideon-defender/mcp-server), the ValidationPipe, and the docs. Triggers on "new endpoint", "add API", "new DTO", "@Body", "@RequirePermission", "MCP tool", "edit controller in apps/api", "OpenAPI", or whenever editing controllers under apps/api/src/.
 ---
 
 # API Endpoint Contract (MCP-friendly NestJS endpoints)
@@ -8,7 +8,7 @@ description: The contract every new or modified API endpoint must follow so it i
 Every customer-facing endpoint in `apps/api/src/` ends up in three places:
 
 1. **The OpenAPI spec** (`packages/docs/openapi.json`) — regenerated on every dev boot, consumed by Speakeasy.
-2. **The MCP server** (`apps/mcp-server/`, published as `@trycompai/mcp-server` on npm) — generated daily from the OpenAPI spec.
+2. **The MCP server** (`apps/mcp-server/`, published as `@gideon-defender/mcp-server` on npm) — generated daily from the OpenAPI spec.
 3. **The runtime ValidationPipe** — accepts/rejects request bodies based on class-validator metadata.
 
 If any one of these three is wrong, the endpoint either silently breaks for agents (Claude Desktop, Cursor, Codex, etc.) or fails validation at runtime. **Follow this contract on every body-accepting endpoint.**
@@ -184,7 +184,7 @@ Write the description for the agent deciding *whether to call this tool*: state 
 4. If the endpoint requires session auth, decide: remove `SessionOnlyGuard`, or disable it for MCP via the overlay.
 5. For long-running work, return a run handle and document the poll target.
 6. For file uploads, accept `s3Key` and read via `UploadsService.readUploadAsBase64`.
-7. **`bun run --filter '@trycompai/api' dev`** — your dev server regenerates `packages/docs/openapi.json` on boot.
+7. **`npm run dev --workspace=@gideon-defender/api`** — your dev server regenerates `packages/docs/openapi.json` on boot.
 8. **`git add packages/docs/openapi.json`** — commit the regenerated spec alongside your API change. The daily Speakeasy CI reads from this file; if it's stale, your new tool never reaches customers.
 9. Sanity-check the new operation in the spec:
    ```

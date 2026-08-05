@@ -1,5 +1,5 @@
 {
-  "name": "@trycompai/security-questionnaire-extension",
+  "name": "@gideon-defender/security-questionnaire-extension",
   "version": "0.0.0",
   "private": true,
   "type": "module",

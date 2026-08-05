@@ -41,14 +41,14 @@ jest.mock('../../auth/session-only.guard', () => ({
   SessionOnlyGuard: class SessionOnlyGuard {},
 }));
 
-jest.mock('@trycompai/auth', () => ({
+jest.mock('@gideon-defender/auth', () => ({
   statement: {
     integration: ['create', 'read', 'update', 'delete'],
   },
   BUILT_IN_ROLE_PERMISSIONS: {},
 }));
 
-jest.mock('@trycompai/integration-platform', () => ({
+jest.mock('@gideon-defender/integration-platform', () => ({
   getManifest: jest.fn(),
 }));
 
@@ -58,7 +58,7 @@ jest.mock('@trigger.dev/sdk', () => ({
   },
 }));
 
-import { getManifest } from '@trycompai/integration-platform';
+import { getManifest } from '@gideon-defender/integration-platform';
 import { tasks } from '@trigger.dev/sdk';
 
 const mockedGetManifest = getManifest as jest.MockedFunction<

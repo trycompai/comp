@@ -8,7 +8,7 @@ import {
   getManifest,
   interpretDeclarativeCheck,
   runAllChecks,
-} from '@trycompai/integration-platform';
+} from '@gideon-defender/integration-platform';
 import { ConnectionRepository } from '../repositories/connection.repository';
 import { ProviderRepository } from '../repositories/provider.repository';
 import { CredentialVaultService } from './credential-vault.service';

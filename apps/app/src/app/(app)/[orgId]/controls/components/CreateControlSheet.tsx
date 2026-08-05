@@ -1,13 +1,13 @@
 'use client';
 
-import { Button } from '@trycompai/ui/button';
-import { Drawer, DrawerContent, DrawerTitle } from '@trycompai/ui/drawer';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
-import { useMediaQuery } from '@trycompai/ui/hooks';
-import { Input } from '@trycompai/ui/input';
-import MultipleSelector, { Option } from '@trycompai/ui/multiple-selector';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@trycompai/ui/sheet';
-import { Textarea } from '@trycompai/ui/textarea';
+import { Button } from '@gideon-defender/ui/button';
+import { Drawer, DrawerContent, DrawerTitle } from '@gideon-defender/ui/drawer';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@gideon-defender/ui/form';
+import { useMediaQuery } from '@gideon-defender/ui/hooks';
+import { Input } from '@gideon-defender/ui/input';
+import MultipleSelector, { Option } from '@gideon-defender/ui/multiple-selector';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@gideon-defender/ui/sheet';
+import { Textarea } from '@gideon-defender/ui/textarea';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRightIcon, X } from 'lucide-react';
 import { useQueryState } from 'nuqs';

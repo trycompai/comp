@@ -1,8 +1,8 @@
 'use client';
 
 import { authClient } from '@/utils/auth-client';
-import { Button } from '@trycompai/ui/button';
-import { DropdownMenuItem } from '@trycompai/ui/dropdown-menu';
+import { Button } from '@gideon-defender/ui/button';
+import { DropdownMenuItem } from '@gideon-defender/ui/dropdown-menu';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 

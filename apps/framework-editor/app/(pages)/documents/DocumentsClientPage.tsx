@@ -8,7 +8,7 @@ import {
   useReactTable,
   type SortingState,
 } from '@tanstack/react-table';
-import { Badge } from '@trycompai/ui';
+import { Badge } from '@gideon-defender/ui';
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { DOCUMENT_TYPE_OPTIONS } from '../controls/document-type-options';

@@ -5,7 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { db } from '@db';
-import { statement } from '@trycompai/auth';
+import { statement } from '@gideon-defender/auth';
 import { createHash, randomBytes } from 'node:crypto';
 
 /** Result from validating an API key */

@@ -1,5 +1,5 @@
 /**
- * Stub for @trycompai/auth.
+ * Stub for @gideon-defender/auth.
  * The real package imports better-auth/plugins/access (ESM .mjs).
  * We only need the RBAC constants used by PermissionGuard.
  */

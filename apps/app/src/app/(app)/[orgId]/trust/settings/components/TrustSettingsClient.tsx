@@ -3,9 +3,9 @@
 import { useDebounce } from '@/hooks/useDebounce';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useTrustPortalSettings } from '@/hooks/use-trust-portal-settings';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel } from '@trycompai/ui/form';
-import { Input } from '@trycompai/ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@gideon-defender/ui/card';
+import { Form, FormControl, FormField, FormItem, FormLabel } from '@gideon-defender/ui/form';
+import { Input } from '@gideon-defender/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';

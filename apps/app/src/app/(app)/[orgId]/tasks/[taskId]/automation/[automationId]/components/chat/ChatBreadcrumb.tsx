@@ -4,7 +4,7 @@ import {
   BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbSeparator,
-} from '@trycompai/ui/breadcrumb';
+} from '@gideon-defender/ui/breadcrumb';
 import { ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 

@@ -1,5 +1,5 @@
-import { cn } from '@trycompai/ui/cn';
-import { Icons } from '@trycompai/ui/icons';
+import { cn } from '@gideon-defender/ui/cn';
+import { Icons } from '@gideon-defender/ui/icons';
 import Link from 'next/link';
 
 export function SidebarLogo({ isCollapsed }: { isCollapsed: boolean }) {

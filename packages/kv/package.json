@@ -1,9 +1,10 @@
 {
-  "name": "@trycompai/kv",
+  "name": "@gideon-defender/kv",
   "description": "Key-value store utilities using Upstash Redis for Comp AI",
   "version": "1.0.0",
   "dependencies": {
     "@upstash/redis": "^1.34.2",
+    "ioredis": "^5.4.1",
     "server-only": "0.0.1"
   },
   "devDependencies": {

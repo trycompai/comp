@@ -1,6 +1,6 @@
 'use client';
 
-import { Card } from '@trycompai/ui';
+import { Card } from '@gideon-defender/ui';
 import { Button } from '@trycompai/design-system';
 import { ChevronUp, ChevronDown } from '@trycompai/design-system/icons';
 import type {

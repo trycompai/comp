@@ -2,8 +2,8 @@
 
 import { authClient } from '@/app/lib/auth-client';
 import { buildSignInCallbackUrls } from '@/app/lib/auth-callback';
-import { Button } from '@trycompai/ui/button';
-import { Icons } from '@trycompai/ui/icons';
+import { Button } from '@gideon-defender/ui/button';
+import { Icons } from '@gideon-defender/ui/icons';
 import { Spinner } from '@trycompai/design-system';
 import { useState } from 'react';
 import { toast } from 'sonner';

@@ -82,27 +82,26 @@ To develop locally:
    git checkout -b MY_BRANCH_NAME
    ```
 
-3. Install bun:
-
-   https://bun.sh/docs/installation
+3. Make sure you have Node.js >=22 and npm >=10 installed
+   (https://nodejs.org/). The project uses npm workspaces — no bun required.
 
 4. Install the dependencies with:
 
    ```sh
-   bun i
+   npm install
    ```
 
 5. Set up your `.env` file:
    - Duplicate `.env.example` to `.env`.
    - Use `openssl rand -base64 32` to generate a key and add it under `SECRET_KEY` in the `.env` file.
    - Setup Trigger.dev
-     - CD into apps/app and run `bunx trigger.dev@latest login`, then `bunx trigger.dev@latest dev`
+     - CD into apps/app and run `npx trigger.dev@latest login`, then `npx trigger.dev@latest dev`
      - Use `openssl rand -base64 32` to generate a key and add it under `TRIGGER_SECRET_KEY` in the `.env` file.
 
 6. Start developing and watch for code changes:
 
    ```sh
-   bun run dev
+   npm run dev
    ```
 
 ## Building
@@ -110,7 +109,7 @@ To develop locally:
 You can build the project with:
 
 ```bash
-bun run build
+npm run build
 ```
 
 Please be sure that you can make a full production build before pushing code.
@@ -130,14 +129,14 @@ Coming soon.
 To check the formatting of your code:
 
 ```sh
-bun run lint
+npm run lint
 ```
 
 If you get errors, be sure to fix them before committing.
 
 ## Adding or modifying API endpoints
 
-Every endpoint in `apps/api/src/` ships to three places: the public OpenAPI spec (`packages/docs/openapi.json`), the customer-facing MCP server published as `@trycompai/mcp-server` on npm, and the runtime `ValidationPipe`. Endpoints that break the contract either silently fail for AI agents (Claude Desktop, Cursor, Codex, etc.) or reject requests at runtime.
+Every endpoint in `apps/api/src/` ships to three places: the public OpenAPI spec (`packages/docs/openapi.json`), the customer-facing MCP server published as `@gideon-defender/mcp-server` on npm, and the runtime `ValidationPipe`. Endpoints that break the contract either silently fail for AI agents (Claude Desktop, Cursor, Codex, etc.) or reject requests at runtime.
 
 **Read the full contract before adding a body-accepting endpoint:**
 - AI tool users: [`.claude/skills/api-endpoint-contract/SKILL.md`](.claude/skills/api-endpoint-contract/SKILL.md) (Claude auto-loads) or [`.cursor/rules/api-endpoint-contract.mdc`](.cursor/rules/api-endpoint-contract.mdc) (Cursor auto-loads).
@@ -151,7 +150,7 @@ Every endpoint in `apps/api/src/` ships to three places: the public OpenAPI spec
 4. `@ApiOperation.description` ≤ 240 chars (truncator in `seo-text.ts`).
 5. Long-running ops return a run handle and document the poll target — don't make agents wait synchronously.
 6. File uploads accept an `s3Key` field (presigned upload path) — never base64 inline from agents.
-7. After your change: `bun run --filter '@trycompai/api' dev` regenerates `packages/docs/openapi.json` on boot — **commit it with your PR**. The daily Speakeasy CI reads from that file.
+7. After your change: `npm run dev --workspace=@gideon-defender/api` regenerates `packages/docs/openapi.json` on boot — **commit it with your PR**. The daily Speakeasy CI reads from that file.
 
 ## Making a Pull Request
 

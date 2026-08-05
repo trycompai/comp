@@ -1,4 +1,4 @@
-import { Button } from '@trycompai/ui/button';
+import { Button } from '@gideon-defender/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface CarouselControlsProps {

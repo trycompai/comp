@@ -13,7 +13,7 @@ import {
   useReactTable,
   type SortingState,
 } from '@tanstack/react-table';
-import { Button } from '@trycompai/ui';
+import { Button } from '@gideon-defender/ui';
 import { ArrowDown, ArrowUp, ArrowUpDown, Download, PencilIcon, Plus, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';

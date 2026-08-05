@@ -20,7 +20,7 @@ import {
   Input,
   Switch,
   Textarea,
-} from '@trycompai/ui';
+} from '@gideon-defender/ui';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';

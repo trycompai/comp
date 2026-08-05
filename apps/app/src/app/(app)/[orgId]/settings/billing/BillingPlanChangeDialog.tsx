@@ -1,6 +1,6 @@
 'use client';
 
-import type { BillingSku } from '@trycompai/billing';
+import type { BillingSku } from '@gideon-defender/billing';
 import {
   Button,
   Dialog,

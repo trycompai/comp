@@ -28,7 +28,7 @@ import {
   getManifest,
   isCodeManifest,
   runAllChecks,
-} from '@trycompai/integration-platform';
+} from '@gideon-defender/integration-platform';
 import { ConnectionRepository } from '../repositories/connection.repository';
 import { ProviderRepository } from '../repositories/provider.repository';
 import { CheckRunRepository } from '../repositories/check-run.repository';

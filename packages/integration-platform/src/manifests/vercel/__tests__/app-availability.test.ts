@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, it } from 'vitest';
 import { appAvailabilityCheck } from '../checks/app-availability';
 import type { CheckContext, CheckVariableValues } from '../../../types';
 import type {

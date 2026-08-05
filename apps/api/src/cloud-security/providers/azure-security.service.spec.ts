@@ -29,7 +29,6 @@ describe('AzureSecurityService.scanSecurityFindings — all-units-failed guard',
 
   beforeEach(() => {
     fetchMock = jest.fn();
-    // @ts-expect-error replacing global fetch with a mock for these tests
     global.fetch = fetchMock;
     service = new AzureSecurityService();
   });

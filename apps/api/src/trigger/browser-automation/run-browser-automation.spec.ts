@@ -18,7 +18,7 @@ jest.mock('../../email/trigger-email', () => ({
   triggerEmail: jest.fn(),
 }));
 
-jest.mock('@trycompai/email', () => ({
+jest.mock('@gideon-defender/email', () => ({
   isUserUnsubscribed: jest.fn().mockResolvedValue(false),
 }));
 

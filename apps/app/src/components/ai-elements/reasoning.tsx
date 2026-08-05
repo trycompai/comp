@@ -7,8 +7,8 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@trycompai/ui/collapsible";
-import { cn } from "@trycompai/ui/cn";
+} from "@gideon-defender/ui/collapsible";
+import { cn } from "@gideon-defender/ui/cn";
 import { cjk } from "@streamdown/cjk";
 import { code } from "@streamdown/code";
 import { math } from "@streamdown/math";

@@ -1,4 +1,4 @@
-import { cn } from '@trycompai/ui/cn';
+import { cn } from '@gideon-defender/ui/cn';
 
 export const VENDOR_STATUS_TYPES = ['not_assessed', 'in_progress', 'assessed'] as const;
 

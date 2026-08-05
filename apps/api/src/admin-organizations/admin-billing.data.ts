@@ -1,6 +1,6 @@
 import { NotFoundException } from '@nestjs/common';
 import { db, Prisma } from '@db';
-import type { BillingSkuKey } from '@trycompai/billing';
+import type { BillingSkuKey } from '@gideon-defender/billing';
 import type Stripe from 'stripe';
 import { BillingEntitlementsService } from '../billing/billing-entitlements.service';
 import { StripeService } from '../stripe/stripe.service';

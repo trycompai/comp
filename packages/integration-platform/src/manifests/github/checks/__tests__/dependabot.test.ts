@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, it } from 'vitest';
 import type { CheckContext, CheckResult, CheckVariableValues } from '../../../../types';
 import type { GitHubDependabotAlert, GitHubRepo } from '../../types';
 import { dependabotCheck } from '../dependabot';

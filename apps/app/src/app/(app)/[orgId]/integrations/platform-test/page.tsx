@@ -7,11 +7,11 @@ import {
   type OAuthAvailability,
 } from '@/hooks/use-integration-platform';
 import { api } from '@/lib/api-client';
-import { Badge } from '@trycompai/ui/badge';
-import { Button } from '@trycompai/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
-import { Input } from '@trycompai/ui/input';
-import { Label } from '@trycompai/ui/label';
+import { Badge } from '@gideon-defender/ui/badge';
+import { Button } from '@gideon-defender/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@gideon-defender/ui/card';
+import { Input } from '@gideon-defender/ui/input';
+import { Label } from '@gideon-defender/ui/label';
 import {
   AlertCircle,
   CheckCircle2,

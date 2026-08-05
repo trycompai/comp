@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { db } from '@db';
-import { getManifest } from '@trycompai/integration-platform';
+import { getManifest } from '@gideon-defender/integration-platform';
 import { ConnectionRepository } from '../repositories/connection.repository';
 import { ProviderRepository } from '../repositories/provider.repository';
 import { ConnectionService } from './connection.service';

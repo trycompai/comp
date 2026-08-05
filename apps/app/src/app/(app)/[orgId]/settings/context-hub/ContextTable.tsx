@@ -2,7 +2,7 @@
 
 import { apiClient } from '@/lib/api-client';
 import { isJSON } from '@/lib/utils';
-import { useMediaQuery } from '@trycompai/ui/hooks';
+import { useMediaQuery } from '@gideon-defender/ui/hooks';
 import type { Context } from '@db';
 import {
   AlertDialog,

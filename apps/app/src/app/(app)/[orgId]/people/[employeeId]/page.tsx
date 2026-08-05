@@ -9,7 +9,7 @@ import { getFleetInstance } from '@/lib/fleet';
 import { serverApi } from '@/lib/server-api-client';
 import type { EmployeeTrainingVideoCompletion, Member, User } from '@db';
 import { db } from '@db/server';
-import { daysSinceCheckIn, getDeviceComplianceStatus } from '@trycompai/utils/devices';
+import { daysSinceCheckIn, getDeviceComplianceStatus } from '@gideon-defender/utils/devices';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';

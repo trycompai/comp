@@ -1,7 +1,7 @@
 import type {
   BasicAuthConfig,
   CredentialField,
-} from '@trycompai/integration-platform';
+} from '@gideon-defender/integration-platform';
 
 /**
  * Turn a credential field name into a human-readable label.

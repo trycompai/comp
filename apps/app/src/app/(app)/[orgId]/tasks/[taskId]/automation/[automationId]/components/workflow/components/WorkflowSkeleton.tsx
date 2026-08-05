@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, CardContent } from '@trycompai/ui/card';
+import { Card, CardContent } from '@gideon-defender/ui/card';
 
 export function WorkflowSkeleton() {
   return (

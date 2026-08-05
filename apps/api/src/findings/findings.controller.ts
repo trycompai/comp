@@ -38,7 +38,7 @@ import { FindingsService } from './findings.service';
 import { CreateFindingDto } from './dto/create-finding.dto';
 import { UpdateFindingDto } from './dto/update-finding.dto';
 import { ValidateFindingIdPipe } from './pipes/validate-finding-id.pipe';
-import { toDbEvidenceFormType } from '@trycompai/company';
+import { toDbEvidenceFormType } from '@gideon-defender/company';
 import { evidenceFormTypeSchema } from '@/evidence-forms/evidence-forms.definitions';
 
 @ApiTags('Findings')

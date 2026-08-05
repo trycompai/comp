@@ -1,7 +1,18 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 
-const globalForPrisma = global as unknown as { prisma?: PrismaClient };
+/**
+ * RLS (Row-Level Security) client roles — mirrors `packages/db/src/client.ts`.
+ *
+ *  - `db`        — legacy client (superuser / owner). Bypasses RLS.
+ *  - `tenantDb`  — RLS-subject app role; use inside `withTenant(orgId, ...)`.
+ *  - `serviceDb` — BYPASSRLS service role for better-auth/system/background.
+ *
+ * URLs resolve from `DATABASE_URL_TENANT` / `DATABASE_URL_SERVICE` and fall
+ * back to `DATABASE_URL` when unset.
+ */
+
+const globalForPrisma = global as unknown as { prismaClients?: Map<string, PrismaClient> };
 
 const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1']);
 
@@ -24,9 +35,18 @@ function isLocalhostUrl(connectionString: string): boolean {
   }
 }
 
-function createPrismaClient(): PrismaClient {
-  const rawUrl = process.env.DATABASE_URL!;
-  const isLocalhost = isLocalhostUrl(rawUrl);
+// Explicit sslmode=disable means the operator intends a plaintext connection
+// (e.g. a local/self-hosted Postgres without TLS). Treat it like localhost.
+function hasSslModeDisable(connectionString: string): boolean {
+  try {
+    return new URL(connectionString).searchParams.get('sslmode') === 'disable';
+  } catch {
+    return false;
+  }
+}
+
+function createPrismaClient(rawUrl: string): PrismaClient {
+  const isLocalhost = isLocalhostUrl(rawUrl) || hasSslModeDisable(rawUrl);
   // Strategy:
   // - Localhost: TLS off (typical dev Postgres has no cert).
   // - Remote with NODE_EXTRA_CA_CERTS set: verified TLS using that bundle
@@ -60,7 +80,7 @@ function createPrismaClient(): PrismaClient {
     );
   }
   // Strip sslmode from the connection string to avoid conflicts with the explicit ssl option
-  const url = ssl !== undefined ? stripSslMode(rawUrl) : rawUrl;
+  const url = stripSslMode(rawUrl);
   const adapter = new PrismaPg({ connectionString: url, ssl });
   return new PrismaClient({
     adapter,
@@ -74,17 +94,69 @@ function createPrismaClient(): PrismaClient {
 // — that only happens on first property access on `db`. Critical so that
 // Next.js `next build` (which imports every route handler to analyze it) does
 // not trigger the strict TLS check at build time when no actual queries run.
-function getClient(): PrismaClient {
-  if (!globalForPrisma.prisma) {
-    globalForPrisma.prisma = createPrismaClient();
+function getClientByUrl(url: string): PrismaClient {
+  if (!globalForPrisma.prismaClients) {
+    globalForPrisma.prismaClients = new Map();
   }
-  return globalForPrisma.prisma;
+  const existing = globalForPrisma.prismaClients.get(url);
+  if (existing) return existing;
+  const client = createPrismaClient(url);
+  globalForPrisma.prismaClients.set(url, client);
+  return client;
 }
 
-export const db = new Proxy({} as PrismaClient, {
-  get(_target, prop, _receiver) {
-    const client = getClient();
-    const value = Reflect.get(client, prop, client);
-    return typeof value === 'function' ? value.bind(client) : value;
-  },
-});
+function resolveConnectionString(envVar: string): string {
+  return process.env[envVar] ?? process.env.DATABASE_URL!;
+}
+
+function lazyClient(envVar: string): PrismaClient {
+  return new Proxy({} as PrismaClient, {
+    get(_target, prop, _receiver) {
+      const client = getClientByUrl(resolveConnectionString(envVar));
+      const value = Reflect.get(client, prop, client);
+      return typeof value === 'function' ? value.bind(client) : value;
+    },
+  });
+}
+
+export const db = lazyClient('DATABASE_URL');
+
+export const tenantDb = lazyClient('DATABASE_URL_TENANT');
+
+export const serviceDb = lazyClient('DATABASE_URL_SERVICE');
+
+const TENANT_GUC = 'app.tenant_id';
+
+async function setTenantGuc(
+  tx: Prisma.TransactionClient,
+  tenantId: string,
+): Promise<void> {
+  await tx.$executeRaw`SELECT set_config(${TENANT_GUC}, ${tenantId}, true)`;
+}
+
+/**
+ * Run `fn` inside a single transaction scoped to `orgId` under RLS.
+ * The tenant GUC is set transaction-locally and cleared on commit/rollback.
+ */
+export async function withTenant<T>(
+  orgId: string,
+  fn: (tx: Prisma.TransactionClient) => Promise<T>,
+): Promise<T> {
+  return tenantDb.$transaction(async (tx) => {
+    await setTenantGuc(tx, orgId);
+    return fn(tx);
+  });
+}
+
+/**
+ * Run `fn` as the service role (BYPASSRLS) inside a single transaction,
+ * clearing any stale tenant GUC first.
+ */
+export async function withService<T>(
+  fn: (tx: Prisma.TransactionClient) => Promise<T>,
+): Promise<T> {
+  return serviceDb.$transaction(async (tx) => {
+    await setTenantGuc(tx, '');
+    return fn(tx);
+  });
+}

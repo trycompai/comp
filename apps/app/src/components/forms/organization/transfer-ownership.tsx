@@ -11,8 +11,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@trycompai/ui/alert-dialog';
-import { Button } from '@trycompai/ui/button';
+} from '@gideon-defender/ui/alert-dialog';
+import { Button } from '@gideon-defender/ui/button';
 import {
   Card,
   CardContent,
@@ -20,16 +20,16 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@trycompai/ui/card';
-import { Input } from '@trycompai/ui/input';
-import { Label } from '@trycompai/ui/label';
+} from '@gideon-defender/ui/card';
+import { Input } from '@gideon-defender/ui/input';
+import { Label } from '@gideon-defender/ui/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@trycompai/ui/select';
+} from '@gideon-defender/ui/select';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';

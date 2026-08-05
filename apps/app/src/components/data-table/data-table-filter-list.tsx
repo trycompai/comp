@@ -19,10 +19,10 @@ import { formatDate } from '@/lib/format';
 import { generateId } from '@/lib/id';
 import { getFiltersStateParser } from '@/lib/parsers';
 import type { ExtendedColumnFilter, FilterOperator, JoinOperator } from '@/types/data-table';
-import { Badge } from '@trycompai/ui/badge';
-import { Button } from '@trycompai/ui/button';
-import { Calendar } from '@trycompai/ui/calendar';
-import { cn } from '@trycompai/ui/cn';
+import { Badge } from '@gideon-defender/ui/badge';
+import { Button } from '@gideon-defender/ui/button';
+import { Calendar } from '@gideon-defender/ui/calendar';
+import { cn } from '@gideon-defender/ui/cn';
 import {
   Command,
   CommandEmpty,
@@ -30,10 +30,10 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from '@trycompai/ui/command';
-import { Input } from '@trycompai/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@trycompai/ui/popover';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@trycompai/ui/select';
+} from '@gideon-defender/ui/command';
+import { Input } from '@gideon-defender/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@gideon-defender/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@gideon-defender/ui/select';
 import { DataTableRangeFilter } from './data-table-range-filter';
 import {
   Faceted,

@@ -3,7 +3,7 @@ import '@trycompai/design-system/globals.css';
 import { env } from '@/env.mjs';
 import { auth } from '@/utils/auth';
 import { Analytics as DubAnalytics } from '@dub/analytics/react';
-import { cn } from '@trycompai/ui/cn';
+import { cn } from '@gideon-defender/ui/cn';
 import { Analytics as VercelAnalytics } from '@vercel/analytics/next';
 import { GeistMono } from 'geist/font/mono';
 import type { Metadata } from 'next';

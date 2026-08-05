@@ -4,7 +4,7 @@ import {
   type RoleObligations,
   allRoles,
   isOrgParticipant,
-} from '@trycompai/auth';
+} from '@gideon-defender/auth';
 import { db } from '@db';
 import { getOrgIsInternal } from './org-participation';
 

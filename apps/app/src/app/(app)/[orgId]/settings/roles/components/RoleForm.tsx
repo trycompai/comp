@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { Button } from '@trycompai/ui/button';
+import { Button } from '@gideon-defender/ui/button';
 import {
   Form,
   FormControl,
@@ -13,8 +13,8 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@trycompai/ui/form';
-import { Input } from '@trycompai/ui/input';
+} from '@gideon-defender/ui/form';
+import { Input } from '@gideon-defender/ui/input';
 import { Stack, Text } from '@trycompai/design-system';
 import { PermissionMatrix } from './PermissionMatrix';
 

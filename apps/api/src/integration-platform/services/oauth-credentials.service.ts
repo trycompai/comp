@@ -5,7 +5,7 @@ import {
   CredentialVaultService,
   EncryptedData,
 } from './credential-vault.service';
-import { getManifest, type OAuthConfig } from '@trycompai/integration-platform';
+import { getManifest, type OAuthConfig } from '@gideon-defender/integration-platform';
 import type { Prisma } from '@db';
 
 export interface OAuthCredentials {

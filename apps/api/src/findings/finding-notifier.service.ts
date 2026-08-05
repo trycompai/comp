@@ -1,7 +1,7 @@
 import { db, FindingArea, FindingStatus, FindingType } from '@db';
 import { Injectable, Logger } from '@nestjs/common';
-import { isUserUnsubscribed } from '@trycompai/email';
-import { toExternalEvidenceFormType } from '@trycompai/company';
+import { isUserUnsubscribed } from '@gideon-defender/email';
+import { toExternalEvidenceFormType } from '@gideon-defender/company';
 import { triggerEmail } from '../email/trigger-email';
 import { FindingNotificationEmail } from '../email/templates/finding-notification';
 import { NovuService } from '../notifications/novu.service';

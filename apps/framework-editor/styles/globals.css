@@ -1,8 +1,8 @@
-@import '@trycompai/ui/globals.css';
+@import '@gideon-defender/ui/globals.css';
 @config '../tailwind.config.ts';
 
 /*
- * Real dark-mode palette (FRAME-5). @trycompai/ui ships a `.dark` block whose
+ * Real dark-mode palette (FRAME-5). @gideon-defender/ui ships a `.dark` block whose
  * values are identical to light, so without this, toggling the `dark` class
  * changes nothing. Declared after the import (and unlayered) so it wins the
  * cascade over the library defaults.

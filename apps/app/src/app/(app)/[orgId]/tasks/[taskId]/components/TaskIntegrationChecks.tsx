@@ -18,9 +18,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@trycompai/ui/alert-dialog';
-import { Badge } from '@trycompai/ui/badge';
-import { Button } from '@trycompai/ui/button';
+} from '@gideon-defender/ui/alert-dialog';
+import { Badge } from '@gideon-defender/ui/badge';
+import { Button } from '@gideon-defender/ui/button';
 import { addDays, formatDistanceToNow, isBefore, setHours, setMinutes } from 'date-fns';
 import {
   AlertCircle,

@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { db } from '@db';
-import { generateUnsubscribeToken } from '@trycompai/email';
+import { generateUnsubscribeToken } from '@gideon-defender/email';
 import { timingSafeEqual } from 'node:crypto';
 
 @ApiTags('Email - Unsubscribe')

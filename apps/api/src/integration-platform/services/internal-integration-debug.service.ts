@@ -1,7 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { db } from '@db';
 import type { Prisma } from '@db';
-import { isCodeManifest } from '@trycompai/integration-platform';
+import { isCodeManifest } from '@gideon-defender/integration-platform';
 import {
   ConnectionCheckRunnerService,
   type RunAllChecksResult,

@@ -28,7 +28,7 @@ jest.mock('../auth/permission.guard', () => ({
   PermissionGuard: class PermissionGuard {},
 }));
 
-jest.mock('@trycompai/auth', () => ({
+jest.mock('@gideon-defender/auth', () => ({
   statement: {
     evidence: ['create', 'read', 'update', 'delete'],
   },

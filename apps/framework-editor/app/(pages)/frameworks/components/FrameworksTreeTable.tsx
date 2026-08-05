@@ -4,7 +4,7 @@ import {
   ColumnResizeHandle,
   useResizableColumns,
 } from '@/app/components/table/resizable-columns';
-import { Button } from '@trycompai/ui/button';
+import { Button } from '@gideon-defender/ui/button';
 import { ChevronDown, ChevronRight, FileText, Folder, Pencil, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import type { FrameworkFamilyWithCount, FrameworkWithCounts } from '../FrameworksClientPage';

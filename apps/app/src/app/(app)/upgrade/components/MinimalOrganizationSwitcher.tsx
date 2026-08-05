@@ -1,13 +1,13 @@
 'use client';
 
 import { authClient } from '@/utils/auth-client';
-import { Button } from '@trycompai/ui/button';
+import { Button } from '@gideon-defender/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@trycompai/ui/dropdown-menu';
+} from '@gideon-defender/ui/dropdown-menu';
 import type { Organization } from '@db';
 import { Check, ChevronsUpDown, Loader2 } from 'lucide-react';
 import { useState } from 'react';

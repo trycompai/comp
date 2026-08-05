@@ -1,13 +1,13 @@
 'use client';
 
-import { Badge } from '@trycompai/ui/badge';
-import { cn } from '@trycompai/ui/cn';
+import { Badge } from '@gideon-defender/ui/badge';
+import { cn } from '@gideon-defender/ui/cn';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@trycompai/ui/tooltip';
+} from '@gideon-defender/ui/tooltip';
 import type { TaskAutomationStatus } from '@db';
 
 interface TaskAutomationStatusBadgeProps {

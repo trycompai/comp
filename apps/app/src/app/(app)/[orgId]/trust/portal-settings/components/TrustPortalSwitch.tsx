@@ -6,7 +6,7 @@ import { useTrustPortalSettings } from '@/hooks/use-trust-portal-settings';
 import { useDebounce } from '@/hooks/useDebounce';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/design-system';
-import { Form } from '@trycompai/ui/form';
+import { Form } from '@gideon-defender/ui/form';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';

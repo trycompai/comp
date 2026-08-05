@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 // Stub heavy deps; render each cell's value as text so we can read row order.
 vi.mock('@/app/lib/api-client', () => ({ apiClient: vi.fn() }));
 vi.mock('../../components/AddExistingItemDialog', () => ({ AddExistingItemDialog: () => null }));
-vi.mock('@trycompai/ui', () => ({
+vi.mock('@gideon-defender/ui', () => ({
   Button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
 }));
 vi.mock('../../components/table', () => ({

@@ -18,7 +18,7 @@ function useMockSelect(): SelectContextValue {
   return ctx;
 }
 
-vi.mock('@trycompai/ui/select', () => ({
+vi.mock('@gideon-defender/ui/select', () => ({
   Select: ({
     value,
     onValueChange,

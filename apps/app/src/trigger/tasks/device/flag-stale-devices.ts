@@ -1,6 +1,6 @@
 import { db } from '@db/server';
 import { logger, schedules } from '@trigger.dev/sdk';
-import { STALE_DEVICE_THRESHOLD_DAYS } from '@trycompai/utils/devices';
+import { STALE_DEVICE_THRESHOLD_DAYS } from '@gideon-defender/utils/devices';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 

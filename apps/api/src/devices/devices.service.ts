@@ -5,7 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { db } from '@db';
-import { getDeviceComplianceStatus } from '@trycompai/utils/devices';
+import { getDeviceComplianceStatus } from '@gideon-defender/utils/devices';
 import { FleetService } from '../lib/fleet.service';
 import { DeviceResponseDto } from './dto/device-responses.dto';
 import type { MemberResponseDto } from './dto/member-responses.dto';

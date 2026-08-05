@@ -17,8 +17,8 @@ vi.mock('recharts', () => ({
   ),
 }));
 
-// Mock @trycompai/ui chart components
-vi.mock('@trycompai/ui/chart', () => ({
+// Mock @gideon-defender/ui chart components
+vi.mock('@gideon-defender/ui/chart', () => ({
   ChartContainer: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   ),

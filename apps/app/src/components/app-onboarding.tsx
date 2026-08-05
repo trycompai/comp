@@ -1,10 +1,10 @@
 'use client';
 
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@trycompai/ui/accordion';
-import { Badge } from '@trycompai/ui/badge';
-import { Button } from '@trycompai/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui/card';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@gideon-defender/ui/accordion';
+import { Badge } from '@gideon-defender/ui/badge';
+import { Button } from '@gideon-defender/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@gideon-defender/ui/card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@gideon-defender/ui/tooltip';
 import { BookOpen, HelpCircle, PlusIcon } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import Image from 'next/image';

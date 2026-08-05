@@ -1,7 +1,7 @@
 'use client';
 
 import { authClient } from '@/utils/auth-client';
-import { Avatar, AvatarFallback, AvatarImageNext } from '@trycompai/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImageNext } from '@gideon-defender/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,7 +9,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@trycompai/ui/dropdown-menu';
+} from '@gideon-defender/ui/dropdown-menu';
 import type { User } from 'better-auth';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';

@@ -5,8 +5,8 @@ import {
   QueryClient,
   QueryClientProvider,
 } from '@tanstack/react-query';
-import { AnalyticsProvider } from '@trycompai/analytics';
-import { Toaster } from '@trycompai/ui/sooner';
+import { AnalyticsProvider } from '@gideon-defender/analytics';
+import { Toaster } from '@gideon-defender/ui/sooner';
 import { Session, User } from 'better-auth';
 import { ThemeProvider } from 'next-themes';
 import type { ReactNode } from 'react';

@@ -1,4 +1,4 @@
-import { TaskFrequency } from '@trycompai/db';
+import { TaskFrequency } from '@gideon-defender/db';
 import { isDueToday } from './is-due-today';
 
 const atUtc = (iso: string) => new Date(`${iso}T00:00:00.000Z`);

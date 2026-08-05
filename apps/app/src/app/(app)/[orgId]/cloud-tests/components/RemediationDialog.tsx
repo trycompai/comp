@@ -1,14 +1,14 @@
 'use client';
 
-import { Badge } from '@trycompai/ui/badge';
-import { Button } from '@trycompai/ui/button';
+import { Badge } from '@gideon-defender/ui/badge';
+import { Button } from '@gideon-defender/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
+} from '@gideon-defender/ui/dialog';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import { AlertTriangle, ListOrdered, Loader2, RotateCcw } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';

@@ -1,4 +1,4 @@
-import type { BasicAuthConfig } from '@trycompai/integration-platform';
+import type { BasicAuthConfig } from '@gideon-defender/integration-platform';
 import { buildBasicAuthCredentialFields } from './basic-auth-credential-fields';
 
 describe('buildBasicAuthCredentialFields', () => {

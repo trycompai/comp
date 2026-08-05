@@ -8,7 +8,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
+} from '@gideon-defender/ui/dialog';
 import type { FrameworkEditorFramework } from '@db';
 import { useSession } from '@/utils/auth-client';
 import { useState } from 'react';

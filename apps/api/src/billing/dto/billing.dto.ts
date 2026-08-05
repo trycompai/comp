@@ -1,4 +1,4 @@
-import { subscriptionBillingSkuKeys } from '@trycompai/billing';
+import { subscriptionBillingSkuKeys } from '@gideon-defender/billing';
 import {
   IsEmail,
   IsIn,

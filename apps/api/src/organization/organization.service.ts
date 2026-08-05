@@ -6,7 +6,7 @@ import {
   ForbiddenException,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { allRoles } from '@trycompai/auth';
+import { allRoles } from '@gideon-defender/auth';
 import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { db, Role } from '@db';
 import { APP_AWS_ORG_ASSETS_BUCKET, s3Client, getSignedUrl } from '../app/s3';

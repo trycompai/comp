@@ -17,12 +17,12 @@ vi.mock('@/hooks/use-tasks-api', () => ({
 }));
 
 // Mock UI components to simplify rendering
-vi.mock('@trycompai/ui/button', () => ({
+vi.mock('@gideon-defender/ui/button', () => ({
   Button: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) => (
     <button {...props}>{children}</button>
   ),
 }));
-vi.mock('@trycompai/ui/dialog', () => ({
+vi.mock('@gideon-defender/ui/dialog', () => ({
   Dialog: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
   DialogContent: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
   DialogDescription: ({ children }: React.PropsWithChildren) => <div>{children}</div>,

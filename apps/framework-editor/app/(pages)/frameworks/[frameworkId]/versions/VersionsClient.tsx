@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@trycompai/ui';
+import { Button } from '@gideon-defender/ui';
 import { useState } from 'react';
 import { useFrameworkVersions } from './hooks/useFrameworkVersions';
 import { PublishVersionDialog } from './components/PublishVersionDialog';

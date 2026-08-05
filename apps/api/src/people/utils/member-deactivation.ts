@@ -1,5 +1,5 @@
 import { db, Prisma } from '@db';
-import { isUserUnsubscribed } from '@trycompai/email';
+import { isUserUnsubscribed } from '@gideon-defender/email';
 import { Logger } from '@nestjs/common';
 import { triggerEmail } from '../../email/trigger-email';
 import { UnassignedItemsNotificationEmail } from '../../email/templates/unassigned-items-notification';

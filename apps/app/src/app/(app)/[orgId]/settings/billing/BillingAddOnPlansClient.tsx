@@ -2,7 +2,7 @@
 
 import { usePermissions } from '@/hooks/use-permissions';
 import { apiClient } from '@/lib/api-client';
-import type { BillingSkuKey } from '@trycompai/billing';
+import type { BillingSkuKey } from '@gideon-defender/billing';
 import {
   PageHeader,
   PageHeaderDescription,

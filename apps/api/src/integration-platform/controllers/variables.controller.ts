@@ -25,7 +25,7 @@ import { OrganizationId } from '../../auth/auth-context.decorator';
 import {
   getManifest,
   type CheckVariable,
-} from '@trycompai/integration-platform';
+} from '@gideon-defender/integration-platform';
 import { ConnectionRepository } from '../repositories/connection.repository';
 import { ConnectionService } from '../services/connection.service';
 import { ProviderRepository } from '../repositories/provider.repository';

@@ -1,12 +1,12 @@
 ---
-description: Use when writing/editing NestJS API endpoints, DTOs, or @Body() params under apps/api/src/. Ensures every endpoint is correct for OpenAPI, the MCP server (@trycompai/mcp-server), and the ValidationPipe.
+description: Use when writing/editing NestJS API endpoints, DTOs, or @Body() params under apps/api/src/. Ensures every endpoint is correct for OpenAPI, the MCP server (@gideon-defender/mcp-server), and the ValidationPipe.
 globs: apps/api/src/**/*.controller.ts,apps/api/src/**/*.dto.ts
 alwaysApply: false
 ---
 
 # API Endpoint Contract (MCP-friendly NestJS endpoints)
 
-Every customer-facing endpoint in `apps/api/src/` flows into three systems: the OpenAPI spec (`packages/docs/openapi.json`), the MCP server (`@trycompai/mcp-server` on npm), and the runtime `ValidationPipe`. If any one is wrong, the endpoint silently breaks for agents or fails validation at runtime.
+Every customer-facing endpoint in `apps/api/src/` flows into three systems: the OpenAPI spec (`packages/docs/openapi.json`), the MCP server (`@gideon-defender/mcp-server` on npm), and the runtime `ValidationPipe`. If any one is wrong, the endpoint silently breaks for agents or fails validation at runtime.
 
 ## The 11 rules
 
@@ -114,7 +114,7 @@ The hosted MCP (Gram) uses **dynamic toolsets**: with 300+ tools the agent seman
 4. No `SessionOnlyGuard` on agent-callable endpoints.
 5. Long-running → run handle + poll target.
 6. File input → `s3Key` field + `UploadsService.readUploadAsBase64`.
-7. Run dev (`bun run --filter '@trycompai/api' dev`) → openapi.json regenerates on boot.
+7. Run dev (`bun run --filter '@gideon-defender/api' dev`) → openapi.json regenerates on boot.
 8. **`git add packages/docs/openapi.json`** — commit the regenerated spec with your API change.
 9. Verify the new schema isn't empty:
    ```

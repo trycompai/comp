@@ -7,7 +7,7 @@ import {
   useIntegrationMutations,
 } from '@/hooks/use-integration-platform';
 import { Button } from '@trycompai/design-system';
-import { Badge } from '@trycompai/ui/badge';
+import { Badge } from '@gideon-defender/ui/badge';
 import { AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';

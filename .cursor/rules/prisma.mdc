@@ -26,19 +26,19 @@ packages/db/prisma/schema/
 ```bash
 # Run from packages/db
 cd packages/db
-bunx prisma migrate dev --name your_migration_name
+npx prisma migrate dev --name your_migration_name
 ```
 
 ### Step 3: Regenerate Types in Apps
 
 ```bash
 # Each app needs to regenerate Prisma client types
-bun run -F apps/app db:generate
-bun run -F apps/api db:generate
-bun run -F apps/portal db:generate
+npm run db:generate --workspace=@gideon-defender/app
+npm run db:generate --workspace=@gideon-defender/api
+npm run db:generate --workspace=@gideon-defender/portal
 
 # Or from root (if configured)
-bun run prisma:generate
+npm run prisma:generate
 ```
 
 ### ✅ Always Do This
@@ -46,12 +46,12 @@ bun run prisma:generate
 ```bash
 # 1. Make schema changes in packages/db
 # 2. Create migration
-cd packages/db && bunx prisma migrate dev --name add_user_role
+cd packages/db && npx prisma migrate dev --name add_user_role
 
 # 3. Regenerate types in ALL apps that use the db
-bun run -F apps/app db:generate
-bun run -F apps/api db:generate
-bun run -F apps/portal db:generate
+npm run db:generate --workspace=@gideon-defender/app
+npm run db:generate --workspace=@gideon-defender/api
+npm run db:generate --workspace=@gideon-defender/portal
 ```
 
 ### ❌ Never Do This
@@ -61,7 +61,7 @@ bun run -F apps/portal db:generate
 apps/app/prisma/schema.prisma  # ❌ Wrong location
 
 # Don't forget to regenerate types
-bunx prisma migrate dev  # ✅ Created migration
+npx prisma migrate dev  # ✅ Created migration
 # ... forgot to run db:generate in apps  # ❌ Types out of sync
 ```
 
@@ -138,7 +138,7 @@ model User {
 After schema changes:
 
 - [ ] Schema edited in `packages/db/prisma/schema/`
-- [ ] Migration created with `bunx prisma migrate dev`
+- [ ] Migration created with `npx prisma migrate dev`
 - [ ] Types regenerated in `apps/app` with `db:generate`
 - [ ] Types regenerated in `apps/api` with `db:generate`
 - [ ] Types regenerated in `apps/portal` with `db:generate`

@@ -2,12 +2,12 @@
 
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { useTaskMutations } from '@/hooks/use-task-mutations';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@trycompai/ui/accordion';
-import { Button } from '@trycompai/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
-import { Input } from '@trycompai/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@trycompai/ui/select';
-import { Textarea } from '@trycompai/ui/textarea';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@gideon-defender/ui/accordion';
+import { Button } from '@gideon-defender/ui/button';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@gideon-defender/ui/form';
+import { Input } from '@gideon-defender/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@gideon-defender/ui/select';
+import { Textarea } from '@gideon-defender/ui/textarea';
 import type { Member, Task, User } from '@db';
 import { TaskStatus } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';

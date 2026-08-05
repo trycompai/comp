@@ -47,8 +47,8 @@ jest.mock('better-auth/plugins/organization/access', () => ({
   ownerAc: {},
 }));
 
-// Stub @trycompai/auth (dist/ not built in worktree; avoids resolving better-auth ESM)
-jest.mock('@trycompai/auth', () => {
+// Stub @gideon-defender/auth (dist/ not built in worktree; avoids resolving better-auth ESM)
+jest.mock('@gideon-defender/auth', () => {
   const emptyRole = { statements: {} };
   const roles = {
     owner: emptyRole,

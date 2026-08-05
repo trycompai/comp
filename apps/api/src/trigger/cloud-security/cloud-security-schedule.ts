@@ -1,4 +1,4 @@
-import { getManifest } from '@trycompai/integration-platform';
+import { getManifest } from '@gideon-defender/integration-platform';
 import { db } from '@db';
 import { logger, schedules } from '@trigger.dev/sdk';
 import { runCloudSecurityScan } from './run-cloud-security-scan';

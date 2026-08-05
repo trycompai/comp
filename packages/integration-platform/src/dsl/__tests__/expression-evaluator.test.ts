@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'bun:test';
+import { describe, it, expect } from 'vitest';
 import { evaluateCondition, evaluateOperator, resolvePath } from '../expression-evaluator';
 import type { Condition } from '../types';
 

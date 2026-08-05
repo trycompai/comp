@@ -9,13 +9,13 @@ import { ProviderRepository } from '../repositories/provider.repository';
 import { ConnectionRepository } from '../repositories/connection.repository';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
-import { getManifest } from '@trycompai/integration-platform';
+import { getManifest } from '@gideon-defender/integration-platform';
 
 jest.mock('../../auth/auth.server', () => ({
   auth: { api: { getSession: jest.fn() } },
 }));
 
-jest.mock('@trycompai/auth', () => ({
+jest.mock('@gideon-defender/auth', () => ({
   statement: {
     integration: ['create', 'read', 'update', 'delete'],
   },
@@ -28,7 +28,7 @@ jest.mock('@db', () => ({
   },
 }));
 
-jest.mock('@trycompai/integration-platform', () => ({
+jest.mock('@gideon-defender/integration-platform', () => ({
   getManifest: jest.fn(),
   getAllManifests: jest.fn(),
   getActiveManifests: jest.fn(),

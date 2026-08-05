@@ -1,5 +1,5 @@
 import { Prisma } from '@prisma/client';
-import type { SyncDevice } from '@trycompai/integration-platform';
+import type { SyncDevice } from '@gideon-defender/integration-platform';
 
 const mockMemberFindFirst = jest.fn();
 const mockDeviceFindFirst = jest.fn();

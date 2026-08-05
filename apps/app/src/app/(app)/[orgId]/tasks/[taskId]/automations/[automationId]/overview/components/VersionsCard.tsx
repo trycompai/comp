@@ -1,7 +1,7 @@
 'use client';
 
-import { Button } from '@trycompai/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
+import { Button } from '@gideon-defender/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@gideon-defender/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -9,7 +9,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
+} from '@gideon-defender/ui/dialog';
 import { EvidenceAutomationVersion } from '@db';
 import { formatDistanceToNow } from 'date-fns';
 import { History, RotateCcw } from 'lucide-react';

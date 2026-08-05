@@ -37,7 +37,7 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
-vi.mock('@trycompai/ui/button', () => ({
+vi.mock('@gideon-defender/ui/button', () => ({
   Button: ({ children, disabled, asChild, ...props }: any) => (
     <button disabled={disabled} {...props}>
       {children}
@@ -45,18 +45,18 @@ vi.mock('@trycompai/ui/button', () => ({
   ),
 }));
 
-vi.mock('@trycompai/ui/card', () => ({
+vi.mock('@gideon-defender/ui/card', () => ({
   Card: ({ children }: any) => <div data-testid="card">{children}</div>,
   CardContent: ({ children }: any) => <div>{children}</div>,
   CardHeader: ({ children }: any) => <div>{children}</div>,
   CardTitle: ({ children }: any) => <h3>{children}</h3>,
 }));
 
-vi.mock('@trycompai/ui/scroll-area', () => ({
+vi.mock('@gideon-defender/ui/scroll-area', () => ({
   ScrollArea: ({ children }: any) => <div>{children}</div>,
 }));
 
-vi.mock('@trycompai/ui/tabs', () => ({
+vi.mock('@gideon-defender/ui/tabs', () => ({
   Tabs: ({ children, defaultValue }: any) => (
     <div data-testid="tabs" data-default={defaultValue}>
       {children}

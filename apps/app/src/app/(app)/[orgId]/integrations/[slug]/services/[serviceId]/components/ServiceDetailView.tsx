@@ -6,7 +6,7 @@ import { Breadcrumb, Stack } from '@trycompai/design-system';
 import type {
   ConnectionListItemResponse,
   IntegrationProviderResponse,
-} from '@trycompai/integration-platform';
+} from '@gideon-defender/integration-platform';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';

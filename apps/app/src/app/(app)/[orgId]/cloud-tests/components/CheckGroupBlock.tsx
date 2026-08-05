@@ -1,6 +1,6 @@
 'use client';
 
-import { Badge } from '@trycompai/ui/badge';
+import { Badge } from '@gideon-defender/ui/badge';
 import { ChevronDown, ChevronRight, ShieldCheck } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { Finding } from '../types';

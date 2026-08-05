@@ -2,7 +2,7 @@ import { db } from '@db';
 import { orgParticipantMemberWhereForFlag } from '../utils/org-participation';
 import { Injectable, Logger } from '@nestjs/common';
 import { TaskStatus } from '@db';
-import { isUserUnsubscribed } from '@trycompai/email';
+import { isUserUnsubscribed } from '@gideon-defender/email';
 import { triggerEmail } from '../email/trigger-email';
 import { TaskBulkStatusChangedEmail } from '../email/templates/task-bulk-status-changed';
 import { TaskBulkAssigneeChangedEmail } from '../email/templates/task-bulk-assignee-changed';

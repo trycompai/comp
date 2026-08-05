@@ -13,7 +13,7 @@ import {
 import type { EvidenceFormAnalysisResult } from '@/app/api/evidence-forms/analyze/route';
 import { FileUploader } from '@/components/file-uploader';
 import { api } from '@/lib/api-client';
-import { meetingFields } from '@trycompai/company';
+import { meetingFields } from '@gideon-defender/company';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Alert,

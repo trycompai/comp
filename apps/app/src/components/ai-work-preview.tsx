@@ -1,7 +1,7 @@
 'use client';
 
-import { cn } from '@trycompai/ui/cn';
-import { Separator } from '@trycompai/ui/separator';
+import { cn } from '@gideon-defender/ui/cn';
+import { Separator } from '@gideon-defender/ui/separator';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlertTriangle,

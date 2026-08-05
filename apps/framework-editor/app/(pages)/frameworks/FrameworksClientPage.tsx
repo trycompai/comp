@@ -2,8 +2,8 @@
 
 import PageLayout from '@/app/components/PageLayout';
 import type { FrameworkEditorFramework, FrameworkEditorFrameworkFamilyStatus } from '@/db';
-import { Button } from '@trycompai/ui/button';
-import { Input } from '@trycompai/ui/input';
+import { Button } from '@gideon-defender/ui/button';
+import { Input } from '@gideon-defender/ui/input';
 import { FolderPlus, MoveRight, Plus, Upload } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { CreateFrameworkDialog } from './components/CreateFrameworkDialog';

@@ -11,8 +11,8 @@ import {
   Stack,
   Text,
 } from '@trycompai/design-system';
-import { Label } from '@trycompai/ui/label';
-import { Textarea } from '@trycompai/ui/textarea';
+import { Label } from '@gideon-defender/ui/label';
+import { Textarea } from '@gideon-defender/ui/textarea';
 import { useState } from 'react';
 
 interface TaskFormProps {

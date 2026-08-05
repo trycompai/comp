@@ -37,30 +37,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          node-version: "22"
 
       - name: Install dependencies
-        run: bun install
+        run: npm ci
 
       - name: Generate Prisma client
         run: |
           cd packages/db
-          bunx prisma generate
+          npx prisma generate
 
       - name: Run database migrations
         run: |
           cd packages/db
-          bunx prisma migrate deploy
+          npx prisma migrate deploy
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
 
       - name: Run quick tests
         run: |
           cd apps/app
-          bunx vitest run src/middleware.test.ts src/lib/__tests__/
+          npx vitest run src/middleware.test.ts src/lib/__tests__/
         env:
           CI: true
           MOCK_REDIS: true
@@ -89,7 +89,7 @@ jobs:
 
             testSummary += 'Please check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.\n\n';
 
-            testSummary += '💡 **Tip**: Run `bun test` locally to debug the failing tests.\n';
+            testSummary += '💡 **Tip**: Run `npm test` locally to debug the failing tests.\n';
 
             // Create or update comment
             const { data: comments } = await github.rest.issues.listComments({

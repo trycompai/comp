@@ -1,5 +1,5 @@
 import { Prisma, db } from '@db';
-import type { BillingSkuKey } from '@trycompai/billing';
+import type { BillingSkuKey } from '@gideon-defender/billing';
 import { isUniqueConstraintError } from './billing-entitlements.types';
 
 export async function refundIncludedUsageEvent(params: {

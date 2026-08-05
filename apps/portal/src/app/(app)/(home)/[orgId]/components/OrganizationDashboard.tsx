@@ -1,6 +1,6 @@
 import type { Device, Member, Organization, User } from '@db';
 import { db } from '@db/server';
-import { evidenceFormDefinitionList } from '@trycompai/company';
+import { evidenceFormDefinitionList } from '@gideon-defender/company';
 import { NoAccessMessage } from '../../components/NoAccessMessage';
 import type { FleetPolicy, Host } from '../types';
 import { EmployeeTasksList } from './EmployeeTasksList';

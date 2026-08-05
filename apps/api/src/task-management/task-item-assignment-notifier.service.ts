@@ -1,7 +1,7 @@
 import { db } from '@db';
 import { isOrgParticipant } from '../utils/org-participation-rule';
 import { Injectable, Logger } from '@nestjs/common';
-import { isUserUnsubscribed } from '@trycompai/email';
+import { isUserUnsubscribed } from '@gideon-defender/email';
 import { triggerEmail } from '../email/trigger-email';
 import { TaskItemAssignedEmail } from '../email/templates/task-item-assigned';
 import { NovuService } from '../notifications/novu.service';

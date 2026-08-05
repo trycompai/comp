@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { api } from '@/lib/api-client';
 import { Button } from '@trycompai/design-system';
 import { Play } from '@trycompai/design-system/icons';
-import { Input } from '@trycompai/ui/input';
+import { Input } from '@gideon-defender/ui/input';
 
 interface TimelineActivateFormProps {
   orgId: string;

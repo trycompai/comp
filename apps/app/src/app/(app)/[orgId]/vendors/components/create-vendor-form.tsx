@@ -2,11 +2,11 @@
 
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { useVendorActions } from '@/hooks/use-vendors';
-import { Button } from '@trycompai/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
-import { Input } from '@trycompai/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@trycompai/ui/select';
-import { Textarea } from '@trycompai/ui/textarea';
+import { Button } from '@gideon-defender/ui/button';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@gideon-defender/ui/form';
+import { Input } from '@gideon-defender/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@gideon-defender/ui/select';
+import { Textarea } from '@gideon-defender/ui/textarea';
 import { type Member, type User, VendorCategory, VendorStatus } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRightIcon } from 'lucide-react';

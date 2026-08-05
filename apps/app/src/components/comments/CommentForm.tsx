@@ -2,7 +2,7 @@
 
 import { useComments, useCommentWithAttachments } from '@/hooks/use-comments-api';
 import { useMentionableMembers } from '@/hooks/use-mentionable-members';
-import { Button } from '@trycompai/ui/button';
+import { Button } from '@gideon-defender/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -10,7 +10,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
+} from '@gideon-defender/ui/dialog';
 import type { CommentEntityType } from '@db';
 import type { JSONContent } from '@tiptap/react';
 import { Camera, FileIcon, Loader2, Paperclip, X } from 'lucide-react';

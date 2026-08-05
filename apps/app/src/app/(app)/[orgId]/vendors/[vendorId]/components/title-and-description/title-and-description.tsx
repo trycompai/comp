@@ -1,7 +1,7 @@
 'use client';
 
-import { Alert, AlertDescription, AlertTitle } from '@trycompai/ui/alert';
-import { Icons } from '@trycompai/ui/icons';
+import { Alert, AlertDescription, AlertTitle } from '@gideon-defender/ui/alert';
+import { Icons } from '@gideon-defender/ui/icons';
 import type { User, Vendor } from '@db';
 import { Button } from '@trycompai/design-system';
 import { Edit } from '@trycompai/design-system/icons';

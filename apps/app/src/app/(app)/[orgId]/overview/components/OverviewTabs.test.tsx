@@ -27,7 +27,7 @@ vi.mock('@db', () => ({
   FindingStatus: { open: 'open' },
 }));
 
-import { ServerFeatureFlagsProvider, useFeatureFlag } from '@trycompai/analytics';
+import { ServerFeatureFlagsProvider, useFeatureFlag } from '@gideon-defender/analytics';
 import { OverviewTabs } from './OverviewTabs';
 
 describe('useFeatureFlag server fallback', () => {

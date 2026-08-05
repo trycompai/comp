@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   getBillingSku,
   resolveBillingCatalogEnvironment,
-} from '@trycompai/billing';
+} from '@gideon-defender/billing';
 import { BillingService } from '../billing/billing.service';
 import { validateBackgroundCheckBillingRedirectUrl } from './background-check-billing-urls';
 

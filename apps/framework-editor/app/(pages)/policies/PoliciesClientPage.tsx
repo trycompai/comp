@@ -3,7 +3,7 @@
 import { apiClient } from '@/app/lib/api-client';
 import { DataTable } from '@/app/components/DataTable';
 import type { FrameworkEditorPolicyTemplate } from '@/db';
-import { Button } from '@trycompai/ui';
+import { Button } from '@gideon-defender/ui';
 import { Link } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';

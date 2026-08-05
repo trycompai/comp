@@ -2,7 +2,7 @@
 
 import { AnimatedWrapper } from '@/components/animated-wrapper';
 import { LogoSpinner } from '@/components/logo-spinner';
-import { Form, FormControl, FormField, FormItem, FormMessage } from '@trycompai/ui/form';
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@gideon-defender/ui/form';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useOnboardingForm } from '../hooks/useOnboardingForm';

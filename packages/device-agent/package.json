@@ -1,5 +1,5 @@
 {
-  "name": "@trycompai/device-agent",
+  "name": "@gideon-defender/device-agent",
   "version": "1.0.0",
   "description": "Comp AI Device Agent - Endpoint Compliance",
   "author": "Comp AI <hello@trycomp.ai>",

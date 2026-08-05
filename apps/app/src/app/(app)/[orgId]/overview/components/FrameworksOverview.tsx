@@ -1,9 +1,9 @@
 'use client';
 
-import { Button } from '@trycompai/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@trycompai/ui/card';
-import { Dialog } from '@trycompai/ui/dialog';
-import { ScrollArea } from '@trycompai/ui/scroll-area';
+import { Button } from '@gideon-defender/ui/button';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@gideon-defender/ui/card';
+import { Dialog } from '@gideon-defender/ui/dialog';
+import { ScrollArea } from '@gideon-defender/ui/scroll-area';
 import type { FrameworkEditorFramework } from '@db';
 import { Add } from '@trycompai/design-system/icons';
 import Image from 'next/image';

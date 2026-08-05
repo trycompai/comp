@@ -1,12 +1,12 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@gideon-defender/ui/card';
 import {
   type ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from '@trycompai/ui/chart';
+} from '@gideon-defender/ui/chart';
 import { Cell, Pie, PieChart } from 'recharts';
 
 interface PolicyOverviewProps {

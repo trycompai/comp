@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - **Node.js** >= 18
-- **Bun** >= 1.3 (used as the package manager)
+- **npm** >= 9 (used as the package manager)
 - **macOS**: Xcode Command Line Tools (`xcode-select --install`)
 - **Windows**: Visual Studio Build Tools with "Desktop development with C++" workload
 
@@ -29,14 +29,14 @@ packages/device-agent/
 From the monorepo root:
 
 ```bash
-bun install
+npm install
 ```
 
 Or from this package directly:
 
 ```bash
 cd packages/device-agent
-bun install
+npm install
 ```
 
 ## Local Development
@@ -44,14 +44,14 @@ bun install
 Start the Electron app in development mode with hot-reload:
 
 ```bash
-bun run dev
+npm run dev
 ```
 
 This launches electron-vite in dev mode. The main process and renderer will
 hot-reload on file changes. It also runs as part of `turbo dev` from the
 monorepo root.
 
-> **Note:** If `bun run dev` fails with "Electron uninstall", run
+> **Note:** If `npm run dev` fails with "Electron uninstall", run
 > `node node_modules/electron/install.js` from the monorepo root to download
 > the Electron binary. This is handled automatically by the `postinstall` script
 > on fresh installs.
@@ -59,7 +59,7 @@ monorepo root.
 ## Type Checking
 
 ```bash
-bun run typecheck
+npm run typecheck
 ```
 
 ## Building
@@ -67,7 +67,7 @@ bun run typecheck
 Build the app (compile TypeScript, bundle with Vite) without packaging:
 
 ```bash
-bun run build
+npm run build
 ```
 
 ## Packaging Installers
@@ -75,7 +75,7 @@ bun run build
 ### macOS (.dmg)
 
 ```bash
-bun run package:mac
+npm run package:mac
 ```
 
 Produces a `.dmg` (universal binary for Apple Silicon + Intel) in the `release/` directory.
@@ -83,7 +83,7 @@ Produces a `.dmg` (universal binary for Apple Silicon + Intel) in the `release/`
 ### Windows (.exe)
 
 ```bash
-bun run package:win
+npm run package:win
 ```
 
 Produces an NSIS `.exe` installer in the `release/` directory.
@@ -91,7 +91,7 @@ Produces an NSIS `.exe` installer in the `release/` directory.
 ### Both Platforms
 
 ```bash
-bun run package:all
+npm run package:all
 ```
 
 > **Note:** Cross-compilation has limitations. Building a `.dmg` requires macOS, and

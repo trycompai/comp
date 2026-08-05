@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { db } from '@db';
-import type { SyncEmployee } from '@trycompai/integration-platform';
-import { matchesSyncFilterTerms } from '@trycompai/integration-platform';
-import { BUILT_IN_ROLE_PERMISSIONS } from '@trycompai/auth';
+import type { SyncEmployee } from '@gideon-defender/integration-platform';
+import { matchesSyncFilterTerms } from '@gideon-defender/integration-platform';
+import { BUILT_IN_ROLE_PERMISSIONS } from '@gideon-defender/auth';
 import type { ResolvedSyncEmployeeFilter } from './sync-employee-filter';
 
 // ============================================================================

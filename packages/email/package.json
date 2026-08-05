@@ -1,12 +1,12 @@
 {
-  "name": "@trycompai/email",
+  "name": "@gideon-defender/email",
   "description": "Email templates and utilities for Comp AI",
   "version": "1.0.0",
   "dependencies": {
     "@react-email/components": "^0.0.41",
     "@react-email/render": "^1.1.2",
     "@react-email/tailwind": "1.0.5",
-    "@trycompai/utils": "workspace:*",
+    "@gideon-defender/utils": "*",
     "date-fns": "^4.1.0",
     "react-email": "^4.0.15",
     "resend": "^4.4.1",

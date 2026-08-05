@@ -1,7 +1,7 @@
 'use client';
 
 import { api } from '@/lib/api-client';
-import { Avatar, AvatarFallback } from '@trycompai/ui/avatar';
+import { Avatar, AvatarFallback } from '@gideon-defender/ui/avatar';
 import { Section, Text, HStack, Stack } from '@trycompai/design-system';
 import { Activity } from '@trycompai/design-system/icons';
 import { formatDistanceToNow } from 'date-fns';

@@ -288,7 +288,7 @@ describe('CompanySubmissionDetailPageClient', () => {
     beforeEach(() => {
       setMockPermissions(ADMIN_PERMISSIONS);
       mockSwrData = makeSubmissionData({
-        formType: 'security-awareness-training',
+        formType: 'board-meeting',
       });
     });
 
@@ -296,7 +296,7 @@ describe('CompanySubmissionDetailPageClient', () => {
       render(
         <CompanySubmissionDetailPageClient
           organizationId="org-1"
-          formType="security-awareness-training"
+          formType="board-meeting"
           submissionId="sub-1"
         />,
       );

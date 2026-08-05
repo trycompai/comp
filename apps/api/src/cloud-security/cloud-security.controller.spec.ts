@@ -4,7 +4,7 @@
 // controller's orchestration logic — the guards themselves are tested
 // elsewhere.
 jest.mock('@db', () => ({ db: {} }));
-jest.mock('@trycompai/auth', () => ({
+jest.mock('@gideon-defender/auth', () => ({
   statement: {},
   ac: { newRole: () => ({}) },
 }));

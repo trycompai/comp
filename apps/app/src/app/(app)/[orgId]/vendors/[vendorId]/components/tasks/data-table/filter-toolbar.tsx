@@ -1,8 +1,8 @@
 'use client';
 
-import { Button } from '@trycompai/ui/button';
-import { Input } from '@trycompai/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@trycompai/ui/select';
+import { Button } from '@gideon-defender/ui/button';
+import { Input } from '@gideon-defender/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@gideon-defender/ui/select';
 import type { TaskStatus, User } from '@db';
 import { XIcon } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';

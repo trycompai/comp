@@ -7,7 +7,7 @@ jest.mock('@db', () => ({
 }));
 
 // Break the ESM better-auth import chain pulled in via HybridAuthGuard.
-jest.mock('@trycompai/auth', () => ({
+jest.mock('@gideon-defender/auth', () => ({
   statement: { integration: ['create', 'read', 'update', 'delete'] },
   BUILT_IN_ROLE_PERMISSIONS: {},
 }));

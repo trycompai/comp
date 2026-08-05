@@ -217,7 +217,7 @@
 ### Bug Fixes
 
 * **api:** reject assignees that aren't members of the organization ([dd071b6](https://github.com/trycompai/comp/commit/dd071b65f74ee59edb47a78660200f3771a00c71))
-* **api:** stop Trigger.dev deploy failing on @trycompai/auth/participation ([#3393](https://github.com/trycompai/comp/issues/3393)) ([1ba1d20](https://github.com/trycompai/comp/commit/1ba1d2014b067e27cbc760a96201d92d2b564046))
+* **api:** stop Trigger.dev deploy failing on @gideon-defender/auth/participation ([#3393](https://github.com/trycompai/comp/issues/3393)) ([1ba1d20](https://github.com/trycompai/comp/commit/1ba1d2014b067e27cbc760a96201d92d2b564046))
 * **org:** address 2nd review pass — harden vendor assignee, unify UI rule, guard boundaries ([ef1a53f](https://github.com/trycompai/comp/commit/ef1a53fe51a814d2c7947cc8198b0d5fb2f2f802))
 * **org:** address review — align browser-automation, tighten null validation, keep dep boundary ([415ee40](https://github.com/trycompai/comp/commit/415ee40786aa104638ed34f27d00b94af3485f09))
 * **org:** address review — spread-safe participant filter, confirm internal toggle ([26cecbe](https://github.com/trycompai/comp/commit/26cecbe4c15f0dcf0e5b5e0b24f631408a475980))
@@ -1830,7 +1830,7 @@
 
 ### Features
 
-* **db:** ship CA bundle with @trycompai/db, clean up debug routes ([#2767](https://github.com/trycompai/comp/issues/2767)) ([84da90c](https://github.com/trycompai/comp/commit/84da90c0bcb67de45a375133462e08c27bede4c5)), closes [#2761](https://github.com/trycompai/comp/issues/2761) [#2762](https://github.com/trycompai/comp/issues/2762) [#2763](https://github.com/trycompai/comp/issues/2763)
+* **db:** ship CA bundle with @gideon-defender/db, clean up debug routes ([#2767](https://github.com/trycompai/comp/issues/2767)) ([84da90c](https://github.com/trycompai/comp/commit/84da90c0bcb67de45a375133462e08c27bede4c5)), closes [#2761](https://github.com/trycompai/comp/issues/2761) [#2762](https://github.com/trycompai/comp/issues/2762) [#2763](https://github.com/trycompai/comp/issues/2763)
 * **integration-platform:** remove code-based jumpcloud, route via DIP ([2ab5b78](https://github.com/trycompai/comp/commit/2ab5b7822ed21fa069a0c22ed3ff1a9093e33d53))
 * **risks:** treatment plan as first-class + vendor AI widening + matrix polish ([1a97746](https://github.com/trycompai/comp/commit/1a97746fb239117fbb384f5c7f199141e09b4ee6)), closes [hi#confidence](https://github.com/hi/issues/confidence) [#2671](https://github.com/trycompai/comp/issues/2671) [#2](https://github.com/trycompai/comp/issues/2) [#3](https://github.com/trycompai/comp/issues/3) [#9](https://github.com/trycompai/comp/issues/9) [#4](https://github.com/trycompai/comp/issues/4) [#5](https://github.com/trycompai/comp/issues/5) [#7](https://github.com/trycompai/comp/issues/7) [#26](https://github.com/trycompai/comp/issues/26) [#6](https://github.com/trycompai/comp/issues/6) [#1](https://github.com/trycompai/comp/issues/1) [#10](https://github.com/trycompai/comp/issues/10) [#36](https://github.com/trycompai/comp/issues/36) [#35](https://github.com/trycompai/comp/issues/35) [#39](https://github.com/trycompai/comp/issues/39) [#37](https://github.com/trycompai/comp/issues/37) [#32](https://github.com/trycompai/comp/issues/32) [#33](https://github.com/trycompai/comp/issues/33) [#34](https://github.com/trycompai/comp/issues/34) [#17](https://github.com/trycompai/comp/issues/17) [#18](https://github.com/trycompai/comp/issues/18) [#19](https://github.com/trycompai/comp/issues/19) [#20](https://github.com/trycompai/comp/issues/20) [#21](https://github.com/trycompai/comp/issues/21) [#22](https://github.com/trycompai/comp/issues/22) [#30](https://github.com/trycompai/comp/issues/30) [#31](https://github.com/trycompai/comp/issues/31) [#29](https://github.com/trycompai/comp/issues/29) [#23](https://github.com/trycompai/comp/issues/23) [#40](https://github.com/trycompai/comp/issues/40) [#28](https://github.com/trycompai/comp/issues/28) [#27](https://github.com/trycompai/comp/issues/27) [#38](https://github.com/trycompai/comp/issues/38) [#24](https://github.com/trycompai/comp/issues/24) [#2671](https://github.com/trycompai/comp/issues/2671)
 * **vendors:** refine inherent risk score after research lands posture data ([#2760](https://github.com/trycompai/comp/issues/2760)) ([e999c72](https://github.com/trycompai/comp/commit/e999c724d0e4600a88d3f2b708bd28b561439a33))
@@ -3145,7 +3145,7 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
 * feat(rbac): add shared auth package and API integration
 
-- Add @trycompai/auth package with centralized permissions and role definitions
+- Add @gideon-defender/auth package with centralized permissions and role definitions
 - Update API auth module to integrate with better-auth server
 - Add 403 responses to policy and risk endpoints for Swagger
 - Add assignment filter and department visibility utilities with tests
@@ -3572,7 +3572,7 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
 * feat(rbac): add shared auth package and API integration
 
-- Add @trycompai/auth package with centralized permissions and role definitions
+- Add @gideon-defender/auth package with centralized permissions and role definitions
 - Update API auth module to integrate with better-auth server
 - Add 403 responses to policy and risk endpoints for Swagger
 - Add assignment filter and department visibility utilities with tests
@@ -4025,7 +4025,7 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
 
 ### Bug Fixes
 
-* **api:** add @trycompai/company package to Dockerfile ([#2148](https://github.com/trycompai/comp/issues/2148)) ([d91bcaa](https://github.com/trycompai/comp/commit/d91bcaa5a92557a1b47a12ec6b396715744fca7f))
+* **api:** add @gideon-defender/company package to Dockerfile ([#2148](https://github.com/trycompai/comp/issues/2148)) ([d91bcaa](https://github.com/trycompai/comp/commit/d91bcaa5a92557a1b47a12ec6b396715744fca7f))
 * **api:** inline mergeDeviceLists to fix production runtime crash ([#2146](https://github.com/trycompai/comp/issues/2146)) ([04ef343](https://github.com/trycompai/comp/commit/04ef343011defa91609ba9ba69b85776063198db))
 
 ## [1.83.1](https://github.com/trycompai/comp/compare/v1.83.0...v1.83.1) (2026-02-17)
@@ -4715,7 +4715,7 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
 * enhance Prisma client generation and application secrets management ([d44cfa3](https://github.com/trycompai/comp/commit/d44cfa364b214fa1457a428123fa3a776526b3ca))
 * enhance Prisma client generation process with detailed logging ([a9210a8](https://github.com/trycompai/comp/commit/a9210a80a02826dbc8d08566a30567d0a3298a83))
 * enhance Prisma exports and update db:generate script ([2d6195d](https://github.com/trycompai/comp/commit/2d6195d8f776096e518f3982732e47d8685dcd18))
-* enhance PrismaExtension to resolve and copy schema from @trycompai/db package ([8bd0263](https://github.com/trycompai/comp/commit/8bd02634731ba32f1f933a84dfd204e85a73bdab))
+* enhance PrismaExtension to resolve and copy schema from @gideon-defender/db package ([8bd0263](https://github.com/trycompai/comp/commit/8bd02634731ba32f1f933a84dfd204e85a73bdab))
 * enhance schema resolution in PrismaExtension for monorepo support ([c413f6f](https://github.com/trycompai/comp/commit/c413f6fc51332f9057653c1929034ac5823fc52d))
 * enhance ToDoOverview component with dynamic tab selection ([e03f402](https://github.com/trycompai/comp/commit/e03f4024753fe6e193f27e3f72200e4f838fd00d))
 * implement attachment download functionality and metadata retrieval ([dde6d48](https://github.com/trycompai/comp/commit/dde6d486cde5d91163d948f127200238e5e33f93))

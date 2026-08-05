@@ -3,9 +3,9 @@
 import { updatePolicyOverviewSchema } from '@/actions/schema';
 import { usePermissions } from '@/hooks/use-permissions';
 import { usePolicyMutations } from '@/hooks/use-policy-mutations';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@gideon-defender/ui/form';
 import type { Policy } from '@db';
-import { Button } from '@trycompai/ui/button';
+import { Button } from '@gideon-defender/ui/button';
 import {
   Accordion,
   AccordionContent,

@@ -1,5 +1,5 @@
 {
-  "extends": "@trycompai/tsconfig/base.json",
+  "extends": "@gideon-defender/tsconfig/base.json",
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src",

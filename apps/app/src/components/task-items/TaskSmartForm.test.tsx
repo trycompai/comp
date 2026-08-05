@@ -58,8 +58,8 @@ vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
-// Mock @trycompai/ui components
-vi.mock('@trycompai/ui/button', () => ({
+// Mock @gideon-defender/ui components
+vi.mock('@gideon-defender/ui/button', () => ({
   Button: ({
     children,
     onClick,
@@ -79,17 +79,17 @@ vi.mock('@trycompai/ui/button', () => ({
   ),
 }));
 
-vi.mock('@trycompai/ui/input', () => ({
+vi.mock('@gideon-defender/ui/input', () => ({
   Input: (props: any) => <input {...props} />,
 }));
 
-vi.mock('@trycompai/ui/label', () => ({
+vi.mock('@gideon-defender/ui/label', () => ({
   Label: ({ children, ...props }: { children: React.ReactNode; htmlFor?: string }) => (
     <label {...props}>{children}</label>
   ),
 }));
 
-vi.mock('@trycompai/ui/select', () => ({
+vi.mock('@gideon-defender/ui/select', () => ({
   Select: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   SelectContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   SelectItem: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,

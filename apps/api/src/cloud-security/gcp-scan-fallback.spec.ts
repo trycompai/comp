@@ -1,4 +1,4 @@
-import type { RunAllChecksResult } from '@trycompai/integration-platform';
+import type { RunAllChecksResult } from '@gideon-defender/integration-platform';
 import {
   GCP_SCAN_MODE_DIRECT,
   GCP_SCAN_MODE_SCC,

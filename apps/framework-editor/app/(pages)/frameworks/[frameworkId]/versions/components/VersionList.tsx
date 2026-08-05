@@ -7,7 +7,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@trycompai/ui';
+} from '@gideon-defender/ui';
 import { useRouter } from 'next/navigation';
 import type { FrameworkVersionListItem } from '../hooks/useFrameworkVersions';
 

@@ -4,9 +4,9 @@ import { GithubSignIn } from '@/components/github-sign-in';
 import { GoogleSignIn } from '@/components/google-sign-in';
 import { MagicLinkSignIn } from '@/components/magic-link';
 import { MicrosoftSignIn } from '@/components/microsoft-sign-in';
-import { Button } from '@trycompai/ui/button';
-import { Card, CardContent, CardDescription, CardTitle } from '@trycompai/ui/card';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@trycompai/ui/collapsible';
+import { Button } from '@gideon-defender/ui/button';
+import { Card, CardContent, CardDescription, CardTitle } from '@gideon-defender/ui/card';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@gideon-defender/ui/collapsible';
 import { CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
 

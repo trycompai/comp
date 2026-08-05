@@ -10,8 +10,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@trycompai/ui/alert-dialog';
-import { Button } from '@trycompai/ui/button';
+} from '@gideon-defender/ui/alert-dialog';
+import { Button } from '@gideon-defender/ui/button';
 import {
   Card,
   CardContent,
@@ -19,7 +19,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@trycompai/ui/card';
+} from '@gideon-defender/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -27,7 +27,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@trycompai/ui/dialog';
+} from '@gideon-defender/ui/dialog';
 import type { Context } from '@db';
 import { Pencil, Plus } from 'lucide-react';
 import { useState } from 'react';

@@ -1,4 +1,4 @@
-import type { BillingSkuKey as CatalogBillingSkuKey } from '@trycompai/billing';
+import type { BillingSkuKey as CatalogBillingSkuKey } from '@gideon-defender/billing';
 
 export type BillingSkuKey = CatalogBillingSkuKey;
 

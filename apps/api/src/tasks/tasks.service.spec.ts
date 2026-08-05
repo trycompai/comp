@@ -26,9 +26,9 @@ jest.mock('../frameworks/frameworks-timeline.helper', () => ({
   checkAutoCompletePhases: jest.fn().mockResolvedValue(undefined),
 }));
 
-// The service's transitive imports pull in @trycompai/auth (ESM better-auth)
+// The service's transitive imports pull in @gideon-defender/auth (ESM better-auth)
 // which jest can't transform; stub it as the controller spec does.
-jest.mock('@trycompai/auth', () => ({
+jest.mock('@gideon-defender/auth', () => ({
   statement: {
     task: ['create', 'read', 'update', 'delete'],
     evidence: ['create', 'read', 'delete'],

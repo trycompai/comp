@@ -1,7 +1,7 @@
 'use client';
 
-import { cn } from '@trycompai/ui/cn';
-import { Progress } from '@trycompai/ui/progress';
+import { cn } from '@gideon-defender/ui/cn';
+import { Progress } from '@gideon-defender/ui/progress';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlertCircle,

@@ -2,7 +2,7 @@
 
 import { FileUploader } from '@/components/file-uploader';
 import { usePermissions } from '@/hooks/use-permissions';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@trycompai/ui/accordion';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@gideon-defender/ui/accordion';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,9 +12,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@trycompai/ui/alert-dialog';
-import { Button } from '@trycompai/ui/button';
-import { Card } from '@trycompai/ui';
+} from '@gideon-defender/ui/alert-dialog';
+import { Button } from '@gideon-defender/ui/button';
+import { Card } from '@gideon-defender/ui';
 import { ChevronLeft, ChevronRight, Download, FileText, Loader2, Trash2, Upload } from 'lucide-react';
 import { useState, useRef, useCallback } from 'react';
 import { toast } from 'sonner';

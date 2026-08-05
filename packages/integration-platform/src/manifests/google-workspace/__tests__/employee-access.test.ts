@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, it } from 'vitest';
 import { employeeAccessCheck } from '../checks/employee-access';
 import type { CheckContext, CheckResult, CheckVariableValues } from '../../../types';
 import type { GoogleWorkspaceUser } from '../types';

@@ -29,7 +29,7 @@ vi.mock('./hooks/useContextEntries', () => ({
   }),
 }));
 
-vi.mock('@trycompai/ui/hooks', () => ({
+vi.mock('@gideon-defender/ui/hooks', () => ({
   useMediaQuery: vi.fn(() => true),
 }));
 

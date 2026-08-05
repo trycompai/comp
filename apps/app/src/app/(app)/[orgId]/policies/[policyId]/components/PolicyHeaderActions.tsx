@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuditLogs } from '@/hooks/use-audit-logs';
-import { Button } from '@trycompai/ui/button';
+import { Button } from '@gideon-defender/ui/button';
 import { useSWRConfig } from 'swr';
 import {
   Dialog,
@@ -10,15 +10,15 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
+} from '@gideon-defender/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@trycompai/ui/dropdown-menu';
-import { Icons } from '@trycompai/ui/icons';
+} from '@gideon-defender/ui/dropdown-menu';
+import { Icons } from '@gideon-defender/ui/icons';
 import type { Member, Policy, PolicyVersion, User } from '@db';
 import type { JSONContent } from '@tiptap/react';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';

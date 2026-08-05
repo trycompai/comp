@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { useChat } from '@ai-sdk/react';
-import { Button } from '@trycompai/ui/button';
+import { Button } from '@gideon-defender/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -10,7 +10,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
+} from '@gideon-defender/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,7 +18,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@trycompai/ui/dropdown-menu';
+} from '@gideon-defender/ui/dropdown-menu';
 import { EvidenceAutomationVersion } from '@db';
 import { Code, Loader2, RotateCcw, Upload, Zap } from 'lucide-react';
 import { useParams } from 'next/navigation';

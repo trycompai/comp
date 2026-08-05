@@ -2,7 +2,7 @@ import { track } from '@/app/posthog';
 import { env } from '@/env.mjs';
 import { auth } from '@/utils/auth';
 import { logger } from '@/utils/logger';
-import { client } from '@trycompai/kv';
+import { client } from '@gideon-defender/kv';
 import { AuditLogEntityType, db } from '@db/server';
 import { Ratelimit } from '@upstash/ratelimit';
 import { DEFAULT_SERVER_ERROR_MESSAGE, createSafeActionClient } from 'next-safe-action';

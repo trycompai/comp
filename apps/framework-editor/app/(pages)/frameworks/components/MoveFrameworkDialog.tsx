@@ -1,8 +1,8 @@
 'use client';
 
 import { apiClient } from '@/app/lib/api-client';
-import { Button } from '@trycompai/ui/button';
-import { Checkbox } from '@trycompai/ui/checkbox';
+import { Button } from '@gideon-defender/ui/button';
+import { Checkbox } from '@gideon-defender/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -10,14 +10,14 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
+} from '@gideon-defender/ui/dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@trycompai/ui/select';
+} from '@gideon-defender/ui/select';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { db } from '@db';
-import { getManifest } from '@trycompai/integration-platform';
+import { getManifest } from '@gideon-defender/integration-platform';
 import { sanitizeEvidence } from './evidence-sanitizer';
 import { getLegacyFindings } from './cloud-security-query.legacy';
 import { resolveCheckKey } from './check-definition.utils';

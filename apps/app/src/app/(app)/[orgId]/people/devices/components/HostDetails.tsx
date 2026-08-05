@@ -1,5 +1,5 @@
-import { Button } from '@trycompai/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
+import { Button } from '@gideon-defender/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@gideon-defender/ui/card';
 import { ArrowLeft } from 'lucide-react';
 import type { Host } from '../types';
 import { PolicyItem } from './PolicyItem';

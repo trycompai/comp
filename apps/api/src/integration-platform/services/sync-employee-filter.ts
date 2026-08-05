@@ -1,4 +1,4 @@
-import { parseSyncFilterTerms } from '@trycompai/integration-platform';
+import { parseSyncFilterTerms } from '@gideon-defender/integration-platform';
 
 export type SyncUserFilterMode = 'all' | 'exclude' | 'include';
 

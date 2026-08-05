@@ -75,7 +75,7 @@ if [ -f "../../apps/app/.env.test.local" ]; then
     export $(grep DATABASE_URL ../../apps/app/.env.test.local | xargs)
 fi
 # Create database and push schema (will create DB if it doesn't exist)
-bunx prisma db push --skip-generate --accept-data-loss
+npx prisma db push --skip-generate --accept-data-loss
 cd ../../apps/app
 echo -e "${GREEN}✓ Migrations complete${NC}"
 

@@ -33,7 +33,7 @@ phases:
 
       # Install only API workspace dependencies
       - echo "Installing API dependencies only..."
-      - bun install --filter=@trycompai/api --frozen-lockfile || bun install --filter=@trycompai/api --ignore-scripts || bun install --ignore-scripts
+      - bun install --filter=@gideon-defender/api --frozen-lockfile || bun install --filter=@gideon-defender/api --ignore-scripts || bun install --ignore-scripts
 
       # Build workspace packages
       - echo "Building workspace packages..."
@@ -77,34 +77,34 @@ phases:
       - cp -r ../../node_modules ../docker-build/
 
       # Remove workspace symlinks and replace with built versions
-      - rm -rf ../docker-build/node_modules/@trycompai/utils
-      - rm -rf ../docker-build/node_modules/@trycompai/db
-      - rm -rf ../docker-build/node_modules/@trycompai/integration-platform
-      - rm -rf ../docker-build/node_modules/@trycompai/auth
-      - rm -rf ../docker-build/node_modules/@trycompai/company
-      - rm -rf ../docker-build/node_modules/@trycompai/billing
-      - mkdir -p ../docker-build/node_modules/@trycompai/utils
-      - mkdir -p ../docker-build/node_modules/@trycompai/db
-      - mkdir -p ../docker-build/node_modules/@trycompai/integration-platform
-      - mkdir -p ../docker-build/node_modules/@trycompai/auth
-      - mkdir -p ../docker-build/node_modules/@trycompai/company
-      - mkdir -p ../docker-build/node_modules/@trycompai/billing
-      - cp -r ../../packages/utils/src ../docker-build/node_modules/@trycompai/utils/
-      - cp ../../packages/utils/package.json ../docker-build/node_modules/@trycompai/utils/
-      - cp -r ../../packages/db/dist ../docker-build/node_modules/@trycompai/db/
-      - cp ../../packages/db/package.json ../docker-build/node_modules/@trycompai/db/
-      - cp -r ../../packages/integration-platform/dist ../docker-build/node_modules/@trycompai/integration-platform/
-      - cp ../../packages/integration-platform/package.json ../docker-build/node_modules/@trycompai/integration-platform/
-      - cp -r ../../packages/auth/dist ../docker-build/node_modules/@trycompai/auth/
-      - cp ../../packages/auth/package.json ../docker-build/node_modules/@trycompai/auth/
-      - cp -r ../../packages/company/dist ../docker-build/node_modules/@trycompai/company/
-      - cp ../../packages/company/package.json ../docker-build/node_modules/@trycompai/company/
-      - cp -r ../../packages/billing/dist ../docker-build/node_modules/@trycompai/billing/
-      - cp ../../packages/billing/package.json ../docker-build/node_modules/@trycompai/billing/
+      - rm -rf ../docker-build/node_modules/@gideon-defender/utils
+      - rm -rf ../docker-build/node_modules/@gideon-defender/db
+      - rm -rf ../docker-build/node_modules/@gideon-defender/integration-platform
+      - rm -rf ../docker-build/node_modules/@gideon-defender/auth
+      - rm -rf ../docker-build/node_modules/@gideon-defender/company
+      - rm -rf ../docker-build/node_modules/@gideon-defender/billing
+      - mkdir -p ../docker-build/node_modules/@gideon-defender/utils
+      - mkdir -p ../docker-build/node_modules/@gideon-defender/db
+      - mkdir -p ../docker-build/node_modules/@gideon-defender/integration-platform
+      - mkdir -p ../docker-build/node_modules/@gideon-defender/auth
+      - mkdir -p ../docker-build/node_modules/@gideon-defender/company
+      - mkdir -p ../docker-build/node_modules/@gideon-defender/billing
+      - cp -r ../../packages/utils/src ../docker-build/node_modules/@gideon-defender/utils/
+      - cp ../../packages/utils/package.json ../docker-build/node_modules/@gideon-defender/utils/
+      - cp -r ../../packages/db/dist ../docker-build/node_modules/@gideon-defender/db/
+      - cp ../../packages/db/package.json ../docker-build/node_modules/@gideon-defender/db/
+      - cp -r ../../packages/integration-platform/dist ../docker-build/node_modules/@gideon-defender/integration-platform/
+      - cp ../../packages/integration-platform/package.json ../docker-build/node_modules/@gideon-defender/integration-platform/
+      - cp -r ../../packages/auth/dist ../docker-build/node_modules/@gideon-defender/auth/
+      - cp ../../packages/auth/package.json ../docker-build/node_modules/@gideon-defender/auth/
+      - cp -r ../../packages/company/dist ../docker-build/node_modules/@gideon-defender/company/
+      - cp ../../packages/company/package.json ../docker-build/node_modules/@gideon-defender/company/
+      - cp -r ../../packages/billing/dist ../docker-build/node_modules/@gideon-defender/billing/
+      - cp ../../packages/billing/package.json ../docker-build/node_modules/@gideon-defender/billing/
 
       - cp Dockerfile ../docker-build/
       # Remove workspace dependencies from package.json (they're copied manually above)
-      - cat package.json | jq 'del(.dependencies["@trycompai/integration-platform"]) | del(.dependencies["@trycompai/auth"]) | del(.dependencies["@trycompai/company"]) | del(.dependencies["@trycompai/billing"])' > ../docker-build/package.json
+      - cat package.json | jq 'del(.dependencies["@gideon-defender/integration-platform"]) | del(.dependencies["@gideon-defender/auth"]) | del(.dependencies["@gideon-defender/company"]) | del(.dependencies["@gideon-defender/billing"])' > ../docker-build/package.json
       - cp ../../bun.lock ../docker-build/ || true
 
       - echo "Building Docker image..."

@@ -1,4 +1,4 @@
-import { EvidenceFormType as DbEvidenceFormType } from '@trycompai/db';
+import { EvidenceFormType as DbEvidenceFormType } from '@prisma/client';
 import type { EvidenceFormType } from './form-types';
 
 export const EXTERNAL_TO_DB_EVIDENCE_FORM_TYPE = {

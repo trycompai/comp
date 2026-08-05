@@ -1,8 +1,8 @@
 'use client';
 
-import { Badge } from '@trycompai/ui/badge';
-import { Card } from '@trycompai/ui/card';
-import { Separator } from '@trycompai/ui/separator';
+import { Badge } from '@gideon-defender/ui/badge';
+import { Card } from '@gideon-defender/ui/card';
+import { Separator } from '@gideon-defender/ui/separator';
 import { formatDistanceToNow } from 'date-fns';
 import { Activity, CheckCircle2, Clock, Sparkles, XCircle, Zap } from 'lucide-react';
 import Link from 'next/link';

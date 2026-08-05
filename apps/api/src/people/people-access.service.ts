@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { db } from '@db';
-import { TASK_TEMPLATES } from '@trycompai/integration-platform';
+import { TASK_TEMPLATES } from '@gideon-defender/integration-platform';
 import {
   CheckResultsService,
   type CheckResultRow,

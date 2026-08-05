@@ -11,7 +11,7 @@ Comp AI billing is SKU-first and subscription-ready. Stripe is the payment provi
 
 ## Core Rules
 
-- Use `@trycompai/billing` for SKU keys, amounts, Stripe product IDs, Stripe price IDs, cadence, and included usage.
+- Use `@gideon-defender/billing` for SKU keys, amounts, Stripe product IDs, Stripe price IDs, cadence, and included usage.
 - Do not add product-specific nullable fields to `OrganizationBilling`.
 - Keep org-level billing generic: `stripeCustomerId`, `stripePaymentMethodId`, and `paymentMethodUpdatedAt`.
 - Store per-product state in generic per-SKU tables keyed by `skuKey`.
@@ -53,7 +53,7 @@ Provision or renew allowance only for the matching subscription item and SKU. Do
 
 ## Validation
 
-- Run `bun run db:generate` after Prisma schema changes.
-- Run `bun run check:prisma-schemas` to catch stale copied schema fragments.
+- Run `npm run db:generate` after Prisma schema changes.
+- Run `npm run check:prisma-schemas` to catch stale copied schema fragments.
 - Run catalog tests after SKU changes.
 - Add webhook tests for duplicate events, out-of-order delivery, payment failure, action required, cancellation, and renewal.

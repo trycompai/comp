@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Input, ScrollArea, Separator } from '@trycompai/ui';
+import { Button, Input, ScrollArea, Separator } from '@gideon-defender/ui';
 import { Link2OffIcon, Loader2, PlusCircleIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 

@@ -2,7 +2,7 @@
 
 import { db } from '@db/server';
 // Remove unused Role import if not needed elsewhere
-// import { Role } from "@trycompai/db/types";
+// import { Role } from "@gideon-defender/db/types";
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
 // Adjust safe-action import for colocalized structure

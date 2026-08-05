@@ -1,5 +1,5 @@
 {
-  "name": "@trycompai/tsconfig",
+  "name": "@gideon-defender/tsconfig",
   "description": "Shared TypeScript configurations for Comp AI",
   "version": "1.0.0",
   "exports": {

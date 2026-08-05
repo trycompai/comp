@@ -9,7 +9,7 @@ import type {
   OAuthAvailabilityResponse,
   OAuthStartResponse,
   TestConnectionResponse,
-} from '@trycompai/integration-platform';
+} from '@gideon-defender/integration-platform';
 import { useParams } from 'next/navigation';
 import { useCallback, useMemo } from 'react';
 import useSWR, { mutate as globalMutate } from 'swr';

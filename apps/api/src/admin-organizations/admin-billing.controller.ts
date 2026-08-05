@@ -16,7 +16,7 @@ import { Throttle } from '@nestjs/throttler';
 import {
   subscriptionBillingSkuKeys,
   type BillingSkuKey,
-} from '@trycompai/billing';
+} from '@gideon-defender/billing';
 import { PlatformAdminGuard } from '../auth/platform-admin.guard';
 import { AdminAuditLogInterceptor } from './admin-audit-log.interceptor';
 import { AdminBillingActionsService } from './admin-billing-actions.service';

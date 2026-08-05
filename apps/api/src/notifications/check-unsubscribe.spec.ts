@@ -1,5 +1,5 @@
-import { isUserUnsubscribed } from '@trycompai/email';
-import type { EmailPreferenceType } from '@trycompai/email';
+import { isUserUnsubscribed } from '@gideon-defender/email';
+import type { EmailPreferenceType } from '@gideon-defender/email';
 
 /**
  * Helper to build a mock db object for isUserUnsubscribed.

@@ -5,7 +5,7 @@ import {
   type RequirementOption,
 } from './ControlRequirementSelect';
 
-vi.mock('@trycompai/ui', () => ({
+vi.mock('@gideon-defender/ui', () => ({
   Button: ({
     children,
     variant: _v,

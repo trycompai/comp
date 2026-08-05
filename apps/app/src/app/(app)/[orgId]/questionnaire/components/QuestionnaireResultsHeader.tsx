@@ -20,8 +20,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@trycompai/ui/dropdown-menu';
-import { Button as CompButton } from '@trycompai/ui/button';
+} from '@gideon-defender/ui/dropdown-menu';
+import { Button as CompButton } from '@gideon-defender/ui/button';
 import {
   ChevronDown,
   Download,

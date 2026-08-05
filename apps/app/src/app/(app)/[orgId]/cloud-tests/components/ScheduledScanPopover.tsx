@@ -2,8 +2,8 @@
 
 import { useApi } from '@/hooks/use-api';
 import { useConnectionServices } from '@/hooks/use-integration-platform';
-import { Popover, PopoverContent, PopoverTrigger } from '@trycompai/ui/popover';
-import { Checkbox } from '@trycompai/ui/checkbox';
+import { Popover, PopoverContent, PopoverTrigger } from '@gideon-defender/ui/popover';
+import { Checkbox } from '@gideon-defender/ui/checkbox';
 import { Button, cn } from '@trycompai/design-system';
 import { EventSchedule } from '@trycompai/design-system/icons';
 import { Search } from 'lucide-react';

@@ -4,7 +4,7 @@ import { db, EvidenceFormType as DbEvidenceFormType } from '@db';
 import {
   toDbEvidenceFormType,
   toExternalEvidenceFormType,
-} from '@trycompai/company';
+} from '@gideon-defender/company';
 import {
   BadRequestException,
   Injectable,

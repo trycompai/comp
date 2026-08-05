@@ -1,6 +1,6 @@
 import { auth } from '@/app/lib/auth';
 import { logger } from '@/utils/logger';
-import { client as kv } from '@trycompai/kv';
+import { client as kv } from '@gideon-defender/kv';
 import { randomBytes } from 'crypto';
 import { type NextRequest, NextResponse } from 'next/server';
 import type { DownloadAgentRequest, SupportedOS } from '../types';

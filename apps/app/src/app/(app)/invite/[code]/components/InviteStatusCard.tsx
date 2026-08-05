@@ -1,7 +1,7 @@
 'use client';
 
-import { Button } from '@trycompai/ui/button';
-import { Icons } from '@trycompai/ui/icons';
+import { Button } from '@gideon-defender/ui/button';
+import { Icons } from '@gideon-defender/ui/icons';
 import Link from 'next/link';
 
 export function InviteStatusCard({

@@ -1,8 +1,8 @@
 'use client';
 
-import { cn } from '@trycompai/ui/cn';
-import { Skeleton } from '@trycompai/ui/skeleton';
-import { Table, TableBody, TableCell, TableRow } from '@trycompai/ui/table';
+import { cn } from '@gideon-defender/ui/cn';
+import { Skeleton } from '@gideon-defender/ui/skeleton';
+import { Table, TableBody, TableCell, TableRow } from '@gideon-defender/ui/table';
 import { DataTableHeader } from '../tables/risk-tasks/data-table-header';
 
 export function Loading({ isEmpty, amount }: { isEmpty: boolean; amount?: number }) {

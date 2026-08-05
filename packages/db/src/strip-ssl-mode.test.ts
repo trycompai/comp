@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'bun:test';
+import { describe, it, expect } from 'vitest';
 
 function stripSslMode(connectionString: string): string {
   const url = new URL(connectionString);

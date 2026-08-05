@@ -1,5 +1,5 @@
 import { serverApi } from '@/lib/api-server';
-import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@gideon-defender/ui/card';
 import type { CSSProperties } from 'react';
 
 interface Props {

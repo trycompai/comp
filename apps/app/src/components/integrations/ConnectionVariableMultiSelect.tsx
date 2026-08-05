@@ -2,7 +2,7 @@
 
 import { Input, Spinner } from '@trycompai/design-system';
 import { Close } from '@trycompai/design-system/icons';
-import MultipleSelector from '@trycompai/ui/multiple-selector';
+import MultipleSelector from '@gideon-defender/ui/multiple-selector';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ConnectionVariable, VariableValue } from './ConnectionVariablesForm';
 

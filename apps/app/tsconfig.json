@@ -39,76 +39,76 @@
       "@/trigger/*": [
         "./src/trigger/*"
       ],
-      "@trycompai/email": [
+      "@gideon-defender/email": [
         "../../packages/email/index.ts"
       ],
-      "@trycompai/email/*": [
+      "@gideon-defender/email/*": [
         "../../packages/email/*"
       ],
-      "@trycompai/utils": [
+      "@gideon-defender/utils": [
         "../../packages/utils/src/index.ts"
       ],
-      "@trycompai/utils/*": [
+      "@gideon-defender/utils/*": [
         "../../packages/utils/src/*"
       ],
-      "@trycompai/integrations": [
+      "@gideon-defender/integrations": [
         "../../packages/integrations/src/index.ts"
       ],
-      "@trycompai/integrations/*": [
+      "@gideon-defender/integrations/*": [
         "../../packages/integrations/src/*"
       ],
-      "@trycompai/integration-platform": [
+      "@gideon-defender/integration-platform": [
         "../../packages/integration-platform/src/index.ts"
       ],
-      "@trycompai/integration-platform/*": [
+      "@gideon-defender/integration-platform/*": [
         "../../packages/integration-platform/src/*"
       ],
-      "@trycompai/analytics": [
+      "@gideon-defender/analytics": [
         "../../packages/analytics/src/index.ts"
       ],
-      "@trycompai/analytics/*": [
+      "@gideon-defender/analytics/*": [
         "../../packages/analytics/src/*"
       ],
-      "@trycompai/ui": [
+      "@gideon-defender/ui": [
         "../../packages/ui/src/components/index.ts"
       ],
-      "@trycompai/ui/*": [
+      "@gideon-defender/ui/*": [
         "../../packages/ui/src/components/*"
       ],
-      "@trycompai/ui/hooks": [
+      "@gideon-defender/ui/hooks": [
         "../../packages/ui/src/hooks/index.ts"
       ],
-      "@trycompai/ui/hooks/*": [
+      "@gideon-defender/ui/hooks/*": [
         "../../packages/ui/src/hooks/*"
       ],
-      "@trycompai/ui/utils/*": [
+      "@gideon-defender/ui/utils/*": [
         "../../packages/ui/src/utils/*"
       ],
-      "@trycompai/ui/cn": [
+      "@gideon-defender/ui/cn": [
         "../../packages/ui/src/utils/cn.ts"
       ],
-      "@trycompai/ui/truncate": [
+      "@gideon-defender/ui/truncate": [
         "../../packages/ui/src/utils/truncate.ts"
       ],
-      "@trycompai/ui/globals.css": [
+      "@gideon-defender/ui/globals.css": [
         "../../packages/ui/src/globals.css"
       ],
-      "@trycompai/ui/editor.css": [
+      "@gideon-defender/ui/editor.css": [
         "../../packages/ui/src/editor.css"
       ],
-      "@trycompai/ui/tailwind.config": [
+      "@gideon-defender/ui/tailwind.config": [
         "../../packages/ui/tailwind.config.ts"
       ],
-      "@trycompai/kv": [
+      "@gideon-defender/kv": [
         "../../packages/kv/src/index.ts"
       ],
-      "@trycompai/kv/*": [
+      "@gideon-defender/kv/*": [
         "../../packages/kv/src/*"
       ],
-      "@trycompai/tsconfig": [
+      "@gideon-defender/tsconfig": [
         "../../packages/tsconfig/index.ts"
       ],
-      "@trycompai/tsconfig/*": [
+      "@gideon-defender/tsconfig/*": [
         "../../packages/tsconfig/*"
       ]
     }

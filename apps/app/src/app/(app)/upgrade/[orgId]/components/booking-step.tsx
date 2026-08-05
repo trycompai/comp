@@ -1,9 +1,9 @@
 'use client';
 
 import { CancelOnboardingButton } from '@/app/(app)/onboarding/components/CancelOnboardingButton';
-import { Button } from '@trycompai/ui/button';
-import { Card } from '@trycompai/ui/card';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
+import { Button } from '@gideon-defender/ui/button';
+import { Card } from '@gideon-defender/ui/card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@gideon-defender/ui/tooltip';
 import { Check, Copy } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';

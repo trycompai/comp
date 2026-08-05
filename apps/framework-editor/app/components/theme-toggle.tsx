@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@trycompai/ui';
+import { Button } from '@gideon-defender/ui';
 import { Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';

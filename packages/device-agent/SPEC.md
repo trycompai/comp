@@ -660,12 +660,12 @@ The packaged app includes `electron-updater` which checks for new GitHub release
 
 ```bash
 cd packages/device-agent
-bun install
-bun run dev       # Start in dev mode with hot reload
-bun run build     # Build for production
-bun run package:mac   # Package macOS DMG
-bun run package:win   # Package Windows installer
-bun run package:linux # Package Linux AppImage + .deb
+npm install
+npm run dev       # Start in dev mode with hot reload
+npm run build     # Build for production
+npm run package:mac   # Package macOS DMG
+npm run package:win   # Package Windows installer
+npm run package:linux # Package Linux AppImage + .deb
 ```
 
 ---

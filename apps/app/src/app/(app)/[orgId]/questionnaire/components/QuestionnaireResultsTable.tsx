@@ -1,8 +1,8 @@
 'use client';
 
-import { Button } from '@trycompai/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@trycompai/ui/table';
-import { Textarea } from '@trycompai/ui/textarea';
+import { Button } from '@gideon-defender/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@gideon-defender/ui/table';
+import { Textarea } from '@gideon-defender/ui/textarea';
 import { BookOpen, ChevronDown, ChevronUp, Link as LinkIcon, Loader2, Zap, Pencil } from 'lucide-react';
 import Link from 'next/link';
 import type { QuestionAnswer } from './types';

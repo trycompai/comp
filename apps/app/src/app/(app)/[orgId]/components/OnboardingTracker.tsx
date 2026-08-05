@@ -1,7 +1,7 @@
 'use client';
 
-import { Button } from '@trycompai/ui/button';
-import { Card, CardContent } from '@trycompai/ui/card';
+import { Button } from '@gideon-defender/ui/button';
+import { Card, CardContent } from '@gideon-defender/ui/card';
 import type { Onboarding } from '@db';
 import { useRun } from '@trigger.dev/react-hooks';
 import { AnimatePresence, motion } from 'framer-motion';

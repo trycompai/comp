@@ -37,14 +37,14 @@ import {
   interpretDeclarativeDeviceSync,
   type OAuthConfig,
   type SyncDefinition,
-} from '@trycompai/integration-platform';
+} from '@gideon-defender/integration-platform';
 import { IntegrationSyncLoggerService } from '../services/integration-sync-logger.service';
 import { GenericEmployeeSyncService } from '../services/generic-employee-sync.service';
 import { resolveSyncEmployeeFilter } from '../services/sync-employee-filter';
 import { GenericDeviceSyncService } from '../services/generic-device-sync.service';
 import { DynamicIntegrationRepository } from '../repositories/dynamic-integration.repository';
 import { CheckRunRepository } from '../repositories/check-run.repository';
-import { createCheckContext } from '@trycompai/integration-platform';
+import { createCheckContext } from '@gideon-defender/integration-platform';
 import { filterUsersByOrgUnits } from './sync-ou-filter';
 
 interface GoogleWorkspaceUser {
@@ -1996,7 +1996,7 @@ export class SyncController {
         employees,
         options: {
           providerName: manifest.name,
-          // `SyncDefinition` (from @trycompai/integration-platform) doesn't
+          // `SyncDefinition` (from @gideon-defender/integration-platform) doesn't
           // declare `isDirectorySource`, but the underlying Prisma JSON value
           // may carry it. Structural cast lets us read the optional flag
           // with a safe `?? false` fallback.

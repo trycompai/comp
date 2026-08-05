@@ -8,7 +8,7 @@
  * can execute under Jest, while still testing the real role definitions.
  */
 
-// Mock better-auth ESM modules before importing @trycompai/auth
+// Mock better-auth ESM modules before importing @gideon-defender/auth
 jest.mock('better-auth', () => ({ betterAuth: jest.fn() }));
 jest.mock('better-auth/adapters/prisma', () => ({ prismaAdapter: jest.fn() }));
 jest.mock('better-auth/plugins', () => ({
@@ -55,7 +55,7 @@ jest.mock('better-auth/plugins/organization/access', () => ({
 import {
   BUILT_IN_ROLE_PERMISSIONS,
   BUILT_IN_ROLE_OBLIGATIONS,
-} from '@trycompai/auth';
+} from '@gideon-defender/auth';
 
 describe('Built-in role permissions — regression', () => {
   // ─── Owner ──────────────────────────────────────────────────────────

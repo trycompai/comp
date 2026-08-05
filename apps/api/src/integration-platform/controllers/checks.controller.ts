@@ -26,7 +26,7 @@ import {
   getManifest,
   getAvailableChecks,
   runAllChecks,
-} from '@trycompai/integration-platform';
+} from '@gideon-defender/integration-platform';
 import { ConnectionRepository } from '../repositories/connection.repository';
 import { ConnectionService } from '../services/connection.service';
 import { CredentialVaultService } from '../services/credential-vault.service';

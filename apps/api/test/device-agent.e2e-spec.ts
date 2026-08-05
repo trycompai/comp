@@ -3,7 +3,7 @@
  *
  * Strategy
  * --------
- * - `@trycompai/db`          → mocked at module level (mockDb)
+ * - `@gideon-defender/db`          → mocked at module level (mockDb)
  * - `../src/auth/auth.server` → mocked at module level (mockGetSession,
  *                               mockHasPermission, mockInternalCreateSession)
  * - `../src/device-agent/device-agent-kv` → mocked (mockRedis)
@@ -82,7 +82,7 @@ const mockDb = {
   organization: mockOrganization,
 };
 
-jest.mock('@trycompai/db', () => ({
+jest.mock('@gideon-defender/db', () => ({
   db: mockDb,
   Prisma: {
     PrismaClientKnownRequestError: class PrismaClientKnownRequestError extends Error {

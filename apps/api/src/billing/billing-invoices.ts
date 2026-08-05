@@ -1,5 +1,5 @@
 import type Stripe from 'stripe';
-import { getBillingSkuByStripePriceId } from '@trycompai/billing';
+import { getBillingSkuByStripePriceId } from '@gideon-defender/billing';
 import type { StripeService } from '../stripe/stripe.service';
 
 export interface BillingInvoice {

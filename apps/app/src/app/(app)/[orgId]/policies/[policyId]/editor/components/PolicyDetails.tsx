@@ -3,8 +3,8 @@
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { PolicyEditor } from '@/components/editor/policy-editor';
 import { useChat } from '@ai-sdk/react';
-import { Badge } from '@trycompai/ui/badge';
-import { useMediaQuery } from '@trycompai/ui/hooks';
+import { Badge } from '@gideon-defender/ui/badge';
+import { useMediaQuery } from '@gideon-defender/ui/hooks';
 import {
   Dialog,
   DialogContent,
@@ -12,14 +12,14 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
+} from '@gideon-defender/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@trycompai/ui/dropdown-menu';
-import { validateAndFixTipTapContent, SuggestionsExtension } from '@trycompai/ui/editor';
+} from '@gideon-defender/ui/dropdown-menu';
+import { validateAndFixTipTapContent, SuggestionsExtension } from '@gideon-defender/ui/editor';
 import { PolicyStatus, type Member, type PolicyDisplayFormat, type PolicyVersion, type User } from '@db';
 import type { JSONContent, Editor as TipTapEditor } from '@tiptap/react';
 import {

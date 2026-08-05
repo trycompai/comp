@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@trycompai/ui/button';
+import { Button } from '@gideon-defender/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -8,9 +8,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
-import { Label } from '@trycompai/ui/label';
-import { Textarea } from '@trycompai/ui/textarea';
+} from '@gideon-defender/ui/dialog';
+import { Label } from '@gideon-defender/ui/label';
+import { Textarea } from '@gideon-defender/ui/textarea';
 import { Stack } from '@trycompai/design-system';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';

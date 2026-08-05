@@ -5,7 +5,7 @@ name: Publish
 # Speakeasy's default is to publish on push to main, but our convention is that
 # `main` = staging/dev (database-migrations-main.yml, trigger-*-deploy-main.yml,
 # etc.) and `release` = production. npm publish is a production action — every
-# customer running `npx @trycompai/mcp-server` gets the new version — so it
+# customer running `npx @gideon-defender/mcp-server` gets the new version — so it
 # belongs on the release branch alongside the other *-release.yml workflows.
 #
 # Daily Speakeasy regen PRs land on main; you review + merge there (no publish).

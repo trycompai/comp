@@ -6,7 +6,7 @@ const mockDb = {
 jest.mock('@db', () => ({ db: mockDb }));
 
 const isUserUnsubscribedMock = jest.fn().mockResolvedValue(false);
-jest.mock('@trycompai/email', () => ({
+jest.mock('@gideon-defender/email', () => ({
   isUserUnsubscribed: (...args: unknown[]) => isUserUnsubscribedMock(...args),
 }));
 

@@ -1,9 +1,9 @@
 'use client';
 
-import { Alert, AlertDescription, AlertTitle } from '@trycompai/ui/alert';
-import { Button } from '@trycompai/ui/button';
-import { Icons } from '@trycompai/ui/icons';
-import { Sheet, SheetContent } from '@trycompai/ui/sheet';
+import { Alert, AlertDescription, AlertTitle } from '@gideon-defender/ui/alert';
+import { Button } from '@gideon-defender/ui/button';
+import { Icons } from '@gideon-defender/ui/icons';
+import { Sheet, SheetContent } from '@gideon-defender/ui/sheet';
 import type { Member, Task, User } from '@db';
 import { PencilIcon } from 'lucide-react';
 import { useState } from 'react';

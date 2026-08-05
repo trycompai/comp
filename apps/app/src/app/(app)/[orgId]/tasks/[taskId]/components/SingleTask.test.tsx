@@ -97,8 +97,8 @@ vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
 }));
 
-// Mock @trycompai/ui components
-vi.mock('@trycompai/ui/breadcrumb', () => ({
+// Mock @gideon-defender/ui components
+vi.mock('@gideon-defender/ui/breadcrumb', () => ({
   Breadcrumb: ({ children }: any) => <nav>{children}</nav>,
   BreadcrumbItem: ({ children }: any) => <span>{children}</span>,
   BreadcrumbLink: ({ children }: any) => <span>{children}</span>,
@@ -106,7 +106,7 @@ vi.mock('@trycompai/ui/breadcrumb', () => ({
   BreadcrumbSeparator: ({ children }: any) => <span>{children}</span>,
 }));
 
-vi.mock('@trycompai/ui/button', () => ({
+vi.mock('@gideon-defender/ui/button', () => ({
   Button: ({ children, title, ...props }: any) => (
     <button title={title} {...props}>
       {children}
@@ -114,7 +114,7 @@ vi.mock('@trycompai/ui/button', () => ({
   ),
 }));
 
-vi.mock('@trycompai/ui/dialog', () => ({
+vi.mock('@gideon-defender/ui/dialog', () => ({
   Dialog: ({ children, open }: any) => (open ? <div>{children}</div> : null),
   DialogContent: ({ children }: any) => <div>{children}</div>,
   DialogDescription: ({ children }: any) => <p>{children}</p>,

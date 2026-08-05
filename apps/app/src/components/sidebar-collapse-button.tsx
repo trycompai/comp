@@ -1,8 +1,8 @@
 'use client';
 
 import { useSidebar } from '@/context/sidebar-context';
-import { Button } from '@trycompai/ui/button';
-import { cn } from '@trycompai/ui/cn';
+import { Button } from '@gideon-defender/ui/button';
+import { cn } from '@gideon-defender/ui/cn';
 import { ArrowLeftFromLine } from 'lucide-react';
 
 export function SidebarCollapseButton() {

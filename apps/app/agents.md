@@ -18,9 +18,9 @@ The `className` prop has been removed from all components to prevent style overr
 // ✅ ALWAYS - Use design system
 import { Button, Table, Badge, Tabs } from '@trycompai/design-system';
 
-// ❌ NEVER - Don't use @trycompai/ui when DS has the component
-import { Button } from '@trycompai/ui/button';
-import { Table } from '@trycompai/ui/table';
+// ❌ NEVER - Don't use @gideon-defender/ui when DS has the component
+import { Button } from '@gideon-defender/ui/button';
+import { Table } from '@gideon-defender/ui/table';
 ```
 
 ## Server vs Client Components

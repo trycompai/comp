@@ -1,6 +1,6 @@
 'use client';
 
-import { validateAndFixTipTapContent } from '@trycompai/ui/editor';
+import { validateAndFixTipTapContent } from '@gideon-defender/ui/editor';
 import type { Extension } from '@tiptap/core';
 import type { JSONContent, Editor as TipTapEditor } from '@tiptap/react';
 import AdvancedEditor from './advanced-editor';

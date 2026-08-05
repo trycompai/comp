@@ -1,7 +1,7 @@
 import PageLayout from '@/app/components/PageLayout';
 import { serverApi } from '@/app/lib/api-server';
 import { isAuthorized } from '@/app/lib/utils';
-import { Badge } from '@trycompai/ui/badge';
+import { Badge } from '@gideon-defender/ui/badge';
 import { notFound, redirect } from 'next/navigation';
 import { FrameworkTabs } from './FrameworkTabs';
 

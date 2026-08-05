@@ -1,4 +1,4 @@
-import { Toaster } from '@trycompai/ui/toaster';
+import { Toaster } from '@gideon-defender/ui/toaster';
 import type { Metadata } from 'next';
 import { type ReactNode } from 'react';
 import { Toaster as SonnerToaster } from 'sonner';

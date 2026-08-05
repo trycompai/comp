@@ -4,8 +4,8 @@ import type {
   ConnectionListItem,
   IntegrationProvider,
 } from '@/hooks/use-integration-platform';
-import { Badge } from '@trycompai/ui/badge';
-import { Button } from '@trycompai/ui/button';
+import { Badge } from '@gideon-defender/ui/badge';
+import { Button } from '@gideon-defender/ui/button';
 import {
   AlertCircle,
   CheckCircle2,

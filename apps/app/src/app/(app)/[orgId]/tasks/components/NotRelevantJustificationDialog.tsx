@@ -1,7 +1,7 @@
 'use client';
 
 import { Label, Textarea } from '@trycompai/design-system';
-import { Button } from '@trycompai/ui/button';
+import { Button } from '@gideon-defender/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -9,7 +9,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
+} from '@gideon-defender/ui/dialog';
 import { useState } from 'react';
 
 interface NotRelevantJustificationDialogProps {

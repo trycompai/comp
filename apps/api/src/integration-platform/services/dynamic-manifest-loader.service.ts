@@ -15,7 +15,7 @@ import {
   type IntegrationCapability,
   type FindingSeverity,
   type CheckVariable,
-} from '@trycompai/integration-platform';
+} from '@gideon-defender/integration-platform';
 import {
   DynamicIntegrationRepository,
   type DynamicIntegrationWithChecks,

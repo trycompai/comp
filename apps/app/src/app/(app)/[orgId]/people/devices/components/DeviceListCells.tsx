@@ -20,7 +20,7 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@trycompai/ui/tooltip';
+} from '@gideon-defender/ui/tooltip';
 import Link from 'next/link';
 import type { DeviceWithChecks } from '../types';
 import {

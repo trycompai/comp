@@ -1,7 +1,7 @@
 'use client';
 
 import { authClient } from '@/app/lib/auth-client';
-import { Button } from '@trycompai/ui';
+import { Button } from '@gideon-defender/ui';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 

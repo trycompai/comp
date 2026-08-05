@@ -1,6 +1,6 @@
 'use client';
 
-import { cn } from '@trycompai/ui/cn';
+import { cn } from '@gideon-defender/ui/cn';
 import { motion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 

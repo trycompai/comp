@@ -2,12 +2,12 @@
 
 ## Tooling
 
-- **Package manager**: `bun` (never npm/yarn/pnpm)
-- **Build**: `bun run build` (uses turbo). Filter: `bun run --filter '@trycompai/app' build`
-- **Typecheck**: `bun run typecheck` or `npx turbo run typecheck --filter=@trycompai/api`
+- **Package manager**: `npm` (never bun/yarn/pnpm)
+- **Build**: `npm run build` (uses turbo). Filter: `npm run build --workspace=@gideon-defender/app`
+- **Typecheck**: `npm run typecheck` or `npx turbo run typecheck --filter=@gideon-defender/api`
 - **Tests (app)**: `cd apps/app && npx vitest run`
 - **Tests (api)**: `cd apps/api && npx jest src/<module> --passWithNoTests`
-- **Lint**: `bun run lint`
+- **Lint**: `npm run lint`
 
 ## Code Style
 
@@ -106,14 +106,14 @@ Every customer-facing API endpoint MUST have:
 
 ## Design System
 
-- **Always prefer `@trycompai/design-system`** over `@trycompai/ui`. Check DS exports first.
-- `@trycompai/ui` is the legacy library being phased out — only use as last resort.
+- **Always prefer `@trycompai/design-system`** over `@gideon-defender/ui`. Check DS exports first.
+- `@gideon-defender/ui` is the legacy library being phased out — only use as last resort.
 - **Icons**: `@trycompai/design-system/icons` (Carbon icons), NOT `lucide-react`
 - **DS components that do NOT accept `className`**: `Text`, `Stack`, `HStack`, `Badge`, `Button` — wrap in `<div>` for custom styling
 - **Layout**: Use `PageLayout`, `PageHeader`, `Stack`, `HStack`, `Section`, `SettingGroup`
 - **Patterns**: Sheet (`Sheet > SheetContent > SheetHeader + SheetBody`), Drawer, Collapsible
 - **Responsive (MANDATORY)**: every UI change must work on mobile (375px), tablet (768px), desktop (1280px), and large desktop (1920px) by default — no one has to ask. See the `responsive-ui` skill for breakpoints, repo patterns, and the checklist.
-- **After editing any frontend component**: Run the `audit-design-system` skill to catch `@trycompai/ui` or `lucide-react` imports that should be migrated
+- **After editing any frontend component**: Run the `audit-design-system` skill to catch `@gideon-defender/ui` or `lucide-react` imports that should be migrated
 
 ## Data Fetching
 
@@ -136,7 +136,7 @@ Every customer-facing API endpoint MUST have:
 
 - **Schema**: `packages/db/prisma/schema/` (split into files per model)
 - **IDs**: Always use prefixed CUIDs: `@default(dbgenerated("generate_prefixed_cuid('prefix'::text)"))`
-- **Migrations**: `cd packages/db && bunx prisma migrate dev --name your_name`
+- **Migrations**: `cd packages/db && npx prisma migrate dev --name your_name`
 - **Multi-tenancy**: Always scope queries by `organizationId`
 - **Transactions**: Use for operations modifying multiple records
 

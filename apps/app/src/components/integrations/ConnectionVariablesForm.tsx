@@ -179,7 +179,7 @@ export function ConnectionVariablesFields({
                 </SelectTrigger>
                 {/*
                   The DS Select is built on @base-ui/react and portals its popup to document.body.
-                  This form is rendered inside a Radix (@trycompai/ui) modal Dialog (ManageIntegrationDialog),
+                  This form is rendered inside a Radix (@gideon-defender/ui) modal Dialog (ManageIntegrationDialog),
                   and Radix's modal sets `body { pointer-events: none }`. The portaled popup inherits that,
                   so its options are unclickable and the open is cancelled on mouseup ("insta-closes").
                   ManageIntegrationDialog passes portal={false} plus alignItemWithTrigger={false} so the

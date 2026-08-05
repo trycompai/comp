@@ -8,7 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
   Textarea,
-} from '@trycompai/ui';
+} from '@gideon-defender/ui';
 import { Edit2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';

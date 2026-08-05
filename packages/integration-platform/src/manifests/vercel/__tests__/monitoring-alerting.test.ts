@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, it } from 'vitest';
 import { monitoringAlertingCheck } from '../checks/monitoring-alerting';
 import type { CheckContext, CheckVariableValues } from '../../../types';
 import type {

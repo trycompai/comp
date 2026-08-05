@@ -6,11 +6,13 @@ const isStandalone = process.env.NEXT_OUTPUT_STANDALONE === 'true';
 
 const config = {
   transpilePackages: [
-    '@trycompai/auth',
-    '@trycompai/db',
+    '@gideon-defender/auth',
+    '@gideon-defender/db',
     '@trycompai/design-system',
     '@carbon/icons-react',
-    '@trycompai/company',
+    '@gideon-defender/company',
+    '@trigger.dev/sdk',
+    '@trigger.dev/react-hooks',
   ],
   images: {
     remotePatterns: [

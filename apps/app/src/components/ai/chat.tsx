@@ -3,7 +3,7 @@
 import { env } from '@/env.mjs';
 import { useSession } from '@/utils/auth-client';
 import { useChat } from '@ai-sdk/react';
-import { Button } from '@trycompai/ui/button';
+import { Button } from '@gideon-defender/ui/button';
 import {
   DefaultChatTransport,
   isToolUIPart,
@@ -32,7 +32,7 @@ import {
 } from '@/components/ai-elements/reasoning';
 import { Tool, ToolHeader, ToolContent } from '@/components/ai-elements/tool';
 import { LogoSpinner } from '../logo-spinner';
-import { Avatar, AvatarFallback, AvatarImage } from '@trycompai/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@gideon-defender/ui/avatar';
 
 const API_URL = env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
 

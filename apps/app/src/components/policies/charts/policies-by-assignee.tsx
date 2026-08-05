@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@gideon-defender/ui/card';
 import { db, PolicyStatus } from '@db/server';
 import type { CSSProperties } from 'react';
 

@@ -16,7 +16,7 @@ import {
   Text,
 } from '@trycompai/design-system';
 import { ArrowLeft, Information } from '@trycompai/design-system/icons';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@gideon-defender/ui/tooltip';
 import type { DeviceWithChecks } from '../types';
 import {
   CANONICAL_DEVICE_CHECKS,

@@ -1,5 +1,5 @@
-import { Button } from '@trycompai/ui/button';
-import { Card } from '@trycompai/ui/card';
+import { Button } from '@gideon-defender/ui/button';
+import { Card } from '@gideon-defender/ui/card';
 import Link from 'next/link';
 
 export default async function UnauthorizedPage() {

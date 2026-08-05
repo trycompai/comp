@@ -5,7 +5,7 @@ import {
   getBillingSkuProductKey,
   isSubscriptionBillingSkuKey,
   type BillingSkuKey,
-} from '@trycompai/billing';
+} from '@gideon-defender/billing';
 import { Badge, Button, Stack, Text } from '@trycompai/design-system';
 import { Launch } from '@trycompai/design-system/icons';
 import { useState } from 'react';

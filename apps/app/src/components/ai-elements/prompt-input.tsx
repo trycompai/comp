@@ -23,38 +23,38 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
-} from "@trycompai/ui/command";
+} from "@gideon-defender/ui/command";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@trycompai/ui/dropdown-menu";
+} from "@gideon-defender/ui/dropdown-menu";
 import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
-} from "@trycompai/ui/hover-card";
+} from "@gideon-defender/ui/hover-card";
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
   InputGroupTextarea,
-} from "@trycompai/ui/input-group";
+} from "@gideon-defender/ui/input-group";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@trycompai/ui/select";
-import { Spinner } from "@trycompai/ui/spinner";
+} from "@gideon-defender/ui/select";
+import { Spinner } from "@gideon-defender/ui/spinner";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@trycompai/ui/tooltip";
-import { cn } from "@trycompai/ui/cn";
+} from "@gideon-defender/ui/tooltip";
+import { cn } from "@gideon-defender/ui/cn";
 import {
   CornerDownLeftIcon,
   ImageIcon,

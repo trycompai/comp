@@ -1,8 +1,8 @@
 'use client';
 
-import { Badge } from '@trycompai/ui/badge';
-import { Button } from '@trycompai/ui/button';
-import { cn } from '@trycompai/ui/cn';
+import { Badge } from '@gideon-defender/ui/badge';
+import { Button } from '@gideon-defender/ui/button';
+import { cn } from '@gideon-defender/ui/cn';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -10,9 +10,9 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@trycompai/ui/dropdown-menu';
-import { Input } from '@trycompai/ui/input';
-import { Table, TableBody, TableCell, TableRow } from '@trycompai/ui/table';
+} from '@gideon-defender/ui/dropdown-menu';
+import { Input } from '@gideon-defender/ui/input';
+import { Table, TableBody, TableCell, TableRow } from '@gideon-defender/ui/table';
 import {
   type ColumnDef,
   type SortingState,

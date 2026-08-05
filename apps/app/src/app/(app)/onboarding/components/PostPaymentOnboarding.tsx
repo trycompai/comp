@@ -4,8 +4,8 @@ import { OnboardingStepInput } from '@/app/(app)/setup/components/OnboardingStep
 import { AnimatedWrapper } from '@/components/animated-wrapper';
 import { LogoSpinner } from '@/components/logo-spinner';
 import type { Organization } from '@db';
-import { Button } from '@trycompai/ui/button';
-import { Form, FormControl, FormField, FormItem, FormMessage } from '@trycompai/ui/form';
+import { Button } from '@gideon-defender/ui/button';
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@gideon-defender/ui/form';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';

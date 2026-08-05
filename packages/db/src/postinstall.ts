@@ -26,7 +26,7 @@ export function generatePrismaClient(options: GenerateOptions = {}): { schema: s
   if (!resolution.path) {
     throw new Error(
       [
-        'Unable to locate schema.prisma from @trycompai/db.',
+        'Unable to locate schema.prisma from @gideon-defender/db.',
         'Looked in the following locations:',
         ...resolution.searched.map((candidate) => ` - ${candidate}`),
       ].join('\n'),
@@ -92,7 +92,7 @@ function buildSchemaCandidates(projectRoot: string): string[] {
 
     let current = start;
     while (true) {
-      candidates.add(resolve(current, 'node_modules/@trycompai/db/dist/schema.prisma'));
+      candidates.add(resolve(current, 'node_modules/@gideon-defender/db/dist/schema.prisma'));
       const parent = dirname(current);
       if (parent === current) {
         break;

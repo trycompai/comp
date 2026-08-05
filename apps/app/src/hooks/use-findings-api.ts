@@ -2,7 +2,7 @@
 
 import { useApi } from '@/hooks/use-api';
 import { useApiSWR, UseApiSWROptions } from '@/hooks/use-api-swr';
-import type { EvidenceFormType } from '@trycompai/company';
+import type { EvidenceFormType } from '@gideon-defender/company';
 import { FindingType } from '@db';
 import type { FindingArea, FindingSeverity, FindingStatus } from '@db';
 import { useCallback } from 'react';

@@ -1,4 +1,4 @@
-import type { runAllChecks } from '@trycompai/integration-platform';
+import type { runAllChecks } from '@gideon-defender/integration-platform';
 
 export type RunAllChecksResult = Awaited<ReturnType<typeof runAllChecks>>;
 

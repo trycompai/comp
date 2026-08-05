@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma, db } from '@db';
-import type { BillingProductKey, BillingSkuKey } from '@trycompai/billing';
+import type { BillingProductKey, BillingSkuKey } from '@gideon-defender/billing';
 import { isUniqueConstraintError } from './billing-entitlements.types';
 import {
   assertCreditEventType,

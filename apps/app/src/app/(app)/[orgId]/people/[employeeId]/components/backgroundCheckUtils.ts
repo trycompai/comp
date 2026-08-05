@@ -1,4 +1,4 @@
-import { getBillingSkuProductKey } from '@trycompai/billing';
+import { getBillingSkuProductKey } from '@gideon-defender/billing';
 import type { AttachFormValues } from './BackgroundCheckAttachForm';
 import type { BackgroundCheckBillingStatus } from './backgroundCheckTypes';
 

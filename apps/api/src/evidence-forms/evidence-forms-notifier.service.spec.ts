@@ -5,7 +5,7 @@ const mockDb = {
 
 jest.mock('@db', () => ({ db: mockDb }));
 
-jest.mock('@trycompai/email', () => ({
+jest.mock('@gideon-defender/email', () => ({
   isUserUnsubscribed: jest.fn().mockResolvedValue(false),
   getUnsubscribeUrl: jest
     .fn()
@@ -20,7 +20,7 @@ jest.mock('../email/templates/evidence-access-request-submitted', () => ({
   EvidenceAccessRequestSubmittedEmail: () => null,
 }));
 
-import { isUserUnsubscribed } from '@trycompai/email';
+import { isUserUnsubscribed } from '@gideon-defender/email';
 import { triggerEmail } from '../email/trigger-email';
 import { EvidenceFormsNotifierService } from './evidence-forms-notifier.service';
 

@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
-import { Button } from '@trycompai/ui/button';
-import { Checkbox } from '@trycompai/ui/checkbox';
+import { Button } from '@gideon-defender/ui/button';
+import { Checkbox } from '@gideon-defender/ui/checkbox';
 import { Member, Task, User } from '@db';
 import { RefreshCw, Trash2, User as UserIcon } from 'lucide-react';
 import { usePermissions } from '@/hooks/use-permissions';

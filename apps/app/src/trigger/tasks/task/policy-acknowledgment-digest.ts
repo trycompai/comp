@@ -5,8 +5,8 @@ import {
   PolicyAcknowledgmentDigestEmail,
   computePolicyAcknowledgmentDigestSubject,
   type PolicyAcknowledgmentDigestOrg,
-} from '@trycompai/email';
-import { getUnsubscribedEmails } from '@trycompai/email/lib/check-unsubscribe';
+} from '@gideon-defender/email';
+import { getUnsubscribedEmails } from '@gideon-defender/email/lib/check-unsubscribe';
 
 import { render } from '@react-email/render';
 import { sendBatchEmailViaApi } from '../../lib/send-email-via-api';

@@ -1,7 +1,7 @@
 'use client';
 
 import { formatDate } from '@/lib/utils/format-date';
-import { cn } from '@trycompai/ui/cn';
+import { cn } from '@gideon-defender/ui/cn';
 
 interface StatusDateProps {
   date: Date;

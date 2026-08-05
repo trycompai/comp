@@ -3,10 +3,10 @@
 import { useApiSWR } from '@/hooks/use-api-swr';
 import { usePermissions } from '@/hooks/use-permissions';
 import { Policy, Task } from '@db';
-import { Button } from '@trycompai/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
-import { ScrollArea } from '@trycompai/ui/scroll-area';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/ui/tabs';
+import { Button } from '@gideon-defender/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@gideon-defender/ui/card';
+import { ScrollArea } from '@gideon-defender/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@gideon-defender/ui/tabs';
 import {
   ArrowRight,
   CheckCircle2,

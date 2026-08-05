@@ -52,7 +52,7 @@ import {
   type OAuthConfig,
   type TaskTemplateId,
   type IntegrationCredentials,
-} from '@trycompai/integration-platform';
+} from '@gideon-defender/integration-platform';
 import {
   getAwsBaseCredentials,
   getAwsRoleAssumerArn,

@@ -97,7 +97,7 @@
             "persistent": true,
             "cache": false
         },
-        "@trycompai/device-agent#dev": {
+        "@gideon-defender/device-agent#dev": {
             "persistent": true,
             "cache": false,
             "interactive": true

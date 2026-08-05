@@ -11,7 +11,7 @@ import {
   HIPAA_TRAINING_UNAVAILABLE_MESSAGE,
   hipaaFrameworkInstanceWhere,
   isTrainingVideoId,
-} from '@trycompai/company';
+} from '@gideon-defender/company';
 import { TrainingEmailService } from './training-email.service';
 import { TrainingCertificatePdfService } from './training-certificate-pdf.service';
 

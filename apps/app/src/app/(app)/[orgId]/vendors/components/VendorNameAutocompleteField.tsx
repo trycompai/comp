@@ -2,8 +2,8 @@
 
 import { useApi } from '@/hooks/use-api';
 import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
-import { Input } from '@trycompai/ui/input';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@gideon-defender/ui/form';
+import { Input } from '@gideon-defender/ui/input';
 import type { GlobalVendors } from '@db';
 import { useMemo, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';

@@ -6,7 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { RESTRICTED_ROLES, PRIVILEGED_ROLES } from '@trycompai/auth';
+import { RESTRICTED_ROLES, PRIVILEGED_ROLES } from '@gideon-defender/auth';
 import { permissionsGrant, resolveRolePermissions } from './app-access';
 import { auth } from './auth.server';
 import { resolveServiceByName } from './service-token.config';

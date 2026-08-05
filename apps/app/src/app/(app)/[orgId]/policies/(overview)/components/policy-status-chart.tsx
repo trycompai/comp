@@ -8,7 +8,7 @@ import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from '@trycompai/ui/chart';
+} from '@gideon-defender/ui/chart';
 import { Card, HStack, Stack, Text } from '@trycompai/design-system';
 import { Information } from '@trycompai/design-system/icons';
 

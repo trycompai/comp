@@ -1,4 +1,4 @@
-import type { DeviceComplianceStatus } from '@trycompai/utils/devices';
+import type { DeviceComplianceStatus } from '@gideon-defender/utils/devices';
 
 export type CheckDetailEntry = {
   method?: string;

@@ -40,7 +40,7 @@ vi.mock('nuqs', () => ({
 }));
 
 // Mock media query hook
-vi.mock('@trycompai/ui/hooks', () => ({
+vi.mock('@gideon-defender/ui/hooks', () => ({
   useMediaQuery: vi.fn(() => true),
 }));
 

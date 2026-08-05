@@ -2,10 +2,10 @@
 
 import { useApi } from '@/hooks/use-api';
 import { usePermissions } from '@/hooks/use-permissions';
-import { Button } from '@trycompai/ui/button';
-import { Input } from '@trycompai/ui/input';
-import { Textarea } from '@trycompai/ui/textarea';
-import { Card } from '@trycompai/ui/card';
+import { Button } from '@gideon-defender/ui/button';
+import { Input } from '@gideon-defender/ui/input';
+import { Textarea } from '@gideon-defender/ui/textarea';
+import { Card } from '@gideon-defender/ui/card';
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { Plus, Trash2, ChevronUp, ChevronDown, Save, Loader2 } from 'lucide-react';

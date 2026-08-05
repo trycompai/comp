@@ -1,7 +1,7 @@
 'use client';
 
-import { Button } from '@trycompai/ui/button';
-import { Textarea } from '@trycompai/ui/textarea';
+import { Button } from '@gideon-defender/ui/button';
+import { Textarea } from '@gideon-defender/ui/textarea';
 import { Save } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';

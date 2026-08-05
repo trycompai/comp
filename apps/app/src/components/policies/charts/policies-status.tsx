@@ -1,8 +1,8 @@
 'use client';
 
 import { PieChart } from '@/components/ui/pie-chart';
-import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
-import { cn } from '@trycompai/ui/cn';
+import { Card, CardContent, CardHeader, CardTitle } from '@gideon-defender/ui/card';
+import { cn } from '@gideon-defender/ui/cn';
 
 interface Props {
   totalPolicies: number;

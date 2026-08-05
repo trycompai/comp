@@ -106,8 +106,8 @@ vi.mock('@trycompai/design-system/icons', () => ({
   Launch: () => <span data-testid="launch-icon" />,
 }));
 
-// Mock @trycompai/ui components
-vi.mock('@trycompai/ui/card', () => ({
+// Mock @gideon-defender/ui components
+vi.mock('@gideon-defender/ui/card', () => ({
   Card: ({
     children,
     onClick,
@@ -140,7 +140,7 @@ vi.mock('@trycompai/ui/card', () => ({
   ),
 }));
 
-vi.mock('@trycompai/ui/multiple-selector', () => ({
+vi.mock('@gideon-defender/ui/multiple-selector', () => ({
   default: () => <div data-testid="multi-selector" />,
 }));
 

@@ -10,12 +10,12 @@ vi.mock('@tiptap/react', () => ({
   EditorContent: () => null,
 }));
 
-vi.mock('@trycompai/ui/editor', () => ({
+vi.mock('@gideon-defender/ui/editor', () => ({
   validateAndFixTipTapContent: (content: unknown) => content,
   createMentionExtension: () => ({}),
 }));
 
-vi.mock('@trycompai/ui/editor/extensions', () => ({
+vi.mock('@gideon-defender/ui/editor/extensions', () => ({
   defaultExtensions: () => [],
 }));
 

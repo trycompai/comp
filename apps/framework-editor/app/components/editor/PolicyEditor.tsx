@@ -3,7 +3,7 @@
 import type { JSONContent } from '@tiptap/react';
 import { useMemo } from 'react';
 import AdvancedEditor from './AdvancedEditor'; // Use local AdvancedEditor
-import { validateAndFixTipTapContent } from '@trycompai/ui';
+import { validateAndFixTipTapContent } from '@gideon-defender/ui';
 
 interface PolicyEditorProps {
   // Accept raw JSONContent or array from DB

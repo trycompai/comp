@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'bun:test';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { db } from '../client';
 import { backfillFrameworkVersions } from './backfill-framework-versions';
 

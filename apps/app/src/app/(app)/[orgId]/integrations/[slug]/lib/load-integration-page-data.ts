@@ -2,7 +2,7 @@ import { serverApi } from '@/lib/api-server';
 import type {
   ConnectionListItemResponse,
   IntegrationProviderResponse,
-} from '@trycompai/integration-platform';
+} from '@gideon-defender/integration-platform';
 import {
   type IntegrationTaskApiResponse,
   type MappedTaskTemplate,

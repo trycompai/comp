@@ -9,8 +9,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
-import { Form } from '@trycompai/ui/form';
+} from '@gideon-defender/ui/dialog';
+import { Form } from '@gideon-defender/ui/form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useRouter } from 'next/navigation';

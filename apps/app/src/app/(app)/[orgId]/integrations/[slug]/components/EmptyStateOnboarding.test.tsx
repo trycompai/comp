@@ -40,7 +40,7 @@ vi.mock('lucide-react', () => ({
   Shield: () => <span data-testid="shield-icon" />,
 }));
 
-vi.mock('@trycompai/integration-platform', () => ({
+vi.mock('@gideon-defender/integration-platform', () => ({
   awsRemediationScript: '',
   getAwsCloudShellUrl: () => 'https://console.aws.amazon.com/cloudshell',
   getAwsCloudShellScript: () => '',

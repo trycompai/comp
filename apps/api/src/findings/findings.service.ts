@@ -16,7 +16,7 @@ import {
 import {
   toDbEvidenceFormType,
   toExternalEvidenceFormType,
-} from '@trycompai/company';
+} from '@gideon-defender/company';
 import { CreateFindingDto } from './dto/create-finding.dto';
 import { UpdateFindingDto } from './dto/update-finding.dto';
 import { FindingAuditService } from './finding-audit.service';

@@ -1,6 +1,6 @@
 import { AppOnboarding } from '@/components/app-onboarding';
 import { serverApi } from '@/lib/api-server';
-import { SecondaryMenu } from '@trycompai/ui/secondary-menu';
+import { SecondaryMenu } from '@gideon-defender/ui/secondary-menu';
 import type { Member, User } from '@db';
 import { Suspense } from 'react';
 import { CreateVendorSheet } from '../components/create-vendor-sheet';

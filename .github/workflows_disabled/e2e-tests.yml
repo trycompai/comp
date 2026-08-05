@@ -56,50 +56,50 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          node-version: "22"
 
       - name: Cache dependencies
         uses: WarpBuilds/cache@v1
         with:
           path: |
-            ~/.bun/install/cache
+            ~/.npm
             node_modules
             apps/*/node_modules
             packages/*/node_modules
-          key: ${{ runner.os }}-bun-${{ matrix.project }}-${{ hashFiles('**/bun.lock') }}
+          key: ${{ runner.os }}-npm-${{ matrix.project }}-${{ hashFiles('package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
-            ${{ runner.os }}-bun-
+            ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
+            ${{ runner.os }}-npm-
 
       - name: Cache Next.js build
         uses: WarpBuilds/cache@v1
         with:
           path: |
             apps/app/.next/cache
-          key: ${{ runner.os }}-nextjs-${{ matrix.project }}-${{ hashFiles('**/bun.lock') }}-${{ hashFiles('apps/app/**/*.js', 'apps/app/**/*.jsx', 'apps/app/**/*.ts', 'apps/app/**/*.tsx') }}
+          key: ${{ runner.os }}-nextjs-${{ matrix.project }}-${{ hashFiles('package-lock.json') }}-${{ hashFiles('apps/app/**/*.js', 'apps/app/**/*.jsx', 'apps/app/**/*.ts', 'apps/app/**/*.tsx') }}
           restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles('**/bun.lock') }}-${{ hashFiles('apps/app/**/*.js', 'apps/app/**/*.jsx', 'apps/app/**/*.ts', 'apps/app/**/*.tsx') }}
-            ${{ runner.os }}-nextjs-${{ hashFiles('**/bun.lock') }}-
+            ${{ runner.os }}-nextjs-${{ hashFiles('package-lock.json') }}-${{ hashFiles('apps/app/**/*.js', 'apps/app/**/*.jsx', 'apps/app/**/*.ts', 'apps/app/**/*.tsx') }}
+            ${{ runner.os }}-nextjs-${{ hashFiles('package-lock.json') }}-
             ${{ runner.os }}-nextjs-
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: npm ci
 
       - name: Setup database
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
         run: |
           cd packages/db
-          bunx prisma migrate deploy
-          bunx prisma db seed || true # Allow seed to fail
+          npx prisma migrate deploy
+          npx prisma db seed || true # Allow seed to fail
 
       - name: Generate Prisma client
         run: |
           cd packages/db
-          bunx prisma generate
+          npx prisma generate
 
       - name: Get Playwright version
         id: playwright-version
@@ -111,7 +111,7 @@ jobs:
           echo "version=$PLAYWRIGHT_VERSION" >> $GITHUB_OUTPUT
 
           # Also get Playwright's internal browser versions for better cache key
-          BROWSER_VERSIONS=$(bunx playwright --version | head -1 || echo "unknown")
+          BROWSER_VERSIONS=$(npx playwright --version | head -1 || echo "unknown")
           echo "Browser versions: $BROWSER_VERSIONS"
           echo "browser_versions=$BROWSER_VERSIONS" >> $GITHUB_OUTPUT
 
@@ -133,14 +133,14 @@ jobs:
           # Always run install - Playwright will skip downloading browsers that already exist
           # This is the safest approach to ensure browsers are properly installed
           echo "Installing Playwright browsers (will skip if already cached)..."
-          bunx playwright install chromium firefox webkit
+          npx playwright install chromium firefox webkit
 
       - name: Install Playwright system dependencies
         run: |
           cd apps/app
           # Install system dependencies separately - this is always needed on Ubuntu runners
           echo "Installing system dependencies..."
-          bunx playwright install-deps chromium firefox webkit
+          npx playwright install-deps chromium firefox webkit
 
       - name: Verify Playwright installation
         run: |
@@ -163,7 +163,7 @@ jobs:
 
           # Check Playwright's own cache directory
           echo "Playwright cache home:"
-          cd apps/app && bunx playwright install --help | grep -i cache || true
+          cd apps/app && npx playwright install --help | grep -i cache || true
 
           # Show disk usage
           echo "Disk usage of cache directories:"
@@ -179,13 +179,13 @@ jobs:
           ls -la ~/.cache/ms-playwright 2>/dev/null || echo "~/.cache/ms-playwright not found"
           du -sh ~/.cache/ms-playwright 2>/dev/null || echo "Cannot check size"
           echo "Playwright browsers installed:"
-          cd apps/app && bunx playwright --version
+          cd apps/app && npx playwright --version
 
       - name: Build app
         run: |
           cd apps/app
           export E2E_TEST_MODE=true
-          bunx next build
+          npx next build
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
           NEXTAUTH_URL: http://localhost:3000
@@ -203,7 +203,7 @@ jobs:
         run: |
           cd apps/app
           # Start server with explicit port and capture output
-          PORT=3000 bun run start > server.log 2>&1 &
+          PORT=3000 npm run start > server.log 2>&1 &
           SERVER_PID=$!
 
           # Wait for server to be ready
@@ -285,7 +285,7 @@ jobs:
         run: |
           cd apps/app
           echo "Starting E2E tests for ${{ matrix.project }} with 2 workers..."
-          bunx playwright test --project=${{ matrix.project }}
+          npx playwright test --project=${{ matrix.project }}
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
           NEXTAUTH_URL: http://localhost:3000
@@ -366,7 +366,7 @@ jobs:
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "Or run locally:" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-            echo "bunx playwright show-trace path/to/trace.zip" >> $GITHUB_STEP_SUMMARY
+            echo "npx playwright show-trace path/to/trace.zip" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           fi
 

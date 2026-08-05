@@ -8,7 +8,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@trycompai/ui';
+} from '@gideon-defender/ui';
 import { Search as SearchIcon, SortAsc, SortDesc } from 'lucide-react';
 import type React from 'react';
 // Import types from the common types definition file

@@ -5,22 +5,22 @@ import { useTrustPortalSettings } from '@/hooks/use-trust-portal-settings';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Plus, X, Info } from 'lucide-react';
-import { Button } from '@trycompai/ui/button';
-import { Input } from '@trycompai/ui/input';
-import { Badge } from '@trycompai/ui/badge';
+import { Button } from '@gideon-defender/ui/button';
+import { Input } from '@gideon-defender/ui/input';
+import { Badge } from '@gideon-defender/ui/badge';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@trycompai/ui/card';
+} from '@gideon-defender/ui/card';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@trycompai/ui/tooltip';
+} from '@gideon-defender/ui/tooltip';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,7 +30,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@trycompai/ui/alert-dialog';
+} from '@gideon-defender/ui/alert-dialog';
 
 interface AllowedDomainsManagerProps {
   initialDomains: string[];

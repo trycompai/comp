@@ -1,12 +1,12 @@
 'use client';
 
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@trycompai/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@gideon-defender/ui/card';
 import {
   type ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from '@trycompai/ui/chart';
+} from '@gideon-defender/ui/chart';
 import * as React from 'react';
 import { Cell, Label, Pie, PieChart } from 'recharts';
 import type { DeviceWithChecks, Host } from '../types';
@@ -18,7 +18,7 @@ interface DeviceComplianceChartProps {
 }
 
 // Design-system tokens (full oklch values — no hsl() wrapper). The previous
-// `hsl(var(--chart-positive))` tokens came from the legacy @trycompai/ui
+// `hsl(var(--chart-positive))` tokens came from the legacy @gideon-defender/ui
 // stylesheet the app no longer loads, so every segment silently rendered as
 // SVG-default black.
 const CHART_COLORS = {

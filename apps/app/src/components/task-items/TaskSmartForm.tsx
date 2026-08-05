@@ -2,16 +2,16 @@
 
 import { useOptimisticTaskItems } from '@/hooks/use-task-items';
 import { useAssignableMembers } from '@/hooks/use-organization-members';
-import { Button } from '@trycompai/ui/button';
-import { Input } from '@trycompai/ui/input';
-import { Label } from '@trycompai/ui/label';
+import { Button } from '@gideon-defender/ui/button';
+import { Input } from '@gideon-defender/ui/input';
+import { Label } from '@gideon-defender/ui/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@trycompai/ui/select';
+} from '@gideon-defender/ui/select';
 import type {
   TaskItemEntityType,
   TaskItemFilters,

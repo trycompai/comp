@@ -5,7 +5,7 @@
   "compilerOptions": {
     "jsx": "react-jsx",
     "paths": {
-      "@trycompai/app/*": ["../../apps/app/*"]
+      "@gideon-defender/app/*": ["../../apps/app/*"]
     }
   }
 }

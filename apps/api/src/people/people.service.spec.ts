@@ -75,7 +75,7 @@ jest.mock('@db', () => ({
   Departments: { it: 'it', none: 'none' },
 }));
 
-jest.mock('@trycompai/auth', () => ({
+jest.mock('@gideon-defender/auth', () => ({
   BUILT_IN_ROLE_PERMISSIONS: {
     owner: {
       organization: ['read', 'update', 'delete'],
@@ -91,7 +91,7 @@ jest.mock('@trycompai/auth', () => ({
   },
 }));
 
-jest.mock('@trycompai/email', () => ({
+jest.mock('@gideon-defender/email', () => ({
   isUserUnsubscribed: jest.fn().mockResolvedValue(false),
   sendUnassignedItemsNotificationEmail: jest.fn().mockResolvedValue(undefined),
 }));

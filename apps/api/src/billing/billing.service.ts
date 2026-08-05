@@ -11,7 +11,7 @@ import {
   getBillingSkuProductKey,
   resolveBillingCatalogEnvironment,
   isSubscriptionBillingSkuKey,
-} from '@trycompai/billing';
+} from '@gideon-defender/billing';
 import { StripeService } from '../stripe/stripe.service';
 import { BillingCreditsService } from './billing-credits.service';
 import { findOrCreateBillingCustomer } from './billing-customer';

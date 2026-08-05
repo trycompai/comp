@@ -22,7 +22,7 @@ vi.mock('../../lib/send-email-via-api', () => ({
   sendBatchEmailViaApi: vi.fn(),
 }));
 
-vi.mock('@trycompai/email/lib/check-unsubscribe', () => ({
+vi.mock('@gideon-defender/email/lib/check-unsubscribe', () => ({
   getUnsubscribedEmails: vi.fn(),
 }));
 
@@ -36,7 +36,7 @@ vi.mock('@trigger.dev/sdk', () => ({
 import { db } from '@db/server';
 import { filterDigestMembersByCompliance } from './policy-acknowledgment-digest-helpers';
 import { sendBatchEmailViaApi } from '../../lib/send-email-via-api';
-import { getUnsubscribedEmails } from '@trycompai/email/lib/check-unsubscribe';
+import { getUnsubscribedEmails } from '@gideon-defender/email/lib/check-unsubscribe';
 import { policyAcknowledgmentDigest } from './policy-acknowledgment-digest';
 
 const mockDb = db as unknown as {

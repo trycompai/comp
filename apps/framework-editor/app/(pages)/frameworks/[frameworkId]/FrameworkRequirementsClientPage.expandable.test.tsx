@@ -25,7 +25,7 @@ vi.mock('./components/DeleteFrameworkDialog', () => ({ DeleteFrameworkDialog: ()
 vi.mock('@/app/lib/api-client', () => ({ apiClient: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }) }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
-vi.mock('@trycompai/ui', () => ({
+vi.mock('@gideon-defender/ui', () => ({
   Button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
 }));
 

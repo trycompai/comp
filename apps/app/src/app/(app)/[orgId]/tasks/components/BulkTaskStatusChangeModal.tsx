@@ -2,7 +2,7 @@
 
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { Label, Textarea } from '@trycompai/design-system';
-import { Button } from '@trycompai/ui/button';
+import { Button } from '@gideon-defender/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -10,8 +10,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@trycompai/ui/select';
+} from '@gideon-defender/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@gideon-defender/ui/select';
 import { Member, TaskStatus, User } from '@db';
 import { Loader2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';

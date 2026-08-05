@@ -1,7 +1,7 @@
 'use client';
 
-import { Badge } from '@trycompai/ui/badge';
-import { Card } from '@trycompai/ui/card';
+import { Badge } from '@gideon-defender/ui/badge';
+import { Card } from '@gideon-defender/ui/card';
 import type { EvidenceAutomation, EvidenceAutomationRun, Task } from '@db';
 import { formatDistanceToNow } from 'date-fns';
 import { Activity, ArrowRight, CheckCircle2, Clock, Sparkles, XCircle } from 'lucide-react';

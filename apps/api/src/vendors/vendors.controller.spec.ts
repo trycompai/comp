@@ -14,7 +14,7 @@ jest.mock('../auth/auth.server', () => ({
   },
 }));
 
-jest.mock('@trycompai/auth', () => ({
+jest.mock('@gideon-defender/auth', () => ({
   statement: {
     vendor: ['create', 'read', 'update', 'delete'],
   },

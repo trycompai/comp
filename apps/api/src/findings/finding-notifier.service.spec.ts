@@ -29,7 +29,7 @@ jest.mock('@db', () => ({
   },
 }));
 
-jest.mock('@trycompai/email', () => ({
+jest.mock('@gideon-defender/email', () => ({
   isUserUnsubscribed: jest.fn().mockResolvedValue(false),
 }));
 

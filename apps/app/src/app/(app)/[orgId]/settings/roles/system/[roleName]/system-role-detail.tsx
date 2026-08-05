@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Card, CardContent } from '@trycompai/ui/card';
+import { Card, CardContent } from '@gideon-defender/ui/card';
 import { Stack, Text } from '@trycompai/design-system';
 import { toast } from 'sonner';
 import { apiClient } from '@/lib/api-client';

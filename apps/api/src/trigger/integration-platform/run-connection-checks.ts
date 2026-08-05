@@ -1,4 +1,4 @@
-import { getManifest, runAllChecks } from '@trycompai/integration-platform';
+import { getManifest, runAllChecks } from '@gideon-defender/integration-platform';
 import { db } from '@db';
 import { logger, tags, task } from '@trigger.dev/sdk';
 import {

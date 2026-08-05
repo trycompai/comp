@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, it } from 'vitest';
 import { isRetryableAssumeError, retryAssume } from '../assume-retry';
 
 // Fast, deterministic options for tests — never actually sleep.

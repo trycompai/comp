@@ -16,8 +16,8 @@ vi.mock('@/hooks/use-permissions', () => ({
   }),
 }));
 
-// Mock @trycompai/ui components
-vi.mock('@trycompai/ui/button', () => ({
+// Mock @gideon-defender/ui components
+vi.mock('@gideon-defender/ui/button', () => ({
   Button: ({
     children,
     onClick,
@@ -40,7 +40,7 @@ vi.mock('@trycompai/ui/button', () => ({
   ),
 }));
 
-vi.mock('@trycompai/ui/checkbox', () => ({
+vi.mock('@gideon-defender/ui/checkbox', () => ({
   Checkbox: ({
     checked,
     onCheckedChange,

@@ -51,14 +51,14 @@ http_headers = { "apikey" = "YOUR_APIKEY" }`;
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@trycompai/mcp-server MCP</title>
-    <meta name="description" content="Install @trycompai/mcp-server MCP server.">
+    <title>@gideon-defender/mcp-server MCP</title>
+    <meta name="description" content="Install @gideon-defender/mcp-server MCP server.">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="@trycompai/mcp-server - MCP Server">
-    <meta property="og:description" content="Install @trycompai/mcp-server MCP server.">
+    <meta property="og:title" content="@gideon-defender/mcp-server - MCP Server">
+    <meta property="og:description" content="Install @gideon-defender/mcp-server MCP server.">
     <meta property="twitter:card" content="summary">
-    <meta property="twitter:title" content="@trycompai/mcp-server - MCP Server">
-    <meta property="twitter:description" content="Install @trycompai/mcp-server MCP server.">
+    <meta property="twitter:title" content="@gideon-defender/mcp-server - MCP Server">
+    <meta property="twitter:description" content="Install @gideon-defender/mcp-server MCP server.">
     <meta name="robots" content="index, follow">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -665,7 +665,7 @@ http_headers = { "apikey" = "YOUR_APIKEY" }`;
                 </svg>
               </div>
               <div class="header-content">
-                <div class="mcp-name">@trycompai/mcp-server</div>
+                <div class="mcp-name">@gideon-defender/mcp-server</div>
                 <div class="mcp-description">MCP Server</div>
               </div>
             </div>
@@ -914,7 +914,7 @@ http_headers = { "apikey" = "YOUR_APIKEY" }`;
               <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
             </svg>
           </button>
-          <code class="code-snippet language-json" id="claude-cli-cmd">claude mcp add CompAi -- npx -y @trycompai/mcp-server start --apikey </code>
+          <code class="code-snippet language-json" id="claude-cli-cmd">claude mcp add CompAi -- npx -y @gideon-defender/mcp-server start --apikey </code>
         </div>
       </div>
     </div>
@@ -965,7 +965,7 @@ http_headers = { "apikey" = "YOUR_APIKEY" }`;
               <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
             </svg>
           </button>
-          <code class="code-snippet language-json" id="gemini-config">gemini mcp add CompAi -- npx -y @trycompai/mcp-server start --apikey </code>
+          <code class="code-snippet language-json" id="gemini-config">gemini mcp add CompAi -- npx -y @gideon-defender/mcp-server start --apikey </code>
         </div>
       </div>
     </div>

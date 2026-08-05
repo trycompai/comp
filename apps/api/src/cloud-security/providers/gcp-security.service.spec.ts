@@ -42,7 +42,6 @@ describe('GCPSecurityService — project detection', () => {
 
   beforeEach(() => {
     fetchMock = jest.fn();
-    // @ts-expect-error replacing global fetch with a mock for these tests
     global.fetch = fetchMock;
     service = new GCPSecurityService();
   });
@@ -746,7 +745,6 @@ describe('GCPSecurityService.scanSecurityFindings — all-scopes-failed guard', 
 
   beforeEach(() => {
     fetchMock = jest.fn();
-    // @ts-expect-error replacing global fetch with a mock for these tests
     global.fetch = fetchMock;
     service = new GCPSecurityService();
   });

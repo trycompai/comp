@@ -1,4 +1,4 @@
-import type { RunAllChecksResult } from '@trycompai/integration-platform';
+import type { RunAllChecksResult } from '@gideon-defender/integration-platform';
 import type { SecurityFinding } from './cloud-security.service';
 
 /**

@@ -1,8 +1,8 @@
 'use client';
 
 import { CreateRiskSheet } from '@/components/sheets/create-risk-sheet';
-import { Button } from '@trycompai/ui/button';
-import { Icons } from '@trycompai/ui/icons';
+import { Button } from '@gideon-defender/ui/button';
+import { Icons } from '@gideon-defender/ui/icons';
 import { Plus } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQueryState } from 'nuqs';

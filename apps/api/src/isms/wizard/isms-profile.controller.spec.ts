@@ -20,7 +20,7 @@ jest.mock('../../auth/permission.guard', () => ({
   PermissionGuard: class MockPermissionGuard {},
   PERMISSIONS_KEY: 'permissions',
 }));
-jest.mock('@trycompai/auth', () => ({
+jest.mock('@gideon-defender/auth', () => ({
   statement: {},
   BUILT_IN_ROLE_PERMISSIONS: {},
 }));

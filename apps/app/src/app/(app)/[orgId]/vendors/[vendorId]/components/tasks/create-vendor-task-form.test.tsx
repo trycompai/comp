@@ -37,15 +37,15 @@ vi.mock('@/components/SelectAssignee', () => ({
   SelectAssignee: () => <div data-testid="select-assignee" />,
 }));
 
-// Mock @trycompai/ui components
-vi.mock('@trycompai/ui/accordion', () => ({
+// Mock @gideon-defender/ui components
+vi.mock('@gideon-defender/ui/accordion', () => ({
   Accordion: ({ children }: any) => <div>{children}</div>,
   AccordionContent: ({ children }: any) => <div>{children}</div>,
   AccordionItem: ({ children }: any) => <div>{children}</div>,
   AccordionTrigger: ({ children }: any) => <div>{children}</div>,
 }));
 
-vi.mock('@trycompai/ui/button', () => ({
+vi.mock('@gideon-defender/ui/button', () => ({
   Button: ({ children, disabled, ...props }: any) => (
     <button disabled={disabled} {...props}>
       {children}
@@ -53,15 +53,15 @@ vi.mock('@trycompai/ui/button', () => ({
   ),
 }));
 
-vi.mock('@trycompai/ui/calendar', () => ({
+vi.mock('@gideon-defender/ui/calendar', () => ({
   Calendar: () => <div data-testid="calendar" />,
 }));
 
-vi.mock('@trycompai/ui/cn', () => ({
+vi.mock('@gideon-defender/ui/cn', () => ({
   cn: (...args: any[]) => args.filter(Boolean).join(' '),
 }));
 
-vi.mock('@trycompai/ui/form', () => ({
+vi.mock('@gideon-defender/ui/form', () => ({
   Form: ({ children, ...props }: any) => <div {...props}>{children}</div>,
   FormControl: ({ children }: any) => <div>{children}</div>,
   FormField: ({ render, name }: any) => (
@@ -74,17 +74,17 @@ vi.mock('@trycompai/ui/form', () => ({
   FormMessage: () => null,
 }));
 
-vi.mock('@trycompai/ui/input', () => ({
+vi.mock('@gideon-defender/ui/input', () => ({
   Input: (props: any) => <input {...props} />,
 }));
 
-vi.mock('@trycompai/ui/popover', () => ({
+vi.mock('@gideon-defender/ui/popover', () => ({
   Popover: ({ children }: any) => <div>{children}</div>,
   PopoverContent: ({ children }: any) => <div>{children}</div>,
   PopoverTrigger: ({ children }: any) => <div>{children}</div>,
 }));
 
-vi.mock('@trycompai/ui/textarea', () => ({
+vi.mock('@gideon-defender/ui/textarea', () => ({
   Textarea: (props: any) => <textarea {...props} />,
 }));
 

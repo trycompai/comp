@@ -13,9 +13,9 @@ import {
   SortableOverlay,
 } from '@/components/data-table/sortable';
 import { dataTableConfig } from '@/lib/data-table-config';
-import { Badge } from '@trycompai/ui/badge';
-import { Button } from '@trycompai/ui/button';
-import { cn } from '@trycompai/ui/cn';
+import { Badge } from '@gideon-defender/ui/badge';
+import { Button } from '@gideon-defender/ui/button';
+import { cn } from '@gideon-defender/ui/cn';
 import {
   Command,
   CommandEmpty,
@@ -23,9 +23,9 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from '@trycompai/ui/command';
-import { Popover, PopoverContent, PopoverTrigger } from '@trycompai/ui/popover';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@trycompai/ui/select';
+} from '@gideon-defender/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@gideon-defender/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@gideon-defender/ui/select';
 
 const OPEN_MENU_SHORTCUT = 's';
 const REMOVE_SORT_SHORTCUTS = ['backspace', 'delete'];

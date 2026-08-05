@@ -28,8 +28,8 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 
-// Mock @trycompai/ui components
-vi.mock('@trycompai/ui/button', () => ({
+// Mock @gideon-defender/ui components
+vi.mock('@gideon-defender/ui/button', () => ({
   Button: ({ children, onClick, disabled, ...props }: any) => (
     <button onClick={onClick} disabled={disabled} {...props}>
       {children}
@@ -37,7 +37,7 @@ vi.mock('@trycompai/ui/button', () => ({
   ),
 }));
 
-vi.mock('@trycompai/ui', () => ({
+vi.mock('@gideon-defender/ui', () => ({
   Card: ({ children, ...props }: any) => (
     <div data-testid="card" {...props}>{children}</div>
   ),

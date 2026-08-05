@@ -1,4 +1,4 @@
-import { cn } from '@trycompai/ui/cn';
+import { cn } from '@gideon-defender/ui/cn';
 
 type Props = {
   className?: string;

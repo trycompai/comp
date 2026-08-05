@@ -7,7 +7,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@trycompai/ui/select';
+} from '@gideon-defender/ui/select';
 
 const LABELS: Record<TaskFrequency, string> = {
   daily: 'Daily',

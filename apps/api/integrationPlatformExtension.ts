@@ -8,12 +8,12 @@ import { existsSync } from 'node:fs';
 import { cp, mkdir } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 
-const PACKAGE_NAME = '@trycompai/integration-platform';
+const PACKAGE_NAME = '@gideon-defender/integration-platform';
 
 /**
- * Custom Trigger.dev build extension for @trycompai/integration-platform workspace package.
+ * Custom Trigger.dev build extension for @gideon-defender/integration-platform workspace package.
  *
- * Since @trycompai/integration-platform is a workspace package (not published to npm),
+ * Since @gideon-defender/integration-platform is a workspace package (not published to npm),
  * we need to:
  * 1. Add an esbuild plugin to resolve the import path during build
  * 2. Copy the built dist files into the trigger.dev deployment
@@ -51,15 +51,15 @@ class IntegrationPlatformExtension implements BuildExtension {
       name: 'resolve-integration-platform',
       setup(build) {
         // Resolve bare import
-        build.onResolve({ filter: /^@trycompai\/integration-platform$/ }, () => {
+        build.onResolve({ filter: /^@gideon-defender\/integration-platform$/ }, () => {
           return {
             path: resolve(packagePath, 'dist/index.js'),
           };
         });
 
-        // Resolve subpath imports like @trycompai/integration-platform/types
+        // Resolve subpath imports like @gideon-defender/integration-platform/types
         build.onResolve(
-          { filter: /^@trycompai\/integration-platform\// },
+          { filter: /^@gideon-defender\/integration-platform\// },
           (args) => {
             const subpath = args.path.replace(`${PACKAGE_NAME}/`, '');
             return {
@@ -88,7 +88,7 @@ class IntegrationPlatformExtension implements BuildExtension {
     // Copy the entire dist to the build output
     const destPath = resolve(
       manifest.outputPath,
-      'node_modules/@trycompai/integration-platform',
+      'node_modules/@gideon-defender/integration-platform',
     );
     const destDistPath = resolve(destPath, 'dist');
 
@@ -104,7 +104,7 @@ class IntegrationPlatformExtension implements BuildExtension {
     }
 
     context.logger.log(
-      'Copied @trycompai/integration-platform to deployment bundle',
+      'Copied @gideon-defender/integration-platform to deployment bundle',
     );
   }
 

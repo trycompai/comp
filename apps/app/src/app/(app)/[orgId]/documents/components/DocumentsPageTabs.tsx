@@ -1,6 +1,6 @@
 'use client';
 
-import { useFeatureFlag } from '@trycompai/analytics';
+import { useFeatureFlag } from '@gideon-defender/analytics';
 import {
   PageHeader,
   PageLayout,

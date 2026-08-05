@@ -13,8 +13,8 @@ jest.mock('./auth.server', () => ({
   },
 }));
 
-// Mock @trycompai/auth to avoid ESM issues with better-auth
-jest.mock('@trycompai/auth', () => ({
+// Mock @gideon-defender/auth to avoid ESM issues with better-auth
+jest.mock('@gideon-defender/auth', () => ({
   RESTRICTED_ROLES: ['employee', 'contractor'],
   PRIVILEGED_ROLES: ['owner', 'admin', 'auditor'],
 }));

@@ -217,7 +217,7 @@ Both sections render behind the existing page-level permission guard (`requireRo
 
 - Single PR containing backend, frontend, and tests.
 - No migration, no feature flag — additive read-only surfaces gated by existing permissions.
-- Typecheck: `npx turbo run typecheck --filter=@trycompai/api` and `--filter=@trycompai/app`.
+- Typecheck: `npx turbo run typecheck --filter=@gideon-defender/api` and `--filter=@gideon-defender/app`.
 - Run `audit-design-system` before committing UI.
 
 ## Open questions

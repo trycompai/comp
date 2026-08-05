@@ -192,7 +192,7 @@ async function seedJsonFiles(subDirectory: string) {
 // ISMS foundational document templates (CS-437). Mirrors
 // apps/api/src/isms/utils/document-types.ts ISMS_TYPE_DEFINITIONS — that file is
 // the single source of truth; this is kept in sync here because the seed (in
-// @trycompai/db) cannot import the API's `@db`-aliased module. Requirement links
+// @gideon-defender/db) cannot import the API's `@db`-aliased module. Requirement links
 // are NOT seeded — the clause fallback resolves them and links are authored in
 // the editor.
 const ISMS_DOCUMENT_TEMPLATES = [

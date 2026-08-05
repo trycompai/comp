@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@trycompai/ui/button';
+import { Button } from '@gideon-defender/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -8,14 +8,14 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
+} from '@gideon-defender/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@trycompai/ui/dropdown-menu';
-import { Icons } from '@trycompai/ui/icons';
+} from '@gideon-defender/ui/dropdown-menu';
+import { Icons } from '@gideon-defender/ui/icons';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { usePolicyActions } from '../hooks/usePolicyActions';

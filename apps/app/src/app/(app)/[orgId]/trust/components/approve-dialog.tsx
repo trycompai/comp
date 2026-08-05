@@ -1,6 +1,6 @@
 import { useAccessRequest, useApproveAccessRequest } from '@/hooks/use-access-requests';
 import { usePermissions } from '@/hooks/use-permissions';
-import { Button } from '@trycompai/ui/button';
+import { Button } from '@gideon-defender/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -8,8 +8,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
-import { Field, FieldError, FieldLabel } from '@trycompai/ui/field';
+} from '@gideon-defender/ui/dialog';
+import { Field, FieldError, FieldLabel } from '@gideon-defender/ui/field';
 import { useForm } from '@tanstack/react-form';
 import { toast } from 'sonner';
 import { DurationPicker } from './duration-picker';

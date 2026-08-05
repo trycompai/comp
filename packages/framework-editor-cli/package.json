@@ -1,5 +1,5 @@
 {
-  "name": "@trycompai/framework-editor-cli",
+  "name": "@gideon-defender/framework-editor-cli",
   "description": "CLI for managing framework editor templates via the Comp AI API",
   "version": "1.0.0",
   "private": true,

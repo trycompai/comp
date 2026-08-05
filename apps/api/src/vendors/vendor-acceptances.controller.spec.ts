@@ -14,7 +14,7 @@ jest.mock('../auth/auth.server', () => ({
   auth: { api: { getSession: jest.fn() } },
 }));
 
-jest.mock('@trycompai/auth', () => ({
+jest.mock('@gideon-defender/auth', () => ({
   statement: { vendor: ['create', 'read', 'update', 'delete'] },
   BUILT_IN_ROLE_PERMISSIONS: {},
 }));

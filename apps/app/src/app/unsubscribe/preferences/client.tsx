@@ -1,7 +1,7 @@
 'use client';
 
-import { Button } from '@trycompai/ui/button';
-import { Checkbox } from '@trycompai/ui/checkbox';
+import { Button } from '@gideon-defender/ui/button';
+import { Checkbox } from '@gideon-defender/ui/checkbox';
 import { useState } from 'react';
 import { toast } from 'sonner';
 

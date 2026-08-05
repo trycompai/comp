@@ -7,7 +7,7 @@ const { setTheme, useThemeMock } = vi.hoisted(() => ({
 }));
 
 vi.mock('next-themes', () => ({ useTheme: useThemeMock }));
-vi.mock('@trycompai/ui', () => ({
+vi.mock('@gideon-defender/ui', () => ({
   Button: ({
     children,
     variant: _v,

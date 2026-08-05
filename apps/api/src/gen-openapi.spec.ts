@@ -50,7 +50,7 @@ jest.mock('better-auth/plugins/organization/access', () => ({
   ownerAc: {},
 }));
 
-jest.mock('@trycompai/auth', () => {
+jest.mock('@gideon-defender/auth', () => {
   const emptyRole = { statements: {} };
   const roles = {
     owner: emptyRole,

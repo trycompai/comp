@@ -30,26 +30,26 @@
 
 ```bash
 # All tests (before pushing)
-cd apps/app && bun run test:all
+cd apps/app && npm run test:all
 
 # Specific test types
-bun run test              # Unit tests only
-bun run test:e2e          # E2E tests only
-bun run test:e2e:headed   # E2E with browser visible
+npm run test              # Unit tests only
+npm run test:e2e          # E2E tests only
+npm run test:e2e:headed   # E2E with browser visible
 ```
 
 ### Debug Failed CI Tests
 
 ```bash
 # View test results locally
-bun run test:e2e:report
+npm run test:e2e:report
 
 # Debug specific test
-bun run test:e2e:debug
+npm run test:e2e:debug
 
 # Run specific test file
-bunx vitest specific-test.spec.ts
-bunx playwright test specific-e2e.spec.ts
+npx vitest specific-test.spec.ts
+npx playwright test specific-e2e.spec.ts
 ```
 
 ## Branch Protection
@@ -88,7 +88,7 @@ Add these to your repository settings → Secrets and variables → Actions:
 ## Maintenance
 
 - Workflows use `ubuntu-latest-custom` runner
-- Update Playwright browsers monthly: `bunx playwright install`
+- Update Playwright browsers monthly: `npx playwright install`
 - Check for action updates quarterly
 - Review test performance weekly
 

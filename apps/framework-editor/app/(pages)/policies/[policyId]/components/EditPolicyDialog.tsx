@@ -29,7 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
   Textarea,
-} from '@trycompai/ui';
+} from '@gideon-defender/ui';
 import { apiClient } from '@/app/lib/api-client';
 
 // Schema for the form, consistent with server action

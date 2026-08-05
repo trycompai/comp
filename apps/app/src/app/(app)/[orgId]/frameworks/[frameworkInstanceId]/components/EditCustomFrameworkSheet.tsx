@@ -18,9 +18,9 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@trycompai/ui/form';
-import { Input } from '@trycompai/ui/input';
-import { Textarea } from '@trycompai/ui/textarea';
+} from '@gideon-defender/ui/form';
+import { Input } from '@gideon-defender/ui/input';
+import { Textarea } from '@gideon-defender/ui/textarea';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';

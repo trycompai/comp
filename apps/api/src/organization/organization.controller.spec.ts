@@ -19,7 +19,7 @@ jest.mock('../auth/auth.server', () => ({
   },
 }));
 
-jest.mock('@trycompai/auth', () => ({
+jest.mock('@gideon-defender/auth', () => ({
   statement: {
     organization: ['read', 'update', 'delete'],
     member: ['create', 'read', 'update', 'delete'],

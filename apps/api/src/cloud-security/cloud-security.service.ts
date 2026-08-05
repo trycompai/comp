@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { db, Prisma } from '@db';
-import { getManifest, runAllChecks } from '@trycompai/integration-platform';
+import { getManifest, runAllChecks } from '@gideon-defender/integration-platform';
 import { runs, tasks } from '@trigger.dev/sdk';
 import { CredentialVaultService } from '../integration-platform/services/credential-vault.service';
 import { OAuthCredentialsService } from '../integration-platform/services/oauth-credentials.service';

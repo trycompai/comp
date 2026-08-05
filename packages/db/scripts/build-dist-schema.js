@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
  * Builds dist/schema.prisma from prisma/schema/*.prisma so consumers that
- * pull from the published @trycompai/db package (e.g. comp-private apps,
- * which run `cp .../@trycompai/db/dist/schema.prisma prisma/schema.prisma`)
+ * pull from the published @gideon-defender/db package (e.g. comp-private apps,
+ * which run `cp .../@gideon-defender/db/dist/schema.prisma prisma/schema.prisma`)
  * receive a single, ready-to-use schema.
  *
  * Native multi-file Prisma v7 schemas live in `prisma/schema/`. Inside the

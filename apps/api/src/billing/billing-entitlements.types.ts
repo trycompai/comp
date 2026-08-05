@@ -1,5 +1,5 @@
 import { Prisma } from '@db';
-import type { BillingSkuKey } from '@trycompai/billing';
+import type { BillingSkuKey } from '@gideon-defender/billing';
 
 export type BillingConsumeResult =
   | { status: 'consumed'; subscriptionId: string }

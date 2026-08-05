@@ -36,8 +36,8 @@ vi.mock('@/hooks/use-integration-platform', () => ({
   }),
 }));
 
-// Mock @trycompai/ui components
-vi.mock('@trycompai/ui/button', () => ({
+// Mock @gideon-defender/ui components
+vi.mock('@gideon-defender/ui/button', () => ({
   Button: ({
     children,
     onClick,
@@ -56,11 +56,11 @@ vi.mock('@trycompai/ui/button', () => ({
   ),
 }));
 
-vi.mock('@trycompai/ui/cn', () => ({
+vi.mock('@gideon-defender/ui/cn', () => ({
   cn: (...args: string[]) => args.filter(Boolean).join(' '),
 }));
 
-vi.mock('@trycompai/ui/dialog', () => ({
+vi.mock('@gideon-defender/ui/dialog', () => ({
   Dialog: ({
     children,
     open,
@@ -91,7 +91,7 @@ vi.mock('@trycompai/ui/dialog', () => ({
   ),
 }));
 
-vi.mock('@trycompai/ui/tabs', () => ({
+vi.mock('@gideon-defender/ui/tabs', () => ({
   Tabs: ({
     children,
   }: {

@@ -1,6 +1,6 @@
 'use client';
 
-import { Editor, type JSONContent } from '@trycompai/ui';
+import { Editor, type JSONContent } from '@gideon-defender/ui';
 
 interface AdvancedEditorProps {
   initialContent?: JSONContent | JSONContent[];

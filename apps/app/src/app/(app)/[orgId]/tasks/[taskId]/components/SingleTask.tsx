@@ -8,7 +8,7 @@ import { useOrganizationMembers } from '@/hooks/use-organization-members';
 import { downloadTaskEvidenceZip } from '@/lib/evidence-download';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useActiveMember } from '@/utils/auth-client';
-import { Button } from '@trycompai/ui/button';
+import { Button } from '@gideon-defender/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -16,7 +16,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
+} from '@gideon-defender/ui/dialog';
 import {
   CommentEntityType,
   EvidenceAutomation,

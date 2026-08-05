@@ -4,7 +4,7 @@ import {
   ConflictException,
   Logger,
 } from '@nestjs/common';
-import { getManifest } from '@trycompai/integration-platform';
+import { getManifest } from '@gideon-defender/integration-platform';
 import { db } from '@db';
 import { ConnectionRepository } from '../repositories/connection.repository';
 import { ProviderRepository } from '../repositories/provider.repository';

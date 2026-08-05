@@ -1,2 +1,2 @@
 export * from '@prisma/client';
-export { db } from './client';
+export { db, tenantDb, serviceDb, withTenant, withService } from './client';

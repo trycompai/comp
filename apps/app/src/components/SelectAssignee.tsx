@@ -2,8 +2,8 @@ import { useOrgIsInternal } from '@/components/org-internal-context';
 import { isOrgParticipant } from '@/lib/org-participation-rule';
 import { authClient } from '@/utils/auth-client';
 import { Member, User } from '@db';
-import { Avatar, AvatarFallback, AvatarImage } from '@trycompai/ui/avatar';
-import { Select, SelectContent, SelectItem, SelectTrigger } from '@trycompai/ui/select';
+import { Avatar, AvatarFallback, AvatarImage } from '@gideon-defender/ui/avatar';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@gideon-defender/ui/select';
 import { UserIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 

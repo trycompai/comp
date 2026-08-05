@@ -1,6 +1,6 @@
 'use client';
 
-import { useMediaQuery } from '@trycompai/ui/hooks';
+import { useMediaQuery } from '@gideon-defender/ui/hooks';
 import type { Policy } from '@db';
 import {
   Button,

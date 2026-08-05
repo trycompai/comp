@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'bun:test';
+import { afterEach, describe, expect, it } from 'vitest';
 import type { IntegrationManifest } from '../../types';
 import { createCheckContext, isTransientTransportError } from '../check-context';
 

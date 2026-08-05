@@ -1,6 +1,6 @@
 'use client';
 
-import { Input } from '@trycompai/ui/input';
+import { Input } from '@gideon-defender/ui/input';
 import { AlertTriangle, ListOrdered } from 'lucide-react';
 
 interface AcknowledgmentPanelProps {

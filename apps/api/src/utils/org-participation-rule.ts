@@ -3,9 +3,9 @@
  *
  * This is a deliberate mirror of `packages/auth/src/participation.ts`. Files
  * that end up in the API's Trigger.dev bundle (e.g. task notifiers) cannot
- * import `@trycompai/auth/participation`: the auth package's dist is not built
+ * import `@gideon-defender/auth/participation`: the auth package's dist is not built
  * in the Trigger.dev deploy workflow, so esbuild fails to resolve the subpath
- * ("Could not resolve @trycompai/auth/participation"). Keeping this rule free of
+ * ("Could not resolve @gideon-defender/auth/participation"). Keeping this rule free of
  * imports lets both NestJS services and Trigger.dev tasks share one
  * implementation. KEEP IN SYNC with the auth package version — the drift-guard
  * test in `org-participation-rule.spec.ts` fails CI if they diverge.

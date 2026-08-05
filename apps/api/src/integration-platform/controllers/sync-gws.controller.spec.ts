@@ -28,15 +28,15 @@ jest.mock('../../auth/auth.server', () => ({
   auth: { api: { getSession: jest.fn() } },
 }));
 
-jest.mock('@trycompai/auth', () => ({
+jest.mock('@gideon-defender/auth', () => ({
   statement: { integration: ['create', 'read', 'update', 'delete'] },
   BUILT_IN_ROLE_PERMISSIONS: {},
 }));
 
-jest.mock('@trycompai/integration-platform', () => {
+jest.mock('@gideon-defender/integration-platform', () => {
   const actual = jest.requireActual<
-    typeof import('@trycompai/integration-platform')
-  >('@trycompai/integration-platform');
+    typeof import('@gideon-defender/integration-platform')
+  >('@gideon-defender/integration-platform');
   return {
     ...actual,
     getManifest: jest.fn().mockReturnValue({

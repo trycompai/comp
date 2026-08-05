@@ -31,12 +31,12 @@ The API key carries your existing RBAC and permissions. The AI assistant can onl
 
 ## Install per AI client
 
-You don't manually download anything. The Comp AI MCP server is distributed as a public npm package — [`@trycompai/mcp-server`](https://www.npmjs.com/package/@trycompai/mcp-server) — and every install path below uses `npx -y` (or a one-click button / drag-and-drop bundle) to fetch it on demand the first time your AI client starts a session. New versions are picked up automatically on the next session.
+You don't manually download anything. The Comp AI MCP server is distributed as a public npm package — [`@gideon-defender/mcp-server`](https://www.npmjs.com/package/@gideon-defender/mcp-server) — and every install path below uses `npx -y` (or a one-click button / drag-and-drop bundle) to fetch it on demand the first time your AI client starts a session. New versions are picked up automatically on the next session.
 
 Pick the tab for your client. Each tab shows the easiest install path first, with a manual JSON option below for advanced setups.
 
 <Note>
-The `npx -y @trycompai/mcp-server` command you'll see throughout is what handles the download. Your AI client runs it in the background when you start a chat; npm fetches the latest published version from [npmjs.com](https://www.npmjs.com/package/@trycompai/mcp-server) and caches it locally. Nothing for you to install manually.
+The `npx -y @gideon-defender/mcp-server` command you'll see throughout is what handles the download. Your AI client runs it in the background when you start a chat; npm fetches the latest published version from [npmjs.com](https://www.npmjs.com/package/@gideon-defender/mcp-server) and caches it locally. Nothing for you to install manually.
 </Note>
 
 <Tabs>
@@ -66,7 +66,7 @@ If you prefer to manage `claude_desktop_config.json` yourself, open **Settings �
       "command": "npx",
       "args": [
         "-y",
-        "@trycompai/mcp-server",
+        "@gideon-defender/mcp-server",
         "start",
         "--apikey",
         "comp_your_api_key_here"
@@ -97,7 +97,7 @@ Open **Cursor → Settings → Tools and Integrations → New MCP Server** and p
   "command": "npx",
   "args": [
     "-y",
-    "@trycompai/mcp-server",
+    "@gideon-defender/mcp-server",
     "start",
     "--apikey",
     "comp_your_api_key_here"
@@ -126,7 +126,7 @@ Open the **Command Palette → MCP: Open User Configuration** and paste:
   "command": "npx",
   "args": [
     "-y",
-    "@trycompai/mcp-server",
+    "@gideon-defender/mcp-server",
     "start",
     "--apikey",
     "comp_your_api_key_here"
@@ -142,7 +142,7 @@ Open the **Command Palette → MCP: Open User Configuration** and paste:
 Install with one command:
 
 ```bash
-claude mcp add CompAI -- npx -y @trycompai/mcp-server start --apikey comp_your_api_key_here
+claude mcp add CompAI -- npx -y @gideon-defender/mcp-server start --apikey comp_your_api_key_here
 ```
 
 Claude Code registers the server immediately — Comp AI tools become available in your next session.
@@ -154,7 +154,7 @@ Claude Code registers the server immediately — Comp AI tools become available 
 Install with one command:
 
 ```bash
-codex mcp add comp-ai -- npx -y @trycompai/mcp-server start --apikey comp_your_api_key_here
+codex mcp add comp-ai -- npx -y @gideon-defender/mcp-server start --apikey comp_your_api_key_here
 ```
 
 Codex registers the server immediately — Comp AI tools become available in your next session.
@@ -168,7 +168,7 @@ For ChatGPT desktop / web with MCP support, follow OpenAI's MCP integration docs
 Install with one command:
 
 ```bash
-gemini mcp add CompAI -- npx -y @trycompai/mcp-server start --apikey comp_your_api_key_here
+gemini mcp add CompAI -- npx -y @gideon-defender/mcp-server start --apikey comp_your_api_key_here
 ```
 
 </Tab>
@@ -184,7 +184,7 @@ Open **Windsurf → Settings → Cascade → Manage MCPs → View raw config** a
       "command": "npx",
       "args": [
         "-y",
-        "@trycompai/mcp-server",
+        "@gideon-defender/mcp-server",
         "start",
         "--apikey",
         "comp_your_api_key_here"
@@ -337,7 +337,7 @@ Open an issue at [github.com/trycompai/comp/issues](https://github.com/trycompai
 
 ## Resources
 
-- **npm package:** [`@trycompai/mcp-server`](https://www.npmjs.com/package/@trycompai/mcp-server)
+- **npm package:** [`@gideon-defender/mcp-server`](https://www.npmjs.com/package/@gideon-defender/mcp-server)
 - **Source:** [github.com/trycompai/comp](https://github.com/trycompai/comp/tree/main/apps/mcp-server)
 - **Direct API reference:** [Comp AI API](/api-reference/overview)
 - **Model Context Protocol overview:** [modelcontextprotocol.io](https://modelcontextprotocol.io/)

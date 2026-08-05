@@ -103,8 +103,8 @@ vi.mock('@/hooks/use-integration-platform', () => ({
   }),
 }));
 
-// Mock @trycompai/ui components
-vi.mock('@trycompai/ui/button', () => ({
+// Mock @gideon-defender/ui components
+vi.mock('@gideon-defender/ui/button', () => ({
   Button: ({
     children,
     onClick,
@@ -130,11 +130,11 @@ vi.mock('@trycompai/ui/button', () => ({
   ),
 }));
 
-vi.mock('@trycompai/ui/combobox-dropdown', () => ({
+vi.mock('@gideon-defender/ui/combobox-dropdown', () => ({
   ComboboxDropdown: () => <div data-testid="combobox" />,
 }));
 
-vi.mock('@trycompai/ui/dialog', () => ({
+vi.mock('@gideon-defender/ui/dialog', () => ({
   Dialog: ({
     children,
     open,
@@ -162,11 +162,11 @@ vi.mock('@trycompai/ui/dialog', () => ({
   }) => <h2>{children}</h2>,
 }));
 
-vi.mock('@trycompai/ui/input', () => ({
+vi.mock('@gideon-defender/ui/input', () => ({
   Input: (props: Record<string, unknown>) => <input {...props} />,
 }));
 
-vi.mock('@trycompai/ui/label', () => ({
+vi.mock('@gideon-defender/ui/label', () => ({
   Label: ({
     children,
   }: {
@@ -175,11 +175,11 @@ vi.mock('@trycompai/ui/label', () => ({
   }) => <label>{children}</label>,
 }));
 
-vi.mock('@trycompai/ui/multiple-selector', () => ({
+vi.mock('@gideon-defender/ui/multiple-selector', () => ({
   default: () => <div data-testid="multi-selector" />,
 }));
 
-vi.mock('@trycompai/ui/select', () => ({
+vi.mock('@gideon-defender/ui/select', () => ({
   Select: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   ),
@@ -195,7 +195,7 @@ vi.mock('@trycompai/ui/select', () => ({
   SelectValue: () => <span />,
 }));
 
-vi.mock('@trycompai/ui/textarea', () => ({
+vi.mock('@gideon-defender/ui/textarea', () => ({
   Textarea: (props: Record<string, unknown>) => <textarea {...props} />,
 }));
 

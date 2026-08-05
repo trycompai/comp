@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, it } from 'vitest';
 import { toHttpReadFailure } from '../http-read-failure';
 
 const httpError = (status: number, message: string) => {

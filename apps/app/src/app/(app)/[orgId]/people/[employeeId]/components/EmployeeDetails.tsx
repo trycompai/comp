@@ -2,7 +2,7 @@
 
 import { DepartmentSelect } from '@/components/DepartmentSelect';
 import { useApi } from '@/hooks/use-api';
-import { Popover, PopoverContent, PopoverTrigger } from '@trycompai/ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@gideon-defender/ui/popover';
 import type { Member, User } from '@db';
 import {
   Button,

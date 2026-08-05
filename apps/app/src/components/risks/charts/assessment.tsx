@@ -1,7 +1,7 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
-import { type ChartConfig, ChartContainer, ChartTooltip } from '@trycompai/ui/chart';
+import { Card, CardContent, CardHeader, CardTitle } from '@gideon-defender/ui/card';
+import { type ChartConfig, ChartContainer, ChartTooltip } from '@gideon-defender/ui/chart';
 import { Legend, Line, LineChart, XAxis, YAxis } from 'recharts';
 
 interface AssessmentChartProps {

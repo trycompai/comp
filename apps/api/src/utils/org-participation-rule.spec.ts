@@ -1,7 +1,7 @@
 import {
   PLATFORM_ADMIN_ROLE as AUTH_PLATFORM_ADMIN_ROLE,
   isOrgParticipant as authIsOrgParticipant,
-} from '@trycompai/auth/participation';
+} from '@gideon-defender/auth/participation';
 import {
   isOrgParticipant,
   PLATFORM_ADMIN_ROLE,
@@ -29,10 +29,10 @@ describe('org-participation-rule (API mirror)', () => {
 });
 
 // Drift guard: this API-local rule is a deliberate dependency-free mirror of
-// `@trycompai/auth/participation` (files in the Trigger.dev bundle can't import
+// `@gideon-defender/auth/participation` (files in the Trigger.dev bundle can't import
 // the auth package — its dist isn't built in that deploy). Fail CI if the two
 // ever diverge.
-describe('API rule stays in sync with @trycompai/auth', () => {
+describe('API rule stays in sync with @gideon-defender/auth', () => {
   const roles: Array<string | null | undefined> = [
     'admin',
     'owner',

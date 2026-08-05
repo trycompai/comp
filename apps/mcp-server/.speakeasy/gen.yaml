@@ -49,6 +49,6 @@ mcp-typescript:
   maxMethodParams: 0
   multipartArrayFormat: standard
   outputModelSuffix: output
-  packageName: '@trycompai/mcp-server'
+  packageName: '@gideon-defender/mcp-server'
   responseFormat: flat
   validateResponse: false

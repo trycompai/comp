@@ -1,12 +1,12 @@
 'use client';
 
-import { Button } from '@trycompai/ui/button';
+import { Button } from '@gideon-defender/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@trycompai/ui/dropdown-menu';
+} from '@gideon-defender/ui/dropdown-menu';
 import { Checkmark, ArrowLeft, Link, Tag, TrashCan, User as UserIcon } from '@trycompai/design-system/icons';
 import { cn } from '@/lib/utils';
 import { SelectAssignee } from '@/components/SelectAssignee';

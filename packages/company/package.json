@@ -1,8 +1,9 @@
 {
-  "name": "@trycompai/company",
+  "name": "@gideon-defender/company",
   "version": "1.0.0",
   "dependencies": {
-    "@trycompai/db": "workspace:*",
+    "@prisma/client": "*",
+    "@gideon-defender/db": "*",
     "zod": "^4.3.6"
   },
   "devDependencies": {

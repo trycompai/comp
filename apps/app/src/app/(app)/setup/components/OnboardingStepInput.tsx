@@ -1,12 +1,12 @@
 import { AnimatedWrapper } from '@/components/animated-wrapper';
 import { SelectablePill } from '@/components/selectable-pill';
 import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
-import { Button } from '@trycompai/ui/button';
-import { Input } from '@trycompai/ui/input';
-import { Label } from '@trycompai/ui/label';
-import { Textarea } from '@trycompai/ui/textarea';
+import { Button } from '@gideon-defender/ui/button';
+import { Input } from '@gideon-defender/ui/input';
+import { Label } from '@gideon-defender/ui/label';
+import { Textarea } from '@gideon-defender/ui/textarea';
 import type { GlobalVendors } from '@db';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@gideon-defender/ui/tooltip';
 import { AlertCircle, Check, ChevronDown, ChevronUp, HelpCircle, Loader2, Plus, Search, Trash2, X } from 'lucide-react';
 import { useApi } from '@/hooks/use-api';
 import { useEffect, useRef, useState } from 'react';

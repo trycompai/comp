@@ -86,7 +86,7 @@ const dbMock = {
 };
 
 jest.mock('@db', () => ({ db: dbMock }));
-jest.mock('@trycompai/integration-platform', () => ({ getManifest: jest.fn() }));
+jest.mock('@gideon-defender/integration-platform', () => ({ getManifest: jest.fn() }));
 jest.mock('./evidence-sanitizer', () => ({
   sanitizeEvidence: (v: unknown) => v,
 }));
@@ -100,7 +100,7 @@ jest.mock('./finding-exceptions', () => ({
   loadActiveExceptionSet: jest.fn().mockResolvedValue({ size: 0 }),
 }));
 
-import { getManifest } from '@trycompai/integration-platform';
+import { getManifest } from '@gideon-defender/integration-platform';
 import { CloudSecurityQueryService } from './cloud-security-query.service';
 
 const ORG_ID = 'org_test';

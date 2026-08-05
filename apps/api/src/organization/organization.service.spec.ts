@@ -16,7 +16,7 @@ jest.mock('../app/s3', () => ({
   APP_AWS_ORG_ASSETS_BUCKET: 'bucket',
 }));
 
-jest.mock('@trycompai/auth', () => ({
+jest.mock('@gideon-defender/auth', () => ({
   allRoles: {},
 }));
 

@@ -1,7 +1,7 @@
 import { logger, queue, schemaTask } from '@trigger.dev/sdk';
 import { z } from 'zod';
 import { resend } from '../../email/resend';
-import { generateUnsubscribeToken } from '@trycompai/email';
+import { generateUnsubscribeToken } from '@gideon-defender/email';
 
 const RESEND_BATCH_LIMIT = 100;
 

@@ -1,5 +1,5 @@
 {
-    "name": "@trycompai/db",
+    "name": "@gideon-defender/db",
     "description": "Database package with Prisma client and schema for Comp AI",
     "version": "2.3.0",
     "dependencies": {
@@ -12,7 +12,9 @@
         "@types/node": "^24.2.0",
         "prisma": "7.6.0",
         "ts-node": "^10.9.2",
-        "typescript": "^5.9.2"
+        "tsx": "^4.19.0",
+        "typescript": "^5.9.2",
+        "vitest": "^3.2.7"
     },
     "exports": {
         ".": {
@@ -48,20 +50,21 @@
         "directory": "packages/db"
     },
     "scripts": {
-        "backfill:framework-versions": "bun src/scripts/backfill-framework-versions.ts",
+        "backfill:framework-versions": "tsx src/scripts/backfill-framework-versions.ts",
         "build": "rm -rf dist && node scripts/generate-prisma-client-js.js && tsc && node scripts/build-dist-schema.js",
         "check-types": "tsc --noEmit",
         "db:generate": "node scripts/generate-prisma-client-js.js",
         "db:migrate": "prisma migrate dev",
         "db:migrate:reset": "prisma migrate reset",
         "db:push": "prisma db push",
-        "db:seed": "bun prisma/seed/seed.ts",
+        "db:seed": "tsx prisma/seed/seed.ts",
         "db:studio": "prisma studio",
         "docker:clean": "docker compose down -v",
         "docker:down": "docker compose down",
         "docker:up": "docker compose up -d",
         "lint": "prettier --check 'src/**/*.{ts,tsx,js,jsx,json}' 'prisma/**/*.prisma' && tsc --noEmit",
         "postinstall": "node scripts/generate-prisma-client-js.js || true",
-        "prepublishOnly": "bun run build"
+        "prepublishOnly": "npm run build",
+        "test": "vitest run"
     }
 }

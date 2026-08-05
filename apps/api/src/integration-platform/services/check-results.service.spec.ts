@@ -1,16 +1,16 @@
 jest.mock('@db', () => ({ db: {} }));
 
-jest.mock('@trycompai/integration-platform', () => {
+jest.mock('@gideon-defender/integration-platform', () => {
   const actual = jest.requireActual<
-    typeof import('@trycompai/integration-platform')
-  >('@trycompai/integration-platform');
+    typeof import('@gideon-defender/integration-platform')
+  >('@gideon-defender/integration-platform');
   return {
     ...actual,
     registry: { getActiveManifests: jest.fn() },
   };
 });
 
-import { registry, TASK_TEMPLATES } from '@trycompai/integration-platform';
+import { registry, TASK_TEMPLATES } from '@gideon-defender/integration-platform';
 import { CheckResultsService } from './check-results.service';
 
 const mockGetActiveManifests = (
