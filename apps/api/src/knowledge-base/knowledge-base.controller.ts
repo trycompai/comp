@@ -70,13 +70,19 @@ export class KnowledgeBaseController {
     });
   }
 
+  // All handlers scope operations to the caller's active organization, resolved
+  // from the authenticated request context via @OrganizationId.
+
   @Post('documents/upload')
   @RequirePermission('questionnaire', 'create')
   @ApiOperation({ summary: 'Upload a knowledge base document' })
   @ApiConsumes('application/json')
   @ApiOkResponse({ description: 'Document uploaded successfully' })
-  async uploadDocument(@Body() dto: UploadDocumentDto) {
-    return this.knowledgeBaseService.uploadDocument(dto);
+  async uploadDocument(
+    @OrganizationId() organizationId: string,
+    @Body() dto: UploadDocumentDto,
+  ) {
+    return this.knowledgeBaseService.uploadDocument({ ...dto, organizationId });
   }
 
   @Post('documents/:documentId/download')
@@ -87,11 +93,13 @@ export class KnowledgeBaseController {
   @ApiOkResponse({ description: 'Signed download URL generated' })
   async getDownloadUrl(
     @Param('documentId') documentId: string,
+    @OrganizationId() organizationId: string,
     @Body() dto: Omit<GetDocumentUrlDto, 'documentId'>,
   ) {
     return this.knowledgeBaseService.getDownloadUrl({
       ...dto,
       documentId,
+      organizationId,
     });
   }
 
@@ -103,11 +111,13 @@ export class KnowledgeBaseController {
   @ApiOkResponse({ description: 'Signed view URL generated' })
   async getViewUrl(
     @Param('documentId') documentId: string,
+    @OrganizationId() organizationId: string,
     @Body() dto: Omit<GetDocumentUrlDto, 'documentId'>,
   ) {
     return this.knowledgeBaseService.getViewUrl({
       ...dto,
       documentId,
+      organizationId,
     });
   }
 
@@ -119,11 +129,13 @@ export class KnowledgeBaseController {
   @ApiOkResponse({ description: 'Document deleted successfully' })
   async deleteDocument(
     @Param('documentId') documentId: string,
+    @OrganizationId() organizationId: string,
     @Body() dto: Omit<DeleteDocumentDto, 'documentId'>,
   ) {
     return this.knowledgeBaseService.deleteDocument({
       ...dto,
       documentId,
+      organizationId,
     });
   }
 
@@ -132,17 +144,14 @@ export class KnowledgeBaseController {
   @ApiOperation({ summary: 'Trigger processing of knowledge base documents' })
   @ApiConsumes('application/json')
   @ApiOkResponse({ description: 'Document processing triggered' })
-  async processDocuments(@Body() dto: ProcessDocumentsDto) {
-    return this.knowledgeBaseService.processDocuments(dto);
-  }
-
-  @Post('runs/:runId/token')
-  @RequirePermission('questionnaire', 'read')
-  @ApiOperation({ summary: 'Create a public access token for a run' })
-  @ApiOkResponse({ description: 'Public access token created' })
-  async createRunToken(@Param('runId') runId: string) {
-    const token = await this.knowledgeBaseService.createRunReadToken(runId);
-    return { success: !!token, token };
+  async processDocuments(
+    @OrganizationId() organizationId: string,
+    @Body() dto: ProcessDocumentsDto,
+  ) {
+    return this.knowledgeBaseService.processDocuments({
+      ...dto,
+      organizationId,
+    });
   }
 
   @Post('manual-answers/:manualAnswerId/delete')
@@ -153,11 +162,13 @@ export class KnowledgeBaseController {
   @ApiOkResponse({ description: 'Manual answer deleted' })
   async deleteManualAnswer(
     @Param('manualAnswerId') manualAnswerId: string,
+    @OrganizationId() organizationId: string,
     @Body() dto: DeleteManualAnswerDto,
   ) {
     return this.knowledgeBaseService.deleteManualAnswer({
       ...dto,
       manualAnswerId,
+      organizationId,
     });
   }
 
@@ -167,7 +178,13 @@ export class KnowledgeBaseController {
   @ApiOperation({ summary: 'Delete all manual answers for an organization' })
   @ApiConsumes('application/json')
   @ApiOkResponse({ description: 'All manual answers deleted' })
-  async deleteAllManualAnswers(@Body() dto: DeleteAllManualAnswersDto) {
-    return this.knowledgeBaseService.deleteAllManualAnswers(dto);
+  async deleteAllManualAnswers(
+    @OrganizationId() organizationId: string,
+    @Body() dto: DeleteAllManualAnswersDto,
+  ) {
+    return this.knowledgeBaseService.deleteAllManualAnswers({
+      ...dto,
+      organizationId,
+    });
   }
 }

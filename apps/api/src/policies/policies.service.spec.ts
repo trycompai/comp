@@ -27,6 +27,7 @@ jest.mock('@db', () => ({
       createMany: jest.fn(),
     },
     $transaction: jest.fn(),
+    $executeRaw: jest.fn(),
   },
   Frequency: {
     monthly: 'monthly',
@@ -95,6 +96,7 @@ const { db } = require('@db') as {
     member: { findMany: jest.Mock; findFirst: jest.Mock };
     auditLog: { createMany: jest.Mock };
     $transaction: jest.Mock;
+    $executeRaw: jest.Mock;
   };
 };
 
@@ -312,6 +314,119 @@ describe('PoliciesService', () => {
 
       const updateArg = db.policy.update.mock.calls[0][0];
       expect(updateArg.data.signedBy).toEqual([]);
+    });
+
+    // CS-722: a content update on a DRAFT policy wrote `content` but left
+    // `draftContent` on the previous text. The stale draft then reported
+    // "unpublished changes" in the UI, and publishing without a versionId
+    // snapshots draftContent — silently reverting the rewrite that just landed.
+    it('syncs draftContent with content when updating a draft policy', async () => {
+      const orgId = 'org_abc';
+      const newContent = [
+        { type: 'paragraph', content: [{ type: 'text', text: 'rewritten body' }] },
+      ];
+      const existing = {
+        id: 'pol_1',
+        organizationId: orgId,
+        status: 'draft',
+        pendingVersionId: null,
+        approverId: null,
+        frequency: 'yearly',
+        pdfUrl: null,
+      };
+
+      db.$transaction.mockImplementation(async (callback: (tx: unknown) => Promise<unknown>) => {
+        const tx = {
+          policy: { findFirst: db.policy.findFirst, update: db.policy.update },
+          policyVersion: { update: db.policyVersion.update },
+        };
+        return callback(tx);
+      });
+      db.policy.findFirst.mockResolvedValueOnce(existing);
+      db.policy.update.mockResolvedValueOnce({
+        id: 'pol_1',
+        name: 'Test Policy',
+        status: 'draft',
+        currentVersionId: 'pv_1',
+      });
+
+      await service.updateById('pol_1', orgId, { content: newContent } as never);
+
+      const updateArg = db.policy.update.mock.calls[0][0];
+      expect(updateArg.data.content).toEqual(newContent);
+      expect(updateArg.data.draftContent).toEqual(newContent);
+      // Still a draft — draft content updates must not auto-publish.
+      expect(updateArg.data.status).toBeUndefined();
+      expect(db.policyVersion.create).not.toHaveBeenCalled();
+      // The current (draft) version snapshot stays in sync too.
+      expect(db.policyVersion.update).toHaveBeenCalledWith({
+        where: { id: 'pv_1' },
+        data: { content: newContent },
+      });
+    });
+
+    it('keeps the updated content when the caller then publishes without a versionId', async () => {
+      // The reported loss: update-policy followed by publish-policy-version with
+      // no versionId used to snapshot the stale draftContent, so the published
+      // version came back with the pre-update text.
+      const orgId = 'org_abc';
+      const oldContent = [
+        { type: 'paragraph', content: [{ type: 'text', text: 'old body' }] },
+      ];
+      const newContent = [
+        { type: 'paragraph', content: [{ type: 'text', text: 'rewritten body' }] },
+      ];
+
+      db.$transaction.mockImplementation(async (callback: (tx: unknown) => Promise<unknown>) => {
+        const tx = {
+          policy: { findFirst: db.policy.findFirst, update: db.policy.update },
+          policyVersion: {
+            findFirst: db.policyVersion.findFirst,
+            create: db.policyVersion.create,
+            update: db.policyVersion.update,
+          },
+        };
+        return callback(tx);
+      });
+      db.policy.findFirst.mockResolvedValueOnce({
+        id: 'pol_1',
+        organizationId: orgId,
+        status: 'draft',
+        pendingVersionId: null,
+        approverId: null,
+        frequency: 'yearly',
+        pdfUrl: null,
+      });
+      db.policy.update.mockResolvedValueOnce({
+        id: 'pol_1',
+        name: 'Test Policy',
+        status: 'draft',
+        currentVersionId: 'pv_1',
+      });
+
+      await service.updateById('pol_1', orgId, { content: newContent } as never);
+
+      // Round-trip the row the update just wrote into the publish call.
+      const written = db.policy.update.mock.calls[0][0].data;
+      db.member.findFirst.mockResolvedValueOnce({ id: 'mem_caller' });
+      db.policy.findUnique.mockResolvedValueOnce({
+        id: 'pol_1',
+        organizationId: orgId,
+        content: written.content ?? oldContent,
+        draftContent: written.draftContent ?? oldContent,
+        pdfUrl: null,
+        frequency: 'yearly',
+        pendingVersionId: null,
+        approverId: null,
+        versions: [],
+      });
+      db.policyVersion.findFirst.mockResolvedValueOnce({ version: 1 });
+      db.policyVersion.create.mockResolvedValueOnce({ id: 'pv_2', version: 2 });
+
+      await service.publishVersion('pol_1', orgId, {}, 'usr_caller');
+
+      const createArg = db.policyVersion.create.mock.calls[0][0];
+      expect(createArg.data.content).toEqual(newContent);
     });
 
     // Auto-route: content update on a non-draft policy creates a new
@@ -603,6 +718,32 @@ describe('PoliciesService', () => {
       expect(policyUpdateArg.data.pendingVersionId).toBeNull();
       expect(policyUpdateArg.data.approverId).toBeNull();
       expect(policyUpdateArg.data.signedBy).toEqual([]);
+    });
+
+    // Same lock order as updateVersionContent / publishVersion: Policy row
+    // first, then PolicyVersion. Approving while someone edits a version is a
+    // realistic race, and the opposite order deadlocks (Postgres 40P01).
+    it('writes the policy row before the version row (single lock order)', async () => {
+      db.policy.findUnique.mockResolvedValueOnce(buildPendingPolicy());
+      db.policyVersion.findUnique.mockResolvedValueOnce({
+        id: 'ver_1',
+        version: 2,
+        content: [{ type: 'paragraph' }],
+      });
+      db.member.findFirst.mockResolvedValueOnce({ id: 'mem_caller' });
+      db.member.findMany.mockResolvedValueOnce([]);
+      mockTransactionTx();
+
+      await service.acceptChanges(
+        'pol_1',
+        'org_abc',
+        { approverId: 'mem_approver' },
+        'usr_caller',
+      );
+
+      expect(db.policy.update.mock.invocationCallOrder[0]).toBeLessThan(
+        db.policyVersion.update.mock.invocationCallOrder[0],
+      );
     });
 
     it('succeeds when called via session impersonation — caller userId differs from approverId', async () => {
@@ -965,6 +1106,195 @@ describe('PoliciesService', () => {
     });
   });
 
+  // CS-722: editing a version wrote PolicyVersion.content only, leaving the
+  // Policy row on the previous text. get-policy then read back the stale
+  // content ("the write didn't land"), and publishing without a versionId
+  // snapshotted the stale draftContent — reverting the edit.
+  describe('updateVersionContent', () => {
+    const policyId = 'pol_1';
+    const organizationId = 'org_abc';
+    const oldContent = [
+      { type: 'paragraph', content: [{ type: 'text', text: 'old body' }] },
+    ];
+    const newContent = [
+      { type: 'paragraph', content: [{ type: 'text', text: 'MCP rewrite' }] },
+    ];
+
+    const mockTransactionTx = (
+      txFindUnique: jest.Mock = db.policyVersion.findUnique,
+    ) => {
+      db.$transaction.mockImplementation(
+        async (callback: (tx: unknown) => Promise<unknown>) => {
+          const tx = {
+            $executeRaw: db.$executeRaw,
+            policyVersion: {
+              findUnique: txFindUnique,
+              findFirst: db.policyVersion.findFirst,
+              create: db.policyVersion.create,
+              update: db.policyVersion.update,
+            },
+            policy: { update: db.policy.update },
+          };
+          return callback(tx);
+        },
+      );
+    };
+
+    const mockVersion = (policyOverrides: Record<string, unknown> = {}) =>
+      db.policyVersion.findUnique.mockResolvedValueOnce({
+        id: 'pv_2',
+        policyId,
+        policy: {
+          id: policyId,
+          organizationId,
+          status: 'published',
+          currentVersionId: 'pv_1',
+          pendingVersionId: null,
+          ...policyOverrides,
+        },
+      });
+
+    it('stages the edited content in Policy.draftContent without touching the live content', async () => {
+      mockVersion();
+      mockTransactionTx();
+
+      await service.updateVersionContent(policyId, 'pv_2', organizationId, {
+        content: newContent,
+      });
+
+      expect(db.policyVersion.update).toHaveBeenCalledWith({
+        where: { id: 'pv_2' },
+        data: { content: newContent },
+      });
+      const policyUpdate = db.policy.update.mock.calls[0][0];
+      expect(policyUpdate.where).toEqual({ id: policyId });
+      expect(policyUpdate.data.draftContent).toEqual(newContent);
+      // The published body only moves when the version is published.
+      expect(policyUpdate.data.content).toBeUndefined();
+    });
+
+    it('also syncs Policy.content when the edited version is the live draft version', async () => {
+      db.policyVersion.findUnique.mockResolvedValueOnce({
+        id: 'pv_1',
+        policyId,
+        policy: {
+          id: policyId,
+          organizationId,
+          status: 'draft',
+          currentVersionId: 'pv_1',
+          pendingVersionId: null,
+        },
+      });
+      mockTransactionTx();
+
+      await service.updateVersionContent(policyId, 'pv_1', organizationId, {
+        content: newContent,
+      });
+
+      const policyUpdate = db.policy.update.mock.calls[0][0];
+      expect(policyUpdate.data.content).toEqual(newContent);
+      expect(policyUpdate.data.draftContent).toEqual(newContent);
+    });
+
+    // The guards and the writes both key off status / currentVersionId, so they
+    // must run against state read inside the locked transaction. Validating a
+    // pre-transaction snapshot let a publish that committed in between pass the
+    // "still a draft" check, and the edit then overwrote the version — and the
+    // live Policy.content — that had just gone live.
+    it('rejects the edit when a concurrent publish promoted the version before the transaction', async () => {
+      const stalePolicy = {
+        id: policyId,
+        organizationId,
+        status: 'draft',
+        currentVersionId: 'pv_1',
+        pendingVersionId: null,
+      };
+      // Read outside the transaction: pv_1 is still the current version of a
+      // draft policy. The locked read inside the transaction waits for the
+      // concurrent publish to commit and sees pv_1 already published.
+      db.policyVersion.findUnique.mockResolvedValue({
+        id: 'pv_1',
+        policyId,
+        policy: stalePolicy,
+      });
+      const txFindUnique = jest.fn().mockResolvedValue({
+        id: 'pv_1',
+        policyId,
+        policy: { ...stalePolicy, status: 'published' },
+      });
+      mockTransactionTx(txFindUnique);
+
+      await expect(
+        service.updateVersionContent(policyId, 'pv_1', organizationId, {
+          content: newContent,
+        }),
+      ).rejects.toThrow(/Cannot edit the published version/);
+
+      expect(db.policyVersion.update).not.toHaveBeenCalled();
+      expect(db.policy.update).not.toHaveBeenCalled();
+    });
+
+    it('row-locks the policy row inside the transaction before validating', async () => {
+      mockVersion();
+      mockTransactionTx();
+
+      await service.updateVersionContent(policyId, 'pv_2', organizationId, {
+        content: newContent,
+      });
+
+      expect(db.$executeRaw).toHaveBeenCalledTimes(1);
+      const [fragments, ...values] = db.$executeRaw.mock.calls[0];
+      expect(fragments.join('?')).toContain('FOR UPDATE');
+      // Org-scoped, so the lock can never be taken on another tenant's row.
+      expect(values).toEqual([policyId, organizationId]);
+    });
+
+    it('does not wipe the stored draft when the payload carries no content', async () => {
+      mockVersion();
+      mockTransactionTx();
+
+      await service.updateVersionContent(policyId, 'pv_2', organizationId, {
+        content: [],
+      });
+
+      expect(db.policy.update).not.toHaveBeenCalled();
+    });
+
+    it('keeps the edit when the caller then publishes without a versionId (MCP flow)', async () => {
+      // The tool sequence Claude is steered into: create-policy-version →
+      // update-policy-version-content → publish-policy-version. Without the
+      // draftContent sync, the publish snapshotted the pre-edit text.
+      mockVersion();
+      mockTransactionTx();
+
+      await service.updateVersionContent(policyId, 'pv_2', organizationId, {
+        content: newContent,
+      });
+
+      // Round-trip the row the edit just wrote into the publish call.
+      const written = db.policy.update.mock.calls[0][0].data;
+      db.member.findFirst.mockResolvedValueOnce({ id: 'mem_caller' });
+      db.policy.findUnique.mockResolvedValueOnce({
+        id: policyId,
+        organizationId,
+        content: oldContent,
+        draftContent: written.draftContent ?? oldContent,
+        pdfUrl: null,
+        frequency: null,
+        pendingVersionId: null,
+        approverId: null,
+        versions: [],
+      });
+      db.policyVersion.findFirst.mockResolvedValueOnce({ version: 2 });
+      db.policyVersion.create.mockResolvedValueOnce({ id: 'pv_3', version: 3 });
+
+      await service.publishVersion(policyId, organizationId, {}, 'usr_caller');
+
+      const createArg = db.policyVersion.create.mock.calls[0][0];
+      expect(createArg.data.content).toEqual(newContent);
+    });
+  });
+
   describe('publishVersion', () => {
     const policyId = 'pol_1';
     const organizationId = 'org_abc';
@@ -1042,6 +1372,34 @@ describe('PoliciesService', () => {
         where: { id: 'pv_target' },
         data: { publishedById: 'mem_caller' },
       });
+    });
+
+    // updateVersionContent locks the Policy row (SELECT ... FOR UPDATE) before
+    // it writes the version, so publishing must take the same locks in the same
+    // order — Policy then PolicyVersion. The reverse order is an ABBA deadlock:
+    // Postgres aborts one of the two transactions with a 40P01.
+    it('writes the policy row before the version row (single lock order)', async () => {
+      db.member.findFirst.mockResolvedValueOnce({ id: 'mem_caller' });
+      db.policy.findUnique.mockResolvedValueOnce(buildPolicy());
+      db.policyVersion.findUnique.mockResolvedValueOnce({
+        id: 'pv_target',
+        policyId,
+        content: versionContent,
+        version: 7,
+        pdfUrl: null,
+      });
+      mockTransactionTx();
+
+      await service.publishVersion(
+        policyId,
+        organizationId,
+        { versionId: 'pv_target' },
+        userId,
+      );
+
+      expect(db.policy.update.mock.invocationCallOrder[0]).toBeLessThan(
+        db.policyVersion.update.mock.invocationCallOrder[0],
+      );
     });
 
     it('sets displayFormat to EDITOR when the published version has no PDF', async () => {

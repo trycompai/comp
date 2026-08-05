@@ -410,6 +410,16 @@ export class PoliciesService {
 
       if (contentValue) {
         updatePayload.content = contentValue;
+        // Keep the working draft in lockstep with the live content. Callers of
+        // this endpoint (MCP, API consumers) send a single content payload —
+        // leaving draftContent on the previous text both shows a phantom
+        // "unpublished changes" banner and makes the next publish
+        // (POST :id/versions/publish with no versionId, which snapshots
+        // draftContent) revert the content that was just written. An empty
+        // array carries no text, so it must never wipe the stored draft.
+        if (contentValue.length > 0) {
+          updatePayload.draftContent = contentValue;
+        }
       }
 
       // All reads and writes in one transaction to prevent concurrent publish bypass
@@ -849,53 +859,80 @@ export class PoliciesService {
     organizationId: string,
     dto: UpdateVersionContentDto,
   ) {
-    const version = await db.policyVersion.findUnique({
-      where: { id: versionId },
-      include: {
-        policy: {
-          select: {
-            id: true,
-            organizationId: true,
-            status: true,
-            currentVersionId: true,
-            pendingVersionId: true,
-          },
-        },
-      },
-    });
-
-    if (
-      !version ||
-      version.policy.id !== policyId ||
-      version.policy.organizationId !== organizationId
-    ) {
-      throw new NotFoundException('Version not found');
-    }
-
-    // Cannot edit the current version unless the policy is in draft status
-    // This covers both 'published' and 'needs_review' states
-    if (
-      version.id === version.policy.currentVersionId &&
-      version.policy.status !== 'draft'
-    ) {
-      throw new BadRequestException(
-        'Cannot edit the published version. Create a new version to make changes.',
-      );
-    }
-
-    if (version.id === version.policy.pendingVersionId) {
-      throw new BadRequestException(
-        'Cannot edit a version that is pending approval.',
-      );
-    }
-
     const processedContent = JSON.parse(
       JSON.stringify(dto.content ?? []),
     ) as Prisma.InputJsonValue[];
 
-    await db.policyVersion.update({
-      where: { id: versionId },
-      data: { content: processedContent },
+    await db.$transaction(async (tx) => {
+      // Lock the policy row, then read its state inside the transaction. Both
+      // the guards and the writes below key off status / currentVersionId, so a
+      // publish or promotion committing in between would let this edit land on
+      // a version that has since become the live one.
+      await tx.$executeRaw`SELECT id FROM "Policy" WHERE id = ${policyId} AND "organizationId" = ${organizationId} FOR UPDATE`;
+
+      const version = await tx.policyVersion.findUnique({
+        where: { id: versionId },
+        include: {
+          policy: {
+            select: {
+              id: true,
+              organizationId: true,
+              status: true,
+              currentVersionId: true,
+              pendingVersionId: true,
+            },
+          },
+        },
+      });
+
+      if (
+        !version ||
+        version.policy.id !== policyId ||
+        version.policy.organizationId !== organizationId
+      ) {
+        throw new NotFoundException('Version not found');
+      }
+
+      // Cannot edit the current version unless the policy is in draft status
+      // This covers both 'published' and 'needs_review' states
+      if (
+        version.id === version.policy.currentVersionId &&
+        version.policy.status !== 'draft'
+      ) {
+        throw new BadRequestException(
+          'Cannot edit the published version. Create a new version to make changes.',
+        );
+      }
+
+      if (version.id === version.policy.pendingVersionId) {
+        throw new BadRequestException(
+          'Cannot edit a version that is pending approval.',
+        );
+      }
+
+      await tx.policyVersion.update({
+        where: { id: versionId },
+        data: { content: processedContent },
+      });
+
+      // Mirror the edit onto the Policy row. draftContent is the working draft
+      // everywhere else — the "unpublished changes" banner compares it against
+      // content, and publishing without a versionId snapshots it — so leaving
+      // it on the previous text makes the next publish revert this edit.
+      // Policy.content only moves when the edited version IS the live one,
+      // which the guard above allows only while the policy is a draft. An empty
+      // payload carries no text, so it must never wipe the stored draft.
+      if (processedContent.length > 0) {
+        await tx.policy.update({
+          where: { id: policyId },
+          data: {
+            draftContent: processedContent,
+            ...(version.id === version.policy.currentVersionId && {
+              content: processedContent,
+            }),
+          },
+        });
+      }
     });
 
     return { versionId };
@@ -1017,11 +1054,10 @@ export class PoliciesService {
       }
 
       await db.$transaction(async (tx) => {
-        await tx.policyVersion.update({
-          where: { id: sourceVersion.id },
-          data: { publishedById: memberId },
-        });
-
+        // Policy row first, then the version row. Every path that writes both
+        // (updateById, updateVersionContent, acceptChanges) takes the locks in
+        // this order; taking them the other way round here deadlocks against a
+        // concurrent edit that already holds the policy lock.
         await tx.policy.update({
           where: { id: policyId },
           data: {
@@ -1041,6 +1077,11 @@ export class PoliciesService {
             // Clear signatures — employees must re-acknowledge new content
             signedBy: [],
           },
+        });
+
+        await tx.policyVersion.update({
+          where: { id: sourceVersion.id },
+          data: { publishedById: memberId },
         });
       });
 
@@ -1316,13 +1357,9 @@ export class PoliciesService {
     const memberId = await this.getMemberId(organizationId, userId);
 
     await db.$transaction(async (tx) => {
-      // Update the version with the publisher
-      await tx.policyVersion.update({
-        where: { id: version.id },
-        data: { publishedById: memberId },
-      });
-
-      // Publish the pending version
+      // Publish the pending version. Policy row first, then the version row —
+      // same lock order as every other path that writes both, so a concurrent
+      // version edit (which locks the policy first) cannot deadlock with this.
       await tx.policy.update({
         where: { id: policyId },
         data: {
@@ -1337,6 +1374,12 @@ export class PoliciesService {
           // Clear signatures — employees must re-acknowledge new content
           signedBy: [],
         },
+      });
+
+      // Stamp the version with the publisher
+      await tx.policyVersion.update({
+        where: { id: version.id },
+        data: { publishedById: memberId },
       });
     });
 
