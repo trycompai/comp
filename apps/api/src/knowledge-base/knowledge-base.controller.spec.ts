@@ -8,6 +8,17 @@ jest.mock('../auth/auth.server', () => ({
   auth: { api: { getSession: jest.fn() } },
 }));
 
+// The controller pulls in the auth guard (and therefore the Prisma client and
+// the @trycompai/auth permission definitions) at import time. The service and
+// guards are fully mocked/overridden below, so none of this is exercised — stub
+// them out to keep this a hermetic unit test (matches the convention used by
+// the other controller specs in this app).
+jest.mock('@db', () => ({ db: {} }));
+jest.mock('@trycompai/auth', () => ({
+  statement: {},
+  BUILT_IN_ROLE_PERMISSIONS: {},
+}));
+
 describe('KnowledgeBaseController', () => {
   let controller: KnowledgeBaseController;
   let service: jest.Mocked<KnowledgeBaseService>;
@@ -89,10 +100,16 @@ describe('KnowledgeBaseController', () => {
     });
   });
 
+  // These handlers scope to the caller's active organization from the auth
+  // context. Each test passes one org in the body and a different authenticated
+  // org, and asserts the authenticated org is what reaches the service.
+  const AUTH_ORG = 'org_authenticated';
+  const OTHER_ORG = 'org_supplied_in_body';
+
   describe('uploadDocument', () => {
-    it('should delegate to service', async () => {
+    it('uses the authenticated organization, not the body organizationId', async () => {
       const dto = {
-        organizationId: 'org_1',
+        organizationId: OTHER_ORG,
         fileName: 'doc.pdf',
         fileType: 'application/pdf',
         fileData: 'base64',
@@ -103,50 +120,73 @@ describe('KnowledgeBaseController', () => {
         s3Key: 'key',
       });
 
-      const result = await controller.uploadDocument(dto as any);
+      const result = await controller.uploadDocument(AUTH_ORG, dto as any);
 
       expect(result.id).toBe('d1');
-      expect(service.uploadDocument).toHaveBeenCalledWith(dto);
+      expect(service.uploadDocument).toHaveBeenCalledWith({
+        ...dto,
+        organizationId: AUTH_ORG,
+      });
     });
   });
 
   describe('getDownloadUrl', () => {
-    it('should merge documentId param with dto', async () => {
-      const dto = { organizationId: 'org_1' };
+    it('scopes to the authenticated organization and merges documentId', async () => {
+      const dto = { organizationId: OTHER_ORG };
       mockService.getDownloadUrl.mockResolvedValue({
         signedUrl: 'https://example.com/signed',
         fileName: 'doc.pdf',
       });
 
-      const result = await controller.getDownloadUrl('d1', dto as any);
+      const result = await controller.getDownloadUrl('d1', AUTH_ORG, dto as any);
 
       expect(result.signedUrl).toBe('https://example.com/signed');
       expect(service.getDownloadUrl).toHaveBeenCalledWith({
-        ...dto,
         documentId: 'd1',
+        organizationId: AUTH_ORG,
+      });
+    });
+  });
+
+  describe('getViewUrl', () => {
+    it('scopes to the authenticated organization and merges documentId', async () => {
+      const dto = { organizationId: OTHER_ORG };
+      mockService.getViewUrl.mockResolvedValue({
+        signedUrl: 'https://example.com/view',
+        fileName: 'doc.pdf',
+        fileType: 'application/pdf',
+        viewableInBrowser: true,
+      });
+
+      const result = await controller.getViewUrl('d1', AUTH_ORG, dto as any);
+
+      expect(result.signedUrl).toBe('https://example.com/view');
+      expect(service.getViewUrl).toHaveBeenCalledWith({
+        documentId: 'd1',
+        organizationId: AUTH_ORG,
       });
     });
   });
 
   describe('deleteDocument', () => {
-    it('should merge documentId param with dto', async () => {
-      const dto = { organizationId: 'org_1' };
+    it('scopes to the authenticated organization and merges documentId', async () => {
+      const dto = { organizationId: OTHER_ORG };
       mockService.deleteDocument.mockResolvedValue({ success: true });
 
-      const result = await controller.deleteDocument('d1', dto as any);
+      const result = await controller.deleteDocument('d1', AUTH_ORG, dto as any);
 
       expect(result).toEqual({ success: true });
       expect(service.deleteDocument).toHaveBeenCalledWith({
-        ...dto,
         documentId: 'd1',
+        organizationId: AUTH_ORG,
       });
     });
   });
 
   describe('processDocuments', () => {
-    it('should delegate to service', async () => {
+    it('uses the authenticated organization, not the body organizationId', async () => {
       const dto = {
-        organizationId: 'org_1',
+        organizationId: OTHER_ORG,
         documentIds: ['d1', 'd2'],
       };
       mockService.processDocuments.mockResolvedValue({
@@ -155,56 +195,49 @@ describe('KnowledgeBaseController', () => {
         message: 'Processing 2 documents in parallel...',
       });
 
-      const result = await controller.processDocuments(dto as any);
+      const result = await controller.processDocuments(AUTH_ORG, dto as any);
 
       expect(result.success).toBe(true);
-      expect(service.processDocuments).toHaveBeenCalledWith(dto);
-    });
-  });
-
-  describe('createRunToken', () => {
-    it('should return token when created', async () => {
-      mockService.createRunReadToken.mockResolvedValue('token_123');
-
-      const result = await controller.createRunToken('run_1');
-
-      expect(result).toEqual({ success: true, token: 'token_123' });
-      expect(service.createRunReadToken).toHaveBeenCalledWith('run_1');
-    });
-
-    it('should return success false when token creation fails', async () => {
-      mockService.createRunReadToken.mockResolvedValue(undefined);
-
-      const result = await controller.createRunToken('run_1');
-
-      expect(result).toEqual({ success: false, token: undefined });
+      expect(service.processDocuments).toHaveBeenCalledWith({
+        ...dto,
+        organizationId: AUTH_ORG,
+      });
     });
   });
 
   describe('deleteManualAnswer', () => {
-    it('should merge manualAnswerId param with dto', async () => {
-      const dto = { organizationId: 'org_1' };
+    it('scopes to the authenticated organization and merges manualAnswerId', async () => {
+      const dto = { organizationId: OTHER_ORG };
       mockService.deleteManualAnswer.mockResolvedValue({ success: true });
 
-      const result = await controller.deleteManualAnswer('ma1', dto as any);
+      const result = await controller.deleteManualAnswer(
+        'ma1',
+        AUTH_ORG,
+        dto as any,
+      );
 
       expect(result).toEqual({ success: true });
       expect(service.deleteManualAnswer).toHaveBeenCalledWith({
-        ...dto,
         manualAnswerId: 'ma1',
+        organizationId: AUTH_ORG,
       });
     });
   });
 
   describe('deleteAllManualAnswers', () => {
-    it('should delegate to service', async () => {
-      const dto = { organizationId: 'org_1' };
+    it('uses the authenticated organization, not the body organizationId', async () => {
+      const dto = { organizationId: OTHER_ORG };
       mockService.deleteAllManualAnswers.mockResolvedValue({ success: true });
 
-      const result = await controller.deleteAllManualAnswers(dto as any);
+      const result = await controller.deleteAllManualAnswers(
+        AUTH_ORG,
+        dto as any,
+      );
 
       expect(result).toEqual({ success: true });
-      expect(service.deleteAllManualAnswers).toHaveBeenCalledWith(dto);
+      expect(service.deleteAllManualAnswers).toHaveBeenCalledWith({
+        organizationId: AUTH_ORG,
+      });
     });
   });
 });
