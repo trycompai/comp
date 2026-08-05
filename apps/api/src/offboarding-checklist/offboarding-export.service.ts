@@ -71,18 +71,7 @@ export class OffboardingExportService {
     items: ChecklistItems,
     prefix = '',
   ) {
-    const rows = [
-      'Item,Status,Completed By,Completed Date,Evidence Count',
-      ...items.map((item) => {
-        const status = item.completed ? 'Complete' : 'Pending';
-        const completedBy = item.completion?.completedBy?.name ?? '';
-        const completedDate = item.completion?.completedAt
-          ? new Date(item.completion.completedAt).toISOString().split('T')[0]
-          : '';
-        return `"${escapeCsvField(item.title)}",${status},"${escapeCsvField(completedBy)}",${completedDate},${item.evidence.length}`;
-      }),
-    ];
-    archive.append(rows.join('\n'), { name: `${prefix}summary.csv` });
+    archive.append(buildSummaryCsv(items), { name: `${prefix}summary.csv` });
   }
 
   private appendVendorRevocationsCsv(
@@ -221,6 +210,33 @@ export class OffboardingExportService {
       return null;
     }
   }
+}
+
+/**
+ * Builds the offboarding summary CSV. Excepted steps are reported with an
+ * `Exception` status and their justification in the `Exception Reason` column —
+ * that reason is the audit artifact for a step that was legitimately skipped.
+ */
+export function buildSummaryCsv(items: ChecklistItems): string {
+  const rows = [
+    'Item,Status,Completed By,Completed Date,Evidence Count,Exception Reason',
+    ...items.map((item) => {
+      const status = summaryStatus(item);
+      const completedBy = item.completion?.completedBy?.name ?? '';
+      const completedDate = item.completion?.completedAt
+        ? new Date(item.completion.completedAt).toISOString().split('T')[0]
+        : '';
+      const reason = item.exceptionReason ?? '';
+      return `"${escapeCsvField(item.title)}",${status},"${escapeCsvField(completedBy)}",${completedDate},${item.evidence.length},"${escapeCsvField(reason)}"`;
+    }),
+  ];
+  return rows.join('\n');
+}
+
+function summaryStatus(item: ChecklistItems[number]): string {
+  if (item.isException) return 'Exception';
+  if (item.completed) return 'Complete';
+  return 'Pending';
 }
 
 function sanitizeFileName(name: string): string {
