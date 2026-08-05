@@ -1,3 +1,10 @@
+## [3.111.1](https://github.com/trycompai/comp/compare/v3.111.0...v3.111.1) (2026-08-05)
+
+
+### Bug Fixes
+
+* **in-progress:** [bug] mcp issue - serialization bug ([#3533](https://github.com/trycompai/comp/issues/3533)) ([c3ffd85](https://github.com/trycompai/comp/commit/c3ffd85b852bd6d70a88d4badbbbcd09cc66ac5b))
+
 # [3.111.0](https://github.com/trycompai/comp/compare/v3.110.1...v3.111.0) (2026-07-29)
 
 
