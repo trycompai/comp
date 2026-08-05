@@ -67,16 +67,16 @@ Every customer-facing endpoint MUST have:
 
 ```bash
 # Run tests for a specific module (from apps/api directory)
-npx jest src/<module-name> --passWithNoTests
+bunx jest src/<module-name> --passWithNoTests
 
 # Run tests for changed files only
-npx jest --onlyChanged
+bunx jest --onlyChanged
 
 # Run all API tests (from repo root)
-npx turbo run test --filter=@trycompai/api
+bunx turbo run test --filter=@trycompai/api
 
 # Type-check before committing
-npx turbo run typecheck --filter=@trycompai/api
+bunx turbo run typecheck --filter=@trycompai/api
 ```
 
 ### Test Patterns
@@ -142,22 +142,22 @@ const module = await Test.createTestingModule({
 1. **Before coding**: Read existing code patterns in the module
 2. **During coding**: Follow established patterns, add types
 3. **After coding**:
-   - Run `npx turbo run typecheck --filter=@trycompai/api`
-   - Write and run tests: `npx jest src/<module>`
+   - Run `bunx turbo run typecheck --filter=@trycompai/api`
+   - Write and run tests: `bunx jest src/<module>`
    - Commit with conventional commit message
 
 ## Common Commands
 
 ```bash
 # Start API in development
-npx turbo run dev --filter=@trycompai/api
+bunx turbo run dev --filter=@trycompai/api
 
 # Type-check
-npx turbo run typecheck --filter=@trycompai/api
+bunx turbo run typecheck --filter=@trycompai/api
 
 # Run specific test file
-npx jest src/roles/roles.service.spec.ts
+bunx jest src/roles/roles.service.spec.ts
 
 # Generate Prisma client after schema changes
-cd packages/db && npx prisma generate
+cd packages/db && bunx prisma generate
 ```
