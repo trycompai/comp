@@ -1,25 +1,25 @@
 lockVersion: 2.0.0
 id: f7130d09-dac4-4515-9162-6095782b6bb6
 management:
-  docChecksum: 35bfc6f0fda8bfe04a92b0c8d0590422
+  docChecksum: ac6da71b7246fc81aff6be78caf5f35c
   docVersion: "1.0"
-  speakeasyVersion: 1.790.3
-  generationVersion: 2.918.4
-  releaseVersion: 0.2.5
-  configChecksum: 16b11601c6d385e8fcd89719245bf1f4
+  speakeasyVersion: 1.792.0
+  generationVersion: 2.927.0
+  releaseVersion: 0.2.6
+  configChecksum: b6b473105a7c754c04de2143d2db564a
   repoURL: https://github.com/trycompai/comp.git
   repoSubDirectory: apps/mcp-server
   installationURL: https://github.com/trycompai/comp
   published: true
 persistentEdits:
-  generation_id: 17e70532-e3a6-4332-a01b-932b527573cb
-  pristine_commit_hash: e91965731fb9be5f2ad648b2b95ffdb7bf59db48
-  pristine_tree_hash: d6f794e558fe5cc10b16fc8c02711092d897cf29
+  generation_id: 6e88cfc6-d85f-476b-8bd2-bb1bd9c96e81
+  pristine_commit_hash: b051592084d62ddf42e9aa3053a9ceb6be1c9ad2
+  pristine_tree_hash: 8bb2b2f89cf1e9e9122243db43a2e997a47b751c
 features:
   mcp-typescript:
     additionalDependencies: 0.1.0
     constsAndDefaults: 0.1.2
-    core: 1.3.6
+    core: 1.3.7
     defaultEnabledRetries: 0.1.0
     enumUnions: 0.1.0
     globalSecurity: 0.1.3
@@ -51,12 +51,12 @@ trackedFiles:
     pristine_git_object: 4f9e60a9462fc4def738d60c3aaadf8232ef185f
   manifest.json:
     id: ca642a226869
-    last_write_checksum: sha1:f669ae5941c3b289dc8b573789626cba3757a8fd
-    pristine_git_object: 9d6a1ee3db7e4e8757abffa67007794c3de60349
+    last_write_checksum: sha1:08ebdaa8e8498fb285c354875e7d9fee74fe2292
+    pristine_git_object: 546471ae0f647afd3a402ddf5d4d4a94a6fd6bd9
   package.json:
     id: 7030d0b2f71b
-    last_write_checksum: sha1:12dca10a6b86137961fd4475234c28c4a0ac078b
-    pristine_git_object: 2832d9d9215452a3d3fa717c8708e56ca305370e
+    last_write_checksum: sha1:ebb8877cf73d641504f7a57693a94602a409e19f
+    pristine_git_object: 23dd230bd434137faee9e647e0424fd2263bebbc
   src/core.ts:
     id: f431fdbcd144
     last_write_checksum: sha1:3c1fe2275a0f345cf54298150f100299284b3f0e
@@ -1095,8 +1095,8 @@ trackedFiles:
     pristine_git_object: b6427c087fa3a520b90ad94df1836393e2bc65e1
   src/funcs/questionnaireQuestionnaireControllerAnswerSingleQuestionV1.ts:
     id: 77e939645afc
-    last_write_checksum: sha1:9d1f80574a9aa2c3b0896c0b0ecb682ee63d08a3
-    pristine_git_object: f7411a14e5917d4f53e789bca72362f75cc5aec6
+    last_write_checksum: sha1:878739188a3f896ae9ebabf01f69fbda24d4ecf9
+    pristine_git_object: 2e6fec1060d98830f40b80a80e42ba8d6830dd2a
   src/funcs/questionnaireQuestionnaireControllerAutoAnswerAndExportUploadV1.ts:
     id: 8d3b5221a040
     last_write_checksum: sha1:abe54a27d9ac034de5802ccb0bac4b257d1f0f95
@@ -1723,16 +1723,16 @@ trackedFiles:
     pristine_git_object: 9c36bf01332084f735909a71036c3544cc4c7e3a
   src/landing-page.ts:
     id: ef64a6ee46d7
-    last_write_checksum: sha1:5776685e5bb1d4778a4abb35a4d984a5b9241321
-    pristine_git_object: 41218b4a5099d8630f4bc30b91f75eac29ffcf28
+    last_write_checksum: sha1:6e7820fbb6198812d8739463c97a94a76d2614c2
+    pristine_git_object: d22c40907d61e5d48e517cae85eb08495d87bf7f
   src/lib/base64.ts:
     id: "598522066688"
     last_write_checksum: sha1:e9f04a037018040361043104960982f7c22db52d
     pristine_git_object: d4bd8b341290e7a828a171d840bd0b0fff7c7cd7
   src/lib/config.ts:
     id: 320761608fb3
-    last_write_checksum: sha1:84e32d3e3fe0ffeb947c26f0a03b08413cc2790d
-    pristine_git_object: dab403e196f65f0db332460cebcf11ad61de3093
+    last_write_checksum: sha1:bf2b3c17e8a9b9e56018cd0394105b3f068eff39
+    pristine_git_object: 7e1415115cd47b1315152f4fb821e4039f8a3cd3
   src/lib/encodings.ts:
     id: 3bd8ead98afd
     last_write_checksum: sha1:3ff4ad6809b749125820fd39c01427b84d3fe0d6
@@ -1819,8 +1819,8 @@ trackedFiles:
     pristine_git_object: 35c8713b6f8c7f17e2545423d3e74401ff77d04b
   src/mcp-server/mcp-server.ts:
     id: aabbc4ab07c1
-    last_write_checksum: sha1:c0ee56a958e0339df1a769b03ed72a69918e60f1
-    pristine_git_object: 615cc68169fd072c601af0e9c64da16c5e5a3b45
+    last_write_checksum: sha1:d9d9934dcc66c5ef1cc3622d17b0f5d23c715f02
+    pristine_git_object: 9408a1c1e6eb9cba1024b7e9a1ec86fbcbd47104
   src/mcp-server/prompts.ts:
     id: 26f3d73cbf31
     last_write_checksum: sha1:cadb036e04534a6d9d765809eebb266d188c499b
@@ -1835,8 +1835,8 @@ trackedFiles:
     pristine_git_object: c25696d4c4f70e081fa5d87ad6891874c509a577
   src/mcp-server/server.ts:
     id: 2784dd48e82a
-    last_write_checksum: sha1:ec87a97923d502b60af5794da916186b9270299a
-    pristine_git_object: 34152619072b0a0a8ce6a8f214e8dd76fafaba83
+    last_write_checksum: sha1:e3069b1f0342b8d491722c9097b31a847c2423bb
+    pristine_git_object: 2d480e310612575a6c94fa7d3494179ea94d522f
   src/mcp-server/shared.ts:
     id: 074e80d4be1e
     last_write_checksum: sha1:19c9034032819a14f15c430de4350c8aba99d725
@@ -3347,8 +3347,8 @@ trackedFiles:
     pristine_git_object: 1f60df367349bd8e7bb33f262beb7927b2f6d17a
   src/models/answersinglequestiondto.ts:
     id: 27b165c7833f
-    last_write_checksum: sha1:1727dde7af44892d514b5a636c0c0ae8fbef1db3
-    pristine_git_object: e479191deb60ffde26f23b06fff7f8b6a6573d53
+    last_write_checksum: sha1:f4c50d4bbf24e0601a3fda64581ab566c8aac920
+    pristine_git_object: 468d6a4b3b4dec8b4f0f3eadc2c0d5e3a4d9ee64
   src/models/approveaccessrequestdto.ts:
     id: 70f67f1ee754
     last_write_checksum: sha1:76b48399f4f6dff3a26ffa323d8394a7280ea4f1
@@ -6677,7 +6677,7 @@ examples:
   QuestionnaireController_answerSingleQuestion_v1:
     speakeasy-default-questionnaire-controller-answer-single-question-v1:
       requestBody:
-        application/json: {}
+        application/json: {"question": "Do you encrypt customer data at rest?", "questionIndex": 0, "totalQuestions": 12, "organizationId": "org_abc123", "questionnaireId": "qst_abc123"}
       responses:
         "200":
           application/json: {}
@@ -7787,4 +7787,6 @@ examples:
       requestBody:
         application/json: {"measurements": []}
 examplesVersion: 1.0.2
-releaseNotes: "## Mcp-typescript SDK Changes:\n* `CompAi.Audit Logs.AuditLogController_getAuditLogs_v1()`: \n  *  `request.offset` **Added**\n"
+releaseNotes: |
+  ## Mcp-typescript SDK Changes:
+  * `CompAi.Questionnaire.QuestionnaireController_answerSingleQuestion_v1()`:  `request` **Changed** (Breaking ⚠️)
