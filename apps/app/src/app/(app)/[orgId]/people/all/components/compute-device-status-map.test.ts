@@ -90,7 +90,10 @@ describe('computeDeviceStatusMap', () => {
     expect(map.mem_1).toBe('stale');
   });
 
-  it('returns stale when a compliant and a stale device are mixed', () => {
+  it('returns compliant when a compliant and a stale device are mixed', () => {
+    // An actively-reporting compliant device beats an old/abandoned device
+    // that hasn't checked in — otherwise the People table contradicts the
+    // per-device list, which still shows the active device as compliant.
     const map = computeDeviceStatusMap({
       agentDevices: [
         makeAgentDevice({ memberId: 'mem_1', complianceStatus: 'compliant' }),
@@ -103,7 +106,25 @@ describe('computeDeviceStatusMap', () => {
       fleetHosts: [],
       complianceMemberIds: ['mem_1'],
     });
-    expect(map.mem_1).toBe('stale');
+    expect(map.mem_1).toBe('compliant');
+  });
+
+  it('returns compliant when a stale device precedes a compliant one', () => {
+    // Sibling-order regression: encountering the stale device first must
+    // not lock the member into stale once a compliant device shows up.
+    const map = computeDeviceStatusMap({
+      agentDevices: [
+        makeAgentDevice({
+          memberId: 'mem_1',
+          complianceStatus: 'stale',
+          daysSinceLastCheckIn: 8,
+        }),
+        makeAgentDevice({ memberId: 'mem_1', complianceStatus: 'compliant' }),
+      ],
+      fleetHosts: [],
+      complianceMemberIds: ['mem_1'],
+    });
+    expect(map.mem_1).toBe('compliant');
   });
 
   it('prefers non-compliant over stale when both present', () => {
