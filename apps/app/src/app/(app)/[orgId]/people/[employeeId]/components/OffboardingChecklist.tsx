@@ -23,6 +23,7 @@ export function OffboardingChecklist({
     isLoading,
     completeItem,
     uncompleteItem,
+    markException,
     uploadEvidence,
     getDownloadUrl,
     refreshChecklist,
@@ -52,6 +53,24 @@ export function OffboardingChecklist({
       }
     },
     [uncompleteItem],
+  );
+
+  const handleMarkException = useCallback(
+    async ({
+      templateItemId,
+      reason,
+    }: {
+      templateItemId: string;
+      reason: string;
+    }) => {
+      try {
+        await markException({ templateItemId, reason });
+        toast.success('Item marked as exception');
+      } catch {
+        toast.error('Failed to mark item as exception');
+      }
+    },
+    [markException],
   );
 
   const handleUploadEvidence = useCallback(
@@ -149,6 +168,7 @@ export function OffboardingChecklist({
               canEdit={canEdit}
               onComplete={handleComplete}
               onUncomplete={handleUncomplete}
+              onMarkException={handleMarkException}
               onUploadEvidence={handleUploadEvidence}
               onDownload={handleDownload}
               onChecklistRefresh={() => refreshChecklist()}
