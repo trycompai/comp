@@ -11,7 +11,7 @@
     "jsonwebtoken": "^9.0.2",
     "node-fetch": "^2.6.7",
     "react": "^19.0.0",
-    "sharp": "^0.34.2",
+    "sharp": "^0.35.3",
     "stoppable": "^1.1.0",
     "zod": "^4.0.14"
   },
