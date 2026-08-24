@@ -14,6 +14,8 @@ import { gcpManifest } from '../manifests/gcp';
 import { manifest as githubManifest } from '../manifests/github';
 import { githubAppManifest } from '../manifests/github-app';
 import { googleWorkspaceManifest } from '../manifests/google-workspace';
+import { msp360BackupManifest } from '../manifests/msp360-backup';
+import { msp360RmmManifest } from '../manifests/msp360-rmm';
 import { ripplingManifest } from '../manifests/rippling';
 import { vercelManifest } from '../manifests/vercel';
 
@@ -148,6 +150,8 @@ const allManifests: IntegrationManifest[] = [
   githubManifest,
   githubAppManifest,
   googleWorkspaceManifest,
+  msp360BackupManifest,
+  msp360RmmManifest,
   ripplingManifest,
   vercelManifest,
   aikidoManifest,
