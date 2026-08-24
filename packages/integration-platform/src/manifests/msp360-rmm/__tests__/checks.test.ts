@@ -83,15 +83,67 @@ describe('msp360-rmm secureDevicesCheck', () => {
     );
   });
 
-  it('fails hosts with no antivirus', async () => {
+  it('fails Windows hosts with no antivirus', async () => {
     const { ctx, failed } = makeRmmCtx(async (path) => {
-      if (path.includes('/host/')) return page([{ hid: 'h2', computerName: 'bare' }]);
+      if (path.includes('/host/')) {
+        return page([{ hid: 'h2', computerName: 'bare', osName: 'Windows 11', operationSystemID: 'Windows' }]);
+      }
       if (path.includes('/antivirus/')) return page([]);
       if (path.includes('/summary/')) return page([]);
       throw new Error(path);
     });
     await secureDevicesCheck.run(ctx);
     expect(failed.some((r) => r.resourceId === 'h2')).toBe(true);
+  });
+
+  it('passes Linux hosts without antivirus as not applicable', async () => {
+    const { ctx, passed, failed } = makeRmmCtx(async (path) => {
+      if (path.includes('/host/')) {
+        return page([
+          {
+            hid: 'linux-1',
+            computerName: 'hetzner',
+            osName: 'Debian GNU/Linux 13',
+            operationSystemID: 'Linux',
+            platformID: 'Unix',
+          },
+        ]);
+      }
+      if (path.includes('/antivirus/')) return page([]);
+      if (path.includes('/summary/')) return page([]);
+      throw new Error(path);
+    });
+    await secureDevicesCheck.run(ctx);
+    expect(failed.filter((r) => r.resourceId === 'linux-1')).toHaveLength(0);
+    expect(passed.some((r) => r.resourceId === 'linux-1')).toBe(true);
+  });
+
+  it('reads enabled AV from nested header/data envelopes', async () => {
+    const hid = '6e6437dd-2fc8-427d-a220-6ff5926bedea';
+    const { ctx, passed, failed } = makeRmmCtx(async (path) => {
+      if (path.includes('/host/')) {
+        return {
+          items: [{ header: { hid, computerName: 'laptop-1' }, data: [{ computerName: 'laptop-1' }] }],
+          total: 1,
+        };
+      }
+      if (path.includes('/antivirus/')) {
+        return {
+          items: [
+            {
+              header: { hid: `{${hid.toUpperCase()}}`, computerName: 'laptop-1' },
+              data: [{ displayName: 'Windows Defender', enabled: true }],
+            },
+          ],
+          total: 1,
+        };
+      }
+      if (path.includes('/summary/')) return { items: [], total: 0 };
+      throw new Error(path);
+    });
+    await secureDevicesCheck.run(ctx);
+    expect(failed.filter((r) => r.resourceId === hid)).toHaveLength(0);
+    expect(passed.some((r) => r.resourceId === hid)).toBe(true);
   });
 });
 
@@ -121,5 +173,27 @@ describe('msp360-rmm infrastructureInventoryCheck', () => {
     expect(failed).toHaveLength(0);
     const device = passed.find((r) => r.resourceId === 'h1');
     expect(device?.evidence).toMatchObject({ hid: 'h1' });
+  });
+
+  it('joins live envelope rows when hid braces differ', async () => {
+    const hidBare = '3c934b6b-a47b-43f7-a458-c4d5610468b7';
+    const hidBraced = '{3C934B6B-A47B-43F7-A458-C4D5610468B7}';
+    const { ctx, passed, failed } = makeRmmCtx(async (path) => {
+      if (path.includes('/host/')) {
+        return { items: [{ header: { hid: hidBare, computerName: 'WIN-1' }, data: [{ computerName: 'WIN-1', osName: 'Windows' }] }], total: 1 };
+      }
+      if (path.includes('/hardware/')) {
+        return { items: [{ header: { hid: hidBraced, computerName: 'WIN-1' }, data: [{ name: 'Disk0' }] }], total: 1 };
+      }
+      if (path.includes('/software/')) {
+        return { items: [{ header: { hid: hidBraced, computerName: 'WIN-1' }, data: [{ name: 'Chrome' }] }], total: 1 };
+      }
+      throw new Error(path);
+    });
+    await infrastructureInventoryCheck.run(ctx);
+    expect(failed).toHaveLength(0);
+    const device = passed.find((r) => r.resourceId === hidBare);
+    expect(device?.title).toContain('WIN-1');
+    expect((device?.evidence as { hardware?: unknown[] } | undefined)?.hardware).toHaveLength(1);
   });
 });

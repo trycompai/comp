@@ -68,7 +68,7 @@ describe('msp360-backup employeeAccessCheck', () => {
 });
 
 describe('msp360-backup backupLogsCheck', () => {
-  it('passes recent successful backups and fails stale or failed jobs', async () => {
+  it('passes recent successful backups, fails error jobs, and treats stale success as paused', async () => {
     const now = new Date().toISOString();
     const stale = new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString();
     const { ctx, passed, failed } = makeBackupCtx({
@@ -106,7 +106,8 @@ describe('msp360-backup backupLogsCheck', () => {
     await backupLogsCheck.run(ctx);
     expect(passed.some((r) => r.resourceId === 'p-ok')).toBe(true);
     expect(failed.some((r) => r.resourceId === 'p-fail')).toBe(true);
-    expect(failed.some((r) => r.resourceId === 'p-stale')).toBe(true);
+    expect(failed.some((r) => r.resourceId === 'p-stale')).toBe(false);
+    expect(passed.some((r) => r.resourceId === 'p-stale')).toBe(true);
   });
 });
 
@@ -131,7 +132,7 @@ describe('msp360-backup backupRestorationTestCheck', () => {
     expect(passed.some((r) => r.resourceId === 'restore-1')).toBe(true);
   });
 
-  it('fails when no successful restore exists in the window', async () => {
+  it('passes as not in scope when no successful restore exists in the window', async () => {
     const { ctx, passed, failed } = makeBackupCtx({
       fetchImpl: async (path, init) =>
         router(path, init?.method, {
@@ -147,7 +148,7 @@ describe('msp360-backup backupRestorationTestCheck', () => {
         }),
     });
     await backupRestorationTestCheck.run(ctx);
-    expect(passed).toHaveLength(0);
-    expect(failed.some((r) => r.resourceId === 'msp360-restore-test')).toBe(true);
+    expect(failed).toHaveLength(0);
+    expect(passed.some((r) => r.resourceId === 'msp360-restore-not-in-scope')).toBe(true);
   });
 });

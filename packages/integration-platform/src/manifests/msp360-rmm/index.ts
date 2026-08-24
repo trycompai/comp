@@ -12,7 +12,7 @@ export const msp360RmmManifest: IntegrationManifest = {
   description:
     'Collect RMM fleet evidence: device list, antivirus, monitoring/alerts, and hardware/software inventory. Uses an RMM API Bearer token — not Backup Provider Login.',
   category: 'Infrastructure',
-  logoUrl: 'https://img.logo.dev/msp360.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ',
+  logoUrl: 'https://images.msp360.com/bimi/msp360-logo.svg',
   docsUrl: 'https://help.mspbackups.com/mbs-api-specification/rmm-api/get-started-rmm-api',
   isActive: true,
   supportsMultipleConnections: false,

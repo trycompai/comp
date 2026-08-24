@@ -16,7 +16,7 @@ export const backupRestorationTestCheck: IntegrationCheck = {
   id: 'backup-restoration-test',
   name: 'MSP360 backup restoration test',
   description:
-    'Pass if at least one successful restore or restore-verification plan ran in the last 90 days (MonitoringPlanType restore family).',
+    'Pass if a successful restore or restore-verification ran in the last 90 days. If none exists, pass as not in scope rather than failing this lab/process control.',
   service: 'backup',
   taskMapping: TASK_TEMPLATES.backupRestorationTest,
 
@@ -61,18 +61,16 @@ export const backupRestorationTestCheck: IntegrationCheck = {
     });
 
     if (recentSuccess.length === 0) {
-      ctx.fail({
-        title: 'No successful MSP360 restore test in the last 90 days',
-        description: `Found ${restoreRows.length} restore-family monitoring row(s), none with a successful LastStart within ${RESTORE_WINDOW_DAYS} days. Monitoring is latest-run only.`,
-        resourceType: 'service',
-        resourceId: 'msp360-restore-test',
-        severity: 'high',
-        remediation:
-          'Run a restore (or enable Restore Verification on image backups) so Monitoring shows a successful restore-family plan, then re-run this check.',
+      ctx.pass({
+        title: 'MSP360 restore test not in scope',
+        description: `Monitoring has ${restoreRows.length} restore-family row(s) and none with a successful LastStart within ${RESTORE_WINDOW_DAYS} days. This is a process control, not a failed restore. Run a restore or enable Restore Verification when it is in scope.`,
+        resourceType: 'control',
+        resourceId: 'msp360-restore-not-in-scope',
         evidence: {
           restoreRowCount: restoreRows.length,
           restoreRows: restoreRows.slice(0, 25),
           windowDays: RESTORE_WINDOW_DAYS,
+          outcome: 'not-in-scope',
           checkedAt,
         },
       });

@@ -34,6 +34,31 @@ const ENCRYPTION_KEYS = [
 
 const SCREEN_LOCK_KEYS = ['screenLock', 'ScreenLock', 'lockScreen', 'screensaver', 'screenSaver'];
 
+const UNIX_OS_RE = /\b(linux|debian|ubuntu|unix|freebsd|centos|rhel|fedora)\b/i;
+const WINDOWS_OS_RE = /\b(windows|winnt|win32)\b/i;
+
+function isUnixHost(host: RmmRecord): boolean {
+  const blob = [
+    host.osName,
+    host.osType,
+    host.operationSystemID,
+    host.platformID,
+    host.os,
+    host.OS,
+  ]
+    .filter((value) => typeof value === 'string')
+    .join(' ');
+  if (WINDOWS_OS_RE.test(blob) && !UNIX_OS_RE.test(blob)) {
+    return false;
+  }
+  return UNIX_OS_RE.test(blob);
+}
+
+function antivirusMetric(row: RmmRecord): RmmRecord | null {
+  const nested = row.antivirus;
+  return nested && typeof nested === 'object' && !Array.isArray(nested) ? (nested as RmmRecord) : null;
+}
+
 function antivirusActive(rows: RmmRecord[]): { active: boolean; reason: string; sample: RmmRecord | null } {
   if (rows.length === 0) {
     return { active: false, reason: 'No antivirus inventory row for this hid', sample: null };
@@ -46,7 +71,14 @@ function antivirusActive(rows: RmmRecord[]): { active: boolean; reason: string; 
     if (flag === false) {
       continue;
     }
-    const product = pickString(row, ['productName', 'ProductName', 'name', 'displayName', 'antivirus']);
+    const nested = antivirusMetric(row);
+    if (nested) {
+      const nestedFlag = truthyFlag(nested, AV_ENABLED_KEYS);
+      if (nestedFlag === true) {
+        return { active: true, reason: 'Summary antivirus metric reported OK/enabled', sample: row };
+      }
+    }
+    const product = pickString(row, ['productName', 'ProductName', 'displayName']);
     if (product) {
       return { active: true, reason: `Antivirus product present (${product}); explicit enabled flag not set`, sample: row };
     }
@@ -153,6 +185,17 @@ export const secureDevicesCheck: IntegrationCheck = {
       };
 
       if (!av.active) {
+        if (isUnixHost(host)) {
+          ctx.pass({
+            title: `Antivirus not applicable on Unix/Linux: ${name}`,
+            description:
+              'This host looks like Linux/Unix. MSP360 RMM antivirus inventory is a Windows-oriented control here, so missing AV is not scored as a fail.',
+            resourceType: 'device',
+            resourceId: hid,
+            evidence: { ...evidence, outcome: 'av-not-applicable-unix' },
+          });
+          continue;
+        }
         ctx.fail({
           title: `Antivirus missing or disabled: ${name}`,
           description: av.reason,

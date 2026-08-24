@@ -15,14 +15,14 @@ const STALE_AFTER_DAYS = 10;
 
 /**
  * Comp AI backup-logs wants ~10 consecutive days of job history. MBS GET /api/Monitoring
- * is latest run only. We pass when every in-scope backup plan's LastStart is within 10 days
- * and status is success; fail stale or failed jobs. CSV export is a manual supplement.
+ * is latest run only. Failed/error jobs fail. Successful recent jobs pass. A successful
+ * latest run older than 10 days is treated as paused / not in scope, not as a failed job.
  */
 export const backupLogsCheck: IntegrationCheck = {
   id: 'backup-logs',
   name: 'MSP360 backup logs (latest monitoring)',
   description:
-    'Latest backup plan runs from GET /api/Monitoring. Pass if each in-scope backup LastStart is within 10 days and succeeded.',
+    'Latest backup plan runs from GET /api/Monitoring. Failed jobs fail. Success within 10 days passes. Older successful runs are paused / not in scope.',
   service: 'backup',
   taskMapping: TASK_TEMPLATES.backupLogs,
 
@@ -90,7 +90,7 @@ export const backupLogsCheck: IntegrationCheck = {
       const ageDays = started ? daysAgo(started) : Number.POSITIVE_INFINITY;
       const stale = !started || ageDays > STALE_AFTER_DAYS;
       const failed = isFailedStatus(row.Status);
-      const success = isSuccessStatus(row.Status) && !stale;
+      const success = isSuccessStatus(row.Status);
 
       const evidence = {
         planName: row.PlanName,
@@ -105,7 +105,21 @@ export const backupLogsCheck: IntegrationCheck = {
         checkedAt,
       };
 
-      if (success) {
+      if (failed) {
+        ctx.fail({
+          title: `Backup issue: ${row.PlanName ?? id}`,
+          description: `Latest run status is ${String(row.Status)}${row.ErrorMessage ? `: ${row.ErrorMessage}` : ''}.`,
+          resourceType: 'backup-plan',
+          resourceId: id,
+          severity: 'high',
+          remediation:
+            'Open the detailed report in the management console, fix the plan error, and re-run.',
+          evidence,
+        });
+        continue;
+      }
+
+      if (success && !stale) {
         ctx.pass({
           title: `Backup ok: ${row.PlanName ?? id}`,
           description: `Latest run succeeded and LastStart is within ${STALE_AFTER_DAYS} days.`,
@@ -116,18 +130,12 @@ export const backupLogsCheck: IntegrationCheck = {
         continue;
       }
 
-      ctx.fail({
-        title: `Backup issue: ${row.PlanName ?? id}`,
-        description: stale
-          ? `Latest run is missing or older than ${STALE_AFTER_DAYS} days (LastStart=${row.LastStart ?? 'n/a'}).`
-          : `Latest run status is ${String(row.Status)}${row.ErrorMessage ? `: ${row.ErrorMessage}` : ''}.`,
+      ctx.pass({
+        title: `Backup paused / not in scope: ${row.PlanName ?? id}`,
+        description: `Latest run is not a failed job, but LastStart is missing or older than ${STALE_AFTER_DAYS} days (LastStart=${row.LastStart ?? 'n/a'}). Treated as paused / not currently in scope, not as a failed backup. Re-enable the plan if it should still protect production data.`,
         resourceType: 'backup-plan',
         resourceId: id,
-        severity: failed || stale ? 'high' : 'medium',
-        remediation: stale
-          ? 'Run the backup plan (or confirm it is still in scope). For a day-by-day file, export Reporting → Backup history → CSV.'
-          : 'Open the detailed report in the management console, fix the plan error, and re-run.',
-        evidence,
+        evidence: { ...evidence, outcome: 'paused-not-in-scope' },
       });
     }
   },

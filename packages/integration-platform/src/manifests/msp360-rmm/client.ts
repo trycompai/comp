@@ -20,9 +20,74 @@ export function rmmToken(ctx: CheckContext): string {
   return credString(ctx, 'api_key') || credString(ctx, 'token') || credString(ctx, 'apiKey');
 }
 
+function isRecord(value: unknown): value is RmmRecord {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+/** Live RMM hid values mix `{GUID}` and bare GUIDs; joins must ignore braces/case. */
+export function normalizeHid(raw: string): string {
+  return raw.replace(/[{}]/g, '').trim().toLowerCase();
+}
+
 export function hidOf(row: RmmRecord, fallback = ''): string {
-  const raw = row.hid ?? row.Hid ?? row.HID ?? row.computerHid ?? row.ComputerHid;
-  return raw != null && String(raw).trim() ? String(raw) : fallback;
+  const header = isRecord(row.header) ? row.header : null;
+  const candidates = [
+    row.hid,
+    row.Hid,
+    row.HID,
+    row.computerHid,
+    row.ComputerHid,
+    header?.hid,
+    header?.Hid,
+    header?.HID,
+    header?.computerHid,
+  ];
+  for (const candidate of candidates) {
+    if (candidate != null && String(candidate).trim()) {
+      return normalizeHid(String(candidate));
+    }
+  }
+  return fallback ? normalizeHid(fallback) : fallback;
+}
+
+/**
+ * Fleet stat endpoints wrap each computer as `{ header, data: [...] }`.
+ * Flatten plugin `data` rows and stamp the header hid so later joins work.
+ */
+export function expandStatRows(rows: RmmRecord[]): RmmRecord[] {
+  const out: RmmRecord[] = [];
+  for (const row of rows) {
+    const header = isRecord(row.header) ? row.header : {};
+    const hid = hidOf(row) || hidOf(header);
+    const inner = Array.isArray(row.data) ? row.data.filter(isRecord) : [];
+    const networkFrom = (record: RmmRecord): RmmRecord | null =>
+      isRecord(record.network) ? record.network : null;
+
+    if (inner.length === 0) {
+      const network = networkFrom(row) ?? networkFrom(header);
+      out.push({
+        ...header,
+        ...row,
+        hid,
+        ip: row.ip ?? network?.ip4Address ?? network?.ip4Address ?? network?.ipAddress,
+        mac: row.mac ?? network?.macAddress,
+      });
+      continue;
+    }
+
+    for (const item of inner) {
+      const network = networkFrom(item) ?? networkFrom(header);
+      out.push({
+        ...header,
+        ...item,
+        hid: hid || hidOf(item),
+        computerName: item.computerName ?? header.computerName ?? row.computerName,
+        ip: item.ip ?? network?.ip4Address ?? network?.ip4Address ?? network?.ipAddress,
+        mac: item.mac ?? network?.macAddress,
+      });
+    }
+  }
+  return out;
 }
 
 export function pageRows<T extends RmmRecord>(payload: unknown): { rows: T[]; total: number | null } {
@@ -31,7 +96,12 @@ export function pageRows<T extends RmmRecord>(payload: unknown): { rows: T[]; to
   }
   if (payload && typeof payload === 'object') {
     const record = payload as RmmPage<T>;
-    const rows = (record.data ?? record.items ?? record.results ?? []) as T[];
+    const rows = (
+      (Array.isArray(record.items) ? record.items : null) ??
+      (Array.isArray(record.data) ? record.data : null) ??
+      (Array.isArray(record.results) ? record.results : null) ??
+      []
+    ) as T[];
     const total =
       typeof record.total === 'number'
         ? record.total
@@ -91,7 +161,7 @@ export async function fetchAllStat<T extends RmmRecord>(
           break;
         }
       }
-      return all;
+      return expandStatRows(all) as T[];
     } catch (error) {
       lastError = error;
       ctx.log(`MSP360 RMM ${path} failed, trying fallback if any`, {

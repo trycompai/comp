@@ -12,7 +12,7 @@ export const msp360BackupManifest: IntegrationManifest = {
   description:
     'Collect Managed Backup evidence: console/API availability, administrator access, latest backup runs, and restore tests. Uses Provider Login — not the RMM token.',
   category: 'Monitoring',
-  logoUrl: 'https://img.logo.dev/msp360.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ',
+  logoUrl: 'https://images.msp360.com/bimi/msp360-logo.svg',
   docsUrl: 'https://help.mspbackups.com/mbs-api-specification/managed-backup-api/methods/api-methods',
   isActive: true,
   supportsMultipleConnections: false,
