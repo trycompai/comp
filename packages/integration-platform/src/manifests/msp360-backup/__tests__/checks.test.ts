@@ -257,13 +257,21 @@ describe('msp360-backup backupRestorationTestCheck', () => {
               PlanName: 'Restore files',
               PlanType: 4,
               LastStart: new Date().toISOString(),
-              PlanId: 'restore-unknown',
+              PlanId: 'restore-missing-status',
+            },
+            {
+              PlanName: 'Restore verify',
+              PlanType: 4,
+              Status: 'bogus',
+              LastStart: new Date().toISOString(),
+              PlanId: 'restore-unrecognized-status',
             },
           ],
         }),
     });
     await backupRestorationTestCheck.run(ctx);
-    expect(failed.some((r) => r.resourceId === 'restore-unknown')).toBe(true);
+    expect(failed.some((r) => r.resourceId === 'restore-missing-status')).toBe(true);
+    expect(failed.some((r) => r.resourceId === 'restore-unrecognized-status')).toBe(true);
     expect(passed.some((r) => r.resourceId === 'msp360-restore-not-in-scope')).toBe(false);
   });
 

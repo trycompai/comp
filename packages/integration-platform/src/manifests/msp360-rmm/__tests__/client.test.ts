@@ -72,12 +72,13 @@ describe('msp360-rmm client parsing', () => {
       '2': Array.from({ length: 100 }, (_, i) => ({ hid: `p2-${i}` })),
       '3': [{ hid: 'overflow', computerName: 'more' }],
     };
-    const failed: Array<{ resourceId?: string }> = [];
+    const failed: Array<{ resourceId?: string; evidence?: { pageCap?: number }; description?: string }> =
+      [];
     const ctx = {
       credentials: { api_key: 't', baseUrl: 'https://api.rmm.mspbackups.com' },
       log: () => {},
       warn: () => {},
-      fail: (result: { resourceId?: string }) => {
+      fail: (result: { resourceId?: string; evidence?: { pageCap?: number }; description?: string }) => {
         failed.push(result);
       },
       fetch: async (_path: string, init?: { params?: Record<string, string> }) => {
@@ -87,7 +88,9 @@ describe('msp360-rmm client parsing', () => {
     } as unknown as CheckContext;
     const rows = await fetchAllStat(ctx, 'host', { maxPages: 2 });
     expect(rows.some((r) => r.hid === 'overflow')).toBe(true);
-    expect(failed.some((r) => r.resourceId === 'msp360-rmm-host-truncated')).toBe(true);
+    const truncation = failed.find((r) => r.resourceId === 'msp360-rmm-host-truncated');
+    expect(truncation?.evidence?.pageCap).toBe(2);
+    expect(truncation?.description).toContain('2 pages');
   });
 
   it('flattens header/data envelopes onto plugin rows', () => {

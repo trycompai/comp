@@ -150,23 +150,29 @@ function pageFingerprint<T extends RmmRecord>(rows: T[]): string {
   return `${hidOf(first)}:${hidOf(last)}:${rows.length}`;
 }
 
-function reportTruncation(ctx: CheckContext, type: string, collected: number): void {
-  ctx.warn(`MSP360 RMM ${type} inventory truncated after ${MAX_STAT_PAGES} pages`, {
+function reportTruncation(
+  ctx: CheckContext,
+  type: string,
+  collected: number,
+  maxPages: number,
+): void {
+  const hostCap = maxPages * STAT_PAGE_SIZE;
+  ctx.warn(`MSP360 RMM ${type} inventory truncated after ${maxPages} pages`, {
     collected,
     pageSize: STAT_PAGE_SIZE,
-    pageCap: MAX_STAT_PAGES,
+    pageCap: maxPages,
   });
   ctx.fail({
     title: `MSP360 RMM ${type} inventory truncated`,
-    description: `Stopped after ${MAX_STAT_PAGES} pages of ${STAT_PAGE_SIZE}. Remaining hosts were not collected. Evidence below is a partial fleet.`,
+    description: `Stopped after ${maxPages} pages of ${STAT_PAGE_SIZE}. Remaining hosts were not collected. Evidence below is a partial fleet.`,
     resourceType: 'connection',
     resourceId: `msp360-rmm-${type}-truncated`,
     severity: 'medium',
-    remediation: 'Narrow the RMM token scope or ask Comp AI to raise the page cap if this tenant is larger than 10k hosts.',
+    remediation: `Narrow the RMM token scope or ask Comp AI to raise the page cap if this tenant is larger than ${hostCap} hosts.`,
     evidence: {
       collected,
       pageSize: STAT_PAGE_SIZE,
-      pageCap: MAX_STAT_PAGES,
+      pageCap: maxPages,
       truncated: true,
     },
   });
@@ -234,7 +240,7 @@ export async function fetchAllStat<T extends RmmRecord>(
     const extraFingerprint = pageFingerprint(extraRows);
     if (extraRows.length > 0 && extraFingerprint !== previousFingerprint) {
       all.push(...extraRows);
-      reportTruncation(ctx, String(type), all.length);
+      reportTruncation(ctx, String(type), all.length, maxPages);
     }
   }
 
