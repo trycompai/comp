@@ -3,8 +3,6 @@ import type { CheckContext, IntegrationCheck } from '../../../types';
 import { bearerHeaders, loginBackup } from '../auth';
 import {
   daysAgo,
-  isFailedStatus,
-  isIncompleteStatus,
   isRestorePlan,
   isSuccessStatus,
   parseMonitoringPayload,
@@ -23,7 +21,7 @@ export const backupRestorationTestCheck: IntegrationCheck = {
   id: 'backup-restoration-test',
   name: 'MSP360 backup restoration test',
   description:
-    'Pass if a successful restore or restore-verification ran in the last 90 days. Fail a restore that ran in that window with a failed/incomplete status. N/A only when there is no restore-family job in that window.',
+    'Pass if a successful restore or restore-verification ran in the last 90 days. Fail every in-window restore that is not success (including missing status). N/A only when there is no restore-family job in that window.',
   service: 'backup',
   taskMapping: TASK_TEMPLATES.backupRestorationTest,
 
@@ -83,8 +81,9 @@ export const backupRestorationTestCheck: IntegrationCheck = {
     const recentSuccess = restoreRows.filter(
       (row) => inRestoreWindow(row) && isSuccessStatus(row.Status),
     );
+    // Missing or unrecognized status in-window is not N/A — it is a failed/indeterminate restore.
     const recentFailed = restoreRows.filter(
-      (row) => inRestoreWindow(row) && (isFailedStatus(row.Status) || isIncompleteStatus(row.Status)),
+      (row) => inRestoreWindow(row) && !isSuccessStatus(row.Status),
     );
 
     if (restoreRows.length === 0 || (recentSuccess.length === 0 && recentFailed.length === 0)) {

@@ -28,11 +28,6 @@ export function parseMonitoringPayload(payload: unknown): ParsedMonitoring {
   return { ok: false };
 }
 
-export function asMonitoringRows(payload: unknown): Msp360MonitoringRow[] {
-  const parsed = parseMonitoringPayload(payload);
-  return parsed.ok ? parsed.rows : [];
-}
-
 function numericOrName(value: unknown): { n: number | null; name: string } {
   if (typeof value === 'number' && Number.isFinite(value)) {
     return { n: value, name: String(value) };

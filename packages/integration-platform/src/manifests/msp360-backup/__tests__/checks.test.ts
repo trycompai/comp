@@ -248,6 +248,25 @@ describe('msp360-backup backupRestorationTestCheck', () => {
     expect(passed.some((r) => r.resourceId === 'msp360-restore-not-in-scope')).toBe(false);
   });
 
+  it('fails an in-window restore with a missing or unrecognized status instead of N/A', async () => {
+    const { ctx, passed, failed } = makeBackupCtx({
+      fetchImpl: async (path, init) =>
+        router(path, init?.method, {
+          '/Monitoring': [
+            {
+              PlanName: 'Restore files',
+              PlanType: 4,
+              LastStart: new Date().toISOString(),
+              PlanId: 'restore-unknown',
+            },
+          ],
+        }),
+    });
+    await backupRestorationTestCheck.run(ctx);
+    expect(failed.some((r) => r.resourceId === 'restore-unknown')).toBe(true);
+    expect(passed.some((r) => r.resourceId === 'msp360-restore-not-in-scope')).toBe(false);
+  });
+
   it('fails collection on a malformed monitoring payload instead of N/A', async () => {
     const { ctx, failed, passed } = makeBackupCtx({
       fetchImpl: async (path, init) =>

@@ -179,17 +179,20 @@ function reportTruncation(ctx: CheckContext, type: string, collected: number): v
 export async function fetchAllStat<T extends RmmRecord>(
   ctx: CheckContext,
   type: keyof typeof STAT_PATHS,
+  options?: { maxPages?: number },
 ): Promise<T[]> {
   const baseUrl = rmmBaseUrl(ctx);
   const path = STAT_PATHS[type];
+  const maxPages = options?.maxPages ?? MAX_STAT_PAGES;
   const all: T[] = [];
-  let truncated = false;
+  let lastPageFull = false;
   let previousFingerprint = '';
 
-  for (let pageNumber = 1; pageNumber <= MAX_STAT_PAGES; pageNumber += 1) {
+  for (let pageNumber = 1; pageNumber <= maxPages; pageNumber += 1) {
     const payload = await fetchStatPage(ctx, path, baseUrl, pageNumber, STAT_PAGE_SIZE);
     const { rows, total } = pageRows<T>(payload);
     if (rows.length === 0) {
+      lastPageFull = false;
       break;
     }
 
@@ -199,6 +202,7 @@ export async function fetchAllStat<T extends RmmRecord>(
         path,
         pageNumber,
       });
+      lastPageFull = false;
       break;
     }
     previousFingerprint = fingerprint;
@@ -207,21 +211,31 @@ export async function fetchAllStat<T extends RmmRecord>(
 
     // Unpaged dump larger than one page — do not request page 2 of the same blob.
     if (Array.isArray(payload) && rows.length > STAT_PAGE_SIZE) {
+      lastPageFull = false;
       break;
     }
     if (total != null && all.length >= total) {
+      lastPageFull = false;
       break;
     }
     if (rows.length < STAT_PAGE_SIZE) {
+      lastPageFull = false;
       break;
     }
-    if (pageNumber === MAX_STAT_PAGES) {
-      truncated = true;
-    }
+    lastPageFull = true;
   }
 
-  if (truncated) {
-    reportTruncation(ctx, String(type), all.length);
+  // A full last page at the cap might still be the entire fleet (exactly N * pageSize).
+  // Probe one more page before calling that truncation.
+  if (lastPageFull) {
+    const extraPage = maxPages + 1;
+    const extraPayload = await fetchStatPage(ctx, path, baseUrl, extraPage, STAT_PAGE_SIZE);
+    const { rows: extraRows } = pageRows<T>(extraPayload);
+    const extraFingerprint = pageFingerprint(extraRows);
+    if (extraRows.length > 0 && extraFingerprint !== previousFingerprint) {
+      all.push(...extraRows);
+      reportTruncation(ctx, String(type), all.length);
+    }
   }
 
   return expandStatRows(all) as T[];

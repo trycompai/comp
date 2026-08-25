@@ -42,6 +42,54 @@ describe('msp360-rmm client parsing', () => {
     expect(rows.some((r) => r.hid === 'b1')).toBe(true);
   });
 
+  it('does not report truncation when a full last page is the end of the fleet', async () => {
+    const pages: Record<string, unknown> = {
+      '1': Array.from({ length: 100 }, (_, i) => ({ hid: `p1-${i}` })),
+      '2': Array.from({ length: 100 }, (_, i) => ({ hid: `p2-${i}` })),
+      '3': [],
+    };
+    const failed: Array<{ resourceId?: string }> = [];
+    const ctx = {
+      credentials: { api_key: 't', baseUrl: 'https://api.rmm.mspbackups.com' },
+      log: () => {},
+      warn: () => {},
+      fail: (result: { resourceId?: string }) => {
+        failed.push(result);
+      },
+      fetch: async (_path: string, init?: { params?: Record<string, string> }) => {
+        const n = init?.params?.pageNumber ?? '1';
+        return pages[n] ?? [];
+      },
+    } as unknown as CheckContext;
+    const rows = await fetchAllStat(ctx, 'host', { maxPages: 2 });
+    expect(rows).toHaveLength(200);
+    expect(failed.some((r) => r.resourceId === 'msp360-rmm-host-truncated')).toBe(false);
+  });
+
+  it('reports truncation only after a probe page still has new hosts', async () => {
+    const pages: Record<string, unknown> = {
+      '1': Array.from({ length: 100 }, (_, i) => ({ hid: `p1-${i}` })),
+      '2': Array.from({ length: 100 }, (_, i) => ({ hid: `p2-${i}` })),
+      '3': [{ hid: 'overflow', computerName: 'more' }],
+    };
+    const failed: Array<{ resourceId?: string }> = [];
+    const ctx = {
+      credentials: { api_key: 't', baseUrl: 'https://api.rmm.mspbackups.com' },
+      log: () => {},
+      warn: () => {},
+      fail: (result: { resourceId?: string }) => {
+        failed.push(result);
+      },
+      fetch: async (_path: string, init?: { params?: Record<string, string> }) => {
+        const n = init?.params?.pageNumber ?? '1';
+        return pages[n] ?? [];
+      },
+    } as unknown as CheckContext;
+    const rows = await fetchAllStat(ctx, 'host', { maxPages: 2 });
+    expect(rows.some((r) => r.hid === 'overflow')).toBe(true);
+    expect(failed.some((r) => r.resourceId === 'msp360-rmm-host-truncated')).toBe(true);
+  });
+
   it('flattens header/data envelopes onto plugin rows', () => {
     const expanded = expandStatRows([
       {
