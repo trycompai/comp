@@ -55,6 +55,18 @@ describe('msp360-rmm deviceListCheck', () => {
     expect(passed.some((r) => r.resourceType === 'device' && r.resourceId === 'h1')).toBe(true);
   });
 
+  it('uses HostName when computerName is missing', async () => {
+    const { ctx, passed, failed } = makeRmmCtx(async (path) => {
+      if (path.includes('/host/')) {
+        return page([{ hid: 'h-host', HostName: 'WIN-ONLY-HOSTNAME' }]);
+      }
+      throw new Error(path);
+    });
+    await deviceListCheck.run(ctx);
+    expect(failed).toHaveLength(0);
+    expect(passed.some((r) => r.title.includes('WIN-ONLY-HOSTNAME'))).toBe(true);
+  });
+
   it('fails when the host list is empty', async () => {
     const { ctx, failed } = makeRmmCtx(async (path) => {
       if (path.includes('/host/')) return page([]);
@@ -116,6 +128,47 @@ describe('msp360-rmm secureDevicesCheck', () => {
     await secureDevicesCheck.run(ctx);
     expect(failed.filter((r) => r.resourceId === 'linux-1')).toHaveLength(0);
     expect(passed.some((r) => r.resourceId === 'linux-1')).toBe(true);
+  });
+
+  it('fails a Linux host when encryption is explicitly off, before AV N/A', async () => {
+    const { ctx, failed, passed } = makeRmmCtx(async (path) => {
+      if (path.includes('/host/')) {
+        return page([
+          {
+            hid: 'linux-enc',
+            computerName: 'hetzner',
+            osName: 'Debian GNU/Linux 13',
+            operationSystemID: 'Linux',
+            encryption: 'disabled',
+          },
+        ]);
+      }
+      if (path.includes('/antivirus/')) return page([]);
+      if (path.includes('/summary/')) return page([]);
+      throw new Error(path);
+    });
+    await secureDevicesCheck.run(ctx);
+    expect(failed.some((r) => r.resourceId === 'linux-enc' && r.title.includes('encryption'))).toBe(
+      true,
+    );
+    expect(passed.some((r) => r.resourceId === 'linux-enc')).toBe(false);
+  });
+
+  it('fails when screen lock is explicitly off', async () => {
+    const { ctx, failed } = makeRmmCtx(async (path) => {
+      if (path.includes('/host/')) {
+        return page([{ hid: 'h-lock', computerName: 'laptop-1', osName: 'Windows 11' }]);
+      }
+      if (path.includes('/antivirus/')) {
+        return page([{ hid: 'h-lock', productName: 'Defender', enabled: true, screenLock: false }]);
+      }
+      if (path.includes('/summary/')) return page([{ hid: 'h-lock' }]);
+      throw new Error(path);
+    });
+    await secureDevicesCheck.run(ctx);
+    expect(failed.some((r) => r.resourceId === 'h-lock' && r.title.includes('Screen lock'))).toBe(
+      true,
+    );
   });
 
   it('reads enabled AV from nested header/data envelopes', async () => {

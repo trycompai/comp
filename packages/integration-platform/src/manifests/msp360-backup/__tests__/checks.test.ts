@@ -45,6 +45,17 @@ describe('msp360-backup appAvailabilityCheck', () => {
     await appAvailabilityCheck.run(ctx);
     expect(failed.length).toBeGreaterThan(0);
   });
+
+  it('fails when the Administrators ping throws after login', async () => {
+    const { ctx, failed } = makeBackupCtx({
+      fetchImpl: async (path, init) =>
+        router(path, init?.method, {
+          '/Administrators': new Error('403 forbidden'),
+        }),
+    });
+    await appAvailabilityCheck.run(ctx);
+    expect(failed.some((r) => r.resourceId === 'msp360-backup')).toBe(true);
+  });
 });
 
 describe('msp360-backup employeeAccessCheck', () => {
@@ -64,6 +75,17 @@ describe('msp360-backup employeeAccessCheck', () => {
     expect(users).toHaveLength(2);
     expect(users.map((r) => r.resourceId).sort()).toEqual(['old@example.com', 'ops@example.com']);
     expect(calls.some((c) => c.path.includes('/Users'))).toBe(false);
+  });
+
+  it('fails when the administrator list is empty', async () => {
+    const { ctx, failed } = makeBackupCtx({
+      fetchImpl: async (path, init) =>
+        router(path, init?.method, {
+          '/Administrators': [],
+        }),
+    });
+    await employeeAccessCheck.run(ctx);
+    expect(failed.some((r) => r.resourceId === 'msp360-backup-admins')).toBe(true);
   });
 });
 
@@ -109,6 +131,59 @@ describe('msp360-backup backupLogsCheck', () => {
     expect(failed.some((r) => r.resourceId === 'p-stale')).toBe(false);
     expect(passed.some((r) => r.resourceId === 'p-stale')).toBe(true);
   });
+
+  it('fails Running/Unknown instead of treating them as paused', async () => {
+    const now = new Date().toISOString();
+    const { ctx, passed, failed } = makeBackupCtx({
+      fetchImpl: async (path, init) =>
+        router(path, init?.method, {
+          '/Monitoring': [
+            {
+              PlanName: 'Running job',
+              ComputerName: 'host',
+              PlanType: 1,
+              Status: 3,
+              LastStart: now,
+              PlanId: 'p-run',
+            },
+            {
+              PlanName: 'Unknown job',
+              ComputerName: 'host',
+              PlanType: 1,
+              Status: 4,
+              LastStart: now,
+              PlanId: 'p-unk',
+            },
+          ],
+        }),
+    });
+    await backupLogsCheck.run(ctx);
+    expect(failed.some((r) => r.resourceId === 'p-run')).toBe(true);
+    expect(failed.some((r) => r.resourceId === 'p-unk')).toBe(true);
+    expect(passed.some((r) => r.resourceId === 'p-run' || r.resourceId === 'p-unk')).toBe(false);
+  });
+
+  it('fails when monitoring has no in-scope backup plans', async () => {
+    const { ctx, failed } = makeBackupCtx({
+      fetchImpl: async (path, init) =>
+        router(path, init?.method, {
+          '/Monitoring': [{ PlanName: 'Restore files', PlanType: 4, Status: 0, LastStart: new Date().toISOString() }],
+        }),
+    });
+    await backupLogsCheck.run(ctx);
+    expect(failed.some((r) => r.resourceId === 'msp360-backup-plans')).toBe(true);
+  });
+
+  it('fails collection on a malformed monitoring payload', async () => {
+    const { ctx, failed } = makeBackupCtx({
+      fetchImpl: async (path, init) =>
+        router(path, init?.method, {
+          '/Monitoring': { unexpected: true },
+        }),
+    });
+    await backupLogsCheck.run(ctx);
+    expect(failed.some((r) => r.resourceId === 'msp360-monitoring')).toBe(true);
+  });
 });
 
 describe('msp360-backup backupRestorationTestCheck', () => {
@@ -150,5 +225,38 @@ describe('msp360-backup backupRestorationTestCheck', () => {
     await backupRestorationTestCheck.run(ctx);
     expect(failed).toHaveLength(0);
     expect(passed.some((r) => r.resourceId === 'msp360-restore-not-in-scope')).toBe(true);
+  });
+
+  it('fails a restore-family job that ran in the window with an error status', async () => {
+    const { ctx, passed, failed } = makeBackupCtx({
+      fetchImpl: async (path, init) =>
+        router(path, init?.method, {
+          '/Monitoring': [
+            {
+              PlanName: 'SQLResore',
+              PlanType: 'SQLResore',
+              Status: 2,
+              LastStart: new Date().toISOString(),
+              PlanId: 'restore-fail',
+              ErrorMessage: 'disk missing',
+            },
+          ],
+        }),
+    });
+    await backupRestorationTestCheck.run(ctx);
+    expect(failed.some((r) => r.resourceId === 'restore-fail')).toBe(true);
+    expect(passed.some((r) => r.resourceId === 'msp360-restore-not-in-scope')).toBe(false);
+  });
+
+  it('fails collection on a malformed monitoring payload instead of N/A', async () => {
+    const { ctx, failed, passed } = makeBackupCtx({
+      fetchImpl: async (path, init) =>
+        router(path, init?.method, {
+          '/Monitoring': { foo: 1 },
+        }),
+    });
+    await backupRestorationTestCheck.run(ctx);
+    expect(failed.some((r) => r.resourceId === 'msp360-restore-monitoring')).toBe(true);
+    expect(passed.some((r) => r.resourceId === 'msp360-restore-not-in-scope')).toBe(false);
   });
 });

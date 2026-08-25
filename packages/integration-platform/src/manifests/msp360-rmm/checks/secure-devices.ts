@@ -1,6 +1,6 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
-import { fetchAllStat, hidOf, indexByHid, pickString, rmmToken, truthyFlag } from '../client';
+import { fetchAllStat, hidOf, hostName, indexByHid, pickString, rmmToken, truthyFlag } from '../client';
 import type { RmmRecord } from '../types';
 
 const AV_ENABLED_KEYS = [
@@ -165,13 +165,16 @@ export const secureDevicesCheck: IntegrationCheck = {
 
     for (const [index, host] of hosts.entries()) {
       const hid = hidOf(host, `host-${index}`);
-      const name = pickString(host, ['computerName', 'ComputerName', 'name', 'hostName']) ?? hid;
+      const name = hostName(host, hid);
       const avForHost = [...(avByHid.get(hid) ?? []), ...(summaryByHid.get(hid) ?? [])];
       const av = antivirusActive(avForHost);
       const encryption = firstPresent(avForHost, ENCRYPTION_KEYS) ?? firstPresent([host], ENCRYPTION_KEYS);
       const screenLock = firstPresent(avForHost, SCREEN_LOCK_KEYS) ?? firstPresent([host], SCREEN_LOCK_KEYS);
       if (encryption !== undefined) encryptionFieldSeen = true;
       if (screenLock !== undefined) screenLockFieldSeen = true;
+
+      const encryptionOff = encryption !== undefined && truthyFlag({ v: encryption }, ['v']) === false;
+      const screenLockOff = screenLock !== undefined && truthyFlag({ v: screenLock }, ['v']) === false;
 
       const evidence = {
         hid,
@@ -183,6 +186,34 @@ export const secureDevicesCheck: IntegrationCheck = {
         screenLockField: screenLock ?? null,
         checkedAt,
       };
+
+      // Field present and off → fail before AV N/A, so Linux does not skip an explicit encryption-off.
+      if (encryptionOff) {
+        ctx.fail({
+          title: `Disk encryption reported off: ${name}`,
+          description: 'RMM returned an encryption field that is not enabled.',
+          resourceType: 'device',
+          resourceId: hid,
+          severity: 'high',
+          remediation:
+            'Enable BitLocker or FileVault on the device. Comp AI Device Agent is still required for laptop encryption evidence if RMM does not cover it.',
+          evidence,
+        });
+        continue;
+      }
+
+      if (screenLockOff) {
+        ctx.fail({
+          title: `Screen lock reported off: ${name}`,
+          description: 'RMM returned a screen-lock field that is not enabled.',
+          resourceType: 'device',
+          resourceId: hid,
+          severity: 'medium',
+          remediation: 'Enable screen lock / screensaver lock on this endpoint, then re-run.',
+          evidence,
+        });
+        continue;
+      }
 
       if (!av.active) {
         if (isUnixHost(host)) {
@@ -203,19 +234,6 @@ export const secureDevicesCheck: IntegrationCheck = {
           resourceId: hid,
           severity: 'high',
           remediation: 'Install or enable antivirus on this endpoint via MSP360 RMM, then re-run.',
-          evidence,
-        });
-        continue;
-      }
-
-      if (encryption === false || encryption === 0 || encryption === 'false') {
-        ctx.fail({
-          title: `Disk encryption reported off: ${name}`,
-          description: 'RMM returned an encryption field that is not enabled.',
-          resourceType: 'device',
-          resourceId: hid,
-          severity: 'high',
-          remediation: 'Enable BitLocker or FileVault on the device. Comp AI Device Agent is still required for laptop encryption evidence if RMM does not cover it.',
           evidence,
         });
         continue;

@@ -1,24 +1,36 @@
 import {
   BACKUP_PLAN_TYPE_VALUES,
   FAILED_STATUS_VALUES,
+  INCOMPLETE_STATUS_VALUES,
   RESTORE_PLAN_TYPE_VALUES,
   SUCCESS_STATUS_VALUES,
   type Msp360MonitoringRow,
 } from './types';
 
-export function asMonitoringRows(payload: unknown): Msp360MonitoringRow[] {
+export type ParsedMonitoring =
+  | { ok: true; rows: Msp360MonitoringRow[] }
+  | { ok: false };
+
+/** Array or a known list envelope. Anything else is malformed — do not treat as empty/N/A. */
+export function parseMonitoringPayload(payload: unknown): ParsedMonitoring {
   if (Array.isArray(payload)) {
-    return payload as Msp360MonitoringRow[];
+    return { ok: true, rows: payload as Msp360MonitoringRow[] };
   }
   if (payload && typeof payload === 'object') {
     const record = payload as Record<string, unknown>;
     for (const key of ['data', 'items', 'results', 'Monitoring']) {
       if (Array.isArray(record[key])) {
-        return record[key] as Msp360MonitoringRow[];
+        return { ok: true, rows: record[key] as Msp360MonitoringRow[] };
       }
     }
+    return { ok: false };
   }
-  return [];
+  return { ok: false };
+}
+
+export function asMonitoringRows(payload: unknown): Msp360MonitoringRow[] {
+  const parsed = parseMonitoringPayload(payload);
+  return parsed.ok ? parsed.rows : [];
 }
 
 function numericOrName(value: unknown): { n: number | null; name: string } {
@@ -37,10 +49,13 @@ function numericOrName(value: unknown): { n: number | null; name: string } {
 
 export function isRestorePlan(row: Msp360MonitoringRow): boolean {
   const { n, name } = numericOrName(row.PlanType);
-  if (n != null && RESTORE_PLAN_TYPE_VALUES.has(n)) {
-    return true;
+  // Numeric type wins: a backup-family id is never a restore just because the plan name says so.
+  if (n != null) {
+    return RESTORE_PLAN_TYPE_VALUES.has(n);
   }
-  return /restore/i.test(name) || /verif/i.test(`${row.PlanName ?? ''} ${name}`);
+  const blob = `${name} ${row.PlanName ?? ''}`;
+  // Docs spell SQL restore as SQLResore (missing t).
+  return /sqlresore/i.test(blob) || /restore/i.test(blob) || /verif/i.test(blob);
 }
 
 export function isBackupPlan(row: Msp360MonitoringRow): boolean {
@@ -72,7 +87,7 @@ export function isSuccessStatus(status: unknown): boolean {
 }
 
 export function isFailedStatus(status: unknown): boolean {
-  if (isSuccessStatus(status)) {
+  if (isSuccessStatus(status) || isIncompleteStatus(status)) {
     return false;
   }
   if (typeof status === 'number') {
@@ -81,6 +96,17 @@ export function isFailedStatus(status: unknown): boolean {
   if (typeof status === 'string') {
     const key = status.trim().toLowerCase();
     return FAILED_STATUS_VALUES.has(key) || /fail|error|overdue|interrupt/i.test(key);
+  }
+  return false;
+}
+
+export function isIncompleteStatus(status: unknown): boolean {
+  if (typeof status === 'number') {
+    return INCOMPLETE_STATUS_VALUES.has(status);
+  }
+  if (typeof status === 'string') {
+    const key = status.trim().toLowerCase();
+    return INCOMPLETE_STATUS_VALUES.has(key);
   }
   return false;
 }
@@ -98,5 +124,8 @@ export function daysAgo(from: Date, now = new Date()): number {
 }
 
 export function rowId(row: Msp360MonitoringRow, index: number): string {
-  return row.PlanId || `${row.ComputerName ?? 'host'}:${row.PlanName ?? index}`;
+  if (row.PlanId) {
+    return row.PlanId;
+  }
+  return `${row.ComputerName ?? 'host'}:${row.PlanName ?? 'plan'}:${index}`;
 }

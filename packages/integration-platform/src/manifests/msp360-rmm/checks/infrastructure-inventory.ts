@@ -1,6 +1,6 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
-import { fetchAllStat, hidOf, indexByHid, pickString, rmmToken } from '../client';
+import { fetchAllStat, hidOf, hostName, indexByHid, rmmToken } from '../client';
 import type { RmmRecord } from '../types';
 
 export const infrastructureInventoryCheck: IntegrationCheck = {
@@ -78,7 +78,7 @@ export const infrastructureInventoryCheck: IntegrationCheck = {
 
     for (const [index, host] of hosts.entries()) {
       const hid = hidOf(host, `host-${index}`);
-      const name = pickString(host, ['computerName', 'ComputerName', 'name', 'hostName']) ?? hid;
+      const name = hostName(host, hid);
       const hw = hwByHid.get(hid) ?? [];
       const sw = swByHid.get(hid) ?? [];
       ctx.pass({

@@ -79,3 +79,15 @@ export const FAILED_STATUS_VALUES = new Set([
   'unexpectedlyclosed',
   'warning',
 ]);
+
+/** Running=3 and Unknown=4 are not completed success and must not be scored as paused/N/A. */
+export const INCOMPLETE_STATUS_VALUES = new Set([
+  3,
+  4,
+  '3',
+  '4',
+  'running',
+  'unknown',
+  'inprogress',
+  'in progress',
+]);

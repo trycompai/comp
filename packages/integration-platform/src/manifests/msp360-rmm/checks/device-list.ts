@@ -1,6 +1,6 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
-import { fetchAllStat, hidOf, pickString, rmmToken } from '../client';
+import { fetchAllStat, hidOf, hostName, pickString, rmmToken } from '../client';
 import type { RmmRecord } from '../types';
 
 export const deviceListCheck: IntegrationCheck = {
@@ -57,7 +57,7 @@ export const deviceListCheck: IntegrationCheck = {
     const checkedAt = new Date().toISOString();
     for (const [index, host] of hosts.entries()) {
       const hid = hidOf(host, `host-${index}`);
-      const name = pickString(host, ['computerName', 'ComputerName', 'name', 'hostName', 'HostName']) ?? hid;
+      const name = hostName(host, hid);
       ctx.pass({
         title: `Device: ${name}`,
         description: 'Listed from MSP360 RMM host inventory.',

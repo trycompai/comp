@@ -1,6 +1,6 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
-import { fetchAllStat, hidOf, pickString, rmmToken } from '../client';
+import { fetchAllStat, hidOf, hostName, rmmToken } from '../client';
 import type { RmmRecord } from '../types';
 
 function alertsOf(row: RmmRecord): unknown {
@@ -77,7 +77,7 @@ export const monitoringAlertingCheck: IntegrationCheck = {
 
     for (const [index, row] of summaries.entries()) {
       const hid = hidOf(row, `summary-${index}`);
-      const name = pickString(row, ['computerName', 'ComputerName', 'name', 'hostName']) ?? hid;
+      const name = hostName(row, hid);
       ctx.pass({
         title: `RMM summary: ${name}`,
         description: 'Current summary/alerts snapshot from MSP360 RMM.',

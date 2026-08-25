@@ -1,5 +1,13 @@
 import type { CheckContext } from '../../types';
-import { DEFAULT_RMM_API_BASE_URL, STAT_PATHS, type RmmPage, type RmmRecord } from './types';
+import {
+  DEFAULT_RMM_API_BASE_URL,
+  HOST_NAME_KEYS,
+  MAX_STAT_PAGES,
+  STAT_PAGE_SIZE,
+  STAT_PATHS,
+  type RmmPage,
+  type RmmRecord,
+} from './types';
 
 export function credString(ctx: CheckContext, key: string, fallback = ''): string {
   const value = ctx.credentials[key];
@@ -92,7 +100,9 @@ export function expandStatRows(rows: RmmRecord[]): RmmRecord[] {
 
 export function pageRows<T extends RmmRecord>(payload: unknown): { rows: T[]; total: number | null } {
   if (Array.isArray(payload)) {
-    return { rows: payload as T[], total: payload.length };
+    // Bare arrays do not include a fleet total. Using length here would stop pagination
+    // after a full first page (length === pageSize).
+    return { rows: payload as T[], total: null };
   }
   if (payload && typeof payload === 'object') {
     const record = payload as RmmPage<T>;
@@ -131,46 +141,90 @@ async function fetchStatPage(
   });
 }
 
+function pageFingerprint<T extends RmmRecord>(rows: T[]): string {
+  if (rows.length === 0) {
+    return '';
+  }
+  const first = rows[0];
+  const last = rows[rows.length - 1];
+  return `${hidOf(first)}:${hidOf(last)}:${rows.length}`;
+}
+
+function reportTruncation(ctx: CheckContext, type: string, collected: number): void {
+  ctx.warn(`MSP360 RMM ${type} inventory truncated after ${MAX_STAT_PAGES} pages`, {
+    collected,
+    pageSize: STAT_PAGE_SIZE,
+    pageCap: MAX_STAT_PAGES,
+  });
+  ctx.fail({
+    title: `MSP360 RMM ${type} inventory truncated`,
+    description: `Stopped after ${MAX_STAT_PAGES} pages of ${STAT_PAGE_SIZE}. Remaining hosts were not collected. Evidence below is a partial fleet.`,
+    resourceType: 'connection',
+    resourceId: `msp360-rmm-${type}-truncated`,
+    severity: 'medium',
+    remediation: 'Narrow the RMM token scope or ask Comp AI to raise the page cap if this tenant is larger than 10k hosts.',
+    evidence: {
+      collected,
+      pageSize: STAT_PAGE_SIZE,
+      pageCap: MAX_STAT_PAGES,
+      truncated: true,
+    },
+  });
+}
+
 /**
- * Page through a fleet-wide stat endpoint. Tries current `/api/v1/computers/stat/{type}/latest`
- * then the older `/api/v1/computers/stat/{type}/latest` path from earlier docs.
+ * Page through a fleet-wide stat endpoint.
+ * Bare arrays have no total — keep paging until a short page, a repeated page, or the cap.
  */
 export async function fetchAllStat<T extends RmmRecord>(
   ctx: CheckContext,
   type: keyof typeof STAT_PATHS,
 ): Promise<T[]> {
   const baseUrl = rmmBaseUrl(ctx);
-  const paths = STAT_PATHS[type];
-  const pageSize = 100;
-  let lastError: unknown;
+  const path = STAT_PATHS[type];
+  const all: T[] = [];
+  let truncated = false;
+  let previousFingerprint = '';
 
-  for (const path of paths) {
-    const all: T[] = [];
-    try {
-      for (let pageNumber = 1; pageNumber <= 100; pageNumber += 1) {
-        const payload = await fetchStatPage(ctx, path, baseUrl, pageNumber, pageSize);
-        const { rows, total } = pageRows<T>(payload);
-        if (rows.length === 0) {
-          break;
-        }
-        all.push(...rows);
-        if (total != null && all.length >= total) {
-          break;
-        }
-        if (rows.length < pageSize) {
-          break;
-        }
-      }
-      return expandStatRows(all) as T[];
-    } catch (error) {
-      lastError = error;
-      ctx.log(`MSP360 RMM ${path} failed, trying fallback if any`, {
-        error: error instanceof Error ? error.message : String(error),
+  for (let pageNumber = 1; pageNumber <= MAX_STAT_PAGES; pageNumber += 1) {
+    const payload = await fetchStatPage(ctx, path, baseUrl, pageNumber, STAT_PAGE_SIZE);
+    const { rows, total } = pageRows<T>(payload);
+    if (rows.length === 0) {
+      break;
+    }
+
+    const fingerprint = pageFingerprint(rows);
+    if (pageNumber > 1 && fingerprint && fingerprint === previousFingerprint) {
+      ctx.warn('MSP360 RMM page repeated; treating as complete (API likely ignored paging)', {
+        path,
+        pageNumber,
       });
+      break;
+    }
+    previousFingerprint = fingerprint;
+
+    all.push(...rows);
+
+    // Unpaged dump larger than one page — do not request page 2 of the same blob.
+    if (Array.isArray(payload) && rows.length > STAT_PAGE_SIZE) {
+      break;
+    }
+    if (total != null && all.length >= total) {
+      break;
+    }
+    if (rows.length < STAT_PAGE_SIZE) {
+      break;
+    }
+    if (pageNumber === MAX_STAT_PAGES) {
+      truncated = true;
     }
   }
 
-  throw lastError instanceof Error ? lastError : new Error(`Failed to fetch RMM ${type} stats`);
+  if (truncated) {
+    reportTruncation(ctx, String(type), all.length);
+  }
+
+  return expandStatRows(all) as T[];
 }
 
 export function indexByHid(rows: RmmRecord[]): Map<string, RmmRecord[]> {
@@ -220,4 +274,8 @@ export function pickString(row: RmmRecord, keys: string[]): string | undefined {
     }
   }
   return undefined;
+}
+
+export function hostName(row: RmmRecord, fallback: string): string {
+  return pickString(row, HOST_NAME_KEYS) ?? fallback;
 }

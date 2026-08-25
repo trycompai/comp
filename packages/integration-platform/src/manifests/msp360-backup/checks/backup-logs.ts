@@ -2,27 +2,48 @@ import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
 import { bearerHeaders, loginBackup } from '../auth';
 import {
-  asMonitoringRows,
   daysAgo,
   isBackupPlan,
   isFailedStatus,
+  isIncompleteStatus,
   isSuccessStatus,
+  parseMonitoringPayload,
   parseTimestamp,
   rowId,
 } from '../monitoring';
 
 const STALE_AFTER_DAYS = 10;
 
+function failMalformedMonitoring(ctx: CheckContext, payload: unknown, resourceId: string): void {
+  ctx.fail({
+    title: 'MSP360 monitoring payload was not a list',
+    description:
+      'GET /api/Monitoring did not return an array or a known list envelope. Collection failed rather than treating this as empty or not in scope.',
+    resourceType: 'connection',
+    resourceId,
+    severity: 'high',
+    remediation: 'Confirm the API user can read monitoring data and that Comp AI received JSON from /api/Monitoring.',
+    evidence: {
+      payloadType: payload === null ? 'null' : typeof payload,
+      keys:
+        payload && typeof payload === 'object' && !Array.isArray(payload)
+          ? Object.keys(payload as object).slice(0, 20)
+          : null,
+    },
+  });
+}
+
 /**
  * Comp AI backup-logs wants ~10 consecutive days of job history. MBS GET /api/Monitoring
  * is latest run only. Failed/error jobs fail. Successful recent jobs pass. A successful
  * latest run older than 10 days is treated as paused / not in scope, not as a failed job.
+ * Running (3) and Unknown (4) are incomplete — not paused.
  */
 export const backupLogsCheck: IntegrationCheck = {
   id: 'backup-logs',
   name: 'MSP360 backup logs (latest monitoring)',
   description:
-    'Latest backup plan runs from GET /api/Monitoring. Failed jobs fail. Success within 10 days passes. Older successful runs are paused / not in scope.',
+    'Latest backup plan runs from GET /api/Monitoring. Failed and Running/Unknown jobs fail. Success within 10 days passes. Older successful runs are paused / not in scope.',
   service: 'backup',
   taskMapping: TASK_TEMPLATES.backupLogs,
 
@@ -54,7 +75,13 @@ export const backupLogsCheck: IntegrationCheck = {
       return;
     }
 
-    const rows = asMonitoringRows(payload);
+    const parsed = parseMonitoringPayload(payload);
+    if (!parsed.ok) {
+      failMalformedMonitoring(ctx, payload, 'msp360-monitoring');
+      return;
+    }
+
+    const rows = parsed.rows;
     const backupRows = rows.filter(isBackupPlan);
     const checkedAt = new Date().toISOString();
 
@@ -90,6 +117,7 @@ export const backupLogsCheck: IntegrationCheck = {
       const ageDays = started ? daysAgo(started) : Number.POSITIVE_INFINITY;
       const stale = !started || ageDays > STALE_AFTER_DAYS;
       const failed = isFailedStatus(row.Status);
+      const incomplete = isIncompleteStatus(row.Status);
       const success = isSuccessStatus(row.Status);
 
       const evidence = {
@@ -119,6 +147,19 @@ export const backupLogsCheck: IntegrationCheck = {
         continue;
       }
 
+      if (incomplete) {
+        ctx.fail({
+          title: `Backup not completed: ${row.PlanName ?? id}`,
+          description: `Latest status is ${String(row.Status)} (Running or Unknown). That is not a successful completed run and is not treated as paused.`,
+          resourceType: 'backup-plan',
+          resourceId: id,
+          severity: 'medium',
+          remediation: 'Wait for the job to finish or inspect why the plan status is unknown, then re-run.',
+          evidence: { ...evidence, outcome: 'incomplete' },
+        });
+        continue;
+      }
+
       if (success && !stale) {
         ctx.pass({
           title: `Backup ok: ${row.PlanName ?? id}`,
@@ -130,12 +171,25 @@ export const backupLogsCheck: IntegrationCheck = {
         continue;
       }
 
-      ctx.pass({
-        title: `Backup paused / not in scope: ${row.PlanName ?? id}`,
-        description: `Latest run is not a failed job, but LastStart is missing or older than ${STALE_AFTER_DAYS} days (LastStart=${row.LastStart ?? 'n/a'}). Treated as paused / not currently in scope, not as a failed backup. Re-enable the plan if it should still protect production data.`,
+      if (success && stale) {
+        ctx.pass({
+          title: `Backup paused / not in scope: ${row.PlanName ?? id}`,
+          description: `Latest run succeeded, but LastStart is missing or older than ${STALE_AFTER_DAYS} days (LastStart=${row.LastStart ?? 'n/a'}). Treated as paused / not currently in scope, not as a failed backup. Re-enable the plan if it should still protect production data.`,
+          resourceType: 'backup-plan',
+          resourceId: id,
+          evidence: { ...evidence, outcome: 'paused-not-in-scope' },
+        });
+        continue;
+      }
+
+      ctx.fail({
+        title: `Backup status not a completed success: ${row.PlanName ?? id}`,
+        description: `Latest status is ${String(row.Status ?? 'missing')}. Only Success can pass or be treated as paused.`,
         resourceType: 'backup-plan',
         resourceId: id,
-        evidence: { ...evidence, outcome: 'paused-not-in-scope' },
+        severity: 'medium',
+        remediation: 'Inspect the plan in the management console and re-run after it completes successfully.',
+        evidence,
       });
     }
   },
