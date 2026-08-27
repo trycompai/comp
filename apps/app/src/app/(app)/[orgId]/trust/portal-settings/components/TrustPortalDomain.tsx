@@ -340,9 +340,7 @@ export function TrustPortalDomain({
                                     variant="ghost"
                                     size="icon"
                                     type="button"
-                                    onClick={() =>
-                                      handleCopy(`compai-domain-verification=${orgId}`, 'Name')
-                                    }
+                                    onClick={() => handleCopy('@', 'Name')}
                                     className="h-6 w-6 shrink-0"
                                   >
                                     <Copy size={16} />
@@ -478,9 +476,7 @@ export function TrustPortalDomain({
                                 variant="ghost"
                                 size="icon"
                                 type="button"
-                                onClick={() =>
-                                  handleCopy(`compai-domain-verification=${orgId}`, 'Name')
-                                }
+                                onClick={() => handleCopy('@', 'Name')}
                                 className="h-6 w-6 shrink-0"
                               >
                                 <Copy size={16} />
