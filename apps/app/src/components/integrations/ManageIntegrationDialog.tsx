@@ -37,6 +37,7 @@ import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { visibleCredentialFields } from './credential-field-visibility';
 
 interface VariableWithValue extends ConnectionVariable {
   currentValue?: string | number | boolean | string[];
@@ -258,9 +259,13 @@ export function ManageIntegrationDialog({
       return;
     }
 
-    // Only send non-empty values
+    // Only non-empty values, and only from fields the operator could see.
+    const visibleIds = new Set(
+      visibleCredentialFields(credentialFields, credentialValues).map((field) => field.id),
+    );
     const credentialsToSave: Record<string, string | string[]> = {};
     for (const [key, value] of Object.entries(credentialValues)) {
+      if (!visibleIds.has(key)) continue;
       if (Array.isArray(value)) {
         if (value.length > 0) {
           credentialsToSave[key] = value;
@@ -505,7 +510,7 @@ function ConfigurationContent({
           <span>Your credentials are encrypted at rest using AES-256-GCM encryption.</span>
         </p>
       </div>
-      {credentialFields.map((field) => (
+      {visibleCredentialFields(credentialFields, credentialValues).map((field) => (
         <div key={field.id} className="space-y-2">
           <Label htmlFor={`cred-${field.id}`}>
             {field.label}

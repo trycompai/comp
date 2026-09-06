@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import type { IntegrationProviderResponse } from '@trycompai/integration-platform';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { EmptyStateOnboarding } from './EmptyStateOnboarding';
 
@@ -125,5 +126,74 @@ describe('EmptyStateOnboarding', () => {
       expect(mockCreateConnection).toHaveBeenCalledWith('dynamic-api', { api_key: 'secret' });
     });
   });
-});
 
+  const conditionalProvider = {
+    id: 'cybedefend',
+    slug: 'cybedefend',
+    name: 'CybeDefend',
+    description: 'Security scanning',
+    category: 'Security',
+    logoUrl: '',
+    authType: 'custom',
+    capabilities: ['checks'],
+    isActive: true,
+    credentialFields: [
+      {
+        id: 'region',
+        label: 'Region',
+        type: 'select',
+        required: true,
+        options: [
+          { value: 'eu', label: 'Europe' },
+          { value: 'dedicated', label: 'Dedicated tenant' },
+        ],
+      },
+      {
+        id: 'tenant',
+        label: 'Tenant name',
+        type: 'text',
+        required: true,
+        showIf: { field: 'region', equals: 'dedicated' },
+      },
+    ],
+  } satisfies IntegrationProviderResponse;
+
+  it('does not submit a hidden field whose value was typed then hidden again', async () => {
+    // The value survives in component state, so without filtering it would be
+    // encrypted and stored even though the operator took it back off screen.
+    render(
+      <EmptyStateOnboarding provider={conditionalProvider} orgId="org_1" onConnected={vi.fn()} />,
+    );
+
+    fireEvent.change(screen.getByLabelText('Region'), { target: { value: 'dedicated' } });
+    fireEvent.change(screen.getByLabelText('Tenant name'), { target: { value: 'acme' } });
+    fireEvent.change(screen.getByLabelText('Region'), { target: { value: 'eu' } });
+
+    fireEvent.click(screen.getByRole('button', { name: /connect account/i }));
+
+    await waitFor(() => {
+      expect(mockCreateConnection).toHaveBeenCalledWith('cybedefend', { region: 'eu' });
+    });
+  });
+
+  it('hides a conditional field until its controlling value is chosen', () => {
+    render(
+      <EmptyStateOnboarding provider={conditionalProvider} orgId="org_1" onConnected={vi.fn()} />,
+    );
+
+    expect(screen.queryByLabelText('Tenant name')).not.toBeInTheDocument();
+  });
+
+  it('does not block submission on a hidden required field', async () => {
+    // A required field the operator cannot see must never gate the form.
+    mockCreateConnection.mockResolvedValue({ success: true });
+
+    render(
+      <EmptyStateOnboarding provider={conditionalProvider} orgId="org_1" onConnected={vi.fn()} />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /connect account/i }));
+
+    expect(screen.queryByText('Tenant name is required')).not.toBeInTheDocument();
+  });
+});
