@@ -261,6 +261,19 @@ describe('createProjectFindingsCheck: unrecognised severity', () => {
     expect(emitted.failed).toHaveLength(0);
   });
 
+  it('survives a severity the export did not send as a string', async () => {
+    const emitted = await run({
+      findings: [
+        finding({ id: 'a', projectId: 'p1', severity: null as unknown as string }),
+        finding({ id: 'b', projectId: 'p1', severity: 'critical' }),
+      ],
+      projects: [{ projectId: 'p1', projectName: 'vulpy' }],
+    });
+
+    expect(emitted.failed).toHaveLength(1);
+    expect(emitted.failed[0]?.evidence).toMatchObject({ counts: { unknown: 1, critical: 1 } });
+  });
+
   it('does not let an unreadable severity breach even the lowest threshold', async () => {
     // The edge case behind the claim: `low` is rank 0 and unknown is -1, so the
     // comparison has to stay strict. A fallback to rank 0 would breach here.

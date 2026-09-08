@@ -19,8 +19,10 @@ const UNKNOWN_RANK = -1;
  * Deliberately not "unknown falls back to the weakest level": that fold is how
  * findings with an empty severity once sat below every threshold, unreported.
  */
-const rank = (severity: string): number =>
-  SEVERITIES.indexOf(severity.trim().toLowerCase() as CybeDefendSeverity);
+const rank = (severity: unknown): number =>
+  typeof severity === 'string'
+    ? SEVERITIES.indexOf(severity.trim().toLowerCase() as CybeDefendSeverity)
+    : UNKNOWN_RANK;
 
 const resolveThreshold = (value: unknown): CybeDefendSeverity =>
   typeof value === 'string' && SEVERITIES.includes(value.toLowerCase() as CybeDefendSeverity)
