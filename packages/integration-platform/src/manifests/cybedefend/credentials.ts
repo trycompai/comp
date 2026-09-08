@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CYBEDEFEND_REGION_IDS } from './regions';
+import { CYBEDEFEND_REGION_IDS, TENANT_PATTERN } from './regions';
 
 /**
  * Connection form.
@@ -54,9 +54,6 @@ export const cybedefendCredentialFields = [
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** Mirrors TENANT_PATTERN in regions.ts, a DNS label under cybedefend.com. */
-const TENANT = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
-
 export const cybedefendCredentialSchema = z
   .object({
     region: z.enum(CYBEDEFEND_REGION_IDS),
@@ -81,7 +78,7 @@ export const cybedefendCredentialSchema = z
       return;
     }
 
-    if (!TENANT.test(value.tenant)) {
+    if (!TENANT_PATTERN.test(value.tenant)) {
       ctx.addIssue({
         code: 'custom',
         path: ['tenant'],

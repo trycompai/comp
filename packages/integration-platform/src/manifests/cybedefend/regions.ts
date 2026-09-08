@@ -12,8 +12,11 @@ const PUBLIC_REGIONS = ['eu', 'us'] as const;
  * Load-bearing, not cosmetic: the URLs are built by interpolation, so
  * `x@evil.com/` would yield `https://api-x@evil.com/.cybedefend.com`, whose
  * host is evil.com. The token would then be posted to an attacker.
+ *
+ * Capped at 58 so the longest derived label, `auth-${tenant}`, stays within the
+ * 63-character DNS limit.
  */
-const TENANT_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
+export const TENANT_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,56}[a-z0-9])?$/;
 
 export interface CybeDefendRegionUrls {
   /** Base URL of the deployment's API. Doubles as the OAuth resource indicator. */

@@ -81,10 +81,21 @@ describe('resolveRegion: tenant names cannot smuggle a host', () => {
     expect(() => resolveRegion({ region: 'dedicated', tenant })).toThrow(/tenant name/i);
   });
 
-  test('refuses a name longer than a DNS label allows', () => {
-    expect(() => resolveRegion({ region: 'dedicated', tenant: 'a'.repeat(64) })).toThrow(
+  test('refuses a name that would overflow the auth- DNS label', () => {
+    // `auth-` prefixes the longest derived label, so 58 is the real ceiling.
+    expect(resolveRegion({ region: 'dedicated', tenant: 'a'.repeat(58) }).logtoEndpoint).toBe(
+      `https://auth-${'a'.repeat(58)}.cybedefend.com`,
+    );
+    expect(() => resolveRegion({ region: 'dedicated', tenant: 'a'.repeat(59) })).toThrow(
       /tenant name/i,
     );
+  });
+
+  test('every derived label stays within the 63-character DNS limit', () => {
+    const urls = resolveRegion({ region: 'dedicated', tenant: 'a'.repeat(58) });
+    for (const url of Object.values(urls)) {
+      expect(new URL(url).hostname.split('.')[0]!.length).toBeLessThanOrEqual(63);
+    }
   });
 
   test('every accepted tenant still resolves to a cybedefend.com host', () => {
