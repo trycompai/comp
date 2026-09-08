@@ -91,6 +91,12 @@ describe('resolveRegion: tenant names cannot smuggle a host', () => {
     );
   });
 
+  test('says why a name of legal characters is still too long', () => {
+    // Without the length in the message, a 59-letter name is told it may only
+    // contain letters, which is exactly what it is.
+    expect(() => resolveRegion({ region: 'dedicated', tenant: 'a'.repeat(59) })).toThrow(/58/);
+  });
+
   test('every derived label stays within the 63-character DNS limit', () => {
     const urls = resolveRegion({ region: 'dedicated', tenant: 'a'.repeat(58) });
     for (const url of Object.values(urls)) {

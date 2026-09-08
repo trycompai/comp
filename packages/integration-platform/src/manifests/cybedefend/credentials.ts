@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CYBEDEFEND_REGION_IDS, TENANT_PATTERN } from './regions';
+import { CYBEDEFEND_REGION_IDS, TENANT_PATTERN, TENANT_RULE } from './regions';
 
 /**
  * Connection form.
@@ -82,8 +82,7 @@ export const cybedefendCredentialSchema = z
       ctx.addIssue({
         code: 'custom',
         path: ['tenant'],
-        message:
-          'Tenant name may only contain lowercase letters, digits and hyphens, and cannot start or end with a hyphen.',
+        message: `Tenant name ${TENANT_RULE}.`,
       });
     }
   });

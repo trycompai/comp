@@ -16,7 +16,11 @@ const PUBLIC_REGIONS = ['eu', 'us'] as const;
  * Capped at 58 so the longest derived label, `auth-${tenant}`, stays within the
  * 63-character DNS limit.
  */
+export const MAX_TENANT_LENGTH = 58;
+
 export const TENANT_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,56}[a-z0-9])?$/;
+
+export const TENANT_RULE = `may only contain lowercase letters, digits and hyphens, cannot start or end with a hyphen, and must be at most ${MAX_TENANT_LENGTH} characters`;
 
 export interface CybeDefendRegionUrls {
   /** Base URL of the deployment's API. Doubles as the OAuth resource indicator. */
@@ -61,9 +65,7 @@ export const resolveRegion = ({ region, tenant }: ResolveRegionOptions): CybeDef
   }
 
   if (!TENANT_PATTERN.test(slug)) {
-    throw new Error(
-      'The CybeDefend tenant name may only contain lowercase letters, digits and hyphens, and cannot start or end with a hyphen.',
-    );
+    throw new Error(`The CybeDefend tenant name ${TENANT_RULE}.`);
   }
 
   return urlsFor(slug);
