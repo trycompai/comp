@@ -46,8 +46,7 @@ vi.mock('@trycompai/integration-platform', () => ({
   getAwsCloudShellUrl: () => 'https://console.aws.amazon.com/cloudshell',
   getAwsCloudShellScript: () => '',
   getAwsRemediationScript: () => '',
-  normalizeAwsEnvironment: (value: unknown) =>
-    value === 'aws-us-gov' ? 'aws-us-gov' : 'aws',
+  normalizeAwsEnvironment: (value: unknown) => (value === 'aws-us-gov' ? 'aws-us-gov' : 'aws'),
 }));
 
 vi.mock('sonner', () => ({
@@ -68,18 +67,20 @@ describe('EmptyStateOnboarding', () => {
 
     render(
       <EmptyStateOnboarding
-        provider={{
-          id: 'dynamic-security',
-          slug: 'dynamic-security',
-          name: 'Dynamic Security',
-          description: 'Dynamic integration',
-          category: 'Security',
-          logoUrl: '',
-          authType: 'custom',
-          capabilities: ['checks'],
-          isActive: true,
-          docsUrl: 'https://example.com/docs',
-        } as any}
+        provider={
+          {
+            id: 'dynamic-security',
+            slug: 'dynamic-security',
+            name: 'Dynamic Security',
+            description: 'Dynamic integration',
+            category: 'Security',
+            logoUrl: '',
+            authType: 'custom',
+            capabilities: ['checks'],
+            isActive: true,
+            docsUrl: 'https://example.com/docs',
+          } as any
+        }
         orgId="org_1"
         onConnected={onConnected}
       />,
@@ -99,17 +100,19 @@ describe('EmptyStateOnboarding', () => {
 
     render(
       <EmptyStateOnboarding
-        provider={{
-          id: 'dynamic-api',
-          slug: 'dynamic-api',
-          name: 'Dynamic API',
-          description: 'Dynamic API integration',
-          category: 'Security',
-          logoUrl: '',
-          authType: 'api_key',
-          capabilities: ['checks'],
-          isActive: true,
-        } as any}
+        provider={
+          {
+            id: 'dynamic-api',
+            slug: 'dynamic-api',
+            name: 'Dynamic API',
+            description: 'Dynamic API integration',
+            category: 'Security',
+            logoUrl: '',
+            authType: 'api_key',
+            capabilities: ['checks'],
+            isActive: true,
+          } as any
+        }
         orgId="org_1"
         onConnected={vi.fn()}
       />,
@@ -185,15 +188,20 @@ describe('EmptyStateOnboarding', () => {
   });
 
   it('does not block submission on a hidden required field', async () => {
-    // A required field the operator cannot see must never gate the form.
+    // Tenant name is required but hidden on a public region, so the form must
+    // submit without it rather than gate on an error pointing at nothing.
     mockCreateConnection.mockResolvedValue({ success: true });
 
     render(
       <EmptyStateOnboarding provider={conditionalProvider} orgId="org_1" onConnected={vi.fn()} />,
     );
 
+    fireEvent.change(screen.getByLabelText('Region'), { target: { value: 'eu' } });
     fireEvent.click(screen.getByRole('button', { name: /connect account/i }));
 
+    await waitFor(() => {
+      expect(mockCreateConnection).toHaveBeenCalledWith('cybedefend', { region: 'eu' });
+    });
     expect(screen.queryByText('Tenant name is required')).not.toBeInTheDocument();
   });
 });
