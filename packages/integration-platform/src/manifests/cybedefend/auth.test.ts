@@ -113,6 +113,32 @@ describe('exchangePersonalAccessToken: token handling', () => {
     expect(error.message).not.toContain(PAT);
   });
 
+  test('reports a 200 whose body is not JSON as an exchange failure', async () => {
+    // A proxy or captive portal can answer 200 with HTML; the raw SyntaxError
+    // that follows tells the operator nothing about the region or the token.
+    const fetchImpl: FetchImpl = async (url) =>
+      url.includes('/client-apps')
+        ? {
+            ok: true,
+            status: 200,
+            json: async () => ({ cli: { appId: APP_ID } }),
+            text: async () => '',
+          }
+        : {
+            ok: true,
+            status: 200,
+            json: async () => {
+              throw new SyntaxError('Unexpected token <');
+            },
+            text: async () => '<html>gateway</html>',
+          };
+
+    const error = await rejectionOf(exchangePersonalAccessToken(options(fetchImpl)));
+
+    expect(error.message).toMatch(/personal access token/i);
+    expect(error.message).not.toContain(PAT);
+  });
+
   test('reports a failed exchange rather than returning an empty token', async () => {
     const { fetchImpl } = fakeLogto({ tokenStatus: 400 });
 

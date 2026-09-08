@@ -76,10 +76,12 @@ export const exchangePersonalAccessToken = async ({
     );
   }
 
-  const payload = (await response.json()) as { access_token?: unknown };
+  const payload = (await response.json().catch(() => null)) as { access_token?: unknown } | null;
 
   if (typeof payload?.access_token !== 'string' || !payload.access_token) {
-    throw new Error('CybeDefend returned no access token for the personal access token.');
+    throw new Error(
+      `CybeDefend returned no usable access token for the personal access token (HTTP ${response.status}).`,
+    );
   }
 
   return payload.access_token;
