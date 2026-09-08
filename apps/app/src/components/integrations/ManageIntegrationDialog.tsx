@@ -250,15 +250,6 @@ export function ManageIntegrationDialog({
   const handleSaveCredentials = async () => {
     if (!connectionId || !orgId) return;
 
-    // Check if any credentials were actually entered
-    const hasValues = Object.values(credentialValues).some((value) =>
-      Array.isArray(value) ? value.length > 0 : value.trim() !== '',
-    );
-    if (!hasValues) {
-      toast.error('Please enter at least one credential value to update');
-      return;
-    }
-
     // Only non-empty values, and only from fields the operator could see.
     const visibleIds = new Set(
       visibleCredentialFields(credentialFields, credentialValues).map((field) => field.id),
@@ -273,6 +264,11 @@ export function ManageIntegrationDialog({
       } else if (value.trim()) {
         credentialsToSave[key] = value.trim();
       }
+    }
+
+    if (Object.keys(credentialsToSave).length === 0) {
+      toast.error('Please enter at least one credential value to update');
+      return;
     }
 
     setSavingCredentials(true);
