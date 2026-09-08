@@ -37,6 +37,7 @@ import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { visibleCredentialFields } from './credential-field-visibility';
 
 interface VariableWithValue extends ConnectionVariable {
   currentValue?: string | number | boolean | string[];
@@ -249,18 +250,13 @@ export function ManageIntegrationDialog({
   const handleSaveCredentials = async () => {
     if (!connectionId || !orgId) return;
 
-    // Check if any credentials were actually entered
-    const hasValues = Object.values(credentialValues).some((value) =>
-      Array.isArray(value) ? value.length > 0 : value.trim() !== '',
+    // Only non-empty values, and only from fields the operator could see.
+    const visibleIds = new Set(
+      visibleCredentialFields(credentialFields, credentialValues).map((field) => field.id),
     );
-    if (!hasValues) {
-      toast.error('Please enter at least one credential value to update');
-      return;
-    }
-
-    // Only send non-empty values
     const credentialsToSave: Record<string, string | string[]> = {};
     for (const [key, value] of Object.entries(credentialValues)) {
+      if (!visibleIds.has(key)) continue;
       if (Array.isArray(value)) {
         if (value.length > 0) {
           credentialsToSave[key] = value;
@@ -268,6 +264,11 @@ export function ManageIntegrationDialog({
       } else if (value.trim()) {
         credentialsToSave[key] = value.trim();
       }
+    }
+
+    if (Object.keys(credentialsToSave).length === 0) {
+      toast.error('Please enter at least one credential value to update');
+      return;
     }
 
     setSavingCredentials(true);
@@ -505,7 +506,7 @@ function ConfigurationContent({
           <span>Your credentials are encrypted at rest using AES-256-GCM encryption.</span>
         </p>
       </div>
-      {credentialFields.map((field) => (
+      {visibleCredentialFields(credentialFields, credentialValues).map((field) => (
         <div key={field.id} className="space-y-2">
           <Label htmlFor={`cred-${field.id}`}>
             {field.label}
