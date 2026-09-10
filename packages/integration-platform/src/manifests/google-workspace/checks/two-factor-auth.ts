@@ -3,9 +3,15 @@ import type { CheckContext, IntegrationCheck } from '../../../types';
 import {
   filterGoogleWorkspaceUsersForChecks,
   parseGoogleWorkspaceCheckUserFilter,
+  resolveGoogleWorkspaceUserFilter,
 } from '../check-user-filter';
 import type { GoogleWorkspaceUser, GoogleWorkspaceUsersResponse } from '../types';
-import { includeSuspendedVariable, targetOrgUnitsVariable } from '../variables';
+import {
+  includeSuspendedVariable,
+  targetDomainsVariable,
+  targetGroupsVariable,
+  targetOrgUnitsVariable,
+} from '../variables';
 
 /**
  * Check that all users have 2-Step Verification enabled
@@ -17,12 +23,20 @@ export const twoFactorAuthCheck: IntegrationCheck = {
   description: 'Verify all users have 2-Step Verification (2FA) enabled in Google Workspace',
   service: 'mfa-compliance',
   taskMapping: TASK_TEMPLATES.twoFactorAuth,
-  variables: [targetOrgUnitsVariable, includeSuspendedVariable],
+  variables: [
+    targetOrgUnitsVariable,
+    targetGroupsVariable,
+    targetDomainsVariable,
+    includeSuspendedVariable,
+  ],
 
   run: async (ctx: CheckContext) => {
     ctx.log('Starting Google Workspace 2FA check');
 
-    const userFilterConfig = parseGoogleWorkspaceCheckUserFilter(ctx.variables);
+    const userFilterConfig = await resolveGoogleWorkspaceUserFilter({
+      client: ctx,
+      config: parseGoogleWorkspaceCheckUserFilter(ctx.variables),
+    });
 
     // Fetch all users with pagination
     const allUsers: GoogleWorkspaceUser[] = [];

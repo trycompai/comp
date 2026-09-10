@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import {
   filterGoogleWorkspaceUsersForChecks,
+  isGoogleWorkspaceUserInScope,
   parseGoogleWorkspaceCheckUserFilter,
   shouldIncludeGoogleWorkspaceUserForCheck,
 } from '../check-user-filter';
@@ -95,5 +96,63 @@ describe('filterGoogleWorkspaceUsersForChecks', () => {
       baseUser({ id: 'u2', primaryEmail: 'drop@example.com' }),
     ];
     expect(filterGoogleWorkspaceUsersForChecks(users, config)).toHaveLength(1);
+  });
+});
+
+describe('isGoogleWorkspaceUserInScope — org unit matching', () => {
+  /** Build a scope matcher for an OU selection; no args means no OU filter. */
+  const scopedTo =
+    (...targetOrgUnits: string[]) =>
+    (orgUnitPath: string) =>
+      isGoogleWorkspaceUserInScope(
+        baseUser({ orgUnitPath }),
+        parseGoogleWorkspaceCheckUserFilter(
+          targetOrgUnits.length > 0 ? { target_org_units: targetOrgUnits } : {},
+        ),
+      );
+
+  it('treats a missing or empty OU selection as "no OU filter"', () => {
+    expect(scopedTo()('/Anything')).toBe(true);
+    // An explicitly empty list must disable the filter, not select nobody.
+    expect(
+      isGoogleWorkspaceUserInScope(
+        baseUser({ orgUnitPath: '/Anything' }),
+        parseGoogleWorkspaceCheckUserFilter({ target_org_units: [] }),
+      ),
+    ).toBe(true);
+  });
+
+  it('matches an OU exactly, including a nested path', () => {
+    expect(scopedTo('/Engineering')('/Engineering')).toBe(true);
+    expect(scopedTo('/Engineering/Frontend')('/Engineering/Frontend')).toBe(true);
+  });
+
+  it('includes child OUs of a selected OU', () => {
+    expect(scopedTo('/Engineering')('/Engineering/Frontend')).toBe(true);
+  });
+
+  it('does not match a partial OU path segment', () => {
+    // '/Eng' must not sweep in '/Engineering' — the filter compares whole path
+    // segments, so a prefix that stops mid-segment selects nobody. Getting this
+    // wrong silently widens sync and check scope.
+    expect(scopedTo('/Eng')('/Engineering')).toBe(false);
+    expect(scopedTo('/Engineer')('/Engineering/Frontend')).toBe(false);
+  });
+
+  it('treats the root OU as matching every user', () => {
+    const inRoot = scopedTo('/');
+    expect(inRoot('/')).toBe(true);
+    expect(inRoot('/Engineering/Frontend')).toBe(true);
+  });
+
+  it('supports multiple target OUs', () => {
+    const inEngOrMarketing = scopedTo('/Engineering', '/Marketing');
+    expect(inEngOrMarketing('/Engineering')).toBe(true);
+    expect(inEngOrMarketing('/Marketing')).toBe(true);
+    expect(inEngOrMarketing('/HR')).toBe(false);
+  });
+
+  it('excludes a user at the root when a specific OU is selected', () => {
+    expect(scopedTo('/Engineering')('/')).toBe(false);
   });
 });

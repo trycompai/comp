@@ -4,6 +4,7 @@ import { initializeOrganization } from '@/actions/organization/lib/initialize-or
 import { resolveFrameworkIds } from '@/actions/organization/lib/resolve-framework-ids';
 import { authActionClientWithoutOrg } from '@/actions/safe-action';
 import { steps } from '@/app/(app)/setup/lib/constants';
+import { dispatchOnboardingJobs } from '../lib/dispatch-onboarding-jobs';
 import { createFleetLabelForOrg } from '@/trigger/tasks/device/create-fleet-label-for-org';
 import { onboardOrganization as onboardOrganizationTask } from '@/trigger/tasks/onboarding/onboard-organization';
 import { auth } from '@/utils/auth';
@@ -194,26 +195,32 @@ export const completeOnboarding = authActionClientWithoutOrg
         update: {},
       });
 
-      // Now trigger the jobs that were skipped during minimal creation
-      const handle = await tasks.trigger<typeof onboardOrganizationTask>('onboard-organization', {
+      // Dispatch the jobs skipped during minimal creation. Deliberately
+      // non-fatal — see dispatchOnboardingJobs for why.
+      const { handle } = await dispatchOnboardingJobs({
         organizationId: parsedInput.organizationId,
+        triggerOnboardOrganization: () =>
+          tasks.trigger<typeof onboardOrganizationTask>('onboard-organization', {
+            organizationId: parsedInput.organizationId,
+          }),
+        triggerCreateFleetLabel: () =>
+          tasks.trigger<typeof createFleetLabelForOrg>('create-fleet-label-for-org', {
+            organizationId: parsedInput.organizationId,
+          }),
       });
 
-      // Update onboarding record with job ID
-      await db.onboarding.update({
-        where: {
-          organizationId: parsedInput.organizationId,
-        },
-        data: { triggerJobId: handle.id },
-      });
+      if (handle) {
+        // Only record a job when there is one to track — downstream pages read
+        // a null triggerJobId as "nothing in progress".
+        await db.onboarding.update({
+          where: {
+            organizationId: parsedInput.organizationId,
+          },
+          data: { triggerJobId: handle.id },
+        });
 
-      // Set cookie for job tracking
-      (await cookies()).set('publicAccessToken', handle.publicAccessToken);
-
-      // Create Fleet Label
-      await tasks.trigger<typeof createFleetLabelForOrg>('create-fleet-label-for-org', {
-        organizationId: parsedInput.organizationId,
-      });
+        (await cookies()).set('publicAccessToken', handle.publicAccessToken);
+      }
 
       // Revalidate paths
       const headersList = await headers();
@@ -226,8 +233,8 @@ export const completeOnboarding = authActionClientWithoutOrg
 
       return {
         success: true,
-        handle: handle.id,
-        publicAccessToken: handle.publicAccessToken,
+        handle: handle?.id,
+        publicAccessToken: handle?.publicAccessToken,
         organizationId: parsedInput.organizationId,
         redirectUrl: `/${parsedInput.organizationId}/`,
       };

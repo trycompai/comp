@@ -45,7 +45,14 @@ import { GenericDeviceSyncService } from '../services/generic-device-sync.servic
 import { DynamicIntegrationRepository } from '../repositories/dynamic-integration.repository';
 import { CheckRunRepository } from '../repositories/check-run.repository';
 import { createCheckContext } from '@trycompai/integration-platform';
-import { filterUsersByOrgUnits } from './sync-ou-filter';
+import {
+  createBearerTokenClient,
+  isGoogleWorkspaceUserInScope,
+  isGoogleWorkspaceUserSelectedBySyncTerms,
+  parseGoogleWorkspaceCheckUserFilter,
+  resolveEffectiveSyncFilterMode,
+  resolveGoogleWorkspaceUserFilter,
+} from '@trycompai/integration-platform';
 
 interface GoogleWorkspaceUser {
   id: string;
@@ -285,57 +292,46 @@ export class SyncController {
       unknown
     >;
 
-    // Filter by organizational unit if configured
-    const targetOrgUnits = Array.isArray(syncVariables.target_org_units)
-      ? (syncVariables.target_org_units as string[])
-      : undefined;
-    const ouFilteredUsers = filterUsersByOrgUnits(users, targetOrgUnits);
-
-    if (targetOrgUnits && targetOrgUnits.length > 0) {
-      this.logger.log(
-        `Google Workspace OU filter kept ${ouFilteredUsers.length}/${users.length} users (OUs: ${targetOrgUnits.join(', ')})`,
-      );
-    }
-
-    const rawSyncFilterMode = syncVariables.sync_user_filter_mode;
-    const syncFilterMode: GoogleWorkspaceSyncFilterMode =
-      typeof rawSyncFilterMode === 'string' &&
-      GOOGLE_WORKSPACE_SYNC_FILTER_MODES.has(
-        rawSyncFilterMode as GoogleWorkspaceSyncFilterMode,
-      )
-        ? (rawSyncFilterMode as GoogleWorkspaceSyncFilterMode)
-        : 'all';
-    const excludedTerms = parseSyncFilterTerms(
-      syncVariables.sync_excluded_emails,
-    );
-    const includedTerms = parseSyncFilterTerms(
-      syncVariables.sync_included_emails,
-    );
-
-    let effectiveSyncFilterMode = syncFilterMode;
-    if (syncFilterMode === 'include' && includedTerms.length === 0) {
-      this.logger.warn(
-        `Google Workspace sync for org ${organizationId} is set to include mode, but include list is empty. Falling back to all users.`,
-      );
-      effectiveSyncFilterMode = 'all';
-    }
-
-    const filteredUsers = ouFilteredUsers.filter((user) => {
-      const email = user.primaryEmail.toLowerCase();
-
-      if (effectiveSyncFilterMode === 'exclude' && excludedTerms.length > 0) {
-        return !matchesSyncFilterTerms(email, excludedTerms);
-      }
-
-      if (effectiveSyncFilterMode === 'include') {
-        return matchesSyncFilterTerms(email, includedTerms);
-      }
-
-      return true;
+    // One implementation of "who is in scope" shared with the Google Workspace
+    // checks (packages/integration-platform). This controller used to
+    // re-implement the OU + email rules, so sync and the access review could
+    // silently disagree about the population.
+    //
+    // Two stages, matching the previous shape exactly:
+    //   scopedUsers  — org unit / group / domain, suspended users RETAINED
+    //                  because offboarding below needs to see them.
+    //   filteredUsers — the include/exclude selection actually imported.
+    const filterConfig = await resolveGoogleWorkspaceUserFilter({
+      client: createBearerTokenClient(String(accessToken), (message) =>
+        this.logger.warn(message),
+      ),
+      config: parseGoogleWorkspaceCheckUserFilter(
+        syncVariables as Record<string, string | string[]>,
+      ),
     });
 
+    const scopedUsers = users.filter((user) =>
+      isGoogleWorkspaceUserInScope(user, filterConfig),
+    );
+    const effectiveSyncFilterMode = resolveEffectiveSyncFilterMode(filterConfig);
+    const excludedTerms = filterConfig.excludedTerms;
+
+    if (effectiveSyncFilterMode !== (filterConfig.userFilterMode ?? 'all')) {
+      this.logger.warn(
+        `Google Workspace sync for org ${organizationId} requested "${filterConfig.userFilterMode}" mode with an empty list. Falling back to all users.`,
+      );
+    }
+
+    const filteredUsers = scopedUsers.filter((user) =>
+      isGoogleWorkspaceUserSelectedBySyncTerms(user, filterConfig),
+    );
+
     this.logger.log(
-      `Google Workspace sync filter mode "${effectiveSyncFilterMode}" kept ${filteredUsers.length}/${ouFilteredUsers.length} users`,
+      `Google Workspace scope kept ${scopedUsers.length}/${users.length} users ` +
+        `(OUs: ${filterConfig.targetOrgUnits?.join(', ') || 'all'}, ` +
+        `groups: ${filterConfig.targetGroups?.join(', ') || 'all'}, ` +
+        `domains: ${filterConfig.targetDomains?.join(', ') || 'all'}); ` +
+        `filter mode "${effectiveSyncFilterMode}" kept ${filteredUsers.length}/${scopedUsers.length}`,
     );
 
     // Active users to import/reactivate are based on the selected filter mode
@@ -349,12 +345,12 @@ export class SyncController {
       activeUsers.map((u) => u.primaryEmail.toLowerCase()),
     );
     const allSuspendedEmails = new Set(
-      ouFilteredUsers
+      scopedUsers
         .filter((u) => u.suspended)
         .map((u) => u.primaryEmail.toLowerCase()),
     );
     const allActiveEmails = new Set(
-      ouFilteredUsers
+      scopedUsers
         .filter((u) => !u.suspended)
         .map((u) => u.primaryEmail.toLowerCase()),
     );
@@ -493,7 +489,7 @@ export class SyncController {
     });
 
     const deactivationGwDomains = new Set(
-      ouFilteredUsers.map((u) => u.primaryEmail.split('@')[1]?.toLowerCase()),
+      scopedUsers.map((u) => u.primaryEmail.split('@')[1]?.toLowerCase()),
     );
     const deactivationSuspendedEmails =
       effectiveSyncFilterMode === 'include'

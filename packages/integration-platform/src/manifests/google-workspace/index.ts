@@ -1,6 +1,15 @@
 import type { IntegrationManifest } from '../../types';
-import { employeeAccessCheck, twoFactorAuthCheck } from './checks';
 import {
+  adminPrivilegeChangesCheck,
+  adminSecurityEventsCheck,
+  employeeAccessCheck,
+  twoFactorAuthCheck,
+} from './checks';
+import {
+  adminAuditApprovedActorsVariable,
+  adminAuditLookbackDaysVariable,
+  targetDomainsVariable,
+  targetGroupsVariable,
   syncExcludedEmailsVariable,
   syncIncludedEmailsVariable,
   syncUserFilterModeVariable,
@@ -24,7 +33,15 @@ export const googleWorkspaceManifest: IntegrationManifest = {
       scopes: [
         'https://www.googleapis.com/auth/admin.directory.user.readonly',
         'https://www.googleapis.com/auth/admin.directory.orgunit.readonly',
+        // Expands admin roles assigned to groups; without it, group-granted
+        // admin access is invisible to the access review.
+        'https://www.googleapis.com/auth/admin.directory.group.readonly',
+        // Lists verified domains for the domain filter.
+        'https://www.googleapis.com/auth/admin.directory.domain.readonly',
         'https://www.googleapis.com/auth/admin.directory.rolemanagement.readonly',
+        // Admin audit log (Reports API) — powers the admin-audit service.
+        // Connections created before this was added must reconnect to grant it.
+        'https://www.googleapis.com/auth/admin.reports.audit.readonly',
       ],
       pkce: false,
       clientAuthMethod: 'body',
@@ -39,7 +56,7 @@ export const googleWorkspaceManifest: IntegrationManifest = {
       setupInstructions: `To enable Google Workspace Admin SDK:
 1. Go to Google Cloud Console (console.cloud.google.com)
 2. Create or select a project
-3. Enable the Admin SDK API
+3. Enable the Admin SDK API (Directory and Reports)
 4. Create OAuth 2.0 credentials (Web application type)
 5. Add the callback URL shown below to "Authorized redirect URIs"
 6. Copy the Client ID and Client Secret
@@ -64,10 +81,24 @@ Note: The user authorizing must be a Google Workspace admin.`,
   services: [
     { id: 'user-sync', name: 'User Sync', description: 'Sync users from Google Workspace as organization members', enabledByDefault: true, implemented: true },
     { id: 'mfa-compliance', name: 'MFA Compliance', description: 'Monitor two-factor authentication enforcement', enabledByDefault: true, implemented: true },
-    { id: 'admin-audit', name: 'Admin Audit', description: 'Track admin console activity and permission changes', implemented: false },
+    { id: 'admin-audit', name: 'Admin Audit', description: 'Track admin console activity and permission changes', enabledByDefault: true, implemented: true },
   ],
 
-  variables: [targetOrgUnitsVariable, syncUserFilterModeVariable, syncExcludedEmailsVariable, syncIncludedEmailsVariable],
+  variables: [
+    targetOrgUnitsVariable,
+    targetGroupsVariable,
+    targetDomainsVariable,
+    syncUserFilterModeVariable,
+    syncExcludedEmailsVariable,
+    syncIncludedEmailsVariable,
+    adminAuditLookbackDaysVariable,
+    adminAuditApprovedActorsVariable,
+  ],
 
-  checks: [twoFactorAuthCheck, employeeAccessCheck],
+  checks: [
+    twoFactorAuthCheck,
+    employeeAccessCheck,
+    adminPrivilegeChangesCheck,
+    adminSecurityEventsCheck,
+  ],
 };

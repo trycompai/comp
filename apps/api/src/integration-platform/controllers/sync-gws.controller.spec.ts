@@ -6,6 +6,7 @@ import { ConnectionRepository } from '../repositories/connection.repository';
 import { CredentialVaultService } from '../services/credential-vault.service';
 import { OAuthCredentialsService } from '../services/oauth-credentials.service';
 import { IntegrationSyncLoggerService } from '../services/integration-sync-logger.service';
+import { GenericDeviceSyncService } from '../services/generic-device-sync.service';
 import { GenericEmployeeSyncService } from '../services/generic-employee-sync.service';
 import { DynamicIntegrationRepository } from '../repositories/dynamic-integration.repository';
 import { CheckRunRepository } from '../repositories/check-run.repository';
@@ -104,6 +105,9 @@ describe('SyncController - Google Workspace employees', () => {
           useValue: { logSync: jest.fn() },
         },
         { provide: GenericEmployeeSyncService, useValue: {} },
+        // Required by SyncController's constructor; the suite could not
+        // instantiate the controller without it.
+        { provide: GenericDeviceSyncService, useValue: {} },
         { provide: DynamicIntegrationRepository, useValue: {} },
         { provide: CheckRunRepository, useValue: {} },
       ],
@@ -306,7 +310,8 @@ describe('SyncController - Google Workspace employees', () => {
       expect(result.skipped).toBe(0);
       expect(mockedDb.member.update).toHaveBeenCalledWith({
         where: { id: 'mem_back' },
-        data: { deactivated: false, isActive: true },
+        // offboardDate is cleared on reactivation (97636c4ea).
+        data: { deactivated: false, isActive: true, offboardDate: null },
       });
     });
 
