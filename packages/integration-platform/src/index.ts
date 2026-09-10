@@ -148,6 +148,7 @@ export {
   resolveGoogleWorkspaceUserFilter,
   shouldIncludeGoogleWorkspaceUserForCheck,
   type GoogleWorkspaceCheckUserFilterConfig,
+  type GoogleWorkspaceFilterableUser,
   type GoogleWorkspaceUserSyncFilterMode,
 } from './manifests/google-workspace/check-user-filter';
 export {

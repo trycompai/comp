@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { AuthContextResponseInterceptor } from './auth/auth-context-response.interceptor';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AttachmentsModule } from './attachments/attachments.module';
@@ -143,6 +144,13 @@ import { OffboardingChecklistModule } from './offboarding-checklist/offboarding-
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      // Appends authType / authenticatedUser to authenticated JSON responses
+      // so the contract is uniform across every endpoint rather than only the
+      // 17 controllers that hand-wrote it. Opt out with @SkipAuthContextResponse().
+      provide: APP_INTERCEPTOR,
+      useClass: AuthContextResponseInterceptor,
     },
   ],
 })
