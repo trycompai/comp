@@ -3,14 +3,21 @@ import type { CheckContext, IntegrationCheck } from '../../../types';
 import {
   filterGoogleWorkspaceUsersForChecks,
   parseGoogleWorkspaceCheckUserFilter,
+  resolveGoogleWorkspaceUserFilter,
 } from '../check-user-filter';
-import type {
-  GoogleWorkspaceRoleAssignmentsResponse,
-  GoogleWorkspaceRolesResponse,
-  GoogleWorkspaceUser,
-  GoogleWorkspaceUsersResponse,
-} from '../types';
-import { includeSuspendedVariable, targetOrgUnitsVariable } from '../variables';
+import type { GoogleWorkspaceUser, GoogleWorkspaceUsersResponse } from '../types';
+import {
+  fetchRoleAssignments,
+  fetchRoleMap,
+  resolveRoleAssignments,
+  type ResolvedRoleGrant,
+} from '../role-assignments';
+import {
+  includeSuspendedVariable,
+  targetDomainsVariable,
+  targetGroupsVariable,
+  targetOrgUnitsVariable,
+} from '../variables';
 
 /**
  * Employee Access Review Check
@@ -23,80 +30,54 @@ export const employeeAccessCheck: IntegrationCheck = {
   description: 'Fetch all employees and their roles from Google Workspace for access review',
   service: 'user-sync',
   taskMapping: TASK_TEMPLATES.employeeAccess,
-  variables: [targetOrgUnitsVariable, includeSuspendedVariable],
+  variables: [
+    targetOrgUnitsVariable,
+    targetGroupsVariable,
+    targetDomainsVariable,
+    includeSuspendedVariable,
+  ],
 
   run: async (ctx: CheckContext) => {
     ctx.log('Starting Google Workspace Employee Access check');
 
-    const userFilterConfig = parseGoogleWorkspaceCheckUserFilter(ctx.variables);
+    const userFilterConfig = await resolveGoogleWorkspaceUserFilter({
+      client: ctx,
+      config: parseGoogleWorkspaceCheckUserFilter(ctx.variables),
+    });
 
-    // Fetch all roles first to build a role ID -> name map
-    ctx.log('Fetching available roles...');
-    const roleMap = new Map<string, string>();
+    // Roles, assignments, then resolution. Group-assigned roles are expanded
+    // to their members — assignments are not all user-scoped.
+    ctx.log('Fetching roles and role assignments...');
+    const roleMap = await fetchRoleMap(ctx);
+    const assignments = await fetchRoleAssignments(ctx);
+    ctx.log(`Fetched ${roleMap.size} roles and ${assignments.length} role assignments`);
 
-    try {
-      let rolesPageToken: string | undefined;
-      do {
-        const params: Record<string, string> = { customer: 'my_customer' };
-        if (rolesPageToken) {
-          params.pageToken = rolesPageToken;
-        }
+    const { grantsByUserId, unresolvedGroupAssignments } = await resolveRoleAssignments({
+      ctx,
+      assignments,
+      roleMap,
+    });
+    ctx.log(`Resolved admin roles for ${grantsByUserId.size} users`);
 
-        const rolesResponse = await ctx.fetch<GoogleWorkspaceRolesResponse>(
-          '/admin/directory/v1/customer/my_customer/roles',
-          { params },
-        );
-
-        if (rolesResponse.items) {
-          for (const role of rolesResponse.items) {
-            roleMap.set(role.roleId, role.roleName);
-          }
-        }
-
-        rolesPageToken = rolesResponse.nextPageToken;
-      } while (rolesPageToken);
-
-      ctx.log(`Fetched ${roleMap.size} roles`);
-    } catch (error) {
-      ctx.log(
-        'Could not fetch roles (may need additional permissions), continuing with basic info',
+    if (unresolvedGroupAssignments.length > 0) {
+      // Never let this pass silently: unexpanded group roles mean the review
+      // under-reports who holds admin access, which is worse than a visible
+      // finding on an otherwise all-pass inventory check.
+      ctx.warn(
+        `${unresolvedGroupAssignments.length} group-assigned role(s) could not be expanded`,
       );
-    }
-
-    // Fetch role assignments to map users to their roles
-    ctx.log('Fetching role assignments...');
-    const userRolesMap = new Map<string, string[]>(); // userId -> roleNames[]
-
-    try {
-      let assignmentsPageToken: string | undefined;
-      do {
-        const params: Record<string, string> = { customer: 'my_customer' };
-        if (assignmentsPageToken) {
-          params.pageToken = assignmentsPageToken;
-        }
-
-        const assignmentsResponse = await ctx.fetch<GoogleWorkspaceRoleAssignmentsResponse>(
-          '/admin/directory/v1/customer/my_customer/roleassignments',
-          { params },
-        );
-
-        if (assignmentsResponse.items) {
-          for (const assignment of assignmentsResponse.items) {
-            const roleName = roleMap.get(assignment.roleId) || `Role ${assignment.roleId}`;
-            const existing = userRolesMap.get(assignment.assignedTo) || [];
-            existing.push(roleName);
-            userRolesMap.set(assignment.assignedTo, existing);
-          }
-        }
-
-        assignmentsPageToken = assignmentsResponse.nextPageToken;
-      } while (assignmentsPageToken);
-
-      ctx.log(`Fetched ${userRolesMap.size} user role assignments`);
-    } catch (error) {
-      ctx.log(
-        'Could not fetch role assignments (may need additional permissions), continuing with basic admin status',
-      );
+      ctx.fail({
+        title: 'Group-assigned admin roles could not be resolved',
+        description:
+          `${unresolvedGroupAssignments.length} admin role(s) are assigned to groups that Comp could not read. ` +
+          'Users holding admin access through those groups are missing from this access review.',
+        resourceType: 'connection',
+        resourceId: ctx.connectionId,
+        severity: 'medium',
+        remediation:
+          'Reconnect Google Workspace and approve the group directory permission (admin.directory.group.readonly) so group-assigned admin roles can be expanded.',
+        evidence: { unresolvedGroupAssignments },
+      });
     }
 
     // Fetch all users with pagination
@@ -147,8 +128,9 @@ export const employeeAccessCheck: IntegrationCheck = {
 
     // Build the employee list with roles
     const employeeList = activeUsers.map((user) => {
-      // Get assigned roles from the role assignments
-      const assignedRoles = userRolesMap.get(user.id) || [];
+      const grants: ResolvedRoleGrant[] = grantsByUserId.get(user.id) ?? [];
+      const assignedRoles = grants.map((g) => g.roleName);
+      const groupGrantedRoles = grants.filter((g) => g.source === 'group');
 
       // Derive a role description
       let role: string;
@@ -167,6 +149,10 @@ export const employeeAccessCheck: IntegrationCheck = {
         name: user.name.fullName,
         role,
         roles: assignedRoles.length > 0 ? assignedRoles : user.isAdmin ? ['Super Admin'] : ['User'],
+        // Provenance matters for access review: a role held via group
+        // membership is revoked by changing the group, not the user.
+        roleGrants: grants,
+        hasGroupGrantedRoles: groupGrantedRoles.length > 0,
         isAdmin: user.isAdmin,
         isDelegatedAdmin: user.isDelegatedAdmin,
         orgUnit: user.orgUnitPath,

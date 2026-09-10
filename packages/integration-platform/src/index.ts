@@ -136,6 +136,25 @@ export { manifest as githubManifest } from './manifests/github';
 // Directory sync email include/exclude terms (Google Workspace, JumpCloud, checks)
 export { matchesSyncFilterTerms, parseSyncFilterTerms } from './sync-filter/email-exclusion-terms';
 
+// Google Workspace user scoping. Exported so the API's employee sync applies
+// the exact same rules as the checks instead of keeping a parallel copy —
+// divergence here means the access review and the personnel list disagree.
+export {
+  filterGoogleWorkspaceUsersForChecks,
+  isGoogleWorkspaceUserInScope,
+  isGoogleWorkspaceUserSelectedBySyncTerms,
+  parseGoogleWorkspaceCheckUserFilter,
+  resolveEffectiveSyncFilterMode,
+  resolveGoogleWorkspaceUserFilter,
+  shouldIncludeGoogleWorkspaceUserForCheck,
+  type GoogleWorkspaceCheckUserFilterConfig,
+  type GoogleWorkspaceUserSyncFilterMode,
+} from './manifests/google-workspace/check-user-filter';
+export {
+  createBearerTokenClient,
+  type GoogleWorkspaceDirectoryClient,
+} from './manifests/google-workspace/directory-client';
+
 // AWS credential helpers (used by frontend setup dialogs)
 export {
   awsRemediationScript,
