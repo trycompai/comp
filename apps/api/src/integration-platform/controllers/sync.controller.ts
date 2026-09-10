@@ -302,7 +302,7 @@ export class SyncController {
     //                  because offboarding below needs to see them.
     //   filteredUsers — the include/exclude selection actually imported.
     const filterConfig = await resolveGoogleWorkspaceUserFilter({
-      client: createBearerTokenClient(accessToken, (message) =>
+      client: createBearerTokenClient(String(accessToken), (message) =>
         this.logger.warn(message),
       ),
       config: parseGoogleWorkspaceCheckUserFilter(

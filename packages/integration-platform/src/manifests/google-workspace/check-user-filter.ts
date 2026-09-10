@@ -4,7 +4,22 @@ import {
   fetchMemberIdsForGroups,
   type GoogleWorkspaceDirectoryClient,
 } from './directory-client';
-import type { GoogleWorkspaceUser } from './types';
+
+/**
+ * The only fields user scoping actually reads.
+ *
+ * Callers hold different shapes for a directory user — the checks use the full
+ * `GoogleWorkspaceUser`, employee sync keeps a narrower local interface — and
+ * requiring the full shape here forced one of them to lie about its data.
+ * Anything with these fields can be filtered.
+ */
+export interface GoogleWorkspaceFilterableUser {
+  id: string;
+  primaryEmail: string;
+  orgUnitPath?: string;
+  suspended?: boolean;
+  archived?: boolean;
+}
 
 /** Read a variable that may arrive as a string or an array of strings. */
 function toStringList(value: unknown): string[] | undefined {
@@ -97,7 +112,7 @@ export async function resolveGoogleWorkspaceUserFilter({
  * own activeness rule on top.
  */
 export function isGoogleWorkspaceUserInScope(
-  user: GoogleWorkspaceUser,
+  user: GoogleWorkspaceFilterableUser,
   config: GoogleWorkspaceCheckUserFilterConfig,
 ): boolean {
   const { targetOrgUnits } = config;
@@ -147,7 +162,7 @@ export function resolveEffectiveSyncFilterMode(
  * Stage 2 — does the email include/exclude selection pick this user?
  */
 export function isGoogleWorkspaceUserSelectedBySyncTerms(
-  user: GoogleWorkspaceUser,
+  user: GoogleWorkspaceFilterableUser,
   config: GoogleWorkspaceCheckUserFilterConfig,
 ): boolean {
   const email = user.primaryEmail.toLowerCase();
@@ -169,7 +184,7 @@ export function isGoogleWorkspaceUserSelectedBySyncTerms(
  * scope, then activeness, then sync term selection.
  */
 export function shouldIncludeGoogleWorkspaceUserForCheck(
-  user: GoogleWorkspaceUser,
+  user: GoogleWorkspaceFilterableUser,
   config: GoogleWorkspaceCheckUserFilterConfig,
 ): boolean {
   if (user.suspended && !config.includeSuspended) {
@@ -187,9 +202,8 @@ export function shouldIncludeGoogleWorkspaceUserForCheck(
   return isGoogleWorkspaceUserSelectedBySyncTerms(user, config);
 }
 
-export function filterGoogleWorkspaceUsersForChecks(
-  users: GoogleWorkspaceUser[],
-  config: GoogleWorkspaceCheckUserFilterConfig,
-): GoogleWorkspaceUser[] {
+export function filterGoogleWorkspaceUsersForChecks<
+  T extends GoogleWorkspaceFilterableUser,
+>(users: T[], config: GoogleWorkspaceCheckUserFilterConfig): T[] {
   return users.filter((user) => shouldIncludeGoogleWorkspaceUserForCheck(user, config));
 }
