@@ -186,47 +186,21 @@ export class TrustAccessService {
 
   private async findPublishedTrustByRouteId(id: string) {
     // First, try treating `id` as the existing friendlyUrl.
-    let trust = await db.trust.findUnique({
-      where: { friendlyUrl: id },
+    let trust = await db.trust.findFirst({
+      where: { friendlyUrl: id, status: 'published' },
       include: { organization: true },
     });
 
     // If none found, fall back to treating `id` as organizationId.
     if (!trust) {
       trust = await db.trust.findFirst({
-        where: { organizationId: id },
+        where: { organizationId: id, status: 'published' },
         include: { organization: true },
       });
     }
 
-    // If still no trust record but we have an organization, auto-create it
     if (!trust) {
-      const organization = await db.organization.findUnique({
-        where: { id },
-      });
-
-      if (!organization) {
-        throw new NotFoundException('Trust site not found');
-      }
-
-      // Auto-create trust record with organizationId as friendlyUrl
-      trust = await db.trust.create({
-        data: {
-          organizationId: id,
-          friendlyUrl: id,
-          status: 'published',
-        },
-        include: { organization: true },
-      });
-    }
-
-    // Ensure the trust portal is published (auto-publish if draft)
-    if (trust.status !== 'published') {
-      trust = await db.trust.update({
-        where: { organizationId: trust.organizationId },
-        data: { status: 'published' },
-        include: { organization: true },
-      });
+      throw new NotFoundException('Trust site not found');
     }
 
     return trust;
@@ -1408,6 +1382,11 @@ export class TrustAccessService {
     };
   }
 
+  private readonly RECLAIM_GENERIC_RESPONSE = {
+    message:
+      'If an active access grant exists for this email, an access link has been sent.',
+  };
+
   async reclaimAccess(id: string, email: string, query?: string) {
     const trust = await this.findPublishedTrustByRouteId(id);
 
@@ -1432,10 +1411,10 @@ export class TrustAccessService {
       },
     });
 
+    // Return the same generic response whether or not a grant exists, so the
+    // response body can't be used to enumerate registered emails.
     if (!grant) {
-      throw new NotFoundException(
-        'No active access grant found for this email',
-      );
+      return this.RECLAIM_GENERIC_RESPONSE;
     }
 
     let accessToken = grant.accessToken;
@@ -1480,11 +1459,10 @@ export class TrustAccessService {
       expiresAt: grant.expiresAt,
     });
 
-    return {
-      message: 'Access link sent to your email',
-      accessLink,
-      expiresAt: accessTokenExpiresAt,
-    };
+    // Never return the access link or token in the response body: it must
+    // stay identical to the no-grant case to avoid an email-enumeration
+    // oracle.
+    return this.RECLAIM_GENERIC_RESPONSE;
   }
 
   async getGrantByAccessToken(token: string) {
