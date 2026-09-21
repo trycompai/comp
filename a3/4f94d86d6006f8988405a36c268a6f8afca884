@@ -1,0 +1,23 @@
+apps/app/src/hooks/use-framework-sync.ts
+  26176ac5d96c92b4 22-28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "a34f94d86d6006f8988405a36c268a6f8afca884",
+  "prompts": {
+    "26176ac5d96c92b4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "abeb4418-acc4-4f48-83cb-0d885a485b29",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 195,
+      "total_deletions": 11,
+      "accepted_lines": 233,
+      "overriden_lines": 0
+    }
+  }
+}

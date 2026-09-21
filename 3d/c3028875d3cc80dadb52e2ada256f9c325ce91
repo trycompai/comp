@@ -1,0 +1,69 @@
+apps/api/src/auth/auth.controller.ts
+  a610da88f606d7de 11-17
+apps/api/src/cloud-security/gcp-remediation.service.ts
+  a610da88f606d7de 232-237,320-322,430,673-674
+apps/api/src/integration-platform/services/connection.service.ts
+  a610da88f606d7de 289
+apps/api/src/policies/policies.service.spec.ts
+  a610da88f606d7de 70
+apps/api/src/admin-organizations/admin-organizations.controller.ts
+  a610da88f606d7de 16-21
+packages/email/emails/policy-acknowledgment-digest.tsx
+  a610da88f606d7de 35,37,56,59-60,65,93,97
+packages/email/emails/render.test.tsx
+  a610da88f606d7de 9,41
+apps/api/src/findings/findings.controller.ts
+  a610da88f606d7de 96-101
+apps/api/src/cloud-security/cloud-security.controller.ts
+  a610da88f606d7de 222-225,246,280,405,455
+apps/api/src/cloud-security/gcp-command-executor.ts
+  a610da88f606d7de 209,218-221,223-225,421-423
+apps/api/src/cloud-security/providers/gcp-security.service.ts
+  a610da88f606d7de 867,1093
+apps/api/src/cloud-security/ai-remediation.service.ts
+  a610da88f606d7de 385
+apps/api/src/integration-platform/controllers/sync.controller.ts
+  a610da88f606d7de 1498-1500,1589-1591
+apps/api/src/trigger/cloud-security/run-cloud-security-scan.ts
+  a610da88f606d7de 50
+apps/api/src/cloud-security/cloud-security.service.ts
+  a610da88f606d7de 443-445
+apps/api/src/trust-portal/domain-verification.spec.ts
+  a610da88f606d7de 1-4
+apps/api/src/utils/mime-type.validator.spec.ts
+  a610da88f606d7de 57,80
+apps/api/src/gen-openapi.spec.ts
+  a610da88f606d7de 23-28
+apps/api/src/openapi-docs.spec.ts
+  a610da88f606d7de 23-28,107-111,143-145,154-156
+apps/api/src/questionnaire/questionnaire.controller.ts
+  a610da88f606d7de 292-294,357-359,440-442,552-554
+apps/api/src/integration-platform/services/connection.service.spec.ts
+  a610da88f606d7de 243
+apps/api/src/cloud-security/azure-remediation.service.ts
+  a610da88f606d7de 467-469,636-637,668-672,708-711
+packages/email/index.ts
+  a610da88f606d7de 8
+apps/api/src/trust-portal/policy-pdf-renderer.service.spec.ts
+  a610da88f606d7de 661
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "3dc3028875d3cc80dadb52e2ada256f9c325ce91",
+  "prompts": {
+    "a610da88f606d7de": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6cc4163b-915a-4c8c-8fd6-cc849d7421e5",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 12035,
+      "total_deletions": 12011,
+      "accepted_lines": 133,
+      "overriden_lines": 0
+    }
+  }
+}

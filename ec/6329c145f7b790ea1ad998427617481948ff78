@@ -1,0 +1,23 @@
+packages/device-agent/src/main/store.ts
+  bceff394c42f40bd 4-5,10-23,25,61-69,71-99,103-109
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "ec6329c145f7b790ea1ad998427617481948ff78",
+  "prompts": {
+    "bceff394c42f40bd": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "97bc2f6d-8072-4294-a180-04c6dec511a4",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 62,
+      "total_deletions": 3,
+      "accepted_lines": 62,
+      "overriden_lines": 0
+    }
+  }
+}

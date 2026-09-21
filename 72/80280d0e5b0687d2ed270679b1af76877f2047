@@ -1,0 +1,25 @@
+apps/portal/src/app/api/portal/accept-policies/route.test.ts
+  a610da88f606d7de 1-141
+apps/portal/src/app/api/portal/accept-policies/route.ts
+  a610da88f606d7de 2,14-25,59-61,63-64,66-79,82-89,91-97
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "7280280d0e5b0687d2ed270679b1af76877f2047",
+  "prompts": {
+    "a610da88f606d7de": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6cc4163b-915a-4c8c-8fd6-cc849d7421e5",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 535,
+      "total_deletions": 176,
+      "accepted_lines": 3169,
+      "overriden_lines": 0
+    }
+  }
+}

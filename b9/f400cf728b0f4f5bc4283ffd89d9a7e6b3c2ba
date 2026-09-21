@@ -1,0 +1,25 @@
+apps/api/src/frameworks/frameworks-timeline.helper.ts
+  fccde9deaca22d8f 333-345
+apps/api/src/timelines/timelines.service.ts
+  fccde9deaca22d8f 37-45,48-55,57,61,63-71,73-74,76-89,91-96,99,110-111,115,120,140-143,161-164,193,201,204,206-257,568-570,573-574
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "b9f400cf728b0f4f5bc4283ffd89d9a7e6b3c2ba",
+  "prompts": {
+    "fccde9deaca22d8f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "36768a54-5467-42bc-beae-f693a338266e",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 1366,
+      "total_deletions": 105,
+      "accepted_lines": 790,
+      "overriden_lines": 0
+    }
+  }
+}

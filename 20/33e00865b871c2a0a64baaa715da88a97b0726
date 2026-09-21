@@ -1,0 +1,23 @@
+apps/app/src/app/(app)/[orgId]/trust/portal-settings/components/TrustPortalDomain.tsx
+  5647a86fe776173b 52-53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "2033e00865b871c2a0a64baaa715da88a97b0726",
+  "prompts": {
+    "5647a86fe776173b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "481da50f-7c62-476a-b82a-d8f7ac03e709",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 3124,
+      "total_deletions": 7,
+      "accepted_lines": 3361,
+      "overriden_lines": 0
+    }
+  }
+}

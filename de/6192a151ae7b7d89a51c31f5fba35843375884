@@ -1,0 +1,43 @@
+apps/api/src/tasks/tasks.service.ts
+  26176ac5d96c92b4 109,199,203,241,324,572,664,894,943,974,1088,1159,1247
+apps/api/src/frameworks/frameworks-timeline.helper.ts
+  26176ac5d96c92b4 177,182,228-229,234
+apps/api/src/controls/controls.service.ts
+  26176ac5d96c92b4 11,15,19,48,79-80,83,153,158,309,325,434,457
+apps/api/src/policies/policies.controller.ts
+  26176ac5d96c92b4 184,187,191,323,392,523,573
+apps/api/src/frameworks/frameworks-scores.helper.ts
+  26176ac5d96c92b4 18-19
+apps/api/src/assistant-chat/assistant-chat-tools.ts
+  26176ac5d96c92b4 63
+apps/api/src/trust-portal/trust-access.service.ts
+  26176ac5d96c92b4 1567,2002,2291
+apps/api/src/timelines/timelines-backfill.helper.ts
+  26176ac5d96c92b4 95,106
+apps/api/src/frameworks/frameworks.service.ts
+  26176ac5d96c92b4 83,88,92,129-130,132,157,162,165,203-204,207,405,503,512,521-522
+apps/api/src/policies/policies.service.ts
+  26176ac5d96c92b4 51,1287
+apps/api/src/vector-store/lib/sync/sync-policies.ts
+  26176ac5d96c92b4 36-37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "de6192a151ae7b7d89a51c31f5fba35843375884",
+  "prompts": {
+    "26176ac5d96c92b4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "abeb4418-acc4-4f48-83cb-0d885a485b29",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 171,
+      "total_deletions": 146,
+      "accepted_lines": 111,
+      "overriden_lines": 0
+    }
+  }
+}

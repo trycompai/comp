@@ -1,0 +1,23 @@
+apps/api/src/browserbase/run-error-formatter.ts
+  bd578efdc41c66bc 1-40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "1f3faff5ce663e1ccda4a887cc7bf84779d2885f",
+  "prompts": {
+    "bd578efdc41c66bc": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e6c163ee-6bd9-41ff-b295-830dc0e3974b",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 40,
+      "total_deletions": 0,
+      "accepted_lines": 40,
+      "overriden_lines": 0
+    }
+  }
+}

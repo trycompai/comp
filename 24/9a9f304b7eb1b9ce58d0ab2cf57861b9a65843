@@ -1,0 +1,21 @@
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "249a9f304b7eb1b9ce58d0ab2cf57861b9a65843",
+  "prompts": {
+    "7a7ecab1563ee10e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3a840ab1-d313-4396-8fec-dabd3a6dfa5e",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 12,
+      "overriden_lines": 0
+    }
+  }
+}

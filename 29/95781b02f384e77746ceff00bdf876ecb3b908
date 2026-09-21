@@ -1,0 +1,31 @@
+apps/app/src/app/(app)/[orgId]/people/[employeeId]/page.tsx
+  86f272f74f83c098 14-17,294-298,321-322
+apps/app/src/app/(app)/[orgId]/people/devices/types/index.ts
+  86f272f74f83c098 1-2,38-41
+apps/app/src/app/api/people/agent-devices/route.test.ts
+  86f272f74f83c098 1-119
+apps/app/src/app/(app)/[orgId]/people/devices/components/DeviceComplianceChart.test.tsx
+  86f272f74f83c098 51-52
+apps/app/src/app/api/people/agent-devices/route.ts
+  86f272f74f83c098 5-8,37-68
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "2995781b02f384e77746ceff00bdf876ecb3b908",
+  "prompts": {
+    "86f272f74f83c098": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2c1e6bd0-3267-4f83-bf4e-afe89837fa38",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 902,
+      "total_deletions": 84,
+      "accepted_lines": 842,
+      "overriden_lines": 0
+    }
+  }
+}
