@@ -2,6 +2,7 @@ import type { AuthContext } from '@/auth/types';
 import { EvidenceFormsService } from './evidence-forms.service';
 import type { AttachmentsService } from '@/attachments/attachments.service';
 import { db } from '@db';
+import { evidenceFormSubmissionSchemaMap } from './evidence-forms.definitions';
 
 jest.mock(
   '@/attachments/attachments.service',
@@ -334,6 +335,84 @@ describe('EvidenceFormsService', () => {
         },
         formType: 'meeting',
       });
+    });
+  });
+  describe('uploadSubmission', () => {
+    const uploadPayload = {
+      fileName: 'pentest-report.pdf',
+      fileType: 'application/pdf',
+      fileData: Buffer.from('%PDF-1.4 test').toString('base64'),
+    };
+
+    beforeEach(() => {
+      (
+        attachmentsServiceMock.uploadToS3 as unknown as jest.Mock
+      ).mockResolvedValue('org_123/attachments/evidence-forms/key.pdf');
+      (
+        attachmentsServiceMock.getPresignedDownloadUrl as unknown as jest.Mock
+      ).mockResolvedValue('https://s3.example.test/key.pdf');
+      mockedDb.evidenceSubmission.create.mockImplementation(
+        ({ data }: { data: { data: Record<string, unknown> } }) =>
+          Promise.resolve({
+            id: 'evs_1',
+            formType: 'penetration_test',
+            data: data.data,
+            submittedBy: null,
+          }),
+      );
+    });
+
+    it("stores the file under the form's declared file field", async () => {
+      await service.uploadSubmission({
+        organizationId: 'org_123',
+        formType: 'penetration-test',
+        userId: 'usr_1',
+        payload: uploadPayload,
+      });
+
+      const written = mockedDb.evidenceSubmission.create.mock.calls[0][0].data
+        .data as Record<string, unknown>;
+
+      // The form declares `pentestReport`; the detail view renders by that key,
+      // so writing a hardcoded `evidenceFile` left the field empty.
+      expect(written.pentestReport).toEqual({
+        fileName: 'pentest-report.pdf',
+        fileKey: 'org_123/attachments/evidence-forms/key.pdf',
+        downloadUrl: 'https://s3.example.test/key.pdf',
+      });
+      expect(written.evidenceFile).toBeUndefined();
+    });
+
+    it('stores under the generic key for a form with no file field', async () => {
+      await service.uploadSubmission({
+        organizationId: 'org_123',
+        formType: 'board-meeting',
+        userId: 'usr_1',
+        payload: { ...uploadPayload, fileName: 'minutes.pdf' },
+      });
+
+      const written = mockedDb.evidenceSubmission.create.mock.calls[0][0].data
+        .data as Record<string, unknown>;
+
+      expect(written.evidenceFile).toMatchObject({ fileName: 'minutes.pdf' });
+    });
+
+    it('produces a submission that satisfies the form schema', async () => {
+      await service.uploadSubmission({
+        organizationId: 'org_123',
+        formType: 'network-diagram',
+        userId: 'usr_1',
+        payload: { ...uploadPayload, fileName: 'diagram.pdf' },
+      });
+
+      const written = mockedDb.evidenceSubmission.create.mock.calls[0][0].data
+        .data as Record<string, unknown>;
+
+      // network-diagram requires a diagram link or an uploaded file; before the
+      // fix the upload satisfied neither, so the stored row failed its own schema.
+      const result =
+        evidenceFormSubmissionSchemaMap['network-diagram'].safeParse(written);
+      expect(result.success).toBe(true);
     });
   });
 });

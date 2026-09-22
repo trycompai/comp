@@ -21,6 +21,7 @@ import {
   type EvidenceFormFieldDefinition,
   type EvidenceFormType,
 } from './evidence-forms.definitions';
+import { resolveUploadFileFieldKey } from './upload-file-field.util';
 import { checkAutoCompletePhases } from '../frameworks/frameworks-timeline.helper';
 import { TimelinesService } from '../timelines/timelines.service';
 import { EvidenceFormsNotifierService } from './evidence-forms-notifier.service';
@@ -715,7 +716,9 @@ export class EvidenceFormsService {
           submittedById: userId,
           data: {
             submissionDate: new Date().toISOString(),
-            evidenceFile: {
+            // Store under the form's own file field so the submission renders
+            // against its declared fields, not just the generic fallback row.
+            [resolveUploadFileFieldKey(parsedType.data)]: {
               fileName: parsed.data.fileName,
               fileKey,
               downloadUrl,
