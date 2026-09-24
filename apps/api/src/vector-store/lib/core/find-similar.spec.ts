@@ -12,6 +12,7 @@ import {
   batchGenerateEmbeddings,
 } from './generate-embedding';
 import { findSimilarContent, findSimilarContentBatch } from './find-similar';
+import { organizationFilter } from './filter';
 
 const mockQuery = vectorIndex!.query as jest.Mock;
 const mockEmbed = generateEmbedding as jest.Mock;
@@ -32,7 +33,7 @@ function buildDistinctPolicyResults(count: number) {
       sourceType: 'policy',
       sourceId: `pol_${i}`,
       policyName: `Policy ${i}`,
-      organizationId: 'org_test',
+      organizationId: 'org_68d3f2f01a2b3c4d5e6f7a8b',
     },
   }));
 }
@@ -52,7 +53,7 @@ describe('findSimilarContent: result cap (CS-594)', () => {
 
     const results = await findSimilarContent(
       'Where is the business located?',
-      'org_test',
+      'org_68d3f2f01a2b3c4d5e6f7a8b',
     );
 
     // Bug: returned all 24. Fix: bounded to a small, relevant set.
@@ -65,7 +66,10 @@ describe('findSimilarContent: result cap (CS-594)', () => {
     const flood = buildDistinctPolicyResults(24);
     mockQuery.mockResolvedValue(flood);
 
-    const results = await findSimilarContent('any question', 'org_test');
+    const results = await findSimilarContent(
+      'any question',
+      'org_68d3f2f01a2b3c4d5e6f7a8b',
+    );
 
     // The most relevant chunk must be present, sorted highest-first.
     expect(results[0].score).toBe(0.9);
@@ -82,7 +86,10 @@ describe('findSimilarContent: result cap (CS-594)', () => {
       { id: 'noise', score: 0.1, metadata: { sourceType: 'policy' } },
     ]);
 
-    const results = await findSimilarContent('q', 'org_test');
+    const results = await findSimilarContent(
+      'q',
+      'org_68d3f2f01a2b3c4d5e6f7a8b',
+    );
 
     expect(results.map((r) => r.id)).toEqual(['good']);
   });
@@ -96,7 +103,7 @@ describe('findSimilarContentBatch: result cap (CS-594)', () => {
 
     const [perQuestion] = await findSimilarContentBatch(
       ['Where is the business located?'],
-      'org_test',
+      'org_68d3f2f01a2b3c4d5e6f7a8b',
     );
 
     expect(perQuestion.length).toBeLessThan(flood.length);
@@ -104,5 +111,51 @@ describe('findSimilarContentBatch: result cap (CS-594)', () => {
     expect(perQuestion.length).toBeGreaterThan(0);
     // Highest-scoring chunk preserved.
     expect(perQuestion[0].score).toBe(0.9);
+  });
+});
+
+describe('organizationFilter: filter injection hardening (GH-043)', () => {
+  it('builds an equality filter for well-formed organization IDs', () => {
+    expect(organizationFilter('org_68d3f2f01a2b3c4d5e6f7a8b')).toBe(
+      'organizationId = "org_68d3f2f01a2b3c4d5e6f7a8b"',
+    );
+  });
+
+  it.each([
+    'zzz" OR organizationId GLOB "*',
+    'org_test',
+    'org_" OR "1"="1',
+    'org with space',
+    'ORG_68D3F2F01A2B3C4D5E6F7A8B',
+    '',
+  ])('rejects unsafe or malformed organizationId %j', (value) => {
+    expect(() => organizationFilter(value)).toThrow(
+      'Invalid organizationId for vector filter',
+    );
+  });
+
+  it('findSimilarContent never queries Upstash with an injected filter', async () => {
+    await expect(
+      findSimilarContent('q', 'zzz" OR organizationId GLOB "*'),
+    ).rejects.toThrow('Invalid organizationId for vector filter');
+    expect(mockQuery).not.toHaveBeenCalled();
+  });
+
+  it('findSimilarContentBatch never queries Upstash with an injected filter', async () => {
+    // Per-question failures are swallowed so one bad question does not fail the
+    // batch, but an invalid organizationId must fail before ANY query is made.
+    await findSimilarContentBatch(['q'], 'zzz" OR organizationId GLOB "*');
+    expect(mockQuery).not.toHaveBeenCalled();
+  });
+
+  it('interpolates only the validated value into the filter string', async () => {
+    mockQuery.mockResolvedValue([]);
+    const orgId = 'org_68d3f2f01a2b3c4d5e6f7a8b';
+
+    await findSimilarContent('q', orgId);
+
+    expect(mockQuery).toHaveBeenCalledWith(
+      expect.objectContaining({ filter: `organizationId = "${orgId}"` }),
+    );
   });
 });

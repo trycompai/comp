@@ -1,4 +1,5 @@
 import { vectorIndex } from './client';
+import { organizationFilter } from './filter';
 import {
   generateEmbedding,
   batchGenerateEmbeddings,
@@ -72,7 +73,7 @@ export async function findSimilarContent(
       vector: queryEmbedding,
       topK: MAX_TOP_K,
       includeMetadata: true,
-      filter: `organizationId = "${organizationId}"`,
+      filter: organizationFilter(organizationId),
     });
 
     // Filter by minimum similarity score, then keep only the highest-scoring
@@ -180,7 +181,7 @@ export async function findSimilarContentBatch(
             vector: embedding,
             topK: MAX_TOP_K,
             includeMetadata: true,
-            filter: `organizationId = "${organizationId}"`,
+            filter: organizationFilter(organizationId),
           });
           return { index, results };
         } catch (error) {

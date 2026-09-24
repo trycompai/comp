@@ -1,5 +1,6 @@
 import { db } from '@db';
 import { vectorIndex } from '../core/client';
+import { organizationFilter } from '../core/filter';
 import {
   findAllOrganizationEmbeddings,
   type ExistingEmbedding,
@@ -220,7 +221,7 @@ async function verifyEmbeddingIsReady(
       const queryResults = await vectorIndex.query({
         vector: fetchedEmbedding.vector,
         topK: 1,
-        filter: `organizationId = "${organizationId}"`,
+        filter: organizationFilter(organizationId),
         includeMetadata: true,
       });
 
