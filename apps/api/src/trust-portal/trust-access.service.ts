@@ -124,7 +124,6 @@ export class TrustAccessService {
         create: {
           organizationId,
           friendlyUrl: organizationId,
-          status: 'published',
         },
       });
       return organizationId;
@@ -304,14 +303,11 @@ export class TrustAccessService {
         expiresAt: existingGrant.expiresAt,
       });
 
-      return {
-        id: existingGrant.id,
-        status: 'already_approved',
-        message: 'A fresh access link was sent to your email',
-        grant: {
-          expiresAt: existingGrant.expiresAt,
-        },
-      };
+      // Return the same generic response as the other paths so the body
+      // can't distinguish "active grant" from "pending request" from "new
+      // request" (email-enumeration oracle), and never leaks grant details.
+      // The access link only ever goes out by email.
+      return this.REQUEST_GENERIC_RESPONSE;
     }
 
     const existingRequest = await db.trustAccessRequest.findFirst({
@@ -323,9 +319,7 @@ export class TrustAccessService {
     });
 
     if (existingRequest) {
-      throw new BadRequestException(
-        'You already have a pending request for this organization',
-      );
+      return this.REQUEST_GENERIC_RESPONSE;
     }
 
     const request = await db.trustAccessRequest.create({
@@ -351,11 +345,7 @@ export class TrustAccessService {
       dto,
     );
 
-    return {
-      id: request.id,
-      status: request.status,
-      message: 'Access request submitted for review',
-    };
+    return this.REQUEST_GENERIC_RESPONSE;
   }
 
   private async sendAccessRequestNotificationToOrg(
@@ -1385,6 +1375,11 @@ export class TrustAccessService {
   private readonly RECLAIM_GENERIC_RESPONSE = {
     message:
       'If an active access grant exists for this email, an access link has been sent.',
+  };
+
+  private readonly REQUEST_GENERIC_RESPONSE = {
+    message:
+      'Your access request has been received. If you already have approved access, a fresh access link has been sent to your email.',
   };
 
   async reclaimAccess(id: string, email: string, query?: string) {
@@ -2691,8 +2686,8 @@ export class TrustAccessService {
   }
 
   async getPublicOverview(friendlyUrl: string) {
-    const trust = await db.trust.findUnique({
-      where: { friendlyUrl },
+    const trust = await db.trust.findFirst({
+      where: { friendlyUrl, status: 'published' },
       select: {
         overviewTitle: true,
         overviewContent: true,
@@ -2727,8 +2722,8 @@ export class TrustAccessService {
   }
 
   async getPublicCustomLinks(friendlyUrl: string) {
-    const trust = await db.trust.findUnique({
-      where: { friendlyUrl },
+    const trust = await db.trust.findFirst({
+      where: { friendlyUrl, status: 'published' },
       select: { organizationId: true },
     });
 
@@ -2761,10 +2756,15 @@ export class TrustAccessService {
     friendlyUrl: string,
     select: S,
   ): Promise<Prisma.TrustGetPayload<{ select: S }> | null> {
+    // Published-only: these readers back unauthenticated endpoints, so a
+    // draft portal must resolve exactly like a missing one.
     return (
-      (await db.trust.findUnique({ where: { friendlyUrl }, select })) ??
-      (await db.trust.findUnique({
-        where: { organizationId: friendlyUrl },
+      (await db.trust.findFirst({
+        where: { friendlyUrl, status: 'published' },
+        select,
+      })) ??
+      (await db.trust.findFirst({
+        where: { organizationId: friendlyUrl, status: 'published' },
         select,
       }))
     );
@@ -2783,8 +2783,8 @@ export class TrustAccessService {
   }
 
   async getPublicVendors(friendlyUrl: string) {
-    const trust = await db.trust.findUnique({
-      where: { friendlyUrl },
+    const trust = await db.trust.findFirst({
+      where: { friendlyUrl, status: 'published' },
       select: { organizationId: true },
     });
 

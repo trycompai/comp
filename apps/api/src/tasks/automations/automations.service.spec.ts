@@ -252,4 +252,24 @@ describe('AutomationsService.createVersion — error mapping', () => {
     ).rejects.toBeInstanceOf(NotFoundException);
     expect(db.$transaction).not.toHaveBeenCalled();
   });
+
+  it("rejects a scriptKey outside the organization's S3 prefix", async () => {
+    await expect(
+      service.createVersion({
+        ...scope,
+        data: { ...data, scriptKey: 'org_2/tsk_2/aut_2.v1.js' },
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(db.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("rejects a scriptKey that escapes the org prefix via '..'", async () => {
+    await expect(
+      service.createVersion({
+        ...scope,
+        data: { ...data, scriptKey: 'org_1/../org_2/aut_2.v1.js' },
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(db.$transaction).not.toHaveBeenCalled();
+  });
 });

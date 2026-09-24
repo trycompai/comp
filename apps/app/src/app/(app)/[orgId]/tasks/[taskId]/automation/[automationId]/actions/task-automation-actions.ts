@@ -159,6 +159,17 @@ export async function uploadAutomationScript(data: {
       return { success: false, error: 'Unauthorized' };
     }
 
+    // The forwarded taskId must belong to the caller's organization —
+    // otherwise an authenticated caller could target another org's task
+    // through the enterprise proxy.
+    const task = await db.task.findUnique({
+      where: { id: data.taskId },
+      select: { organizationId: true },
+    });
+    if (task?.organizationId !== activeOrganizationId) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
     const result = await callEnterpriseApi('/api/tasks-automations/s3/upload', {
       method: 'POST',
       body: data,
@@ -252,6 +263,14 @@ export async function executeAutomationScript(data: {
   try {
     const activeOrganizationId = await getActiveOrganizationId();
     if (!activeOrganizationId || activeOrganizationId !== data.orgId) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    const belongsToOrg = await isAutomationInOrganization({
+      automationId: data.automationId,
+      organizationId: activeOrganizationId,
+    });
+    if (!belongsToOrg) {
       return { success: false, error: 'Unauthorized' };
     }
 
@@ -449,6 +468,14 @@ export async function publishAutomation(
       return { success: false, error: 'Unauthorized' };
     }
 
+    const belongsToOrg = await isAutomationInOrganization({
+      automationId,
+      organizationId: activeOrganizationId,
+    });
+    if (!belongsToOrg) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
     // Call enterprise API to copy draft → versioned S3 key
     const response = await callEnterpriseApi<{
       success: boolean;
@@ -505,6 +532,14 @@ export async function restoreVersion(
   try {
     const activeOrganizationId = await getActiveOrganizationId();
     if (!activeOrganizationId || activeOrganizationId !== orgId) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    const belongsToOrg = await isAutomationInOrganization({
+      automationId,
+      organizationId: activeOrganizationId,
+    });
+    if (!belongsToOrg) {
       return { success: false, error: 'Unauthorized' };
     }
 
