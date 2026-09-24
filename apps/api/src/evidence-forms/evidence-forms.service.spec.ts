@@ -367,6 +367,20 @@ describe('EvidenceFormsService', () => {
           },
         },
         {
+          id: 'sub_fullwidth',
+          submittedAt: new Date('2026-09-18T00:45:00.000Z'),
+          submittedBy: { name: 'Mallory', email: 'mallory@example.com' },
+          data: {
+            submissionDate: '2026-09-18',
+            incidentDate: '2026-09-18',
+            // Full-width formula prefixes (U+FF1D etc.): OWASP notes some
+            // locales may treat these as formula starters.
+            complaintDetails: '\uFF1DSUM(A1:A2)',
+            individualsInvolved: '\uFF0B1+2',
+            evidence: '\uFF0D10',
+          },
+        },
+        {
           id: 'sub_benign',
           submittedAt: new Date('2026-09-18T01:00:00.000Z'),
           submittedBy: { name: 'Alice', email: 'alice@example.com' },
@@ -387,9 +401,9 @@ describe('EvidenceFormsService', () => {
       });
 
       // The sub_newline row carries an embedded newline inside a quoted
-      // cell, so a naive split on \n yields 5 pieces, not 4.
+      // cell, so a naive split on \n yields 6 pieces, not 5.
       const lines = csv.split('\n');
-      expect(lines).toHaveLength(5);
+      expect(lines).toHaveLength(6);
       // Every formula-leading value is prefixed with a single quote so
       // Excel/Sheets render it as text instead of evaluating it.
       expect(lines[1]).toContain(`"'=cmd|' /C calc'!A0"`);
@@ -399,10 +413,13 @@ describe('EvidenceFormsService', () => {
       // the quote prefix lands before the \n so nothing evaluates it.
       expect(lines[2].endsWith(',"\'')).toBe(true);
       expect(lines[3]).toContain('=HYPERLINK(""https://evil.example"",""x"")');
-      expect(lines[4]).toContain(`"'@channel please review"`);
+      expect(lines[4]).toContain(`"'\uFF1DSUM(A1:A2)"`);
+      expect(lines[4]).toContain(`"'\uFF0B1+2"`);
+      expect(lines[4]).toContain(`"'\uFF0D10"`);
+      expect(lines[5]).toContain(`"'@channel please review"`);
       // Benign values stay untouched; embedded-quote escaping is unchanged.
-      expect(lines[4]).toContain('"Bob and Carol"');
-      expect(lines[4]).toContain('He said ""hi""');
+      expect(lines[5]).toContain('"Bob and Carol"');
+      expect(lines[5]).toContain('He said ""hi""');
     });
 
     it('rejects export for reviewers without privileged evidence access', async () => {

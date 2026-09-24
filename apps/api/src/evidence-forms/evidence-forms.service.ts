@@ -63,9 +63,14 @@ const MAX_UPLOAD_BASE64_LENGTH = Math.ceil(MAX_UPLOAD_FILE_SIZE_BYTES / 3) * 4;
 // Excel/Sheets strip the surrounding quotes before evaluating, so quoting
 // alone is not a mitigation. Line feed is included: some parsers trim
 // leading whitespace before evaluating, so a "\n=..." value could still
-// execute.
+// execute. The full-width variants (\uFF1D =, \uFF0B +, \uFF0D -,
+// \uFF20 @) are covered too: OWASP's CSV Injection guidance notes some
+// locales (e.g. Japanese environments) may interpret them as formula
+// starters.
+const FORMULA_PREFIX_PATTERN = /^[=+\-@\t\r\n\uFF1D\uFF0B\uFF0D\uFF20]/;
+
 function neutralizeFormula(value: string): string {
-  if (/^[=+\-@\t\r\n]/.test(value)) {
+  if (FORMULA_PREFIX_PATTERN.test(value)) {
     return `'${value}`;
   }
   return value;
