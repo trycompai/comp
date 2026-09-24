@@ -14,9 +14,16 @@ const config = {
   ],
   images: {
     remotePatterns: [
+      // Restrict the image optimizer so /_next/image is not an open proxy
+      // for arbitrary https hosts (GH-083). Dynamic org/integration assets
+      // render with `unoptimized` and bypass this list.
       {
         protocol: 'https',
-        hostname: '**',
+        hostname: 'img.logo.dev',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.amazonaws.com',
       },
     ],
   },
