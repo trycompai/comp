@@ -3,7 +3,9 @@
 import { groq } from '@ai-sdk/groq';
 import { db } from '@db/server';
 import { generateObject, NoObjectGeneratedError } from 'ai';
+import { headers } from 'next/headers';
 import { z } from 'zod';
+import { auth } from '@/utils/auth';
 import {
   AUTOMATION_SUGGESTIONS_SYSTEM_PROMPT,
   getAutomationSuggestionsPrompt,
@@ -20,11 +22,27 @@ const SuggestionsSchema = z.object({
   ),
 });
 
+/**
+ * Resolve the caller's session and active organization. This action is a
+ * publicly-invocable Next.js Server Action RPC, so it MUST fail closed when
+ * there is no session or the requested org is not the session's active org.
+ */
+async function getActiveOrganizationId(): Promise<string | null> {
+  const session = await auth.api.getSession({ headers: await headers() });
+
+  return session?.session.activeOrganizationId ?? null;
+}
+
 export async function generateAutomationSuggestions(
   taskDescription: string,
   organizationId: string,
 ): Promise<{ title: string; prompt: string; vendorName?: string; vendorWebsite?: string }[]> {
   try {
+    const activeOrganizationId = await getActiveOrganizationId();
+    if (!activeOrganizationId || activeOrganizationId !== organizationId) {
+      return [];
+    }
+
     // Get vendors from the Vendor table
     const vendors = await db.vendor.findMany({
       where: {
