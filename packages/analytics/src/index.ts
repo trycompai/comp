@@ -29,3 +29,4 @@ export * from './components/provider';
 export * from './components/organization-identifier';
 export * from './components/server-feature-flags-provider';
 export * from './hooks/use-feature-flag';
+export * from './lib/before-send';
