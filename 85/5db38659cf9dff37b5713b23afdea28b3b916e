@@ -1,0 +1,25 @@
+apps/api/src/frameworks/framework-versioning/framework-drift.ts
+  26176ac5d96c92b4 1-33
+apps/api/src/frameworks/framework-versioning/framework-drift.spec.ts
+  26176ac5d96c92b4 1-54
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "855db38659cf9dff37b5713b23afdea28b3b916e",
+  "prompts": {
+    "26176ac5d96c92b4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "abeb4418-acc4-4f48-83cb-0d885a485b29",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 87,
+      "total_deletions": 0,
+      "accepted_lines": 131,
+      "overriden_lines": 0
+    }
+  }
+}

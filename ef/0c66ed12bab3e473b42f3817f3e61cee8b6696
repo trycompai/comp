@@ -1,0 +1,54 @@
+apps/api/src/frameworks/frameworks.controller.spec.ts
+  26176ac5d96c92b4 1-25,30-31,38-39,45-55,63-67,77-78,102,160-326
+apps/api/src/framework-editor-versions/framework-versions.module.ts
+  26176ac5d96c92b4 2,6
+apps/api/src/framework-editor-versions/framework-versions.controller.spec.ts
+  26176ac5d96c92b4 19,21,109-159
+apps/api/src/frameworks/frameworks.controller.ts
+  26176ac5d96c92b4 2,34-37,44-48,184-263
+apps/api/src/framework-editor-versions/framework-versions.service.ts
+  26176ac5d96c92b4 4-5,63-77
+apps/api/src/frameworks/frameworks.module.ts
+  26176ac5d96c92b4 6-7,12
+apps/api/src/frameworks/dto/rollback-framework.dto.ts
+  26176ac5d96c92b4 1-7
+apps/api/src/frameworks/dto/sync-framework.dto.ts
+  26176ac5d96c92b4 1-7
+apps/api/src/frameworks/frameworks.service.ts
+  26176ac5d96c92b4 16-17,566-722
+apps/api/src/framework-editor-versions/framework-versions.controller.ts
+  26176ac5d96c92b4 44-56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "ef0c66ed12bab3e473b42f3817f3e61cee8b6696",
+  "prompts": {
+    "26176ac5d96c92b4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "abeb4418-acc4-4f48-83cb-0d885a485b29",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 1093,
+      "total_deletions": 17,
+      "accepted_lines": 619,
+      "overriden_lines": 0
+    },
+    "bceff394c42f40bd": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "97bc2f6d-8072-4294-a180-04c6dec511a4",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 6,
+      "total_deletions": 525,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    }
+  }
+}

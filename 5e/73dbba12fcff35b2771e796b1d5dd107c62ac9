@@ -1,0 +1,36 @@
+apps/api/src/admin-feature-flags/admin-feature-flags.service.spec.ts
+  fccde9deaca22d8f 58-59,72
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "5e73dbba12fcff35b2771e796b1d5dd107c62ac9",
+  "prompts": {
+    "124576b6a5024a6e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1531e357-761d-4293-b193-260998df8551",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 146,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    },
+    "fccde9deaca22d8f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "36768a54-5467-42bc-beae-f693a338266e",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 3243,
+      "total_deletions": 3,
+      "accepted_lines": 3243,
+      "overriden_lines": 0
+    }
+  }
+}

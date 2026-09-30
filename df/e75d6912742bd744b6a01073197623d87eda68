@@ -1,0 +1,27 @@
+apps/framework-editor/app/(pages)/frameworks/[frameworkId]/versions/components/PublishVersionDialog.tsx
+  26176ac5d96c92b4 292-307,311-322,326-337,341-352,449-454,459-460,463-466,468-494,497,500-506,511-531
+apps/api/src/framework-editor-versions/framework-versions.service.ts
+  26176ac5d96c92b4 73-95,98-142
+apps/framework-editor/app/(pages)/frameworks/[frameworkId]/versions/hooks/useFrameworkDraftDiff.ts
+  26176ac5d96c92b4 54-79
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "dfe75d6912742bd744b6a01073197623d87eda68",
+  "prompts": {
+    "26176ac5d96c92b4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "abeb4418-acc4-4f48-83cb-0d885a485b29",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 362,
+      "total_deletions": 25,
+      "accepted_lines": 8083,
+      "overriden_lines": 12
+    }
+  }
+}

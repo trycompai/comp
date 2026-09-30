@@ -1,0 +1,29 @@
+packages/db/prisma/seed/seed.ts
+  26176ac5d96c92b4 196-204
+apps/api/src/frameworks/frameworks-upsert.helper.ts
+  26176ac5d96c92b4 93-117,139
+packages/db/prisma/migrations/20260423121434_backfill_framework_versions/migration.sql
+  26176ac5d96c92b4 1-143
+apps/app/src/actions/organization/lib/initialize-organization.ts
+  26176ac5d96c92b4 127-131,134-152,172
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "8d719ca3cdf529c730314ae2ac7f6b6f72b0075c",
+  "prompts": {
+    "26176ac5d96c92b4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "abeb4418-acc4-4f48-83cb-0d885a485b29",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 1035,
+      "total_deletions": 62,
+      "accepted_lines": 508,
+      "overriden_lines": 0
+    }
+  }
+}

@@ -1,0 +1,43 @@
+apps/api/src/findings/finding-notifier.service.spec.ts
+  5647a86fe776173b 13-18,84-89,91,209-248
+apps/api/src/findings/finding-notifier.service.ts
+  5647a86fe776173b 1,40,104-189,206-207,220,223-230,237-247,274,297-302,317-318,330,333-340,347-352,367-368,380,383-390,397-402,441,451-463,712-799
+packages/docs/openapi.json
+  5647a86fe776173b 13827-13841,25177-25184
+apps/api/src/findings/dto/create-finding.dto.ts
+  5647a86fe776173b 10,46-54
+apps/api/src/findings/findings.service.ts
+  5647a86fe776173b 11,179-194,245,249-250,254,259,330,351,370,381-383,543,627
+apps/api/src/findings/findings.controller.ts
+  5647a86fe776173b 25,71-76,93,96,101,106,117-127
+packages/db/prisma/schema/finding.prisma
+  5647a86fe776173b 13-19,38
+packages/db/prisma/migrations/20260410120000_add_finding_scope/migration.sql
+  5647a86fe776173b 1-5
+apps/app/src/hooks/use-findings-api.ts
+  5647a86fe776173b 6,21,65,156-160
+packages/ui/src/components/select.tsx
+  5647a86fe776173b 69-74
+apps/api/src/findings/finding-audit.service.ts
+  5647a86fe776173b 24,45,160,180
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "04674ef8a79a84e808f79e119ab83aa870819db8",
+  "prompts": {
+    "5647a86fe776173b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "481da50f-7c62-476a-b82a-d8f7ac03e709",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 3997,
+      "total_deletions": 111,
+      "accepted_lines": 3946,
+      "overriden_lines": 0
+    }
+  }
+}

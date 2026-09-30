@@ -1,0 +1,25 @@
+apps/app/src/app/(app)/[orgId]/people/all/components/MemberRow.tsx
+  86f272f74f83c098 22,37,294-313
+apps/app/src/app/(app)/[orgId]/people/all/components/MemberRow.test.tsx
+  86f272f74f83c098 121-148
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "afa211371ef950d48d81210d93c8b7577648b083",
+  "prompts": {
+    "86f272f74f83c098": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2c1e6bd0-3267-4f83-bf4e-afe89837fa38",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 100,
+      "total_deletions": 2,
+      "accepted_lines": 1563,
+      "overriden_lines": 0
+    }
+  }
+}
