@@ -73,6 +73,7 @@ export async function POST(
         authorId: author.id,
         policies,
       },
+      { tags: [organizationId] },
     );
 
     // The run is now in flight server-side. Mint a 15-min public token so

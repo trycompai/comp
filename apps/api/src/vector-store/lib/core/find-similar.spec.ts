@@ -106,3 +106,64 @@ describe('findSimilarContentBatch: result cap (CS-594)', () => {
     expect(perQuestion[0].score).toBe(0.9);
   });
 });
+
+describe('findSimilarContent: organizationId filter injection guard (GH-103)', () => {
+  it('passes a normal organization id through to the Upstash filter unchanged', async () => {
+    mockQuery.mockResolvedValue([]);
+
+    await findSimilarContent('any question', 'org_cl9ebqhxk00003b600tymydho');
+
+    expect(mockQuery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filter: 'organizationId = "org_cl9ebqhxk00003b600tymydho"',
+      }),
+    );
+  });
+
+  it('rejects an organization id containing a double quote before it ever queries Upstash', async () => {
+    const malicious = 'zzz" OR organizationId GLOB "*';
+
+    await expect(
+      findSimilarContent('any question', malicious),
+    ).rejects.toThrow();
+    expect(mockQuery).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    'org with spaces',
+    'org"quote',
+    "org'quote",
+    'org(paren',
+    'org*glob',
+    'org\\backslash',
+  ])(
+    'rejects organization ids containing filter metacharacters: %s',
+    async (malicious) => {
+      await expect(
+        findSimilarContent('any question', malicious),
+      ).rejects.toThrow();
+      expect(mockQuery).not.toHaveBeenCalled();
+    },
+  );
+});
+
+describe('findSimilarContentBatch: organizationId filter injection guard (GH-103)', () => {
+  it('passes a normal organization id through to the Upstash filter unchanged', async () => {
+    mockQuery.mockResolvedValue([]);
+
+    await findSimilarContentBatch(['q1'], 'org_cl9ebqhxk00003b600tymydho');
+
+    expect(mockQuery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filter: 'organizationId = "org_cl9ebqhxk00003b600tymydho"',
+      }),
+    );
+  });
+
+  it('rejects an organization id containing filter metacharacters before querying Upstash', async () => {
+    const malicious = 'zzz" OR organizationId GLOB "*';
+
+    await expect(findSimilarContentBatch(['q1'], malicious)).rejects.toThrow();
+    expect(mockQuery).not.toHaveBeenCalled();
+  });
+});

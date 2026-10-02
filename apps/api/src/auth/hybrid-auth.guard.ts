@@ -218,6 +218,7 @@ export class HybridAuthGuard implements CanActivate {
           where: {
             userId: user.id,
             organizationId,
+            isActive: true,
             deactivated: false,
           },
           select: {
@@ -329,7 +330,7 @@ export class HybridAuthGuard implements CanActivate {
     // any org, or who was removed from all of them — is blocked from EVERY MCP
     // tool, including the org-agnostic (skipOrgCheck) ones.
     const memberships = await db.member.findMany({
-      where: { userId, deactivated: false },
+      where: { userId, isActive: true, deactivated: false },
       select: { id: true, role: true, department: true, organizationId: true },
     });
 

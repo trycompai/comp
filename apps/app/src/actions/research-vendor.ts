@@ -14,11 +14,20 @@ export const researchVendorAction = authActionClientWithoutOrg
   .metadata({
     name: 'research-vendor',
   })
-  .action(async ({ parsedInput: { website } }) => {
+  .action(async ({ parsedInput: { website }, ctx }) => {
     try {
-      const handle = await tasks.trigger<typeof researchVendor>('research-vendor', {
-        website,
-      });
+      // research-vendor writes to the shared GlobalVendors table rather than
+      // per-org data, and this action runs without requiring an active
+      // organization, so one isn't guaranteed here. Tag the run when one is
+      // available so it can still be looked up through the org-scoped
+      // status route.
+      const organizationId = ctx.session.activeOrganizationId;
+
+      const handle = await tasks.trigger<typeof researchVendor>(
+        'research-vendor',
+        { website },
+        organizationId ? { tags: [organizationId] } : undefined,
+      );
 
       return {
         success: true,

@@ -4,6 +4,7 @@ import {
   findAllOrganizationEmbeddings,
   type ExistingEmbedding,
 } from '../core/find-existing-embeddings';
+import { assertSafeOrganizationId } from '../core/find-similar';
 import { batchUpsertEmbeddings } from '../core/upsert-embedding';
 import { logger } from '../../logger';
 import { syncPolicies, fetchPolicies } from './sync-policies';
@@ -186,6 +187,10 @@ async function verifyEmbeddingIsReady(
     logger.warn('Vector index not configured, skipping verification');
     return { success: false, attempts: 0, totalWaitMs: 0 };
   }
+
+  // The readiness query below interpolates organizationId into an Upstash
+  // filter string - reject anything outside the prefixed-CUID shape (GH-103).
+  assertSafeOrganizationId(organizationId);
 
   const maxRetries = 8;
   const initialDelay = 300; // 300ms

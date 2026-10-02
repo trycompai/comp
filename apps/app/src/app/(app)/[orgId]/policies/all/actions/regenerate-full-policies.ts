@@ -21,9 +21,11 @@ export const regenerateFullPoliciesAction = authActionClient
       throw new Error('No active organization');
     }
 
-    await tasks.trigger<typeof generateFullPolicies>('generate-full-policies', {
-      organizationId: session.activeOrganizationId,
-    });
+    await tasks.trigger<typeof generateFullPolicies>(
+      'generate-full-policies',
+      { organizationId: session.activeOrganizationId },
+      { tags: [session.activeOrganizationId] },
+    );
 
     // Revalidation handled by safe-action middleware using x-pathname header
     return { success: true };

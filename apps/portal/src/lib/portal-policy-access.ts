@@ -46,7 +46,13 @@ export async function getPortalPolicyMember({
   memberId?: string;
 }) {
   return db.member.findFirst({
-    where: { userId, organizationId, deactivated: false, ...(memberId ? { id: memberId } : {}) },
+    where: {
+      userId,
+      organizationId,
+      isActive: true,
+      deactivated: false,
+      ...(memberId ? { id: memberId } : {}),
+    },
     select: { id: true, organizationId: true, department: true },
   });
 }

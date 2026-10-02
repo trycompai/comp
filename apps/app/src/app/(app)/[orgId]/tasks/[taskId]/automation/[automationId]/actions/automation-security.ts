@@ -31,7 +31,7 @@ export async function requireAutomationPermission(action: 'read' | 'update') {
 
   // A saved active organization is not proof of current membership.
   const member = await db.member.findFirst({
-    where: { organizationId, userId, deactivated: false },
+    where: { organizationId, userId, isActive: true, deactivated: false },
     select: { id: true },
   });
   if (!member) throw new AutomationAccessError();

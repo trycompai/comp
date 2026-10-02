@@ -117,12 +117,16 @@ export default async function Layout({
   const meRes = await serverApi.get<{ organizations: OrganizationFromMe[] }>('/v1/auth/me');
   const organizations = meRes.data?.organizations ?? [];
 
-  // Generate logo URLs for all organizations
+  // Generate logo URLs for all organizations. Logo keys are scoped
+  // `${organizationId}/logo/...` (see apps/api organization.service.ts
+  // uploadLogo) — skip presigning anything that isn't scoped to the org it's
+  // attached to, so a stray/cross-tenant key can't be used to read another
+  // tenant's object out of the shared assets bucket.
   const logoUrls: Record<string, string> = {};
   if (s3Client && APP_AWS_ORG_ASSETS_BUCKET) {
     await Promise.all(
       organizations.map(async (org) => {
-        if (org.logo) {
+        if (org.logo && org.logo.startsWith(`${org.id}/`)) {
           try {
             const command = new GetObjectCommand({
               Bucket: APP_AWS_ORG_ASSETS_BUCKET,

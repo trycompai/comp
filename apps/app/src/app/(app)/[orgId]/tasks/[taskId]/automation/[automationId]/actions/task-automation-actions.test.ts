@@ -119,16 +119,19 @@ describe('authorization before privileged requests', () => {
     expect(await action()).toEqual({ success: false, error: 'Unauthorized' });
     expectNoSideEffects();
   });
-  it.each(actions)('denies removed or deactivated membership: %s', async (_name, action) => {
-    mocks.member.mockResolvedValue(null);
-    expect(await action()).toEqual({ success: false, error: 'Unauthorized' });
-    expect(mocks.member).toHaveBeenCalledWith({
-      where: { organizationId: 'org_1', userId: 'user_1', deactivated: false },
-      select: { id: true },
-    });
-    expect(mocks.permission).not.toHaveBeenCalled();
-    expectNoSideEffects();
-  });
+  it.each(actions)(
+    'denies removed, inactive or deactivated membership: %s',
+    async (_name, action) => {
+      mocks.member.mockResolvedValue(null);
+      expect(await action()).toEqual({ success: false, error: 'Unauthorized' });
+      expect(mocks.member).toHaveBeenCalledWith({
+        where: { organizationId: 'org_1', userId: 'user_1', isActive: true, deactivated: false },
+        select: { id: true },
+      });
+      expect(mocks.permission).not.toHaveBeenCalled();
+      expectNoSideEffects();
+    },
+  );
   it.each([null, { session: { activeOrganizationId: null }, user: { id: 'user_1' } }])(
     'denies absent session or active organization',
     async (session) => {

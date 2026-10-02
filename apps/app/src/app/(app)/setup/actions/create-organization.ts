@@ -146,9 +146,11 @@ export const createOrganization = authActionClientWithoutOrg
         revalidatePath(`/${org.organizationId}`);
       }
 
-      const handle = await tasks.trigger<typeof onboardOrganizationTask>('onboard-organization', {
-        organizationId: orgId,
-      });
+      const handle = await tasks.trigger<typeof onboardOrganizationTask>(
+        'onboard-organization',
+        { organizationId: orgId },
+        { tags: [orgId] },
+      );
 
       // Set triggerJobId to signal that the job is running.
       await db.onboarding.update({
@@ -165,9 +167,11 @@ export const createOrganization = authActionClientWithoutOrg
       (await cookies()).set('publicAccessToken', handle.publicAccessToken);
 
       // Create Fleet Label.
-      await tasks.trigger<typeof createFleetLabelForOrg>('create-fleet-label-for-org', {
-        organizationId: orgId,
-      });
+      await tasks.trigger<typeof createFleetLabelForOrg>(
+        'create-fleet-label-for-org',
+        { organizationId: orgId },
+        { tags: [orgId] },
+      );
 
       return {
         success: true,

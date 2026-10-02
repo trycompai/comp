@@ -19,6 +19,7 @@ export async function acknowledgePortalPolicies({
         where: {
           userId,
           organizationId,
+          isActive: true,
           deactivated: false,
           ...(memberId ? { id: memberId } : {}),
         },

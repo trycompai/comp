@@ -87,6 +87,7 @@ beforeEach(() => {
   mocks.memberFindFirst.mockImplementation(({ where }) =>
     where.userId === 'user_own' &&
     where.organizationId === 'org_own' &&
+    where.isActive === true &&
     where.deactivated === false &&
     (!where.id || where.id === 'mem_own')
       ? { id: 'mem_own', organizationId: 'org_own', department: 'engineering' }
@@ -240,7 +241,12 @@ describe('employee portal policy authorization', () => {
     ).toBe(200);
     expect(mocks.memberFindFirst).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { userId: 'user_own', organizationId: 'org_own', deactivated: false },
+        where: {
+          userId: 'user_own',
+          organizationId: 'org_own',
+          isActive: true,
+          deactivated: false,
+        },
       }),
     );
     expect(mocks.policyUpdateMany).toHaveBeenCalledOnce();

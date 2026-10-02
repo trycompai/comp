@@ -23,9 +23,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // research-vendor writes to the shared GlobalVendors table rather than
+    // per-org data, and this route is reachable before an org exists (e.g.
+    // during onboarding), so an active organization isn't guaranteed here.
+    // Tag the run when one is available so it can still be looked up
+    // through the org-scoped status route.
+    const organizationId = session.session.activeOrganizationId;
+
     const handle = await tasks.trigger<typeof researchVendor>(
       'research-vendor',
       { website },
+      organizationId ? { tags: [organizationId] } : undefined,
     );
 
     return NextResponse.json({ success: true, handle });

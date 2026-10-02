@@ -64,7 +64,10 @@ export class OrganizationController {
     @Query('includeOwnership') includeOwnership?: string,
   ) {
     const org = await this.organizationService.findById(organizationId);
-    const logoUrl = await this.organizationService.getLogoSignedUrl(org.logo);
+    const logoUrl = await this.organizationService.getLogoSignedUrl({
+      logoKey: org.logo,
+      organizationId,
+    });
 
     const result: Record<string, unknown> = {
       ...org,

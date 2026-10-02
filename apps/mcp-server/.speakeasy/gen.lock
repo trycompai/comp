@@ -5,7 +5,7 @@ management:
   docVersion: "1.0"
   speakeasyVersion: 1.790.3
   generationVersion: 2.918.4
-  releaseVersion: 0.2.5
+  releaseVersion: 0.2.8
   configChecksum: 16b11601c6d385e8fcd89719245bf1f4
   repoURL: https://github.com/trycompai/comp.git
   repoSubDirectory: apps/mcp-server
@@ -7787,4 +7787,4 @@ examples:
       requestBody:
         application/json: {"measurements": []}
 examplesVersion: 1.0.2
-releaseNotes: "## Mcp-typescript SDK Changes:\n* `CompAi.Audit Logs.AuditLogController_getAuditLogs_v1()`: \n  *  `request.offset` **Added**\n"
+releaseNotes: "## Comp maintenance security patch\nHarden local MCP origins and Host validation; require request credentials for network serving. Published under the legacy tag so comp-v2 latest is unchanged.\n"

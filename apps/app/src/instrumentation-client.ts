@@ -20,11 +20,12 @@ Sentry.init({
   enabled: process.env.NEXT_PUBLIC_VERCEL_ENV === 'production',
 
   integrations: [
-    // Add `data-sentry-mask` (or `.sentry-mask`) to any element rendering
-    // customer-confidential data; `data-sentry-block` to drop whole sections.
+    // Mask everything by default — replays capture customer compliance data.
+    // Add `data-sentry-unmask` (or `.sentry-unmask`) only to elements that are
+    // provably safe to record verbatim; `data-sentry-block` drops whole sections.
     Sentry.replayIntegration({
-      maskAllText: false,
-      blockAllMedia: false,
+      maskAllText: true,
+      blockAllMedia: true,
       mask: ['.sentry-mask', '[data-sentry-mask]'],
       block: ['[data-sentry-block]'],
     }),
