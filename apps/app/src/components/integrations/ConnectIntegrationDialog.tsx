@@ -744,6 +744,7 @@ export function ConnectIntegrationDialog({
                 width={28}
                 height={28}
                 className="object-contain"
+                unoptimized
               />
             </div>
             {getDialogTitle()}
