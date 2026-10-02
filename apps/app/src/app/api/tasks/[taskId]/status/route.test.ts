@@ -63,6 +63,20 @@ describe('GET /api/tasks/[taskId]/status', () => {
     expect((await GET(request(), params())).status).toBe(404);
   });
 
+  it('does not let generic task read permission expose policy output', async () => {
+    mocks.getAccess.mockResolvedValue(access({ task: ['read'] }));
+    const response = await GET(request(), params());
+    expect(response.status).toBe(404);
+    expect(await response.json()).not.toHaveProperty('output');
+  });
+
+  it('does not let policy read permission expose vendor output', async () => {
+    mocks.retrieve.mockResolvedValue({ ...run(), taskIdentifier: 'generate-vendor-mitigation' });
+    const response = await GET(request(), params());
+    expect(response.status).toBe(404);
+    expect(await response.json()).not.toHaveProperty('output');
+  });
+
   it.each([
     { tags: ['org_other'] },
     { tags: [] },

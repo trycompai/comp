@@ -45,6 +45,7 @@ jobs:
           bunx vitest run
           'src/app/api/tasks/[taskId]/status/route.test.ts'
           'src/app/(app)/[orgId]/cloud-tests/actions/batch-fix.test.ts'
+          'src/app/(app)/[orgId]/integrations/[slug]/actions/batch-fix.test.ts'
           src/trigger/tasks/cloud-security/remediate-batch.test.ts
           src/trigger/tasks/cloud-security/remediate-batch-helpers.test.ts
       - name: Portal policy regressions

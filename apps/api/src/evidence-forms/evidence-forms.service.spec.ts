@@ -384,6 +384,53 @@ describe('EvidenceFormsService', () => {
         });
       });
     });
+
+    describe('exportCsv', () => {
+      const exportSubmission = (fileKey: string) => ({
+        id: 'sub_export_1',
+        submittedAt: new Date('2026-01-01T00:00:00.000Z'),
+        submittedBy: { name: 'Jane Employee', email: 'jane@example.com' },
+        data: pentestPayload(fileKey),
+      });
+
+      it('does not presign a stored fileKey outside the organization', async () => {
+        mockedDb.evidenceSubmission.findMany.mockResolvedValue([
+          exportSubmission(
+            'org_999/attachments/evidence-forms/penetration-test/evil.pdf',
+          ),
+        ]);
+
+        const csv = await service.exportCsv({
+          organizationId: 'org_123',
+          formType: 'penetration-test',
+          authContext,
+        });
+
+        expect(getPresignedDownloadUrlMock).not.toHaveBeenCalled();
+        expect(csv).not.toContain('org_999');
+        expect(csv).toContain('sub_export_1');
+      });
+
+      it("presigns a stored fileKey that belongs to the caller's organization", async () => {
+        getPresignedDownloadUrlMock.mockResolvedValue(
+          'https://example.com/fresh-signed-url',
+        );
+        const fileKey =
+          'org_123/attachments/evidence-forms/penetration-test/report.pdf';
+        mockedDb.evidenceSubmission.findMany.mockResolvedValue([
+          exportSubmission(fileKey),
+        ]);
+
+        const csv = await service.exportCsv({
+          organizationId: 'org_123',
+          formType: 'penetration-test',
+          authContext,
+        });
+
+        expect(getPresignedDownloadUrlMock).toHaveBeenCalledWith(fileKey);
+        expect(csv).toContain('https://example.com/fresh-signed-url');
+      });
+    });
   });
 
   describe('reviewSubmission', () => {
