@@ -1,7 +1,16 @@
 import type { EvidenceFormFieldDefinition } from './evidence-forms.definitions';
 
+// Treat formula-leading cells as text before escaping CSV quotes.
+const FORMULA_PREFIX_PATTERN = /^[=+\-@\t\r\n\uFF1D\uFF0B\uFF0D\uFF20]/;
+
+function neutralizeFormula(value: string): string {
+  return FORMULA_PREFIX_PATTERN.test(value) ? `'${value}` : value;
+}
+
 export function toCsvRow(values: string[]): string {
-  return values.map((value) => `"${value.replace(/"/g, '""')}"`).join(',');
+  return values
+    .map((value) => `"${neutralizeFormula(value).replace(/"/g, '""')}"`)
+    .join(',');
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

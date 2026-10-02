@@ -92,7 +92,11 @@ export class AutomationsController {
     // Verify task access first
     await this.tasksService.verifyTaskAccess(organizationId, taskId);
 
-    return this.automationsService.findById(automationId);
+    return this.automationsService.findById({
+      organizationId,
+      taskId,
+      automationId,
+    });
   }
 
   @Post()
@@ -143,7 +147,12 @@ export class AutomationsController {
     // Verify task access first
     await this.tasksService.verifyTaskAccess(organizationId, taskId);
 
-    return this.automationsService.update(automationId, updateAutomationDto);
+    return this.automationsService.update({
+      organizationId,
+      taskId,
+      automationId,
+      updateAutomationDto,
+    });
   }
 
   @Delete(':automationId')
@@ -174,7 +183,11 @@ export class AutomationsController {
     // Verify task access first
     await this.tasksService.verifyTaskAccess(organizationId, taskId);
 
-    return this.automationsService.delete(automationId);
+    return this.automationsService.delete({
+      organizationId,
+      taskId,
+      automationId,
+    });
   }
 
   @Get(':automationId/runs')
@@ -192,7 +205,11 @@ export class AutomationsController {
     @Param('automationId') automationId: string,
   ) {
     await this.tasksService.verifyTaskAccess(organizationId, taskId);
-    return this.automationsService.findRunsByAutomationId(automationId);
+    return this.automationsService.findRunsByAutomationId({
+      organizationId,
+      taskId,
+      automationId,
+    });
   }
 
   @Get(':automationId/versions')
@@ -243,11 +260,13 @@ export class AutomationsController {
     await this.tasksService.verifyTaskAccess(organizationId, taskId);
     const parsedLimit = limit ? parseInt(limit) : undefined;
     const parsedOffset = offset ? parseInt(offset) : undefined;
-    return this.automationsService.listVersions(
+    return this.automationsService.listVersions({
+      organizationId,
+      taskId,
       automationId,
-      parsedLimit,
-      parsedOffset,
-    );
+      limit: parsedLimit,
+      offset: parsedOffset,
+    });
   }
 
   @Post(':automationId/versions')
@@ -265,7 +284,12 @@ export class AutomationsController {
     @Body() body: CreateVersionDto,
   ) {
     await this.tasksService.verifyTaskAccess(organizationId, taskId);
-    return this.automationsService.createVersion(automationId, body);
+    return this.automationsService.createVersion({
+      organizationId,
+      taskId,
+      automationId,
+      data: body,
+    });
   }
 
   // ==================== AUTOMATION RUNS (per task) ====================
