@@ -40,6 +40,7 @@ jest.mock('@db', () => {
     db: {
       evidenceSubmission: {
         findFirst: jest.fn(),
+        findMany: jest.fn(),
         groupBy: jest.fn(),
         update: jest.fn(),
         create: jest.fn(),
@@ -55,6 +56,7 @@ jest.mock('@db', () => {
 type MockDb = {
   evidenceSubmission: {
     findFirst: jest.Mock;
+    findMany: jest.Mock;
     groupBy: jest.Mock;
     update: jest.Mock;
     create: jest.Mock;
@@ -334,6 +336,101 @@ describe('EvidenceFormsService', () => {
         },
         formType: 'meeting',
       });
+    });
+  });
+
+  describe('exportCsv', () => {
+    it('neutralizes spreadsheet formula prefixes in submitted free text (GH-097)', async () => {
+      mockedDb.evidenceSubmission.findMany.mockResolvedValue([
+        {
+          id: 'sub_attack',
+          submittedAt: new Date('2026-09-18T00:00:00.000Z'),
+          submittedBy: { name: 'Mallory', email: 'mallory@example.com' },
+          data: {
+            submissionDate: '2026-09-18',
+            incidentDate: '2026-09-18',
+            complaintDetails: "=cmd|' /C calc'!A0",
+            individualsInvolved: '+SUM(A1:A2)',
+            evidence: '-10+20',
+          },
+        },
+        {
+          id: 'sub_newline',
+          submittedAt: new Date('2026-09-18T00:30:00.000Z'),
+          submittedBy: { name: 'Mallory', email: 'mallory@example.com' },
+          data: {
+            submissionDate: '2026-09-18',
+            incidentDate: '2026-09-18',
+            complaintDetails: '\n=HYPERLINK("https://evil.example","x")',
+            individualsInvolved: 'Mallory',
+            evidence: 'x',
+          },
+        },
+        {
+          id: 'sub_fullwidth',
+          submittedAt: new Date('2026-09-18T00:45:00.000Z'),
+          submittedBy: { name: 'Mallory', email: 'mallory@example.com' },
+          data: {
+            submissionDate: '2026-09-18',
+            incidentDate: '2026-09-18',
+            // Full-width formula prefixes (U+FF1D etc.): OWASP notes some
+            // locales may treat these as formula starters.
+            complaintDetails: '\uFF1DSUM(A1:A2)',
+            individualsInvolved: '\uFF0B1+2',
+            evidence: '\uFF0D10',
+          },
+        },
+        {
+          id: 'sub_benign',
+          submittedAt: new Date('2026-09-18T01:00:00.000Z'),
+          submittedBy: { name: 'Alice', email: 'alice@example.com' },
+          data: {
+            submissionDate: '2026-09-18',
+            incidentDate: '2026-09-18',
+            complaintDetails: '@channel please review',
+            individualsInvolved: 'Bob and Carol',
+            evidence: 'He said "hi"',
+          },
+        },
+      ]);
+
+      const csv = await service.exportCsv({
+        organizationId: 'org_123',
+        formType: 'whistleblower-report',
+        authContext,
+      });
+
+      // The sub_newline row carries an embedded newline inside a quoted
+      // cell, so a naive split on \n yields 6 pieces, not 5.
+      const lines = csv.split('\n');
+      expect(lines).toHaveLength(6);
+      // Every formula-leading value is prefixed with a single quote so
+      // Excel/Sheets render it as text instead of evaluating it.
+      expect(lines[1]).toContain(`"'=cmd|' /C calc'!A0"`);
+      expect(lines[1]).toContain('"\'+SUM(A1:A2)"');
+      expect(lines[1]).toContain('"\'-10+20"');
+      // A leading line feed must not smuggle a formula past the check:
+      // the quote prefix lands before the \n so nothing evaluates it.
+      expect(lines[2].endsWith(',"\'')).toBe(true);
+      expect(lines[3]).toContain('=HYPERLINK(""https://evil.example"",""x"")');
+      expect(lines[4]).toContain(`"'\uFF1DSUM(A1:A2)"`);
+      expect(lines[4]).toContain(`"'\uFF0B1+2"`);
+      expect(lines[4]).toContain(`"'\uFF0D10"`);
+      expect(lines[5]).toContain(`"'@channel please review"`);
+      // Benign values stay untouched; embedded-quote escaping is unchanged.
+      expect(lines[5]).toContain('"Bob and Carol"');
+      expect(lines[5]).toContain('He said ""hi""');
+    });
+
+    it('rejects export for reviewers without privileged evidence access', async () => {
+      await expect(
+        service.exportCsv({
+          organizationId: 'org_123',
+          formType: 'whistleblower-report',
+          authContext: { ...authContext, userRoles: ['employee'] },
+        }),
+      ).rejects.toThrow();
+      expect(mockedDb.evidenceSubmission.findMany).not.toHaveBeenCalled();
     });
   });
 });
