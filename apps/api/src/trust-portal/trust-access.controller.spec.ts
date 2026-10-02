@@ -280,7 +280,7 @@ describe('TrustAccessController', () => {
       const req = mockRequest();
       mockService.signNda.mockResolvedValue({ success: true });
 
-      const result = await controller.signNda('token_abc', dto as any, req);
+      const result = await controller.signNda('token_abc', dto, req);
 
       expect(result).toEqual({ success: true });
       expect(service.signNda).toHaveBeenCalledWith(
@@ -326,17 +326,27 @@ describe('TrustAccessController', () => {
   });
 
   describe('reclaimAccess', () => {
+    // GH-042: the response body is a generic message regardless of whether a
+    // grant exists, so the controller test only needs to prove it forwards
+    // params and returns the service's response verbatim (no accessLink or
+    // token added or stripped in the controller layer).
+    const GENERIC_RESPONSE = {
+      message:
+        'If an active access grant exists for this email, an access link has been sent.',
+    };
+
     it('should call service.reclaimAccess with friendlyUrl, email, and query', async () => {
       const dto = { email: 'user@example.com' };
-      mockService.reclaimAccess.mockResolvedValue({ success: true });
+      mockService.reclaimAccess.mockResolvedValue(GENERIC_RESPONSE);
 
       const result = await controller.reclaimAccess(
         'my-portal',
-        dto as any,
+        dto,
         'security-questionnaire',
       );
 
-      expect(result).toEqual({ success: true });
+      expect(result).toEqual(GENERIC_RESPONSE);
+      expect(result).not.toHaveProperty('accessLink');
       expect(service.reclaimAccess).toHaveBeenCalledWith(
         'my-portal',
         'user@example.com',
@@ -346,15 +356,24 @@ describe('TrustAccessController', () => {
 
     it('should pass undefined query when not provided', async () => {
       const dto = { email: 'user@example.com' };
-      mockService.reclaimAccess.mockResolvedValue({ success: true });
+      mockService.reclaimAccess.mockResolvedValue(GENERIC_RESPONSE);
 
-      await controller.reclaimAccess('my-portal', dto as any);
+      await controller.reclaimAccess('my-portal', dto);
 
       expect(service.reclaimAccess).toHaveBeenCalledWith(
         'my-portal',
         'user@example.com',
         undefined,
       );
+    });
+
+    it('returns the same generic response whether or not a grant exists (no enumeration signal)', async () => {
+      const dto = { email: 'nobody@example.com' };
+      mockService.reclaimAccess.mockResolvedValue(GENERIC_RESPONSE);
+
+      const result = await controller.reclaimAccess('my-portal', dto);
+
+      expect(result).toEqual(GENERIC_RESPONSE);
     });
   });
 

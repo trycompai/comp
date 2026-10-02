@@ -58,8 +58,28 @@ const EVIDENCE_FORM_DELETE_ROLES = ['owner', 'admin'] as const;
 const MAX_UPLOAD_FILE_SIZE_BYTES = 100 * 1024 * 1024;
 const MAX_UPLOAD_BASE64_LENGTH = Math.ceil(MAX_UPLOAD_FILE_SIZE_BYTES / 3) * 4;
 
+// Prefix values that spreadsheet apps would parse as formulas so exported
+// CSVs can't carry executable content (CSV formula injection, GH-097).
+// Excel/Sheets strip the surrounding quotes before evaluating, so quoting
+// alone is not a mitigation. Line feed is included: some parsers trim
+// leading whitespace before evaluating, so a "\n=..." value could still
+// execute. The full-width variants (\uFF1D =, \uFF0B +, \uFF0D -,
+// \uFF20 @) are covered too: OWASP's CSV Injection guidance notes some
+// locales (e.g. Japanese environments) may interpret them as formula
+// starters.
+const FORMULA_PREFIX_PATTERN = /^[=+\-@\t\r\n\uFF1D\uFF0B\uFF0D\uFF20]/;
+
+function neutralizeFormula(value: string): string {
+  if (FORMULA_PREFIX_PATTERN.test(value)) {
+    return `'${value}`;
+  }
+  return value;
+}
+
 function toCsvRow(values: string[]): string {
-  return values.map((value) => `"${value.replace(/"/g, '""')}"`).join(',');
+  return values
+    .map((value) => `"${neutralizeFormula(value).replace(/"/g, '""')}"`)
+    .join(',');
 }
 
 function flattenValue(value: unknown): string {

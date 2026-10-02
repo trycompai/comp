@@ -1,9 +1,14 @@
 name: Device Agent Release
 
+# The push trigger is intentionally limited to protected branches (main, release).
+# This pipeline handles Apple code-signing secrets (MAC_CSC_LINK, APPLE_ID, ...) and
+# SSL.com eSigner secrets (ESIGNER_*) - broadening it to arbitrary branches would let
+# anyone who can push a branch exfiltrate those credentials. Manual staging builds are
+# still available via workflow_dispatch.
 on:
   workflow_dispatch:
   push:
-    branches: ['**']
+    branches: ['main', 'release']
     paths:
       - 'packages/device-agent/**'
 
@@ -90,6 +95,7 @@ jobs:
     name: Build macOS (.dmg + .zip)
     needs: detect-version
     runs-on: macos-latest
+    environment: ${{ needs.detect-version.outputs.s3_env }}
     defaults:
       run:
         working-directory: packages/device-agent
@@ -148,6 +154,7 @@ jobs:
     name: Build Windows (.exe)
     needs: detect-version
     runs-on: windows-latest
+    environment: ${{ needs.detect-version.outputs.s3_env }}
     defaults:
       run:
         working-directory: packages/device-agent
@@ -418,6 +425,7 @@ jobs:
     name: Upload to S3
     needs: [detect-version, build-macos, build-windows, build-linux]
     runs-on: ubuntu-latest
+    environment: ${{ needs.detect-version.outputs.s3_env }}
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4

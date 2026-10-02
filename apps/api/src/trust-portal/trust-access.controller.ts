@@ -378,7 +378,8 @@ export class TrustAccessController {
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Access link sent to email',
+    description:
+      'Generic confirmation message, identical whether or not an active access grant exists for the email (no access link or token is returned).',
   })
   async reclaimAccess(
     // Note: friendlyUrl can be either the custom friendly URL or the organization ID

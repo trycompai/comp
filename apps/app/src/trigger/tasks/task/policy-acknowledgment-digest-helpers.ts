@@ -109,7 +109,7 @@ export function computePendingPolicies(
   policies: DigestPolicy[],
 ): DigestPolicy[] {
   return policies.filter((policy) => {
-    // signedBy stores member ids (see apps/portal/src/actions/accept-policies.ts),
+    // signedBy stores member ids (see apps/portal accept-policies API route),
     // not user ids — every other consumer checks against member.id.
     if (policy.signedBy.includes(member.id)) return false;
     if (policy.visibility === 'ALL') return true;
