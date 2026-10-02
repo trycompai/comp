@@ -1,11 +1,13 @@
 'use server';
 
+import { hasPermission } from '@/lib/permissions';
+import { resolveUserPermissions } from '@/lib/permissions.server';
+import { auth } from '@/utils/auth';
 import { groq } from '@ai-sdk/groq';
 import { db } from '@db/server';
 import { generateObject, NoObjectGeneratedError } from 'ai';
 import { headers } from 'next/headers';
 import { z } from 'zod';
-import { auth } from '@/utils/auth';
 import {
   AUTOMATION_SUGGESTIONS_SYSTEM_PROMPT,
   getAutomationSuggestionsPrompt,
@@ -23,14 +25,39 @@ const SuggestionsSchema = z.object({
 });
 
 /**
- * Resolve the caller's session and active organization. This action is a
- * publicly-invocable Next.js Server Action RPC, so it MUST fail closed when
- * there is no session or the requested org is not the session's active org.
+ * Authorize the requested organization before reading vendor or context data.
+ * Resolve permissions against this membership, rather than a second session
+ * lookup whose active organization could change during the request.
  */
-async function getActiveOrganizationId(): Promise<string | null> {
+async function getAuthorizedOrganizationId({
+  organizationId,
+}: {
+  organizationId: string;
+}): Promise<string | null> {
   const session = await auth.api.getSession({ headers: await headers() });
+  const activeOrganizationId = session?.session.activeOrganizationId;
+  if (!session?.user.id || !activeOrganizationId || activeOrganizationId !== organizationId) {
+    return null;
+  }
 
-  return session?.session.activeOrganizationId ?? null;
+  const member = await db.member.findFirst({
+    where: {
+      userId: session.user.id,
+      organizationId: activeOrganizationId,
+      deactivated: false,
+      isActive: true,
+    },
+    select: { role: true },
+  });
+  if (!member) return null;
+
+  const permissions = await resolveUserPermissions(member.role, activeOrganizationId);
+  const canReadData = ['task', 'vendor', 'evidence'].every((resource) =>
+    hasPermission(permissions, resource, 'read'),
+  );
+  if (!canReadData) return null;
+
+  return activeOrganizationId;
 }
 
 export async function generateAutomationSuggestions(
@@ -38,15 +65,15 @@ export async function generateAutomationSuggestions(
   organizationId: string,
 ): Promise<{ title: string; prompt: string; vendorName?: string; vendorWebsite?: string }[]> {
   try {
-    const activeOrganizationId = await getActiveOrganizationId();
-    if (!activeOrganizationId || activeOrganizationId !== organizationId) {
+    const authorizedOrganizationId = await getAuthorizedOrganizationId({ organizationId });
+    if (!authorizedOrganizationId) {
       return [];
     }
 
     // Get vendors from the Vendor table
     const vendors = await db.vendor.findMany({
       where: {
-        organizationId,
+        organizationId: authorizedOrganizationId,
       },
       select: {
         name: true,
@@ -57,7 +84,7 @@ export async function generateAutomationSuggestions(
     // Get vendors from context table as well
     const contextEntries = await db.context.findMany({
       where: {
-        organizationId,
+        organizationId: authorizedOrganizationId,
       },
       select: {
         question: true,
@@ -104,19 +131,15 @@ export async function generateAutomationSuggestions(
       try {
         const errorText = error.text;
         if (errorText) {
-          const parsed = JSON.parse(errorText);
-          if (parsed.suggestions) {
-            const suggestions = Array.isArray(parsed.suggestions)
-              ? parsed.suggestions
-              : [parsed.suggestions];
-            if (suggestions.length > 0 && suggestions[0].title) {
-              return suggestions.map((s: Record<string, unknown>) => ({
-                title: String(s.title),
-                prompt: String(s.prompt),
-                vendorName: (s.vendorName as string) ?? undefined,
-                vendorWebsite: (s.vendorWebsite as string) ?? undefined,
-              }));
-            }
+          const parsed: unknown = JSON.parse(errorText);
+          const result = SuggestionsSchema.safeParse(parsed);
+          if (result.success) {
+            return result.data.suggestions.map((suggestion) => ({
+              title: suggestion.title,
+              prompt: suggestion.prompt,
+              vendorName: suggestion.vendorName ?? undefined,
+              vendorWebsite: suggestion.vendorWebsite ?? undefined,
+            }));
           }
         }
       } catch {

@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { QuestionnaireService } from './questionnaire.service';
 import { UploadsService } from '../uploads/uploads.service';
 
+jest.mock('../uploads/uploads.service', () => ({ UploadsService: class UploadsService {} }));
+
 // Mock external dependencies
 jest.mock('@db', () => ({
   db: {
@@ -490,7 +492,7 @@ describe('QuestionnaireService', () => {
         publicAccessToken: 'token_123',
       });
       expect(uploadQuestionnaireFile).toHaveBeenCalled();
-      expect(tasks.trigger).toHaveBeenCalledWith('parse-questionnaire', {
+      expect(tasks.trigger).toHaveBeenCalledWith('internal-parse-questionnaire', {
         inputType: 's3',
         organizationId: 'org_1',
         s3Key: 'key',

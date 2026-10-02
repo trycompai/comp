@@ -25,7 +25,6 @@ export function useQuestionnaireState() {
   const [answeringQuestionIndices, setAnsweringQuestionIndices] = useState<Set<number>>(new Set());
   const [parseTaskId, setParseTaskId] = useState<string | null>(null);
   const [parseToken, setParseToken] = useState<string | null>(null);
-  const [autoAnswerToken, setAutoAnswerToken] = useState<string | null>(null);
   const [singleAnswerToken, setSingleAnswerToken] = useState<string | null>(null);
   const [isParseProcessStarted, setIsParseProcessStarted] = useState(false);
   const [isAutoAnswerProcessStarted, setIsAutoAnswerProcessStarted] = useState(false);
@@ -78,8 +77,6 @@ export function useQuestionnaireState() {
     setParseTaskId,
     parseToken,
     setParseToken,
-    autoAnswerToken,
-    setAutoAnswerToken,
     singleAnswerToken,
     setSingleAnswerToken,
     isParseProcessStarted,
@@ -92,4 +89,3 @@ export function useQuestionnaireState() {
     resetState,
   };
 }
-

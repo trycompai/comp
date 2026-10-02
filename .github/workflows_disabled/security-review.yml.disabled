@@ -1,10 +1,8 @@
-name: Security Review
-
-# Anthropic's official Claude security reviewer. Runs on every PR, analyzes only
-# the changed files (diff-aware), and posts inline comments with findings + fixes.
-# This is the authoritative gate; the local Claude Code hook + skill are the
-# fast dev-time layer. Prereq: add an ANTHROPIC_API_KEY repo secret (enabled for
-# Claude Code). Make this a required check via branch protection to block merges.
+# ARCHIVED: GitHub does not load this directory or the .disabled extension.
+# Retired for this maintained legacy repository: the reviewer executes Claude
+# project hooks from PR contents in a process holding an API key. Its successful
+# check also does not enforce absence of findings. See ../SECURITY_CI.md.
+name: Security Review (archived)
 
 on:
   pull_request:

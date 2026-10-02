@@ -1,9 +1,8 @@
-name: Sync MCP source to Gram
-
-# Keeps the hosted MCP (Speakeasy Gram) in sync with the clean public OpenAPI
-# spec. Runs whenever the spec (or the Gram deployment config) changes on main,
-# and can be triggered manually. No manual uploads — the source is pushed
-# declaratively from gram.json via the Gram CLI.
+# ARCHIVED: GitHub does not load this directory or the .disabled extension.
+# Retired for this maintained legacy repository: the mutable installer controls
+# the executable later given a publishing API key. This source must not publish
+# to the production hosted MCP automatically. See ../SECURITY_CI.md.
+name: Sync MCP source to Gram (archived)
 on:
   push:
     branches: [main]
@@ -21,8 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       # Org + project slugs are NOT secret — they appear in the Gram dashboard URL
-      # (app.getgram.ai/<org>/projects/<project>). Only the API key is a secret,
-      # and it is scoped to the push step so the curl|bash installer never sees it.
+      # (app.getgram.ai/<org>/projects/<project>). Step-scoping the key does not
+      # protect it from the installer replacing the CLI executed in that step.
       GRAM_ORG: comp-ai-f041
       GRAM_PROJECT: default
     steps:
