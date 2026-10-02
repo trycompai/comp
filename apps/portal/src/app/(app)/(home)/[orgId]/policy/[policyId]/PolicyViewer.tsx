@@ -1,16 +1,12 @@
 'use client';
 
-import type { Policy, PolicyVersion } from '@db';
+import type { PortalPolicy } from '@/lib/portal-policy-types';
 import type { JSONContent } from '@tiptap/react';
 import { PolicyEditor } from '../../components/policy/PolicyEditor';
 import { PortalPdfViewer } from '../../components/policy/PortalPdfViewer';
 
-type PolicyWithVersion = Pick<Policy, 'id' | 'content' | 'displayFormat' | 'pdfUrl'> & {
-  currentVersion?: Pick<PolicyVersion, 'id' | 'content' | 'pdfUrl' | 'version'> | null;
-};
-
 interface PolicyViewerProps {
-  policy: PolicyWithVersion;
+  policy: PortalPolicy;
 }
 
 export default function PolicyViewer({ policy }: PolicyViewerProps) {
@@ -22,6 +18,7 @@ export default function PolicyViewer({ policy }: PolicyViewerProps) {
     return (
       <PortalPdfViewer
         policyId={policy.id}
+        organizationId={policy.organizationId}
         s3Key={effectivePdfUrl}
         versionId={policy.currentVersion?.id}
       />

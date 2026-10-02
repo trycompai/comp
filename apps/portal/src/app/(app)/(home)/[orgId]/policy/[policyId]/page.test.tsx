@@ -1,3 +1,4 @@
+import { portalPolicySelect } from '@/lib/portal-policy-access';
 import type { Policy, PolicyVersion } from '@db';
 import { createElement, type ComponentProps, type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -6,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   getSession: vi.fn(),
   memberFindFirst: vi.fn(),
-  policyFindUnique: vi.fn(),
+  policyFindFirst: vi.fn(),
   policyViewer: vi.fn(),
 }));
 
@@ -16,7 +17,7 @@ vi.mock('@/app/lib/auth', () => ({
 vi.mock('@db/server', () => ({
   db: {
     member: { findFirst: mocks.memberFindFirst },
-    policy: { findUnique: mocks.policyFindUnique },
+    policy: { findFirst: mocks.policyFindFirst },
   },
 }));
 vi.mock('next/headers', () => ({ headers: async () => new Headers() }));
@@ -58,12 +59,14 @@ type PolicyFixture = Pick<
   | 'archivedAt'
   | 'content'
   | 'draftContent'
+  | 'visibility'
+  | 'visibleToDepartments'
   | 'displayFormat'
   | 'pdfUrl'
   | 'signedBy'
   | 'updatedAt'
 > & {
-  currentVersion: Pick<PolicyVersion, 'id' | 'content' | 'pdfUrl' | 'version'>;
+  currentVersion: Pick<PolicyVersion, 'id' | 'policyId' | 'content' | 'pdfUrl' | 'version'>;
 };
 
 function makePolicy(): PolicyFixture {
@@ -73,6 +76,8 @@ function makePolicy(): PolicyFixture {
     name: 'Internal employee policy',
     description: 'Confidential description',
     status: 'published',
+    visibility: 'ALL',
+    visibleToDepartments: [],
     isArchived: false,
     archivedAt: null,
     displayFormat: 'EDITOR',
@@ -81,6 +86,7 @@ function makePolicy(): PolicyFixture {
     draftContent: [{ text: 'Unreleased policy revision' }],
     currentVersion: {
       id: 'pv_current',
+      policyId: 'pol_requested',
       content: [{ text: 'Confidential current version' }],
       pdfUrl: null,
       version: 1,
@@ -90,7 +96,12 @@ function makePolicy(): PolicyFixture {
   };
 }
 
-type PolicyLookup = { where: Partial<PolicyFixture>; select?: Record<string, unknown> };
+type PolicyLookup = {
+  where: Partial<PolicyFixture> & {
+    OR?: Array<{ visibility: string; visibleToDepartments?: { has: string } }>;
+  };
+  select?: Record<string, unknown>;
+};
 type MemberLookup = {
   where: { userId: string; organizationId: string; deactivated?: boolean; isActive?: boolean };
 };
@@ -112,15 +123,25 @@ describe('Portal policy page authorization', () => {
         where.organizationId === 'org_authorized' &&
         (where.deactivated === undefined || where.deactivated === deactivated) &&
         (where.isActive === undefined || where.isActive === isActive);
-      return Promise.resolve(matches ? { id: 'mem_employee' } : null);
+      return Promise.resolve(
+        matches
+          ? { id: 'mem_employee', organizationId: 'org_authorized', department: 'engineering' }
+          : null,
+      );
     });
     // Model database filtering, rather than returning a policy regardless of
     // its query. An id-only lookup must reproduce the original disclosure.
-    mocks.policyFindUnique.mockImplementation(({ where, select }: PolicyLookup) => {
-      const matches = Object.entries(where).every(
-        ([key, value]) => policy[key as keyof PolicyFixture] === value,
+    mocks.policyFindFirst.mockImplementation(({ where, select }: PolicyLookup) => {
+      const matches = Object.entries(where)
+        .filter(([key]) => key !== 'OR')
+        .every(([key, value]) => policy[key as keyof PolicyFixture] === value);
+      const visible = where.OR?.some(
+        (condition) =>
+          condition.visibility === policy.visibility &&
+          (!condition.visibleToDepartments ||
+            policy.visibleToDepartments.includes(condition.visibleToDepartments.has)),
       );
-      if (!matches) return Promise.resolve(null);
+      if (!matches || !visible) return Promise.resolve(null);
       if (!select) return Promise.resolve(policy);
       return Promise.resolve(
         Object.fromEntries(Object.entries(policy).filter(([key]) => select[key])),
@@ -152,6 +173,9 @@ describe('Portal policy page authorization', () => {
 
     expect(html).toContain('Confidential policy content');
     expect(html).not.toContain('Unreleased policy revision');
+    expect(mocks.policyFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ select: portalPolicySelect }),
+    );
   });
 
   it('does not expose another organization policy through an authorized organization URL', async () => {
@@ -182,11 +206,24 @@ describe('Portal policy page authorization', () => {
     expect(mocks.policyViewer).not.toHaveBeenCalled();
   });
 
+  it('does not expose policies limited to another department', async () => {
+    policy.visibility = 'DEPARTMENT';
+    policy.visibleToDepartments = ['finance'];
+    await expect(renderPolicy()).rejects.toThrow('REDIRECT:/org_authorized');
+    expect(mocks.policyViewer).not.toHaveBeenCalled();
+  });
+
+  it('does not expose a malformed current version belonging to another policy', async () => {
+    policy.currentVersion.policyId = 'pol_foreign';
+    await expect(renderPolicy()).rejects.toThrow('REDIRECT:/org_authorized');
+    expect(mocks.policyViewer).not.toHaveBeenCalled();
+  });
+
   it('does not fetch a policy for a deactivated member', async () => {
     deactivated = true;
 
     await expect(renderPolicy()).rejects.toThrow('REDIRECT:/');
-    expect(mocks.policyFindUnique).not.toHaveBeenCalled();
+    expect(mocks.policyFindFirst).not.toHaveBeenCalled();
     expect(mocks.policyViewer).not.toHaveBeenCalled();
   });
 
@@ -194,13 +231,13 @@ describe('Portal policy page authorization', () => {
     isActive = false;
 
     await expect(renderPolicy()).rejects.toThrow('REDIRECT:/');
-    expect(mocks.policyFindUnique).not.toHaveBeenCalled();
+    expect(mocks.policyFindFirst).not.toHaveBeenCalled();
     expect(mocks.policyViewer).not.toHaveBeenCalled();
   });
 
   it('does not fetch a policy when the user is not a member of the URL organization', async () => {
     await expect(renderPolicy({ orgId: 'org_unrelated' })).rejects.toThrow('REDIRECT:/');
-    expect(mocks.policyFindUnique).not.toHaveBeenCalled();
+    expect(mocks.policyFindFirst).not.toHaveBeenCalled();
     expect(mocks.policyViewer).not.toHaveBeenCalled();
   });
 
@@ -209,7 +246,7 @@ describe('Portal policy page authorization', () => {
 
     await expect(renderPolicy()).rejects.toThrow('REDIRECT:/auth');
     expect(mocks.memberFindFirst).not.toHaveBeenCalled();
-    expect(mocks.policyFindUnique).not.toHaveBeenCalled();
+    expect(mocks.policyFindFirst).not.toHaveBeenCalled();
     expect(mocks.policyViewer).not.toHaveBeenCalled();
   });
 });

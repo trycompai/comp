@@ -1,5 +1,5 @@
 import { auth } from '@/app/lib/auth';
-import { db } from '@db/server';
+import { acknowledgePortalPolicies } from '@/lib/acknowledge-portal-policies';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -7,60 +7,30 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const schema = z.object({
+  organizationId: z.string().min(1),
   policyId: z.string().min(1),
 });
 
 export async function POST(req: NextRequest) {
   const session = await auth.api.getSession({ headers: req.headers });
+  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  if (!session?.user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const body = await req.json();
-  const parsed = schema.safeParse(body);
-
+  const parsed = schema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
-    return NextResponse.json(
-      { error: 'Invalid request body', details: parsed.error.flatten() },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 
-  const { policyId } = parsed.data;
-
-  const policy = await db.policy.findUnique({
-    where: { id: policyId },
-  });
-
-  if (!policy) {
-    return NextResponse.json({ error: 'Policy not found' }, { status: 404 });
-  }
-
-  const member = await db.member.findFirst({
-    where: {
+  try {
+    const result = await acknowledgePortalPolicies({
       userId: session.user.id,
-      organizationId: policy.organizationId,
-      isActive: true,
-      deactivated: false,
-    },
-  });
-
-  if (!member) {
-    return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+      organizationId: parsed.data.organizationId,
+      policyIds: [parsed.data.policyId],
+    });
+    if (!result.success) {
+      return NextResponse.json({ error: 'Policy access denied' }, { status: result.status });
+    }
+    return NextResponse.json({ success: true, alreadySigned: result.alreadySigned });
+  } catch {
+    return NextResponse.json({ error: 'Failed to accept policy' }, { status: 500 });
   }
-
-  // Check if user has already signed this policy
-  if (policy.signedBy.includes(member.id)) {
-    return NextResponse.json({ success: true, alreadySigned: true });
-  }
-
-  await db.policy.update({
-    where: { id: policyId },
-    data: {
-      signedBy: [...policy.signedBy, member.id],
-    },
-  });
-
-  return NextResponse.json({ success: true });
 }

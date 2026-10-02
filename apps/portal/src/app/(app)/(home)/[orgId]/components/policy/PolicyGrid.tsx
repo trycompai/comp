@@ -1,14 +1,11 @@
 'use client';
 
-import type { Member, Policy, PolicyVersion } from '@db';
+import type { PortalPolicy } from '@/lib/portal-policy-types';
+import type { Member } from '@db';
 import { Card, CardContent, CardHeader, CardTitle, Text } from '@trycompai/design-system';
 
-type PolicyWithVersion = Policy & {
-  currentVersion?: Pick<PolicyVersion, 'id' | 'content' | 'pdfUrl' | 'version'> | null;
-};
-
 interface PolicyGridProps {
-  policies: PolicyWithVersion[];
+  policies: PortalPolicy[];
   onPolicyClick: (index: number) => void;
   member: Member;
 }

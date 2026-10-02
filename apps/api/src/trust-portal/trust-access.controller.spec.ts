@@ -18,7 +18,6 @@ jest.mock('@trycompai/auth', () => ({
 
 describe('TrustAccessController', () => {
   let controller: TrustAccessController;
-  let service: jest.Mocked<TrustAccessService>;
 
   const mockService = {
     createAccessRequest: jest.fn(),
@@ -76,13 +75,12 @@ describe('TrustAccessController', () => {
       .compile();
 
     controller = module.get<TrustAccessController>(TrustAccessController);
-    service = module.get(TrustAccessService);
 
     jest.clearAllMocks();
   });
 
   describe('createAccessRequest', () => {
-    it('should call service.createAccessRequest with correct params', async () => {
+    it('should call mockService.createAccessRequest with correct params', async () => {
       const dto = { email: 'user@example.com', company: 'Acme' } as any;
       const req = mockRequest();
       mockService.createAccessRequest.mockResolvedValue({ id: 'req_1' });
@@ -94,7 +92,7 @@ describe('TrustAccessController', () => {
       );
 
       expect(result).toEqual({ id: 'req_1' });
-      expect(service.createAccessRequest).toHaveBeenCalledWith(
+      expect(mockService.createAccessRequest).toHaveBeenCalledWith(
         'my-portal',
         dto,
         '127.0.0.1',
@@ -104,7 +102,7 @@ describe('TrustAccessController', () => {
   });
 
   describe('listAccessRequests', () => {
-    it('should call service.listAccessRequests with organizationId and dto', async () => {
+    it('should call mockService.listAccessRequests with organizationId and dto', async () => {
       const dto = { status: 'pending' } as any;
       const mockResult = { data: [{ id: 'req_1' }], count: 1 };
       mockService.listAccessRequests.mockResolvedValue(mockResult);
@@ -112,24 +110,24 @@ describe('TrustAccessController', () => {
       const result = await controller.listAccessRequests(orgId, dto);
 
       expect(result).toEqual(mockResult);
-      expect(service.listAccessRequests).toHaveBeenCalledWith(orgId, dto);
+      expect(mockService.listAccessRequests).toHaveBeenCalledWith(orgId, dto);
     });
   });
 
   describe('getAccessRequest', () => {
-    it('should call service.getAccessRequest with organizationId and requestId', async () => {
+    it('should call mockService.getAccessRequest with organizationId and requestId', async () => {
       const mockResult = { id: 'req_1', email: 'user@example.com' };
       mockService.getAccessRequest.mockResolvedValue(mockResult);
 
       const result = await controller.getAccessRequest(orgId, 'req_1');
 
       expect(result).toEqual(mockResult);
-      expect(service.getAccessRequest).toHaveBeenCalledWith(orgId, 'req_1');
+      expect(mockService.getAccessRequest).toHaveBeenCalledWith(orgId, 'req_1');
     });
   });
 
   describe('approveRequest', () => {
-    it('should call service.approveRequest with correct params', async () => {
+    it('should call mockService.approveRequest with correct params', async () => {
       const dto = { expiresInDays: 30 } as any;
       const req = mockRequest('user_1');
       mockService.getMemberIdFromUserId.mockResolvedValue('mem_1');
@@ -138,11 +136,11 @@ describe('TrustAccessController', () => {
       const result = await controller.approveRequest(orgId, 'req_1', dto, req);
 
       expect(result).toEqual({ success: true });
-      expect(service.getMemberIdFromUserId).toHaveBeenCalledWith(
+      expect(mockService.getMemberIdFromUserId).toHaveBeenCalledWith(
         'user_1',
         orgId,
       );
-      expect(service.approveRequest).toHaveBeenCalledWith(
+      expect(mockService.approveRequest).toHaveBeenCalledWith(
         orgId,
         'req_1',
         dto,
@@ -161,7 +159,7 @@ describe('TrustAccessController', () => {
   });
 
   describe('denyRequest', () => {
-    it('should call service.denyRequest with correct params', async () => {
+    it('should call mockService.denyRequest with correct params', async () => {
       const dto = { reason: 'Not eligible' } as any;
       const req = mockRequest('user_1');
       mockService.getMemberIdFromUserId.mockResolvedValue('mem_1');
@@ -170,11 +168,11 @@ describe('TrustAccessController', () => {
       const result = await controller.denyRequest(orgId, 'req_1', dto, req);
 
       expect(result).toEqual({ success: true });
-      expect(service.getMemberIdFromUserId).toHaveBeenCalledWith(
+      expect(mockService.getMemberIdFromUserId).toHaveBeenCalledWith(
         'user_1',
         orgId,
       );
-      expect(service.denyRequest).toHaveBeenCalledWith(
+      expect(mockService.denyRequest).toHaveBeenCalledWith(
         orgId,
         'req_1',
         dto,
@@ -193,19 +191,19 @@ describe('TrustAccessController', () => {
   });
 
   describe('listGrants', () => {
-    it('should call service.listGrants with organizationId', async () => {
+    it('should call mockService.listGrants with organizationId', async () => {
       const mockResult = [{ id: 'grant_1' }];
       mockService.listGrants.mockResolvedValue(mockResult);
 
       const result = await controller.listGrants(orgId);
 
       expect(result).toEqual(mockResult);
-      expect(service.listGrants).toHaveBeenCalledWith(orgId);
+      expect(mockService.listGrants).toHaveBeenCalledWith(orgId);
     });
   });
 
   describe('revokeGrant', () => {
-    it('should call service.revokeGrant with correct params', async () => {
+    it('should call mockService.revokeGrant with correct params', async () => {
       const dto = { reason: 'Revoked' } as any;
       const req = mockRequest('user_1');
       mockService.getMemberIdFromUserId.mockResolvedValue('mem_1');
@@ -214,11 +212,11 @@ describe('TrustAccessController', () => {
       const result = await controller.revokeGrant(orgId, 'grant_1', dto, req);
 
       expect(result).toEqual({ success: true });
-      expect(service.getMemberIdFromUserId).toHaveBeenCalledWith(
+      expect(mockService.getMemberIdFromUserId).toHaveBeenCalledWith(
         'user_1',
         orgId,
       );
-      expect(service.revokeGrant).toHaveBeenCalledWith(
+      expect(mockService.revokeGrant).toHaveBeenCalledWith(
         orgId,
         'grant_1',
         dto,
@@ -237,13 +235,13 @@ describe('TrustAccessController', () => {
   });
 
   describe('resendAccessEmail', () => {
-    it('should call service.resendAccessGrantEmail with organizationId and grantId', async () => {
+    it('should call mockService.resendAccessGrantEmail with organizationId and grantId', async () => {
       mockService.resendAccessGrantEmail.mockResolvedValue({ success: true });
 
       const result = await controller.resendAccessEmail(orgId, 'grant_1');
 
       expect(result).toEqual({ success: true });
-      expect(service.resendAccessGrantEmail).toHaveBeenCalledWith(
+      expect(mockService.resendAccessGrantEmail).toHaveBeenCalledWith(
         orgId,
         'grant_1',
       );
@@ -251,31 +249,31 @@ describe('TrustAccessController', () => {
   });
 
   describe('getNda', () => {
-    it('should call service.getNdaByToken with token', async () => {
+    it('should call mockService.getNdaByToken with token', async () => {
       const mockResult = { id: 'nda_1', content: 'NDA content' };
       mockService.getNdaByToken.mockResolvedValue(mockResult);
 
       const result = await controller.getNda('token_abc');
 
       expect(result).toEqual(mockResult);
-      expect(service.getNdaByToken).toHaveBeenCalledWith('token_abc');
+      expect(mockService.getNdaByToken).toHaveBeenCalledWith('token_abc');
     });
   });
 
   describe('previewNdaByToken', () => {
-    it('should call service.previewNdaByToken with token', async () => {
+    it('should call mockService.previewNdaByToken with token', async () => {
       const mockResult = { url: 'https://preview-url' };
       mockService.previewNdaByToken.mockResolvedValue(mockResult);
 
       const result = await controller.previewNdaByToken('token_abc');
 
       expect(result).toEqual(mockResult);
-      expect(service.previewNdaByToken).toHaveBeenCalledWith('token_abc');
+      expect(mockService.previewNdaByToken).toHaveBeenCalledWith('token_abc');
     });
   });
 
   describe('signNda', () => {
-    it('should call service.signNda with correct params when accepted', async () => {
+    it('should call mockService.signNda with correct params when accepted', async () => {
       const dto = { accept: true, name: 'John', email: 'john@example.com' };
       const req = mockRequest();
       mockService.signNda.mockResolvedValue({ success: true });
@@ -283,7 +281,7 @@ describe('TrustAccessController', () => {
       const result = await controller.signNda('token_abc', dto, req);
 
       expect(result).toEqual({ success: true });
-      expect(service.signNda).toHaveBeenCalledWith(
+      expect(mockService.signNda).toHaveBeenCalledWith(
         'token_abc',
         'John',
         'john@example.com',
@@ -303,25 +301,25 @@ describe('TrustAccessController', () => {
   });
 
   describe('resendNda', () => {
-    it('should call service.resendNda with organizationId and requestId', async () => {
+    it('should call mockService.resendNda with organizationId and requestId', async () => {
       mockService.resendNda.mockResolvedValue({ success: true });
 
       const result = await controller.resendNda(orgId, 'req_1');
 
       expect(result).toEqual({ success: true });
-      expect(service.resendNda).toHaveBeenCalledWith(orgId, 'req_1');
+      expect(mockService.resendNda).toHaveBeenCalledWith(orgId, 'req_1');
     });
   });
 
   describe('previewNda', () => {
-    it('should call service.previewNda with organizationId and requestId', async () => {
+    it('should call mockService.previewNda with organizationId and requestId', async () => {
       const mockResult = { url: 'https://preview-url' };
       mockService.previewNda.mockResolvedValue(mockResult);
 
       const result = await controller.previewNda(orgId, 'req_1');
 
       expect(result).toEqual(mockResult);
-      expect(service.previewNda).toHaveBeenCalledWith(orgId, 'req_1');
+      expect(mockService.previewNda).toHaveBeenCalledWith(orgId, 'req_1');
     });
   });
 
@@ -332,10 +330,10 @@ describe('TrustAccessController', () => {
     // token added or stripped in the controller layer).
     const GENERIC_RESPONSE = {
       message:
-        'If an active access grant exists for this email, an access link has been sent.',
+        'If an active access grant exists for this email, an access link will be sent.',
     };
 
-    it('should call service.reclaimAccess with friendlyUrl, email, and query', async () => {
+    it('should call mockService.reclaimAccess with friendlyUrl, email, and query', async () => {
       const dto = { email: 'user@example.com' };
       mockService.reclaimAccess.mockResolvedValue(GENERIC_RESPONSE);
 
@@ -347,7 +345,7 @@ describe('TrustAccessController', () => {
 
       expect(result).toEqual(GENERIC_RESPONSE);
       expect(result).not.toHaveProperty('accessLink');
-      expect(service.reclaimAccess).toHaveBeenCalledWith(
+      expect(mockService.reclaimAccess).toHaveBeenCalledWith(
         'my-portal',
         'user@example.com',
         'security-questionnaire',
@@ -360,7 +358,7 @@ describe('TrustAccessController', () => {
 
       await controller.reclaimAccess('my-portal', dto);
 
-      expect(service.reclaimAccess).toHaveBeenCalledWith(
+      expect(mockService.reclaimAccess).toHaveBeenCalledWith(
         'my-portal',
         'user@example.com',
         undefined,
@@ -378,33 +376,35 @@ describe('TrustAccessController', () => {
   });
 
   describe('getGrantByAccessToken', () => {
-    it('should call service.getGrantByAccessToken with token', async () => {
+    it('should call mockService.getGrantByAccessToken with token', async () => {
       const mockResult = { id: 'grant_1', email: 'user@example.com' };
       mockService.getGrantByAccessToken.mockResolvedValue(mockResult);
 
       const result = await controller.getGrantByAccessToken('token_abc');
 
       expect(result).toEqual(mockResult);
-      expect(service.getGrantByAccessToken).toHaveBeenCalledWith('token_abc');
+      expect(mockService.getGrantByAccessToken).toHaveBeenCalledWith(
+        'token_abc',
+      );
     });
   });
 
   describe('getPoliciesByAccessToken', () => {
-    it('should call service.getPoliciesByAccessToken with token', async () => {
+    it('should call mockService.getPoliciesByAccessToken with token', async () => {
       const mockResult = [{ id: 'pol_1', name: 'Privacy Policy' }];
       mockService.getPoliciesByAccessToken.mockResolvedValue(mockResult);
 
       const result = await controller.getPoliciesByAccessToken('token_abc');
 
       expect(result).toEqual(mockResult);
-      expect(service.getPoliciesByAccessToken).toHaveBeenCalledWith(
+      expect(mockService.getPoliciesByAccessToken).toHaveBeenCalledWith(
         'token_abc',
       );
     });
   });
 
   describe('downloadAllPolicies', () => {
-    it('should call service.downloadAllPoliciesByAccessToken with token', async () => {
+    it('should call mockService.downloadAllPoliciesByAccessToken with token', async () => {
       const mockResult = { url: 'https://download-url' };
       mockService.downloadAllPoliciesByAccessToken.mockResolvedValue(
         mockResult,
@@ -413,14 +413,14 @@ describe('TrustAccessController', () => {
       const result = await controller.downloadAllPolicies('token_abc');
 
       expect(result).toEqual(mockResult);
-      expect(service.downloadAllPoliciesByAccessToken).toHaveBeenCalledWith(
+      expect(mockService.downloadAllPoliciesByAccessToken).toHaveBeenCalledWith(
         'token_abc',
       );
     });
   });
 
   describe('downloadAllPoliciesAsZip', () => {
-    it('should call service.downloadAllPoliciesAsZipByAccessToken with token', async () => {
+    it('should call mockService.downloadAllPoliciesAsZipByAccessToken with token', async () => {
       const mockResult = { url: 'https://zip-url' };
       mockService.downloadAllPoliciesAsZipByAccessToken.mockResolvedValue(
         mockResult,
@@ -430,13 +430,13 @@ describe('TrustAccessController', () => {
 
       expect(result).toEqual(mockResult);
       expect(
-        service.downloadAllPoliciesAsZipByAccessToken,
+        mockService.downloadAllPoliciesAsZipByAccessToken,
       ).toHaveBeenCalledWith('token_abc');
     });
   });
 
   describe('getComplianceResourcesByAccessToken', () => {
-    it('should call service.getComplianceResourcesByAccessToken with token', async () => {
+    it('should call mockService.getComplianceResourcesByAccessToken with token', async () => {
       const mockResult = [{ id: 'cr_1' }];
       mockService.getComplianceResourcesByAccessToken.mockResolvedValue(
         mockResult,
@@ -446,14 +446,14 @@ describe('TrustAccessController', () => {
         await controller.getComplianceResourcesByAccessToken('token_abc');
 
       expect(result).toEqual(mockResult);
-      expect(service.getComplianceResourcesByAccessToken).toHaveBeenCalledWith(
-        'token_abc',
-      );
+      expect(
+        mockService.getComplianceResourcesByAccessToken,
+      ).toHaveBeenCalledWith('token_abc');
     });
   });
 
   describe('getTrustDocumentsByAccessToken', () => {
-    it('should call service.getTrustDocumentsByAccessToken with token', async () => {
+    it('should call mockService.getTrustDocumentsByAccessToken with token', async () => {
       const mockResult = [{ id: 'td_1' }];
       mockService.getTrustDocumentsByAccessToken.mockResolvedValue(mockResult);
 
@@ -461,14 +461,14 @@ describe('TrustAccessController', () => {
         await controller.getTrustDocumentsByAccessToken('token_abc');
 
       expect(result).toEqual(mockResult);
-      expect(service.getTrustDocumentsByAccessToken).toHaveBeenCalledWith(
+      expect(mockService.getTrustDocumentsByAccessToken).toHaveBeenCalledWith(
         'token_abc',
       );
     });
   });
 
   describe('downloadAllTrustDocuments', () => {
-    it('should call service.downloadAllTrustDocumentsByAccessToken with token', async () => {
+    it('should call mockService.downloadAllTrustDocumentsByAccessToken with token', async () => {
       const mockResult = { url: 'https://zip-url' };
       mockService.downloadAllTrustDocumentsByAccessToken.mockResolvedValue(
         mockResult,
@@ -478,7 +478,7 @@ describe('TrustAccessController', () => {
 
       expect(result).toEqual(mockResult);
       expect(
-        service.downloadAllTrustDocumentsByAccessToken,
+        mockService.downloadAllTrustDocumentsByAccessToken,
       ).toHaveBeenCalledWith('token_abc');
     });
   });
@@ -496,7 +496,7 @@ describe('TrustAccessController', () => {
       );
 
       expect(result).toEqual(mockResult);
-      expect(service.getTrustDocumentUrlByAccessToken).toHaveBeenCalledWith(
+      expect(mockService.getTrustDocumentUrlByAccessToken).toHaveBeenCalledWith(
         'token_abc',
         'tdoc_1',
       );
@@ -517,55 +517,57 @@ describe('TrustAccessController', () => {
 
       expect(result).toEqual(mockResult);
       expect(
-        service.getComplianceResourceUrlByAccessToken,
+        mockService.getComplianceResourceUrlByAccessToken,
       ).toHaveBeenCalledWith('token_abc', 'SOC2');
     });
   });
 
   describe('getFaqs', () => {
-    it('should call service.getFaqs with friendlyUrl', async () => {
+    it('should call mockService.getFaqs with friendlyUrl', async () => {
       const mockResult = { faqs: [{ question: 'Q1', answer: 'A1' }] };
       mockService.getFaqs.mockResolvedValue(mockResult);
 
       const result = await controller.getFaqs('my-portal');
 
       expect(result).toEqual(mockResult);
-      expect(service.getFaqs).toHaveBeenCalledWith('my-portal');
+      expect(mockService.getFaqs).toHaveBeenCalledWith('my-portal');
     });
   });
 
   describe('getPublicOverview', () => {
-    it('should call service.getPublicOverview with friendlyUrl', async () => {
+    it('should call mockService.getPublicOverview with friendlyUrl', async () => {
       const mockResult = { title: 'Trust Center' };
       mockService.getPublicOverview.mockResolvedValue(mockResult);
 
       const result = await controller.getPublicOverview('my-portal');
 
       expect(result).toEqual(mockResult);
-      expect(service.getPublicOverview).toHaveBeenCalledWith('my-portal');
+      expect(mockService.getPublicOverview).toHaveBeenCalledWith('my-portal');
     });
   });
 
   describe('getPublicCustomLinks', () => {
-    it('should call service.getPublicCustomLinks with friendlyUrl', async () => {
+    it('should call mockService.getPublicCustomLinks with friendlyUrl', async () => {
       const mockResult = [{ id: 'cl_1', title: 'Link' }];
       mockService.getPublicCustomLinks.mockResolvedValue(mockResult);
 
       const result = await controller.getPublicCustomLinks('my-portal');
 
       expect(result).toEqual(mockResult);
-      expect(service.getPublicCustomLinks).toHaveBeenCalledWith('my-portal');
+      expect(mockService.getPublicCustomLinks).toHaveBeenCalledWith(
+        'my-portal',
+      );
     });
   });
 
   describe('getPublicFavicon', () => {
-    it('should call service.getPublicFavicon and return wrapped result', async () => {
+    it('should call mockService.getPublicFavicon and return wrapped result', async () => {
       mockService.getPublicFavicon.mockResolvedValue('https://favicon-url');
 
       const result = await controller.getPublicFavicon('my-portal');
 
       expect(result).toEqual({ faviconUrl: 'https://favicon-url' });
-      expect(service.getPublicFavicon).toHaveBeenCalledWith('my-portal');
+      expect(mockService.getPublicFavicon).toHaveBeenCalledWith('my-portal');
     });
 
     it('should return null faviconUrl when service returns null', async () => {
@@ -578,14 +580,14 @@ describe('TrustAccessController', () => {
   });
 
   describe('getPublicVendors', () => {
-    it('should call service.getPublicVendors with friendlyUrl', async () => {
+    it('should call mockService.getPublicVendors with friendlyUrl', async () => {
       const mockResult = [{ id: 'v_1', name: 'Vendor' }];
       mockService.getPublicVendors.mockResolvedValue(mockResult);
 
       const result = await controller.getPublicVendors('my-portal');
 
       expect(result).toEqual(mockResult);
-      expect(service.getPublicVendors).toHaveBeenCalledWith('my-portal');
+      expect(mockService.getPublicVendors).toHaveBeenCalledWith('my-portal');
     });
   });
 });

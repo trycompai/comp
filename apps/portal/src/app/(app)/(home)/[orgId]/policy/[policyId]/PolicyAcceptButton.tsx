@@ -30,7 +30,7 @@ export function PolicyAcceptButton({
           method: 'POST',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ policyIds: [policyId], memberId }),
+          body: JSON.stringify({ policyIds: [policyId], memberId, organizationId: orgId }),
         });
 
         if (!res.ok) {
@@ -46,7 +46,9 @@ export function PolicyAcceptButton({
           router.push(`/${orgId}`);
         }, 1000);
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : 'An error occurred while accepting the policy');
+        toast.error(
+          error instanceof Error ? error.message : 'An error occurred while accepting the policy',
+        );
       }
     });
   };

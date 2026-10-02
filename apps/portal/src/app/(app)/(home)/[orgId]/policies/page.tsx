@@ -1,4 +1,5 @@
 import { auth } from '@/app/lib/auth';
+import { portalPolicyWhere } from '@/lib/portal-policy-access';
 import { db } from '@db/server';
 import {
   Breadcrumb,
@@ -45,11 +46,8 @@ export default async function SignedPoliciesPage({
   const policies = sortPoliciesByName(
     await db.policy.findMany({
       where: {
-        organizationId: orgId,
-        status: 'published',
+        ...portalPolicyWhere({ organizationId: orgId, department: member.department }),
         isRequiredToSign: true,
-        isArchived: false,
-        archivedAt: null,
         signedBy: { has: member.id },
       },
       select: {
@@ -82,11 +80,7 @@ export default async function SignedPoliciesPage({
         ) : (
           <div className="space-y-2">
             {policies.map((policy) => (
-              <Link
-                key={policy.id}
-                href={`/${orgId}/policy/${policy.id}`}
-                className="block"
-              >
+              <Link key={policy.id} href={`/${orgId}/policy/${policy.id}`} className="block">
                 <Card>
                   <CardContent>
                     <div className="flex items-center gap-3">

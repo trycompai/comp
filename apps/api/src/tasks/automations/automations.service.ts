@@ -190,6 +190,16 @@ export class AutomationsService {
     // Verify automation exists and belongs to the task/organization
     await this.verifyAutomationAccess({ organizationId, taskId, automationId });
 
+    // Bind the caller-supplied scriptKey to this organization's S3 prefix so a
+    // caller can't register another tenant's object as this automation's
+    // version. Reject '..' segments that could escape the prefix.
+    if (
+      !data.scriptKey.startsWith(`${organizationId}/`) ||
+      data.scriptKey.includes('..')
+    ) {
+      throw new NotFoundException('Automation script not found');
+    }
+
     try {
       const [version] = await db.$transaction([
         db.evidenceAutomationVersion.create({

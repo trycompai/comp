@@ -71,6 +71,7 @@ export class TrustEmailService {
     organizationName: string;
     accessLink: string;
     expiresAt: Date;
+    idempotencyKey?: string;
   }): Promise<void> {
     const { toEmail, toName, organizationName, accessLink, expiresAt } = params;
 
@@ -84,6 +85,7 @@ export class TrustEmailService {
         expiresAt,
       }),
       trustPortal: true,
+      idempotencyKey: params.idempotencyKey,
     });
 
     this.logger.log(`Access reclaim email sent to ${toEmail} (ID: ${id})`);
@@ -99,6 +101,7 @@ export class TrustEmailService {
     purpose?: string | null;
     requestedDurationDays?: number | null;
     reviewUrl: string;
+    idempotencyKey?: string;
   }): Promise<void> {
     const {
       toEmail,
@@ -126,6 +129,7 @@ export class TrustEmailService {
         reviewUrl,
       }),
       trustPortal: true,
+      idempotencyKey: params.idempotencyKey,
     });
 
     this.logger.log(

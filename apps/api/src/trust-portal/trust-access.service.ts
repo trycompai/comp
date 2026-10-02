@@ -15,6 +15,8 @@ import {
   RevokeGrantDto,
 } from './dto/trust-access.dto';
 import { TrustEmailService } from './email.service';
+import { enqueueTrustAccessSubmission } from './trust-access-submission';
+import { buildTrustPortalBaseUrl } from './trust-access-url';
 import { NdaPdfService } from './nda-pdf.service';
 import { AttachmentsService } from '../attachments/attachments.service';
 import { PolicyPdfRendererService } from './policy-pdf-renderer.service';
@@ -88,84 +90,11 @@ export class TrustAccessService {
     return randomBytes(length).toString('base64url').slice(0, length);
   }
 
-  /**
-   * Normalize URL by removing trailing slash
-   */
-  private normalizeUrl(input: string): string {
-    return input.endsWith('/') ? input.slice(0, -1) : input;
-  }
-
-  /**
-   * Normalize domain by removing protocol and path
-   */
-  private normalizeDomain(input: string): string {
-    const trimmed = input.trim();
-    const withoutProtocol = trimmed.replace(/^https?:\/\//i, '');
-    const withoutPath = withoutProtocol.split('/')[0] ?? withoutProtocol;
-    return withoutPath.trim().toLowerCase();
-  }
-
-  /**
-   * Ensure organization has a friendlyUrl, defaulting to organizationId
-   */
-  private async ensureFriendlyUrl(organizationId: string): Promise<string> {
-    const current = await db.trust.findUnique({
-      where: { organizationId },
-      select: { friendlyUrl: true },
-    });
-
-    if (current?.friendlyUrl) return current.friendlyUrl;
-
-    // Use organizationId as the default friendlyUrl (guaranteed unique)
-    try {
-      await db.trust.upsert({
-        where: { organizationId },
-        update: { friendlyUrl: organizationId },
-        create: {
-          organizationId,
-          friendlyUrl: organizationId,
-          status: 'published',
-        },
-      });
-      return organizationId;
-    } catch (error: unknown) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
-        // If somehow there's a conflict, the friendlyUrl already exists
-        const existing = await db.trust.findUnique({
-          where: { organizationId },
-          select: { friendlyUrl: true },
-        });
-        return existing?.friendlyUrl ?? organizationId;
-      }
-      throw error;
-    }
-  }
-
-  /**
-   * Build portal base URL, checking custom domain first
-   */
   private async buildPortalBaseUrl(params: {
     organizationId: string;
     organizationName: string;
   }): Promise<string> {
-    const { organizationId } = params;
-
-    const trust = await db.trust.findUnique({
-      where: { organizationId },
-      select: { domain: true, domainVerified: true, friendlyUrl: true },
-    });
-
-    if (trust?.domain && trust.domainVerified) {
-      return `https://${this.normalizeDomain(trust.domain)}`;
-    }
-
-    const urlId =
-      trust?.friendlyUrl || (await this.ensureFriendlyUrl(organizationId));
-
-    return `${this.normalizeUrl(this.TRUST_APP_URL)}/${urlId}`;
+    return buildTrustPortalBaseUrl(params.organizationId);
   }
 
   /**
@@ -245,187 +174,15 @@ export class TrustAccessService {
     userAgent: string | undefined,
   ) {
     const trust = await this.findPublishedTrustByRouteId(id);
-
-    // Check if the email already has an active grant
-    const existingGrant = await db.trustAccessGrant.findFirst({
-      where: {
-        subjectEmail: dto.email,
-        status: 'active',
-        expiresAt: {
-          gt: new Date(),
-        },
-        accessRequest: {
-          organizationId: trust.organizationId,
-        },
-      },
-      include: {
-        accessRequest: {
-          include: {
-            organization: true,
-          },
-        },
-      },
+    await enqueueTrustAccessSubmission({
+      kind: 'request',
+      organizationId: trust.organizationId,
+      email: dto.email,
+      request: dto,
+      ipAddress,
+      userAgent,
     });
-
-    if (existingGrant) {
-      // Reuse the reclaim flow: rotate the access token if needed and email a
-      // fresh portal link to the requester so they don't need a separate
-      // "Reclaim access" step.
-      let accessToken = existingGrant.accessToken;
-      let accessTokenExpiresAt = existingGrant.accessTokenExpiresAt;
-
-      if (
-        !accessToken ||
-        !accessTokenExpiresAt ||
-        accessTokenExpiresAt < new Date()
-      ) {
-        accessToken = this.generateToken(32);
-        // Mirror the grant's own expiry rather than a fixed window, so the
-        // emailed link stays valid for the whole approved duration.
-        accessTokenExpiresAt = existingGrant.expiresAt;
-
-        await db.trustAccessGrant.update({
-          where: { id: existingGrant.id },
-          data: { accessToken, accessTokenExpiresAt },
-        });
-      }
-
-      const accessLink = await this.buildPortalAccessUrl({
-        organizationId: trust.organizationId,
-        organizationName: existingGrant.accessRequest.organization.name,
-        accessToken,
-      });
-
-      await this.emailService.sendAccessReclaimEmail({
-        toEmail: dto.email,
-        toName: existingGrant.accessRequest.name,
-        organizationName: existingGrant.accessRequest.organization.name,
-        accessLink,
-        expiresAt: existingGrant.expiresAt,
-      });
-
-      return {
-        id: existingGrant.id,
-        status: 'already_approved',
-        message: 'A fresh access link was sent to your email',
-        grant: {
-          expiresAt: existingGrant.expiresAt,
-        },
-      };
-    }
-
-    const existingRequest = await db.trustAccessRequest.findFirst({
-      where: {
-        organizationId: trust.organizationId,
-        email: dto.email,
-        status: 'under_review',
-      },
-    });
-
-    if (existingRequest) {
-      throw new BadRequestException(
-        'You already have a pending request for this organization',
-      );
-    }
-
-    const request = await db.trustAccessRequest.create({
-      data: {
-        organizationId: trust.organizationId,
-        name: dto.name,
-        email: dto.email,
-        company: dto.company,
-        jobTitle: dto.jobTitle,
-        purpose: dto.purpose,
-        requestedDurationDays: dto.requestedDurationDays,
-        status: 'under_review',
-        ipAddress,
-        userAgent,
-      },
-    });
-
-    // Send notification email to organization
-    await this.sendAccessRequestNotificationToOrg(
-      trust.organizationId,
-      request.id,
-      trust.organization.name,
-      dto,
-    );
-
-    return {
-      id: request.id,
-      status: request.status,
-      message: 'Access request submitted for review',
-    };
-  }
-
-  private async sendAccessRequestNotificationToOrg(
-    organizationId: string,
-    requestId: string,
-    organizationName: string,
-    dto: CreateAccessRequestDto,
-  ) {
-    // Get contact email from Trust or fallback to owner/admin emails
-    const trust = await db.trust.findUnique({
-      where: { organizationId },
-      select: { contactEmail: true },
-    });
-
-    let notificationEmails: string[] = [];
-
-    // Use contactEmail if available
-    if (trust?.contactEmail) {
-      notificationEmails.push(trust.contactEmail);
-    } else {
-      // Fallback: Get owner and admin emails
-      const members = await db.member.findMany({
-        where: {
-          organizationId,
-        },
-        include: {
-          user: {
-            select: {
-              email: true,
-            },
-          },
-        },
-      });
-
-      // Filter for members with owner or admin role (handles comma-separated roles)
-      const ownerAdminMembers = members.filter((m) => {
-        const role = m.role.toLowerCase();
-        return role.includes('owner') || role.includes('admin');
-      });
-
-      notificationEmails = ownerAdminMembers
-        .map((m) => m.user.email)
-        .filter((email): email is string => !!email);
-    }
-
-    // If no notification emails found, skip sending
-    if (notificationEmails.length === 0) {
-      return;
-    }
-
-    // Construct review URL pointing at the pending access requests list, not
-    // the trust portal settings/overview page.
-    const reviewUrl = `${process.env.BETTER_AUTH_URL}/${organizationId}/trust/access-requests`;
-
-    // Send notification to all recipients
-    const emailPromises = notificationEmails.map((email) =>
-      this.emailService.sendAccessRequestNotification({
-        toEmail: email,
-        organizationName,
-        requesterName: dto.name,
-        requesterEmail: dto.email,
-        requesterCompany: dto.company,
-        requesterJobTitle: dto.jobTitle,
-        purpose: dto.purpose,
-        requestedDurationDays: dto.requestedDurationDays,
-        reviewUrl,
-      }),
-    );
-
-    await Promise.allSettled(emailPromises);
+    return this.REQUEST_GENERIC_RESPONSE;
   }
 
   async listAccessRequests(organizationId: string, dto: ListAccessRequestsDto) {
@@ -1035,10 +792,17 @@ export class TrustAccessService {
       throw new NotFoundException('NDA agreement not found');
     }
 
-    const portalUrl = await this.buildPortalBaseUrl({
-      organizationId: nda.organizationId,
-      organizationName: nda.accessRequest.organization.name,
-    });
+    // Expired or revoked NDA tokens must not create a Trust row while resolving
+    // a URL. In particular, an old bearer cannot republish a removed portal.
+    const isExpired = nda.signTokenExpiresAt < new Date();
+    const isVoid = nda.status === 'void';
+    const portalUrl =
+      isExpired || isVoid
+        ? null
+        : await this.buildPortalBaseUrl({
+            organizationId: nda.organizationId,
+            organizationName: nda.accessRequest.organization.name,
+          });
     const branding = await this.getTrustBrandingByOrganizationId(
       nda.organizationId,
     );
@@ -1054,7 +818,7 @@ export class TrustAccessService {
       portalUrl,
     };
 
-    if (nda.signTokenExpiresAt < new Date()) {
+    if (isExpired) {
       return {
         ...baseResponse,
         status: 'expired',
@@ -1062,7 +826,7 @@ export class TrustAccessService {
       };
     }
 
-    if (nda.status === 'void') {
+    if (isVoid) {
       return {
         ...baseResponse,
         status: 'void',
@@ -1384,84 +1148,22 @@ export class TrustAccessService {
 
   private readonly RECLAIM_GENERIC_RESPONSE = {
     message:
-      'If an active access grant exists for this email, an access link has been sent.',
+      'If an active access grant exists for this email, an access link will be sent.',
+  };
+
+  private readonly REQUEST_GENERIC_RESPONSE = {
+    message:
+      'Your access request has been received. If you already have approved access, a fresh access link will be sent to your email.',
   };
 
   async reclaimAccess(id: string, email: string, query?: string) {
     const trust = await this.findPublishedTrustByRouteId(id);
-
-    const grant = await db.trustAccessGrant.findFirst({
-      where: {
-        subjectEmail: email,
-        status: 'active',
-        expiresAt: {
-          gt: new Date(),
-        },
-        accessRequest: {
-          organizationId: trust.organizationId,
-        },
-      },
-      include: {
-        accessRequest: {
-          include: {
-            organization: true,
-          },
-        },
-        ndaAgreement: true,
-      },
-    });
-
-    // Return the same generic response whether or not a grant exists, so the
-    // response body can't be used to enumerate registered emails.
-    if (!grant) {
-      return this.RECLAIM_GENERIC_RESPONSE;
-    }
-
-    let accessToken = grant.accessToken;
-    let accessTokenExpiresAt = grant.accessTokenExpiresAt;
-
-    if (
-      !accessToken ||
-      !accessTokenExpiresAt ||
-      accessTokenExpiresAt < new Date()
-    ) {
-      accessToken = this.generateToken(32);
-      // Mirror the grant's own expiry rather than a fixed window, so the
-      // emailed link stays valid for the whole approved duration.
-      accessTokenExpiresAt = grant.expiresAt;
-
-      await db.trustAccessGrant.update({
-        where: { id: grant.id },
-        data: {
-          accessToken,
-          accessTokenExpiresAt,
-        },
-      });
-    }
-
-    let accessLink = await this.buildPortalAccessUrl({
+    await enqueueTrustAccessSubmission({
+      kind: 'reclaim',
       organizationId: trust.organizationId,
-      organizationName: grant.accessRequest.organization.name,
-      accessToken,
+      email,
+      query,
     });
-
-    // Append query parameter if provided
-    if (query) {
-      const separator = accessLink.includes('?') ? '&' : '?';
-      accessLink = `${accessLink}${separator}query=${encodeURIComponent(query)}`;
-    }
-
-    await this.emailService.sendAccessReclaimEmail({
-      toEmail: email,
-      toName: grant.accessRequest.name,
-      organizationName: grant.accessRequest.organization.name,
-      accessLink,
-      expiresAt: grant.expiresAt,
-    });
-
-    // Never return the access link or token in the response body: it must
-    // stay identical to the no-grant case to avoid an email-enumeration
-    // oracle.
     return this.RECLAIM_GENERIC_RESPONSE;
   }
 
@@ -2709,8 +2411,8 @@ export class TrustAccessService {
   }
 
   async getPublicOverview(friendlyUrl: string) {
-    const trust = await db.trust.findUnique({
-      where: { friendlyUrl },
+    const trust = await db.trust.findFirst({
+      where: { friendlyUrl, status: 'published' },
       select: {
         overviewTitle: true,
         overviewContent: true,
@@ -2745,8 +2447,8 @@ export class TrustAccessService {
   }
 
   async getPublicCustomLinks(friendlyUrl: string) {
-    const trust = await db.trust.findUnique({
-      where: { friendlyUrl },
+    const trust = await db.trust.findFirst({
+      where: { friendlyUrl, status: 'published' },
       select: { organizationId: true },
     });
 
@@ -2779,10 +2481,15 @@ export class TrustAccessService {
     friendlyUrl: string,
     select: S,
   ): Promise<Prisma.TrustGetPayload<{ select: S }> | null> {
+    // Published-only: these readers back unauthenticated endpoints, so a
+    // draft portal must resolve exactly like a missing one.
     return (
-      (await db.trust.findUnique({ where: { friendlyUrl }, select })) ??
-      (await db.trust.findUnique({
-        where: { organizationId: friendlyUrl },
+      (await db.trust.findFirst({
+        where: { friendlyUrl, status: 'published' },
+        select,
+      })) ??
+      (await db.trust.findFirst({
+        where: { organizationId: friendlyUrl, status: 'published' },
         select,
       }))
     );
@@ -2801,8 +2508,8 @@ export class TrustAccessService {
   }
 
   async getPublicVendors(friendlyUrl: string) {
-    const trust = await db.trust.findUnique({
-      where: { friendlyUrl },
+    const trust = await db.trust.findFirst({
+      where: { friendlyUrl, status: 'published' },
       select: { organizationId: true },
     });
 

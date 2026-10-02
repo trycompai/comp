@@ -18,6 +18,7 @@ jest.mock('@db', () => ({
     },
     trust: {
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
     },
   },
 }));
@@ -26,7 +27,7 @@ const mockDb = db as unknown as {
   customFramework: { findMany: jest.Mock; findFirst: jest.Mock };
   trustCustomFramework: { findMany: jest.Mock; upsert: jest.Mock };
   trustResource: { findMany: jest.Mock };
-  trust: { findUnique: jest.Mock };
+  trust: { findUnique: jest.Mock; findFirst: jest.Mock };
 };
 
 describe('TrustCustomFrameworkService', () => {
@@ -175,7 +176,7 @@ describe('TrustCustomFrameworkService', () => {
 
   describe('getPublicCustomFrameworks', () => {
     it('returns [] when no trust portal resolves for the friendly URL', async () => {
-      mockDb.trust.findUnique.mockResolvedValue(null);
+      mockDb.trust.findFirst.mockResolvedValue(null);
 
       await expect(
         service.getPublicCustomFrameworks('unknown'),
@@ -184,7 +185,7 @@ describe('TrustCustomFrameworkService', () => {
     });
 
     it('returns only enabled frameworks with certificate flags', async () => {
-      mockDb.trust.findUnique.mockResolvedValue({ organizationId: 'org_1' });
+      mockDb.trust.findFirst.mockResolvedValue({ organizationId: 'org_1' });
       mockDb.trustCustomFramework.findMany.mockResolvedValue([
         {
           status: 'compliant',
@@ -221,21 +222,36 @@ describe('TrustCustomFrameworkService', () => {
     });
 
     it('falls back to resolving the route id as an organizationId', async () => {
-      mockDb.trust.findUnique
+      mockDb.trust.findFirst
         .mockResolvedValueOnce(null) // friendlyUrl miss
         .mockResolvedValueOnce({ organizationId: 'org_1' }); // org id hit
       mockDb.trustCustomFramework.findMany.mockResolvedValue([]);
 
       await service.getPublicCustomFrameworks('org_1');
 
-      expect(mockDb.trust.findUnique).toHaveBeenNthCalledWith(1, {
-        where: { friendlyUrl: 'org_1' },
+      expect(mockDb.trust.findFirst).toHaveBeenNthCalledWith(1, {
+        where: { friendlyUrl: 'org_1', status: 'published' },
         select: { organizationId: true },
       });
-      expect(mockDb.trust.findUnique).toHaveBeenNthCalledWith(2, {
-        where: { organizationId: 'org_1' },
+      expect(mockDb.trust.findFirst).toHaveBeenNthCalledWith(2, {
+        where: { organizationId: 'org_1', status: 'published' },
         select: { organizationId: true },
       });
+    });
+
+    it('does not resolve draft portals (published-only filter)', async () => {
+      // A draft row never matches status: 'published', so the lookup comes
+      // back empty even when a row exists for the friendly URL.
+      mockDb.trust.findFirst.mockResolvedValue(null);
+
+      const result = await service.getPublicCustomFrameworks('draft-portal');
+
+      expect(mockDb.trust.findFirst).toHaveBeenCalledWith({
+        where: { friendlyUrl: 'draft-portal', status: 'published' },
+        select: { organizationId: true },
+      });
+      expect(result).toEqual([]);
+      expect(mockDb.trustCustomFramework.findMany).not.toHaveBeenCalled();
     });
   });
 });

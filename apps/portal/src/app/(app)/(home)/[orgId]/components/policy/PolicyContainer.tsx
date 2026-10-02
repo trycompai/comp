@@ -1,18 +1,15 @@
 'use client';
 
-import type { Member, Policy, PolicyVersion } from '@db';
+import type { PortalPolicy } from '@/lib/portal-policy-types';
+import type { Member } from '@db';
 import { Button, Text } from '@trycompai/design-system';
 import { ArrowLeft } from '@trycompai/design-system/icons';
 import { useState } from 'react';
 import { PolicyCarousel } from './PolicyCarousel';
 import { PolicyGrid } from './PolicyGrid';
 
-type PolicyWithVersion = Policy & {
-  currentVersion?: Pick<PolicyVersion, 'id' | 'content' | 'pdfUrl' | 'version'> | null;
-};
-
 interface PolicyContainerProps {
-  policies: PolicyWithVersion[];
+  policies: PortalPolicy[];
   member: Member;
 }
 

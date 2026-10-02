@@ -37,6 +37,12 @@ jobs:
           src/auth/task-status-access.spec.ts
           src/auth/auth.controller.spec.ts
           src/auth/permission.guard.spec.ts
+          src/auth/auth-context.decorator.spec.ts
+          src/people
+          src/tasks/automations
+          src/trust-portal
+          src/email/trigger-email.spec.ts
+          src/trigger/trust-portal/process-access-submission.spec.ts
           src/cloud-security/remediation-batch.service.spec.ts
           src/cloud-security/remediation-batch.races.spec.ts
           src/cloud-security/remediation-batch.controller.spec.ts
@@ -53,12 +59,17 @@ jobs:
           'src/app/(app)/[orgId]/integrations/[slug]/actions/batch-fix.test.ts'
           src/trigger/tasks/cloud-security/remediate-batch.test.ts
           src/trigger/tasks/cloud-security/remediate-batch-helpers.test.ts
+          'src/app/(app)/[orgId]/tasks/[taskId]/automation/[automationId]/actions'
+          'src/app/(app)/[orgId]/tasks/[taskId]/automation/[automationId]/hooks'
+          src/actions/trigger/heal-access-token.test.ts
+          src/utils/auth.permissions.test.ts
       - name: Portal policy regressions
         working-directory: apps/portal
         run: >-
           bunx vitest run
           'src/app/(app)/(home)/[orgId]/policy/[policyId]/page.test.tsx'
           src/app/api/portal/policy-access.test.ts
+          src/lib/portal-policy-security.test.ts
       - name: Unsubscribe signing regressions
         working-directory: packages/email
         run: bunx vitest run lib/unsubscribe.test.ts

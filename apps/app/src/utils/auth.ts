@@ -134,7 +134,9 @@ function headersToObject(headers: ReadonlyHeaders | Headers): Record<string, str
  * @param options.headers - The request headers (must include cookies)
  * @returns The session data or null if not authenticated
  */
-async function getSession(options: { headers: ReadonlyHeaders | Headers }): Promise<Session | null> {
+async function getSession(options: {
+  headers: ReadonlyHeaders | Headers;
+}): Promise<Session | null> {
   try {
     const response = await fetch(`${API_URL}/api/auth/get-session`, {
       method: 'GET',
@@ -236,6 +238,7 @@ async function hasPermission(options: {
   headers: ReadonlyHeaders | Headers;
   body: {
     permission: Record<string, string[]>;
+    organizationId?: string;
   };
 }): Promise<{ success: boolean; error?: string }> {
   try {
@@ -245,7 +248,12 @@ async function hasPermission(options: {
         ...headersToObject(options.headers),
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(options.body),
+      // The organization plugin evaluates `permissions` (plural). Preserve
+      // the wrapper's existing callers while pinning checks to their org.
+      body: JSON.stringify({
+        permissions: options.body.permission,
+        organizationId: options.body.organizationId,
+      }),
       cache: 'no-store',
     });
 
@@ -253,8 +261,11 @@ async function hasPermission(options: {
       return { success: false, error: 'Request failed' };
     }
 
-    const data = await response.json();
-    return { success: data.success === true };
+    const data: unknown = await response.json();
+    return {
+      success:
+        typeof data === 'object' && data !== null && 'success' in data && data.success === true,
+    };
   } catch (error) {
     if (IS_DEVELOPMENT) {
       console.error('[auth] Failed to check permission:', error);
@@ -340,7 +351,9 @@ async function setActiveOrganization(options: {
       console.error('[auth] Failed to set active organization:', error);
     }
     if (options.asResponse) {
-      return new Response(JSON.stringify({ error: 'Failed to set active organization' }), { status: 500 });
+      return new Response(JSON.stringify({ error: 'Failed to set active organization' }), {
+        status: 500,
+      });
     }
     return null;
   }

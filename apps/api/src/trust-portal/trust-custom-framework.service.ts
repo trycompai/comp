@@ -181,16 +181,19 @@ export class TrustCustomFrameworkService {
   private async resolveOrganizationId(
     friendlyUrl: string,
   ): Promise<string | null> {
-    const byFriendlyUrl = await db.trust.findUnique({
-      where: { friendlyUrl },
+    // Published-only: this resolver backs the unauthenticated public
+    // frameworks list, so a draft portal must resolve exactly like a missing
+    // one.
+    const byFriendlyUrl = await db.trust.findFirst({
+      where: { friendlyUrl, status: 'published' },
       select: { organizationId: true },
     });
     if (byFriendlyUrl) {
       return byFriendlyUrl.organizationId;
     }
 
-    const byOrgId = await db.trust.findUnique({
-      where: { organizationId: friendlyUrl },
+    const byOrgId = await db.trust.findFirst({
+      where: { organizationId: friendlyUrl, status: 'published' },
       select: { organizationId: true },
     });
     return byOrgId?.organizationId ?? null;

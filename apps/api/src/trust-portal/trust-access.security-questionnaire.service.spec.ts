@@ -5,6 +5,7 @@ jest.mock('@db', () => ({
   db: {
     trust: {
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
     },
   },
   Prisma: {},
@@ -18,7 +19,7 @@ jest.mock('../app/s3', () => ({
 }));
 
 const mockDb = db as unknown as {
-  trust: { findUnique: jest.Mock };
+  trust: { findUnique: jest.Mock; findFirst: jest.Mock };
 };
 
 describe('TrustAccessService.getPublicSecurityQuestionnaireEnabled', () => {
@@ -35,22 +36,22 @@ describe('TrustAccessService.getPublicSecurityQuestionnaireEnabled', () => {
   });
 
   it('resolves by friendlyUrl first', async () => {
-    mockDb.trust.findUnique.mockResolvedValue({
+    mockDb.trust.findFirst.mockResolvedValue({
       securityQuestionnaireEnabled: false,
     });
 
     const result = await service.getPublicSecurityQuestionnaireEnabled('acme');
 
     expect(result).toBe(false);
-    expect(mockDb.trust.findUnique).toHaveBeenCalledTimes(1);
-    expect(mockDb.trust.findUnique).toHaveBeenNthCalledWith(1, {
-      where: { friendlyUrl: 'acme' },
+    expect(mockDb.trust.findFirst).toHaveBeenCalledTimes(1);
+    expect(mockDb.trust.findFirst).toHaveBeenNthCalledWith(1, {
+      where: { friendlyUrl: 'acme', status: 'published' },
       select: { securityQuestionnaireEnabled: true },
     });
   });
 
   it('falls back to organizationId when friendlyUrl does not match', async () => {
-    mockDb.trust.findUnique
+    mockDb.trust.findFirst
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({ securityQuestionnaireEnabled: false });
 
@@ -58,14 +59,14 @@ describe('TrustAccessService.getPublicSecurityQuestionnaireEnabled', () => {
       await service.getPublicSecurityQuestionnaireEnabled('org_123');
 
     expect(result).toBe(false);
-    expect(mockDb.trust.findUnique).toHaveBeenNthCalledWith(2, {
-      where: { organizationId: 'org_123' },
+    expect(mockDb.trust.findFirst).toHaveBeenNthCalledWith(2, {
+      where: { organizationId: 'org_123', status: 'published' },
       select: { securityQuestionnaireEnabled: true },
     });
   });
 
   it('returns true when the flag is enabled', async () => {
-    mockDb.trust.findUnique.mockResolvedValue({
+    mockDb.trust.findFirst.mockResolvedValue({
       securityQuestionnaireEnabled: true,
     });
 
@@ -75,7 +76,7 @@ describe('TrustAccessService.getPublicSecurityQuestionnaireEnabled', () => {
   });
 
   it('defaults to enabled when the portal cannot be resolved', async () => {
-    mockDb.trust.findUnique.mockResolvedValue(null);
+    mockDb.trust.findFirst.mockResolvedValue(null);
 
     await expect(
       service.getPublicSecurityQuestionnaireEnabled('unknown'),
