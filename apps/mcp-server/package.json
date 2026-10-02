@@ -1,6 +1,6 @@
 {
   "name": "@trycompai/mcp-server",
-  "version": "0.2.5",
+  "version": "0.2.8",
   "author": "Comp AI",
   "type": "module",
   "sideEffects": false,
@@ -14,11 +14,12 @@
     "mcp": "bin/mcp-server.js"
   },
   "scripts": {
-    "build": "bun i && bun src/mcp-server/build.mts && tsc",
-    "mcpb:build": "bun i && bun src/mcp-server/build.mts --pack && tsc",
-    "check": "npm run lint",
-    "lint": "eslint --cache --max-warnings=0 src",
-    "prepublishOnly": "npm run build"
+    "build": "bun src/mcp-server/build.mts && tsc",
+    "mcpb:build": "bun src/mcp-server/build.mts --pack && tsc",
+    "check": "bun run lint",
+    "lint": "eslint --cache --max-warnings=0 src tests",
+    "prepublishOnly": "bun run build && bun run test",
+    "test": "bun test tests"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.26.0",

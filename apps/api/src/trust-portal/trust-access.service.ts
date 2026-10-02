@@ -1568,6 +1568,24 @@ export class TrustAccessService {
     return grant.accessRequest.organizationId;
   }
 
+  /**
+   * Whether the AI-assisted Security Questionnaire is enabled for an
+   * organization, keyed by organizationId (used by token-authenticated
+   * questionnaire endpoints, which already have the organizationId resolved
+   * from the access token). Defaults to enabled when the Trust row does not
+   * exist yet, matching getPublicSecurityQuestionnaireEnabled's semantics.
+   */
+  async isSecurityQuestionnaireEnabledForOrganization(
+    organizationId: string,
+  ): Promise<boolean> {
+    const trust = await db.trust.findUnique({
+      where: { organizationId },
+      select: { securityQuestionnaireEnabled: true },
+    });
+
+    return trust?.securityQuestionnaireEnabled ?? true;
+  }
+
   private async validateAccessToken(token: string) {
     const grant = await db.trustAccessGrant.findUnique({
       where: { accessToken: token },

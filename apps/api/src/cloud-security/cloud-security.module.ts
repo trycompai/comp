@@ -7,6 +7,8 @@ import { GCPSecurityService } from './providers/gcp-security.service';
 import { AWSSecurityService } from './providers/aws-security.service';
 import { AzureSecurityService } from './providers/azure-security.service';
 import { RemediationController } from './remediation.controller';
+import { RemediationBatchController } from './remediation-batch.controller';
+import { RemediationBatchService } from './remediation-batch.service';
 import { RemediationService } from './remediation.service';
 import { GcpRemediationService } from './gcp-remediation.service';
 import { AzureRemediationService } from './azure-remediation.service';
@@ -23,7 +25,11 @@ import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [forwardRef(() => IntegrationPlatformModule), AuthModule],
-  controllers: [CloudSecurityController, RemediationController],
+  controllers: [
+    CloudSecurityController,
+    RemediationController,
+    RemediationBatchController,
+  ],
   providers: [
     CloudSecurityService,
     CloudSecurityQueryService,
@@ -33,6 +39,7 @@ import { AuthModule } from '../auth/auth.module';
     AWSSecurityService,
     AzureSecurityService,
     RemediationService,
+    RemediationBatchService,
     GcpRemediationService,
     AzureRemediationService,
     AiRemediationService,

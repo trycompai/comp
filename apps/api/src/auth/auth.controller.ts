@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Controller,
   Delete,
   ForbiddenException,
@@ -8,7 +7,13 @@ import {
   Param,
   UseGuards,
 } from '@nestjs/common';
-import { ApiExcludeController, ApiOperation, ApiParam, ApiSecurity, ApiTags } from '@nestjs/swagger';
+import {
+  ApiExcludeController,
+  ApiOperation,
+  ApiParam,
+  ApiSecurity,
+  ApiTags,
+} from '@nestjs/swagger';
 import { db } from '@db';
 import { OrganizationId } from './auth-context.decorator';
 import { PermissionGuard } from './permission.guard';
@@ -16,6 +21,7 @@ import { RequirePermission } from './require-permission.decorator';
 import { AuthContext } from './auth-context.decorator';
 import { HybridAuthGuard } from './hybrid-auth.guard';
 import { SkipOrgCheck } from './skip-org-check.decorator';
+import { resolveRolePermissions } from './app-access';
 import type { AuthContext as AuthContextType } from './types';
 
 @ApiExcludeController()
@@ -24,6 +30,45 @@ import type { AuthContext as AuthContextType } from './types';
 @UseGuards(HybridAuthGuard)
 @ApiSecurity('apikey')
 export class AuthController {
+  @Get('task-status-access')
+  @UseGuards(PermissionGuard)
+  @ApiOperation({
+    summary: 'Get current member access for task status',
+    description:
+      'Resolve the current session member’s live organization and read permissions before accessing private background task output.',
+  })
+  async getTaskStatusAccess(@AuthContext() context: AuthContextType) {
+    // This is a self-access check, not a lookup of caller-supplied roles.
+    if (
+      context.authType !== 'session' ||
+      !context.userId ||
+      !context.organizationId
+    ) {
+      throw new ForbiddenException('Session membership required');
+    }
+
+    const member = await db.member.findFirst({
+      where: {
+        userId: context.userId,
+        organizationId: context.organizationId,
+        isActive: true,
+        deactivated: false,
+      },
+      select: { role: true },
+    });
+    if (!member) throw new ForbiddenException('Active membership required');
+
+    const roles = (member.role ?? '')
+      .split(',')
+      .map((role) => role.trim())
+      .filter(Boolean);
+    const permissions = await resolveRolePermissions(
+      context.organizationId,
+      roles,
+    );
+    return { organizationId: context.organizationId, permissions };
+  }
+
   @Get('me')
   @SkipOrgCheck()
   @ApiOperation({

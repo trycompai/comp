@@ -78,9 +78,10 @@ describe('EvidenceFormsService', () => {
     userEmail: 'reviewer@example.com',
   };
 
+  const getPresignedDownloadUrlMock = jest.fn();
   const attachmentsServiceMock = {
     uploadToS3: jest.fn(),
-    getPresignedDownloadUrl: jest.fn(),
+    getPresignedDownloadUrl: getPresignedDownloadUrlMock,
   } as unknown as AttachmentsService;
 
   const timelinesServiceMock =
@@ -268,6 +269,167 @@ describe('EvidenceFormsService', () => {
       expect(
         evidenceFormsNotifierMock.notifyAccessRequestSubmitted,
       ).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('file field organization guard', () => {
+    const pentestPayload = (fileKey: string) => ({
+      submissionDate: '2026-01-01T00:00:00.000Z',
+      testDate: '2026-01-01',
+      vendorName: 'Acme Security',
+      summary: 'No critical findings',
+      pentestReport: {
+        fileName: 'report.pdf',
+        fileKey,
+        downloadUrl: 'https://example.com/stale-signed-url',
+      },
+    });
+
+    describe('submitForm', () => {
+      it("rejects a fileKey belonging to another organization's attachments", async () => {
+        await expect(
+          service.submitForm({
+            organizationId: 'org_123',
+            formType: 'penetration-test',
+            payload: pentestPayload(
+              'org_999/attachments/evidence-forms/penetration-test/evil.pdf',
+            ),
+            authContext,
+          }),
+        ).rejects.toThrow(
+          'Submitted file does not belong to this organization',
+        );
+
+        expect(mockedDb.evidenceSubmission.create).not.toHaveBeenCalled();
+      });
+
+      it("accepts a fileKey belonging to the caller's own organization", async () => {
+        const fileKey =
+          'org_123/attachments/evidence-forms/penetration-test/report.pdf';
+
+        mockedDb.evidenceSubmission.create.mockResolvedValue({
+          id: 'sub_pentest_1',
+          formType: 'penetration_test',
+          data: pentestPayload(fileKey),
+          submittedBy: {
+            id: 'usr_reviewer',
+            name: 'Jane Employee',
+            email: 'reviewer@example.com',
+          },
+        });
+
+        await expect(
+          service.submitForm({
+            organizationId: 'org_123',
+            formType: 'penetration-test',
+            payload: pentestPayload(fileKey),
+            authContext,
+          }),
+        ).resolves.toMatchObject({ id: 'sub_pentest_1' });
+      });
+    });
+
+    describe('getSubmission (refreshFileUrls)', () => {
+      it('does not presign a stored fileKey outside the organization and clears its download URL', async () => {
+        mockedDb.evidenceSubmission.findFirst.mockResolvedValue({
+          id: 'sub_pentest_2',
+          formType: 'penetration_test',
+          data: pentestPayload(
+            'org_999/attachments/evidence-forms/penetration-test/evil.pdf',
+          ),
+          submittedBy: null,
+          reviewedBy: null,
+        });
+
+        const result = await service.getSubmission({
+          organizationId: 'org_123',
+          authContext,
+          formType: 'penetration-test',
+          submissionId: 'sub_pentest_2',
+        });
+
+        expect(getPresignedDownloadUrlMock).not.toHaveBeenCalled();
+        expect(result.submission.data).toMatchObject({
+          pentestReport: { downloadUrl: null },
+        });
+      });
+
+      it("presigns a stored fileKey that belongs to the caller's organization", async () => {
+        getPresignedDownloadUrlMock.mockResolvedValue(
+          'https://example.com/fresh-signed-url',
+        );
+        const fileKey =
+          'org_123/attachments/evidence-forms/penetration-test/report.pdf';
+
+        mockedDb.evidenceSubmission.findFirst.mockResolvedValue({
+          id: 'sub_pentest_3',
+          formType: 'penetration_test',
+          data: pentestPayload(fileKey),
+          submittedBy: null,
+          reviewedBy: null,
+        });
+
+        const result = await service.getSubmission({
+          organizationId: 'org_123',
+          authContext,
+          formType: 'penetration-test',
+          submissionId: 'sub_pentest_3',
+        });
+
+        expect(getPresignedDownloadUrlMock).toHaveBeenCalledWith(fileKey);
+        expect(result.submission.data).toMatchObject({
+          pentestReport: {
+            downloadUrl: 'https://example.com/fresh-signed-url',
+          },
+        });
+      });
+    });
+
+    describe('exportCsv', () => {
+      const exportSubmission = (fileKey: string) => ({
+        id: 'sub_export_1',
+        submittedAt: new Date('2026-01-01T00:00:00.000Z'),
+        submittedBy: { name: 'Jane Employee', email: 'jane@example.com' },
+        data: pentestPayload(fileKey),
+      });
+
+      it('does not presign a stored fileKey outside the organization', async () => {
+        mockedDb.evidenceSubmission.findMany.mockResolvedValue([
+          exportSubmission(
+            'org_999/attachments/evidence-forms/penetration-test/evil.pdf',
+          ),
+        ]);
+
+        const csv = await service.exportCsv({
+          organizationId: 'org_123',
+          formType: 'penetration-test',
+          authContext,
+        });
+
+        expect(getPresignedDownloadUrlMock).not.toHaveBeenCalled();
+        expect(csv).not.toContain('org_999');
+        expect(csv).toContain('sub_export_1');
+      });
+
+      it("presigns a stored fileKey that belongs to the caller's organization", async () => {
+        getPresignedDownloadUrlMock.mockResolvedValue(
+          'https://example.com/fresh-signed-url',
+        );
+        const fileKey =
+          'org_123/attachments/evidence-forms/penetration-test/report.pdf';
+        mockedDb.evidenceSubmission.findMany.mockResolvedValue([
+          exportSubmission(fileKey),
+        ]);
+
+        const csv = await service.exportCsv({
+          organizationId: 'org_123',
+          formType: 'penetration-test',
+          authContext,
+        });
+
+        expect(getPresignedDownloadUrlMock).toHaveBeenCalledWith(fileKey);
+        expect(csv).toContain('https://example.com/fresh-signed-url');
+      });
     });
   });
 

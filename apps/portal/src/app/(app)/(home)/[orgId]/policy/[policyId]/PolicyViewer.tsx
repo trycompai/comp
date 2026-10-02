@@ -5,7 +5,7 @@ import type { JSONContent } from '@tiptap/react';
 import { PolicyEditor } from '../../components/policy/PolicyEditor';
 import { PortalPdfViewer } from '../../components/policy/PortalPdfViewer';
 
-type PolicyWithVersion = Policy & {
+type PolicyWithVersion = Pick<Policy, 'id' | 'content' | 'displayFormat' | 'pdfUrl'> & {
   currentVersion?: Pick<PolicyVersion, 'id' | 'content' | 'pdfUrl' | 'version'> | null;
 };
 

@@ -28,14 +28,18 @@ export async function startPreview(
       return { error: 'No active organization' };
     }
 
-    const handle = await tasks.trigger('remediate-preview', {
-      connectionId: input.connectionId,
-      organizationId,
-      checkResultId: input.checkResultId,
-      remediationKey: input.remediationKey,
-      userId: session.user.id,
-      cachedPermissions: input.cachedPermissions,
-    });
+    const handle = await tasks.trigger(
+      'remediate-preview',
+      {
+        connectionId: input.connectionId,
+        organizationId,
+        checkResultId: input.checkResultId,
+        remediationKey: input.remediationKey,
+        userId: session.user.id,
+        cachedPermissions: input.cachedPermissions,
+      },
+      { tags: [organizationId] },
+    );
 
     const accessToken = await triggerAuth.createPublicToken({
       scopes: { read: { runs: [handle.id] } },
@@ -72,14 +76,18 @@ export async function startSingleFix(
       return { error: 'No active organization' };
     }
 
-    const handle = await tasks.trigger('remediate-single', {
-      connectionId: input.connectionId,
-      organizationId,
-      checkResultId: input.checkResultId,
-      remediationKey: input.remediationKey,
-      userId: session.user.id,
-      acknowledgment: input.acknowledgment,
-    });
+    const handle = await tasks.trigger(
+      'remediate-single',
+      {
+        connectionId: input.connectionId,
+        organizationId,
+        checkResultId: input.checkResultId,
+        remediationKey: input.remediationKey,
+        userId: session.user.id,
+        acknowledgment: input.acknowledgment,
+      },
+      { tags: [organizationId] },
+    );
 
     const accessToken = await triggerAuth.createPublicToken({
       scopes: { read: { runs: [handle.id] } },

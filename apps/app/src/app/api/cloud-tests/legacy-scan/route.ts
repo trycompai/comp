@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
         organizationId: orgId,
         ...(integrationId ? { integrationId } : {}),
       },
+      { tags: [orgId] },
     );
 
     // Poll for completion

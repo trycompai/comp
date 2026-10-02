@@ -29,23 +29,25 @@ export async function POST(req: NextRequest) {
 
   const { policyId } = parsed.data;
 
-  const member = await db.member.findFirst({
-    where: {
-      userId: session.user.id,
-      deactivated: false,
-    },
-  });
-
-  if (!member) {
-    return NextResponse.json({ error: 'Member not found' }, { status: 404 });
-  }
-
   const policy = await db.policy.findUnique({
     where: { id: policyId },
   });
 
   if (!policy) {
     return NextResponse.json({ error: 'Policy not found' }, { status: 404 });
+  }
+
+  const member = await db.member.findFirst({
+    where: {
+      userId: session.user.id,
+      organizationId: policy.organizationId,
+      isActive: true,
+      deactivated: false,
+    },
+  });
+
+  if (!member) {
+    return NextResponse.json({ error: 'Access denied' }, { status: 403 });
   }
 
   // Check if user has already signed this policy

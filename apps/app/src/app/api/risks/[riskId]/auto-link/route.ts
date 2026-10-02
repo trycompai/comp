@@ -43,6 +43,7 @@ export async function POST(
     const handle = await tasks.trigger<typeof linkRisksAndVendorsToWork>(
       'link-risks-and-vendors-to-work',
       { organizationId, riskId, suggestionsOnly: true },
+      { tags: [organizationId] },
     );
 
     // Persist the runId so the UI can resume an in-flight scan after a page

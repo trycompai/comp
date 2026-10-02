@@ -117,6 +117,10 @@ describe('OrganizationController', () => {
         authenticatedUser: { id: 'usr_123', email: 'test@example.com' },
       });
       expect(mockOrganizationService.findById).toHaveBeenCalledWith('org_123');
+      expect(mockOrganizationService.getLogoSignedUrl).toHaveBeenCalledWith({
+        logoKey: mockOrg.logo,
+        organizationId: 'org_123',
+      });
     });
 
     it('should return org without authenticatedUser for API key auth', async () => {

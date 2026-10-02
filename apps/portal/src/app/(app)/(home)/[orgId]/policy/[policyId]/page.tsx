@@ -38,9 +38,37 @@ export default async function PolicyPage({
     redirect('/auth');
   }
 
+  const member = await db.member.findFirst({
+    where: {
+      userId: session.user.id,
+      organizationId: orgId,
+      isActive: true,
+      deactivated: false,
+    },
+  });
+
+  if (!member) {
+    redirect('/');
+  }
+
   const policy = await db.policy.findUnique({
-    where: { id: policyId },
-    include: {
+    where: {
+      id: policyId,
+      organizationId: orgId,
+      status: 'published',
+      isArchived: false,
+      archivedAt: null,
+    },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      status: true,
+      signedBy: true,
+      displayFormat: true,
+      content: true,
+      pdfUrl: true,
+      updatedAt: true,
       currentVersion: {
         select: {
           id: true,
@@ -54,19 +82,6 @@ export default async function PolicyPage({
 
   if (!policy) {
     redirect(`/${orgId}`);
-  }
-
-  // Get the member info for the current org
-  const member = await db.member.findFirst({
-    where: {
-      userId: session.user.id,
-      organizationId: orgId,
-      deactivated: false,
-    },
-  });
-
-  if (!member) {
-    redirect('/');
   }
 
   const isAccepted = policy.signedBy.includes(member.id);

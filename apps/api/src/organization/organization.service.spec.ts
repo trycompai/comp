@@ -20,7 +20,9 @@ jest.mock('@trycompai/auth', () => ({
   allRoles: {},
 }));
 
+import { BadRequestException } from '@nestjs/common';
 import { db } from '@db';
+import { getSignedUrl } from '../app/s3';
 import { OrganizationService } from './organization.service';
 import type { UpdateOrganizationDto } from './dto/update-organization.dto';
 
@@ -91,5 +93,66 @@ describe('OrganizationService.updateById', () => {
 
     const arg = mockedDb.organization.update.mock.calls[0][0];
     expect(arg.data).not.toHaveProperty('hasAccess');
+  });
+
+  it('rejects a logo key scoped to a different organization', async () => {
+    await expect(
+      service.updateById('org_1', { logo: 'org_2/logo/1-evil.png' }),
+    ).rejects.toThrow(BadRequestException);
+
+    expect(mockedDb.organization.update).not.toHaveBeenCalled();
+  });
+
+  it('accepts a logo key scoped to the organization being updated', async () => {
+    await service.updateById('org_1', { logo: 'org_1/logo/1-mark.png' });
+
+    const arg = mockedDb.organization.update.mock.calls[0][0];
+    expect(arg.data.logo).toBe('org_1/logo/1-mark.png');
+  });
+
+  it('allows clearing the logo', async () => {
+    await service.updateById('org_1', { logo: '' });
+
+    const arg = mockedDb.organization.update.mock.calls[0][0];
+    expect(arg.data.logo).toBe('');
+  });
+});
+
+describe('OrganizationService.getLogoSignedUrl', () => {
+  const service = new OrganizationService();
+  const mockedGetSignedUrl = getSignedUrl as jest.Mock;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockedGetSignedUrl.mockResolvedValue('https://signed.example.com/logo.png');
+  });
+
+  it('returns null for a key scoped to a different organization', async () => {
+    const result = await service.getLogoSignedUrl({
+      logoKey: 'org_2/logo/1-evil.png',
+      organizationId: 'org_1',
+    });
+
+    expect(result).toBeNull();
+    expect(mockedGetSignedUrl).not.toHaveBeenCalled();
+  });
+
+  it('presigns a key scoped to the requesting organization', async () => {
+    const result = await service.getLogoSignedUrl({
+      logoKey: 'org_1/logo/1-mark.png',
+      organizationId: 'org_1',
+    });
+
+    expect(result).toBe('https://signed.example.com/logo.png');
+    expect(mockedGetSignedUrl).toHaveBeenCalled();
+  });
+
+  it('returns null when no logo key is stored', async () => {
+    const result = await service.getLogoSignedUrl({
+      logoKey: null,
+      organizationId: 'org_1',
+    });
+
+    expect(result).toBeNull();
   });
 });

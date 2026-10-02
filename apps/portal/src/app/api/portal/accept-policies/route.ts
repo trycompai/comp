@@ -35,6 +35,7 @@ export async function POST(req: NextRequest) {
     where: {
       id: memberId,
       userId: session.user.id,
+      isActive: true,
       deactivated: false,
     },
   });
@@ -49,7 +50,11 @@ export async function POST(req: NextRequest) {
         where: { id: policyId },
       });
 
-      if (policy && !policy.signedBy.includes(memberId)) {
+      if (!policy || policy.organizationId !== member.organizationId) {
+        return null;
+      }
+
+      if (!policy.signedBy.includes(memberId)) {
         return db.policy.update({
           where: { id: policyId },
           data: {
@@ -65,7 +70,7 @@ export async function POST(req: NextRequest) {
     await Promise.all(updatePromises);
 
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to accept policies' }, { status: 500 });
   }
 }
