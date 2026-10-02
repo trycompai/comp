@@ -12,21 +12,9 @@ const config = {
     '@carbon/icons-react',
     '@trycompai/company',
   ],
-  images: {
-    remotePatterns: [
-      // Restrict the image optimizer so /_next/image is not an open proxy
-      // for arbitrary https hosts (GH-083). Dynamic org/integration assets
-      // render with `unoptimized` and bypass this list.
-      {
-        protocol: 'https',
-        hostname: 'img.logo.dev',
-      },
-      {
-        protocol: 'https',
-        hostname: '**.amazonaws.com',
-      },
-    ],
-  },
+  // No `images.remotePatterns`: every remote <Image> in the portal (S3 signed
+  // URLs, blob previews) renders `unoptimized`, so /_next/image must not proxy
+  // any remote host.
   async rewrites() {
     return [
       {

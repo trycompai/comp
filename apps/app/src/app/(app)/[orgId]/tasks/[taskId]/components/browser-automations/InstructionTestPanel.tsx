@@ -176,6 +176,7 @@ export function InstructionTestPanel({
               width={800}
               height={450}
               className="h-auto w-full object-contain"
+              unoptimized
             />
           </div>
         </div>
@@ -195,6 +196,7 @@ export function InstructionTestPanel({
               width={800}
               height={450}
               className="h-auto w-full object-contain"
+              unoptimized
             />
           </div>
         </div>

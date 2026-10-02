@@ -341,6 +341,7 @@ export function ManageIntegrationDialog({
                 width={20}
                 height={20}
                 className="object-contain"
+                unoptimized
               />
             </div>
             {checkContext

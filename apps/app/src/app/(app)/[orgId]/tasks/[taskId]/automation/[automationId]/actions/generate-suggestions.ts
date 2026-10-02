@@ -5,6 +5,8 @@ import { db } from '@db/server';
 import { generateObject, NoObjectGeneratedError } from 'ai';
 import { headers } from 'next/headers';
 import { z } from 'zod';
+import { hasPermission } from '@/lib/permissions';
+import { resolveCurrentUserPermissions } from '@/lib/permissions.server';
 import { auth } from '@/utils/auth';
 import {
   AUTOMATION_SUGGESTIONS_SYSTEM_PROMPT,
@@ -40,6 +42,13 @@ export async function generateAutomationSuggestions(
   try {
     const activeOrganizationId = await getActiveOrganizationId();
     if (!activeOrganizationId || activeOrganizationId !== organizationId) {
+      return [];
+    }
+
+    // Org identity alone is not authorization: enforce RBAC (built-in and
+    // custom roles) before reading vendor/context data.
+    const permissions = await resolveCurrentUserPermissions(organizationId);
+    if (!permissions || !hasPermission(permissions, 'task', 'read')) {
       return [];
     }
 

@@ -121,6 +121,7 @@ export function ModernTaskListItem({
                   width={32}
                   height={32}
                   className="object-cover"
+                  unoptimized
                 />
               ) : (
                 <span className="text-muted-foreground text-xs font-medium">
