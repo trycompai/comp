@@ -1,4 +1,4 @@
-import { auth } from '@/utils/auth';
+import { requireApiPermission } from '@/lib/permissions.server';
 import { runs } from '@trigger.dev/sdk';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -7,13 +7,8 @@ export async function GET(
   { params }: { params: Promise<{ taskId: string }> },
 ) {
   try {
-    const session = await auth.api.getSession({
-      headers: req.headers,
-    });
-
-    if (!session?.session?.activeOrganizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const ctx = await requireApiPermission(req, 'task', 'read');
+    if (ctx instanceof NextResponse) return ctx;
 
     const { taskId } = await params;
 
@@ -33,7 +28,7 @@ export async function GET(
     // owning organization's id. A run with no matching tag either belongs to
     // another tenant or was never tagged, so it's not ours to read — return
     // the same 404 as a genuinely missing run to avoid leaking existence.
-    if (!run.tags.includes(session.session.activeOrganizationId)) {
+    if (!run.tags.includes(ctx.organizationId)) {
       return NextResponse.json({ error: 'Run not found' }, { status: 404 });
     }
 

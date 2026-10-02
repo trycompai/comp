@@ -861,6 +861,11 @@ export class EvidenceFormsService {
                 'fileKey' in rawValue &&
                 typeof rawValue.fileKey === 'string'
               ) {
+                // Legacy or tampered rows may reference another tenant's
+                // object; never presign outside this organization's prefix.
+                if (!rawValue.fileKey.startsWith(`${params.organizationId}/`)) {
+                  return '';
+                }
                 const signedUrl =
                   await this.attachmentsService.getPresignedDownloadUrl(
                     rawValue.fileKey,

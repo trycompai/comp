@@ -17,7 +17,7 @@ export async function startBatchFix(
   try {
     // Step 1: Create batch record in DB via API
     const api = serverApi;
-    const batchResp = await api.post<{ data: { id: string } }>(
+    const batchResp = await api.post<{ data: { id: string; organizationId: string } }>(
       '/v1/cloud-security/remediation/batch',
       {
         connectionId: input.connectionId,
@@ -25,21 +25,25 @@ export async function startBatchFix(
       },
     );
 
-    if (batchResp.error || !batchResp.data?.data?.id) {
+    const batch = batchResp.data?.data;
+    if (batchResp.error || !batch?.id || !batch.organizationId) {
       return { error: 'Failed to create batch record' };
     }
 
-    const batchId = batchResp.data.data.id;
+    // The API scopes the batch to the authenticated org, so take the org id
+    // from it rather than from caller-controlled input. The run tag is what
+    // the status route uses for its ownership check.
+    const { id: batchId, organizationId } = batch;
 
     // Step 2: Trigger the API-layer task
     const handle = await tasks.trigger(
       'remediate-batch',
       {
         batchId,
-        organizationId: input.organizationId,
+        organizationId,
         connectionId: input.connectionId,
       },
-      { tags: [input.organizationId] },
+      { tags: [organizationId] },
     );
 
     // Step 3: Store triggerRunId on the batch
