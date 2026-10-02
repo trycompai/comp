@@ -15,7 +15,7 @@ jobs:
         run: git config --global --add safe.directory /github/workspace
         continue-on-error: true
       - name: Check out repository code
-        uses: actions/checkout@v3
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         continue-on-error: true
       - name: Get package version
         id: package-version
@@ -23,7 +23,7 @@ jobs:
       # The pull-request action will now only run if the checkout action was successful.
       - name: Create pull request
         if: ${{ success() }} # This step runs only if all previous steps succeeded
-        uses: repo-sync/pull-request@v2
+        uses: repo-sync/pull-request@7e79a9f5dc3ad0ce53138f01df2fad14a04831c5 # v2.12.1
         continue-on-error: true
         with:
           destination_branch: 'release'

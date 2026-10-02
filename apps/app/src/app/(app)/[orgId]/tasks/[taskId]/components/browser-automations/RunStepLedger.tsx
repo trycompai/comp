@@ -118,6 +118,7 @@ function ShotPane({ label, src, scroll }: { label: string; src: string; scroll?:
                 : 'max-h-full w-auto max-w-full object-contain'
             }
             onError={() => setError(true)}
+            unoptimized
           />
         </a>
       ) : (

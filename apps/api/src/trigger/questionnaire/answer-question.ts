@@ -1,5 +1,5 @@
 import { syncOrganizationEmbeddings } from '@/vector-store/lib';
-import { logger, metadata, tags, task } from '@trigger.dev/sdk';
+import { logger, metadata } from '@trigger.dev/sdk';
 import { generateAnswerWithRAG } from './answer-question-helpers';
 
 export interface AnswerQuestionPayload {
@@ -161,24 +161,3 @@ export async function answerQuestion(
     };
   }
 }
-
-/**
- * Trigger.dev task wrapper for frontend use (single question answers)
- * This wraps the answerQuestion function so it can be triggered from the frontend
- */
-export const answerQuestionTask = task({
-  id: 'answer-question',
-  retry: {
-    maxAttempts: 3,
-  },
-  run: async (payload: {
-    question: string;
-    organizationId: string;
-    questionIndex: number;
-    totalQuestions: number;
-  }) => {
-    await tags.add([`org:${payload.organizationId}`]);
-
-    return await answerQuestion(payload);
-  },
-});

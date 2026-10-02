@@ -18,6 +18,7 @@ export function AssignedUser({ avatarUrl, fullName, date }: Props) {
             width={24}
             height={24}
             className="rounded-full object-cover"
+            unoptimized
           />
         </Avatar>
       )}

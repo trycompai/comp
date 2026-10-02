@@ -13,12 +13,9 @@ const config = {
     '@trycompai/company',
   ],
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '**',
-      },
-    ],
+    // Disable the public optimizer endpoint (GH-083). Dynamic avatars, logos,
+    // and signed uploads load directly in the browser without a server proxy.
+    unoptimized: true,
   },
   async rewrites() {
     return [

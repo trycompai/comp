@@ -9,7 +9,7 @@ import type { AnswerQuestionResult } from '@/trigger/questionnaire/answer-questi
 import { answerQuestion } from '@/trigger/questionnaire/answer-question';
 import { generateAnswerWithRAGBatch } from '@/trigger/questionnaire/answer-question-helpers';
 import { tasks } from '@trigger.dev/sdk';
-import type { parseQuestionnaireTask } from '@/trigger/questionnaire/parse-questionnaire';
+import type { internalParseQuestionnaireTask } from '@/trigger/questionnaire/internal-parse-questionnaire';
 import type { autoAnswerQuestionnaireTask } from '@/trigger/questionnaire/auto-answer-questionnaire';
 import { TriggerAutoAnswerResponseDto } from './dto/trigger-auto-answer-response.dto';
 import { ParseQuestionnaireDto } from './dto/parse-questionnaire.dto';
@@ -261,8 +261,8 @@ export class QuestionnaireService {
     }
 
     // Trigger async processing via Trigger.dev
-    const handle = await tasks.trigger<typeof parseQuestionnaireTask>(
-      'parse-questionnaire',
+    const handle = await tasks.trigger<typeof internalParseQuestionnaireTask>(
+      'internal-parse-questionnaire',
       {
         inputType: 's3' as const,
         organizationId: dto.organizationId,

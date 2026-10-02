@@ -18,6 +18,7 @@ export function ChatUser({ avatarUrl, fullName, date }: Props) {
             width={40}
             height={40}
             className="rounded-full object-cover"
+            unoptimized
           />
         </Avatar>
       )}

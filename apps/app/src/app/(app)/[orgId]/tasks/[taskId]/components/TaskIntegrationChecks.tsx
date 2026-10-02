@@ -604,6 +604,7 @@ export function TaskIntegrationChecks({
                           width={24}
                           height={24}
                           className="rounded"
+                          unoptimized
                         />
                         <div
                           className={cn(
@@ -817,6 +818,7 @@ export function TaskIntegrationChecks({
                             width={20}
                             height={20}
                             className="rounded opacity-50"
+                            unoptimized
                           />
                           <div>
                             <p className="text-sm text-muted-foreground line-through">
@@ -901,6 +903,7 @@ export function TaskIntegrationChecks({
                             width={20}
                             height={20}
                             className="rounded opacity-50 group-hover:opacity-100 transition-opacity"
+                            unoptimized
                           />
                           <div>
                             <p className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
@@ -1292,6 +1295,7 @@ function IntegrationEmptyState({
                     width={24}
                     height={24}
                     className="object-contain"
+                    unoptimized
                   />
                 </div>
               ))}
@@ -1359,6 +1363,7 @@ function IntegrationEmptyState({
                         width={20}
                         height={20}
                         className="object-contain grayscale"
+                        unoptimized
                       />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -1390,6 +1395,7 @@ function IntegrationEmptyState({
                       width={20}
                       height={20}
                       className="object-contain"
+                      unoptimized
                     />
                   </div>
                   <div className="flex-1 min-w-0">

@@ -130,6 +130,7 @@ export function UpdateTrustFavicon({
                 fill
                 className="object-contain p-2"
                 sizes="64px"
+                unoptimized
               />
             ) : (
               <Add className="h-6 w-6 text-muted-foreground/50" />

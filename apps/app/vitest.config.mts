@@ -4,7 +4,7 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
-  plugins: [tsconfigPaths(), react()],
+  plugins: [tsconfigPaths({ projects: ['./tsconfig.json'] }), react()],
   test: {
     environment: 'jsdom',
     globals: true,
@@ -32,6 +32,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),
+      '@trycompai/auth': resolve(__dirname, '../../packages/auth/src/index.ts'),
       '@trycompai/billing': resolve(__dirname, '../../packages/billing/src/index.ts'),
     },
   },
