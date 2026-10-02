@@ -76,6 +76,7 @@ export class SOAController {
       throw new BadRequestException('User not authenticated');
     }
 
+    dto.organizationId = organizationId;
     return this.soaService.saveAnswer(dto, authContext.userId);
   }
 
@@ -97,6 +98,7 @@ export class SOAController {
       throw new BadRequestException('User not authenticated');
     }
 
+    dto.organizationId = organizationId;
     const userId = authContext.userId;
     setupSSEHeaders(res);
     const send = createSafeSSESender(res);
@@ -319,6 +321,7 @@ export class SOAController {
     @Body() dto: CreateSOADocumentDto,
     @OrganizationId() organizationId: string,
   ) {
+    dto.organizationId = organizationId;
     return this.soaService.createDocument(dto);
   }
 
@@ -334,6 +337,7 @@ export class SOAController {
     @Body() dto: EnsureSOASetupDto,
     @OrganizationId() organizationId: string,
   ) {
+    dto.organizationId = organizationId;
     return this.soaService.ensureSetup(dto);
   }
 
@@ -372,6 +376,7 @@ export class SOAController {
       throw new BadRequestException('User not authenticated');
     }
 
+    dto.organizationId = organizationId;
     return this.soaService.approveDocument(dto, authContext.userId);
   }
 
@@ -392,6 +397,7 @@ export class SOAController {
       throw new BadRequestException('User not authenticated');
     }
 
+    dto.organizationId = organizationId;
     return this.soaService.declineDocument(dto, authContext.userId);
   }
 
@@ -407,6 +413,7 @@ export class SOAController {
     @Body() dto: SubmitSOAForApprovalDto,
     @OrganizationId() organizationId: string,
   ) {
+    dto.organizationId = organizationId;
     return this.soaService.submitForApproval(dto);
   }
 

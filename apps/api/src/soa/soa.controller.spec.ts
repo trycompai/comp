@@ -29,6 +29,8 @@ jest.mock('@/vector-store/lib', () => ({
   syncOrganizationEmbeddings: jest.fn(),
 }));
 
+import { syncOrganizationEmbeddings } from '@/vector-store/lib';
+
 describe('SOAController', () => {
   let controller: SOAController;
   let soaService: jest.Mocked<SOAService>;
@@ -98,7 +100,7 @@ describe('SOAController', () => {
       mockSOAService.saveAnswer.mockResolvedValue({ success: true });
 
       const result = await controller.saveAnswer(
-        dto as never,
+        dto,
         'org_123',
         mockAuthContext,
       );
@@ -110,6 +112,64 @@ describe('SOAController', () => {
     it('should throw BadRequestException when userId is missing', async () => {
       await expect(
         controller.saveAnswer(dto as never, 'org_123', noUserAuthContext),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should overwrite a body-supplied organizationId with the session organizationId', async () => {
+      const spoofedDto = { ...dto, organizationId: 'org_victim' };
+      mockSOAService.saveAnswer.mockResolvedValue({ success: true });
+
+      await controller.saveAnswer(spoofedDto, 'org_own', mockAuthContext);
+
+      expect(soaService.saveAnswer).toHaveBeenCalledWith(
+        expect.objectContaining({ organizationId: 'org_own' }),
+        'usr_123',
+      );
+    });
+  });
+
+  describe('autoFill', () => {
+    const dto = {
+      organizationId: 'org_123',
+      documentId: 'doc_1',
+    };
+
+    it('should overwrite a body-supplied organizationId with the session organizationId', async () => {
+      const spoofedDto = { ...dto, organizationId: 'org_victim' };
+      mockSOAService.getDocument.mockResolvedValue({
+        configuration: { questions: [] },
+      });
+      mockSOAService.checkIfFullyRemote.mockResolvedValue(false);
+      mockSOAService.batchSearchSOAQuestions.mockResolvedValue(new Map());
+      mockSOAService.saveAnswersToDatabase.mockResolvedValue(undefined);
+      mockSOAService.countAnsweredAnswers.mockResolvedValue(0);
+      mockSOAService.updateDocumentAfterAutoFill.mockResolvedValue(undefined);
+      const res = {
+        setHeader: jest.fn(),
+        write: jest.fn(),
+        end: jest.fn(),
+      } as unknown as Response;
+
+      await controller.autoFill(spoofedDto, 'org_own', mockAuthContext, res);
+
+      expect(syncOrganizationEmbeddings).toHaveBeenCalledWith('org_own');
+      expect(soaService.getDocument).toHaveBeenCalledWith('doc_1', 'org_own');
+      expect(soaService.checkIfFullyRemote).toHaveBeenCalledWith('org_own');
+      expect(soaService.batchSearchSOAQuestions).toHaveBeenCalledWith(
+        [],
+        'org_own',
+      );
+    });
+
+    it('should throw BadRequestException when userId is missing', async () => {
+      const res = {
+        setHeader: jest.fn(),
+        write: jest.fn(),
+        end: jest.fn(),
+      } as unknown as Response;
+
+      await expect(
+        controller.autoFill(dto as never, 'org_123', noUserAuthContext, res),
       ).rejects.toThrow(BadRequestException);
     });
   });
@@ -129,6 +189,17 @@ describe('SOAController', () => {
       expect(soaService.createDocument).toHaveBeenCalledWith(dto);
       expect(result).toEqual(created);
     });
+
+    it('should overwrite a body-supplied organizationId with the session organizationId', async () => {
+      const spoofedDto = { ...dto, organizationId: 'org_victim' };
+      mockSOAService.createDocument.mockResolvedValue({ id: 'doc_1' });
+
+      await controller.createDocument(spoofedDto as never, 'org_own');
+
+      expect(soaService.createDocument).toHaveBeenCalledWith(
+        expect.objectContaining({ organizationId: 'org_own' }),
+      );
+    });
   });
 
   describe('ensureSetup', () => {
@@ -146,6 +217,19 @@ describe('SOAController', () => {
       expect(soaService.ensureSetup).toHaveBeenCalledWith(dto);
       expect(result).toEqual(setupResult);
     });
+
+    it('should overwrite a body-supplied organizationId with the session organizationId', async () => {
+      const spoofedDto = { ...dto, organizationId: 'org_victim' };
+      mockSOAService.ensureSetup.mockResolvedValue({
+        document: { id: 'doc_1' },
+      });
+
+      await controller.ensureSetup(spoofedDto as never, 'org_own');
+
+      expect(soaService.ensureSetup).toHaveBeenCalledWith(
+        expect.objectContaining({ organizationId: 'org_own' }),
+      );
+    });
   });
 
   describe('getSetup', () => {
@@ -162,10 +246,25 @@ describe('SOAController', () => {
       };
       mockSOAService.getSetup.mockResolvedValue(setupResult);
 
-      const result = await controller.getSetup(dto as never, 'org_123');
+      const result = await controller.getSetup(dto, 'org_123');
 
       expect(soaService.getSetup).toHaveBeenCalledWith(dto);
       expect(result).toEqual(setupResult);
+    });
+
+    it('should overwrite a body-supplied organizationId with the session organizationId', async () => {
+      const spoofedDto = { ...dto, organizationId: 'org_victim' };
+      mockSOAService.getSetup.mockResolvedValue({
+        success: true,
+        configuration: null,
+        document: null,
+      });
+
+      await controller.getSetup(spoofedDto, 'org_own');
+
+      expect(soaService.getSetup).toHaveBeenCalledWith(
+        expect.objectContaining({ organizationId: 'org_own' }),
+      );
     });
   });
 
@@ -180,7 +279,7 @@ describe('SOAController', () => {
       mockSOAService.approveDocument.mockResolvedValue(approved);
 
       const result = await controller.approveDocument(
-        dto as never,
+        dto,
         'org_123',
         mockAuthContext,
       );
@@ -193,6 +292,18 @@ describe('SOAController', () => {
       await expect(
         controller.approveDocument(dto as never, 'org_123', noUserAuthContext),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should overwrite a body-supplied organizationId with the session organizationId', async () => {
+      const spoofedDto = { ...dto, organizationId: 'org_victim' };
+      mockSOAService.approveDocument.mockResolvedValue({ success: true });
+
+      await controller.approveDocument(spoofedDto, 'org_own', mockAuthContext);
+
+      expect(soaService.approveDocument).toHaveBeenCalledWith(
+        expect.objectContaining({ organizationId: 'org_own' }),
+        'usr_123',
+      );
     });
   });
 
@@ -208,7 +319,7 @@ describe('SOAController', () => {
       mockSOAService.declineDocument.mockResolvedValue(declined);
 
       const result = await controller.declineDocument(
-        dto as never,
+        dto,
         'org_123',
         mockAuthContext,
       );
@@ -221,6 +332,18 @@ describe('SOAController', () => {
       await expect(
         controller.declineDocument(dto as never, 'org_123', noUserAuthContext),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should overwrite a body-supplied organizationId with the session organizationId', async () => {
+      const spoofedDto = { ...dto, organizationId: 'org_victim' };
+      mockSOAService.declineDocument.mockResolvedValue({ success: true });
+
+      await controller.declineDocument(spoofedDto, 'org_own', mockAuthContext);
+
+      expect(soaService.declineDocument).toHaveBeenCalledWith(
+        expect.objectContaining({ organizationId: 'org_own' }),
+        'usr_123',
+      );
     });
   });
 
@@ -241,6 +364,17 @@ describe('SOAController', () => {
 
       expect(soaService.submitForApproval).toHaveBeenCalledWith(dto);
       expect(result).toEqual(submitted);
+    });
+
+    it('should overwrite a body-supplied organizationId with the session organizationId', async () => {
+      const spoofedDto = { ...dto, organizationId: 'org_victim' };
+      mockSOAService.submitForApproval.mockResolvedValue({ success: true });
+
+      await controller.submitForApproval(spoofedDto as never, 'org_own');
+
+      expect(soaService.submitForApproval).toHaveBeenCalledWith(
+        expect.objectContaining({ organizationId: 'org_own' }),
+      );
     });
   });
 
@@ -277,6 +411,25 @@ describe('SOAController', () => {
         'attachment; filename="soa-export.pdf"',
       );
       expect(res.send).toHaveBeenCalledWith(fileBuffer);
+    });
+
+    it('should overwrite a body-supplied organizationId with the session organizationId', async () => {
+      const spoofedDto = { ...dto, organizationId: 'org_victim' };
+      mockSOAService.exportDocument.mockResolvedValue({
+        fileBuffer: Buffer.from('pdf-data'),
+        mimeType: 'application/pdf',
+        filename: 'soa-export.pdf',
+      });
+      const res = {
+        setHeader: jest.fn(),
+        send: jest.fn(),
+      } as unknown as Response;
+
+      await controller.exportDocument(spoofedDto as never, res, 'org_own');
+
+      expect(soaService.exportDocument).toHaveBeenCalledWith(
+        expect.objectContaining({ organizationId: 'org_own' }),
+      );
     });
   });
 });

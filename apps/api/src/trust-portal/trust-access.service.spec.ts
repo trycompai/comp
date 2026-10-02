@@ -8,7 +8,10 @@ jest.mock('@db', () => ({
   db: {
     trust: {
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
       upsert: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
     },
     trustNDAAgreement: {
       findUnique: jest.fn(),
@@ -64,7 +67,10 @@ jest.mock('../app/s3', () => ({
 const mockDb = db as unknown as {
   trust: {
     findUnique: jest.Mock;
+    findFirst: jest.Mock;
     upsert: jest.Mock;
+    create: jest.Mock;
+    update: jest.Mock;
   };
   trustNDAAgreement: {
     findUnique: jest.Mock;
@@ -547,7 +553,91 @@ describe('TrustAccessService signNda NDA copy', () => {
   });
 });
 
-describe('TrustAccessService reclaimAccess token rotation', () => {
+describe('TrustAccessService findPublishedTrustByRouteId (GH-272)', () => {
+  const service = new TrustAccessService(
+    {} as any,
+    {} as any,
+    {} as any,
+    {} as any,
+    {} as any,
+  );
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('resolves a published trust row by friendlyUrl', async () => {
+    mockDb.trust.findFirst.mockResolvedValueOnce({
+      organizationId: 'org_1',
+      friendlyUrl: 'acme-security',
+      status: 'published',
+      organization: { name: 'Acme Security' },
+    });
+
+    const result = await (service as any).findPublishedTrustByRouteId(
+      'acme-security',
+    );
+
+    expect(mockDb.trust.findFirst).toHaveBeenCalledWith({
+      where: { friendlyUrl: 'acme-security', status: 'published' },
+      include: { organization: true },
+    });
+    expect(result.organizationId).toBe('org_1');
+  });
+
+  it('falls back to organizationId when no friendlyUrl match exists', async () => {
+    mockDb.trust.findFirst.mockResolvedValueOnce(null).mockResolvedValueOnce({
+      organizationId: 'org_1',
+      friendlyUrl: 'org_1',
+      status: 'published',
+      organization: { name: 'Acme Security' },
+    });
+
+    const result = await (service as any).findPublishedTrustByRouteId('org_1');
+
+    expect(mockDb.trust.findFirst).toHaveBeenNthCalledWith(2, {
+      where: { organizationId: 'org_1', status: 'published' },
+      include: { organization: true },
+    });
+    expect(result.organizationId).toBe('org_1');
+  });
+
+  it('404s when no trust row exists for the id, without auto-creating one', async () => {
+    mockDb.trust.findFirst.mockResolvedValue(null);
+
+    await expect(
+      (service as any).findPublishedTrustByRouteId('unknown-id'),
+    ).rejects.toThrow('Trust site not found');
+
+    expect(mockDb.trust.create).not.toHaveBeenCalled();
+    expect(mockDb.trust.update).not.toHaveBeenCalled();
+  });
+
+  it('404s for a draft trust row instead of silently auto-publishing it', async () => {
+    // A draft row never matches the status: 'published' filter, so both the
+    // friendlyUrl and organizationId lookups come back empty even though a
+    // row exists in the table.
+    mockDb.trust.findFirst.mockResolvedValue(null);
+
+    await expect(
+      (service as any).findPublishedTrustByRouteId('draft-portal'),
+    ).rejects.toThrow('Trust site not found');
+
+    expect(mockDb.trust.findFirst).toHaveBeenCalledWith({
+      where: { friendlyUrl: 'draft-portal', status: 'published' },
+      include: { organization: true },
+    });
+    expect(mockDb.trust.update).not.toHaveBeenCalled();
+    expect(mockDb.trust.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('TrustAccessService reclaimAccess (GH-042)', () => {
+  const GENERIC_RESPONSE = {
+    message:
+      'If an active access grant exists for this email, an access link has been sent.',
+  };
+
   const emailService = {
     sendAccessReclaimEmail: jest.fn(),
   };
@@ -564,7 +654,7 @@ describe('TrustAccessService reclaimAccess token rotation', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockDb.trust.findUnique.mockResolvedValue({
+    mockDb.trust.findFirst.mockResolvedValue({
       organizationId: 'org_1',
       friendlyUrl: 'acme-security',
       status: 'published',
@@ -594,6 +684,43 @@ describe('TrustAccessService reclaimAccess token rotation', () => {
       data: expect.objectContaining({ accessTokenExpiresAt: grantExpiresAt }),
     });
   });
+
+  it('returns only a generic message, with no accessLink or token, when a grant exists', async () => {
+    mockDb.trustAccessGrant.findFirst.mockResolvedValue({
+      id: 'tag_1',
+      subjectEmail: 'chang.liu@client.com',
+      status: 'active',
+      expiresAt: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000),
+      accessToken: 'existing-token',
+      accessTokenExpiresAt: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000),
+      accessRequest: {
+        name: 'Chang Liu',
+        organization: { name: 'Acme Security' },
+      },
+      ndaAgreement: null,
+    });
+
+    const result = await service.reclaimAccess(
+      'acme-security',
+      'chang.liu@client.com',
+    );
+
+    expect(result).toEqual(GENERIC_RESPONSE);
+    expect(result).not.toHaveProperty('accessLink');
+    expect(emailService.sendAccessReclaimEmail).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns the same generic message and does not throw when no grant exists', async () => {
+    mockDb.trustAccessGrant.findFirst.mockResolvedValue(null);
+
+    const result = await service.reclaimAccess(
+      'acme-security',
+      'nobody@client.com',
+    );
+
+    expect(result).toEqual(GENERIC_RESPONSE);
+    expect(emailService.sendAccessReclaimEmail).not.toHaveBeenCalled();
+  });
 });
 
 describe('TrustAccessService access request notification', () => {
@@ -619,7 +746,9 @@ describe('TrustAccessService access request notification', () => {
 
   it('points the review button at the access requests page, not the trust overview', async () => {
     // contactEmail present -> single recipient, no member fallback lookup.
-    mockDb.trust.findUnique.mockResolvedValue({ contactEmail: 'owner@acme.com' });
+    mockDb.trust.findUnique.mockResolvedValue({
+      contactEmail: 'owner@acme.com',
+    });
 
     const dto: CreateAccessRequestDto = {
       name: 'Jane Doe',
