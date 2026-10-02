@@ -5,7 +5,7 @@ export const TRUST_OPERATION_METADATA: Record<string, PublicOperationMetadata> =
     TrustAccessController_createAccessRequest_v1: {
       summary: 'Submit Trust Access request',
       description:
-        'Submit a Trust Center access request with requester details, company context, and review reason for administrator approval.',
+        'Queue a Trust Center access request for administrator review. Returns a generic acknowledgment; approved access links are delivered only by email.',
     },
     TrustAccessController_listAccessRequests_v1: {
       summary: 'List Trust Access requests',
@@ -55,7 +55,7 @@ export const TRUST_OPERATION_METADATA: Record<string, PublicOperationMetadata> =
     TrustAccessController_reclaimAccess_v1: {
       summary: 'Reclaim Trust Access link',
       description:
-        'Request a fresh Trust Access link for a reviewer who already has an active grant on a published Trust Center.',
+        'Queue an access-link email for a published Trust Center. Returns a generic acknowledgment whether or not the reviewer has an active grant.',
     },
     TrustAccessController_getNda_v1: {
       summary: 'Get Trust Access NDA',

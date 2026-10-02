@@ -1,5 +1,5 @@
 import { auth } from '@/app/lib/auth';
-import { db } from '@db/server';
+import { getPortalPolicy, getPortalPolicyMember } from '@/lib/portal-policy-access';
 import {
   Badge,
   Breadcrumb,
@@ -38,36 +38,15 @@ export default async function PolicyPage({
     redirect('/auth');
   }
 
-  const policy = await db.policy.findUnique({
-    where: { id: policyId },
-    include: {
-      currentVersion: {
-        select: {
-          id: true,
-          content: true,
-          pdfUrl: true,
-          version: true,
-        },
-      },
-    },
+  const member = await getPortalPolicyMember({ userId: session.user.id, organizationId: orgId });
+  if (!member) redirect('/');
+
+  const policy = await getPortalPolicy({
+    policyId,
+    organizationId: orgId,
+    department: member.department,
   });
-
-  if (!policy) {
-    redirect(`/${orgId}`);
-  }
-
-  // Get the member info for the current org
-  const member = await db.member.findFirst({
-    where: {
-      userId: session.user.id,
-      organizationId: orgId,
-      deactivated: false,
-    },
-  });
-
-  if (!member) {
-    redirect('/');
-  }
+  if (!policy) redirect(`/${orgId}`);
 
   const isAccepted = policy.signedBy.includes(member.id);
 

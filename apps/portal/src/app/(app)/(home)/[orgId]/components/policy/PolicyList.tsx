@@ -1,14 +1,11 @@
 'use client';
 
-import type { Member, Policy, PolicyVersion } from '@db';
+import type { PortalPolicy } from '@/lib/portal-policy-types';
+import type { Member } from '@db';
 import { PolicyContainer } from './PolicyContainer';
 
-type PolicyWithVersion = Policy & {
-  currentVersion?: Pick<PolicyVersion, 'id' | 'content' | 'pdfUrl' | 'version'> | null;
-};
-
 interface PolicyListProps {
-  policies: PolicyWithVersion[];
+  policies: PortalPolicy[];
   member: Member;
 }
 

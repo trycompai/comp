@@ -76,6 +76,7 @@ jest.mock('@db', () => ({
 }));
 
 jest.mock('@trycompai/auth', () => ({
+  isRestrictedRole: (role: string) => ['employee', 'contractor'].includes(role),
   BUILT_IN_ROLE_PERMISSIONS: {
     owner: {
       organization: ['read', 'update', 'delete'],
@@ -228,7 +229,21 @@ describe('PeopleService', () => {
         createdMember,
       );
 
-      const result = await service.create('org_123', createData as any);
+      jest.mocked(db.member).findFirst.mockImplementation(
+        jest.fn().mockResolvedValue({ role: 'owner' }),
+      );
+      const result = await service.create({
+        organizationId: 'org_123',
+        createData,
+        authContext: {
+          organizationId: 'org_123',
+          authType: 'session',
+          isApiKey: false,
+          isPlatformAdmin: false,
+          userId: 'usr_caller',
+          userRoles: ['owner'],
+        },
+      });
 
       expect(result).toEqual(createdMember);
       expect(MemberQueries.createMember).toHaveBeenCalledWith(
@@ -247,7 +262,18 @@ describe('PeopleService', () => {
       );
 
       await expect(
-        service.create('org_123', { userId: 'usr_dup' } as any),
+        service.create({
+          organizationId: 'org_123',
+          createData: { userId: 'usr_dup', role: 'employee' },
+          authContext: {
+            organizationId: 'org_123',
+            authType: 'api-key',
+            isApiKey: true,
+            isPlatformAdmin: false,
+            userRoles: null,
+            apiKeyScopes: ['member:create'],
+          },
+        }),
       ).rejects.toThrow(BadRequestException);
     });
   });

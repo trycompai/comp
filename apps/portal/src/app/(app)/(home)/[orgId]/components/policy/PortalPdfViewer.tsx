@@ -16,11 +16,17 @@ import { toast } from 'sonner';
 
 interface PortalPdfViewerProps {
   policyId: string;
+  organizationId: string;
   s3Key?: string | null;
   versionId?: string;
 }
 
-export function PortalPdfViewer({ policyId, s3Key, versionId }: PortalPdfViewerProps) {
+export function PortalPdfViewer({
+  policyId,
+  organizationId,
+  s3Key,
+  versionId,
+}: PortalPdfViewerProps) {
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -34,7 +40,7 @@ export function PortalPdfViewer({ policyId, s3Key, versionId }: PortalPdfViewerP
 
     const fetchPdfUrl = async () => {
       try {
-        const params = new URLSearchParams({ policyId });
+        const params = new URLSearchParams({ policyId, organizationId });
         if (versionId) {
           params.set('versionId', versionId);
         }
@@ -70,7 +76,7 @@ export function PortalPdfViewer({ policyId, s3Key, versionId }: PortalPdfViewerP
     return () => {
       cancelled = true;
     };
-  }, [s3Key, policyId, versionId]);
+  }, [s3Key, policyId, organizationId, versionId]);
 
   if (isLoading) {
     return (

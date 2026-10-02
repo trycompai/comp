@@ -1,18 +1,15 @@
 'use client';
 
-import type { Member, Policy, PolicyVersion } from '@db';
+import type { PortalPolicy } from '@/lib/portal-policy-types';
+import type { Member } from '@db';
 import { Button, Text } from '@trycompai/design-system';
 import { ChevronLeft, ChevronRight } from '@trycompai/design-system/icons';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { PolicyCard } from './PolicyCard';
 
-type PolicyWithVersion = Policy & {
-  currentVersion?: Pick<PolicyVersion, 'id' | 'content' | 'pdfUrl' | 'version'> | null;
-};
-
 interface PolicyCarouselProps {
-  policies: PolicyWithVersion[];
+  policies: PortalPolicy[];
   member: Member;
   initialIndex?: number;
   onIndexChange?: (index: number) => void;
@@ -33,7 +30,7 @@ export function PolicyCarousel({
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ policyId }),
+        body: JSON.stringify({ policyId, organizationId: member.organizationId }),
       });
       if (!res.ok) {
         throw new Error('Failed to complete policy');

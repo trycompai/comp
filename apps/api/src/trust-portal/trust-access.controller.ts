@@ -12,6 +12,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBody,
   ApiOperation,
   ApiParam,
   ApiQuery,
@@ -23,7 +24,7 @@ import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
 import { OrganizationId } from '../auth/auth-context.decorator';
-import { AuthenticatedRequest } from '../auth/types';
+import { Public } from '../auth/public.decorator';
 import {
   ApproveAccessRequestDto,
   CreateAccessRequestDto,
@@ -42,11 +43,13 @@ export class TrustAccessController {
   constructor(private readonly trustAccessService: TrustAccessService) {}
 
   @Post(':friendlyUrl/requests')
+  @Public()
+  @ApiBody({ type: CreateAccessRequestDto })
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Submit data access request',
     description:
-      'External users submit request for data access from trust site',
+      'Queue a request for Trust Center access. Returns a generic acknowledgment; approved access links are delivered only by email.',
   })
   @ApiParam({
     name: 'friendlyUrl',
@@ -54,7 +57,11 @@ export class TrustAccessController {
   })
   @ApiResponse({
     status: HttpStatus.CREATED,
-    description: 'Access request created and sent for review',
+    description: 'Access request queued for processing',
+  })
+  @ApiResponse({
+    status: HttpStatus.SERVICE_UNAVAILABLE,
+    description: 'Access submission queue is temporarily unavailable',
   })
   async createAccessRequest(
     // Note: friendlyUrl can be either the custom friendly URL or the organization ID
@@ -359,11 +366,13 @@ export class TrustAccessController {
   }
 
   @Post(':friendlyUrl/reclaim')
+  @Public()
+  @ApiBody({ type: ReclaimAccessDto })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Reclaim access',
     description:
-      'Generate access link for users with existing grants to redownload data',
+      'Queue an access-link email for a published Trust Center. Returns a generic acknowledgment whether or not the reviewer has an active grant.',
   })
   @ApiParam({
     name: 'friendlyUrl',
@@ -380,6 +389,10 @@ export class TrustAccessController {
     status: HttpStatus.OK,
     description:
       'Generic confirmation message, identical whether or not an active access grant exists for the email (no access link or token is returned).',
+  })
+  @ApiResponse({
+    status: HttpStatus.SERVICE_UNAVAILABLE,
+    description: 'Access submission queue is temporarily unavailable',
   })
   async reclaimAccess(
     // Note: friendlyUrl can be either the custom friendly URL or the organization ID

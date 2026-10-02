@@ -1,6 +1,7 @@
 'use client';
 
-import type { Member, Policy, PolicyVersion } from '@db';
+import type { PortalPolicy } from '@/lib/portal-policy-types';
+import type { Member } from '@db';
 import {
   AccordionContent,
   AccordionItem,
@@ -14,12 +15,8 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
-type PolicyWithVersion = Policy & {
-  currentVersion?: Pick<PolicyVersion, 'id' | 'content' | 'pdfUrl' | 'version'> | null;
-};
-
 interface PoliciesAccordionItemProps {
-  policies: PolicyWithVersion[];
+  policies: PortalPolicy[];
   member: Member;
 }
 
@@ -43,7 +40,11 @@ export function PoliciesAccordionItem({ policies, member }: PoliciesAccordionIte
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ policyIds: unacceptedPolicyIds, memberId: member.id }),
+        body: JSON.stringify({
+          policyIds: unacceptedPolicyIds,
+          memberId: member.id,
+          organizationId: member.organizationId,
+        }),
       });
 
       if (!res.ok) {
@@ -55,7 +56,9 @@ export function PoliciesAccordionItem({ policies, member }: PoliciesAccordionIte
       toast.success('All policies accepted successfully');
       router.refresh();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'An error occurred while accepting policies');
+      toast.error(
+        error instanceof Error ? error.message : 'An error occurred while accepting policies',
+      );
     } finally {
       setIsAcceptingAll(false);
     }
@@ -68,12 +71,19 @@ export function PoliciesAccordionItem({ policies, member }: PoliciesAccordionIte
           <AccordionTrigger>
             <div className="flex items-center gap-3">
               {hasAcceptedPolicies ? (
-                <div className="text-primary"><CheckmarkFilled size={20} /></div>
+                <div className="text-primary">
+                  <CheckmarkFilled size={20} />
+                </div>
               ) : (
-                <div className="text-muted-foreground"><CircleDash size={20} /></div>
+                <div className="text-muted-foreground">
+                  <CircleDash size={20} />
+                </div>
               )}
               <span
-                className={cn('text-base', hasAcceptedPolicies && 'text-muted-foreground line-through')}
+                className={cn(
+                  'text-base',
+                  hasAcceptedPolicies && 'text-muted-foreground line-through',
+                )}
               >
                 Security Policies
               </span>
@@ -97,10 +107,16 @@ export function PoliciesAccordionItem({ policies, member }: PoliciesAccordionIte
                           href={`/${member.organizationId}/policy/${policy.id}`}
                           className="hover:text-primary flex items-center gap-2 text-sm transition-colors"
                         >
-                          <div className="text-muted-foreground"><Document size={16} /></div>
+                          <div className="text-muted-foreground">
+                            <Document size={16} />
+                          </div>
                           <span className={cn(isAccepted && 'line-through')}>{policy.name}</span>
                         </Link>
-                        {isAccepted && <div className="text-primary"><CheckmarkFilled size={12} /></div>}
+                        {isAccepted && (
+                          <div className="text-primary">
+                            <CheckmarkFilled size={12} />
+                          </div>
+                        )}
                       </div>
                     );
                   })}

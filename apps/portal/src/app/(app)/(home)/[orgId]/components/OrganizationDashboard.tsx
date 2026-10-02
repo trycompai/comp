@@ -1,3 +1,4 @@
+import { portalPolicySelect, portalPolicyWhere } from '@/lib/portal-policy-access';
 import type { Device, Member, Organization, User } from '@db';
 import { db } from '@db/server';
 import { evidenceFormDefinitionList } from '@trycompai/company';
@@ -33,28 +34,15 @@ export async function OrganizationDashboard({
 }: OrganizationDashboardProps) {
   // Fetch policies specific to the selected organization
   const policies = sortPoliciesByName(
-    await db.policy.findMany({
-      where: {
-        organizationId: organizationId,
-        isRequiredToSign: true,
-        status: 'published',
-        // Hide policies archived by the user or by a framework version sync.
-        // A sync sets `archivedAt` but leaves `status: 'published'`, so both
-        // flags must be checked. See packages/db Policy schema.
-        isArchived: false,
-        archivedAt: null,
-      },
-      include: {
-        currentVersion: {
-          select: {
-            id: true,
-            content: true,
-            pdfUrl: true,
-            version: true,
-          },
+    (
+      await db.policy.findMany({
+        where: {
+          ...portalPolicyWhere({ organizationId, department: member.department }),
+          isRequiredToSign: true,
         },
-      },
-    }),
+        select: portalPolicySelect,
+      })
+    ).filter((policy) => !policy.currentVersion || policy.currentVersion.policyId === policy.id),
   );
 
   // Fetch training video completions specific to the member
