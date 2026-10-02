@@ -1,0 +1,51 @@
+apps/api/src/evidence-forms/evidence-forms-csv.ts
+  s_4507f85befe0c4::t_d28bf49cefcaa5 3-9,11-13
+.github/workflows/device-agent-release.yml
+  s_4507f85befe0c4::t_ef87a595345bb0 3-7,11,98,157,428
+apps/api/src/evidence-forms/evidence-forms.service.spec.ts
+  s_4507f85befe0c4::t_dd4f6f42941824 43,59,456-550
+apps/api/src/soa/soa.controller.spec.ts
+  s_4507f85befe0c4::t_3290c9ad2c4b8e 32-33,103,117-174,192-202,220-232,249,254-268,282,296-307,322,336-347,368-378,415-433
+apps/api/src/soa/soa.controller.ts
+  s_4507f85befe0c4::t_1153e1203b929f 79,101,324,340,379,400,416
+apps/api/src/tasks/automations/automations.controller.ts
+  s_4507f85befe0c4::t_2c355c30660710 95-99,150-155,186-190,208-212,263-265,267-269,287-292
+apps/api/src/tasks/automations/automations.service.spec.ts
+  s_4507f85befe0c4::t_78ab89c60a26c2 19-25,40-185,188-194,199-201,205-209,211,219-221,228,236,244-253
+apps/api/src/tasks/automations/automations.service.ts
+  s_4507f85befe0c4::t_2e91f3119ada07 36-50,54-55,63-80,117-129,154-164,179-192,228-239,257-272
+apps/api/src/trust-portal/trust-access.controller.spec.ts
+  s_4507f85befe0c4::t_4ee0a8bc294f1b 283,329-337,340,344,348-349,359,361,369-377
+apps/api/src/trust-portal/trust-access.controller.ts
+  s_4507f85befe0c4::t_d56588798c76a4 381-382
+apps/api/src/trust-portal/trust-access.service.spec.ts
+  s_4507f85befe0c4::t_01eeb56cbfa6ec 11,13-14,70,72-73,556-640,657,687-723,749-751
+apps/api/src/trust-portal/trust-access.service.ts
+  s_4507f85befe0c4::t_df8e5aa6be810a 189-190,197,203,1385-1389,1414-1415,1417,1462-1465
+apps/app/src/actions/trigger/heal-access-token.test.ts
+  s_4507f85befe0c4::t_a3f8f332baca12 1-177
+apps/app/src/actions/trigger/heal-access-token.ts
+  s_4507f85befe0c4::t_3a6daeeec0b22f 3-4,6-32,37-49,72-84
+apps/app/src/app/(app)/[orgId]/tasks/[taskId]/automation/[automationId]/actions/task-automation-actions.ts
+  s_4507f85befe0c4::t_393d3628060dbd 8-9,105-136,157-161,182-190,209-213,253-264,290-294,318-321,324-328,360-372,404-416,447-451,481-482,506-510,550-554,556-558,580-584,586-588
+apps/app/src/trigger/tasks/task/policy-acknowledgment-digest-helpers.ts
+  s_4507f85befe0c4::t_09cd16db272a15 112
+packages/docs/introduction.mdx
+  s_4507f85befe0c4::t_8b4f7987321366 2-3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f1ebca12ac79bfd8375a7100776032034952b125",
+  "prompts": {},
+  "sessions": {
+    "s_4507f85befe0c4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f9f5-36d4-7e61-b892-debb809f387f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "tofikwest <tofik@trycomp.ai>"
+    }
+  }
+}
