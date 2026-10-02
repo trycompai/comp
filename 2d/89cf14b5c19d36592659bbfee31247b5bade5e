@@ -1,0 +1,26 @@
+apps/app/src/app/(app)/[orgId]/integrations/[slug]/actions/batch-fix.test.ts
+  s_4507f85befe0c4::t_136a2c74911ab6 1-64
+  s_4507f85befe0c4::t_da893ae098be3a 65-81
+.github/workflows/security-regressions.yml
+  s_4507f85befe0c4::t_16f1658958a6e9 48
+apps/app/src/app/api/tasks/[taskId]/status/route.test.ts
+  s_4507f85befe0c4::t_0aa69599282deb 66-79
+apps/api/src/evidence-forms/evidence-forms.service.spec.ts
+  s_4507f85befe0c4::t_a6b5f1c009ac42 387-433
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2d89cf14b5c19d36592659bbfee31247b5bade5e",
+  "prompts": {},
+  "sessions": {
+    "s_4507f85befe0c4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f9f5-36d4-7e61-b892-debb809f387f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "tofikwest <tofik@trycomp.ai>"
+    }
+  }
+}
