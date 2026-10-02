@@ -1,0 +1,25 @@
+apps/portal/src/app/api/portal/mark-policy-completed/route.test.ts
+  a610da88f606d7de 1-147
+apps/portal/src/app/api/portal/mark-policy-completed/route.ts
+  a610da88f606d7de 2,13-24,55-67,69-70,72-87,89-95,97-100
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "fa68a198986c26e5b18f145beb4817ff1cdd01d8",
+  "prompts": {
+    "a610da88f606d7de": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6cc4163b-915a-4c8c-8fd6-cc849d7421e5",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 2982,
+      "overriden_lines": 0
+    }
+  }
+}

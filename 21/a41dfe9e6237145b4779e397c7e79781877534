@@ -1,0 +1,29 @@
+apps/api/src/frameworks/frameworks-source-loader.helper.ts
+  26176ac5d96c92b4 1-296
+apps/app/src/actions/organization/lib/load-framework-sources.ts
+  26176ac5d96c92b4 1-315
+apps/api/src/frameworks/frameworks-upsert.helper.ts
+  26176ac5d96c92b4 2,11,13,50-57,60-64,66-73,75-77,170,234-235,282-283,293,333-341,351-353
+apps/app/src/actions/organization/lib/initialize-organization.ts
+  26176ac5d96c92b4 2,53,55-59,62-65,68-72,74-81,83-85,312-313,330-345,349-355,358-364,373-381,391-393
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "21a41dfe9e6237145b4779e397c7e79781877534",
+  "prompts": {
+    "26176ac5d96c92b4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "abeb4418-acc4-4f48-83cb-0d885a485b29",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 2144,
+      "total_deletions": 233,
+      "accepted_lines": 1041,
+      "overriden_lines": 0
+    }
+  }
+}

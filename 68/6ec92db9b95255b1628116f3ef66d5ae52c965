@@ -1,0 +1,23 @@
+apps/app/src/app/(app)/[orgId]/people/devices/components/DeviceAgentDevicesList.tsx
+  86f272f74f83c098 202
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "686ec92db9b95255b1628116f3ef66d5ae52c965",
+  "prompts": {
+    "86f272f74f83c098": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2c1e6bd0-3267-4f83-bf4e-afe89837fa38",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 2,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  }
+}

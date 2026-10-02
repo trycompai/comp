@@ -1,0 +1,25 @@
+apps/app/src/app/(app)/[orgId]/frameworks/[frameworkInstanceId]/review-update/page.tsx
+  26176ac5d96c92b4 31-32,34,41
+apps/app/src/app/(app)/[orgId]/frameworks/[frameworkInstanceId]/review-update/components/ReviewUpdateContent.tsx
+  26176ac5d96c92b4 149
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "0cda4b376a6da57fef4b3739a2bd7399178133af",
+  "prompts": {
+    "26176ac5d96c92b4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "abeb4418-acc4-4f48-83cb-0d885a485b29",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 5,
+      "total_deletions": 4,
+      "accepted_lines": 1114,
+      "overriden_lines": 1
+    }
+  }
+}

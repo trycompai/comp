@@ -1,0 +1,167 @@
+apps/api/src/policies/policies.service.ts
+  ad16a9a71ebc3cfa 11,121-122,148-149,151,156-160,164,360-367
+packages/db/prisma/schema/finding.prisma
+  ad16a9a71ebc3cfa 13-20,22-33,49-52,55,60-61,67-86,91-95,97
+apps/api/src/framework-editor/control-template/control-template.service.ts
+  ad16a9a71ebc3cfa 57
+apps/api/src/findings/finding-notifier.service.spec.ts
+  ad16a9a71ebc3cfa 1-22,25,29-33,36,38-53,55,58-59,63-64,66-69,71,74-78,81-86,88-91,94-101,104-107,109-116,118-122,125
+packages/email/index.ts
+  ad16a9a71ebc3cfa 8
+apps/api/src/findings/findings.service.spec.ts
+  ad16a9a71ebc3cfa 1-128
+apps/app/src/trigger/tasks/onboarding/update-policy.ts
+  ad16a9a71ebc3cfa 30
+packages/docs/openapi.json
+  ad16a9a71ebc3cfa 13696,13698-13728,13768-13800,13810,13818,13838,13846,13873,13881,13903,13941,13949,13969,13977,13999,14007,19504-19658,19884,19886,19889,19891,19895-20089,24036,24040,24044,24060-24064,24066-24082,24085-24090,24102-24112,24115,24143,24149-24158,24166,25084-25160,25166-25170,25214-25234,25242-25333
+apps/api/src/findings/findings.controller.ts
+  ad16a9a71ebc3cfa 25-31,41,51-54,58-63,69-74,76-86,88-95,98-102,104,107,110-117,120-128,131,133-145,149,153-154,163,168,170,177-178,189-190,241,243-244,291-292,335-336
+packages/db/prisma/migrations/20260419150000_finding_area_general_targets/migration.sql
+  ad16a9a71ebc3cfa 1-11
+apps/api/src/frameworks/dto/link-controls.dto.ts
+  ad16a9a71ebc3cfa 1-14
+apps/api/src/findings/finding-notifier.service.ts
+  ad16a9a71ebc3cfa 1,4,25-53,55,60,81-82,93-103,106-119,122-131,134-139,148-150,155-156,162,164,168-169,171-197,201-222,226-228,230-232,240-242,251-254,261,283,294,301-302,304-319,321-341,352-354,356-358,360-367,370-373,375-378,381-401,403-412,414-422,425,430-431,437-438,440,442,447-486,488-491,493,499-506,508-509,514,516-517,521-522,525,527,535,538,541-551,553,555,574,579,583-596
+apps/api/src/findings/dto/create-finding.dto.ts
+  ad16a9a71ebc3cfa 10,17,19,23,25,30,38-67,69-70,73-78,80,92-94,97-101,103,107
+apps/app/src/hooks/use-permissions.ts
+  ad16a9a71ebc3cfa 81
+apps/api/src/audit/audit-log.utils.ts
+  ad16a9a71ebc3cfa 284-286,292,298,300-301,303
+packages/db/prisma/schema/requirement.prisma
+  ad16a9a71ebc3cfa 4-9,18,20
+apps/api/src/frameworks/dto/create-custom-framework.dto.ts
+  ad16a9a71ebc3cfa 1-21
+apps/api/src/controls/controls.controller.ts
+  ad16a9a71ebc3cfa 7,24-28,101-170
+apps/app/src/trigger/tasks/task/policy-acknowledgment-digest.test.ts
+  ad16a9a71ebc3cfa 1-682
+apps/api/src/findings/finding-audit.service.ts
+  ad16a9a71ebc3cfa 100,133,136
+packages/db/prisma/schema/framework.prisma
+  ad16a9a71ebc3cfa 6-13,20-21
+packages/db/prisma/migrations/20260419140000_finding_area_add_other/migration.sql
+  ad16a9a71ebc3cfa 1-6
+packages/db/prisma/migrations/20260417210000_split_custom_frameworks/migration.sql
+  ad16a9a71ebc3cfa 1-117
+apps/api/src/frameworks/dto/link-requirements.dto.ts
+  ad16a9a71ebc3cfa 1-14
+apps/app/src/trigger/tasks/task/policy-acknowledgment-digest.ts
+  ad16a9a71ebc3cfa 1-247
+apps/app/src/app/api/people/fleet-hosts/route.ts
+  ad16a9a71ebc3cfa 1-119
+apps/api/src/admin-organizations/admin-policies.controller.ts
+  ad16a9a71ebc3cfa 133,136-160,162-167
+packages/db/prisma/migrations/20260417200000_custom_frameworks_requirements/migration.sql
+  ad16a9a71ebc3cfa 1-20
+apps/api/src/tasks/tasks.service.ts
+  ad16a9a71ebc3cfa 78,81-83,321
+apps/app/src/trigger/tasks/task/policy-acknowledgment-digest-helpers.ts
+  ad16a9a71ebc3cfa 1-111
+apps/api/src/findings/findings.service.ts
+  ad16a9a71ebc3cfa 11-12,24-35,40,44,48,50-51,60-70,80,98-99,101,103-115,120-134,141,143,161-162,166-169,173,178,182,184,188-189,192,194-246,249,252-259,261-285,291,304-309,311,322-324,332,335,340,345,400-402,406,409,440,442,445-446,463,465-467,472
+apps/api/src/policies/policies.service.spec.ts
+  ad16a9a71ebc3cfa 1,10-11,13,22,25-27,38-47,51-53,55-60,69,71-81,90,95,101-121,124-161,165-192,195-200,202-242,245-305,308-314,316-340,342-347,349-352
+apps/app/src/hooks/use-findings-api.ts
+  ad16a9a71ebc3cfa 6-11,14-17,22,25,28-29,33-38,40,42,45,47,49-51,53-54,61-68,81-82,86-91,93,98,101,119-124,129,132-134,136,138,140-150,153-161,164-166,169,173-174,178-180,192-193,203,211-215,224,230,233-235,240,253-256,264-315
+packages/db/prisma/migrations/20260419120000_unified_findings/migration.sql
+  ad16a9a71ebc3cfa 1-52
+apps/api/src/findings/findings.controller.spec.ts
+  ad16a9a71ebc3cfa 1-2,4-5
+apps/api/src/frameworks/frameworks.service.ts
+  ad16a9a71ebc3cfa 14-22,25-59,71,80,114-126,130-134,143,185-206,218-392,394-409,455,461-467,469-474,506-507
+apps/api/src/controls/dto/create-control.dto.ts
+  ad16a9a71ebc3cfa 1,8,14-28,30,79-89
+apps/api/src/frameworks/frameworks.service.spec.ts
+  ad16a9a71ebc3cfa 12-30,80,157-235
+packages/db/prisma/schema/auth.prisma
+  ad16a9a71ebc3cfa 131
+packages/db/prisma/schema/device.prisma
+  ad16a9a71ebc3cfa 27-28
+packages/email/lib/check-unsubscribe.ts
+  ad16a9a71ebc3cfa 45,54-211
+apps/app/src/app/api/people/agent-devices/route.ts
+  ad16a9a71ebc3cfa 1-59
+apps/app/src/lib/types/framework.ts
+  ad16a9a71ebc3cfa 3,11-12
+packages/db/prisma/schema/policy.prisma
+  ad16a9a71ebc3cfa 51
+apps/api/src/frameworks/dto/create-custom-requirement.dto.ts
+  ad16a9a71ebc3cfa 1-21
+apps/app/src/trigger/tasks/task/policy-acknowledgment-digest-helpers.test.ts
+  ad16a9a71ebc3cfa 1-135
+packages/db/prisma/schema/custom-framework.prisma
+  ad16a9a71ebc3cfa 1-40
+apps/api/src/policies/policies.controller.ts
+  ad16a9a71ebc3cfa 228,231-257,259-264
+package.json
+  ad16a9a71ebc3cfa 22,27,36,42,49,51,93,100
+packages/db/prisma/schema/risk.prisma
+  ad16a9a71ebc3cfa 26
+packages/db/prisma/migrations/20260417220000_tenant_consistent_custom_fks/migration.sql
+  ad16a9a71ebc3cfa 1-51
+apps/api/src/framework-editor/control-template/control-template.controller.ts
+  ad16a9a71ebc3cfa 47-48
+apps/app/src/trigger/tasks/onboarding/onboard-organization.ts
+  ad16a9a71ebc3cfa 72-74
+apps/app/src/trigger/tasks/onboarding/generate-full-policies.ts
+  ad16a9a71ebc3cfa 35-37
+apps/api/src/controls/dto/link-requirements.dto.ts
+  ad16a9a71ebc3cfa 1-43
+apps/api/src/frameworks/frameworks.controller.ts
+  ad16a9a71ebc3cfa 25-28,60-61,113-167
+packages/email/emails/render.test.tsx
+  ad16a9a71ebc3cfa 9,41,142-203
+packages/db/prisma/schema/organization.prisma
+  ad16a9a71ebc3cfa 84-87
+apps/api/src/controls/dto/link-policies.dto.ts
+  ad16a9a71ebc3cfa 1-10
+apps/api/src/controls/dto/link-tasks.dto.ts
+  ad16a9a71ebc3cfa 1-10
+apps/app/src/hooks/use-frameworks.ts
+  ad16a9a71ebc3cfa 55-68,91
+packages/auth/src/permissions.ts
+  ad16a9a71ebc3cfa 74-75,110-111,143
+apps/api/src/framework-editor/control-template/control-template.service.spec.ts
+  ad16a9a71ebc3cfa 1-85
+apps/app/src/app/api/user-frameworks/route.ts
+  ad16a9a71ebc3cfa 35-39,68-70
+apps/api/src/trigger/policies/update-policy.ts
+  ad16a9a71ebc3cfa 28
+packages/email/emails/policy-acknowledgment-digest.tsx
+  ad16a9a71ebc3cfa 1-161
+apps/api/src/admin-organizations/admin-findings.controller.ts
+  ad16a9a71ebc3cfa 48-50
+apps/api/src/frameworks/frameworks-scores.helper.ts
+  ad16a9a71ebc3cfa 209-214,216,225-231,233-242,244-253,255-257,259-280,284-299
+apps/api/src/findings/dto/update-finding.dto.ts
+  ad16a9a71ebc3cfa 9,12,17,22-27,35
+apps/api/src/controls/dto/link-document-types.dto.ts
+  ad16a9a71ebc3cfa 1-19
+apps/api/src/controls/controls.service.ts
+  ad16a9a71ebc3cfa 1-6,19,24-26,77,81,84,94-111,131,167-173,178-215,221-228,230-258,260,263,265,268-293,295,297-351,355-417,421-578
+packages/db/prisma/src/.gitignore
+  ad16a9a71ebc3cfa 1-2
+packages/db/prisma/schema/vendor.prisma
+  ad16a9a71ebc3cfa 29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "deb2526836de2296157bd6431f5c68f908134997",
+  "prompts": {
+    "ad16a9a71ebc3cfa": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6d025b10-bb02-4b2d-a661-71d7e82a3bfe",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 25075,
+      "total_deletions": 3191,
+      "accepted_lines": 20633,
+      "overriden_lines": 3
+    }
+  }
+}

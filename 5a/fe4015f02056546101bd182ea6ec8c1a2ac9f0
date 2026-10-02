@@ -1,0 +1,29 @@
+apps/api/src/framework-editor/requirement/requirement.controller.ts
+  263130e366c41f12 14,27,35,42,49
+apps/api/src/framework-editor/framework/framework.controller.ts
+  263130e366c41f12 14,32,40,46,53,60,66,73,79,85,91,97,103,112,118
+apps/api/src/framework-editor/policy-template/policy-template.controller.ts
+  263130e366c41f12 14,28,40,46,56,63,73
+apps/api/src/framework-editor/control-template/control-template.controller.ts
+  263130e366c41f12 14,27,39,45,55,62,68,77,86,95,104,110
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "5afe4015f02056546101bd182ea6ec8c1a2ac9f0",
+  "prompts": {
+    "263130e366c41f12": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2fee9372-d179-43ad-b8b7-67856e032117",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 39,
+      "total_deletions": 4,
+      "accepted_lines": 39,
+      "overriden_lines": 0
+    }
+  }
+}

@@ -1,0 +1,27 @@
+apps/app/src/app/(app)/[orgId]/frameworks/components/FrameworksTable.tsx
+  8d9f3540e3044be5 39
+apps/app/src/app/(app)/[orgId]/overview/components/FrameworksOverview.test.tsx
+  8d9f3540e3044be5 31-34,73-96
+apps/app/src/app/(app)/[orgId]/overview/components/FrameworksOverview.tsx
+  8d9f3540e3044be5 47-50
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "a5a7f80db5fa9eea161e81ec0f30ca9fdcd9cd11",
+  "prompts": {
+    "8d9f3540e3044be5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019d8893-7f38-7081-8759-aba5e9f6b35c",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 21521,
+      "total_deletions": 1,
+      "accepted_lines": 21521,
+      "overriden_lines": 0
+    }
+  }
+}

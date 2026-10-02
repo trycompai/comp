@@ -1,0 +1,29 @@
+packages/email/emails/render.test.tsx
+  a610da88f606d7de 9,41
+packages/email/index.ts
+  a610da88f606d7de 8
+packages/email/emails/policy-acknowledgment-digest.tsx
+  a610da88f606d7de 35,37,56,59-60,65,93,97
+apps/api/src/policies/policies.service.spec.ts
+  a610da88f606d7de 70
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "5141b5328fa658767ec4e6d752c70368de5c562d",
+  "prompts": {
+    "a610da88f606d7de": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6cc4163b-915a-4c8c-8fd6-cc849d7421e5",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 12,
+      "overriden_lines": 0
+    }
+  }
+}

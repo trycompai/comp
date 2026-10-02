@@ -1,0 +1,29 @@
+apps/api/src/browserbase/browserbase.service.ts
+  bd578efdc41c66bc 15,324,568,583,721,738
+apps/api/src/browserbase/run-error-formatter.ts
+  bd578efdc41c66bc 14-17,19,21,24-26,28-34,38
+apps/api/src/browserbase/screenshot-overlay.ts
+  bd578efdc41c66bc 113-114,116
+apps/api/src/browserbase/run-error-formatter.spec.ts
+  bd578efdc41c66bc 1,46-64
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "bc19ab1eee568203722ae6a10b291692bf619b43",
+  "prompts": {
+    "bd578efdc41c66bc": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e6c163ee-6bd9-41ff-b295-830dc0e3974b",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 46,
+      "total_deletions": 19,
+      "accepted_lines": 46,
+      "overriden_lines": 0
+    }
+  }
+}

@@ -1,0 +1,31 @@
+apps/api/src/device-agent/device-agent.controller.ts
+  bceff394c42f40bd 12,31,134,138-142
+apps/api/src/auth/types.ts
+  bceff394c42f40bd 19
+apps/api/src/auth/hybrid-auth.guard.ts
+  bceff394c42f40bd 221
+apps/api/src/device-agent/device-agent-auth.service.ts
+  bceff394c42f40bd 104,108,127-143
+apps/api/src/device-agent/device-agent-auth.service.spec.ts
+  bceff394c42f40bd 22-24,207-211,220-227,231,251-258,261-265,278-286,289-293,311-315,319-323,334-456
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "f6e98515e74a12ec6b806bab58a983053acef0b9",
+  "prompts": {
+    "bceff394c42f40bd": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "97bc2f6d-8072-4294-a180-04c6dec511a4",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 649,
+      "total_deletions": 1334,
+      "accepted_lines": 258,
+      "overriden_lines": 0
+    }
+  }
+}

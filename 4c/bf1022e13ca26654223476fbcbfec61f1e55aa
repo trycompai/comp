@@ -1,0 +1,23 @@
+packages/db/prisma/schema/organization.prisma
+  65d8a25ea2dc2ce8 12-13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "4cbf1022e13ca26654223476fbcbfec61f1e55aa",
+  "prompts": {
+    "65d8a25ea2dc2ce8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "42ecccd4-f855-4d39-b1f3-b2c7fa390155",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 2,
+      "total_deletions": 0,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    }
+  }
+}

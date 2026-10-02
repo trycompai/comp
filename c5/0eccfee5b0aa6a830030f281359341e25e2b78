@@ -1,0 +1,23 @@
+packages/email/emails/policy-acknowledgment-digest.tsx
+  e9a81173655a1b40 47-49,60-61,97-98
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "c50eccfee5b0aa6a830030f281359341e25e2b78",
+  "prompts": {
+    "e9a81173655a1b40": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6d508305-6da9-4a2a-b146-998303e54368",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 168,
+      "total_deletions": 166,
+      "accepted_lines": 7,
+      "overriden_lines": 0
+    }
+  }
+}

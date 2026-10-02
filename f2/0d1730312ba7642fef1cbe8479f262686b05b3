@@ -1,0 +1,27 @@
+apps/api/src/frameworks/framework-versioning/framework-sync-apply.ts
+  26176ac5d96c92b4 149,156,169,194,210,300-310
+apps/api/src/frameworks/framework-versioning/framework-rollback.service.ts
+  26176ac5d96c92b4 138-142
+apps/api/src/frameworks/framework-versioning/framework-sync-apply.spec.ts
+  26176ac5d96c92b4 190,193,216
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "f20d1730312ba7642fef1cbe8479f262686b05b3",
+  "prompts": {
+    "26176ac5d96c92b4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "abeb4418-acc4-4f48-83cb-0d885a485b29",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 207,
+      "total_deletions": 809,
+      "accepted_lines": 660,
+      "overriden_lines": 0
+    }
+  }
+}

@@ -1,0 +1,27 @@
+apps/app/src/trigger/tasks/task/policy-acknowledgment-digest.test.ts
+  a610da88f606d7de 18,31,40,50,59,107-111,322-324,329-333,397-440
+packages/email/lib/check-unsubscribe.ts
+  a610da88f606d7de 45,54-213
+apps/app/src/trigger/tasks/task/policy-acknowledgment-digest.ts
+  a610da88f606d7de 6,20-33,88,100-106,108-109,111-113,115,132-159,161-162,164,169,183-188,190-196
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "947be25978828c34fbddd26a19cbb6e8f4ae7ace",
+  "prompts": {
+    "a610da88f606d7de": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6cc4163b-915a-4c8c-8fd6-cc849d7421e5",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Mariano Fuentes",
+      "messages": [],
+      "total_additions": 961,
+      "total_deletions": 699,
+      "accepted_lines": 302,
+      "overriden_lines": 0
+    }
+  }
+}
