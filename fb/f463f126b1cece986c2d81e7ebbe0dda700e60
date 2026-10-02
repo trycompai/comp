@@ -1,0 +1,187 @@
+.github/SECURITY_CI.md
+  s_fe639e496e881c::t_9e49920fd5e0b4 11-16
+.github/workflows/sdk_publish.yaml
+  s_fe639e496e881c::t_7f524d5cc6c8ae 4-6,25,31-33,37,42-43
+.github/workflows/security-regressions.yml
+  s_fe639e496e881c::t_51f26cf0d1b714 1-72
+apps/api/.env.example
+  s_fe639e496e881c::t_add10ce855fcca 46-47,87-90
+apps/api/src/auth/auth.controller.spec.ts
+  s_fe639e496e881c::t_b9040dd682a926 13-15,27
+apps/api/src/auth/auth.controller.ts
+  s_fe639e496e881c::t_98371de0a2faa7 10-16,24,33-71
+apps/api/src/auth/hybrid-auth-active-membership.spec.ts
+  s_fe639e496e881c::t_911bd886fff560 1-207
+apps/api/src/auth/hybrid-auth.guard.ts
+  s_fe639e496e881c::t_680d9c61e1ce00 221,333
+apps/api/src/auth/task-status-access.spec.ts
+  s_fe639e496e881c::t_450860c2a12737 1-104
+apps/api/src/cloud-security/cloud-security.module.ts
+  s_fe639e496e881c::t_3aa7c46e6f242e 10-11,28-32,42
+apps/api/src/cloud-security/dto/remediation-batch.dto.ts
+  s_fe639e496e881c::t_b04947b4d8ba4b 1-73
+apps/api/src/cloud-security/remediation-batch.controller.spec.ts
+  s_fe639e496e881c::t_3c742d2f3e7440 1-164
+apps/api/src/cloud-security/remediation-batch.controller.ts
+  s_fe639e496e881c::t_2abba26243aff9 1-116
+apps/api/src/cloud-security/remediation-batch.races.spec.ts
+  s_fe639e496e881c::t_26518ad824f11c 1-217
+apps/api/src/cloud-security/remediation-batch.service.spec.ts
+  s_fe639e496e881c::t_9f8916355bbe10 1-283
+apps/api/src/cloud-security/remediation-batch.service.ts
+  s_fe639e496e881c::t_dc672ba612886c 1-237
+apps/api/src/evidence-forms/evidence-forms-csv.service.spec.ts
+  s_fe639e496e881c::t_36bcc13b7b1639 1-240
+apps/api/src/evidence-forms/evidence-forms-csv.ts
+  s_fe639e496e881c::t_1e69df7474ab76 1-93
+apps/api/src/evidence-forms/evidence-forms.service.spec.ts
+  s_fe639e496e881c::t_1189085e2443ac 81,84,275-435
+apps/api/src/evidence-forms/evidence-forms.service.ts
+  s_fe639e496e881c::t_1b13a3786e564f 23,150-151,153,155-167,169-186,190-217,385-388,444-447,552-556,785-791
+apps/api/src/organization/organization.controller.spec.ts
+  s_fe639e496e881c::t_ff1b70d806d54f 120-123
+apps/api/src/organization/organization.controller.ts
+  s_fe639e496e881c::t_421d194006bee1 67-70
+apps/api/src/organization/organization.service.spec.ts
+  s_fe639e496e881c::t_d1060889e53a8a 23,25,97-157
+apps/api/src/organization/organization.service.ts
+  s_fe639e496e881c::t_11b73ccc897053 90-100,150-152,465-471,476-482
+apps/api/src/questionnaire/questionnaire.controller.spec.ts
+  s_fe639e496e881c::t_41acdf19708a87 2,59,358-443
+apps/api/src/questionnaire/questionnaire.controller.ts
+  s_fe639e496e881c::t_bc4b38e06b9296 6,516-525
+apps/api/src/trust-portal/trust-access.service.ts
+  s_fe639e496e881c::t_55d174e397f599 1571-1588
+apps/api/src/vector-store/lib/core/find-similar.spec.ts
+  s_fe639e496e881c::t_c4c7882a294d3e 145-148,163-223
+apps/api/src/vector-store/lib/core/find-similar.ts
+  s_fe639e496e881c::t_ffc859ab607320 41-45,71-72,159-160
+apps/api/src/vector-store/lib/sync/sync-organization.ts
+  s_fe639e496e881c::t_f66985b8639eaa 8,192-195
+apps/app/.env.example
+  s_fe639e496e881c::t_d9415d0279429e 9
+apps/app/src/actions/research-vendor.ts
+  s_fe639e496e881c::t_dacda85a449460 17,19-30
+apps/app/src/app/(app)/[orgId]/cloud-tests/actions/batch-fix.test.ts
+  s_fe639e496e881c::t_a619a11b06fdb8 1-131
+apps/app/src/app/(app)/[orgId]/cloud-tests/actions/batch-fix.ts
+  s_fe639e496e881c::t_793468161c6613 7-31,45-48,50-58,61,64-72,75,78-82,87,98-102,114,116-120,125-134,157,164,203
+apps/app/src/app/(app)/[orgId]/cloud-tests/actions/run-tests.ts
+  s_fe639e496e881c::t_4879d41b9663cc 39-46
+apps/app/src/app/(app)/[orgId]/cloud-tests/actions/single-fix.ts
+  s_fe639e496e881c::t_e597bbc6665b76 31-42,79-90
+apps/app/src/app/(app)/[orgId]/integrations/[slug]/actions/batch-fix.test.ts
+  s_fe639e496e881c::t_b1924af91ac1de 1-81
+apps/app/src/app/(app)/[orgId]/integrations/[slug]/actions/batch-fix.ts
+  s_fe639e496e881c::t_83450233efcac9 7-31,45-48,50-58,61,64-72,75,78-82,87,98-102,114,116-120,125-134,157,164,203
+apps/app/src/app/(app)/[orgId]/layout.tsx
+  s_fe639e496e881c::t_b7d12c473f72d7 120-124,129
+apps/app/src/app/(app)/[orgId]/policies/all/actions/regenerate-full-policies.ts
+  s_fe639e496e881c::t_fc59edf56aee11 24-28
+apps/app/src/app/(app)/onboarding/actions/complete-onboarding.ts
+  s_fe639e496e881c::t_3a93f117c26bf0 198-202,216-220
+apps/app/src/app/(app)/setup/actions/create-organization.ts
+  s_fe639e496e881c::t_a3e9450852d157 149-153,170-174
+apps/app/src/app/api/cloud-tests/legacy-scan/route.ts
+  s_fe639e496e881c::t_f2df7d27246afa 41
+apps/app/src/app/api/risks/[riskId]/auto-link/route.ts
+  s_fe639e496e881c::t_15a9373581b82a 46
+apps/app/src/app/api/risks/[riskId]/regenerate-mitigation/route.ts
+  s_fe639e496e881c::t_10d34e3562e40b 76
+apps/app/src/app/api/risks/[riskId]/relink/route.ts
+  s_fe639e496e881c::t_e10ba55a7d1433 45
+apps/app/src/app/api/tasks/[taskId]/status/access.ts
+  s_fe639e496e881c::t_6bedd502452b30 1-89
+apps/app/src/app/api/tasks/[taskId]/status/route.test.ts
+  s_fe639e496e881c::t_a12faf92399e38 1-154
+apps/app/src/app/api/tasks/[taskId]/status/route.ts
+  s_fe639e496e881c::t_312c4d46b39342 1,4,6,8-16,24,32,36-40,42
+apps/app/src/app/api/vendors/[vendorId]/auto-link/route.ts
+  s_fe639e496e881c::t_1598413732150d 46
+apps/app/src/app/api/vendors/[vendorId]/regenerate-mitigation/route.ts
+  s_fe639e496e881c::t_1ec2d5d9990c4d 76
+apps/app/src/app/api/vendors/[vendorId]/relink/route.ts
+  s_fe639e496e881c::t_6151417eaed700 45
+apps/app/src/app/api/vendors/research/route.ts
+  s_fe639e496e881c::t_b8b4f3d86767c8 26-32,36
+apps/app/src/instrumentation-client.ts
+  s_fe639e496e881c::t_ceaf16e8d3503b 23-25,27-28
+apps/app/src/trigger/tasks/cloud-security/remediate-batch-helpers.test.ts
+  s_fe639e496e881c::t_575ca5bf8561ba 7,52,89,95,128-129,155,171-172,181-214
+apps/app/src/trigger/tasks/cloud-security/remediate-batch-helpers.ts
+  s_fe639e496e881c::t_8017df6e9bd16f 7,35,166-169,185,187-190,192-196,198-199,208
+apps/app/src/trigger/tasks/cloud-security/remediate-batch.test.ts
+  s_fe639e496e881c::t_3df826ae5e7e06 1-89
+apps/app/src/trigger/tasks/cloud-security/remediate-batch.ts
+  s_fe639e496e881c::t_b7939285911738 19,23-37,43-46
+apps/mcp-server/.npmignore
+  s_fe639e496e881c::t_ae2e43a27c5a35 14
+apps/mcp-server/.speakeasy/gen.lock
+  s_fe639e496e881c::t_88e2a4e964b20a 8,7790
+apps/mcp-server/.speakeasy/gen.yaml
+  s_fe639e496e881c::t_5aa20f08d56620 34
+apps/mcp-server/README.md
+  s_fe639e496e881c::t_13b8c9c41e37a1 5-8,37,39,51,64,78,86,105,116,130,144,168
+apps/mcp-server/manifest.json
+  s_fe639e496e881c::t_4d2a633267b775 4
+apps/mcp-server/package-lock.json
+  s_fe639e496e881c::t_ffc0bfbb59642b 3,9
+apps/mcp-server/package.json
+  s_fe639e496e881c::t_ac9ffcf86319c5 3,17-22
+apps/mcp-server/src/landing-page.ts
+  s_fe639e496e881c::t_5df9fc3edab710 933
+apps/mcp-server/src/lib/config.ts
+  s_fe639e496e881c::t_d5263a65758d58 68,71
+apps/mcp-server/src/mcp-server/cli/serve/command.ts
+  s_fe639e496e881c::t_81298e652d5df9 24-30
+apps/mcp-server/src/mcp-server/cli/serve/impl.ts
+  s_fe639e496e881c::t_c13fd2ceb987c1 7,19,23,39-43,47-56,75,92
+apps/mcp-server/src/mcp-server/cli/serve/security.ts
+  s_fe639e496e881c::t_5f3297089b8ca6 1-45
+apps/mcp-server/src/mcp-server/mcp-server.ts
+  s_fe639e496e881c::t_6752ccba1da1ea 24
+apps/mcp-server/src/mcp-server/server.ts
+  s_fe639e496e881c::t_aa3773a764abed 407
+apps/mcp-server/tests/serve-artifact.test.ts
+  s_fe639e496e881c::t_2386b91adbfd96 1-184
+apps/mcp-server/tests/serve-security.test.ts
+  s_fe639e496e881c::t_efe0dc67a91b69 1-88
+apps/portal/src/app/(app)/(home)/[orgId]/policy/[policyId]/PolicyViewer.tsx
+  s_fe639e496e881c::t_e8a5650a3a5464 8
+apps/portal/src/app/(app)/(home)/[orgId]/policy/[policyId]/page.test.tsx
+  s_fe639e496e881c::t_71d1f149a06cd9 1-215
+apps/portal/src/app/(app)/(home)/[orgId]/policy/[policyId]/page.tsx
+  s_fe639e496e881c::t_3d036c355ef0d5 41-53,55-71
+apps/portal/src/app/api/portal/accept-policies/route.ts
+  s_fe639e496e881c::t_ff02036a3c3577 38,53-57,73
+apps/portal/src/app/api/portal/mark-policy-completed/route.ts
+  s_fe639e496e881c::t_72d9b0808cb7d8 32-39,43-44,50
+apps/portal/src/app/api/portal/policy-access.test.ts
+  s_fe639e496e881c::t_a1e5d5c5895d9a 1-154
+apps/portal/src/app/api/portal/policy-pdf-url/route.ts
+  s_fe639e496e881c::t_d54c40d5253d6a 2,44,57,59,80-81
+apps/portal/src/instrumentation-client.ts
+  s_fe639e496e881c::t_1c4d1080dbec91 18-20,22-23
+packages/email/lib/unsubscribe.test.ts
+  s_fe639e496e881c::t_194358d5d54027 1-62
+packages/email/lib/unsubscribe.ts
+  s_fe639e496e881c::t_9db43c37d2cb31 3-16,42
+turbo.json
+  s_fe639e496e881c::t_4101aaef3ca962 22-23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fbf463f126b1cece986c2d81e7ebbe0dda700e60",
+  "prompts": {},
+  "sessions": {
+    "s_fe639e496e881c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f9f5-b4f6-7f43-b1fa-0903beedf0be",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "tofikwest <tofik@trycomp.ai>"
+    }
+  }
+}
