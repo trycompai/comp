@@ -41,6 +41,7 @@ export async function POST(req: NextRequest) {
     where: {
       userId: session.user.id,
       organizationId: policy.organizationId,
+      isActive: true,
       deactivated: false,
     },
   });

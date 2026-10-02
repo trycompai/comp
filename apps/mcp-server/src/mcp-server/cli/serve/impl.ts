@@ -4,7 +4,7 @@
 
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
-import express from "express";
+import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js";
 import { LocalContext } from "../../cli.js";
 import {
   ConsoleLoggerLevel,
@@ -16,6 +16,7 @@ import { buildAnnotationFilter } from "../../tools.js";
 import { buildSDK } from "../../tools.js";
 
 import { landingPageExpress } from "../../../landing-page.js";
+import { getRequestSecurityError, requiresRequestCredentials } from "./security.js";
 
 interface ServeCommandFlags extends MCPServerFlags {
   readonly port: number;
@@ -33,34 +34,23 @@ export async function main(this: LocalContext, flags: ServeCommandFlags) {
   await startStreamableHTTP(flags);
 }
 
-function isAllowedOrigin(origin: string): boolean {
-  let originURL: URL;
-  try {
-    originURL = new URL(origin);
-  } catch {
-    return false;
-  }
-
-  return (
-    originURL.hostname === "localhost" ||
-    originURL.hostname === "127.0.0.1" ||
-    originURL.hostname === "[::1]"
-  );
-}
-
 async function startStreamableHTTP(cliFlags: ServeCommandFlags) {
   const logger = createConsoleLogger(cliFlags["log-level"]);
-  const app = express();
-
-  app.use(express.json());
+  // The SDK validates Host on loopback, preventing DNS rebinding.
+  const app = createMcpExpressApp({ host: cliFlags.host });
+  const requireCredentials = requiresRequestCredentials({
+    host: cliFlags.host,
+    disableStaticAuth: cliFlags["disable-static-auth"],
+  });
 
   app.post("/mcp", async (req, res) => {
-    const originHeader = req.headers.origin;
-    const origin = Array.isArray(originHeader)
-      ? originHeader[0]
-      : originHeader;
-    if (origin !== undefined && !isAllowedOrigin(origin)) {
-      res.status(403).json({ error: "Origin not allowed" });
+    const securityError = getRequestSecurityError({
+      origin: req.headers.origin,
+      apiKey: req.headers["apikey"],
+      requireCredentials,
+    });
+    if (securityError) {
+      res.status(securityError.status).json({ error: securityError.message });
       return;
     }
 
@@ -82,7 +72,7 @@ async function startStreamableHTTP(cliFlags: ServeCommandFlags) {
       annotationFilter: buildAnnotationFilter(cliFlags["tool-annotations"]),
       serverURL: cliFlags["server-url"],
       getSDK: () =>
-        buildSDK(headers, cliFlags, cliFlags["disable-static-auth"], logger),
+        buildSDK(headers, cliFlags, requireCredentials, logger),
       serverIdx: cliFlags["server-index"],
     });
 

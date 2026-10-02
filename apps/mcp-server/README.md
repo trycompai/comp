@@ -2,6 +2,10 @@
 
 Model Context Protocol (MCP) Server for the *@trycompai/mcp-server* API.
 
+This repository maintains the legacy server. Install `@trycompai/mcp-server@legacy` after its maintenance release is published; the `latest` tag belongs to comp-v2. Version 0.2.8 is prepared here for that release.
+
+For HTTP mode, the default loopback binding supports a static CLI API key. Any non-loopback binding requires every MCP request to supply its own `apikey` header; the operator’s CLI key is never shared with network clients. Browser origins must be loopback HTTP(S), and loopback servers validate the Host header.
+
 [![Built by Speakeasy](https://img.shields.io/badge/Built_by-SPEAKEASY-374151?style=for-the-badge&labelColor=f3f4f6)](https://www.speakeasy.com/?utm_source=@trycompai/mcp-server&utm_campaign=mcp-typescript)
 [![License: MIT](https://img.shields.io/badge/LICENSE_//_MIT-3b5bdb?style=for-the-badge&labelColor=eff6ff)](https://opensource.org/licenses/MIT)
 
@@ -30,9 +34,9 @@ Comp AI API: Compliance automation API for SOC 2, ISO 27001, HIPAA, GDPR, eviden
 <details>
 <summary>Claude Desktop</summary>
 
-Install the MCP server as a Desktop Extension using the pre-built [`mcp-server.mcpb`](https://github.com/trycompai/comp/releases/download/v0.2.5/mcp-server.mcpb) file:
+Install the MCP server as a Desktop Extension using the pre-built [`mcp-server.mcpb`](https://github.com/trycompai/comp/releases/download/apps/mcp-server/v0.2.8/mcp-server.mcpb) file:
 
-Simply drag and drop the [`mcp-server.mcpb`](https://github.com/trycompai/comp/releases/download/v0.2.5/mcp-server.mcpb) file onto Claude Desktop to install the extension.
+Simply drag and drop the [`mcp-server.mcpb`](https://github.com/trycompai/comp/releases/download/apps/mcp-server/v0.2.8/mcp-server.mcpb) file onto Claude Desktop to install the extension.
 
 The MCP bundle package includes the MCP server and all necessary configuration. Once installed, the server will be available without additional setup.
 
@@ -44,7 +48,7 @@ The MCP bundle package includes the MCP server and all necessary configuration. 
 <details>
 <summary>Cursor</summary>
 
-[![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](cursor://anysphere.cursor-deeplink/mcp/install?name=CompAi&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyJAdHJ5Y29tcGFpL21jcC1zZXJ2ZXIiLCJzdGFydCIsIi0tYXBpa2V5IiwiIl19)
+[![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](cursor://anysphere.cursor-deeplink/mcp/install?name=CompAi&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyJAdHJ5Y29tcGFpL21jcC1zZXJ2ZXJAbGVnYWN5Iiwic3RhcnQiLCItLWFwaWtleSIsIiJdfQ==)
 
 Or manually:
 
@@ -57,7 +61,7 @@ Or manually:
 {
   "command": "npx",
   "args": [
-    "@trycompai/mcp-server",
+    "@trycompai/mcp-server@legacy",
     "start",
     "--apikey",
     ""
@@ -71,7 +75,7 @@ Or manually:
 <summary>Claude Code CLI</summary>
 
 ```bash
-claude mcp add CompAi -- npx -y @trycompai/mcp-server start --apikey 
+claude mcp add CompAi -- npx -y @trycompai/mcp-server@legacy start --apikey
 ```
 
 </details>
@@ -79,7 +83,7 @@ claude mcp add CompAi -- npx -y @trycompai/mcp-server start --apikey
 <summary>Gemini</summary>
 
 ```bash
-gemini mcp add CompAi -- npx -y @trycompai/mcp-server start --apikey 
+gemini mcp add CompAi -- npx -y @trycompai/mcp-server@legacy start --apikey
 ```
 
 </details>
@@ -98,7 +102,7 @@ Refer to [Official Windsurf documentation](https://docs.windsurf.com/windsurf/ca
 {
   "command": "npx",
   "args": [
-    "@trycompai/mcp-server",
+    "@trycompai/mcp-server@legacy",
     "start",
     "--apikey",
     ""
@@ -109,7 +113,7 @@ Refer to [Official Windsurf documentation](https://docs.windsurf.com/windsurf/ca
 <details>
 <summary>VS Code</summary>
 
-[![Install in VS Code](https://img.shields.io/badge/VS_Code-VS_Code?style=flat-square&label=Install%20CompAi%20MCP&color=0098FF)](vscode://ms-vscode.vscode-mcp/install?name=CompAi&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyJAdHJ5Y29tcGFpL21jcC1zZXJ2ZXIiLCJzdGFydCIsIi0tYXBpa2V5IiwiIl19)
+[![Install in VS Code](https://img.shields.io/badge/VS_Code-VS_Code?style=flat-square&label=Install%20CompAi%20MCP&color=0098FF)](vscode://ms-vscode.vscode-mcp/install?name=CompAi&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyJAdHJ5Y29tcGFpL21jcC1zZXJ2ZXJAbGVnYWN5Iiwic3RhcnQiLCItLWFwaWtleSIsIiJdfQ==)
 
 Or manually:
 
@@ -123,7 +127,7 @@ Refer to [Official VS Code documentation](https://code.visualstudio.com/api/exte
 {
   "command": "npx",
   "args": [
-    "@trycompai/mcp-server",
+    "@trycompai/mcp-server@legacy",
     "start",
     "--apikey",
     ""
@@ -137,7 +141,7 @@ Refer to [Official VS Code documentation](https://code.visualstudio.com/api/exte
 To start the MCP server, run:
 
 ```bash
-npx @trycompai/mcp-server start --apikey 
+npx @trycompai/mcp-server@legacy start --apikey
 ```
 
 For a full list of server arguments, run:
@@ -161,7 +165,7 @@ To enable dynamic mode, pass the `--mode dynamic` flag when starting your server
   "mcpServers": {
     "CompAi": {
       "command": "npx",
-      "args": ["@trycompai/mcp-server", "start", "--mode", "dynamic"],
+      "args": ["@trycompai/mcp-server@legacy", "start", "--mode", "dynamic"],
       // ... other server arguments
     }
   }

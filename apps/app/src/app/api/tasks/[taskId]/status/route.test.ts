@@ -1,119 +1,140 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Mock auth
-vi.mock('@/utils/auth', () => ({
-  auth: {
-    api: {
-      getSession: vi.fn(),
-    },
-  },
-}));
+const mocks = vi.hoisted(() => ({ getAccess: vi.fn(), retrieve: vi.fn() }));
+vi.mock('@/lib/api-server', () => ({ serverApi: { get: mocks.getAccess } }));
+vi.mock('@trigger.dev/sdk', () => ({ runs: { retrieve: mocks.retrieve } }));
 
-// Mock the Trigger.dev SDK
-vi.mock('@trigger.dev/sdk', () => ({
-  runs: {
-    retrieve: vi.fn(),
-  },
-}));
-
-// Import after mocks are declared
 import { GET } from './route';
-import { auth } from '@/utils/auth';
-import { runs } from '@trigger.dev/sdk';
 
-const mockGetSession = vi.mocked(auth.api.getSession);
-const mockRunsRetrieve = vi.mocked(runs.retrieve);
-
-function createRequest(): NextRequest {
-  return new NextRequest('http://localhost:3000/api/tasks/run_123/status');
-}
-
-function createParams(taskId: string): { params: Promise<{ taskId: string }> } {
-  return { params: Promise.resolve({ taskId }) };
-}
+const access = (permissions: Record<string, string[]> = { policy: ['read'] }) => ({
+  status: 200,
+  data: { organizationId: 'org_mine', permissions },
+});
+const run = () => ({
+  taskIdentifier: 'update-policy',
+  status: 'COMPLETED',
+  output: { result: 'private policy content' },
+  tags: ['org_mine'],
+  payload: { organizationId: 'org_mine' },
+});
+const request = () => new NextRequest('http://localhost/api/tasks/run_123/status');
+const params = (taskId = 'run_123') => ({ params: Promise.resolve({ taskId }) });
 
 describe('GET /api/tasks/[taskId]/status', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    mocks.getAccess.mockResolvedValue(access());
+    mocks.retrieve.mockResolvedValue(run());
   });
 
-  it('should return 401 when not authenticated', async () => {
-    mockGetSession.mockResolvedValue(null as any);
+  it.each([401, 403])(
+    'denies an API-rejected session (%s) before retrieving a run',
+    async (status) => {
+      mocks.getAccess.mockResolvedValue({ status, error: 'No active membership' });
+      const response = await GET(request(), params());
+      expect(response.status).toBe(status);
+      expect(mocks.retrieve).not.toHaveBeenCalled();
+      expect(await response.json()).not.toHaveProperty('output');
+    },
+  );
 
-    const response = await GET(createRequest(), createParams('run_123'));
-    const data = await response.json();
-
-    expect(response.status).toBe(401);
-    expect(data.error).toBe('Unauthorized');
-    expect(mockRunsRetrieve).not.toHaveBeenCalled();
-  });
-
-  it('should return 401 when there is no active organization', async () => {
-    mockGetSession.mockResolvedValue({
-      session: { activeOrganizationId: null },
-    } as any);
-
-    const response = await GET(createRequest(), createParams('run_123'));
-    const data = await response.json();
-
-    expect(response.status).toBe(401);
-    expect(data.error).toBe('Unauthorized');
-  });
-
-  it('should return 404 (not leaking existence) when the run belongs to another organization', async () => {
-    mockGetSession.mockResolvedValue({
-      session: { activeOrganizationId: 'org_mine' },
-    } as any);
-    mockRunsRetrieve.mockResolvedValue({
-      status: 'COMPLETED',
-      output: { secret: 'someone else policy' },
-      error: undefined,
-      tags: ['org_other'],
-    } as any);
-
-    const response = await GET(createRequest(), createParams('run_123'));
-    const data = await response.json();
-
-    expect(response.status).toBe(404);
-    expect(data.error).toBe('Run not found');
-    expect(data.output).toBeUndefined();
-  });
-
-  it('should return 404 when the run has no tags at all', async () => {
-    mockGetSession.mockResolvedValue({
-      session: { activeOrganizationId: 'org_mine' },
-    } as any);
-    mockRunsRetrieve.mockResolvedValue({
-      status: 'COMPLETED',
-      output: { secret: 'untagged run' },
-      error: undefined,
-      tags: [],
-    } as any);
-
-    const response = await GET(createRequest(), createParams('run_123'));
-    const data = await response.json();
-
-    expect(response.status).toBe(404);
-    expect(data.error).toBe('Run not found');
-  });
-
-  it('should return the run status when the run is tagged with the caller organization', async () => {
-    mockGetSession.mockResolvedValue({
-      session: { activeOrganizationId: 'org_mine' },
-    } as any);
-    mockRunsRetrieve.mockResolvedValue({
-      status: 'COMPLETED',
-      output: { result: 'my own output' },
-      error: undefined,
-      tags: ['org_mine'],
-    } as any);
-
-    const response = await GET(createRequest(), createParams('run_123'));
-    const data = await response.json();
-
+  it('authorizes membership and permissions through the API', async () => {
+    const response = await GET(request(), params());
+    expect(mocks.getAccess).toHaveBeenCalledWith('/v1/auth/task-status-access');
     expect(response.status).toBe(200);
-    expect(data.status).toBe('COMPLETED');
-    expect(data.output).toEqual({ result: 'my own output' });
+    expect(await response.json()).toEqual({ status: 'COMPLETED', output: run().output });
+  });
+
+  it('allows an auditor with resource read permission without write permission', async () => {
+    mocks.getAccess.mockResolvedValue(access({ policy: ['read'], app: ['read'] }));
+    expect((await GET(request(), params())).status).toBe(200);
+  });
+
+  it('denies a same-organization user without policy read access', async () => {
+    mocks.getAccess.mockResolvedValue(access({ app: ['read'], vendor: ['read'] }));
+    const response = await GET(request(), params());
+    expect(response.status).toBe(404);
+    expect(await response.json()).toEqual({ error: 'Run not found' });
+  });
+
+  it('does not treat write permission alone as read permission', async () => {
+    mocks.getAccess.mockResolvedValue(access({ policy: ['update'] }));
+    expect((await GET(request(), params())).status).toBe(404);
+  });
+
+  it.each([
+    { tags: ['org_other'] },
+    { tags: [] },
+    { tags: ['org_mine', 'org_other'] },
+    { tags: ['org_mine', 'org:org_other'] },
+    { tags: null },
+    { taskIdentifier: 'unknown-task' },
+    { taskIdentifier: 'constructor' },
+    { taskIdentifier: undefined },
+    { payload: { organizationId: 'org_other' } },
+    { payload: { organizationId: 'org_mine', scoreContext: { organizationId: 'org_other' } } },
+    { payload: undefined },
+  ])('hides unowned, ambiguous, unknown or malformed runs: %j', async (override) => {
+    mocks.retrieve.mockResolvedValue({ ...run(), ...override });
+    const response = await GET(request(), params());
+    expect(response.status).toBe(404);
+    expect(await response.json()).toEqual({ error: 'Run not found' });
+  });
+
+  it('supports organization tags added by the API workers', async () => {
+    mocks.retrieve.mockResolvedValue({ ...run(), tags: ['org:org_mine', 'policy'] });
+    expect((await GET(request(), params())).status).toBe(200);
+  });
+
+  it('requires every resource permission for tasks with combined output', async () => {
+    mocks.retrieve.mockResolvedValue({
+      ...run(),
+      taskIdentifier: 'link-risks-and-vendors-to-work',
+    });
+    mocks.getAccess.mockResolvedValue(access({ risk: ['read'], vendor: ['read'] }));
+    expect((await GET(request(), params())).status).toBe(404);
+    mocks.getAccess.mockResolvedValue(access({ risk: ['read'], vendor: ['read'], task: ['read'] }));
+    expect((await GET(request(), params())).status).toBe(200);
+  });
+
+  it.each([0, 500])(
+    'fails closed when the authorization API is unavailable (%s)',
+    async (status) => {
+      mocks.getAccess.mockResolvedValue({ status, error: 'internal secret error' });
+      const response = await GET(request(), params());
+      expect(response.status).toBe(503);
+      expect(await response.json()).toEqual({ error: 'Unable to verify access' });
+      expect(mocks.retrieve).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    { organizationId: 'org_mine', permissions: { policy: 'read' } },
+    { permissions: { policy: ['read'] } },
+    { organizationId: '', permissions: { policy: ['read'] } },
+  ])('denies malformed authorization responses', async (data) => {
+    mocks.getAccess.mockResolvedValue({ status: 200, data });
+    expect((await GET(request(), params())).status).toBe(503);
+    expect(mocks.retrieve).not.toHaveBeenCalled();
+  });
+
+  it('rejects missing run IDs', async () => {
+    expect((await GET(request(), params(''))).status).toBe(400);
+    expect(mocks.retrieve).not.toHaveBeenCalled();
+  });
+
+  it('does not expose SDK exception details', async () => {
+    mocks.retrieve.mockRejectedValue(new Error('secret credential'));
+    const response = await GET(request(), params());
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({ error: 'Failed to retrieve run status' });
+  });
+
+  it('does not expose raw worker error details', async () => {
+    mocks.retrieve.mockResolvedValue({ ...run(), error: { message: 'secret credential' } });
+    const response = await GET(request(), params());
+    expect(response.status).toBe(200);
+    expect((await response.json()).error).toBe('Task failed');
   });
 });

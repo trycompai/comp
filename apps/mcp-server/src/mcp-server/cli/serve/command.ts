@@ -24,7 +24,7 @@ export const serveCommand = buildCommand({
       host: {
         kind: "parsed",
         brief:
-          "The bind address for the HTTP server. Defaults to 127.0.0.1 (local-only); setting this to 0.0.0.0 exposes the server on the network.",
+          "The bind address. Defaults to 127.0.0.1. Network bindings require an apikey header on each request; the CLI key is only used on loopback.",
         default: "127.0.0.1",
         parse: (val: string) => z.string().parse(val),
       },

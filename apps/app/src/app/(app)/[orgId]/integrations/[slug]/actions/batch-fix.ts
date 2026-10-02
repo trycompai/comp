@@ -4,6 +4,31 @@ import { serverApi } from '@/lib/api-server';
 import { classifyExecuteResult } from '@/trigger/tasks/cloud-security/execute-result';
 import { classifyRetryPreview } from '@/trigger/tasks/cloud-security/retry-preview';
 import { auth, runs, tasks } from '@trigger.dev/sdk';
+import { z } from 'zod';
+
+const batchResponseSchema = z.object({
+  data: z.object({
+    id: z.string(),
+    organizationId: z.string(),
+    connectionId: z.string(),
+    triggerRunId: z.string().nullable().optional(),
+    findings: z
+      .array(
+        z.object({
+          id: z.string(),
+          title: z.string(),
+          status: z.string(),
+          error: z.string().optional(),
+        }),
+      )
+      .default([]),
+  }),
+});
+const runPayloadSchema = z.object({
+  batchId: z.string(),
+  organizationId: z.string(),
+  connectionId: z.string(),
+});
 
 interface BatchFixInput {
   organizationId: string;
@@ -17,40 +42,49 @@ export async function startBatchFix(
   try {
     // Step 1: Create batch record in DB via API
     const api = serverApi;
-    const batchResp = await api.post<{ data: { id: string } }>(
-      '/v1/cloud-security/remediation/batch',
-      {
-        connectionId: input.connectionId,
-        findings: input.findings,
-      },
-    );
+    const batchResp = await api.post<unknown>('/v1/cloud-security/remediation/batch', {
+      connectionId: input.connectionId,
+      findings: input.findings,
+    });
 
-    if (batchResp.error || !batchResp.data?.data?.id) {
-      return { error: 'Failed to create batch record' };
+    if (batchResp.error) return { error: batchResp.error };
+    const parsed = batchResponseSchema.safeParse(batchResp.data);
+    if (!parsed.success) return { error: 'Invalid batch response' };
+    const batch = parsed.data.data;
+    if (
+      batch.organizationId !== input.organizationId ||
+      batch.connectionId !== input.connectionId
+    ) {
+      return { error: 'Batch ownership mismatch' };
     }
 
-    const batchId = batchResp.data.data.id;
+    const batchId = batch.id;
 
     // Step 2: Trigger the API-layer task
     const handle = await tasks.trigger(
       'remediate-batch',
       {
         batchId,
-        organizationId: input.organizationId,
-        connectionId: input.connectionId,
+        organizationId: batch.organizationId,
+        connectionId: batch.connectionId,
       },
-      { tags: [input.organizationId] },
+      { tags: [batch.organizationId] },
     );
 
     // Step 3: Store triggerRunId on the batch
-    await api.patch(`/v1/cloud-security/remediation/batch/${batchId}`, {
+    const binding = await api.patch(`/v1/cloud-security/remediation/batch/${batchId}`, {
       triggerRunId: handle.id,
-      status: 'running',
     });
+    if (binding.error) {
+      // This run was created above; never cancel a run supplied by the caller.
+      await runs.cancel(handle.id).catch(() => undefined);
+      return { error: binding.error };
+    }
 
     // Step 4: Create public access token for real-time progress
     const accessToken = await auth.createPublicToken({
       scopes: { read: { runs: [handle.id] } },
+      expirationTime: '15m',
     });
 
     return { data: { batchId, runId: handle.id, accessToken } };
@@ -61,17 +95,11 @@ export async function startBatchFix(
 }
 
 export async function cancelBatchFix(runId: string, batchId: string): Promise<void> {
-  try {
-    // Mark batch as cancelled in DB — task will check this before next finding
-    const api = serverApi;
-    await api.patch(`/v1/cloud-security/remediation/batch/${batchId}`, {
-      status: 'cancelled',
-    });
-    // Also cancel the trigger run
-    await runs.cancel(runId);
-  } catch {
-    // Run may have already completed
-  }
+  const response = await serverApi.post(
+    `/v1/cloud-security/remediation/batch/${encodeURIComponent(batchId)}/cancel`,
+    { runId },
+  );
+  if (response.error) throw new Error(response.error);
 }
 
 /** Check for an active batch on page load — returns batch + access token if found. */
@@ -83,16 +111,27 @@ export async function getActiveBatch(connectionId: string): Promise<{
 } | null> {
   try {
     const resp = await serverApi.get(
-      `/v1/cloud-security/remediation/batch/active?connectionId=${connectionId}`,
+      `/v1/cloud-security/remediation/batch/active?connectionId=${encodeURIComponent(connectionId)}`,
     );
-    const batch = (
-      resp.data as { data?: { id: string; triggerRunId?: string; findings: unknown[] } }
-    )?.data;
-    if (!batch?.triggerRunId) return null;
+    if (resp.error) return null;
+    const parsed = batchResponseSchema.safeParse(resp.data);
+    if (!parsed.success) return null;
+    const batch = parsed.data.data;
+    if (!batch.triggerRunId || batch.connectionId !== connectionId) return null;
 
     // Verify the trigger run is actually still active
     try {
       const run = await runs.retrieve(batch.triggerRunId);
+      const payload = runPayloadSchema.safeParse(run.payload);
+      if (
+        run.taskIdentifier !== 'remediate-batch' ||
+        !run.tags.includes(batch.organizationId) ||
+        !payload.success ||
+        payload.data.batchId !== batch.id ||
+        payload.data.organizationId !== batch.organizationId ||
+        payload.data.connectionId !== batch.connectionId
+      )
+        return null;
       if (
         run.status === 'COMPLETED' ||
         run.status === 'FAILED' ||
@@ -115,18 +154,14 @@ export async function getActiveBatch(connectionId: string): Promise<{
 
     const accessToken = await auth.createPublicToken({
       scopes: { read: { runs: [batch.triggerRunId] } },
+      expirationTime: '15m',
     });
 
     return {
       batchId: batch.id,
       triggerRunId: batch.triggerRunId,
       accessToken,
-      findings: batch.findings as Array<{
-        id: string;
-        title: string;
-        status: string;
-        error?: string;
-      }>,
+      findings: batch.findings,
     };
   } catch {
     return null;
@@ -165,8 +200,7 @@ export async function retryFinding(
     if (preview.error) return { status: 'failed', error: String(preview.error) };
 
     const data = preview.data as
-      | { guidedOnly?: boolean; missingPermissions?: string[] }
-      | undefined;
+      { guidedOnly?: boolean; missingPermissions?: string[] } | undefined;
     const previewDecision = classifyRetryPreview(data);
     if (previewDecision.type === 'needs_permissions') {
       return {

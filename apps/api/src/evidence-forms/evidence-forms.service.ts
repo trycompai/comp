@@ -18,9 +18,9 @@ import {
   evidenceFormDefinitions,
   evidenceFormSubmissionSchemaMap,
   evidenceFormTypeSchema,
-  type EvidenceFormFieldDefinition,
   type EvidenceFormType,
 } from './evidence-forms.definitions';
+import { getCsvFieldValue, toCsvRow } from './evidence-forms-csv';
 import { checkAutoCompletePhases } from '../frameworks/frameworks-timeline.helper';
 import { TimelinesService } from '../timelines/timelines.service';
 import { EvidenceFormsNotifierService } from './evidence-forms-notifier.service';
@@ -57,73 +57,6 @@ const EVIDENCE_FORM_REVIEWER_ROLES = ['owner', 'admin', 'auditor'] as const;
 const EVIDENCE_FORM_DELETE_ROLES = ['owner', 'admin'] as const;
 const MAX_UPLOAD_FILE_SIZE_BYTES = 100 * 1024 * 1024;
 const MAX_UPLOAD_BASE64_LENGTH = Math.ceil(MAX_UPLOAD_FILE_SIZE_BYTES / 3) * 4;
-
-function toCsvRow(values: string[]): string {
-  return values.map((value) => `"${value.replace(/"/g, '""')}"`).join(',');
-}
-
-function flattenValue(value: unknown): string {
-  if (value === null || value === undefined) {
-    return '';
-  }
-
-  if (typeof value === 'object') {
-    if (
-      'fileName' in value &&
-      typeof value.fileName === 'string' &&
-      'downloadUrl' in value &&
-      typeof value.downloadUrl === 'string'
-    ) {
-      return value.downloadUrl;
-    }
-    return JSON.stringify(value);
-  }
-
-  if (typeof value === 'string') {
-    return value;
-  }
-  if (
-    typeof value === 'number' ||
-    typeof value === 'boolean' ||
-    typeof value === 'bigint'
-  ) {
-    return value.toString();
-  }
-  if (typeof value === 'symbol') {
-    return value.description ?? '';
-  }
-
-  return '';
-}
-
-function flattenMatrixRows(
-  value: unknown,
-  field: EvidenceFormFieldDefinition,
-): string {
-  if (!Array.isArray(value)) {
-    return '';
-  }
-
-  const columns = Array.isArray(field.columns) ? field.columns : [];
-  if (columns.length === 0) {
-    return JSON.stringify(value);
-  }
-
-  return value
-    .filter((row) => row && typeof row === 'object')
-    .map((row) => {
-      const rowRecord = row as Record<string, unknown>;
-      return columns
-        .map((column) => {
-          const cellValue = rowRecord[column.key];
-          const normalizedValue =
-            typeof cellValue === 'string' ? cellValue : '';
-          return `${column.label}: ${normalizedValue}`;
-        })
-        .join(' | ');
-    })
-    .join(' || ');
-}
 
 function normalizeSubmissionFormType<
   T extends { formType: DbEvidenceFormType },
@@ -849,30 +782,13 @@ export class EvidenceFormsService {
 
     const rows = await Promise.all(
       submissions.map(async (submission) => {
-        const data = submission.data as Record<string, unknown>;
-        const fieldValues = await Promise.all(
-          form.fields
-            .filter((field) => field.key !== 'submissionDate')
-            .map(async (field) => {
-              const rawValue = data[field.key];
-              if (
-                rawValue &&
-                typeof rawValue === 'object' &&
-                'fileKey' in rawValue &&
-                typeof rawValue.fileKey === 'string'
-              ) {
-                const signedUrl =
-                  await this.attachmentsService.getPresignedDownloadUrl(
-                    rawValue.fileKey,
-                  );
-                return signedUrl;
-              }
-              if (field.type === 'matrix') {
-                return flattenMatrixRows(rawValue, field);
-              }
-              return flattenValue(rawValue);
-            }),
-        );
+        const data = await this.refreshFileUrls({
+          data: z.record(z.string(), z.unknown()).parse(submission.data),
+          organizationId: params.organizationId,
+        });
+        const fieldValues = form.fields
+          .filter((field) => field.key !== 'submissionDate')
+          .map((field) => getCsvFieldValue({ value: data[field.key], field }));
 
         return [
           submission.id,

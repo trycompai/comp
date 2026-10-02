@@ -35,6 +35,7 @@ export async function POST(req: NextRequest) {
     where: {
       id: memberId,
       userId: session.user.id,
+      isActive: true,
       deactivated: false,
     },
   });
@@ -69,7 +70,7 @@ export async function POST(req: NextRequest) {
     await Promise.all(updatePromises);
 
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to accept policies' }, { status: 500 });
   }
 }
