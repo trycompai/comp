@@ -5,6 +5,7 @@ const mockTaskFindUnique = vi.fn();
 const mockAutomationFindUnique = vi.fn();
 const mockRevalidatePath = vi.fn();
 const mockFetch = vi.fn();
+const mockResolvePermissions = vi.fn();
 
 vi.mock('@/utils/auth', () => ({
   auth: {
@@ -19,6 +20,10 @@ vi.mock('@db/server', () => ({
     task: { findUnique: mockTaskFindUnique },
     evidenceAutomation: { findUnique: mockAutomationFindUnique },
   },
+}));
+
+vi.mock('@/lib/permissions.server', () => ({
+  resolveCurrentUserPermissions: mockResolvePermissions,
 }));
 
 vi.mock('next/headers', () => ({
@@ -57,6 +62,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   process.env.ENTERPRISE_API_SECRET = 'test-key';
   mockSession(ORG_ID);
+  mockResolvePermissions.mockResolvedValue({ task: ['read', 'update'] });
 });
 
 describe('uploadAutomationScript', () => {
@@ -130,6 +136,7 @@ describe('executeAutomationScript', () => {
 describe('publishAutomation', () => {
   it("rejects before calling the enterprise API when the automation belongs to another organization", async () => {
     mockAutomationFindUnique.mockResolvedValue({
+      taskId: 'tsk_1',
       task: { organizationId: 'org_other' },
     });
 
@@ -149,9 +156,42 @@ describe('publishAutomation', () => {
   });
 });
 
+describe('publishAutomation task:update and taskId binding', () => {
+  it('rejects a caller without task:update before calling the enterprise API', async () => {
+    mockResolvePermissions.mockResolvedValue({ task: ['read'] });
+
+    const result = await publishAutomation(ORG_ID, 'tsk_1', 'aut_1');
+
+    expect(result).toEqual({ success: false, error: 'Unauthorized' });
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('rejects a caller who is not an active member', async () => {
+    mockResolvePermissions.mockResolvedValue(null);
+
+    const result = await publishAutomation(ORG_ID, 'tsk_1', 'aut_1');
+
+    expect(result).toEqual({ success: false, error: 'Unauthorized' });
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('rejects when the automation belongs to a different task', async () => {
+    mockAutomationFindUnique.mockResolvedValue({
+      taskId: 'tsk_other',
+      task: { organizationId: ORG_ID },
+    });
+
+    const result = await publishAutomation(ORG_ID, 'tsk_1', 'aut_1');
+
+    expect(result).toEqual({ success: false, error: 'Unauthorized' });
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+});
+
 describe('restoreVersion', () => {
   it("rejects before calling the enterprise API when the automation belongs to another organization", async () => {
     mockAutomationFindUnique.mockResolvedValue({
+      taskId: 'tsk_1',
       task: { organizationId: 'org_other' },
     });
 
@@ -163,6 +203,7 @@ describe('restoreVersion', () => {
 
   it("restores when the automation belongs to the caller's organization", async () => {
     mockAutomationFindUnique.mockResolvedValue({
+      taskId: 'tsk_1',
       task: { organizationId: ORG_ID },
     });
     mockEnterpriseOk({ success: true });
@@ -171,5 +212,27 @@ describe('restoreVersion', () => {
 
     expect(result).toEqual({ success: true });
     expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects a caller without task:update before calling the enterprise API', async () => {
+    mockResolvePermissions.mockResolvedValue({ task: ['read'] });
+
+    const result = await restoreVersion(ORG_ID, 'tsk_1', 'aut_1', 2);
+
+    expect(result).toEqual({ success: false, error: 'Unauthorized' });
+    expect(mockAutomationFindUnique).not.toHaveBeenCalled();
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('rejects when the automation belongs to a different task', async () => {
+    mockAutomationFindUnique.mockResolvedValue({
+      taskId: 'tsk_other',
+      task: { organizationId: ORG_ID },
+    });
+
+    const result = await restoreVersion(ORG_ID, 'tsk_1', 'aut_1', 2);
+
+    expect(result).toEqual({ success: false, error: 'Unauthorized' });
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 });

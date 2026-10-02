@@ -5,6 +5,8 @@
  * These actions securely call the enterprise API with server-side license key
  */
 
+import { hasPermission } from '@/lib/permissions';
+import { resolveCurrentUserPermissions } from '@/lib/permissions.server';
 import { auth } from '@/utils/auth';
 import { db } from '@db/server';
 import { revalidatePath } from 'next/cache';
@@ -132,6 +134,38 @@ async function isAutomationInOrganization({
   });
 
   return automation?.task.organizationId === organizationId;
+}
+
+/**
+ * Check that an automation belongs to the given task AND that task belongs to
+ * the given organization. Used where the caller-supplied `taskId` is forwarded
+ * to the enterprise API, so it cannot be paired with an unrelated automation.
+ */
+async function isAutomationBoundToTaskInOrganization({
+  automationId,
+  taskId,
+  organizationId,
+}: {
+  automationId: string;
+  taskId: string;
+  organizationId: string;
+}): Promise<boolean> {
+  const automation = await db.evidenceAutomation.findUnique({
+    where: { id: automationId },
+    select: { taskId: true, task: { select: { organizationId: true } } },
+  });
+
+  return automation?.taskId === taskId && automation.task.organizationId === organizationId;
+}
+
+/**
+ * Check that the caller holds `task:update` in the organization. Fails closed
+ * when the caller is not an active member.
+ */
+async function canUpdateTasks(organizationId: string): Promise<boolean> {
+  const permissions = await resolveCurrentUserPermissions(organizationId);
+
+  return permissions !== null && hasPermission(permissions, 'task', 'update');
 }
 
 /**
@@ -468,11 +502,16 @@ export async function publishAutomation(
       return { success: false, error: 'Unauthorized' };
     }
 
-    const belongsToOrg = await isAutomationInOrganization({
+    if (!(await canUpdateTasks(activeOrganizationId))) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    const isBound = await isAutomationBoundToTaskInOrganization({
       automationId,
+      taskId,
       organizationId: activeOrganizationId,
     });
-    if (!belongsToOrg) {
+    if (!isBound) {
       return { success: false, error: 'Unauthorized' };
     }
 
@@ -535,11 +574,16 @@ export async function restoreVersion(
       return { success: false, error: 'Unauthorized' };
     }
 
-    const belongsToOrg = await isAutomationInOrganization({
+    if (!(await canUpdateTasks(activeOrganizationId))) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    const isBound = await isAutomationBoundToTaskInOrganization({
       automationId,
+      taskId,
       organizationId: activeOrganizationId,
     });
-    if (!belongsToOrg) {
+    if (!isBound) {
       return { success: false, error: 'Unauthorized' };
     }
 
