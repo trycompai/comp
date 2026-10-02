@@ -1,0 +1,72 @@
+name: Security regressions
+
+on:
+  pull_request:
+  push:
+    branches: [main, release]
+
+permissions:
+  contents: read
+
+jobs:
+  regressions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Client generation and mocked tests only; no database connection is needed.
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/comp_security_tests
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: '1.3.4'
+      - run: bun install --frozen-lockfile --ignore-scripts
+      - run: bun run db:generate
+      - run: bunx turbo run build --filter=@trycompai/auth --filter=@trycompai/company --filter=@trycompai/billing --filter=@trycompai/email --filter=@trycompai/utils --filter=@trycompai/integration-platform
+      - name: API authorization, batch, and storage regressions
+        working-directory: apps/api
+        run: >-
+          bunx jest src/evidence-forms
+          src/auth/hybrid-auth.guard.spec.ts
+          src/auth/hybrid-auth-active-membership.spec.ts
+          src/auth/task-status-access.spec.ts
+          src/auth/auth.controller.spec.ts
+          src/auth/permission.guard.spec.ts
+          src/cloud-security/remediation-batch.service.spec.ts
+          src/cloud-security/remediation-batch.races.spec.ts
+          src/cloud-security/remediation-batch.controller.spec.ts
+          src/vector-store/lib/core/find-similar.spec.ts
+          src/trigger/vector-store/helpers/extract-content-from-file.spec.ts
+          src/questionnaire/questionnaire.service.spec.ts
+          src/questionnaire/questionnaire.controller.spec.ts --runInBand
+      - name: App task authorization and batch regressions
+        working-directory: apps/app
+        run: >-
+          bunx --no-install vitest run --config vitest.config.mts
+          'src/app/api/tasks/[taskId]/status/route.test.ts'
+          'src/app/(app)/[orgId]/cloud-tests/actions/batch-fix.test.ts'
+          'src/app/(app)/[orgId]/integrations/[slug]/actions/batch-fix.test.ts'
+          src/trigger/tasks/cloud-security/remediate-batch.test.ts
+          src/trigger/tasks/cloud-security/remediate-batch-helpers.test.ts
+      - name: Portal policy regressions
+        working-directory: apps/portal
+        run: >-
+          bunx vitest run
+          'src/app/(app)/(home)/[orgId]/policy/[policyId]/page.test.tsx'
+          src/app/api/portal/policy-access.test.ts
+      - name: Unsubscribe signing regressions
+        working-directory: packages/email
+        run: bunx vitest run lib/unsubscribe.test.ts
+      - name: Install standalone MCP dependencies
+        working-directory: apps/mcp-server
+        run: |
+          bun install
+          node node_modules/bun/install.js
+      - name: MCP security tests and package build
+        working-directory: apps/mcp-server
+        run: bun run build && bun run test && bun run lint

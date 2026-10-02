@@ -4,6 +4,7 @@ vi.mock('@db/server', () => {
   const remediationBatch = {
     findUnique: vi.fn(),
     update: vi.fn(),
+    updateMany: vi.fn(),
   };
 
   class PrismaClientKnownRequestError extends Error {
@@ -48,6 +49,7 @@ import {
 type MockRemediationBatch = {
   findUnique: Mock;
   update: Mock;
+  updateMany: Mock;
 };
 
 type MockDb = {
@@ -84,11 +86,13 @@ function progress(findings: FindingProgress[]): BatchProgress {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  remediationBatch.updateMany.mockResolvedValue({ count: 1 });
 });
 
 describe('persistProgress', () => {
   it('preserves concurrent per-finding cancellations before writing progress', async () => {
     remediationBatch.findUnique.mockResolvedValue({
+      status: 'running',
       findings: [
         finding({ id: 'check-1', status: 'pending' }),
         finding({
@@ -121,8 +125,8 @@ describe('persistProgress', () => {
     expect(batchProgress.skipped).toBe(1);
     expect(batchProgress.failed).toBe(0);
 
-    expect(remediationBatch.update).toHaveBeenCalledWith({
-      where: { id: 'batch-1' },
+    expect(remediationBatch.updateMany).toHaveBeenCalledWith({
+      where: { id: 'batch-1', status: 'running' },
       data: expect.objectContaining({
         status: 'done',
         fixed: 1,
@@ -148,6 +152,7 @@ describe('persistProgress', () => {
           callback({ remediationBatch }),
       );
     remediationBatch.findUnique.mockResolvedValue({
+      status: 'running',
       findings: [finding({ id: 'check-1', status: 'cancelled', error: 'Removed during retry' })],
     });
     remediationBatch.update.mockResolvedValue({});
@@ -163,8 +168,8 @@ describe('persistProgress', () => {
       status: 'cancelled',
       error: 'Removed during retry',
     });
-    expect(remediationBatch.update).toHaveBeenCalledWith({
-      where: { id: 'batch-1' },
+    expect(remediationBatch.updateMany).toHaveBeenCalledWith({
+      where: { id: 'batch-1', status: 'running' },
       data: expect.objectContaining({
         status: 'done',
         fixed: 0,
@@ -172,5 +177,39 @@ describe('persistProgress', () => {
         failed: 0,
       }),
     });
+  });
+  it.each(['done', 'cancelled'] as const)(
+    'never overwrites a persisted %s terminal state',
+    async (status) => {
+      remediationBatch.findUnique.mockResolvedValue({ status, findings: [] });
+      const batchProgress = progress([finding({ status: 'fixed' })]);
+      await persistProgress('batch-1', batchProgress, 'done');
+      expect(remediationBatch.updateMany).not.toHaveBeenCalled();
+      expect(batchProgress.phase).toBe(status);
+    },
+  );
+
+  it('re-reads cancellation after its observed-status predicate loses a race', async () => {
+    remediationBatch.findUnique
+      .mockResolvedValueOnce({ status: 'running', findings: [] })
+      .mockResolvedValueOnce({ status: 'cancelled', findings: [] });
+    remediationBatch.updateMany.mockResolvedValueOnce({ count: 0 });
+    const batchProgress = progress([finding({ status: 'fixed' })]);
+    await persistProgress('batch-1', batchProgress, 'done');
+    expect(remediationBatch.updateMany).toHaveBeenCalledTimes(1);
+    expect(remediationBatch.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'batch-1', status: 'running' } }),
+    );
+    expect(batchProgress.phase).toBe('cancelled');
+    expect(mockedDb.$transaction).toHaveBeenCalledTimes(2);
+  });
+
+  it('fails closed after three observed-status conflicts', async () => {
+    remediationBatch.findUnique.mockResolvedValue({ status: 'running', findings: [] });
+    remediationBatch.updateMany.mockResolvedValue({ count: 0 });
+    await expect(persistProgress('batch-1', progress([]), 'done')).rejects.toThrow(
+      'Batch progress changed',
+    );
+    expect(remediationBatch.updateMany).toHaveBeenCalledTimes(3);
   });
 });

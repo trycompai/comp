@@ -16,16 +16,34 @@ export const remediateBatch = task({
   maxDuration: 60 * 30, // 30 minutes (seconds, not ms)
   retry: { maxAttempts: 1 },
   run: async (payload: { batchId: string; organizationId: string; connectionId: string }) => {
-    const { batchId, organizationId, connectionId } = payload;
+    const { batchId } = payload;
 
     const batch = await db.remediationBatch.findUnique({ where: { id: batchId } });
     if (!batch) return { success: false, error: 'Batch not found' };
+    if (
+      payload.organizationId !== batch.organizationId ||
+      payload.connectionId !== batch.connectionId
+    ) {
+      throw new Error('Batch ownership mismatch');
+    }
+    const { organizationId, connectionId } = batch;
+    const connection = await db.integrationConnection.findFirst({
+      where: { id: connectionId, organizationId, status: 'active' },
+      select: { id: true },
+    });
+    if (!connection) throw new Error('Batch connection not found');
+    if (batch.status === 'cancelled' || batch.status === 'done') {
+      return { success: false, error: 'Batch is no longer active' };
+    }
 
     const findings = batch.findings as unknown as FindingProgress[];
     const userId = batch.initiatedById; // pass to API for audit trail
     logger.info(`Batch ${batchId}: ${findings.length} findings (user: ${userId})`);
 
-    await db.remediationBatch.update({ where: { id: batchId }, data: { status: 'running' } });
+    await db.remediationBatch.update({
+      where: { id: batchId, organizationId, status: { in: ['pending', 'running'] } },
+      data: { status: 'running' },
+    });
 
     const confirmed = new Set<string>(); // permissions we know exist on the role
     const progress: BatchProgress = {

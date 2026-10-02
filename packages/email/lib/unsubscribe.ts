@@ -1,7 +1,19 @@
 import { createHmac } from 'node:crypto';
 
-const UNSUBSCRIBE_SECRET =
-  process.env.UNSUBSCRIBE_SECRET || process.env.AUTH_SECRET || 'fallback-secret';
+/**
+ * Resolve the HMAC secret used to sign/verify unsubscribe tokens.
+ * Resolved lazily (not at module load) so importing this package never
+ * throws — only generating a token without a configured secret does.
+ */
+function getUnsubscribeSecret(): string {
+  const secret = process.env.UNSUBSCRIBE_SECRET || process.env.AUTH_SECRET;
+  if (!secret) {
+    throw new Error(
+      'UNSUBSCRIBE_SECRET (or AUTH_SECRET) must be configured to generate unsubscribe tokens',
+    );
+  }
+  return secret;
+}
 
 /**
  * Get the base URL for unsubscribe links based on environment
@@ -27,7 +39,7 @@ function getBaseUrl(): string {
  * Generate a secure unsubscribe token for an email address
  */
 export function generateUnsubscribeToken(email: string): string {
-  const hmac = createHmac('sha256', UNSUBSCRIBE_SECRET);
+  const hmac = createHmac('sha256', getUnsubscribeSecret());
   hmac.update(email);
   return hmac.digest('base64url');
 }

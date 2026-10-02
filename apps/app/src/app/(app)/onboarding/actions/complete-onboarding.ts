@@ -195,9 +195,11 @@ export const completeOnboarding = authActionClientWithoutOrg
       });
 
       // Now trigger the jobs that were skipped during minimal creation
-      const handle = await tasks.trigger<typeof onboardOrganizationTask>('onboard-organization', {
-        organizationId: parsedInput.organizationId,
-      });
+      const handle = await tasks.trigger<typeof onboardOrganizationTask>(
+        'onboard-organization',
+        { organizationId: parsedInput.organizationId },
+        { tags: [parsedInput.organizationId] },
+      );
 
       // Update onboarding record with job ID
       await db.onboarding.update({
@@ -211,9 +213,11 @@ export const completeOnboarding = authActionClientWithoutOrg
       (await cookies()).set('publicAccessToken', handle.publicAccessToken);
 
       // Create Fleet Label
-      await tasks.trigger<typeof createFleetLabelForOrg>('create-fleet-label-for-org', {
-        organizationId: parsedInput.organizationId,
-      });
+      await tasks.trigger<typeof createFleetLabelForOrg>(
+        'create-fleet-label-for-org',
+        { organizationId: parsedInput.organizationId },
+        { tags: [parsedInput.organizationId] },
+      );
 
       // Revalidate paths
       const headersList = await headers();

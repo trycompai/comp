@@ -10,7 +10,9 @@ jest.mock('@db', () => ({
       findMany: (...a: unknown[]) => mockMemberFindMany(...a),
       count: (...a: unknown[]) => mockMemberCount(...a),
     },
-    invitation: { findFirst: (...a: unknown[]) => mockInvitationFindFirst(...a) },
+    invitation: {
+      findFirst: (...a: unknown[]) => mockInvitationFindFirst(...a),
+    },
   },
 }));
 
@@ -22,6 +24,7 @@ jest.mock('./permission.guard', () => ({
   PermissionGuard: class {},
   PERMISSIONS_KEY: 'permissions',
 }));
+jest.mock('./app-access', () => ({ resolveRolePermissions: jest.fn() }));
 
 import { AuthController } from './auth.controller';
 import type { AuthContext } from './types';

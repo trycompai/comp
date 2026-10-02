@@ -73,6 +73,7 @@ export async function POST(
         authorId: author.id,
         policies,
       },
+      { tags: [organizationId] },
     );
 
     // See risks/regenerate-mitigation: don't fail the request when only the

@@ -4,13 +4,7 @@ import { postCloudSecurityApi } from './api-response';
 import { classifyExecuteResult } from './execute-result';
 
 export type FindingStatus =
-  | 'pending'
-  | 'fixing'
-  | 'fixed'
-  | 'skipped'
-  | 'failed'
-  | 'cancelled'
-  | 'needs_permissions';
+  'pending' | 'fixing' | 'fixed' | 'skipped' | 'failed' | 'cancelled' | 'needs_permissions';
 
 export interface FindingProgress {
   id: string;
@@ -38,6 +32,7 @@ export interface BatchProgress {
 export type BatchTerminalStatus = 'cancelled' | 'done';
 
 const MAX_PERSIST_PROGRESS_ATTEMPTS = 3;
+class BatchProgressConflict extends Error {}
 
 interface PreviewResult {
   guidedOnly?: boolean;
@@ -168,7 +163,10 @@ function recalculateProgressCounts(progress: BatchProgress): void {
 }
 
 function isSerializableTransactionConflict(error: unknown): boolean {
-  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034';
+  return (
+    error instanceof BatchProgressConflict ||
+    (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034')
+  );
 }
 
 export async function persistProgress(
@@ -184,19 +182,21 @@ export async function persistProgress(
         async (tx) => {
           const current = await tx.remediationBatch.findUnique({
             where: { id: batchId },
-            select: { findings: true },
+            select: { findings: true, status: true },
           });
-
-          if (current) {
-            preservePersistedCancellations({
-              progress,
-              persistedFindings: current.findings as unknown as FindingProgress[],
-            });
-            recalculateProgressCounts(progress);
+          if (!current) throw new Error('Batch not found');
+          if (current.status === 'done' || current.status === 'cancelled') {
+            progress.phase = current.status;
+            return;
           }
+          preservePersistedCancellations({
+            progress,
+            persistedFindings: current.findings as unknown as FindingProgress[],
+          });
+          recalculateProgressCounts(progress);
 
-          await tx.remediationBatch.update({
-            where: { id: batchId },
+          const updated = await tx.remediationBatch.updateMany({
+            where: { id: batchId, status: current.status },
             data: {
               ...(status && { status }),
               findings: JSON.parse(JSON.stringify(progress.findings)),
@@ -205,6 +205,7 @@ export async function persistProgress(
               failed: progress.failed,
             },
           });
+          if (updated.count !== 1) throw new BatchProgressConflict('Batch progress changed');
         },
         { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
       );

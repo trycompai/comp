@@ -38,6 +38,11 @@ const MAX_TOP_K = 100;
 // app-side findSimilarContent limit used by the same auto-answer flow.
 const MAX_RESULTS = 5;
 
+/** Validate organization IDs with the shared vector-filter allowlist (GH-043/GH-103). */
+export function assertSafeOrganizationId(organizationId: string): void {
+  organizationFilter(organizationId);
+}
+
 /**
  * Finds similar content using semantic search in Upstash Vector
  * Optimized for RAG (Retrieval-Augmented Generation) answer generation
@@ -62,6 +67,8 @@ export async function findSimilarContent(
   if (!question || question.trim().length === 0) {
     return [];
   }
+
+  assertSafeOrganizationId(organizationId);
 
   try {
     // Generate embedding for the question
@@ -148,6 +155,8 @@ export async function findSimilarContentBatch(
   if (questions.length === 0) {
     return [];
   }
+
+  assertSafeOrganizationId(organizationId);
 
   const startTime = Date.now();
 

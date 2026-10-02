@@ -36,10 +36,14 @@ export const runTests = async (integrationId?: string) => {
 
   try {
     // Trigger the task
-    const handle = await tasks.trigger<typeof runIntegrationTests>('run-integration-tests', {
-      organizationId: orgId,
-      ...(integrationId ? { integrationId } : {}),
-    });
+    const handle = await tasks.trigger<typeof runIntegrationTests>(
+      'run-integration-tests',
+      {
+        organizationId: orgId,
+        ...(integrationId ? { integrationId } : {}),
+      },
+      { tags: [orgId] },
+    );
 
     // Poll for completion
     let attempts = 0;

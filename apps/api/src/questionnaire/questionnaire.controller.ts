@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   NotFoundException,
   Param,
@@ -511,6 +512,16 @@ export class QuestionnaireController {
       await this.trustAccessService.validateAccessTokenAndGetOrganizationId(
         token,
       );
+
+    const securityQuestionnaireEnabled =
+      await this.trustAccessService.isSecurityQuestionnaireEnabledForOrganization(
+        organizationId,
+      );
+    if (!securityQuestionnaireEnabled) {
+      throw new ForbiddenException(
+        'Security questionnaire is disabled for this organization',
+      );
+    }
 
     const dto: ExportQuestionnaireDto = {
       fileData: file.buffer.toString('base64'),

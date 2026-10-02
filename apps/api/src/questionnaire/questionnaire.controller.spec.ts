@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
 
 jest.mock('../auth/auth.server', () => ({
   auth: { api: { getSession: jest.fn() } },
@@ -56,6 +56,7 @@ describe('QuestionnaireController', () => {
 
   const mockTrustAccessService = {
     validateAccessTokenAndGetOrganizationId: jest.fn(),
+    isSecurityQuestionnaireEnabledForOrganization: jest.fn(),
   };
 
   const mockGuard = { canActivate: jest.fn().mockReturnValue(true) };
@@ -352,6 +353,92 @@ describe('QuestionnaireController', () => {
       expect(service.uploadAndParse).toHaveBeenCalledWith(
         expect.objectContaining({ organizationId: 'org_1' }),
       );
+    });
+  });
+
+  describe('parseQuestionnaireUploadByToken', () => {
+    const mockFile = {
+      originalname: 'test.pdf',
+      mimetype: 'application/pdf',
+      buffer: Buffer.from('file-contents'),
+    } as Express.Multer.File;
+
+    const mockRes = {
+      setHeader: jest.fn(),
+      send: jest.fn(),
+    } as unknown as import('express').Response;
+
+    it('should throw ForbiddenException when the org disabled the security questionnaire', async () => {
+      mockTrustAccessService.validateAccessTokenAndGetOrganizationId.mockResolvedValue(
+        'org_1',
+      );
+      mockTrustAccessService.isSecurityQuestionnaireEnabledForOrganization.mockResolvedValue(
+        false,
+      );
+
+      await expect(
+        controller.parseQuestionnaireUploadByToken(
+          mockFile,
+          'token_123',
+          {},
+          mockRes,
+        ),
+      ).rejects.toThrow(ForbiddenException);
+
+      expect(service.autoAnswerAndExport).not.toHaveBeenCalled();
+    });
+
+    it('should proceed when the security questionnaire is enabled', async () => {
+      mockTrustAccessService.validateAccessTokenAndGetOrganizationId.mockResolvedValue(
+        'org_1',
+      );
+      mockTrustAccessService.isSecurityQuestionnaireEnabledForOrganization.mockResolvedValue(
+        true,
+      );
+      mockService.autoAnswerAndExport.mockResolvedValue({
+        mimeType: 'application/zip',
+        filename: 'export.zip',
+        fileBuffer: Buffer.from('zip-contents'),
+        questionsAndAnswers: [],
+      });
+
+      await controller.parseQuestionnaireUploadByToken(
+        mockFile,
+        'token_123',
+        {},
+        mockRes,
+      );
+
+      expect(
+        mockTrustAccessService.isSecurityQuestionnaireEnabledForOrganization,
+      ).toHaveBeenCalledWith('org_1');
+      expect(service.autoAnswerAndExport).toHaveBeenCalledWith(
+        expect.objectContaining({ organizationId: 'org_1' }),
+      );
+    });
+
+    it('should proceed when the org has no Trust row (defaults to enabled)', async () => {
+      mockTrustAccessService.validateAccessTokenAndGetOrganizationId.mockResolvedValue(
+        'org_1',
+      );
+      mockTrustAccessService.isSecurityQuestionnaireEnabledForOrganization.mockResolvedValue(
+        true,
+      );
+      mockService.autoAnswerAndExport.mockResolvedValue({
+        mimeType: 'application/zip',
+        filename: 'export.zip',
+        fileBuffer: Buffer.from('zip-contents'),
+        questionsAndAnswers: [],
+      });
+
+      await expect(
+        controller.parseQuestionnaireUploadByToken(
+          mockFile,
+          'token_123',
+          {},
+          mockRes,
+        ),
+      ).resolves.toBeUndefined();
     });
   });
 });

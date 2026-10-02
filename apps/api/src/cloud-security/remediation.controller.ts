@@ -2,7 +2,6 @@ import {
   Controller,
   Post,
   Get,
-  Patch,
   Param,
   Query,
   Body,
@@ -13,7 +12,6 @@ import {
 } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { SkipThrottle } from '@nestjs/throttler';
-import { db } from '@db';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
@@ -267,118 +265,5 @@ export class RemediationController {
         error instanceof Error ? error.message : 'Failed to get actions';
       throw new HttpException(message, HttpStatus.BAD_REQUEST);
     }
-  }
-
-  // ─── Batch endpoints ──────────────────────────────────────────────
-
-  /** Get active batch for a connection (if any). */
-  @Get('batch/active')
-  @RequirePermission('integration', 'read')
-  @ApiOperation({ summary: 'Get the active remediation batch' })
-  async getActiveBatch(
-    @Query('connectionId') connectionId: string,
-    @OrganizationId() organizationId: string,
-  ) {
-    const batch = await db.remediationBatch.findFirst({
-      where: {
-        connectionId,
-        organizationId,
-        status: { in: ['pending', 'running'] },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-    return { data: batch };
-  }
-
-  /** Create a new batch record (called before triggering the task). */
-  @Post('batch')
-  @RequirePermission('integration', 'update')
-  @ApiOperation({ summary: 'Create a remediation batch' })
-  async createBatch(
-    @Body()
-    body: {
-      connectionId: string;
-      findings: Array<{ id: string; key: string; title: string }>;
-    },
-    @OrganizationId() organizationId: string,
-    @UserId() userId: string,
-  ) {
-    const findings = body.findings.map((f) => ({
-      id: f.id,
-      key: f.key,
-      title: f.title,
-      status: 'pending',
-    }));
-
-    const batch = await db.remediationBatch.create({
-      data: {
-        connectionId: body.connectionId,
-        organizationId,
-        initiatedById: userId,
-        status: 'pending',
-        findings,
-      },
-    });
-
-    await logCloudSecurityActivity({
-      organizationId,
-      userId,
-      connectionId: body.connectionId,
-      action: 'remediation_executed',
-      description: `Started batch fix: ${body.findings.length} findings`,
-      metadata: { batchId: batch.id, findingCount: body.findings.length },
-    });
-
-    return { data: batch };
-  }
-
-  /** Update a batch (set triggerRunId after task starts). */
-  @Patch('batch/:batchId')
-  @RequirePermission('integration', 'update')
-  @ApiOperation({ summary: 'Update a remediation batch' })
-  async updateBatch(
-    @Param('batchId') batchId: string,
-    @Body() body: { triggerRunId?: string; status?: string },
-    @OrganizationId() organizationId: string,
-  ) {
-    const batch = await db.remediationBatch.update({
-      where: { id: batchId, organizationId },
-      data: {
-        ...(body.triggerRunId && { triggerRunId: body.triggerRunId }),
-        ...(body.status && { status: body.status }),
-      },
-    });
-    return { data: batch };
-  }
-
-  /** Skip a specific finding in an active batch. */
-  @Post('batch/:batchId/skip/:findingId')
-  @RequirePermission('integration', 'update')
-  @ApiOperation({ summary: 'Skip a finding in a remediation batch' })
-  async skipFinding(
-    @Param('batchId') batchId: string,
-    @Param('findingId') findingId: string,
-    @OrganizationId() organizationId: string,
-  ) {
-    const batch = await db.remediationBatch.findFirst({
-      where: { id: batchId, organizationId },
-    });
-    if (!batch) {
-      throw new HttpException('Batch not found', HttpStatus.NOT_FOUND);
-    }
-
-    const findings = batch.findings as Array<{ id: string; status: string }>;
-    const updated = findings.map((f) =>
-      f.id === findingId && f.status === 'pending'
-        ? { ...f, status: 'cancelled' }
-        : f,
-    );
-
-    await db.remediationBatch.update({
-      where: { id: batchId },
-      data: { findings: updated },
-    });
-
-    return { success: true };
   }
 }

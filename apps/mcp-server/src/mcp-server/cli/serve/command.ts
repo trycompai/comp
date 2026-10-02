@@ -21,6 +21,13 @@ export const serveCommand = buildCommand({
         parse: (val: string) =>
           z.coerce.number().int().gte(0).lt(65536).parse(val),
       },
+      host: {
+        kind: "parsed",
+        brief:
+          "The bind address. Defaults to 127.0.0.1. Network bindings require an apikey header on each request; the CLI key is only used on loopback.",
+        default: "127.0.0.1",
+        parse: (val: string) => z.string().parse(val),
+      },
       "disable-static-auth": {
         kind: "boolean",
         brief:

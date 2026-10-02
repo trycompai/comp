@@ -1,5 +1,5 @@
 import { auth } from '@/app/lib/auth';
-import { BUCKET_NAME, s3Client, getSignedUrl } from '@/utils/s3';
+import { BUCKET_NAME, getSignedUrl, s3Client } from '@/utils/s3';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { db } from '@db/server';
 import { type NextRequest, NextResponse } from 'next/server';
@@ -41,6 +41,7 @@ export async function GET(req: NextRequest) {
       where: {
         userId: session.user.id,
         organizationId: policy.organizationId,
+        isActive: true,
         deactivated: false,
       },
     });
@@ -53,8 +54,9 @@ export async function GET(req: NextRequest) {
     let pdfUrl: string | null = null;
 
     if (versionId) {
+      // IMPORTANT: scope the lookup to this policy to prevent cross-policy/cross-org access
       const version = await db.policyVersion.findUnique({
-        where: { id: versionId },
+        where: { id: versionId, policyId },
         select: { pdfUrl: true },
       });
       pdfUrl = version?.pdfUrl ?? null;
@@ -75,10 +77,7 @@ export async function GET(req: NextRequest) {
     const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 900 });
 
     return NextResponse.json({ success: true, url: signedUrl });
-  } catch (error) {
-    return NextResponse.json(
-      { success: false, error: 'Could not retrieve PDF.' },
-      { status: 500 },
-    );
+  } catch {
+    return NextResponse.json({ success: false, error: 'Could not retrieve PDF.' }, { status: 500 });
   }
 }

@@ -87,6 +87,17 @@ export class OrganizationService {
         throw new NotFoundException(`Organization with ID ${id} not found`);
       }
 
+      // Logo keys are scoped by organization (`${organizationId}/logo/...`,
+      // written by uploadLogo) so the signed-URL read path can trust the
+      // prefix. Reject anything that doesn't match rather than let a caller
+      // point at another tenant's asset in the shared bucket. Empty/null is
+      // allowed — that's how a logo gets cleared.
+      if (updateData.logo && !updateData.logo.startsWith(`${id}/`)) {
+        throw new BadRequestException(
+          'Logo must be a key scoped to this organization',
+        );
+      }
+
       // Persist only the profile fields an organization owner may change.
       // Platform- and billing-managed flags are set through their own flows.
       const data = {
@@ -134,6 +145,9 @@ export class OrganizationService {
       return updatedOrganization;
     } catch (error) {
       if (error instanceof NotFoundException) {
+        throw error;
+      }
+      if (error instanceof BadRequestException) {
         throw error;
       }
       this.logger.error(`Failed to update organization ${id}:`, error);
@@ -448,10 +462,21 @@ export class OrganizationService {
     return { data: configs };
   }
 
-  async getLogoSignedUrl(
-    logoKey: string | null | undefined,
-  ): Promise<string | null> {
+  async getLogoSignedUrl({
+    logoKey,
+    organizationId,
+  }: {
+    logoKey: string | null | undefined;
+    organizationId: string;
+  }): Promise<string | null> {
     if (!logoKey || !s3Client || !APP_AWS_ORG_ASSETS_BUCKET) {
+      return null;
+    }
+
+    // The org-assets bucket also holds trust documents and other tenants'
+    // logos, all keyed by organizationId. Only presign a key that is
+    // actually scoped to the caller's organization.
+    if (!logoKey.startsWith(`${organizationId}/`)) {
       return null;
     }
 

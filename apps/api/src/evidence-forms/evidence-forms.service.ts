@@ -18,9 +18,9 @@ import {
   evidenceFormDefinitions,
   evidenceFormSubmissionSchemaMap,
   evidenceFormTypeSchema,
-  type EvidenceFormFieldDefinition,
   type EvidenceFormType,
 } from './evidence-forms.definitions';
+import { getCsvFieldValue, toCsvRow } from './evidence-forms-csv';
 import { checkAutoCompletePhases } from '../frameworks/frameworks-timeline.helper';
 import { TimelinesService } from '../timelines/timelines.service';
 import { EvidenceFormsNotifierService } from './evidence-forms-notifier.service';
@@ -57,93 +57,6 @@ const EVIDENCE_FORM_REVIEWER_ROLES = ['owner', 'admin', 'auditor'] as const;
 const EVIDENCE_FORM_DELETE_ROLES = ['owner', 'admin'] as const;
 const MAX_UPLOAD_FILE_SIZE_BYTES = 100 * 1024 * 1024;
 const MAX_UPLOAD_BASE64_LENGTH = Math.ceil(MAX_UPLOAD_FILE_SIZE_BYTES / 3) * 4;
-
-// Prefix values that spreadsheet apps would parse as formulas so exported
-// CSVs can't carry executable content (CSV formula injection, GH-097).
-// Excel/Sheets strip the surrounding quotes before evaluating, so quoting
-// alone is not a mitigation. Line feed is included: some parsers trim
-// leading whitespace before evaluating, so a "\n=..." value could still
-// execute. The full-width variants (\uFF1D =, \uFF0B +, \uFF0D -,
-// \uFF20 @) are covered too: OWASP's CSV Injection guidance notes some
-// locales (e.g. Japanese environments) may interpret them as formula
-// starters.
-const FORMULA_PREFIX_PATTERN = /^[=+\-@\t\r\n\uFF1D\uFF0B\uFF0D\uFF20]/;
-
-function neutralizeFormula(value: string): string {
-  if (FORMULA_PREFIX_PATTERN.test(value)) {
-    return `'${value}`;
-  }
-  return value;
-}
-
-function toCsvRow(values: string[]): string {
-  return values
-    .map((value) => `"${neutralizeFormula(value).replace(/"/g, '""')}"`)
-    .join(',');
-}
-
-function flattenValue(value: unknown): string {
-  if (value === null || value === undefined) {
-    return '';
-  }
-
-  if (typeof value === 'object') {
-    if (
-      'fileName' in value &&
-      typeof value.fileName === 'string' &&
-      'downloadUrl' in value &&
-      typeof value.downloadUrl === 'string'
-    ) {
-      return value.downloadUrl;
-    }
-    return JSON.stringify(value);
-  }
-
-  if (typeof value === 'string') {
-    return value;
-  }
-  if (
-    typeof value === 'number' ||
-    typeof value === 'boolean' ||
-    typeof value === 'bigint'
-  ) {
-    return value.toString();
-  }
-  if (typeof value === 'symbol') {
-    return value.description ?? '';
-  }
-
-  return '';
-}
-
-function flattenMatrixRows(
-  value: unknown,
-  field: EvidenceFormFieldDefinition,
-): string {
-  if (!Array.isArray(value)) {
-    return '';
-  }
-
-  const columns = Array.isArray(field.columns) ? field.columns : [];
-  if (columns.length === 0) {
-    return JSON.stringify(value);
-  }
-
-  return value
-    .filter((row) => row && typeof row === 'object')
-    .map((row) => {
-      const rowRecord = row as Record<string, unknown>;
-      return columns
-        .map((column) => {
-          const cellValue = rowRecord[column.key];
-          const normalizedValue =
-            typeof cellValue === 'string' ? cellValue : '';
-          return `${column.label}: ${normalizedValue}`;
-        })
-        .join(' | ');
-    })
-    .join(' || ');
-}
 
 function normalizeSubmissionFormType<
   T extends { formType: DbEvidenceFormType },
@@ -234,27 +147,73 @@ export class EvidenceFormsService {
   }
 
   /**
-   * Walk submission data and regenerate fresh presigned URLs for any file fields.
-   * File fields are objects with { fileKey, downloadUrl, fileName }.
+   * Find top-level submission fields shaped like a file field, i.e. objects
+   * with a string `fileKey` (e.g. { fileKey, downloadUrl, fileName }).
    */
-  private async refreshFileUrls(
+  private findFileFieldEntries(
     data: Record<string, unknown>,
-  ): Promise<Record<string, unknown>> {
-    const refreshed: Record<string, unknown> = { ...data };
-
-    for (const [key, value] of Object.entries(refreshed)) {
-      if (
-        value &&
-        typeof value === 'object' &&
-        'fileKey' in value &&
-        typeof (value as Record<string, unknown>).fileKey === 'string'
-      ) {
-        const fileObj = value as Record<string, unknown>;
-        const freshUrl = await this.attachmentsService.getPresignedDownloadUrl(
-          fileObj.fileKey as string,
+  ): Array<[string, Record<string, unknown>]> {
+    return Object.entries(data).filter(
+      (entry): entry is [string, Record<string, unknown>] => {
+        const value = entry[1];
+        return (
+          !!value &&
+          typeof value === 'object' &&
+          'fileKey' in value &&
+          typeof (value as Record<string, unknown>).fileKey === 'string'
         );
-        refreshed[key] = { ...fileObj, downloadUrl: freshUrl };
+      },
+    );
+  }
+
+  /**
+   * Reject a submission whose file fields reference an attachment key
+   * outside the caller's own organization namespace
+   * (`${organizationId}/attachments/...`). Without this check a caller
+   * could submit another org's fileKey and have it presigned on read.
+   */
+  private assertFileKeysBelongToOrganization(params: {
+    data: Record<string, unknown>;
+    organizationId: string;
+  }): void {
+    const { data, organizationId } = params;
+    const orgPrefix = `${organizationId}/`;
+
+    for (const [, fileObj] of this.findFileFieldEntries(data)) {
+      const fileKey = fileObj.fileKey as string;
+      if (!fileKey.startsWith(orgPrefix)) {
+        throw new BadRequestException(
+          'Submitted file does not belong to this organization',
+        );
       }
+    }
+  }
+
+  /**
+   * Walk submission data and regenerate fresh presigned URLs for any file
+   * fields. Skips presigning (and clears the download URL) for any stored
+   * fileKey outside the caller's organization namespace, since legacy or
+   * tampered rows may not have passed `assertFileKeysBelongToOrganization`.
+   */
+  private async refreshFileUrls(params: {
+    data: Record<string, unknown>;
+    organizationId: string;
+  }): Promise<Record<string, unknown>> {
+    const { data, organizationId } = params;
+    const refreshed: Record<string, unknown> = { ...data };
+    const orgPrefix = `${organizationId}/`;
+
+    for (const [key, fileObj] of this.findFileFieldEntries(data)) {
+      const fileKey = fileObj.fileKey as string;
+
+      if (!fileKey.startsWith(orgPrefix)) {
+        refreshed[key] = { ...fileObj, downloadUrl: null };
+        continue;
+      }
+
+      const freshUrl =
+        await this.attachmentsService.getPresignedDownloadUrl(fileKey);
+      refreshed[key] = { ...fileObj, downloadUrl: freshUrl };
     }
 
     return refreshed;
@@ -423,9 +382,10 @@ export class EvidenceFormsService {
 
     const submissionsWithFreshUrls = await Promise.all(
       paginated.map(async (submission) => {
-        const refreshedData = await this.refreshFileUrls(
-          submission.data as Record<string, unknown>,
-        );
+        const refreshedData = await this.refreshFileUrls({
+          data: submission.data as Record<string, unknown>,
+          organizationId,
+        });
         return normalizeSubmissionFormType({
           ...submission,
           data: refreshedData,
@@ -481,9 +441,10 @@ export class EvidenceFormsService {
       throw new NotFoundException('Submission not found');
     }
 
-    const refreshedData = await this.refreshFileUrls(
-      submission.data as Record<string, unknown>,
-    );
+    const refreshedData = await this.refreshFileUrls({
+      data: submission.data as Record<string, unknown>,
+      organizationId: params.organizationId,
+    });
 
     return {
       form: evidenceFormDefinitions[parsedType.data],
@@ -587,6 +548,11 @@ export class EvidenceFormsService {
 
       throw new BadRequestException(message);
     }
+
+    this.assertFileKeysBelongToOrganization({
+      data: parsedPayload.data,
+      organizationId: params.organizationId,
+    });
 
     const submission = await db.evidenceSubmission
       .create({
@@ -816,30 +782,13 @@ export class EvidenceFormsService {
 
     const rows = await Promise.all(
       submissions.map(async (submission) => {
-        const data = submission.data as Record<string, unknown>;
-        const fieldValues = await Promise.all(
-          form.fields
-            .filter((field) => field.key !== 'submissionDate')
-            .map(async (field) => {
-              const rawValue = data[field.key];
-              if (
-                rawValue &&
-                typeof rawValue === 'object' &&
-                'fileKey' in rawValue &&
-                typeof rawValue.fileKey === 'string'
-              ) {
-                const signedUrl =
-                  await this.attachmentsService.getPresignedDownloadUrl(
-                    rawValue.fileKey,
-                  );
-                return signedUrl;
-              }
-              if (field.type === 'matrix') {
-                return flattenMatrixRows(rawValue, field);
-              }
-              return flattenValue(rawValue);
-            }),
-        );
+        const data = await this.refreshFileUrls({
+          data: z.record(z.string(), z.unknown()).parse(submission.data),
+          organizationId: params.organizationId,
+        });
+        const fieldValues = form.fields
+          .filter((field) => field.key !== 'submissionDate')
+          .map((field) => getCsvFieldValue({ value: data[field.key], field }));
 
         return [
           submission.id,

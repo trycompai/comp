@@ -42,6 +42,7 @@ export async function POST(
     const handle = await tasks.trigger<typeof linkRisksAndVendorsToWork>(
       'link-risks-and-vendors-to-work',
       { organizationId, riskId, replace: true },
+      { tags: [organizationId] },
     );
 
     const publicAccessToken = await triggerAuth.createPublicToken({

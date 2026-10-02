@@ -8,7 +8,12 @@ lifecycle scripts disabled. Prisma declarations are then generated explicitly
 from the checked-in schema for the mocked API tests, without connecting to a
 database. Tests fail the check when a regression is detected.
 
-The workflow also checks that active actions use immutable commit references,
+The broader `Security regressions` workflow retains the API, app, portal, email,
+and MCP regressions from earlier security fixes, with pinned actions and Bun and
+checkout credential persistence disabled. SDK maintenance publishing retains the
+release-only guard and `legacy` npm tag, leaving `latest` to Comp v2.
+
+The focused workflow also checks that active actions use immutable commit references,
 streamed remote shell installers are absent, Bun matches the root package manager
 version, and the retired workflows remain inactive. Dependabot updates GitHub
 Actions references weekly. Configure `Security Regression` as a required check if
