@@ -296,6 +296,7 @@ function FilePreview({ file }: FilePreviewProps) {
         height={48}
         loading="lazy"
         className="aspect-square shrink-0 rounded-sm object-cover"
+        unoptimized
       />
     );
   }

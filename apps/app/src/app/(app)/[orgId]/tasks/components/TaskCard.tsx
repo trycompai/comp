@@ -210,6 +210,7 @@ export function TaskCard({
                 width={20}
                 height={20}
                 className="object-cover"
+                unoptimized
               />
             ) : (
               <span className="text-muted-foreground text-[10px]">

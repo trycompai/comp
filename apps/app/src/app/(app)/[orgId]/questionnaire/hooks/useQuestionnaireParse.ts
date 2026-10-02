@@ -1,27 +1,23 @@
 'use client';
 
-import { api } from '@/lib/api-client';
 import { isFailureRunStatus } from '@/app/(app)/[orgId]/cloud-tests/status';
+import { api } from '@/lib/api-client';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import type { QuestionAnswer } from '../components/types';
+import { z } from 'zod';
+
+const parseResultSchema = z.object({
+  success: z.boolean(),
+  questionnaireId: z.string(),
+  questionsAndAnswers: z
+    .array(z.object({ question: z.string(), answer: z.string().nullable() }))
+    .optional(),
+});
 
 interface UseQuestionnaireParseProps {
-  parseTaskId: string | null;
-  parseToken: string | null;
-  autoAnswerToken: string | null;
-  setAutoAnswerToken: (token: string | null) => void;
   setIsParseProcessStarted: (started: boolean) => void;
-  setParseTaskId: (id: string | null) => void;
-  setParseToken: (token: string | null) => void;
-  setResults: (results: QuestionAnswer[] | null) => void;
-  setExtractedContent: (content: string | null) => void;
-  setQuestionStatuses: React.Dispatch<
-    React.SetStateAction<Map<number, 'pending' | 'processing' | 'completed'>>
-  >;
-  setHasClickedAutoAnswer: (clicked: boolean) => void;
   setQuestionnaireId: (id: string | null) => void;
   orgId: string;
 }
@@ -29,8 +25,6 @@ interface UseQuestionnaireParseProps {
 type ParseStatus = 'idle' | 'executing';
 
 export function useQuestionnaireParse({
-  autoAnswerToken,
-  setAutoAnswerToken,
   setIsParseProcessStarted,
   setQuestionnaireId,
   orgId,
@@ -41,29 +35,6 @@ export function useQuestionnaireParse({
   const [runId, setRunId] = useState<string | null>(null);
   const [runToken, setRunToken] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
-
-  // Get trigger token for auto-answer (can trigger and read)
-  useEffect(() => {
-    async function getAutoAnswerToken() {
-      try {
-        const res = await fetch('/api/questionnaire/trigger-token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ taskId: 'vendor-questionnaire-orchestrator' }),
-        });
-        const data = await res.json();
-        if (data.success && data.token) {
-          setAutoAnswerToken(data.token);
-        }
-      } catch (error) {
-        console.error('Failed to get trigger token:', error);
-      }
-    }
-    if (!autoAnswerToken) {
-      getAutoAnswerToken();
-    }
-  }, [autoAnswerToken, setAutoAnswerToken]);
 
   // Track the parse task via realtime
   const { run: parseRun } = useRealtimeRun(runId ?? '', {
@@ -76,17 +47,12 @@ export function useQuestionnaireParse({
     if (!parseRun?.status) return;
 
     if (parseRun.status === 'COMPLETED') {
-      const output = parseRun.output as {
-        success: boolean;
-        questionnaireId: string;
-        questionsAndAnswers: { question: string; answer: string | null }[];
-      } | undefined;
+      const parsedOutput = parseResultSchema.safeParse(parseRun.output);
+      const output = parsedOutput.success ? parsedOutput.data : undefined;
 
       if (output?.success && output.questionnaireId) {
         setQuestionnaireId(output.questionnaireId);
-        toast.success(
-          `Successfully parsed ${output.questionsAndAnswers?.length ?? 0} questions`,
-        );
+        toast.success(`Successfully parsed ${output.questionsAndAnswers?.length ?? 0} questions`);
         router.push(`/${orgId}/questionnaire/${output.questionnaireId}`);
       } else {
         setIsParseProcessStarted(false);
@@ -164,11 +130,7 @@ export function useQuestionnaireParse({
         setUploadStatus('idle');
         setParseStatus('idle');
         console.error('Parse error:', error);
-        toast.error(
-          error instanceof Error
-            ? error.message
-            : 'Failed to parse questionnaire',
-        );
+        toast.error(error instanceof Error ? error.message : 'Failed to parse questionnaire');
       }
     },
     [setIsParseProcessStarted],

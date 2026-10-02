@@ -109,6 +109,7 @@ export function UpdateOrganizationLogo({ currentLogoUrl }: UpdateOrganizationLog
                 alt="Organization logo"
                 fill
                 className="object-contain p-2"
+                unoptimized
               />
             ) : (
               <ImagePlus className="h-8 w-8 text-muted-foreground/50" />

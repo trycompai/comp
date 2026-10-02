@@ -11,17 +11,7 @@ export function useQuestionnaireParser() {
   const state = useQuestionnaireState();
 
   const parse = useQuestionnaireParse({
-    parseTaskId: state.parseTaskId,
-    parseToken: state.parseToken,
-    autoAnswerToken: state.autoAnswerToken,
-    setAutoAnswerToken: state.setAutoAnswerToken,
     setIsParseProcessStarted: state.setIsParseProcessStarted,
-    setParseTaskId: state.setParseTaskId,
-    setParseToken: state.setParseToken,
-    setResults: state.setResults,
-    setExtractedContent: state.setExtractedContent,
-    setQuestionStatuses: state.setQuestionStatuses,
-    setHasClickedAutoAnswer: state.setHasClickedAutoAnswer,
     setQuestionnaireId: state.setQuestionnaireId,
     orgId: state.orgId,
   });
@@ -91,11 +81,7 @@ export function useQuestionnaireParser() {
     const isParseActionExecuting = parse.parseAction.status === 'executing';
 
     return isUploading || isParseActionExecuting;
-  }, [
-    parse.uploadFileAction.status,
-    parse.parseAction.status,
-    state.isParseProcessStarted,
-  ]);
+  }, [parse.uploadFileAction.status, parse.parseAction.status, state.isParseProcessStarted]);
 
   const filteredResults = useMemo(() => {
     if (!state.results) return null;
@@ -134,11 +120,7 @@ export function useQuestionnaireParser() {
       return 'analyzing';
     }
     return null;
-  }, [
-    parse.uploadFileAction.status,
-    parse.parseAction.status,
-    state.isParseProcessStarted,
-  ]);
+  }, [parse.uploadFileAction.status, parse.parseAction.status, state.isParseProcessStarted]);
 
   // Throttled status for smooth transitions
   const [parseStatus, setParseStatus] = useState<

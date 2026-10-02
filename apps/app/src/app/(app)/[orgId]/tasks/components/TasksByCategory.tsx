@@ -346,6 +346,7 @@ export function TasksByCategory({ tasks, members, statusFilter }: TasksByCategor
                                   width={32}
                                   height={32}
                                   className="h-full w-full object-cover"
+                                  unoptimized
                                 />
                               ) : (
                                 <span className="text-[11px] font-medium uppercase">

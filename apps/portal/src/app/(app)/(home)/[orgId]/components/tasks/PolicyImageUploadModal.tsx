@@ -151,6 +151,7 @@ export function PolicyImageUploadModal({
                             width={32}
                             height={32}
                             className="h-full w-full object-cover"
+                            unoptimized
                           />
                         </div>
                         <span className="truncate">{item.file.name}</span>

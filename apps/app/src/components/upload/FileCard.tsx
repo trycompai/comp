@@ -71,6 +71,7 @@ export function FileCard({
                   fill
                   className="object-contain"
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 75vw, 50vw"
+                  unoptimized
                 />
                 <DialogTrigger asChild>
                   <Button
@@ -141,6 +142,7 @@ export function FileCard({
                       fill
                       className="object-contain"
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 75vw, 50vw"
+                      unoptimized
                     />
                   </div>
                 ) : isPdf ? (
