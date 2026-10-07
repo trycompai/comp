@@ -1,10 +1,9 @@
 name: Device Agent Release
 
-# The push trigger is intentionally limited to protected branches (main, release).
-# This pipeline handles Apple code-signing secrets (MAC_CSC_LINK, APPLE_ID, ...) and
-# SSL.com eSigner secrets (ESIGNER_*) - broadening it to arbitrary branches would let
-# anyone who can push a branch exfiltrate those credentials. Manual staging builds are
-# still available via workflow_dispatch.
+# Signed builds run only for main (staging) and release (production), inside the
+# matching GitHub environment. The environment deployment-branch policy enforces
+# this independently of the workflow file, so a build dispatched from, or pushed
+# on, any other branch is rejected rather than signed.
 on:
   workflow_dispatch:
   push:
@@ -94,6 +93,7 @@ jobs:
   build-macos:
     name: Build macOS (.dmg + .zip)
     needs: detect-version
+    if: github.ref_name == 'main' || github.ref_name == 'release'
     runs-on: macos-latest
     environment: ${{ needs.detect-version.outputs.s3_env }}
     defaults:
@@ -153,6 +153,7 @@ jobs:
   build-windows:
     name: Build Windows (.exe)
     needs: detect-version
+    if: github.ref_name == 'main' || github.ref_name == 'release'
     runs-on: windows-latest
     environment: ${{ needs.detect-version.outputs.s3_env }}
     defaults:
@@ -302,6 +303,7 @@ jobs:
   build-linux:
     name: Build Linux (.AppImage, .deb)
     needs: detect-version
+    if: github.ref_name == 'main' || github.ref_name == 'release'
     runs-on: ubuntu-latest
     defaults:
       run:
