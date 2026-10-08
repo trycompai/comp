@@ -64,6 +64,7 @@ describe('auditLogEvidenceCheck', () => {
     await auditLogEvidenceCheck.run(fake.ctx);
     expect(fake.passed).toEqual(['audit-log']);
     expect(fake.failed).toEqual([]);
+    expect(fake.calls.map((c) => c.params?.outcome)).toEqual([undefined, 'denied']);
     const since = Date.parse(fake.calls[0]?.params?.since ?? '');
     expect(Math.round((Date.now() - since) / 86_400_000)).toBe(7);
   });

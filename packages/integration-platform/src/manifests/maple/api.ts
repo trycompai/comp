@@ -44,7 +44,12 @@ export function requireMapleBaseUrl(ctx: CheckContext): string | null {
 /** Fetches every page of a Maple v2 list endpoint */
 export function listAll<T>(
   ctx: CheckContext,
-  { baseUrl, path, params }: { baseUrl: string; path: string; params?: Record<string, string> },
+  {
+    baseUrl,
+    path,
+    params,
+    maxPages = MAX_PAGES,
+  }: { baseUrl: string; path: string; params?: Record<string, string>; maxPages?: number },
 ): Promise<T[]> {
   return ctx.fetchWithCursor<T>(path, {
     baseUrl,
@@ -52,7 +57,7 @@ export function listAll<T>(
     cursorParam: 'cursor',
     cursorPath: 'next_cursor',
     dataPath: 'data',
-    maxPages: MAX_PAGES,
+    maxPages,
   });
 }
 

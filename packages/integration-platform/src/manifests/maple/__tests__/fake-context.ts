@@ -46,7 +46,11 @@ export function fakeContext({
       const route = routes[path];
       if (route === undefined) throw new Error(`Unexpected fetch: ${path}`);
       if (route instanceof Error) throw route;
-      return route as T[];
+      const outcome = options?.params?.outcome;
+      const rows = outcome
+        ? route.filter((row) => (row as { outcome?: string }).outcome === outcome)
+        : route;
+      return rows as T[];
     }) as CheckContext['fetchWithCursor'],
   } as unknown as CheckContext;
 

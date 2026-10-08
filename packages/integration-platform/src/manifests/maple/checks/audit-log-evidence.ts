@@ -4,6 +4,8 @@ import type { MapleAuditLogEntry } from '../types';
 import { auditWindowDaysVariable, parseAuditWindowDays } from '../variables';
 
 const TOP_N = 20;
+/** Newest entries sampled for the activity summary; denied entries are always fetched in full */
+const SAMPLE_PAGES = 10;
 
 /**
  * Maple Audit Log Evidence Check
@@ -29,19 +31,31 @@ export const auditLogEvidenceCheck: IntegrationCheck = {
 
     ctx.log(`Fetching Maple audit log since ${since.toISOString()}`);
     let entries: MapleAuditLogEntry[];
+    let denied: MapleAuditLogEntry[];
     try {
-      entries = await listAll<MapleAuditLogEntry>(ctx, {
-        baseUrl,
-        path: '/v2/audit_log',
-        params: { since: since.toISOString() },
-      });
+      [entries, denied] = await Promise.all([
+        listAll<MapleAuditLogEntry>(ctx, {
+          baseUrl,
+          path: '/v2/audit_log',
+          params: { since: since.toISOString() },
+          maxPages: SAMPLE_PAGES,
+        }),
+        listAll<MapleAuditLogEntry>(ctx, {
+          baseUrl,
+          path: '/v2/audit_log',
+          params: { since: since.toISOString(), outcome: 'denied' },
+        }),
+      ]);
     } catch (error) {
       failMapleRequest(ctx, { error, resource: 'audit log', scope: 'audit_log:read' });
       return;
     }
 
-    const denied = entries.filter((entry) => entry.outcome === 'denied');
-    ctx.log(`Found ${entries.length} entries, ${denied.length} denied`);
+    // A full sample page set means older entries in the window were not read.
+    const truncated = entries.length >= SAMPLE_PAGES * 100;
+    ctx.log(
+      `Sampled ${entries.length} entries${truncated ? ' (truncated)' : ''}, ${denied.length} denied`,
+    );
 
     if (denied.length > 0) {
       ctx.fail({
@@ -70,10 +84,13 @@ export const auditLogEvidenceCheck: IntegrationCheck = {
       title: 'Maple audit log is recorded',
       resourceType: 'maple',
       resourceId: 'audit-log',
-      description: `${entries.length} audit log entries in the last ${windowDays} days.`,
+      description: truncated
+        ? `More than ${entries.length} audit log entries in the last ${windowDays} days; the newest ${entries.length} are summarized.`
+        : `${entries.length} audit log entries in the last ${windowDays} days.`,
       evidence: {
         since: since.toISOString(),
-        totalEntries: entries.length,
+        sampledEntries: entries.length,
+        truncated,
         deniedEntries: denied.length,
         byAction: countBy(entries, (entry) => entry.action),
         byActor: countBy(
