@@ -22,7 +22,7 @@ export const mapleManifest: IntegrationManifest = {
   description:
     'Connect Maple to verify production services are monitored, alerts reach your team, and API keys are managed.',
   category: 'Monitoring',
-  logoUrl: 'https://img.logo.dev/maple.dev?token=pk_AZatYxV5QDSfWpRDaBxzRQ',
+  logoUrl: 'https://maple.dev/logo512.png',
   docsUrl: 'https://api.maple.dev/v2/docs',
 
   baseUrl: MAPLE_US_API_URL,

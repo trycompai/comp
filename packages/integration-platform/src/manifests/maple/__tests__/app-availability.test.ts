@@ -17,13 +17,13 @@ const run = async (
 };
 
 describe('appAvailabilityCheck', () => {
-  it('passes a service covered by an all-services rule', async () => {
+  it('passes once with a routed availability rule', async () => {
     const { passed, failed } = await run({
-      '/v2/services': [makeService()],
-      '/v2/alerts/rules': [makeRule()],
+      '/v2/services': [makeService(), makeService({ name: 'payments' })],
+      '/v2/alerts/rules': [makeRule({ service_names: ['payments'] })],
     });
     expect(failed).toEqual([]);
-    expect(passed).toEqual(['checkout']);
+    expect(passed).toEqual(['availability-alerts']);
   });
 
   it('fails when no services report telemetry', async () => {
@@ -31,40 +31,33 @@ describe('appAvailabilityCheck', () => {
     expect(failed).toEqual(['services']);
   });
 
-  it('fails a service only covered by a rule scoped to another service', async () => {
-    const { failed } = await run({
-      '/v2/services': [makeService()],
-      '/v2/alerts/rules': [makeRule({ service_names: ['payments'] })],
-    });
-    expect(failed).toEqual(['checkout']);
-  });
-
-  it('fails a service excluded from the rule', async () => {
-    const { failed } = await run({
-      '/v2/services': [makeService()],
-      '/v2/alerts/rules': [makeRule({ exclude_service_names: ['checkout'] })],
-    });
-    expect(failed).toEqual(['checkout']);
-  });
-
-  it('ignores rules on another environment, disabled rules, and query rules', async () => {
-    const { failed } = await run({
+  it('fails when no rule is an enabled, routed availability rule', async () => {
+    const { failed, passed } = await run({
       '/v2/services': [makeService()],
       '/v2/alerts/rules': [
-        makeRule({ id: 'a', environments: ['staging'] }),
-        makeRule({ id: 'b', enabled: false }),
-        makeRule({ id: 'c', signal_type: 'raw_query' }),
+        makeRule({ id: 'a', enabled: false }),
+        makeRule({ id: 'b', signal_type: 'raw_query' }),
+        makeRule({ id: 'c', destination_ids: [] }),
       ],
     });
-    expect(failed).toEqual(['checkout']);
+    expect(failed).toEqual(['availability-alerts']);
+    expect(passed).toEqual([]);
   });
 
-  it('ignores rules without an enabled destination', async () => {
-    const { failed } = await run({
-      '/v2/services': [makeService()],
-      '/v2/alerts/rules': [makeRule({ destination_ids: [] })],
+  it('records per-service coverage as evidence', async () => {
+    const fake = fakeContext({
+      routes: {
+        '/v2/alerts/destinations': [makeDestination()],
+        '/v2/services': [makeService(), makeService({ name: 'payments' })],
+        '/v2/alerts/rules': [makeRule({ exclude_service_names: ['checkout'] })],
+      },
     });
-    expect(failed).toEqual(['checkout']);
+    let evidence: Record<string, unknown> | undefined;
+    fake.ctx.pass = (result) => {
+      evidence = result.evidence;
+    };
+    await appAvailabilityCheck.run(fake.ctx);
+    expect(evidence?.uncoveredServices).toEqual(['checkout']);
   });
 
   it('passes the environment and window to the services query', async () => {

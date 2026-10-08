@@ -26,15 +26,16 @@ const AVAILABILITY_SIGNALS: ReadonlySet<MapleAlertSignalType> = new Set([
 /**
  * Maple App Availability Check
  *
- * Verifies that services are sending telemetry and that each one is covered by an
- * enabled, routed availability alert (error rate, latency, Apdex, or throughput).
+ * Verifies that services are sending telemetry and that at least one enabled, routed
+ * availability alert (error rate, latency, Apdex, or throughput) exists. Per-service
+ * coverage is recorded as evidence.
  * Maps to: App Availability task
  */
 export const appAvailabilityCheck: IntegrationCheck = {
   id: 'app-availability',
   name: 'Services Have Availability Alerts',
   description:
-    'Verify services are reporting telemetry and each one is covered by an error rate, latency, Apdex, or throughput alert',
+    'Verify services are reporting telemetry and an error rate, latency, Apdex, or throughput alert notifies your team',
   service: 'availability',
   taskMapping: TASK_TEMPLATES.appAvailability,
   defaultSeverity: 'medium',
@@ -106,43 +107,53 @@ export const appAvailabilityCheck: IntegrationCheck = {
       `${services.length} services reporting, ${availabilityRules.length} routed availability rules`,
     );
 
-    for (const service of services) {
-      const covering = availabilityRules.filter((rule) => ruleCoversService(rule, service));
-      const evidence = {
-        service: service.name,
-        environments: service.deployment_environments,
-        spanCount: service.span_count,
-        errorRate: service.error_rate,
-        p95LatencyMs: service.p95_latency_ms,
-        coveringRules: covering.map((rule) => ({
-          id: rule.id,
-          name: rule.name,
-          signalType: rule.signal_type,
-        })),
-      };
+    const coverage = services.map((service) => ({
+      service: service.name,
+      environments: service.deployment_environments,
+      spanCount: service.span_count,
+      errorRate: service.error_rate,
+      p95LatencyMs: service.p95_latency_ms,
+      coveringRules: availabilityRules
+        .filter((rule) => ruleCoversService(rule, service))
+        .map((rule) => rule.name),
+    }));
+    const uncovered = coverage.filter((c) => c.coveringRules.length === 0).map((c) => c.service);
+    const evidence = {
+      environment,
+      lookbackHours,
+      availabilityRules: availabilityRules.map((rule) => ({
+        id: rule.id,
+        name: rule.name,
+        signalType: rule.signal_type,
+        services: rule.service_names.length > 0 ? rule.service_names : 'all',
+      })),
+      uncoveredServices: uncovered,
+      services: coverage,
+    };
 
-      if (covering.length === 0) {
-        ctx.fail({
-          title: `"${service.name}" has no availability alert`,
-          resourceType: 'service',
-          resourceId: service.name,
-          severity: 'medium',
-          description:
-            'This service is sending telemetry, but no enabled error rate, latency, Apdex, or throughput rule with a destination covers it.',
-          remediation: `In Maple, open Alerts → Rules and create an error rate or latency rule that includes "${service.name}" (or applies to all services) and notifies an enabled destination.`,
-          evidence,
-        });
-        continue;
-      }
-
-      ctx.pass({
-        title: `"${service.name}" is monitored for availability`,
-        resourceType: 'service',
-        resourceId: service.name,
-        description: `Covered by ${covering.map((rule) => rule.name).join(', ')}.`,
+    // Coverage is judged org-wide: one routed availability rule is enough. Per-service
+    // gaps stay in the evidence, since not every service warrants its own alert.
+    if (availabilityRules.length === 0) {
+      ctx.fail({
+        title: 'No availability alerts',
+        resourceType: 'maple',
+        resourceId: 'availability-alerts',
+        severity: 'high',
+        description: `${services.length} services are sending telemetry, but no enabled error rate, latency, Apdex, or throughput rule notifies an enabled destination.`,
+        remediation:
+          'In Maple, open Alerts → Rules and create an error rate or latency rule for your services that notifies an enabled destination.',
         evidence,
       });
+      return;
     }
+
+    ctx.pass({
+      title: 'Services are monitored for availability',
+      resourceType: 'maple',
+      resourceId: 'availability-alerts',
+      description: `${services.length - uncovered.length}/${services.length} services covered by ${availabilityRules.length} availability rule${availabilityRules.length === 1 ? '' : 's'}.`,
+      evidence,
+    });
   },
 };
 
