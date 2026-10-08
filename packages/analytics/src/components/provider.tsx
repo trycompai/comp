@@ -3,6 +3,7 @@
 import posthog from 'posthog-js';
 import { PostHogProvider as PHProvider } from 'posthog-js/react';
 import { useEffect } from 'react';
+import { dropBrowserExtensionExceptions } from '../lib/before-send';
 import { PostHogPageView } from './page-view';
 
 interface ProviderProps {
@@ -20,6 +21,10 @@ export function AnalyticsProvider({ children, userId, userEmail }: ProviderProps
     posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
       api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
       capture_pageview: true,
+      // Drop browser-extension exception noise (e.g. WebExtension
+      // `runtime.sendMessage` "Tab not found" errors) before it reaches
+      // error tracking. None of this originates from our code.
+      before_send: dropBrowserExtensionExceptions,
       session_recording: {
         maskAllInputs: false,
         maskInputOptions: {
