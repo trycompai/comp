@@ -172,6 +172,8 @@ export class OffboardingChecklistService {
           ...template,
           templateItemId: template.id,
           completed: !!completion,
+          isException: completion?.isException ?? false,
+          exceptionReason: completion?.exceptionReason ?? null,
           completion: completion ?? null,
           evidence,
         };
@@ -260,6 +262,58 @@ export class OffboardingChecklistService {
     }
 
     return completion;
+  }
+
+  async markException({
+    organizationId,
+    memberId,
+    templateItemId,
+    completedById,
+    reason,
+  }: {
+    organizationId: string;
+    memberId: string;
+    templateItemId: string;
+    completedById: string;
+    reason: string;
+  }) {
+    const existing = await db.offboardingChecklistCompletion.findFirst({
+      where: { organizationId, memberId, templateItemId },
+    });
+
+    if (existing) {
+      throw new BadRequestException('Item is already resolved');
+    }
+
+    const template = await db.offboardingChecklistTemplate.findFirst({
+      where: { id: templateItemId, organizationId, isEnabled: true },
+    });
+
+    if (!template) {
+      throw new NotFoundException('Template item not found');
+    }
+
+    // The access-revocation step is driven by the per-vendor revocation flow,
+    // so it can't be blanket-excepted here.
+    if (template.isAccessRevocation) {
+      throw new BadRequestException(
+        'The access revocation step cannot be marked as an exception',
+      );
+    }
+
+    // An exception resolves the step without evidence (that's the point — the
+    // step could not or need not be done), so the evidenceRequired check that
+    // completeItem enforces is intentionally skipped.
+    return db.offboardingChecklistCompletion.create({
+      data: {
+        organizationId,
+        memberId,
+        templateItemId,
+        completedById,
+        isException: true,
+        exceptionReason: reason.trim(),
+      },
+    });
   }
 
   async uncompleteItem({
