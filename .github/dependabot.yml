@@ -1,14 +1,47 @@
 version: 2
 updates:
-  - package-ecosystem: github-actions
-    directory: '/'
-    schedule:
-      interval: weekly
-    target-branch: 'main'
-    open-pull-requests-limit: 3
+  # Root bun workspace (covers apps/*, apps/browser-extension/*, packages/*
+  # via bun workspaces — all resolve into the root bun.lock).
   - package-ecosystem: npm
     directory: '/'
     schedule:
       interval: daily
     target-branch: 'main'
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 25
+    groups:
+      # Group minor/patch security bumps so the bot opens one PR instead of
+      # dozens, keeping the queue manageable.
+      security:
+        applies-to: security-updates
+        patterns:
+          - '*'
+        update-types:
+          - patch
+          - minor
+      # Keep the design-system and tiptap pins grouped to avoid lockfile churn.
+      tiptap:
+        patterns:
+          - '@tiptap/*'
+          - 'prosemirror-*'
+
+  # apps/mcp-server is EXCLUDED from the bun workspace and uses its own npm
+  # package-lock.json, so it needs its own Dependabot entry.
+  - package-ecosystem: npm
+    directory: '/apps/mcp-server'
+    schedule:
+      interval: daily
+    target-branch: 'main'
+    open-pull-requests-limit: 10
+    groups:
+      security:
+        applies-to: security-updates
+        patterns:
+          - '*'
+
+  # GitHub Actions workflows (actions/* bumps — e.g. upload/download-artifact).
+  - package-ecosystem: github-actions
+    directory: '/'
+    schedule:
+      interval: weekly
+    target-branch: 'main'
+    open-pull-requests-limit: 10
