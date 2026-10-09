@@ -48,7 +48,7 @@
         "postcss": "^8.5.4",
         "tailwindcss": "^4.1.8",
         "typescript": "^5.8.3",
-        "vitest": "^3.2.7"
+        "vitest": "^4.1.11"
     },
     "peerDependencies": {
         "react": "^19.1.1",
