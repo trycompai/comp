@@ -15,6 +15,7 @@ export type { AssigneeData, PoliciesOverview };
 interface PolicyFromApi {
   id: string;
   status: string;
+  lastPublishedAt: string | null;
   isArchived: boolean;
   archivedAt: string | null;
   assigneeId: string | null;

@@ -87,6 +87,35 @@ describe('frameworks-scores.helper', () => {
     });
   });
 
+  it('keeps a published policy counted as published while a new version is pending approval', async () => {
+    (mockDb.member.findMany as jest.Mock).mockResolvedValue([]);
+    mockFilterComplianceMembers.mockResolvedValue([]);
+    (mockDb.organization.findUnique as jest.Mock).mockResolvedValue({
+      securityTrainingStepEnabled: false,
+      deviceAgentStepEnabled: false,
+      backgroundCheckStepEnabled: false,
+    });
+    (mockDb.policy.findMany as jest.Mock).mockResolvedValue([
+      { id: 'pol_1', status: 'published', lastPublishedAt: new Date() },
+      { id: 'pol_2', status: 'needs_review', lastPublishedAt: new Date() },
+      { id: 'pol_3', status: 'needs_review', lastPublishedAt: null },
+      { id: 'pol_4', status: 'draft', lastPublishedAt: null },
+    ]);
+
+    const scores = await getOverviewScores('org_1');
+
+    expect(scores.policies.total).toBe(4);
+    expect(scores.policies.published).toBe(2);
+    expect(scores.policies.unpublishedPolicies.map((p) => p.id)).toEqual([
+      'pol_3',
+      'pol_4',
+    ]);
+    expect(scores.policies.policiesInReview.map((p) => p.id)).toEqual([
+      'pol_2',
+      'pol_3',
+    ]);
+  });
+
   it('requires installed device for people completion when device agent step is enabled', async () => {
     const members: Array<{
       id: string;

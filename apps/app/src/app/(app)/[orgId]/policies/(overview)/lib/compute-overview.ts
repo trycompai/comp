@@ -4,6 +4,7 @@ import { isArchivedPolicy } from '../../lib/policy-archive-state';
 interface PolicyForOverview {
   id: string;
   status: string;
+  lastPublishedAt?: Date | string | null;
   isArchived: boolean;
   archivedAt?: Date | string | null;
   assigneeId: string | null;
@@ -35,6 +36,15 @@ export interface PoliciesOverview {
 }
 
 /**
+ * A policy with a new version pending approval keeps its previously published
+ * version active, so it still counts as published.
+ */
+function getEffectiveStatus(policy: PolicyForOverview): string {
+  if (policy.status === 'needs_review' && policy.lastPublishedAt) return 'published';
+  return policy.status;
+}
+
+/**
  * Compute overview stats from policies array
  * Pure function - works on both server and client
  */
@@ -48,15 +58,16 @@ export function computePoliciesOverview(policies: PolicyForOverview[]): Policies
 
   for (const policy of policies) {
     const archived = isArchivedPolicy(policy);
+    const status = getEffectiveStatus(policy);
 
     // Count by status
     if (archived) {
       archivedPolicies += 1;
-    } else if (policy.status === 'published') {
+    } else if (status === 'published') {
       publishedPolicies += 1;
-    } else if (policy.status === 'draft') {
+    } else if (status === 'draft') {
       draftPolicies += 1;
-    } else if (policy.status === 'needs_review') {
+    } else if (status === 'needs_review') {
       needsReviewPolicies += 1;
     }
 
@@ -80,11 +91,11 @@ export function computePoliciesOverview(policies: PolicyForOverview[]): Policies
 
       if (archived) {
         assigneeData.archived += 1;
-      } else if (policy.status === 'published') {
+      } else if (status === 'published') {
         assigneeData.published += 1;
-      } else if (policy.status === 'draft') {
+      } else if (status === 'draft') {
         assigneeData.draft += 1;
-      } else if (policy.status === 'needs_review') {
+      } else if (status === 'needs_review') {
         assigneeData.needs_review += 1;
       }
     }

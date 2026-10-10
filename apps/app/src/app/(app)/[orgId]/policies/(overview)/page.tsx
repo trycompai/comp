@@ -42,6 +42,7 @@ export default async function PoliciesPage({ params }: PoliciesPageProps) {
     policies.map((p) => ({
       id: p.id,
       status: p.status,
+      lastPublishedAt: p.lastPublishedAt,
       isArchived: isArchivedPolicy(p),
       assigneeId: p.assigneeId,
       assignee: p.assignee,

@@ -50,13 +50,19 @@ export async function getOverviewScores(organizationId: string) {
   const backgroundCheckStepEnabled = org?.backgroundCheckStepEnabled === true;
   const hasHipaaFramework = !!hipaaInstance;
 
-  const publishedPolicies = allPolicies.filter((p) => p.status === 'published');
+  // A policy with a new version pending approval keeps its previously
+  // published version active, so it still counts as published.
+  const hasActivePublishedVersion = (p: (typeof allPolicies)[number]) =>
+    p.status === 'published' ||
+    (p.status === 'needs_review' && p.lastPublishedAt !== null);
+
+  const publishedPolicies = allPolicies.filter(hasActivePublishedVersion);
   const draftPolicies = allPolicies.filter((p) => p.status === 'draft');
   const policiesInReview = allPolicies.filter(
     (p) => p.status === 'needs_review',
   );
   const unpublishedPolicies = allPolicies.filter(
-    (p) => p.status === 'draft' || p.status === 'needs_review',
+    (p) => !hasActivePublishedVersion(p),
   );
 
   const doneTasks = allTasks.filter(
