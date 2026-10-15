@@ -39,6 +39,11 @@ const config: NextConfig = {
       ? `${process.env.STATIC_ASSETS_URL}/app`
       : '',
   reactStrictMode: false,
+  // Docker builds set SKIP_TYPECHECK=true: the type-check step alone can exhaust
+  // a typical Docker Desktop VM's memory. Types are still checked in dev/CI.
+  typescript: {
+    ignoreBuildErrors: process.env.SKIP_TYPECHECK === 'true',
+  },
   transpilePackages: [
     '@trycompai/auth',
     '@trycompai/db',

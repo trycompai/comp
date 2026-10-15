@@ -4,7 +4,7 @@ import { prismaExtension } from './customPrismaExtension';
 
 export default defineConfig({
   runtime: 'node-22',
-  project: 'proj_lhxjliiqgcdyqbgtucda',
+  project: 'proj_druvwpokbjbpegrmmxut',
   logLevel: 'log',
   // PrismaInstrumentation was emitting a `prisma:client:operation` span for
   // every query, drowning out our own task logs. We rely on per-task

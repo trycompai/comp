@@ -162,6 +162,14 @@ test-results/
 .turbo
 */.turbo
 
+# Local dev caches at any depth (e.g. apps/app/.next is several GB after `next dev`)
+**/.next
+**/.turbo
+**/.trigger
+.worktrees
+.claude
+execregen-evaluation
+
 # Build artifacts and caches
 */dist/
 **/dist/

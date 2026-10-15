@@ -1,9 +1,29 @@
 version: '3.7'
 
 services:
+  # One-shot: creates a self-signed TLS certificate for PostgreSQL (kept in a volume).
+  # The app's database client requires TLS for any host other than localhost, so
+  # containers that reach the database as "postgres" need TLS enabled on the server.
+  pg-certs:
+    container_name: comp-pg-certs
+    image: alpine:3.20
+    volumes:
+      - postgres_certs:/certs
+    entrypoint: ['/bin/sh', '-c']
+    command:
+      - >
+        [ -f /certs/server.key ] || (apk add --no-cache openssl > /dev/null &&
+        openssl req -new -x509 -days 3650 -nodes -subj /CN=postgres
+        -keyout /certs/server.key -out /certs/server.crt &&
+        chown 70:70 /certs/server.key /certs/server.crt && chmod 600 /certs/server.key)
+
   postgres:
+    container_name: comp-postgres
     image: postgres:17-alpine
     restart: always
+    depends_on:
+      pg-certs:
+        condition: service_completed_successfully
     environment:
       - POSTGRES_DB=comp
       - POSTGRES_USER=postgres
@@ -19,14 +39,104 @@ services:
       retries: 20
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    command: postgres -c listen_addresses='*'
+      - postgres_certs:/certs:ro
+    # ssl=on enables TLS but still accepts non-TLS clients (e.g. local dev on localhost)
+    command: postgres -c listen_addresses='*' -c ssl=on -c ssl_cert_file=/certs/server.crt -c ssl_key_file=/certs/server.key
     logging:
       options:
         max-size: '10m'
         max-file: '3'
 
+  redis:
+    container_name: comp-redis
+    image: redis:7-alpine
+    restart: always
+    ports:
+      # Host port 6380 avoids clashing with other local Redis containers on 6379;
+      # the app reaches Redis through redis-http (8079), not this port.
+      - '6380:6379'
+    networks:
+      - prisma-network
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 2s
+      retries: 20
+
+  # Upstash-compatible REST proxy so @upstash/redis works against local Redis.
+  # Set UPSTASH_REDIS_REST_URL=http://localhost:8079 and
+  # UPSTASH_REDIS_REST_TOKEN=local_dev_token in your .env files.
+  redis-http:
+    container_name: comp-redis-http
+    image: hiett/serverless-redis-http:latest
+    restart: always
+    environment:
+      - SRH_MODE=env
+      - SRH_TOKEN=local_dev_token
+      - SRH_CONNECTION_STRING=redis://redis:6379
+    ports:
+      - '8079:80'
+    networks:
+      - prisma-network
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # S3-compatible storage for local dev (SeaweedFS's S3 gateway).
+  # Both apps honour APP_AWS_ENDPOINT and switch to path-style addressing when
+  # it is set, so pointing them at http://localhost:8333 is all that's needed.
+  # Not MinIO (images pulled from Docker Hub, quay.io now needs auth) and not
+  # LocalStack (the community image was discontinued in 2026.03).
+  s3:
+    container_name: comp-s3
+    image: chrislusf/seaweedfs:latest
+    restart: always
+    command: server -dir=/data -s3 -s3.port=8333 -master.volumeSizeLimitMB=1024
+    ports:
+      - '8333:8333'
+    networks:
+      - prisma-network
+    healthcheck:
+      # SeaweedFS binds the S3 port to the container IP, not loopback, so
+      # probe via the service name rather than localhost.
+      test: ['CMD-SHELL', 'wget -q -O - http://s3:8333/ > /dev/null']
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    volumes:
+      - s3_data:/data
+
+  # One-shot: creates the buckets the app/api expect, then exits.
+  s3-init:
+    container_name: comp-s3-init
+    image: amazon/aws-cli:latest
+    networks:
+      - prisma-network
+    depends_on:
+      s3:
+        condition: service_healthy
+    environment:
+      - AWS_ACCESS_KEY_ID=local
+      - AWS_SECRET_ACCESS_KEY=localsecret
+      - AWS_DEFAULT_REGION=us-east-1
+    entrypoint:
+      - /bin/sh
+      - -c
+      - >
+        for b in comp-app comp-org-assets comp-questionnaires comp-knowledge-base comp-fleet-agent; do
+          aws --endpoint-url http://s3:8333 s3api create-bucket --bucket "$$b" || true;
+        done;
+        aws --endpoint-url http://s3:8333 s3 ls
+
 networks:
   prisma-network:
 
+# Fixed names so this file's data is shared whether it runs on its own
+# (`bun run docker:up`) or is included by the root docker-compose.yml.
 volumes:
   postgres_data:
+    name: db_postgres_data
+  postgres_certs:
+    name: db_postgres_certs
+  s3_data:
+    name: db_s3_data

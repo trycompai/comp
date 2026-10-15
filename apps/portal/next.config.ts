@@ -5,6 +5,11 @@ import './src/env.mjs';
 const isStandalone = process.env.NEXT_OUTPUT_STANDALONE === 'true';
 
 const config = {
+  // Docker builds set SKIP_TYPECHECK=true to keep the build within Docker
+  // Desktop's memory; types are still checked in dev/CI.
+  typescript: {
+    ignoreBuildErrors: process.env.SKIP_TYPECHECK === 'true',
+  },
   transpilePackages: [
     '@trycompai/auth',
     '@trycompai/db',

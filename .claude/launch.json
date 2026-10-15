@@ -1,0 +1,19 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dev",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "--filter", "@trycompai/app", "dev:no-trigger"],
+      "port": 3000,
+      "autoPort": false
+    },
+    {
+      "name": "api",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["--cwd", "apps/api", "--enable-source-maps", "dist/src/main.js"],
+      "port": 3333,
+      "autoPort": false
+    }
+  ]
+}

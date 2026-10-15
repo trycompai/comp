@@ -1,3 +1,17 @@
+# Full local stack in Docker: databases + API + web app + portal.
+#   docker compose up -d --build
+# Then open http://localhost:3000 (API on :3333, portal on :3002).
+#
+# The app uses NEXT_PUBLIC_API_URL both in the browser and in its own server, so
+# app and portal share the api container's network namespace: "localhost:3333"
+# then reaches the API from the browser and from inside the containers alike,
+# and the session cookie stays on "localhost".
+
+include:
+  # PostgreSQL, Redis, Upstash-compatible Redis REST proxy, S3 (SeaweedFS).
+  # Do not run `bun run docker:up` at the same time: same ports and volumes.
+  - packages/db/docker-compose.yml
+
 x-logging: &default-logging
   driver: json-file
   options:
@@ -5,58 +19,147 @@ x-logging: &default-logging
     max-file: '5'
     compress: 'true'
 
+# How the containers reach the data services (service names on the compose network).
+x-data-services: &data-services
+  DATABASE_URL: postgresql://postgres:postgres@postgres:5432/comp
+  # Local Postgres uses a self-signed cert; the db client still encrypts the
+  # connection but skips certificate verification. Remove for managed databases.
+  PRISMA_ALLOW_INSECURE_TLS: '1'
+  UPSTASH_REDIS_REST_URL: http://redis-http:80
+  UPSTASH_REDIS_REST_TOKEN: local_dev_token
+  # Presigned file URLs are opened by the browser, so S3 uses an address that
+  # resolves both on the host (Docker Desktop) and in containers.
+  APP_AWS_ENDPOINT: http://host.docker.internal:8333
+
 services:
   migrator:
+    container_name: comp-migrator
     build:
       context: .
       dockerfile: Dockerfile
       target: migrator
     env_file:
       - packages/db/.env
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/comp
+    networks:
+      - prisma-network
+    depends_on:
+      postgres:
+        condition: service_healthy
     logging: *default-logging
+
+  # One-off: `docker compose --profile seed run --rm seeder` (not started by `up`).
   seeder:
+    container_name: comp-seeder
+    profiles: ['seed']
     build:
       context: .
       dockerfile: Dockerfile
       target: migrator
     env_file:
       - packages/db/.env
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/comp
+    networks:
+      - prisma-network
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
     command: sh -lc "bunx prisma generate --schema=node_modules/@trycompai/db/dist/schema.prisma && bun packages/db/prisma/seed/seed.js"
     logging: *default-logging
+
+  # Backend: NestJS API. Also publishes the app and portal ports, because those
+  # containers run inside this container's network namespace.
+  api:
+    container_name: comp-api
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile.multistage
+      target: production
+    ports:
+      - '3333:3333' # API
+      - '3000:3000' # web app
+      - '3002:3002' # portal
+    env_file:
+      - apps/api/.env
+    environment:
+      <<: *data-services
+      NODE_ENV: production
+      PORT: '3333'
+      BASE_URL: http://localhost:3333
+      BETTER_AUTH_URL: http://localhost:3333
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      # Required when NODE_ENV=production (trust-portal links)
+      PORTAL_URL: http://localhost:3002
+      # The image bakes in the AWS RDS CA bundle, which makes the db client demand
+      # verified TLS; clear it so PRISMA_ALLOW_INSECURE_TLS applies to local Postgres.
+      NODE_EXTRA_CA_CERTS: ''
+    networks:
+      - prisma-network
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis-http:
+        condition: service_started
+      migrator:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    logging: *default-logging
+
+  # Frontend: Next.js compliance app (port 3000, published by api)
   app:
+    container_name: comp-app
     build:
       context: .
       dockerfile: Dockerfile
       target: app
       args:
-        NEXT_PUBLIC_BETTER_AUTH_URL: ${BETTER_AUTH_URL}
-    ports:
-      - '3000:3000'
+        NEXT_PUBLIC_BETTER_AUTH_URL: http://localhost:3333
+        NEXT_PUBLIC_API_URL: http://localhost:3333
+        NEXT_PUBLIC_PORTAL_URL: http://localhost:3002
+    network_mode: 'service:api'
     env_file:
       - apps/app/.env
+    environment:
+      <<: *data-services
+      HOSTNAME: 0.0.0.0
+      PORT: '3000'
+      NEXT_PUBLIC_API_URL: http://localhost:3333
+      NEXT_PUBLIC_BETTER_AUTH_URL: http://localhost:3333
+      BETTER_AUTH_URL: http://localhost:3333
+      NEXT_PUBLIC_PORTAL_URL: http://localhost:3002
+    depends_on:
+      api:
+        condition: service_started
     restart: unless-stopped
-    healthcheck:
-      test: ['CMD-SHELL', 'curl -f http://localhost:3000/api/health || exit 1']
-      interval: 30s
-      timeout: 10s
-      retries: 3
     command: sh -lc "node apps/app/server.js"
     logging: *default-logging
+
+  # Employee portal (port 3002, published by api)
+  # Optional: `docker compose --profile portal up -d portal` (not built or started by default)
   portal:
+    container_name: comp-portal
+    profiles: ['portal']
     build:
       context: .
       dockerfile: Dockerfile
       target: portal
       args:
-        NEXT_PUBLIC_BETTER_AUTH_URL: ${BETTER_AUTH_URL_PORTAL}
-    ports:
-      - '3002:3000'
+        NEXT_PUBLIC_BETTER_AUTH_URL: http://localhost:3333
+    network_mode: 'service:api'
     env_file:
       - apps/portal/.env
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/comp
+      PRISMA_ALLOW_INSECURE_TLS: '1'
+      HOSTNAME: 0.0.0.0
+      PORT: '3002'
+      NEXT_PUBLIC_API_URL: http://localhost:3333
+    depends_on:
+      api:
+        condition: service_started
     restart: unless-stopped
-    healthcheck:
-      test: ['CMD-SHELL', 'curl -f http://localhost:3000/ || exit 1']
-      interval: 30s
-      timeout: 10s
-      retries: 3
     logging: *default-logging

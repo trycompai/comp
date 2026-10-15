@@ -7274,6 +7274,463 @@
         }
       }
     },
+    "/v1/risks/{id}/acceptances": {
+      "get": {
+        "description": "Returns the residual-risk acceptance history for a risk, newest first. Each event freezes the residual rating at acceptance and carries a stale flag set when the risk's residual rating has changed since (ISO 27001 6.1.3(f)).",
+        "operationId": "RiskAcceptancesController_listRiskAcceptances_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Risk ID",
+            "schema": {
+              "example": "rsk_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Acceptance history retrieved successfully (newest first)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Acceptance event ID",
+                            "example": "rska_abc123def456"
+                          },
+                          "acceptedById": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "Member ID of the acceptor (null if since removed)",
+                            "example": "mem_abc123def456"
+                          },
+                          "acceptedByName": {
+                            "type": "string",
+                            "description": "Acceptor display name, frozen at acceptance",
+                            "example": "Jane Doe"
+                          },
+                          "notes": {
+                            "type": "string",
+                            "nullable": true,
+                            "example": "Residual risk reviewed at the Q2 risk review."
+                          },
+                          "residualLikelihood": {
+                            "type": "string",
+                            "enum": [
+                              "very_unlikely",
+                              "unlikely",
+                              "possible",
+                              "likely",
+                              "very_likely"
+                            ],
+                            "description": "Residual likelihood frozen at acceptance",
+                            "example": "unlikely"
+                          },
+                          "residualImpact": {
+                            "type": "string",
+                            "enum": [
+                              "insignificant",
+                              "minor",
+                              "moderate",
+                              "major",
+                              "severe"
+                            ],
+                            "description": "Residual impact frozen at acceptance",
+                            "example": "minor"
+                          },
+                          "level": {
+                            "type": "string",
+                            "enum": [
+                              "very-low",
+                              "low",
+                              "medium",
+                              "high",
+                              "very-high"
+                            ],
+                            "description": "Risk level of the accepted residual rating",
+                            "example": "low"
+                          },
+                          "levelLabel": {
+                            "type": "string",
+                            "description": "Human-readable level label",
+                            "example": "Low"
+                          },
+                          "stale": {
+                            "type": "boolean",
+                            "description": "True when the residual rating changed after this acceptance was recorded — re-acceptance is required",
+                            "example": false
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "When the acceptance was recorded (server-set, immutable)"
+                          }
+                        }
+                      }
+                    },
+                    "authType": {
+                      "type": "string",
+                      "enum": [
+                        "api-key",
+                        "session",
+                        "service"
+                      ],
+                      "description": "How the request was authenticated"
+                    },
+                    "authenticatedUser": {
+                      "type": "object",
+                      "description": "User information (only for session auth)",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "example": "usr_def456ghi789"
+                        },
+                        "email": {
+                          "type": "string",
+                          "example": "user@example.com"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid authentication",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Invalid or expired API key"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - User does not have permission to access this risk",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "You do not have access to this risk"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Risk not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Risk with ID abc123 not found in organization org_abc123def456"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Internal server error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "List risk-owner acceptance events",
+        "tags": [
+          "Risks"
+        ],
+        "x-mint": {
+          "metadata": {
+            "title": "List risk-owner acceptance events | Comp AI API",
+            "sidebarTitle": "List risk-owner acceptance events",
+            "description": "Returns the residual-risk acceptance history for a risk, newest first. Each event freezes the residual rating at acceptance and carries a stale flag set.",
+            "og:title": "List risk-owner acceptance events | Comp AI API",
+            "og:description": "Returns the residual-risk acceptance history for a risk, newest first. Each event freezes the residual rating at acceptance and carries a stale flag set."
+          }
+        },
+        "x-speakeasy-mcp": {
+          "name": "list-risk-acceptances"
+        }
+      },
+      "post": {
+        "description": "Records an immutable, timestamped acceptance of a risk's current residual risk by the risk owner (or a chosen member). Re-record after the residual rating changes; prior events remain in the history.",
+        "operationId": "RiskAcceptancesController_recordRiskAcceptance_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Risk ID",
+            "schema": {
+              "example": "rsk_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Acceptance data (acceptor defaults to the risk owner)",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRiskAcceptanceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Acceptance recorded successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Acceptance event ID",
+                      "example": "rska_abc123def456"
+                    },
+                    "acceptedById": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Member ID of the acceptor (null if since removed)",
+                      "example": "mem_abc123def456"
+                    },
+                    "acceptedByName": {
+                      "type": "string",
+                      "description": "Acceptor display name, frozen at acceptance",
+                      "example": "Jane Doe"
+                    },
+                    "notes": {
+                      "type": "string",
+                      "nullable": true,
+                      "example": "Residual risk reviewed at the Q2 risk review."
+                    },
+                    "residualLikelihood": {
+                      "type": "string",
+                      "enum": [
+                        "very_unlikely",
+                        "unlikely",
+                        "possible",
+                        "likely",
+                        "very_likely"
+                      ],
+                      "description": "Residual likelihood frozen at acceptance",
+                      "example": "unlikely"
+                    },
+                    "residualImpact": {
+                      "type": "string",
+                      "enum": [
+                        "insignificant",
+                        "minor",
+                        "moderate",
+                        "major",
+                        "severe"
+                      ],
+                      "description": "Residual impact frozen at acceptance",
+                      "example": "minor"
+                    },
+                    "level": {
+                      "type": "string",
+                      "enum": [
+                        "very-low",
+                        "low",
+                        "medium",
+                        "high",
+                        "very-high"
+                      ],
+                      "description": "Risk level of the accepted residual rating",
+                      "example": "low"
+                    },
+                    "levelLabel": {
+                      "type": "string",
+                      "description": "Human-readable level label",
+                      "example": "Low"
+                    },
+                    "stale": {
+                      "type": "boolean",
+                      "description": "True when the residual rating changed after this acceptance was recorded — re-acceptance is required",
+                      "example": false
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "When the acceptance was recorded (server-set, immutable)"
+                    },
+                    "authType": {
+                      "type": "string",
+                      "enum": [
+                        "api-key",
+                        "session",
+                        "service"
+                      ],
+                      "description": "How the request was authenticated"
+                    },
+                    "authenticatedUser": {
+                      "type": "object",
+                      "description": "User information (only for session auth)",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "example": "usr_def456ghi789"
+                        },
+                        "email": {
+                          "type": "string",
+                          "example": "user@example.com"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No owner assigned, or the acceptor is not a valid member",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "No owner is assigned. Assign an owner or choose an acceptor."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid authentication",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Invalid or expired API key"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - User does not have permission to access this risk",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "You do not have access to this risk"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Risk not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Risk with ID abc123 not found in organization org_abc123def456"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Internal server error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Record risk-owner acceptance",
+        "tags": [
+          "Risks"
+        ],
+        "x-mint": {
+          "metadata": {
+            "title": "Record risk-owner acceptance | Comp AI API",
+            "sidebarTitle": "Record risk-owner acceptance",
+            "description": "Records an immutable, timestamped acceptance of a risk's current residual risk by the risk owner (or a chosen member). Re-record after the residual rating.",
+            "og:title": "Record risk-owner acceptance | Comp AI API",
+            "og:description": "Records an immutable, timestamped acceptance of a risk's current residual risk by the risk owner (or a chosen member). Re-record after the residual rating."
+          }
+        },
+        "x-speakeasy-mcp": {
+          "name": "record-risk-acceptance"
+        }
+      }
+    },
     "/v1/vendors/global/search": {
       "get": {
         "operationId": "VendorsController_searchGlobalVendors_v1",
@@ -8487,6 +8944,463 @@
         },
         "x-speakeasy-mcp": {
           "name": "trigger-assessment"
+        }
+      }
+    },
+    "/v1/vendors/{id}/acceptances": {
+      "get": {
+        "description": "Returns the residual-risk acceptance history for a vendor, newest first. Each event freezes the residual rating at acceptance and carries a stale flag set when the vendor's residual rating has changed since (ISO 27001 6.1.3(f)).",
+        "operationId": "VendorAcceptancesController_listVendorAcceptances_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Vendor ID",
+            "schema": {
+              "example": "vnd_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Acceptance history retrieved successfully (newest first)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Acceptance event ID",
+                            "example": "rska_abc123def456"
+                          },
+                          "acceptedById": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "Member ID of the acceptor (null if since removed)",
+                            "example": "mem_abc123def456"
+                          },
+                          "acceptedByName": {
+                            "type": "string",
+                            "description": "Acceptor display name, frozen at acceptance",
+                            "example": "Jane Doe"
+                          },
+                          "notes": {
+                            "type": "string",
+                            "nullable": true,
+                            "example": "Residual risk reviewed at the Q2 risk review."
+                          },
+                          "residualLikelihood": {
+                            "type": "string",
+                            "enum": [
+                              "very_unlikely",
+                              "unlikely",
+                              "possible",
+                              "likely",
+                              "very_likely"
+                            ],
+                            "description": "Residual likelihood frozen at acceptance",
+                            "example": "unlikely"
+                          },
+                          "residualImpact": {
+                            "type": "string",
+                            "enum": [
+                              "insignificant",
+                              "minor",
+                              "moderate",
+                              "major",
+                              "severe"
+                            ],
+                            "description": "Residual impact frozen at acceptance",
+                            "example": "minor"
+                          },
+                          "level": {
+                            "type": "string",
+                            "enum": [
+                              "very-low",
+                              "low",
+                              "medium",
+                              "high",
+                              "very-high"
+                            ],
+                            "description": "Risk level of the accepted residual rating",
+                            "example": "low"
+                          },
+                          "levelLabel": {
+                            "type": "string",
+                            "description": "Human-readable level label",
+                            "example": "Low"
+                          },
+                          "stale": {
+                            "type": "boolean",
+                            "description": "True when the residual rating changed after this acceptance was recorded — re-acceptance is required",
+                            "example": false
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "When the acceptance was recorded (server-set, immutable)"
+                          }
+                        }
+                      }
+                    },
+                    "authType": {
+                      "type": "string",
+                      "enum": [
+                        "api-key",
+                        "session",
+                        "service"
+                      ],
+                      "description": "How the request was authenticated"
+                    },
+                    "authenticatedUser": {
+                      "type": "object",
+                      "description": "User information (only for session auth)",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "example": "usr_def456ghi789"
+                        },
+                        "email": {
+                          "type": "string",
+                          "example": "user@example.com"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid authentication",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Invalid or expired API key"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - User does not have permission to access vendor risks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Vendor not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Vendor with ID vnd_abc123def456 not found in organization org_abc123def456"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Internal server error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "List vendor risk acceptance events",
+        "tags": [
+          "Vendors"
+        ],
+        "x-mint": {
+          "metadata": {
+            "title": "List vendor risk acceptance events | Comp AI API",
+            "sidebarTitle": "List vendor risk acceptance events",
+            "description": "Returns the residual-risk acceptance history for a vendor, newest first. Each event freezes the residual rating at acceptance and carries a stale flag set.",
+            "og:title": "List vendor risk acceptance events | Comp AI API",
+            "og:description": "Returns the residual-risk acceptance history for a vendor, newest first. Each event freezes the residual rating at acceptance and carries a stale flag set."
+          }
+        },
+        "x-speakeasy-mcp": {
+          "name": "list-vendor-acceptances"
+        }
+      },
+      "post": {
+        "description": "Records an immutable, timestamped acceptance of a vendor's current residual risk by the vendor owner (or a chosen member). Re-record after the residual rating changes; prior events remain in the history.",
+        "operationId": "VendorAcceptancesController_recordVendorAcceptance_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Vendor ID",
+            "schema": {
+              "example": "vnd_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Acceptance data (acceptor defaults to the vendor owner)",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRiskAcceptanceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Acceptance recorded successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Acceptance event ID",
+                      "example": "rska_abc123def456"
+                    },
+                    "acceptedById": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Member ID of the acceptor (null if since removed)",
+                      "example": "mem_abc123def456"
+                    },
+                    "acceptedByName": {
+                      "type": "string",
+                      "description": "Acceptor display name, frozen at acceptance",
+                      "example": "Jane Doe"
+                    },
+                    "notes": {
+                      "type": "string",
+                      "nullable": true,
+                      "example": "Residual risk reviewed at the Q2 risk review."
+                    },
+                    "residualLikelihood": {
+                      "type": "string",
+                      "enum": [
+                        "very_unlikely",
+                        "unlikely",
+                        "possible",
+                        "likely",
+                        "very_likely"
+                      ],
+                      "description": "Residual likelihood frozen at acceptance",
+                      "example": "unlikely"
+                    },
+                    "residualImpact": {
+                      "type": "string",
+                      "enum": [
+                        "insignificant",
+                        "minor",
+                        "moderate",
+                        "major",
+                        "severe"
+                      ],
+                      "description": "Residual impact frozen at acceptance",
+                      "example": "minor"
+                    },
+                    "level": {
+                      "type": "string",
+                      "enum": [
+                        "very-low",
+                        "low",
+                        "medium",
+                        "high",
+                        "very-high"
+                      ],
+                      "description": "Risk level of the accepted residual rating",
+                      "example": "low"
+                    },
+                    "levelLabel": {
+                      "type": "string",
+                      "description": "Human-readable level label",
+                      "example": "Low"
+                    },
+                    "stale": {
+                      "type": "boolean",
+                      "description": "True when the residual rating changed after this acceptance was recorded — re-acceptance is required",
+                      "example": false
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "When the acceptance was recorded (server-set, immutable)"
+                    },
+                    "authType": {
+                      "type": "string",
+                      "enum": [
+                        "api-key",
+                        "session",
+                        "service"
+                      ],
+                      "description": "How the request was authenticated"
+                    },
+                    "authenticatedUser": {
+                      "type": "object",
+                      "description": "User information (only for session auth)",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "example": "usr_def456ghi789"
+                        },
+                        "email": {
+                          "type": "string",
+                          "example": "user@example.com"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No owner assigned, or the acceptor is not a valid member",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "No owner is assigned. Assign an owner or choose an acceptor."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid authentication",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Invalid or expired API key"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - User does not have permission to access vendor risks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Vendor not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Vendor with ID vnd_abc123def456 not found in organization org_abc123def456"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Internal server error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Record vendor risk-owner acceptance",
+        "tags": [
+          "Vendors"
+        ],
+        "x-mint": {
+          "metadata": {
+            "title": "Record vendor risk-owner acceptance | Comp AI API",
+            "sidebarTitle": "Record vendor risk-owner acceptance",
+            "description": "Records an immutable, timestamped acceptance of a vendor's current residual risk by the vendor owner (or a chosen member). Re-record after the residual.",
+            "og:title": "Record vendor risk-owner acceptance | Comp AI API",
+            "og:description": "Records an immutable, timestamped acceptance of a vendor's current residual risk by the vendor owner (or a chosen member). Re-record after the residual."
+          }
+        },
+        "x-speakeasy-mcp": {
+          "name": "record-vendor-acceptance"
         }
       }
     },
@@ -19007,6 +19921,9 @@
           },
           "404": {
             "description": "Role not found"
+          },
+          "409": {
+            "description": "Role was modified by another request since it was read. Retry the update."
           }
         },
         "security": [
@@ -20257,48 +21174,6 @@
         }
       }
     },
-    "/v1/knowledge-base/runs/{runId}/token": {
-      "post": {
-        "operationId": "KnowledgeBaseController_createRunToken_v1",
-        "parameters": [
-          {
-            "name": "runId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Public access token created"
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "summary": "Create a public access token for a run",
-        "tags": [
-          "Knowledge Base"
-        ],
-        "description": "Create a public access token for a run in Comp AI. Upload source documents, process them for retrieval, and manage reusable manual answers that power questionnaires and AI policy workflows.",
-        "x-mint": {
-          "metadata": {
-            "title": "Create a public access token for a run | Comp AI API",
-            "sidebarTitle": "Create a public access token for a run",
-            "description": "Create a public access token for a run in Comp AI. Upload source documents, process them for retrieval, and manage reusable manual answers that power.",
-            "og:title": "Create a public access token for a run | Comp AI API",
-            "og:description": "Create a public access token for a run in Comp AI. Upload source documents, process them for retrieval, and manage reusable manual answers that power."
-          }
-        },
-        "x-speakeasy-mcp": {
-          "name": "create-run-token"
-        }
-      }
-    },
     "/v1/knowledge-base/manual-answers/{manualAnswerId}/delete": {
       "post": {
         "operationId": "KnowledgeBaseController_deleteManualAnswer_v1",
@@ -21200,6 +22075,48 @@
         }
       }
     },
+    "/v1/isms/documents/{id}/risk-treatment": {
+      "get": {
+        "description": "Returns the organisational and supplier risk rows the Risk Treatment Plan renders (from the Risk Register and Vendors, with acceptance state per row) plus its submit-readiness messages.",
+        "operationId": "IsmsController_riskTreatment_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Risk + vendor treatment rows and readiness messages"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "The Risk Treatment Plan's rows (Clause 6.1.3)",
+        "tags": [
+          "ISMS"
+        ],
+        "x-mint": {
+          "metadata": {
+            "title": "The Risk Treatment Plan's rows (Clause 6.1.3) | Comp AI API",
+            "sidebarTitle": "The Risk Treatment Plan's rows (Clause 6.1.3)",
+            "description": "Returns the organisational and supplier risk rows the Risk Treatment Plan renders (from the Risk Register and Vendors, with acceptance state per row) plus.",
+            "og:title": "The Risk Treatment Plan's rows (Clause 6.1.3) | Comp AI API",
+            "og:description": "Returns the organisational and supplier risk rows the Risk Treatment Plan renders (from the Risk Register and Vendors, with acceptance state per row) plus."
+          }
+        },
+        "x-speakeasy-mcp": {
+          "name": "risk-treatment"
+        }
+      }
+    },
     "/v1/isms/documents/{id}/versions": {
       "get": {
         "operationId": "IsmsController_getVersions_v1",
@@ -21520,7 +22437,10 @@
                     "enum": [
                       "conform",
                       "substantially_conform",
-                      "not_yet_conform"
+                      "not_yet_conform",
+                      "suitable",
+                      "adequate",
+                      "effective"
                     ],
                     "nullable": true
                   },
@@ -21602,6 +22522,65 @@
                   "closureEvidence": {
                     "type": "string",
                     "nullable": true
+                  },
+                  "meetingDate": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "chairName": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "attendees": {
+                    "type": "array",
+                    "description": "Attendees frozen at selection (members picked from People)",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "memberId": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "memberId",
+                        "name"
+                      ]
+                    }
+                  },
+                  "decisionsText": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "changesText": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "signoffChairName": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "signoffChairDate": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "reviewId": {
+                    "type": "string"
+                  },
+                  "inputRef": {
+                    "type": "string"
+                  },
+                  "whatItCovers": {
+                    "type": "string"
+                  },
+                  "discussionNotes": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "discussed": {
+                    "type": "boolean"
                   },
                   "position": {
                     "type": "integer",
@@ -21867,7 +22846,10 @@
                     "enum": [
                       "conform",
                       "substantially_conform",
-                      "not_yet_conform"
+                      "not_yet_conform",
+                      "suitable",
+                      "adequate",
+                      "effective"
                     ],
                     "nullable": true
                   },
@@ -21949,6 +22931,65 @@
                   "closureEvidence": {
                     "type": "string",
                     "nullable": true
+                  },
+                  "meetingDate": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "chairName": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "attendees": {
+                    "type": "array",
+                    "description": "Attendees frozen at selection (members picked from People)",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "memberId": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "memberId",
+                        "name"
+                      ]
+                    }
+                  },
+                  "decisionsText": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "changesText": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "signoffChairName": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "signoffChairDate": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "reviewId": {
+                    "type": "string"
+                  },
+                  "inputRef": {
+                    "type": "string"
+                  },
+                  "whatItCovers": {
+                    "type": "string"
+                  },
+                  "discussionNotes": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "discussed": {
+                    "type": "boolean"
                   },
                   "position": {
                     "type": "integer",
@@ -22996,6 +24037,56 @@
         },
         "x-speakeasy-mcp": {
           "name": "send-training-completion-email"
+        }
+      }
+    },
+    "/v1/training/send-hipaa-completion-email": {
+      "post": {
+        "description": "Checks if the member has completed the HIPAA Security Awareness Training. If so, sends an email with the HIPAA training certificate attached.",
+        "operationId": "TrainingController_sendHipaaTrainingCompletionEmail_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendTrainingCompletionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Email sent or reason why it was not sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendTrainingCompletionResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Send HIPAA training completion email with certificate",
+        "tags": [
+          "Training"
+        ],
+        "x-mint": {
+          "metadata": {
+            "title": "Send HIPAA training completion email with | Comp AI API",
+            "sidebarTitle": "Send HIPAA training completion email with certificate",
+            "description": "Checks if the member has completed the HIPAA Security Awareness Training. If so, sends an email with the HIPAA training certificate attached.",
+            "og:title": "Send HIPAA training completion email with | Comp AI API",
+            "og:description": "Checks if the member has completed the HIPAA Security Awareness Training. If so, sends an email with the HIPAA training certificate attached."
+          }
+        },
+        "x-speakeasy-mcp": {
+          "name": "send-hipaa-training-completion-email"
         }
       }
     },
@@ -27964,6 +29055,21 @@
           }
         }
       },
+      "CreateRiskAcceptanceDto": {
+        "type": "object",
+        "properties": {
+          "acceptedById": {
+            "type": "string",
+            "description": "Member ID of the acceptor. Defaults to the risk owner (assignee) when omitted.",
+            "example": "mem_abc123def456"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Optional notes recorded with the acceptance.",
+            "example": "Residual risk reviewed at the Q2 risk review."
+          }
+        }
+      },
       "CreateVendorDto": {
         "type": "object",
         "properties": {
@@ -29747,9 +30853,9 @@
         "properties": {
           "content": {
             "type": "string",
-            "description": "Content of the comment",
+            "description": "Content of the comment (plain text or serialized Tiptap JSON). Limited to 2000 characters of visible text; maxLength bounds the serialized payload size, not the visible text.",
             "example": "This task needs to be completed by end of week",
-            "maxLength": 2000
+            "maxLength": 50000
           },
           "entityId": {
             "type": "string",
@@ -29798,9 +30904,9 @@
         "properties": {
           "content": {
             "type": "string",
-            "description": "Updated content of the comment",
+            "description": "Updated content of the comment (plain text or serialized Tiptap JSON). Limited to 2000 characters of visible text; maxLength bounds the serialized payload size, not the visible text.",
             "example": "This task needs to be completed by end of week (updated)",
-            "maxLength": 2000
+            "maxLength": 50000
           },
           "contextUrl": {
             "type": "string",
@@ -30437,6 +31543,16 @@
           }
         }
       },
+      "BuiltInObligationsBody": {
+        "type": "object",
+        "properties": {
+          "compliance": {
+            "type": "boolean",
+            "description": "Whether the role must complete compliance tasks.",
+            "example": false
+          }
+        }
+      },
       "CreateRoleDto": {
         "type": "object",
         "properties": {
@@ -30465,27 +31581,21 @@
             }
           },
           "obligations": {
-            "type": "object",
             "description": "Obligations for the role. Boolean flags for requirements like compliance.",
             "example": {
               "compliance": true
-            }
+            },
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BuiltInObligationsBody"
+              }
+            ]
           }
         },
         "required": [
           "name",
           "permissions"
         ]
-      },
-      "BuiltInObligationsBody": {
-        "type": "object",
-        "properties": {
-          "compliance": {
-            "type": "boolean",
-            "description": "Whether the role must complete compliance tasks.",
-            "example": false
-          }
-        }
       },
       "UpdateBuiltInObligationsDto": {
         "type": "object",
@@ -30537,11 +31647,15 @@
             }
           },
           "obligations": {
-            "type": "object",
             "description": "Updated obligations for the role.",
             "example": {
               "compliance": true
-            }
+            },
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BuiltInObligationsBody"
+              }
+            ]
           }
         }
       },

@@ -8,7 +8,11 @@ WORKDIR /app
 # Copy workspace configuration
 COPY package.json bun.lock ./
 
-# Copy package.json files for all packages (exclude local db; use published @trycompai/db)
+# Copy package.json files for all workspace packages the app and portal depend on
+COPY packages/auth/package.json ./packages/auth/
+COPY packages/billing/package.json ./packages/billing/
+COPY packages/company/package.json ./packages/company/
+COPY packages/db/package.json ./packages/db/
 COPY packages/kv/package.json ./packages/kv/
 COPY packages/ui/package.json ./packages/ui/
 COPY packages/email/package.json ./packages/email/
@@ -59,6 +63,7 @@ WORKDIR /app
 # Copy all source code needed for build
 COPY packages ./packages
 COPY apps/app ./apps/app
+COPY turbo.json ./turbo.json
 
 # Bring in node_modules for build and prisma prebuild
 COPY --from=deps /app/node_modules ./node_modules
@@ -70,6 +75,10 @@ COPY --from=deps /app/node_modules ./node_modules
 # + types when it imports @prisma/client.
 RUN cd packages/db && node scripts/combine-schemas.js \
                    && node scripts/generate-prisma-client-js.js
+
+# Workspace packages resolve to their dist/ output (excluded from the build
+# context), so compile everything the app depends on before `next build`.
+RUN bunx turbo run build --filter="@trycompai/app^..."
 
 # Ensure Next build has required public env at build-time
 ARG NEXT_PUBLIC_BETTER_AUTH_URL
@@ -86,7 +95,8 @@ ENV NEXT_PUBLIC_BETTER_AUTH_URL=$NEXT_PUBLIC_BETTER_AUTH_URL \
     NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
     NEXT_TELEMETRY_DISABLED=1 NODE_ENV=production \
     NEXT_OUTPUT_STANDALONE=true \
-    NODE_OPTIONS=--max_old_space_size=6144
+    NODE_OPTIONS=--max_old_space_size=4096 \
+    SKIP_TYPECHECK=true
 
 # Build the app
 RUN cd apps/app && SKIP_ENV_VALIDATION=true bun run build:docker
@@ -116,6 +126,7 @@ WORKDIR /app
 # Copy all source code needed for build
 COPY packages ./packages
 COPY apps/portal ./apps/portal
+COPY turbo.json ./turbo.json
 
 # Bring in node_modules for build and prisma prebuild
 COPY --from=deps /app/node_modules ./node_modules
@@ -124,12 +135,16 @@ COPY --from=deps /app/node_modules ./node_modules
 RUN cd packages/db && node scripts/combine-schemas.js
 RUN cp packages/db/dist/schema.prisma apps/portal/prisma/schema.prisma
 
+# Compile the workspace packages the portal depends on (dist/ is not in the context)
+RUN bunx turbo run build --filter="@trycompai/portal^..."
+
 # Ensure Next build has required public env at build-time
 ARG NEXT_PUBLIC_BETTER_AUTH_URL
 ENV NEXT_PUBLIC_BETTER_AUTH_URL=$NEXT_PUBLIC_BETTER_AUTH_URL \
     NEXT_TELEMETRY_DISABLED=1 NODE_ENV=production \
     NEXT_OUTPUT_STANDALONE=true \
-    NODE_OPTIONS=--max_old_space_size=6144
+    NODE_OPTIONS=--max_old_space_size=4096 \
+    SKIP_TYPECHECK=true
 
 # Build the portal
 RUN cd apps/portal && SKIP_ENV_VALIDATION=true bun run build:docker
