@@ -65,4 +65,15 @@ export class CheckInDto {
   @IsString()
   @IsOptional()
   agentVersion?: string;
+
+  /**
+   * Current OS version as read by the agent at check-in time. Optional so
+   * agents that predate this field keep working; when present it refreshes
+   * the version recorded at registration.
+   */
+  @IsString()
+  @MinLength(1)
+  @MaxLength(100)
+  @IsOptional()
+  osVersion?: string;
 }
