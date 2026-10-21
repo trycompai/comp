@@ -12,7 +12,7 @@ inputs:
   node_version:
     description: 'Node.js version to use'
     required: false
-    default: v20.x
+    default: v22.x
 
 runs:
   using: 'composite'
