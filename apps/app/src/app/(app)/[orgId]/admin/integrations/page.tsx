@@ -1,7 +1,6 @@
 'use client';
 
 import { api } from '@/lib/api-client';
-import { decrypt, type EncryptedData } from '@/lib/encryption';
 import {
   Button,
   Card,
@@ -21,31 +20,22 @@ import useSWR from 'swr';
 import { IntegrationCard, type Integration } from './components/IntegrationCard';
 
 interface ApiIntegration extends Integration {
-  encryptedClientId?: EncryptedData;
-  encryptedClientSecret?: EncryptedData;
+  clientId?: string | null;
+  clientSecret?: string | null;
 }
 
-async function decryptIntegrations(integrations: ApiIntegration[]): Promise<Integration[]> {
-  return Promise.all(
-    integrations.map(async (integration) => {
-      if (!integration.hasCredentials || !integration.encryptedClientId) {
-        return integration;
-      }
+function withCredentials(integrations: ApiIntegration[]): Integration[] {
+  return integrations.map(({ clientId, clientSecret, ...integration }) => {
+    if (!integration.hasCredentials || !clientId) {
+      return integration;
+    }
 
-      try {
-        const [decryptedClientId, decryptedClientSecret] = await Promise.all([
-          decrypt(integration.encryptedClientId),
-          integration.encryptedClientSecret
-            ? decrypt(integration.encryptedClientSecret)
-            : Promise.resolve(undefined),
-        ]);
-
-        return { ...integration, decryptedClientId, decryptedClientSecret };
-      } catch {
-        return integration;
-      }
-    }),
-  );
+    return {
+      ...integration,
+      decryptedClientId: clientId,
+      decryptedClientSecret: clientSecret ?? undefined,
+    };
+  });
 }
 
 export default function AdminIntegrationsPage() {
@@ -60,7 +50,7 @@ export default function AdminIntegrationsPage() {
     const response = await api.get<ApiIntegration[]>('/v1/admin/integrations');
     if (response.error) throw new Error(response.error);
     const raw = response.data || [];
-    return decryptIntegrations(raw);
+    return withCredentials(raw);
   });
 
   const filteredIntegrations = integrations?.filter((i) => {

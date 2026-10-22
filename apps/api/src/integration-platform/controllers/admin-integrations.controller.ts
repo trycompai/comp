@@ -15,6 +15,10 @@ import {
 import { ApiExcludeController } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { OAuthCredentialsService } from '../services/oauth-credentials.service';
+import {
+  CredentialVaultService,
+  type EncryptedData,
+} from '../services/credential-vault.service';
 import { PlatformCredentialRepository } from '../repositories/platform-credential.repository';
 import { getAllManifests, getManifest } from '@trycompai/integration-platform';
 import { PlatformAdminGuard } from '../../auth/platform-admin.guard';
@@ -39,6 +43,7 @@ export class AdminIntegrationsController {
   constructor(
     private readonly oauthCredentialsService: OAuthCredentialsService,
     private readonly platformCredentialRepository: PlatformCredentialRepository,
+    private readonly credentialVaultService: CredentialVaultService,
   ) {}
 
   @Get()
@@ -51,44 +56,80 @@ export class AdminIntegrationsController {
       platformCredentials.map((c) => c.providerSlug),
     );
 
-    return manifests.map((manifest) => {
-      const credential = platformCredentials.find(
-        (c) => c.providerSlug === manifest.id,
-      );
+    return Promise.all(
+      manifests.map(async (manifest) => {
+        const credential = platformCredentials.find(
+          (c) => c.providerSlug === manifest.id,
+        );
 
-      return {
-        id: manifest.id,
-        name: manifest.name,
-        description: manifest.description,
-        category: manifest.category,
-        logoUrl: manifest.logoUrl,
-        authType: manifest.auth.type,
-        capabilities: manifest.capabilities,
-        isActive: manifest.isActive,
-        docsUrl: manifest.docsUrl,
-        hasCredentials: configuredProviders.has(manifest.id),
-        credentialConfiguredAt: credential?.createdAt,
-        credentialUpdatedAt: credential?.updatedAt,
-        clientIdHint: credential?.clientIdHint,
-        clientSecretHint: credential?.clientSecretHint,
-        encryptedClientId: credential?.encryptedClientId,
-        encryptedClientSecret: credential?.encryptedClientSecret,
-        existingCustomSettings:
-          (
-            credential as
-              | { customSettings?: Record<string, unknown> }
-              | undefined
-          )?.customSettings || undefined,
-        ...(manifest.auth.type === 'oauth2' && {
-          setupInstructions: manifest.auth.config.setupInstructions,
-          createAppUrl: manifest.auth.config.createAppUrl,
-          requiredScopes: manifest.auth.config.scopes,
-          authorizeUrl: manifest.auth.config.authorizeUrl,
-          additionalOAuthSettings:
-            manifest.auth.config.additionalOAuthSettings || [],
-        }),
-      };
-    });
+        const { clientId, clientSecret } = await this.decryptCredential({
+          providerSlug: manifest.id,
+          encryptedClientId: credential?.encryptedClientId,
+          encryptedClientSecret: credential?.encryptedClientSecret,
+        });
+
+        return {
+          id: manifest.id,
+          name: manifest.name,
+          description: manifest.description,
+          category: manifest.category,
+          logoUrl: manifest.logoUrl,
+          authType: manifest.auth.type,
+          capabilities: manifest.capabilities,
+          isActive: manifest.isActive,
+          docsUrl: manifest.docsUrl,
+          hasCredentials: configuredProviders.has(manifest.id),
+          credentialConfiguredAt: credential?.createdAt,
+          credentialUpdatedAt: credential?.updatedAt,
+          clientIdHint: credential?.clientIdHint,
+          clientSecretHint: credential?.clientSecretHint,
+          clientId,
+          clientSecret,
+          existingCustomSettings:
+            (
+              credential as
+                { customSettings?: Record<string, unknown> } | undefined
+            )?.customSettings || undefined,
+          ...(manifest.auth.type === 'oauth2' && {
+            setupInstructions: manifest.auth.config.setupInstructions,
+            createAppUrl: manifest.auth.config.createAppUrl,
+            requiredScopes: manifest.auth.config.scopes,
+            authorizeUrl: manifest.auth.config.authorizeUrl,
+            additionalOAuthSettings:
+              manifest.auth.config.additionalOAuthSettings || [],
+          }),
+        };
+      }),
+    );
+  }
+
+  private async decryptCredential({
+    providerSlug,
+    encryptedClientId,
+    encryptedClientSecret,
+  }: {
+    providerSlug: string;
+    encryptedClientId: unknown;
+    encryptedClientSecret: unknown;
+  }): Promise<{ clientId: string | null; clientSecret: string | null }> {
+    if (!encryptedClientId || !encryptedClientSecret) {
+      return { clientId: null, clientSecret: null };
+    }
+
+    try {
+      const [clientId, clientSecret] = await Promise.all([
+        this.credentialVaultService.decrypt(encryptedClientId as EncryptedData),
+        this.credentialVaultService.decrypt(
+          encryptedClientSecret as EncryptedData,
+        ),
+      ]);
+      return { clientId, clientSecret };
+    } catch (error) {
+      this.logger.error(
+        `Failed to read platform credentials for ${providerSlug}: ${error}`,
+      );
+      return { clientId: null, clientSecret: null };
+    }
   }
 
   /**
