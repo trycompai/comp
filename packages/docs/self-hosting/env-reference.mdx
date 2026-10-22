@@ -53,6 +53,8 @@ These variables are required for a functional Docker deployment:
 | `AUTH_MICROSOFT_CLIENT_SECRET` | app | runtime | conditional | Microsoft/Entra OAuth client secret |
 | `AUTH_MICROSOFT_TENANT_ID` | app | runtime | optional | `common` (default), `organizations`, or tenant GUID to restrict login |
 
+To use Microsoft sign-in, add the optional ID token claims `email`, `xms_edov`, `verified_primary_email` and `verified_secondary_email` in your Entra app registration (**Token configuration**), accept the prompt to add the `email` permission, and leave `acceptMappedClaims` off. Without them, people signing in with Microsoft for the first time are refused. People who already sign in with Microsoft aren't affected.
+
 ### Email
 
 | Name | Service(s) | Phase | Required | Notes |
