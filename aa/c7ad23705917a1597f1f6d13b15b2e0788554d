@@ -1,0 +1,48 @@
+apps/api/src/integration-platform/controllers/admin-integrations.controller.spec.ts
+  s_81b615c14487a3::t_da0d6a7d5b738e 1-12,17-94,96-145
+  s_81b615c14487a3::t_b75ff1cf2a1c24 13-16
+apps/api/src/auth/session-only.guard.spec.ts
+  s_81b615c14487a3::t_f5e9e4962b9d12 1-29
+apps/api/src/auth/mcp-oauth-hooks.ts
+  s_81b615c14487a3::t_dc58bcbd27163d 1-12,18-22,25-35,54-56,58-63,68-69,71-77,89,103,118-119,121-138,140-141
+  s_81b615c14487a3::t_aad7ed8e3a3f65 13-17,23-24,36-53,57,78-88,90-102,104-117,120,139
+apps/api/src/auth/mcp-oauth-token-hook.spec.ts
+  s_81b615c14487a3::t_cc979d4715fb6b 1-97,99-209,211-212
+apps/app/src/lib/encryption.test.ts
+  s_81b615c14487a3::t_8e1eab4ce072fa 2-17,22-31,33-38
+  s_81b615c14487a3::t_ffdd639a9f9ebd 18-21
+apps/api/src/auth/oauth-pending-authorization.ts
+  s_81b615c14487a3::t_0016a2b9fb7760 1-21
+apps/app/src/app/(public)/oauth/consent/page.tsx
+  s_81b615c14487a3::t_7ab2356720561c 1-41
+apps/app/src/app/(public)/oauth/consent/components/ConsentForm.tsx
+  s_81b615c14487a3::t_e63a629ca545b3 1-106
+apps/mcp-server/tests/start-transport.test.ts
+  s_81b615c14487a3::t_368659e88a38ba 1-104,107-110,113-163
+apps/app/src/app/(public)/oauth/consent/components/ConsentForm.test.tsx
+  s_81b615c14487a3::t_73e8b2b9c992f0 1-65,68-79
+apps/api/src/auth/oauth-consent.spec.ts
+  s_81b615c14487a3::t_9371b0fc38eda8 1-144,149-171
+apps/api/src/auth/mcp-oauth-hooks.spec.ts
+  s_81b615c14487a3::t_b72af6f222aa4c 1-82,85-99,103-111,113-114,116,118-133,139-167,169-170,172-181,183-185,187-199
+apps/api/src/auth/oauth-consent.ts
+  s_81b615c14487a3::t_e70fda6d7149eb 1-46
+apps/app/src/app/(public)/oauth/consent/page.test.tsx
+  s_81b615c14487a3::t_27b4698e8f95f4 1-60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "aac7ad23705917a1597f1f6d13b15b2e0788554d",
+  "prompts": {},
+  "sessions": {
+    "s_81b615c14487a3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5dd29353-d468-4d24-b659-ac3423125fb7",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mariano Fuentes <marfuen98@gmail.com>"
+    }
+  }
+}
