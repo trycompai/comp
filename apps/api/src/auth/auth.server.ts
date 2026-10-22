@@ -23,6 +23,7 @@ import { ac, allRoles } from '@trycompai/auth';
 import { createAuthMiddleware } from 'better-auth/api';
 import { Redis } from '@upstash/redis';
 import type { AccessControl } from 'better-auth/plugins/access';
+import { mcpOAuthBeforeHook } from './mcp-oauth-hooks';
 import { mapMicrosoftProfileToUser } from './microsoft-email';
 import { assertMicrosoftSignUpVerified } from './microsoft-sign-up-policy';
 import {
@@ -190,10 +191,6 @@ const gramMcpClient =
         disabled: false,
         redirectUrls: [process.env.GRAM_OAUTH_REDIRECT_URI],
         metadata: null,
-        // First-party client: Gram is Comp AI's own hosted MCP, so the user's
-        // login (Sign in with Google) IS the authorization — no separate consent
-        // screen is needed. This also avoids having to build a consent page UI.
-        skipConsent: true,
       }
     : null;
 
@@ -202,6 +199,8 @@ const gramMcpClient =
 const mcpLoginPage =
   process.env.MCP_OAUTH_LOGIN_PAGE ||
   `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.trycomp.ai'}/auth`;
+
+const mcpConsentPage = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.trycomp.ai'}/oauth/consent`;
 
 // =============================================================================
 // Security Validation
@@ -370,6 +369,7 @@ export const auth = betterAuth({
     },
   },
   hooks: {
+    before: mcpOAuthBeforeHook,
     after: createAuthMiddleware(async (ctx) => {
       if (!ctx.path.startsWith('/admin/')) return;
 
@@ -536,6 +536,7 @@ export const auth = betterAuth({
         : {}),
       oidcConfig: {
         loginPage: mcpLoginPage,
+        consentPage: mcpConsentPage,
         allowDynamicClientRegistration: false,
         ...(gramMcpClient ? { trustedClients: [gramMcpClient] } : {}),
       },

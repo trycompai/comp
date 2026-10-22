@@ -1,4 +1,4 @@
-'use server';
+import 'server-only';
 
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'node:crypto';
 

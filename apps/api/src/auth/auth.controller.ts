@@ -5,6 +5,7 @@ import {
   Get,
   NotFoundException,
   Param,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -15,12 +16,14 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { db } from '@db';
-import { OrganizationId } from './auth-context.decorator';
+import { OrganizationId, UserId } from './auth-context.decorator';
 import { PermissionGuard } from './permission.guard';
 import { RequirePermission } from './require-permission.decorator';
 import { AuthContext } from './auth-context.decorator';
 import { HybridAuthGuard } from './hybrid-auth.guard';
 import { SkipOrgCheck } from './skip-org-check.decorator';
+import { SessionOnlyGuard } from './session-only.guard';
+import { getPendingConsent, OAuthConsentQueryDto } from './oauth-consent';
 import { resolveRolePermissions } from './app-access';
 import type { AuthContext as AuthContextType } from './types';
 
@@ -140,6 +143,19 @@ export class AuthController {
       pendingInvitation,
       hasInactiveMembership: inactiveMembershipCount > 0,
     };
+  }
+
+  @Get('oauth-consent')
+  @SkipOrgCheck()
+  @UseGuards(SessionOnlyGuard)
+  @ApiOperation({
+    summary: 'Get a pending OAuth authorization for the signed-in user',
+  })
+  async getOAuthConsent(
+    @UserId() userId: string,
+    @Query() query: OAuthConsentQueryDto,
+  ) {
+    return getPendingConsent({ consentCode: query.consent_code, userId });
   }
 
   @Get('invitations')

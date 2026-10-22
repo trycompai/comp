@@ -19,10 +19,8 @@ import {
   ViewOff,
 } from '@trycompai/design-system/icons';
 import Image from 'next/image';
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import useSWR from 'swr';
-
-import { decrypt, type EncryptedData } from '@/lib/encryption';
 
 interface AdditionalOAuthSetting {
   id: string;
@@ -48,8 +46,8 @@ interface Integration {
   hasCredentials: boolean;
   credentialConfiguredAt?: string;
   credentialUpdatedAt?: string;
-  encryptedClientId?: EncryptedData;
-  encryptedClientSecret?: EncryptedData;
+  clientId?: string | null;
+  clientSecret?: string | null;
   existingCustomSettings?: Record<string, unknown>;
   setupInstructions?: string;
   createAppUrl?: string;
@@ -72,27 +70,7 @@ function IntegrationCard({
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showSecret, setShowSecret] = useState(false);
-  const [decryptedClientId, setDecryptedClientId] = useState<string | null>(null);
-  const [decryptedClientSecret, setDecryptedClientSecret] = useState<string | null>(null);
-  const [isDecrypting, setIsDecrypting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const handleDecryptCredentials = useCallback(async () => {
-    if (decryptedClientId || !integration.encryptedClientId || !integration.encryptedClientSecret) return;
-    setIsDecrypting(true);
-    try {
-      const [id, secret] = await Promise.all([
-        decrypt(integration.encryptedClientId),
-        decrypt(integration.encryptedClientSecret),
-      ]);
-      setDecryptedClientId(id);
-      setDecryptedClientSecret(secret);
-    } catch {
-      setError('Failed to decrypt credentials');
-    } finally {
-      setIsDecrypting(false);
-    }
-  }, [integration.encryptedClientId, integration.encryptedClientSecret, decryptedClientId]);
 
   const additionalSettings = integration.additionalOAuthSettings || [];
 
@@ -199,13 +177,7 @@ function IntegrationCard({
                   size="sm"
                   variant="outline"
                   iconLeft={<Settings />}
-                  onClick={() => {
-                    const next = !showConfig;
-                    setShowConfig(next);
-                    if (next && integration.hasCredentials) {
-                      handleDecryptCredentials();
-                    }
-                  }}
+                  onClick={() => setShowConfig(!showConfig)}
                 >
                   {showConfig ? 'Hide' : 'Configure'}
                 </Button>
@@ -243,24 +215,19 @@ function IntegrationCard({
                       <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                         Current Credentials
                       </h4>
-                      {isDecrypting ? (
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <div className="h-3 w-3 animate-spin"><InProgress /></div>
-                          Decrypting...
-                        </div>
-                      ) : decryptedClientId ? (
+                      {integration.clientId ? (
                         <div className="grid gap-1.5 text-sm">
                           <div className="flex items-center gap-2">
                             <span className="text-muted-foreground text-xs w-20 shrink-0">Client ID:</span>
                             <code className="text-xs bg-background px-2 py-1 rounded border truncate select-all">
-                              {decryptedClientId}
+                              {integration.clientId}
                             </code>
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="text-muted-foreground text-xs w-20 shrink-0">Secret:</span>
                             <code className="text-xs bg-background px-2 py-1 rounded border select-all">
                               {showSecret
-                                ? decryptedClientSecret
+                                ? integration.clientSecret
                                 : '••••••••••••••••'}
                             </code>
                             <Button
@@ -327,7 +294,7 @@ function IntegrationCard({
                       </Label>
                       <Input
                         className="font-mono text-sm"
-                        placeholder={decryptedClientId || 'Enter OAuth Client ID'}
+                        placeholder={integration.clientId || 'Enter OAuth Client ID'}
                         value={clientId}
                         onChange={(e) => setClientId(e.target.value)}
                       />
