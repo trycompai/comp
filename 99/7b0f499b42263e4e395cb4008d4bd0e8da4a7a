@@ -1,0 +1,63 @@
+apps/api/src/evidence-forms/evidence-forms.service.spec.ts
+  s_fe639e496e881c::t_5a5cf38dd14f0e 43,59,341-435
+apps/api/src/evidence-forms/evidence-forms.service.ts
+  s_fe639e496e881c::t_e4627510ffe451 61-78,80-82
+apps/app/src/app/(app)/[orgId]/auditor/(overview)/components/AuditorView.tsx
+  s_fe639e496e881c::t_f6f64136949bf0 42
+apps/app/src/app/(app)/[orgId]/integrations/components/PlatformIntegrations.tsx
+  s_fe639e496e881c::t_08c931208c6b3d 574
+apps/app/src/app/(app)/[orgId]/people/devices/components/PolicyImagePreview.tsx
+  s_fe639e496e881c::t_fea4e1e1f83593 47
+apps/app/src/app/(app)/[orgId]/tasks/[taskId]/components/TaskIntegrationChecks.tsx
+  s_fe639e496e881c::t_e92734fed88e1c 607,821,906,1298,1366,1398
+apps/app/src/app/(app)/[orgId]/tasks/[taskId]/components/browser-automations/InstructionTestPanel.tsx
+  s_fe639e496e881c::t_0cad392e9feca2 179,199
+apps/app/src/app/(app)/[orgId]/tasks/[taskId]/components/browser-automations/RunStepLedger.tsx
+  s_fe639e496e881c::t_87a0b1123ea694 121
+apps/app/src/app/(app)/[orgId]/tasks/components/ModernTaskListItem.tsx
+  s_fe639e496e881c::t_a4dbbfc732393b 124
+apps/app/src/app/(app)/[orgId]/tasks/components/TaskCard.tsx
+  s_fe639e496e881c::t_335415b48b8a51 213
+apps/app/src/app/(app)/[orgId]/tasks/components/TasksByCategory.tsx
+  s_fe639e496e881c::t_43a8fe759db9f1 349
+apps/app/src/app/(app)/[orgId]/trust/portal-settings/components/UpdateTrustFavicon.tsx
+  s_fe639e496e881c::t_35dc5c0258d2b8 133
+apps/app/src/components/assigned-user.tsx
+  s_fe639e496e881c::t_dfdf27902d82a0 21
+apps/app/src/components/chat-user.tsx
+  s_fe639e496e881c::t_2a44ceb9e4e75a 21
+apps/app/src/components/file-uploader.tsx
+  s_fe639e496e881c::t_212545b387e870 299
+apps/app/src/components/forms/organization/update-organization-logo.tsx
+  s_fe639e496e881c::t_fbd078be263767 112
+apps/app/src/components/integrations/ConnectIntegrationDialog.tsx
+  s_fe639e496e881c::t_3561bbe9755b77 747
+apps/app/src/components/integrations/ManageIntegrationDialog.tsx
+  s_fe639e496e881c::t_b3ec01009da022 344
+apps/app/src/components/upload/FileCard.tsx
+  s_fe639e496e881c::t_7c87a39b3c35af 74,145
+apps/app/src/trigger/tasks/task/policy-acknowledgment-digest-helpers.ts
+  s_fe639e496e881c::t_911c88abad90f5 112
+apps/portal/src/app/(app)/(home)/[orgId]/components/tasks/PolicyImagePreviewModal.tsx
+  s_fe639e496e881c::t_4e1b6f23b1dad2 57
+apps/portal/src/app/(app)/(home)/[orgId]/components/tasks/PolicyImageUploadModal.tsx
+  s_fe639e496e881c::t_f95e0d4bf2ca13 154
+packages/docs/introduction.mdx
+  s_fe639e496e881c::t_4f298810eebc36 2-3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "997b0f499b42263e4e395cb4008d4bd0e8da4a7a",
+  "prompts": {},
+  "sessions": {
+    "s_fe639e496e881c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f9f5-b4f6-7f43-b1fa-0903beedf0be",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "tofikwest <tofik@trycomp.ai>"
+    }
+  }
+}

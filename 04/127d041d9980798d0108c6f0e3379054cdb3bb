@@ -1,0 +1,14 @@
+.github/workflows/device-agent-release.yml
+  h_cf0fdb4da2fef1 3-6,96,156,306
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "04127d041d9980798d0108c6f0e3379054cdb3bb",
+  "prompts": {},
+  "humans": {
+    "h_cf0fdb4da2fef1": {
+      "author": "tofikwest <tofik@trycomp.ai>"
+    }
+  }
+}

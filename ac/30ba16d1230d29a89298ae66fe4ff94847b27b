@@ -1,0 +1,177 @@
+apps/mcp-server/.npmignore
+  s_4507f85befe0c4::t_8ae1789746bfad 14
+apps/app/.env.example
+  s_4507f85befe0c4::t_8ae1789746bfad 9
+apps/app/src/app/(app)/[orgId]/cloud-tests/actions/batch-fix.ts
+  s_4507f85befe0c4::t_7722792b3ca97e 9-26,28-30,45-48,54-57,129-130,133-134,203
+  s_4507f85befe0c4::t_accf93bd495cdc 7,27,31,50-53,58,61,68-69,71,75,78-82,87,98-102,114,116-120,125-128,131-132,157,164
+  s_4507f85befe0c4::t_4690ec45ed07d2 8
+apps/portal/src/app/api/portal/policy-access.test.ts
+  s_4507f85befe0c4::t_d74d46f572a74f 1-146
+  s_4507f85befe0c4::t_ad3907e23692da 147-154
+apps/app/src/trigger/tasks/cloud-security/remediate-batch-helpers.ts
+  s_4507f85befe0c4::t_8f02da0b8a3c54 35,166-169,185,187-190,192-196,199
+  s_4507f85befe0c4::t_4a3d4501aaf14d 7,198,208
+apps/mcp-server/tests/serve-artifact.test.ts
+  s_4507f85befe0c4::t_9f5ecf459605e4 4,115
+  s_4507f85befe0c4::t_85911ee1358ff6 1-3,5-114,116-184
+.github/workflows/security-regressions.yml
+  s_4507f85befe0c4::t_fb6398354974aa 66
+  s_4507f85befe0c4::t_3f59b52f7e6852 41,61-63
+  s_4507f85befe0c4::t_f3dfdfe665e844 1-35,37-40,42-60,64-65
+  s_4507f85befe0c4::t_4d4665d1d6f5ed 36
+apps/api/src/cloud-security/remediation-batch.service.spec.ts
+  s_4507f85befe0c4::t_7f2df6d2dd6905 8-13,18-22,25-27,32-37,47-55,58-64,67-72,81-83,85-87,91,96-98,103-104,107-113,116-121,126-128,134-136,141-152,157-174,184-187,189-195,200-206,211-218,220-228,232-238,244-250,257-263,269-275
+  s_4507f85befe0c4::t_0de95d3e536f10 1-7,14-17,23-24,28-31,38-46,56-57,65-66,73-80,84,88-90,92-95,99-102,105-106,114-115,122-125,129-133,137-140,153-156,175-183,188,196-199,207-210,219,229-231,239-243,251-256,264-268,276-278
+  s_4507f85befe0c4::t_0c53356dbe25f6 279-283
+apps/mcp-server/src/mcp-server/cli/serve/security.ts
+  s_4507f85befe0c4::t_bd13ac4e195853 1-45
+apps/api/src/auth/task-status-access.spec.ts
+  s_4507f85befe0c4::t_0ae0e9795312ce 1-80
+  s_4507f85befe0c4::t_c1428e42ff2b3c 81-104
+apps/portal/src/app/(app)/(home)/[orgId]/policy/[policyId]/page.tsx
+  s_4507f85befe0c4::t_4cf72325af4f65 62-71
+  s_4507f85befe0c4::t_25ca9b168aa2b0 41-44,46-53,55-61
+  s_4507f85befe0c4::t_d27fdc0cded778 45
+apps/api/src/evidence-forms/evidence-forms-csv.ts
+  s_4507f85befe0c4::t_4f4902428a4324 1-72,74-84
+  s_4507f85befe0c4::t_a5e0ecec342b8a 73
+apps/api/src/evidence-forms/evidence-forms.service.ts
+  s_4507f85befe0c4::t_9d0619ffc9f87c 23,785-791
+apps/app/src/app/api/tasks/[taskId]/status/access.ts
+  s_4507f85befe0c4::t_144a38acda9b0f 1-4,6-13,20-69,75-81,88-89
+  s_4507f85befe0c4::t_f03249057916bf 14-19,70-74,86-87
+  s_4507f85befe0c4::t_8be7311c84e0d8 5,82-85
+apps/api/src/cloud-security/dto/remediation-batch.dto.ts
+  s_4507f85befe0c4::t_8c17322f1a5f34 1-57
+  s_4507f85befe0c4::t_28959721d862d0 58-73
+apps/mcp-server/src/mcp-server/cli/serve/command.ts
+  s_4507f85befe0c4::t_bd13ac4e195853 27
+apps/mcp-server/tests/serve-security.test.ts
+  s_4507f85befe0c4::t_f86ced78023691 42,44
+  s_4507f85befe0c4::t_bd13ac4e195853 1-41,43,45-76
+  s_4507f85befe0c4::t_0cc431b3a6160a 77-88
+.github/workflows/sdk_publish.yaml
+  s_4507f85befe0c4::t_860f577ffe953f 31-33,37,42-43
+  s_4507f85befe0c4::t_64a5aa1ab1faf0 4-6,25
+apps/portal/src/app/api/portal/mark-policy-completed/route.ts
+  s_4507f85befe0c4::t_d27fdc0cded778 44
+apps/api/src/auth/auth.controller.ts
+  s_4507f85befe0c4::t_1bed0f9394f9c4 10-16,37-38,42-46,61-68
+  s_4507f85befe0c4::t_e1cf9c6b8d59a8 24,33-36,39-41,47-60,69-71
+apps/portal/src/app/(app)/(home)/[orgId]/policy/[policyId]/page.test.tsx
+  s_4507f85befe0c4::t_34979669cf79cc 2,48,81,93,110-112,119,123-127,148-154
+  s_4507f85befe0c4::t_ba7bd64cb32041 3-47,49,70-76,80,88,90-92,94,96-100,102-106,108-109,115-118,120-122,128,132-147,155-186,195-215
+  s_4507f85befe0c4::t_a7e42c34f8f3c5 1,50-69,77-79,82-87,89,129-131
+  s_4507f85befe0c4::t_d74d46f572a74f 95,101,107,113-114,187-194
+turbo.json
+  s_4507f85befe0c4::t_7943ee001ff27d 22-23
+apps/portal/src/app/(app)/(home)/[orgId]/policy/[policyId]/PolicyViewer.tsx
+  s_4507f85befe0c4::t_4cf72325af4f65 8
+apps/app/src/app/api/tasks/[taskId]/status/route.ts
+  s_4507f85befe0c4::t_c3362b6a7dcff9 1,4,6,8-16,24,32,36-40,42
+apps/mcp-server/src/mcp-server/cli/serve/impl.ts
+  s_4507f85befe0c4::t_bd13ac4e195853 39-44,47-52
+  s_4507f85befe0c4::t_8028ecb618838a 7,19,53,75
+apps/app/src/app/(app)/[orgId]/cloud-tests/actions/batch-fix.test.ts
+  s_4507f85befe0c4::t_7722792b3ca97e 4-10,12-14,16-17,22,24-46,61-70,102-104
+  s_4507f85befe0c4::t_3ed23c170e6034 55,95
+  s_4507f85befe0c4::t_8b60aa213e9c31 1-3,11,15,18-21,23,47-54,56-60,71-94,96-101,105-129
+  s_4507f85befe0c4::t_f802153423f543 130-131
+apps/api/src/evidence-forms/evidence-forms-csv.service.spec.ts
+  s_4507f85befe0c4::t_efda5dafe01046 1,3,6,8,18-46,61,68-145,182,198-209,240
+  s_4507f85befe0c4::t_e0ad56ddc358f0 7,146-181
+  s_4507f85befe0c4::t_073b37d0aa3daf 2,4-5,9-17,47-60,62-67
+  s_4507f85befe0c4::t_f939c1de5f9805 183-197
+  s_4507f85befe0c4::t_276fae878008a3 210-234,238-239
+  s_4507f85befe0c4::t_609de8f2911ea4 235-237
+apps/api/src/auth/hybrid-auth.guard.ts
+  s_4507f85befe0c4::t_fabb64f41406ba 221,333
+apps/app/src/app/(app)/[orgId]/integrations/[slug]/actions/batch-fix.ts
+  s_4507f85befe0c4::t_7722792b3ca97e 7-31,45-48,50-58,61,68-69,71,75,78-82,87,98-102,114,116-120,125-134,157,164,203
+apps/app/src/trigger/tasks/cloud-security/remediate-batch-helpers.test.ts
+  s_4507f85befe0c4::t_7722792b3ca97e 7,52,89,95,128-129,155,171-172,181-207
+  s_4507f85befe0c4::t_46eb0caefd5220 208-214
+apps/api/.env.example
+  s_4507f85befe0c4::t_8c17322f1a5f34 46-47
+apps/api/src/cloud-security/cloud-security.module.ts
+  s_4507f85befe0c4::t_8c17322f1a5f34 10-11,28
+  s_4507f85befe0c4::t_890994a005124c 29-32,42
+apps/api/src/auth/hybrid-auth-active-membership.spec.ts
+  s_4507f85befe0c4::t_a7a7699e43133f 1-149
+  s_4507f85befe0c4::t_dea991ebf4d75c 150-207
+apps/api/src/cloud-security/remediation-batch.races.spec.ts
+  s_4507f85befe0c4::t_7722792b3ca97e 3
+  s_4507f85befe0c4::t_d28de69a5c88eb 5-13,15-19,21-23,27-32,37-38,41-45,47-58,69-80,82-85,87,89-108,110-116,119-121,125,127-135,137-142,147-160,171,173,185-188,194-198,203-206,211-213
+  s_4507f85befe0c4::t_7f2df6d2dd6905 1-2,4,14,20,24-26,33-36,39-40,46,59-68,81,86,88,109,117-118,122-124,126,136,143-146,161-170,172,174-184,189-193,199-202,207-210,214-217
+apps/api/src/cloud-security/remediation-batch.controller.spec.ts
+  s_4507f85befe0c4::t_87f856a4d0bf52 4,10-13,19-25,32-57,59-65,68-70,81-90,94-100,104-113,123-126,131-134,136-140,142-146,151-160
+  s_4507f85befe0c4::t_3ed23c170e6034 1-3,5-9,14-18,26-31,58,66-67,71-80,91-93,101-103,114-122,127-130,135,141,147-150,161-164
+apps/api/src/cloud-security/remediation-batch.controller.ts
+  s_4507f85befe0c4::t_8c17322f1a5f34 1-86
+  s_4507f85befe0c4::t_75afe42e73646f 87-116
+apps/api/src/auth/auth.controller.spec.ts
+  s_4507f85befe0c4::t_3971b6a976d840 27
+  s_4507f85befe0c4::t_0c065b32d43967 13-15
+apps/app/src/trigger/tasks/cloud-security/remediate-batch.ts
+  s_4507f85befe0c4::t_8c17322f1a5f34 19,23-37
+  s_4507f85befe0c4::t_3ed23c170e6034 43-46
+apps/app/src/app/api/tasks/[taskId]/status/route.test.ts
+  s_4507f85befe0c4::t_ffc82a6781d9c2 4-6,10-22,27-28,42-46,49-51,54-59,61-64,66-75,77-80,82,85-88,90,95-99,111-119,122-125,127-131
+  s_4507f85befe0c4::t_f03249057916bf 2,31-40,76,91-94,101-110,132,134-136,138
+apps/api/src/cloud-security/remediation-batch.service.ts
+  s_4507f85befe0c4::t_3ed23c170e6034 133-134,138-139
+  s_4507f85befe0c4::t_034346f8cc3396 3,103-107,116-117,123-124,137,140,145,149-153,161-182
+  s_4507f85befe0c4::t_8c17322f1a5f34 1,7-11,16-17,21,30-40,44-60,65-67,70-72,76,81-85,89-96,100-102,108-115,118-122,125-126,132,135-136,147-148,154-155,183-193,196-220
+  s_4507f85befe0c4::t_87f856a4d0bf52 2,4-6,12-15,18-20,22-29,41-43,61-64,68-69,73-75,77-80,86-88,97-99,127-131,141-144,146,156-160,194-195
+  s_4507f85befe0c4::t_b332ddf260d42f 221-237
+apps/portal/src/app/api/portal/accept-policies/route.ts
+  s_4507f85befe0c4::t_d27fdc0cded778 38
+  s_4507f85befe0c4::t_f563db419eb4c3 73
+apps/mcp-server/package.json
+  s_4507f85befe0c4::t_f525d5ab34334e 20
+  s_4507f85befe0c4::t_fb6398354974aa 3,17-19,21-22
+apps/portal/src/app/api/portal/policy-pdf-url/route.ts
+  s_4507f85befe0c4::t_f563db419eb4c3 80
+  s_4507f85befe0c4::t_d27fdc0cded778 44
+  s_4507f85befe0c4::t_9f044f9f9d3a3f 2,81
+packages/email/lib/unsubscribe.test.ts
+  s_4507f85befe0c4::t_8ae1789746bfad 1-62
+apps/app/src/trigger/tasks/cloud-security/remediate-batch.test.ts
+  s_4507f85befe0c4::t_0de95d3e536f10 1-71
+  s_4507f85befe0c4::t_08394b4e49d089 72-89
+apps/mcp-server/.speakeasy/gen.lock
+  s_4507f85befe0c4::t_bb09848e82b928 8,7790
+apps/mcp-server/.speakeasy/gen.yaml
+  s_4507f85befe0c4::t_edf177586025dc 34
+apps/mcp-server/README.md
+  s_4507f85befe0c4::t_9dd884314df123 5-8,37,39,51,64,78,86,105,116,130,144,168
+apps/mcp-server/manifest.json
+  s_4507f85befe0c4::t_4100a02f8b3f2a 4
+apps/mcp-server/package-lock.json
+  s_4507f85befe0c4::t_b27b9aacd235e5 3,9
+apps/mcp-server/src/landing-page.ts
+  s_4507f85befe0c4::t_77fbf7bd076631 933
+apps/mcp-server/src/lib/config.ts
+  s_4507f85befe0c4::t_38a7f9bfcf538d 68,71
+apps/mcp-server/src/mcp-server/mcp-server.ts
+  s_4507f85befe0c4::t_db8c993c974551 24
+apps/mcp-server/src/mcp-server/server.ts
+  s_4507f85befe0c4::t_3f784cb74780b9 407
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ac30ba16d1230d29a89298ae66fe4ff94847b27b",
+  "prompts": {},
+  "sessions": {
+    "s_4507f85befe0c4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f9f5-36d4-7e61-b892-debb809f387f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "tofikwest <tofik@trycomp.ai>"
+    }
+  }
+}

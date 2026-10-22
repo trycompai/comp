@@ -1,0 +1,98 @@
+apps/app/src/lib/image-security.test.ts
+  s_fe639e496e881c::t_0f3a4ada89e7f5 1-8,14-21,23-61,67-70,82-115,123-132,140-145
+  s_fe639e496e881c::t_4d235ba0f77b31 9-13,22,62-66,71-81,116-122,133-139
+.github/workflows/database-migrations-main.yml
+  s_fe639e496e881c::t_df241389893ae5 22
+apps/portal/next.config.ts
+  s_fe639e496e881c::t_aab2b4e781ab9e 16-18
+.github/SECURITY_CI.md
+  s_fe639e496e881c::t_c9bf565f668308 7-9
+  s_fe639e496e881c::t_1bcdda99a2caaa 40
+  s_fe639e496e881c::t_f00ca7bea95d95 1-6,10-39,41-45
+.github/workflows/database-migrations-release.yml
+  s_fe639e496e881c::t_df241389893ae5 22
+apps/app/src/app/api/questionnaire/trigger-token/route.test.ts
+  s_fe639e496e881c::t_974ae1180e8165 1-29
+  s_fe639e496e881c::t_3dfb190d07adf8 30-34
+.github/workflows/security-regression.yml
+  s_fe639e496e881c::t_c9bf565f668308 45-49
+  s_fe639e496e881c::t_1bcdda99a2caaa 40
+  s_fe639e496e881c::t_a776e7572fd84c 1-39,41-44,50-66
+.github/tests/security-ci.test.ts
+  s_fe639e496e881c::t_c76c59ec9f6517 1-2,4-8,10,16-113,115-118
+  s_fe639e496e881c::t_f00ca7bea95d95 3,9,11-15
+  s_fe639e496e881c::t_1bcdda99a2caaa 114
+  s_fe639e496e881c::t_d5bb979457a6a7 119
+apps/api/src/trigger/questionnaire/retired-questionnaire-tasks.ts
+  s_fe639e496e881c::t_9b4b14a8095251 1-19
+  s_fe639e496e881c::t_010c946ef6db3e 20-22
+apps/app/next.config.ts
+  s_fe639e496e881c::t_aab2b4e781ab9e 51-53
+.github/actions/bun-install/action.yml
+  s_fe639e496e881c::t_df241389893ae5 28
+.github/workflows/release.yml
+  s_fe639e496e881c::t_df241389893ae5 31-32
+.github/workflows_disabled/gram-sync.yml.disabled
+  s_fe639e496e881c::t_df241389893ae5 1-39
+.github/workflows/security-questionnaire-extension-release.yml
+  s_fe639e496e881c::t_df241389893ae5 52-53
+.github/workflows/device-agent-release.yml
+  s_fe639e496e881c::t_df241389893ae5 109,168,316
+apps/app/src/app/(app)/[orgId]/tasks/[taskId]/automation/[automationId]/actions/generate-suggestions.test.ts
+  s_fe639e496e881c::t_314a5b0e774eb1 1-122
+  s_fe639e496e881c::t_764b161d9db874 123-145
+apps/api/src/trigger/questionnaire/retired-questionnaire-tasks.spec.ts
+  s_fe639e496e881c::t_b79c84d63e2467 5
+  s_fe639e496e881c::t_974ae1180e8165 1-4,6,13-15,42
+  s_fe639e496e881c::t_bf133298fa0f0d 7-12,16-41,43-54
+apps/api/src/questionnaire/questionnaire-security.spec.ts
+  s_fe639e496e881c::t_3723dfd0e1a656 1-10,15,17-105
+  s_fe639e496e881c::t_ede8aede22aea1 11-14,16
+  s_fe639e496e881c::t_08e6f838f5428b 106-181
+apps/app/src/app/(app)/[orgId]/tasks/[taskId]/automation/[automationId]/actions/generate-suggestions.ts
+  s_fe639e496e881c::t_157b29fba107bb 28-30,32-36,38-58,60,68-69,76,87,134-142
+  s_fe639e496e881c::t_d0a5c3f44dde9c 3-5
+apps/app/src/app/(app)/[orgId]/questionnaire/hooks/useQuestionnaireParse.test.tsx
+  s_fe639e496e881c::t_0e9aa98e0e24fc 1-53
+  s_fe639e496e881c::t_8b5ce835b0630f 54-66
+.github/workflows_disabled/security-review.yml.disabled
+  s_fe639e496e881c::t_df241389893ae5 1-32
+apps/app/vitest.config.mts
+  s_fe639e496e881c::t_5e5cc02d261f16 7,35
+.github/dependabot.yml
+  s_fe639e496e881c::t_df241389893ae5 3-8
+apps/api/src/questionnaire/questionnaire.service.spec.ts
+  s_fe639e496e881c::t_72ade862e8ab59 5-6,495
+apps/api/src/questionnaire/questionnaire.service.ts
+  s_fe639e496e881c::t_0255b87a640daa 12,264-265
+apps/api/src/trigger/questionnaire/answer-question.ts
+  s_fe639e496e881c::t_b97752143471af 2
+apps/api/src/trigger/questionnaire/internal-parse-questionnaire.ts
+  s_fe639e496e881c::t_aad0fbe828915b 1-201
+apps/api/src/trigger/questionnaire/parse-questionnaire-extraction.ts
+  s_fe639e496e881c::t_63880d3527ea24 1-229
+apps/api/src/trigger/questionnaire/parse-questionnaire.ts
+  s_fe639e496e881c::t_b7c07da2581ce5 1,3-4,7-13
+apps/app/src/app/(app)/[orgId]/questionnaire/hooks/useQuestionnaireParse.ts
+  s_fe639e496e881c::t_357552d1a6271b 4,9-17,50-51,55,133
+apps/app/src/app/(app)/[orgId]/questionnaire/hooks/useQuestionnaireParser.ts
+  s_fe639e496e881c::t_efd31e8e223d53 84,123
+apps/app/src/app/api/questionnaire/trigger-token/route.ts
+  s_fe639e496e881c::t_9d522bcf6cbeb5 1-9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b7ebed05950d3ce6e97ea18d439efd9c19fdf6ec",
+  "prompts": {},
+  "sessions": {
+    "s_fe639e496e881c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f9f5-b4f6-7f43-b1fa-0903beedf0be",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "tofikwest <tofik@trycomp.ai>"
+    }
+  }
+}
