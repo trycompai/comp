@@ -23,10 +23,8 @@ import { ac, allRoles } from '@trycompai/auth';
 import { createAuthMiddleware } from 'better-auth/api';
 import { Redis } from '@upstash/redis';
 import type { AccessControl } from 'better-auth/plugins/access';
-import {
-  resolveMicrosoftEmail,
-  type MicrosoftEmailClaims,
-} from './microsoft-email';
+import { mapMicrosoftProfileToUser } from './microsoft-email';
+import { assertMicrosoftSignUpVerified } from './microsoft-sign-up-policy';
 import {
   getBetterAuthTrustedOrigins,
   isStaticTrustedOrigin,
@@ -164,9 +162,7 @@ if (
     // which makes better-auth abort sign-in with `email_not_found`. Fall back to
     // the username/UPN claims so these users can sign in. Accounts that DO return
     // an `email` claim are unaffected. See ./microsoft-email.ts.
-    mapProfileToUser: (profile: MicrosoftEmailClaims) => ({
-      email: resolveMicrosoftEmail(profile),
-    }),
+    mapProfileToUser: mapMicrosoftProfileToUser,
   };
 }
 
@@ -304,6 +300,14 @@ export const auth = betterAuth({
     }),
   },
   databaseHooks: {
+    user: {
+      create: {
+        before: (user, context) => {
+          assertMicrosoftSignUpVerified({ user, context });
+          return Promise.resolve();
+        },
+      },
+    },
     session: {
       create: {
         before: async (session) => {
@@ -574,7 +578,7 @@ export const auth = betterAuth({
     modelName: 'Account',
     accountLinking: {
       enabled: true,
-      trustedProviders: ['google', 'github', 'microsoft'],
+      trustedProviders: ['google', 'github'],
     },
     // Skip the state cookie CSRF check for OAuth flows.
     // In our cross-origin setup (app/portal → API), the state cookie may not

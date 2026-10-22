@@ -28,6 +28,10 @@ export interface MicrosoftEmailClaims {
   email?: string | null;
   preferred_username?: string | null;
   upn?: string | null;
+  xms_edov?: unknown;
+  email_verified?: unknown;
+  verified_primary_email?: unknown;
+  verified_secondary_email?: unknown;
 }
 
 function firstNonEmptyString(...values: unknown[]): string | undefined {
@@ -48,4 +52,56 @@ export function resolveMicrosoftEmail(
     profile.preferred_username,
     profile.upn,
   );
+}
+
+function isSameAddress({
+  claim,
+  email,
+}: {
+  claim: unknown;
+  email: string;
+}): boolean {
+  return (
+    typeof claim === 'string' &&
+    claim.trim().toLowerCase() === email.toLowerCase()
+  );
+}
+
+function listContainsAddress({
+  claim,
+  email,
+}: {
+  claim: unknown;
+  email: string;
+}): boolean {
+  const values: unknown[] = Array.isArray(claim) ? claim : [claim];
+  return values.some((value) => isSameAddress({ claim: value, email }));
+}
+
+export function isMicrosoftEmailVerified({
+  profile,
+  email,
+}: {
+  profile: MicrosoftEmailClaims;
+  email: string | undefined;
+}): boolean {
+  if (!email) return false;
+  if (
+    isSameAddress({ claim: profile.email, email }) &&
+    (profile.xms_edov === true || profile.email_verified === true)
+  ) {
+    return true;
+  }
+  return (
+    listContainsAddress({ claim: profile.verified_primary_email, email }) ||
+    listContainsAddress({ claim: profile.verified_secondary_email, email })
+  );
+}
+
+export function mapMicrosoftProfileToUser(profile: MicrosoftEmailClaims): {
+  email: string | undefined;
+  emailVerified: boolean;
+} {
+  const email = resolveMicrosoftEmail(profile);
+  return { email, emailVerified: isMicrosoftEmailVerified({ profile, email }) };
 }
