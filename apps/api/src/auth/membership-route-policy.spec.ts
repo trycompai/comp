@@ -26,8 +26,11 @@ describe('assertMembershipRouteAllowed', () => {
     warnSpy.mockRestore();
   });
 
-  it('refuses /organization/update-member-role with a generic 403', () => {
-    const path = '/organization/update-member-role';
+  it.each([
+    '/organization/update-member-role',
+    '/organization/leave',
+    '/organization/remove-member',
+  ])('refuses %s with a generic 403', (path) => {
     let thrown: unknown;
     try {
       assertMembershipRouteAllowed(path);
@@ -40,7 +43,7 @@ describe('assertMembershipRouteAllowed', () => {
     const { body } = thrown as APIError;
     expect(body).toEqual({ message: 'Forbidden' });
     const serialized = JSON.stringify(body).toLowerCase();
-    for (const hint of ['people', 'role', 'endpoint', '/v1']) {
+    for (const hint of ['people', 'role', 'remove', 'endpoint', '/v1']) {
       expect(serialized).not.toContain(hint);
     }
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining(path));

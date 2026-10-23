@@ -91,8 +91,10 @@ describe('active GitHub Actions security policy', () => {
   test('PR security regressions execute without repository secrets or write tokens', () => {
     const configuration = parseConfiguration(securityWorkflowPath);
     expect(configuration.permissions).toEqual({ contents: 'read' });
-    expect(isRecord(configuration.on) && 'pull_request' in configuration.on).toBe(true);
-    expect(isRecord(configuration.on) && 'pull_request_target' in configuration.on).toBe(false);
+    // Bun.YAML parses a bare `on:` key as `true`.
+    const triggers = configuration.on ?? configuration.true;
+    expect(isRecord(triggers) && 'pull_request' in triggers).toBe(true);
+    expect(isRecord(triggers) && 'pull_request_target' in triggers).toBe(false);
     const source = readFileSync(securityWorkflowPath, 'utf8');
     expect(source).not.toMatch(/\bsecrets\s*[.\[]|secrets:\s*inherit/);
     expect(source).not.toContain('continue-on-error');

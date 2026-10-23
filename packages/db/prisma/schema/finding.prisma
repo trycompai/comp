@@ -76,7 +76,7 @@ model Finding {
   riskId               String?
   risk                 Risk?               @relation(fields: [riskId], references: [id], onDelete: Cascade)
   memberId             String?
-  member               Member?             @relation("FindingSubject", fields: [memberId], references: [id], onDelete: Cascade)
+  member               Member?             @relation("FindingSubject", fields: [memberId], references: [id], onDelete: SetNull)
   deviceId             String?
   device               Device?             @relation(fields: [deviceId], references: [id], onDelete: Cascade)
 
