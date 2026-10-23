@@ -113,6 +113,21 @@ export function usePeopleActions() {
     [api],
   );
 
+  /** Replaces the member's roles (the row menu's Edit Roles). */
+  const updateMemberRoles = useCallback(
+    async ({ memberId, roles }: { memberId: string; roles: string[] }) => {
+      const response = await api.patch<PeopleResponseDto>(
+        `/v1/people/${memberId}`,
+        { role: roles.join(',') },
+      );
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      return response.data!;
+    },
+    [api],
+  );
+
   return {
     unlinkDevice,
     removeMember,
@@ -120,5 +135,6 @@ export function usePeopleActions() {
     removeDeviceAgent,
     reactivateMember,
     resendPortalInvite,
+    updateMemberRoles,
   };
 }

@@ -193,7 +193,7 @@ describe('auth.server.ts MCP OAuth wiring (structural)', () => {
   const authServer = readFileSync(join(__dirname, 'auth.server.ts'), 'utf-8');
 
   it('runs the hook before every endpoint and configures a consent page', () => {
-    expect(authServer).toContain('before: mcpOAuthBeforeHook,');
+    expect(authServer).toContain('return mcpOAuthBeforeHook(ctx);');
     expect(authServer).toContain('consentPage: mcpConsentPage,');
   });
 });
