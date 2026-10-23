@@ -24,6 +24,7 @@ import { createAuthMiddleware } from 'better-auth/api';
 import { Redis } from '@upstash/redis';
 import type { AccessControl } from 'better-auth/plugins/access';
 import { mcpOAuthBeforeHook } from './mcp-oauth-hooks';
+import { assertMembershipRouteAllowed } from './membership-route-policy';
 import { mapMicrosoftProfileToUser } from './microsoft-email';
 import { assertMicrosoftSignUpVerified } from './microsoft-sign-up-policy';
 import {
@@ -369,7 +370,10 @@ export const auth = betterAuth({
     },
   },
   hooks: {
-    before: mcpOAuthBeforeHook,
+    before: createAuthMiddleware(async (ctx) => {
+      assertMembershipRouteAllowed(ctx.path);
+      return mcpOAuthBeforeHook(ctx);
+    }),
     after: createAuthMiddleware(async (ctx) => {
       if (!ctx.path.startsWith('/admin/')) return;
 

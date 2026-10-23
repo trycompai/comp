@@ -10,7 +10,6 @@ import { format } from 'date-fns';
 import { useApi } from '@/hooks/use-api';
 import { usePeopleActions } from '@/hooks/use-people-api';
 import { parseRolesString } from '@/lib/permissions';
-import { authClient } from '@/utils/auth-client';
 import useSWR from 'swr';
 import type { Invitation } from '@db';
 import {
@@ -129,7 +128,13 @@ export function TeamMembersClient({
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(25);
 
-  const { unlinkDevice, removeMember, reactivateMember, resendPortalInvite } = usePeopleActions();
+  const {
+    unlinkDevice,
+    removeMember,
+    reactivateMember,
+    resendPortalInvite,
+    updateMemberRoles,
+  } = usePeopleActions();
   const api = useApi();
 
   // Fetch custom roles for the role combobox
@@ -288,12 +293,10 @@ export function TeamMembersClient({
     router.refresh(); // Revalidate data to update UI
   };
 
-  // Update handleUpdateRole to use authClient and add toasts
   const handleUpdateRole = async (memberId: string, roles: string[]) => {
     const rolesArray = Array.isArray(roles) ? roles : [roles];
     const member = data.members.find((m) => m.id === memberId);
 
-    // Client-side check (optional, robust check should be server-side in authClient)
     const memberRoles = parseRolesString(member?.role);
     if (member && memberRoles.includes('owner') && !rolesArray.includes('owner')) {
       // Show toast error directly, no need to return an error object
@@ -308,11 +311,7 @@ export function TeamMembersClient({
     }
 
     try {
-      // Use authClient directly
-      await authClient.organization.updateMemberRole({
-        memberId: memberId,
-        role: rolesArray, // Pass the array of roles
-      });
+      await updateMemberRoles({ memberId, roles: rolesArray });
       toast.success('Member roles updated successfully.');
       router.refresh(); // Revalidate data
     } catch (error) {
