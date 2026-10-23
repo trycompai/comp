@@ -167,9 +167,45 @@ describe('OffboardingChecklistService', () => {
       expect(result.totalItems).toBe(2);
       expect(result.completedItems).toBe(1);
       expect(result.items[0].completed).toBe(true);
+      expect(result.items[0].isException).toBe(false);
       expect(result.items[0].evidence).toHaveLength(1);
       expect(result.items[1].completed).toBe(false);
       expect(result.items[1].evidence).toHaveLength(0);
+    });
+
+    it('surfaces exception state and reason on the item', async () => {
+      mockDb.offboardingChecklistTemplate.count.mockResolvedValue(1);
+      mockDb.offboardingChecklistTemplate.findMany.mockResolvedValue([
+        {
+          id: 'oct_1',
+          organizationId: 'org_1',
+          title: 'Retrieve company devices',
+          isEnabled: true,
+          sortOrder: 1,
+        },
+      ]);
+      mockDb.offboardingChecklistCompletion.findMany.mockResolvedValue([
+        {
+          id: 'occ_1',
+          templateItemId: 'oct_1',
+          memberId: 'mem_1',
+          completedById: 'usr_1',
+          completedBy: { id: 'usr_1', name: 'Test User' },
+          isException: true,
+          exceptionReason: 'No company device was ever issued',
+        },
+      ]);
+      mockDb.attachment.findMany.mockResolvedValue([]);
+
+      const result = await service.getMemberChecklist('org_1', 'mem_1');
+
+      // An exception counts as resolved (completed) but is flagged distinctly.
+      expect(result.items[0].completed).toBe(true);
+      expect(result.completedItems).toBe(1);
+      expect(result.items[0].isException).toBe(true);
+      expect(result.items[0].exceptionReason).toBe(
+        'No company device was ever issued',
+      );
     });
   });
 
@@ -284,6 +320,126 @@ describe('OffboardingChecklistService', () => {
         },
         'usr_1',
       );
+    });
+  });
+
+  describe('markException', () => {
+    it('creates an exception completion with the reason and no evidence', async () => {
+      mockDb.offboardingChecklistCompletion.findFirst.mockResolvedValue(null);
+      // evidenceRequired is true to prove the exception path bypasses it.
+      mockDb.offboardingChecklistTemplate.findFirst.mockResolvedValue({
+        id: 'oct_1',
+        organizationId: 'org_1',
+        isEnabled: true,
+        isAccessRevocation: false,
+        evidenceRequired: true,
+      });
+      mockDb.offboardingChecklistCompletion.create.mockResolvedValue({
+        id: 'occ_1',
+        isException: true,
+        exceptionReason: 'No company device was ever issued',
+      });
+
+      const result = await service.markException({
+        organizationId: 'org_1',
+        memberId: 'mem_1',
+        templateItemId: 'oct_1',
+        completedById: 'usr_1',
+        reason: 'No company device was ever issued',
+      });
+
+      expect(result.id).toBe('occ_1');
+      expect(
+        mockDb.offboardingChecklistCompletion.create,
+      ).toHaveBeenCalledWith({
+        data: {
+          organizationId: 'org_1',
+          memberId: 'mem_1',
+          templateItemId: 'oct_1',
+          completedById: 'usr_1',
+          isException: true,
+          exceptionReason: 'No company device was ever issued',
+        },
+      });
+      expect(mockAttachmentsService.uploadAttachment).not.toHaveBeenCalled();
+    });
+
+    it('trims the reason before saving', async () => {
+      mockDb.offboardingChecklistCompletion.findFirst.mockResolvedValue(null);
+      mockDb.offboardingChecklistTemplate.findFirst.mockResolvedValue({
+        id: 'oct_1',
+        organizationId: 'org_1',
+        isEnabled: true,
+        isAccessRevocation: false,
+      });
+      mockDb.offboardingChecklistCompletion.create.mockResolvedValue({ id: 'occ_1' });
+
+      await service.markException({
+        organizationId: 'org_1',
+        memberId: 'mem_1',
+        templateItemId: 'oct_1',
+        completedById: 'usr_1',
+        reason: '  No device issued  ',
+      });
+
+      expect(
+        mockDb.offboardingChecklistCompletion.create,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ exceptionReason: 'No device issued' }),
+        }),
+      );
+    });
+
+    it('throws if the step is already resolved', async () => {
+      mockDb.offboardingChecklistCompletion.findFirst.mockResolvedValue({
+        id: 'occ_1',
+      });
+
+      await expect(
+        service.markException({
+          organizationId: 'org_1',
+          memberId: 'mem_1',
+          templateItemId: 'oct_1',
+          completedById: 'usr_1',
+          reason: 'No device issued',
+        }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('throws if the template item is not found', async () => {
+      mockDb.offboardingChecklistCompletion.findFirst.mockResolvedValue(null);
+      mockDb.offboardingChecklistTemplate.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.markException({
+          organizationId: 'org_1',
+          memberId: 'mem_1',
+          templateItemId: 'oct_invalid',
+          completedById: 'usr_1',
+          reason: 'No device issued',
+        }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('throws when the step is the access-revocation step', async () => {
+      mockDb.offboardingChecklistCompletion.findFirst.mockResolvedValue(null);
+      mockDb.offboardingChecklistTemplate.findFirst.mockResolvedValue({
+        id: 'oct_ar',
+        organizationId: 'org_1',
+        isEnabled: true,
+        isAccessRevocation: true,
+      });
+
+      await expect(
+        service.markException({
+          organizationId: 'org_1',
+          memberId: 'mem_1',
+          templateItemId: 'oct_ar',
+          completedById: 'usr_1',
+          reason: 'Handled elsewhere',
+        }),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
   });
 
