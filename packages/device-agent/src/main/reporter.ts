@@ -1,5 +1,6 @@
 import { AGENT_VERSION, API_ROUTES } from '../shared/constants';
 import type { CheckInRequest, CheckInResponse, CheckResult } from '../shared/types';
+import { getCurrentOSVersion } from './device-info';
 import { log } from './logger';
 import { getApiUrl, getAuth, setAuth } from './store';
 
@@ -35,11 +36,15 @@ export async function reportCheckResults(checks: CheckResult[]): Promise<ReportR
   let sessionExpired = false;
   let notFoundCount = 0;
 
+  // Read once per run: the same OS version is reported to every org.
+  const osVersion = getCurrentOSVersion();
+
   for (const org of auth.organizations) {
     const payload: CheckInRequest = {
       deviceId: org.deviceId,
       checks,
       agentVersion: AGENT_VERSION,
+      ...(osVersion ? { osVersion } : {}),
     };
 
     try {
