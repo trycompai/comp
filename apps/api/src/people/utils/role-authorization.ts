@@ -31,12 +31,8 @@ interface AuthorizeRoleChangeParams {
  * Enforces:
  *  - Caller cannot change their OWN role (use /organization/transfer-ownership for owner moves).
  *  - The 'owner' role can only be granted/revoked via /organization/transfer-ownership.
- *  - Every new role is a built-in role or a custom role of this organization.
  *  - Only an owner can change the roles of an owner.
- *  - The `validateAssignableRoles` ceiling applies to both the new roles and
- *    the target's current roles: full member access (admin) may assign any
- *    non-owner role; partial member access may only grant, or edit members
- *    holding, employee/contractor and custom roles within its own permissions.
+ *  - `validateAssignableRoles` applies to the current and the new roles.
  */
 export async function authorizeRoleChange({
   callerUserId,
@@ -50,7 +46,9 @@ export async function authorizeRoleChange({
   });
 
   if (!callerMember) {
-    throw new ForbiddenException('Caller is not a member of this organization');
+    throw new ForbiddenException(
+      'Caller is not a member of this organization',
+    );
   }
 
   const callerRoles = parseRoles(callerMember.role);

@@ -1,6 +1,4 @@
 jest.mock('better-auth/api', () => ({
-  // Real APIError would drag in the whole better-auth ESM graph, which jest
-  // cannot transform here (see mcp-oauth-hooks.spec.ts for the precedent).
   APIError: class APIError extends Error {
     constructor(
       readonly status: string,

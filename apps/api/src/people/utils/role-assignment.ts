@@ -12,22 +12,6 @@ export interface RoleAssignmentContext {
   apiKeyScopes?: string[];
 }
 
-/**
- * Full member write (create+read+update+delete) lets a caller assign any
- * role. Partial member access (e.g. auditor with create+read, or an API key
- * scoped to only member:create) can only assign restricted roles
- * (employee/contractor) — plus custom roles, but only when the caller's own
- * effective permissions are a superset of the custom role's: a custom role is
- * just a named permission bundle, so assigning one that grants more than the
- * caller holds is the same privilege escalation as assigning a built-in
- * privileged role.
- *
- * The context is REQUIRED and the custom-role check is fail-closed: a limited
- * caller assigning a custom role whose row cannot be found, or whose
- * permissions cannot be resolved against the caller's, is rejected — never
- * silently authorized. Omission is a type error; there is no "skip the
- * custom-role check" path.
- */
 export async function validateAssignableRoles(
   targetRoles: string[],
   callerMemberActions: Set<string>,
@@ -65,10 +49,6 @@ export async function validateAssignableRoles(
       select: { name: true, permissions: true },
     });
 
-    // Fail closed: a limited caller may only assign a custom role we can
-    // actually resolve and prove is within their own permissions. A role name
-    // that matches no row in this org (typo, or a role from another org) is
-    // rejected rather than waved through.
     const resolvedNames = new Set(customRoles.map((r) => r.name));
     const unresolvable = customRoleNames.filter((n) => !resolvedNames.has(n));
     if (unresolvable.length > 0) {
@@ -96,13 +76,6 @@ export async function validateAssignableRoles(
   return null;
 }
 
-/**
- * The caller's member actions, derived from their role for sessions or from
- * the key's scopes for API-key auth (mirroring the PermissionGuard's scope
- * model): a key with full member management — or a legacy full-access key —
- * can assign any role, while a key scoped to only `member:create` stays
- * restricted.
- */
 export async function resolveCallerMemberActions(params: {
   callerRole: string;
   organizationId: string;
@@ -112,7 +85,6 @@ export async function resolveCallerMemberActions(params: {
   const { callerRole, organizationId, isApiKey, apiKeyScopes } = params;
 
   if (isApiKey) {
-    // Legacy keys (empty scopes) = full access.
     if (!apiKeyScopes || apiKeyScopes.length === 0) {
       return new Set(['create', 'read', 'update', 'delete']);
     }
@@ -135,9 +107,6 @@ export async function resolveCallerMemberActions(params: {
     if (builtIn?.member) {
       for (const a of builtIn.member) actions.add(a);
     }
-    // Own-property check, same reason as in rolesHaveAppAccess: truthiness
-    // would treat a caller's custom role named after an Object.prototype
-    // member as built-in, never loading its `member` actions.
     if (!Object.hasOwn(BUILT_IN_ROLE_PERMISSIONS, role)) {
       customRoleNames.push(role);
     }
@@ -159,13 +128,6 @@ export async function resolveCallerMemberActions(params: {
   return actions;
 }
 
-/**
- * The caller's full effective permission set (every resource), derived the
- * same way as resolveCallerMemberActions but without narrowing to `member`:
- * scoped API keys contribute their scopes; sessions contribute the union of
- * their built-in and custom role statements. Legacy full-access keys are
- * rejected upstream by the write-access gate and never reach this lookup.
- */
 async function resolveCallerEffectivePermissions(
   params: RoleAssignmentContext,
 ): Promise<Record<string, string[]>> {
@@ -197,7 +159,6 @@ async function resolveCallerEffectivePermissions(
       .filter(Boolean);
     const customRoleNames: string[] = [];
     for (const role of roles) {
-      // Same own-property check as resolveCallerMemberActions.
       if (Object.hasOwn(BUILT_IN_ROLE_PERMISSIONS, role)) {
         grant(BUILT_IN_ROLE_PERMISSIONS[role]);
       } else {
@@ -223,10 +184,6 @@ async function resolveCallerEffectivePermissions(
   );
 }
 
-/**
- * True when every action `granted` assigns is something `held` already has —
- * the superset rule for custom-role assignment.
- */
 function isPermissionSubset(
   granted: Record<string, string[]>,
   held: Record<string, string[]>,

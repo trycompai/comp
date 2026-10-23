@@ -93,7 +93,6 @@ jest.mock('@trycompai/auth', () => ({
     employee: { compliance: ['required'] },
     contractor: { compliance: ['required'] },
   },
-  // Same stub as role-assignment.spec.ts: custom role permissions are JSON.
   parseRolePermissions: (value: unknown) =>
     typeof value === 'string' ? JSON.parse(value) : value,
 }));
@@ -567,7 +566,6 @@ describe('PeopleService', () => {
         setCustomRoles({});
       });
 
-      // Custom roles of org_123, by name; looked up by the role checks.
       const setCustomRoles = (roles: Record<string, object>) => {
         (db.organizationRole.findMany as jest.Mock).mockImplementation(
           (args: { where: { name: { in: string[] } } }) =>
@@ -658,8 +656,6 @@ describe('PeopleService', () => {
         expect(MemberQueries.updateMember).not.toHaveBeenCalled();
       });
 
-      // Full member access may assign any non-owner role, including roles
-      // the admin does not hold itself.
       it.each(['employee', 'auditor,contractor', 'people-editor'])(
         'should allow admin to set another admin to %s',
         async (role) => {

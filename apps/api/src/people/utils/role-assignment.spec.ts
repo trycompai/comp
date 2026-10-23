@@ -11,10 +11,6 @@ jest.mock('@db', () => ({
   },
 }));
 
-// Same pattern as people-invite.service.spec.ts: the real @trycompai/auth
-// index pulls better-auth's ESM build into jest, so only the fixtures the
-// helper consumes are stubbed — with the shipped role statements, so the
-// superset math is exercised against production-shaped permissions.
 jest.mock('@trycompai/auth', () => ({
   BUILT_IN_ROLE_PERMISSIONS: {
     admin: {
@@ -55,7 +51,6 @@ const mockFindMany = db.organizationRole.findMany as jest.Mock;
 
 const ORG = 'org_1';
 
-/** member:create+read only — the auditor profile this PR restricts. */
 const PARTIAL_MEMBER_ACTIONS = new Set(['create', 'read']);
 const FULL_MEMBER_ACTIONS = new Set(['create', 'read', 'update', 'delete']);
 
@@ -65,10 +60,6 @@ describe('validateAssignableRoles — custom-role superset rule (GH-037)', () =>
   });
 
   it('rejects a limited caller assigning a custom admin-level role', async () => {
-    // An auditor (member:create,read only) must not mint a member with a
-    // custom role that grants member:update/delete — permissions the caller
-    // does not hold. Built-in 'admin' is already refused; a custom role with
-    // the same statements was the remaining escalation path.
     mockFindMany.mockResolvedValue([
       {
         name: 'superuser',
@@ -173,9 +164,6 @@ describe('validateAssignableRoles — custom-role superset rule (GH-037)', () =>
   });
 
   it('fail-closed: rejects a custom role name that resolves to no row in this org', async () => {
-    // A limited caller naming a custom role whose row cannot be found (typo,
-    // or a role belonging to another org) must NOT be waved through — the
-    // grant is unverifiable, so it is refused.
     mockFindMany.mockResolvedValue([]);
 
     const error = await validateAssignableRoles(
@@ -192,13 +180,6 @@ describe('validateAssignableRoles — custom-role superset rule (GH-037)', () =>
   });
 
   it('requires a context: the parameter type excludes undefined (fail-closed by signature)', () => {
-    // Unsuppressed type-level proof that the context parameter is required.
-    // `undefined extends P` (not `P extends undefined`, which distributes over
-    // the union and always allows `true`): if the parameter ever became
-    // optional (`context?`), `undefined` would be assignable to P, the type
-    // below collapses to `never`, and assigning `true` fails to compile.
-    // Verified with a negative control: an optional 3rd param makes this exact
-    // assertion error TS2322.
     type ThirdParam = Parameters<typeof validateAssignableRoles>[2];
     const contextIsRequired: undefined extends ThirdParam ? never : true = true;
     expect(contextIsRequired).toBe(true);

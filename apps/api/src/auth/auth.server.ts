@@ -371,7 +371,6 @@ export const auth = betterAuth({
   },
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
-      // Role changes go through PATCH /v1/people/:id.
       assertMembershipRouteAllowed(ctx.path);
       return mcpOAuthBeforeHook(ctx);
     }),

@@ -118,7 +118,6 @@ async function assertGrantApproved(ctx: AuthEndpointContext): Promise<void> {
   });
 }
 
-/** MCP OAuth rules, run by the `before` hook in auth.server.ts. */
 export async function mcpOAuthBeforeHook(ctx: AuthEndpointContext) {
   if (ctx.path === MCP_REGISTER_PATH) {
     throw new APIError('FORBIDDEN', { error: 'access_denied' });

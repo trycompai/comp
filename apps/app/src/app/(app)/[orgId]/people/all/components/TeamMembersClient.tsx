@@ -297,7 +297,6 @@ export function TeamMembersClient({
     const rolesArray = Array.isArray(roles) ? roles : [roles];
     const member = data.members.find((m) => m.id === memberId);
 
-    // Client-side check; PATCH /v1/people/:id enforces the role rules.
     const memberRoles = parseRolesString(member?.role);
     if (member && memberRoles.includes('owner') && !rolesArray.includes('owner')) {
       // Show toast error directly, no need to return an error object

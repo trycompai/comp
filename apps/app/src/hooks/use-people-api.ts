@@ -113,7 +113,6 @@ export function usePeopleActions() {
     [api],
   );
 
-  /** Replaces the member's roles (the row menu's Edit Roles). */
   const updateMemberRoles = useCallback(
     async ({ memberId, roles }: { memberId: string; roles: string[] }) => {
       const response = await api.patch<PeopleResponseDto>(
