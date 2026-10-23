@@ -22,13 +22,13 @@
     "test": "bun test tests"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.26.0",
+    "@modelcontextprotocol/sdk": "1.32.1",
     "@stricli/core": "^1.1.2",
     "express": "^5.1.0",
     "zod": "^4.0.0"
   },
   "overrides": {
-    "@modelcontextprotocol/sdk": "1.26.0",
+    "@modelcontextprotocol/sdk": "1.32.1",
     "hono": ">=4.12.25",
     "fast-uri": ">=3.1.2"
   },
