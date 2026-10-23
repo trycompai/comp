@@ -12,8 +12,20 @@ jobs:
   regressions:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: comp_security_tests
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
     env:
-      # Client generation and mocked tests only; no database connection is needed.
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/comp_security_tests
     steps:
       - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
@@ -38,6 +50,10 @@ jobs:
           src/auth/auth.controller.spec.ts
           src/auth/permission.guard.spec.ts
           src/auth/auth-context.decorator.spec.ts
+          src/auth/membership-route-policy.spec.ts
+          src/auth/mcp-oauth-hooks.spec.ts
+          src/auth/auth-server-origins.spec.ts
+          src/auth/api-key.service.spec.ts
           src/people
           src/tasks/automations
           src/trust-portal
@@ -50,6 +66,12 @@ jobs:
           src/trigger/vector-store/helpers/extract-content-from-file.spec.ts
           src/questionnaire/questionnaire.service.spec.ts
           src/questionnaire/questionnaire.controller.spec.ts --runInBand
+      - name: Apply every migration to an empty database
+        working-directory: packages/db
+        run: bunx prisma migrate deploy
+      - name: Deleting a member keeps its audit evidence
+        working-directory: packages/db
+        run: bun test src/member-delete-keeps-audit-evidence.test.ts
       - name: App task authorization and batch regressions
         working-directory: apps/app
         run: >-

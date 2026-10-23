@@ -168,11 +168,7 @@ describe('isStaticTrustedOrigin', () => {
 });
 
 describe('getCustomDomains (structural)', () => {
-  it('auth.server.ts should NOT filter by domainVerified in CORS domain query', () => {
-    // Custom domains should be allowed for CORS as soon as they are configured
-    // by an admin, not only after DNS verification completes. Vercel can serve
-    // the trust portal before our domainVerified flag is set, causing CORS
-    // failures on client-side API calls.
+  it('auth.server.ts only trusts verified published custom domains', () => {
     const fs = require('fs');
     const path = require('path');
     const authServer = fs.readFileSync(
@@ -187,8 +183,7 @@ describe('getCustomDomains (structural)', () => {
     expect(fnMatch).toBeTruthy();
     const fnBody = fnMatch![0];
 
-    // Must NOT require domainVerified — that flag lags behind Vercel's own verification
-    expect(fnBody).not.toContain('domainVerified');
+    expect(fnBody).toContain('domainVerified: true');
 
     // Must still filter by published status
     expect(fnBody).toContain("status: 'published'");
