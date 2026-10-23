@@ -1,3 +1,5 @@
+jest.mock('@db', () => ({ db: {} }));
+
 jest.mock('@trycompai/auth', () => ({
   statement: {
     organization: ['read', 'update', 'delete'],

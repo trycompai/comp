@@ -1,8 +1,4 @@
-import {
-  APIError,
-  createAuthMiddleware,
-  getSessionFromCtx,
-} from 'better-auth/api';
+import { APIError, getSessionFromCtx } from 'better-auth/api';
 import {
   parsePendingAuthorization,
   type PendingAuthorization,
@@ -122,7 +118,7 @@ async function assertGrantApproved(ctx: AuthEndpointContext): Promise<void> {
   });
 }
 
-export const mcpOAuthBeforeHook = createAuthMiddleware(async (ctx) => {
+export async function mcpOAuthBeforeHook(ctx: AuthEndpointContext) {
   if (ctx.path === MCP_REGISTER_PATH) {
     throw new APIError('FORBIDDEN', { error: 'access_denied' });
   }
@@ -138,4 +134,4 @@ export const mcpOAuthBeforeHook = createAuthMiddleware(async (ctx) => {
   if (ctx.path === MCP_TOKEN_PATH) {
     await assertGrantApproved(ctx);
   }
-});
+}
