@@ -1,14 +1,26 @@
 # =============================================================================
 # STAGE 1: Dependencies - Install and cache workspace dependencies
 # =============================================================================
-FROM oven/bun:1.2.8 AS deps
+FROM node:22-bookworm-slim AS node-runtime
+
+FROM oven/bun:1.3.4 AS bun-node
+
+# Prisma's CLI requires Node.js. The Bun image otherwise supplies a `node`
+# fallback that executes JavaScript with Bun.
+COPY --from=node-runtime /usr/local/bin/node /usr/local/bin/node
+
+FROM bun-node AS deps
 
 WORKDIR /app
 
 # Copy workspace configuration
-COPY package.json bun.lock ./
+COPY package.json bun.lock bunfig.toml ./
 
-# Copy package.json files for all packages (exclude local db; use published @trycompai/db)
+# Copy package.json files for the app and portal workspace dependency graph
+COPY packages/auth/package.json ./packages/auth/
+COPY packages/billing/package.json ./packages/billing/
+COPY packages/company/package.json ./packages/company/
+COPY packages/db/package.json ./packages/db/
 COPY packages/kv/package.json ./packages/kv/
 COPY packages/ui/package.json ./packages/ui/
 COPY packages/email/package.json ./packages/email/
@@ -28,7 +40,7 @@ RUN PRISMA_SKIP_POSTINSTALL_GENERATE=true bun install --ignore-scripts
 # =============================================================================
 # STAGE 2: Ultra-Minimal Migrator - Only Prisma
 # =============================================================================
-FROM oven/bun:1.2.8 AS migrator
+FROM bun-node AS migrator
 
 WORKDIR /app
 
@@ -57,19 +69,17 @@ FROM deps AS app-builder
 WORKDIR /app
 
 # Copy all source code needed for build
+COPY turbo.json ./
 COPY packages ./packages
 COPY apps/app ./apps/app
 
 # Bring in node_modules for build and prisma prebuild
 COPY --from=deps /app/node_modules ./node_modules
 
-# Pre-combine schemas and generate the Prisma client into
-# node_modules/@prisma/client. The deps stage ran `bun install` with
-# `--ignore-scripts` so packages/db's postinstall was skipped; we run
-# it explicitly here so `next build` can resolve the generated runtime
-# + types when it imports @prisma/client.
-RUN cd packages/db && node scripts/combine-schemas.js \
-                   && node scripts/generate-prisma-client-js.js
+# Build local workspace dependencies, then copy the split database schemas
+# into the app before generating its Prisma client.
+RUN bunx turbo run build --filter='@trycompai/app^...'
+RUN cd apps/app && bun run db:getschema
 
 # Ensure Next build has required public env at build-time
 ARG NEXT_PUBLIC_BETTER_AUTH_URL
@@ -114,15 +124,17 @@ FROM deps AS portal-builder
 WORKDIR /app
 
 # Copy all source code needed for build
+COPY turbo.json ./
 COPY packages ./packages
 COPY apps/portal ./apps/portal
 
 # Bring in node_modules for build and prisma prebuild
 COPY --from=deps /app/node_modules ./node_modules
 
-# Pre-combine schemas for portal build
-RUN cd packages/db && node scripts/combine-schemas.js
-RUN cp packages/db/dist/schema.prisma apps/portal/prisma/schema.prisma
+# Build local workspace dependencies, then copy the split database schemas
+# into the portal before generating its Prisma client.
+RUN bunx turbo run build --filter='@trycompai/portal^...'
+RUN cd apps/portal && bun run db:getschema
 
 # Ensure Next build has required public env at build-time
 ARG NEXT_PUBLIC_BETTER_AUTH_URL
