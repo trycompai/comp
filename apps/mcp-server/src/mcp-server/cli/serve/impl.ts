@@ -5,6 +5,7 @@
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js";
+import express from "express";
 import { LocalContext } from "../../cli.js";
 import {
   ConsoleLoggerLevel,
@@ -16,7 +17,11 @@ import { buildAnnotationFilter } from "../../tools.js";
 import { buildSDK } from "../../tools.js";
 
 import { landingPageExpress } from "../../../landing-page.js";
-import { getRequestSecurityError, requiresRequestCredentials } from "./security.js";
+import {
+  getRequestSecurityError,
+  requestEncoding,
+  requiresRequestCredentials,
+} from "./security.js";
 
 interface ServeCommandFlags extends MCPServerFlags {
   readonly port: number;
@@ -89,7 +94,11 @@ async function startStreamableHTTP(cliFlags: ServeCommandFlags) {
 
   app.get("/", landingPageExpress);
 
-  const httpServer = app.listen(cliFlags.port, cliFlags.host, () => {
+  // createMcpExpressApp runs express.json first, so refuse unsafe encodings
+  // in an outer app before it can decode them.
+  const server = express().use(requestEncoding, app);
+
+  const httpServer = server.listen(cliFlags.port, cliFlags.host, () => {
     const ha = httpServer.address();
     const host = typeof ha === "string" ? ha : `${ha?.address}:${ha?.port}`;
     logger.info("MCP Streamable HTTP server started", { host });

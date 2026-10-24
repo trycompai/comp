@@ -3,6 +3,7 @@ import { spawn, type ChildProcess } from 'node:child_process';
 import { access } from 'node:fs/promises';
 import { createServer, request as httpRequest, type RequestListener, type Server } from 'node:http';
 import { fileURLToPath } from 'node:url';
+import { brotliCompressSync, gzipSync } from 'node:zlib';
 
 const packageDirectory = fileURLToPath(new URL('../', import.meta.url));
 const staticKey = 'comp-test-static-key';
@@ -27,11 +28,13 @@ function request(params: {
   port: number;
   method?: 'POST' | 'GET';
   headers?: Record<string, string>;
-  body?: object;
+  body?: object | Buffer;
 }): Promise<HttpResult> {
   return new Promise((resolve, reject) => {
     const method = params.method ?? 'POST';
-    const body = method === 'POST' ? JSON.stringify(params.body ?? initialization) : undefined;
+    const body = method !== 'POST' ? undefined
+      : Buffer.isBuffer(params.body) ? params.body
+      : JSON.stringify(params.body ?? initialization);
     // node:http preserves an explicit Host header, unlike fetch implementations.
     const outgoing = httpRequest({
       hostname: '127.0.0.1',
@@ -162,6 +165,26 @@ describe('built HTTP MCP artifact security', () => {
       expect(result.status).toBe(200);
       expect(result.body).toContain('"result"');
     }
+  });
+
+  // CVE-2026-111497: express.json must never decode a Brotli body.
+  test.each([
+    ['br', brotliCompressSync(JSON.stringify(initialization))],
+    [' BR ', brotliCompressSync(JSON.stringify(initialization))],
+    ['gzip, br', gzipSync(JSON.stringify(initialization))],
+    ['zstd', Buffer.from(JSON.stringify(initialization))],
+  ])('refuses Content-Encoding %p before decoding the body', async (encoding, body) => {
+    const headers = { 'content-encoding': encoding };
+    expect((await request({ port: loopbackPort, headers, body })).status).toBe(415);
+    const network = await request({ port: networkPort, headers: { ...headers, apikey: callerKey }, body });
+    expect(network.status).toBe(415);
+  });
+
+  test('still accepts gzip-encoded requests', async () => {
+    const headers = { 'content-encoding': 'gzip' };
+    const result = await request({ port: loopbackPort, headers, body: gzipSync(JSON.stringify(initialization)) });
+    expect(result.status).toBe(200);
+    expect(result.body).toContain('"result"');
   });
 
   test('does not expose an unauthenticated GET MCP handler', async () => {
