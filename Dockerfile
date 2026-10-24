@@ -1,7 +1,7 @@
 # =============================================================================
 # STAGE 1: Dependencies - Install and cache workspace dependencies
 # =============================================================================
-FROM oven/bun:1.2.8 AS deps
+FROM oven/bun:1.4.4 AS deps
 
 WORKDIR /app
 
@@ -28,7 +28,7 @@ RUN PRISMA_SKIP_POSTINSTALL_GENERATE=true bun install --ignore-scripts
 # =============================================================================
 # STAGE 2: Ultra-Minimal Migrator - Only Prisma
 # =============================================================================
-FROM oven/bun:1.2.8 AS migrator
+FROM oven/bun:1.4.4 AS migrator
 
 WORKDIR /app
 
