@@ -118,6 +118,7 @@
         "resend": "^6.4.2",
         "rxjs": "^7.8.1",
         "safe-stable-stringify": "^2.5.0",
+        "sharp": "^0.34.5",
         "stripe": "^20.4.0",
         "swagger-ui-express": "^5.0.1",
         "zod": "^4.0.14"
