@@ -16,6 +16,12 @@ import { toast } from 'sonner';
 const MIN_REASON_LENGTH = 20;
 
 /**
+ * `MarkExceptionDto`'s `@MaxLength`. The textarea cannot exceed it, so a long
+ * paste is cut here instead of coming back as a 400.
+ */
+const MAX_REASON_LENGTH = 10_000;
+
+/**
  * Tomorrow's date in the user's LOCAL time zone, formatted as YYYY-MM-DD.
  *
  * Avoids the UTC-midnight bug where `new Date().toISOString().slice(0, 10)`
@@ -147,6 +153,7 @@ export function MarkExceptionModal({
               id="exception-reason"
               rows={4}
               value={reason}
+              maxLength={MAX_REASON_LENGTH}
               onChange={(e) => setReason(e.target.value)}
               placeholder="e.g. This bucket hosts our public marketing assets. Public read access is intentional."
               className="w-full rounded-md border bg-background px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30"
