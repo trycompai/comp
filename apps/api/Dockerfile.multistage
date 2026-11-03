@@ -1,12 +1,14 @@
 # =============================================================================
 # STAGE 1: Dependencies - Install only what the API needs
 # =============================================================================
-FROM oven/bun:1.2.8 AS deps
+FROM oven/bun:1.4.4 AS deps
 
 WORKDIR /app
 
-# Copy root workspace config
-COPY package.json bun.lock ./
+# Copy root workspace config. bunfig.toml keeps the hoisted linker: with this
+# lockfile (configVersion 1), Bun 1.3 and later default workspaces to isolated
+# installs, and the builder stage copies only the root node_modules.
+COPY package.json bun.lock bunfig.toml ./
 
 # Strip root package.json to only keep workspaces config.
 # The root has frontend deps (design-system, react-dnd, sharp, semantic-release, etc.)
@@ -36,7 +38,12 @@ RUN bun install --ignore-scripts
 # =============================================================================
 # STAGE 2: Builder - Build workspace packages and NestJS app
 # =============================================================================
-FROM oven/bun:1.2.8 AS builder
+FROM oven/bun:1.4.4 AS builder
+
+# Run the Nest CLI on Node.js, not on the image's Bun `node` shim. Under Bun
+# 1.4, require.resolve applies tsconfig paths, so `nest build` takes `@db` for
+# an installed package and leaves the alias unrewritten in dist/.
+COPY --from=node:22.23.4-slim /usr/local/bin/node /usr/local/bin/node
 
 WORKDIR /app
 
