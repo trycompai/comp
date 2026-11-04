@@ -130,6 +130,20 @@ describe('MarkExceptionModal', () => {
     expect(submit).not.toBeDisabled();
   });
 
+  it('caps the reason at the length the API accepts', () => {
+    render(
+      <MarkExceptionModal
+        open
+        onOpenChange={() => {}}
+        findingId="icx_1"
+        findingTitle="X"
+      />,
+    );
+    // MarkExceptionDto's `@MaxLength`. Kept in step so a long paste is cut here
+    // instead of coming back as a 400.
+    expect(screen.getByLabelText(/Reason for exception/i)).toHaveAttribute('maxlength', '10000');
+  });
+
   it('submits to the exception endpoint and invokes onMarked on success', async () => {
     postMock.mockResolvedValueOnce({ error: null, data: { data: { id: 'fex_1' } } });
     const onMarked = vi.fn();

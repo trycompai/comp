@@ -27669,7 +27669,8 @@
           "reason": {
             "type": "string",
             "description": "Documentation for why this finding does not apply or is being accepted. Minimum 20 non-whitespace characters.",
-            "example": "Bucket hosts intentionally public marketing assets; writes restricted to the marketing IAM role."
+            "example": "Bucket hosts intentionally public marketing assets; writes restricted to the marketing IAM role.",
+            "maxLength": 10000
           },
           "reviewedBy": {
             "type": "string",
