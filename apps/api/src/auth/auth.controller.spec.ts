@@ -47,6 +47,7 @@ describe('AuthController.getMe — hasInactiveMembership (CS-569)', () => {
     mockUserFindUnique.mockResolvedValue({
       id: 'user_1',
       email: 'user@example.com',
+      emailVerified: true,
       name: 'User',
       image: null,
       role: 'user',
@@ -104,5 +105,57 @@ describe('AuthController.getMe — hasInactiveMembership (CS-569)', () => {
 
     expect(res.organizations).toHaveLength(1);
     expect(res.hasInactiveMembership).toBe(false);
+  });
+});
+
+describe('AuthController.getMe — pending invitation', () => {
+  const controller = new AuthController();
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockMemberFindMany.mockResolvedValue([]);
+    mockMemberCount.mockResolvedValue(0);
+    mockInvitationFindFirst.mockResolvedValue({ id: 'inv_1' });
+  });
+
+  function mockUser({ emailVerified }: { emailVerified: boolean }) {
+    mockUserFindUnique.mockResolvedValue({
+      id: 'user_1',
+      email: 'user@example.com',
+      emailVerified,
+      name: 'User',
+      image: null,
+      role: 'user',
+    });
+  }
+
+  it('returns the pending invitation to a verified email address', async () => {
+    mockUser({ emailVerified: true });
+
+    const res = await controller.getMe(sessionContext());
+
+    expect(res.pendingInvitation).toEqual({ id: 'inv_1' });
+  });
+
+  it('withholds the pending invitation from an unverified email address', async () => {
+    mockUser({ emailVerified: false });
+
+    const res = await controller.getMe(sessionContext());
+
+    expect(res.pendingInvitation).toBeNull();
+  });
+
+  it('keeps the user response shape unchanged', async () => {
+    mockUser({ emailVerified: true });
+
+    const res = await controller.getMe(sessionContext());
+
+    expect(res.user).toEqual({
+      id: 'user_1',
+      email: 'user@example.com',
+      name: 'User',
+      image: null,
+      role: 'user',
+    });
   });
 });

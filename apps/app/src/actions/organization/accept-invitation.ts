@@ -60,6 +60,11 @@ export const completeInvitation = authActionClientWithoutOrg
         throw new Error('Unauthorized');
       }
 
+      // Invitations are accepted from verified email addresses only.
+      if (user.emailVerified !== true) {
+        throw new Error('Verify your email address to accept this invitation');
+      }
+
       try {
         const invitation = await validateInviteCode(inviteCode, user.email);
 

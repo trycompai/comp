@@ -83,13 +83,14 @@ export class AuthController {
       return { user: null, organizations: [], pendingInvitation: null };
     }
 
-    const [user, memberships, pendingInvitation, inactiveMembershipCount] =
+    const [userRecord, memberships, invitation, inactiveMembershipCount] =
       await Promise.all([
         db.user.findUnique({
           where: { id: userId },
           select: {
             id: true,
             email: true,
+            emailVerified: true,
             name: true,
             image: true,
             role: true,
@@ -132,6 +133,19 @@ export class AuthController {
           },
         }),
       ]);
+
+    const user = userRecord
+      ? {
+          id: userRecord.id,
+          email: userRecord.email,
+          name: userRecord.name,
+          image: userRecord.image,
+          role: userRecord.role,
+        }
+      : null;
+    // Pending invitations are returned to verified email addresses only.
+    const pendingInvitation =
+      userRecord?.emailVerified === true ? invitation : null;
 
     return {
       user,
