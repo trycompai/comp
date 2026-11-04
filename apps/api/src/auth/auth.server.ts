@@ -23,6 +23,10 @@ import { ac, allRoles } from '@trycompai/auth';
 import { createAuthMiddleware } from 'better-auth/api';
 import { Redis } from '@upstash/redis';
 import type { AccessControl } from 'better-auth/plugins/access';
+import {
+  assertAuthRequestAllowed,
+  assertEmailChangeLinkOwner,
+} from './auth-request-policy';
 import { mcpOAuthBeforeHook } from './mcp-oauth-hooks';
 import { assertMembershipRouteAllowed } from './membership-route-policy';
 import { mapMicrosoftProfileToUser } from './microsoft-email';
@@ -372,6 +376,8 @@ export const auth = betterAuth({
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
       assertMembershipRouteAllowed(ctx.path);
+      assertAuthRequestAllowed({ path: ctx.path, body: ctx.body });
+      await assertEmailChangeLinkOwner(ctx);
       return mcpOAuthBeforeHook(ctx);
     }),
     after: createAuthMiddleware(async (ctx) => {
@@ -494,6 +500,8 @@ export const auth = betterAuth({
     }),
     magicLink({
       expiresIn: MAGIC_LINK_EXPIRES_IN_SECONDS,
+      // Verification tokens are persisted as one-way hashes.
+      storeToken: 'hashed',
       sendMagicLink: async ({ email, url }) => {
         // The `url` from better-auth points to the API's verify endpoint
         // and includes the callbackURL from the client's sign-in request.
