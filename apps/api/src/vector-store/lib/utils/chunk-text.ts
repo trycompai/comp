@@ -38,13 +38,9 @@ export function chunkText(
 
   const chunks: string[] = [];
   let start = 0;
-  let iterations = 0;
-  const maxIterations =
-    Math.ceil(text.length / (chunkSizeChars - overlapChars)) + 10; // Safety limit
 
-  while (start < text.length && iterations < maxIterations) {
-    iterations++;
-    const end = Math.min(start + chunkSizeChars, text.length);
+  while (start < text.length) {
+    let end = Math.min(start + chunkSizeChars, text.length);
 
     if (end <= start) {
       break; // Prevent infinite loop
@@ -60,6 +56,7 @@ export function chunkText(
 
       if (breakPoint > chunkSizeChars * 0.7) {
         // Only break at sentence if we're at least 70% through the chunk
+        end = start + breakPoint + 1;
         chunk = chunk.slice(0, breakPoint + 1);
       }
     }
@@ -69,7 +66,13 @@ export function chunkText(
       chunks.push(trimmedChunk);
     }
 
-    // Move start position forward, accounting for overlap
+    // The final chunk already contains the suffix; overlapping it again would
+    // create redundant embeddings of progressively shorter tails.
+    if (end === text.length) break;
+
+    // Advance from the actual sentence boundary so no source text is skipped.
+    // Strict forward progress also bounds the loop when overlap exceeds a
+    // shortened chunk's length, without an iteration cap that can truncate it.
     const nextStart = end - overlapChars;
     if (nextStart <= start) {
       // Prevent infinite loop - move forward at least 1 character
@@ -77,8 +80,6 @@ export function chunkText(
     } else {
       start = nextStart;
     }
-
-    if (start >= text.length) break;
   }
 
   return chunks.filter((chunk) => chunk.length > 0);
