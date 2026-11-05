@@ -18,6 +18,16 @@ export function getDeviceInfo(): DeviceInfo {
   };
 }
 
+/**
+ * Reads the OS version for check-ins. Returns undefined when it cannot be
+ * determined, so a transient read failure never replaces a known version
+ * on the server with 'Unknown'.
+ */
+export function getCurrentOSVersion(): string | undefined {
+  const version = getOSVersion(getDevicePlatform());
+  return version === 'Unknown' ? undefined : version;
+}
+
 function getDevicePlatform(): DevicePlatform {
   if (process.platform === 'win32') return 'windows';
   if (process.platform === 'linux') return 'linux';

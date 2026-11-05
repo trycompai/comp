@@ -11,6 +11,52 @@ vi.mock('./store', () => ({
 }));
 vi.mock('./logger', () => ({ log: vi.fn() }));
 
+const getCurrentOSVersionMock = vi.fn();
+vi.mock('./device-info', () => ({
+  getCurrentOSVersion: () => getCurrentOSVersionMock(),
+}));
+
+const SINGLE_ORG_AUTH = {
+  sessionToken: 'tok',
+  cookieName: 'better-auth.session_token',
+  userId: 'usr_1',
+  organizations: [{ organizationId: 'org_1', organizationName: 'A', deviceId: 'dev_1' }],
+};
+
+function sentBody(): Record<string, unknown> {
+  const [, init] = (globalThis.fetch as unknown as Mock).mock.calls[0];
+  return JSON.parse((init as RequestInit).body as string);
+}
+
+describe('reportCheckResults OS version', () => {
+  beforeEach(() => {
+    getAuthMock.mockReset().mockReturnValue(SINGLE_ORG_AUTH);
+    getCurrentOSVersionMock.mockReset();
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ isCompliant: true, nextCheckIn: '' }),
+    }) as unknown as typeof fetch;
+  });
+
+  it('sends the current OS version so the server can refresh it after an OS update', async () => {
+    getCurrentOSVersionMock.mockReturnValue('15.8.1');
+
+    const { reportCheckResults } = await import('./reporter');
+    await reportCheckResults([]);
+
+    expect(sentBody()).toMatchObject({ deviceId: 'dev_1', osVersion: '15.8.1' });
+  });
+
+  it('omits osVersion when it cannot be read, so a failed read never overwrites a good value', async () => {
+    getCurrentOSVersionMock.mockReturnValue(undefined);
+
+    const { reportCheckResults } = await import('./reporter');
+    await reportCheckResults([]);
+
+    expect(sentBody()).not.toHaveProperty('osVersion');
+  });
+});
+
 describe('reportCheckResults silent upgrade', () => {
   beforeEach(() => {
     getAuthMock.mockReset();
