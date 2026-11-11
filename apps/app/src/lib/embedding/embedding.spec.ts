@@ -8,13 +8,17 @@ const deleteMock = vi.fn();
 const rangeMock = vi.fn();
 
 vi.mock('@upstash/vector', () => ({
-  Index: vi.fn().mockImplementation(() => ({
-    upsert: upsertMock,
-    query: queryMock,
-    info: infoMock,
-    delete: deleteMock,
-    range: rangeMock,
-  })),
+  // `Index` is constructed with `new`: vitest 4 constructs the mock's
+  // implementation, so it has to be a `function`, not an arrow.
+  Index: vi.fn().mockImplementation(function () {
+    return {
+      upsert: upsertMock,
+      query: queryMock,
+      info: infoMock,
+      delete: deleteMock,
+      range: rangeMock,
+    };
+  }),
 }));
 
 vi.mock('@ai-sdk/openai', () => ({
