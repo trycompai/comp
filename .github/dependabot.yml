@@ -1,8 +1,10 @@
 version: 2
 updates:
   # Root bun workspace (covers apps/*, apps/browser-extension/*, packages/*
-  # via bun workspaces — all resolve into the root bun.lock).
-  - package-ecosystem: npm
+  # via bun workspaces — all resolve into the root bun.lock). Declared as the
+  # `bun` ecosystem, not `npm`: the only root lockfile is bun.lock, which the
+  # npm updater does not read.
+  - package-ecosystem: bun
     directory: '/'
     schedule:
       interval: daily
