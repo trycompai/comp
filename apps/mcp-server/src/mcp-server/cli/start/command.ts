@@ -18,14 +18,7 @@ export const startCommand = buildCommand({
         kind: "enum",
         brief: "The transport to use for communicating with the server",
         default: "stdio",
-        values: ["stdio", "sse"],
-      },
-      port: {
-        kind: "parsed",
-        brief: "The port to use when the SSE transport is enabled",
-        default: "2718",
-        parse: (val: string) =>
-          z.coerce.number().int().gte(0).lt(65536).parse(val),
+        values: ["stdio"],
       },
       tool: {
         kind: "parsed",

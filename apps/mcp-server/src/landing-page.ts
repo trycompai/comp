@@ -35,14 +35,14 @@ export function landingPageHTML(origin: string): string {
     "args": [
       "-y",
       "mcp-remote@0.1.25",
-      `${o}/sse`,
+      `${o}/mcp`,
       "--header",
       "apikey:${APIKEY}",
     ],
     "env": { "APIKEY": "YOUR_VALUE_HERE" },
   };
   const codexConfig = `[mcp_servers.CompAi]
-url = "${o}/sse"
+url = "${o}/mcp"
 http_headers = { "apikey" = "YOUR_APIKEY" }`;
 
   return `

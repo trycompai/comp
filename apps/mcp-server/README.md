@@ -4,7 +4,7 @@ Model Context Protocol (MCP) Server for the *@trycompai/mcp-server* API.
 
 This repository maintains the legacy server. Install `@trycompai/mcp-server@legacy` after its maintenance release is published; the `latest` tag belongs to comp-v2. Version 0.2.8 is prepared here for that release.
 
-For HTTP mode, the default loopback binding supports a static CLI API key. Any non-loopback binding requires every MCP request to supply its own `apikey` header; the operator’s CLI key is never shared with network clients. Browser origins must be loopback HTTP(S), and loopback servers validate the Host header.
+The `start` command uses the stdio transport only; use `serve` for HTTP (endpoint `/mcp`). With `serve`, the default loopback binding supports a static CLI API key. Any non-loopback binding requires every MCP request to supply its own `apikey` header; the operator’s CLI key is never shared with network clients. Browser origins must be loopback HTTP(S), and loopback servers validate the Host header.
 
 [![Built by Speakeasy](https://img.shields.io/badge/Built_by-SPEAKEASY-374151?style=for-the-badge&labelColor=f3f4f6)](https://www.speakeasy.com/?utm_source=@trycompai/mcp-server&utm_campaign=mcp-typescript)
 [![License: MIT](https://img.shields.io/badge/LICENSE_//_MIT-3b5bdb?style=for-the-badge&labelColor=eff6ff)](https://opensource.org/licenses/MIT)

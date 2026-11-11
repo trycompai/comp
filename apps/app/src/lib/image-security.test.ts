@@ -4,7 +4,7 @@ import loadConfig from 'next/dist/server/config';
 import NextNodeServer from 'next/dist/server/next-server';
 import { PHASE_DEVELOPMENT_SERVER } from 'next/dist/shared/lib/constants';
 import { getImgProps } from 'next/dist/shared/lib/get-img-props';
-import { imageConfigDefault } from 'next/dist/shared/lib/image-config';
+import { imageConfigDefault, prepareImageConfig } from 'next/dist/shared/lib/image-config';
 import defaultLoader from 'next/dist/shared/lib/image-loader';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { IncomingMessage, ServerResponse } from 'node:http';
@@ -133,7 +133,8 @@ describe.each([
     const { props, meta } = getImgProps(
       { src, alt: 'Image', width: 40, height: 40 },
       {
-        imgConf: { ...imageConfigDefault, ...config.images },
+        // next 16.4 types imgConf as the prepared config; build it the way Next does.
+        imgConf: prepareImageConfig(undefined, { ...imageConfigDefault, ...config.images }),
         defaultLoader,
       },
     );

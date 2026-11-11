@@ -39,7 +39,7 @@ model AuditLog {
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  member       Member?      @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  member       Member?      @relation(fields: [memberId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([organizationId])

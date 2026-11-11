@@ -1,5 +1,5 @@
 # Use Node.js runtime for production
-FROM node:20-slim
+FROM node:22.23.4-slim
 
 # Install required packages:
 # - wget for healthcheck, curl/bash for bun install, openssl for prisma

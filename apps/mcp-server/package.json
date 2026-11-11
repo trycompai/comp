@@ -38,7 +38,7 @@
     "@types/bun": "^1.2.13",
     "@types/express": "^5.0.1",
     "@types/node": "^18.19.3",
-    "bun": "^1.2.12",
+    "bun": "^1.4.4",
     "eslint": "^9.26.0",
     "globals": "^16.0.0",
     "typescript": "~5.8.3",
