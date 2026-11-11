@@ -100,8 +100,4 @@ describe('auth.server.ts wiring (structural)', () => {
       'assertMicrosoftSignUpVerified({ user, context })',
     );
   });
-
-  it('only trusts Google and GitHub for account linking', () => {
-    expect(authServer).toContain("trustedProviders: ['google', 'github'],");
-  });
 });

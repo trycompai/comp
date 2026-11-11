@@ -27,6 +27,7 @@ import {
   assertAuthRequestAllowed,
   assertEmailChangeLinkOwner,
 } from './auth-request-policy';
+import { TRUSTED_LINKING_PROVIDERS } from './account-linking-policy';
 import { mcpOAuthBeforeHook } from './mcp-oauth-hooks';
 import { assertMembershipRouteAllowed } from './membership-route-policy';
 import { mapMicrosoftProfileToUser } from './microsoft-email';
@@ -591,7 +592,7 @@ export const auth = betterAuth({
     modelName: 'Account',
     accountLinking: {
       enabled: true,
-      trustedProviders: ['google', 'github'],
+      trustedProviders: TRUSTED_LINKING_PROVIDERS,
     },
     // Skip the state cookie CSRF check for OAuth flows.
     // In our cross-origin setup (app/portal → API), the state cookie may not
