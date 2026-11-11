@@ -5,6 +5,7 @@ import {
   Get,
   NotFoundException,
   Param,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -15,12 +16,14 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { db } from '@db';
-import { OrganizationId } from './auth-context.decorator';
+import { OrganizationId, UserId } from './auth-context.decorator';
 import { PermissionGuard } from './permission.guard';
 import { RequirePermission } from './require-permission.decorator';
 import { AuthContext } from './auth-context.decorator';
 import { HybridAuthGuard } from './hybrid-auth.guard';
 import { SkipOrgCheck } from './skip-org-check.decorator';
+import { SessionOnlyGuard } from './session-only.guard';
+import { getPendingConsent, OAuthConsentQueryDto } from './oauth-consent';
 import { resolveRolePermissions } from './app-access';
 import type { AuthContext as AuthContextType } from './types';
 
@@ -80,13 +83,14 @@ export class AuthController {
       return { user: null, organizations: [], pendingInvitation: null };
     }
 
-    const [user, memberships, pendingInvitation, inactiveMembershipCount] =
+    const [userRecord, memberships, invitation, inactiveMembershipCount] =
       await Promise.all([
         db.user.findUnique({
           where: { id: userId },
           select: {
             id: true,
             email: true,
+            emailVerified: true,
             name: true,
             image: true,
             role: true,
@@ -130,6 +134,19 @@ export class AuthController {
         }),
       ]);
 
+    const user = userRecord
+      ? {
+          id: userRecord.id,
+          email: userRecord.email,
+          name: userRecord.name,
+          image: userRecord.image,
+          role: userRecord.role,
+        }
+      : null;
+    // Pending invitations are returned to verified email addresses only.
+    const pendingInvitation =
+      userRecord?.emailVerified === true ? invitation : null;
+
     return {
       user,
       organizations: memberships.map((m) => ({
@@ -140,6 +157,19 @@ export class AuthController {
       pendingInvitation,
       hasInactiveMembership: inactiveMembershipCount > 0,
     };
+  }
+
+  @Get('oauth-consent')
+  @SkipOrgCheck()
+  @UseGuards(SessionOnlyGuard)
+  @ApiOperation({
+    summary: 'Get a pending OAuth authorization for the signed-in user',
+  })
+  async getOAuthConsent(
+    @UserId() userId: string,
+    @Query() query: OAuthConsentQueryDto,
+  ) {
+    return getPendingConsent({ consentCode: query.consent_code, userId });
   }
 
   @Get('invitations')

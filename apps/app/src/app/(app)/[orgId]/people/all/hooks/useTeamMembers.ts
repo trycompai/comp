@@ -2,8 +2,7 @@
 
 import { apiClient } from '@/lib/api-client';
 import { usePeopleActions } from '@/hooks/use-people-api';
-import { authClient } from '@/utils/auth-client';
-import type { Invitation, Member, Role, User } from '@db';
+import type { Invitation, Member, User } from '@db';
 import { useCallback } from 'react';
 import useSWR from 'swr';
 
@@ -87,17 +86,6 @@ export function useTeamMembers({
     [unlinkDevice, mutate],
   );
 
-  const updateMemberRole = useCallback(
-    async (memberId: string, roles: Role[]) => {
-      await authClient.organization.updateMemberRole({
-        memberId,
-        role: roles,
-      });
-      await mutate();
-    },
-    [mutate],
-  );
-
   const cancelInvitation = useCallback(
     async (invitationId: string) => {
       const response = await apiClient.delete(
@@ -120,7 +108,6 @@ export function useTeamMembers({
     error,
     removeMember,
     removeDevice,
-    updateMemberRole,
     cancelInvitation,
     revalidate,
   };

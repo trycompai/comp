@@ -1,5 +1,10 @@
-import { ForbiddenException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { db } from '@db';
+import { BUILT_IN_ROLE_PERMISSIONS } from '@trycompai/auth';
+import {
+  resolveCallerMemberActions,
+  validateAssignableRoles,
+} from './role-assignment';
 
 const OWNER_ROLE = 'owner';
 
@@ -26,7 +31,8 @@ interface AuthorizeRoleChangeParams {
  * Enforces:
  *  - Caller cannot change their OWN role (use /organization/transfer-ownership for owner moves).
  *  - The 'owner' role can only be granted/revoked via /organization/transfer-ownership.
- *  - A caller cannot assign a role they do not themselves possess.
+ *  - Only an owner can change the roles of an owner.
+ *  - `validateAssignableRoles` applies to the current and the new roles.
  */
 export async function authorizeRoleChange({
   callerUserId,
@@ -64,15 +70,61 @@ export async function authorizeRoleChange({
     );
   }
 
+  await assertRolesExist({ organizationId, roles: newRoles });
+
   if (callerRoles.includes(OWNER_ROLE)) {
     return;
   }
 
-  for (const role of newRoles) {
-    if (!callerRoles.includes(role)) {
-      throw new ForbiddenException(
-        `You cannot assign the role "${role}" because you do not hold it`,
-      );
-    }
+  if (existingHasOwner) {
+    throw new ForbiddenException(
+      'Only an owner can change the roles of an owner',
+    );
+  }
+
+  const context = { organizationId, callerRole: callerMember.role };
+  const callerMemberActions = await resolveCallerMemberActions(context);
+
+  const existingRolesError = await validateAssignableRoles(
+    existingRoles,
+    callerMemberActions,
+    context,
+  );
+  if (existingRolesError) {
+    throw new ForbiddenException(
+      `You cannot change the roles of this member. ${existingRolesError}`,
+    );
+  }
+
+  const newRolesError = await validateAssignableRoles(
+    newRoles,
+    callerMemberActions,
+    context,
+  );
+  if (newRolesError) {
+    throw new ForbiddenException(newRolesError);
+  }
+}
+
+async function assertRolesExist({
+  organizationId,
+  roles,
+}: {
+  organizationId: string;
+  roles: string[];
+}): Promise<void> {
+  const customRoleNames = roles.filter(
+    (role) => !Object.hasOwn(BUILT_IN_ROLE_PERMISSIONS, role),
+  );
+  if (customRoleNames.length === 0) return;
+
+  const found = await db.organizationRole.findMany({
+    where: { organizationId, name: { in: customRoleNames } },
+    select: { name: true },
+  });
+  const foundNames = new Set(found.map((role) => role.name));
+  const unknown = customRoleNames.filter((name) => !foundNames.has(name));
+  if (unknown.length > 0) {
+    throw new BadRequestException(`Unknown roles: ${unknown.join(', ')}`);
   }
 }
