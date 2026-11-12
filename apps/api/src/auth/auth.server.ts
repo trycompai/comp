@@ -31,6 +31,12 @@ import { TRUSTED_LINKING_PROVIDERS } from './account-linking-policy';
 import { mcpOAuthBeforeHook } from './mcp-oauth-hooks';
 import { assertMembershipRouteAllowed } from './membership-route-policy';
 import { mapMicrosoftProfileToUser } from './microsoft-email';
+import {
+  hardenGithubProviderOptions,
+  hardenGoogleProviderOptions,
+  hardenMicrosoftProviderOptions,
+} from './provider-sign-in-policy';
+import type { FindLinkedAccount } from './provider-sign-in-policy';
 import { assertMicrosoftSignUpVerified } from './microsoft-sign-up-policy';
 import {
   getBetterAuthTrustedOrigins,
@@ -139,38 +145,60 @@ export async function isTrustedOrigin(origin: string): Promise<boolean> {
   }
 }
 
+// A linked provider may only sign in when the provider still proves the email.
+// See ./provider-sign-in-policy.ts.
+const findLinkedAccount: FindLinkedAccount = async ({
+  providerId,
+  providerAccountId,
+}) => {
+  const account = await db.account.findFirst({
+    where: { providerId, accountId: providerAccountId },
+    select: { user: { select: { email: true } } },
+  });
+  return account ? { email: account.user.email } : null;
+};
+
 // Build social providers config
 const socialProviders: Record<string, unknown> = {};
 
 if (process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET) {
-  socialProviders.google = {
-    clientId: process.env.AUTH_GOOGLE_ID,
-    clientSecret: process.env.AUTH_GOOGLE_SECRET,
-  };
+  socialProviders.google = hardenGoogleProviderOptions({
+    options: {
+      clientId: process.env.AUTH_GOOGLE_ID,
+      clientSecret: process.env.AUTH_GOOGLE_SECRET,
+    },
+    findLinkedAccount,
+  });
 }
 
 if (process.env.AUTH_GITHUB_ID && process.env.AUTH_GITHUB_SECRET) {
-  socialProviders.github = {
-    clientId: process.env.AUTH_GITHUB_ID,
-    clientSecret: process.env.AUTH_GITHUB_SECRET,
-  };
+  socialProviders.github = hardenGithubProviderOptions({
+    options: {
+      clientId: process.env.AUTH_GITHUB_ID,
+      clientSecret: process.env.AUTH_GITHUB_SECRET,
+    },
+    findLinkedAccount,
+  });
 }
 
 if (
   process.env.AUTH_MICROSOFT_CLIENT_ID &&
   process.env.AUTH_MICROSOFT_CLIENT_SECRET
 ) {
-  socialProviders.microsoft = {
-    clientId: process.env.AUTH_MICROSOFT_CLIENT_ID,
-    clientSecret: process.env.AUTH_MICROSOFT_CLIENT_SECRET,
-    tenantId: process.env.AUTH_MICROSOFT_TENANT_ID || 'common',
-    prompt: 'select_account',
-    // Microsoft Entra often omits the `email` claim for work/school accounts,
-    // which makes better-auth abort sign-in with `email_not_found`. Fall back to
-    // the username/UPN claims so these users can sign in. Accounts that DO return
-    // an `email` claim are unaffected. See ./microsoft-email.ts.
-    mapProfileToUser: mapMicrosoftProfileToUser,
-  };
+  socialProviders.microsoft = hardenMicrosoftProviderOptions({
+    options: {
+      clientId: process.env.AUTH_MICROSOFT_CLIENT_ID,
+      clientSecret: process.env.AUTH_MICROSOFT_CLIENT_SECRET,
+      tenantId: process.env.AUTH_MICROSOFT_TENANT_ID || 'common',
+      prompt: 'select_account',
+      // Microsoft Entra often omits the `email` claim for work/school accounts,
+      // which makes better-auth abort sign-in with `email_not_found`. Fall back to
+      // the username/UPN claims so these users can sign in. Accounts that DO return
+      // an `email` claim are unaffected. See ./microsoft-email.ts.
+      mapProfileToUser: mapMicrosoftProfileToUser,
+    },
+    findLinkedAccount,
+  });
 }
 
 const cookieDomain = getCookieDomain();

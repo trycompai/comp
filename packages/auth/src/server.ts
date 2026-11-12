@@ -230,7 +230,8 @@ export function createAuthServer(options: CreateAuthServerOptions) {
       modelName: 'Account',
       accountLinking: {
         enabled: true,
-        trustedProviders: ['google', 'github'],
+        // Never link by email alone; see apps/api/src/auth/account-linking-policy.ts.
+        trustedProviders: [],
       },
     },
     verification: {
