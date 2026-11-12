@@ -35,7 +35,7 @@ permissions:
 jobs:
   publish:
     if: github.ref == 'refs/heads/release'
-    uses: speakeasy-api/sdk-generation-action/.github/workflows/sdk-publish.yaml@68f3bfefb79354d39358bf4699863dabd2cea0f6 # v15.60.11
+    uses: speakeasy-api/sdk-generation-action/.github/workflows/sdk-publish.yaml@c318ea1153f3ea3f59a81f949094d17895a9d577 # v15.60.13
     with:
       target: comp-ai
       working_directory: apps/mcp-server
