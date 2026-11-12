@@ -114,7 +114,7 @@
         "puppeteer-core": "^24.7.2",
         "react": "^19.2.3",
         "react-dom": "^19.2.3",
-        "react-email": "^4.0.15",
+        "react-email": "^6.11.8",
         "react-hook-form": "^7.61.1",
         "react-hotkeys-hook": "^5.1.0",
         "react-intersection-observer": "^9.16.0",
