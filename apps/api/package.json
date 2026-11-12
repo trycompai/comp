@@ -33,7 +33,7 @@
         "@aws-sdk/client-elasticache": "^3.948.0",
         "@aws-sdk/client-emr": "^3.948.0",
         "@aws-sdk/client-eventbridge": "^3.948.0",
-        "@aws-sdk/client-glue": "^3.948.0",
+        "@aws-sdk/client-glue": "^3.1164.0",
         "@aws-sdk/client-guardduty": "^3.948.0",
         "@aws-sdk/client-iam": "^3.948.0",
         "@aws-sdk/client-inspector2": "^3.948.0",
