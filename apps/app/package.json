@@ -30,7 +30,7 @@
         "@hookform/resolvers": "^5.1.1",
         "@mendable/firecrawl-js": "^1.24.0",
         "@monaco-editor/react": "^4.7.0",
-        "@novu/api": "^3.15.0",
+        "@novu/api": "^3.19.1",
         "@novu/nextjs": "^3.10.1",
         "@number-flow/react": "^0.5.9",
         "@prisma/adapter-pg": "7.6.0",
