@@ -40,7 +40,7 @@
   "dependencies": {
     "@aws-sdk/client-cloudtrail": "^3.943.0",
     "@aws-sdk/client-ec2": "^3.943.0",
-    "@aws-sdk/client-iam": "^3.943.0",
+    "@aws-sdk/client-iam": "^3.1164.0",
     "@aws-sdk/client-kms": "^3.943.0",
     "@aws-sdk/client-rds": "^3.943.0",
     "@aws-sdk/client-s3": "^3.943.0",
