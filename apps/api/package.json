@@ -21,7 +21,7 @@
         "@aws-sdk/client-codebuild": "^3.948.0",
         "@aws-sdk/client-cognito-identity-provider": "^3.948.0",
         "@aws-sdk/client-config-service": "^3.948.0",
-        "@aws-sdk/client-cost-explorer": "^3.948.0",
+        "@aws-sdk/client-cost-explorer": "^3.1164.0",
         "@aws-sdk/client-dynamodb": "^3.948.0",
         "@aws-sdk/client-ec2": "^3.911.0",
         "@aws-sdk/client-ecr": "^3.948.0",
