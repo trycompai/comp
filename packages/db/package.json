@@ -5,7 +5,7 @@
     "dependencies": {
         "@prisma/adapter-pg": "7.6.0",
         "@prisma/client": "7.6.0",
-        "dotenv": "^16.4.5",
+        "dotenv": "^18.0.10",
         "zod": "^4.3.6"
     },
     "devDependencies": {
