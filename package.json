@@ -5,7 +5,7 @@
     "@azure/core-http": "^3.0.5",
     "@azure/core-rest-pipeline": "^1.25.0",
     "@azure/core-tracing": "^1.4.0",
-    "@azure/identity": "^4.13.1",
+    "@azure/identity": "^4.14.1",
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
     "@hookform/resolvers": "^5.4.0",
