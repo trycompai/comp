@@ -22,7 +22,6 @@ import {
 import { ac, allRoles } from '@trycompai/auth';
 import { createAuthMiddleware } from 'better-auth/api';
 import { Redis } from '@upstash/redis';
-import type { AccessControl } from 'better-auth/plugins/access';
 import {
   assertAuthRequestAllowed,
   assertEmailChangeLinkOwner,
@@ -484,6 +483,10 @@ export const auth = betterAuth({
   plugins: [
     organization({
       membershipLimit: 100000000000,
+      // Invitations are read, accepted and rejected from verified addresses only.
+      // Stated explicitly: left unset, better-auth derives it from the ID-generation
+      // options above, so changing those would silently drop the requirement.
+      requireEmailVerificationOnInvitation: true,
       async sendInvitationEmail(data) {
         if (process.env.NODE_ENV === 'development') {
           console.log('[Auth] Sending invitation to:', data.email);
