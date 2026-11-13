@@ -15,7 +15,11 @@ import type { UpdatePeopleDto } from './dto/update-people.dto';
 import type { BulkCreatePeopleDto } from './dto/bulk-create-people.dto';
 import { MemberValidator } from './utils/member-validator';
 import { MemberQueries } from './utils/member-queries';
-import { authorizeRoleChange } from './utils/role-authorization';
+import {
+  authorizeRoleChange,
+  authorizeRoleRestoration,
+  type MemberActor,
+} from './utils/role-authorization';
 import { authorizeMemberCreation } from './utils/member-creation-authorization';
 import type { AuthContext } from '../auth/types';
 import {
@@ -207,8 +211,8 @@ export class PeopleService {
         organizationId,
         timelinesService: this.timelinesService,
       }).catch((err) => {
-      this.logger.warn('timeline auto-complete check failed', err);
-    });
+        this.logger.warn('timeline auto-complete check failed', err);
+      });
 
       return member;
     } catch (error) {
@@ -307,8 +311,8 @@ export class PeopleService {
           organizationId,
           timelinesService: this.timelinesService,
         }).catch((err) => {
-      this.logger.warn('timeline auto-complete check failed', err);
-    });
+          this.logger.warn('timeline auto-complete check failed', err);
+        });
       }
 
       return { created, errors, summary };
@@ -328,7 +332,7 @@ export class PeopleService {
     memberId: string,
     organizationId: string,
     updateData: UpdatePeopleDto,
-    callerUserId?: string,
+    caller?: MemberActor,
   ): Promise<PeopleResponseDto> {
     try {
       await MemberValidator.validateOrganization(organizationId);
@@ -336,6 +340,7 @@ export class PeopleService {
         memberId,
         organizationId,
       );
+      const callerUserId = caller?.userId;
 
       if (updateData.role !== undefined) {
         if (!callerUserId) {
@@ -348,6 +353,20 @@ export class PeopleService {
           organizationId,
           targetMember: existingMember,
           newRole: updateData.role,
+        });
+      }
+
+      // Reinstatement is a role grant: the dormant row keeps its roles and
+      // isActive:true hands them back, so the same ceiling applies.
+      const isReinstatement =
+        updateData.isActive === true &&
+        (existingMember.isActive !== true ||
+          existingMember.deactivated === true);
+      if (isReinstatement) {
+        await authorizeRoleRestoration({
+          organizationId,
+          targetMember: existingMember,
+          actor: caller,
         });
       }
 
@@ -543,10 +562,15 @@ export class PeopleService {
     };
   }
 
-  async reactivateById(
-    memberId: string,
-    organizationId: string,
-  ): Promise<PeopleResponseDto> {
+  async reactivateById({
+    memberId,
+    organizationId,
+    actor,
+  }: {
+    memberId: string;
+    organizationId: string;
+    actor?: MemberActor;
+  }): Promise<PeopleResponseDto> {
     const member = await MemberQueries.findByIdInOrganization(
       memberId,
       organizationId,
@@ -566,6 +590,14 @@ export class PeopleService {
         `Member with ID ${memberId} not found in organization ${organizationId}`,
       );
     }
+
+    // `inactiveMember` holds the full row, including the roles this
+    // reinstatement hands back.
+    await authorizeRoleRestoration({
+      organizationId,
+      targetMember: inactiveMember,
+      actor,
+    });
 
     const reactivatedMember = await db.member.update({
       where: { id: memberId, organizationId },

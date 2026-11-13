@@ -41,19 +41,32 @@ export class MemberValidator {
    *
    * Deactivated members are intentionally included. This check guards the
    * member-update path, and reactivating a deactivated member (the status
-   * dropdown sends PATCH { isActive: true }) must be able to find them.
+   * dropdown sends PATCH { isActive: true }) must be able to find them and
+   * read the roles that reinstatement hands back.
    * Organization scoping is preserved.
    */
   static async validateMemberExists(
     memberId: string,
     organizationId: string,
-  ): Promise<{ id: string; userId: string; role: string }> {
+  ): Promise<{
+    id: string;
+    userId: string;
+    role: string;
+    isActive: boolean;
+    deactivated: boolean;
+  }> {
     const member = await db.member.findFirst({
       where: {
         id: memberId,
         organizationId,
       },
-      select: { id: true, userId: true, role: true },
+      select: {
+        id: true,
+        userId: true,
+        role: true,
+        isActive: true,
+        deactivated: true,
+      },
     });
 
     if (!member) {

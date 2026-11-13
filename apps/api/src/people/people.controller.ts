@@ -41,6 +41,7 @@ import { AttachmentsService } from '../attachments/attachments.service';
 import { UploadAttachmentDto } from '../attachments/upload-attachment.dto';
 import { AttachmentEntityType } from '@db';
 import { PeopleService } from './people.service';
+import { toMemberActor } from './utils/role-authorization';
 import { PeopleInviteService } from './people-invite.service';
 import { PeopleAccessService } from './people-access.service';
 import { GET_ALL_PEOPLE_RESPONSES } from './schemas/get-all-people.responses';
@@ -128,20 +129,33 @@ export class PeopleController {
     @Query('offboardAfter') offboardAfter?: string,
     @Query('offboardBefore') offboardBefore?: string,
   ) {
-    const parseDateParam = (param: string | undefined, name: string): Date | undefined => {
+    const parseDateParam = (
+      param: string | undefined,
+      name: string,
+    ): Date | undefined => {
       if (!param) return undefined;
       const date = new Date(param);
       if (isNaN(date.getTime())) {
-        throw new BadRequestException(`Invalid date value for "${name}": ${param}`);
+        throw new BadRequestException(
+          `Invalid date value for "${name}": ${param}`,
+        );
       }
       return date;
     };
 
     const filters = {
-      ...(onboardAfter ? { onboardAfter: parseDateParam(onboardAfter, 'onboardAfter') } : {}),
-      ...(onboardBefore ? { onboardBefore: parseDateParam(onboardBefore, 'onboardBefore') } : {}),
-      ...(offboardAfter ? { offboardAfter: parseDateParam(offboardAfter, 'offboardAfter') } : {}),
-      ...(offboardBefore ? { offboardBefore: parseDateParam(offboardBefore, 'offboardBefore') } : {}),
+      ...(onboardAfter
+        ? { onboardAfter: parseDateParam(onboardAfter, 'onboardAfter') }
+        : {}),
+      ...(onboardBefore
+        ? { onboardBefore: parseDateParam(onboardBefore, 'onboardBefore') }
+        : {}),
+      ...(offboardAfter
+        ? { offboardAfter: parseDateParam(offboardAfter, 'offboardAfter') }
+        : {}),
+      ...(offboardBefore
+        ? { offboardBefore: parseDateParam(offboardBefore, 'offboardBefore') }
+        : {}),
     };
 
     const hasFilters = Object.keys(filters).length > 0;
@@ -332,10 +346,11 @@ export class PeopleController {
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
   ) {
-    const member = await this.peopleService.reactivateById(
+    const member = await this.peopleService.reactivateById({
       memberId,
       organizationId,
-    );
+      actor: toMemberActor(authContext),
+    });
 
     return {
       ...member,
@@ -487,7 +502,7 @@ export class PeopleController {
       memberId,
       organizationId,
       updateData,
-      authContext.userId,
+      toMemberActor(authContext),
     );
 
     return {
@@ -685,9 +700,14 @@ export class PeopleController {
       entityType,
     );
     if (!attachments.some((a) => a.id === attachmentId)) {
-      throw new BadRequestException('Attachment not found for this member and event type');
+      throw new BadRequestException(
+        'Attachment not found for this member and event type',
+      );
     }
-    await this.attachmentsService.deleteAttachment(organizationId, attachmentId);
+    await this.attachmentsService.deleteAttachment(
+      organizationId,
+      attachmentId,
+    );
     return { success: true };
   }
 

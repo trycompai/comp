@@ -74,6 +74,7 @@ describe('PeopleController', () => {
     create: jest.fn(),
     bulkCreate: jest.fn(),
     updateById: jest.fn(),
+    reactivateById: jest.fn(),
     deleteById: jest.fn(),
     unlinkDevice: jest.fn(),
     removeHostById: jest.fn(),
@@ -277,7 +278,7 @@ describe('PeopleController', () => {
         'mem_1',
         'org_123',
         dto,
-        'usr_123',
+        expect.objectContaining({ userId: 'usr_123' }),
       );
     });
 
@@ -295,7 +296,31 @@ describe('PeopleController', () => {
         'mem_1',
         'org_123',
         { backgroundCheckExempt: true },
-        'usr_123',
+        expect.objectContaining({ userId: 'usr_123' }),
+      );
+    });
+  });
+
+  describe('reactivateMember', () => {
+    it('passes the caller identity so reinstatement is ceiling-checked', async () => {
+      mockPeopleService.reactivateById.mockResolvedValue({
+        id: 'mem_1',
+        user: { name: 'Alice' },
+      });
+
+      const result = await controller.reactivateMember(
+        'mem_1',
+        'org_123',
+        mockAuthContext,
+      );
+
+      expect(result).toMatchObject({ id: 'mem_1' });
+      expect(peopleService.reactivateById).toHaveBeenCalledWith(
+        expect.objectContaining({
+          memberId: 'mem_1',
+          organizationId: 'org_123',
+          actor: expect.objectContaining({ userId: 'usr_123' }),
+        }),
       );
     });
   });
@@ -330,7 +355,12 @@ describe('PeopleController', () => {
       };
       mockPeopleService.deleteById.mockResolvedValue(deleteResult);
 
-      await controller.deleteMember('mem_1', 'org_123', mockAuthContext, 'true');
+      await controller.deleteMember(
+        'mem_1',
+        'org_123',
+        mockAuthContext,
+        'true',
+      );
 
       expect(peopleService.deleteById).toHaveBeenCalledWith(
         'mem_1',
