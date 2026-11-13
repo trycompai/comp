@@ -81,6 +81,22 @@ export class RolesService {
   }
 
   /**
+   * Rows named after a built-in role are obligation overrides, not custom roles
+   * (see listRoles, which hides them from `customRoles`). They are deliberately
+   * not addressable through the custom-role API: renaming one would turn a hidden
+   * override into an assignable custom role.
+   */
+  private assertCustomRoleRow<T extends { name: string }>(
+    role: T,
+    roleId: string,
+  ): T {
+    if (BUILT_IN_ROLES.includes(role.name)) {
+      throw new NotFoundException(`Role not found: ${roleId}`);
+    }
+    return role;
+  }
+
+  /**
    * Enforces the compliance -> portal permission invariant before a role is
    * persisted: any role whose obligations require compliance (sign policies,
    * watch training, etc.) must also carry `portal:read/update`. The
@@ -359,7 +375,9 @@ export class RolesService {
     // Include built-in roles info (with effective obligations: override or default)
     const builtInRoles = BUILT_IN_ROLES.map((name) => {
       const override = overrideByName.get(name);
-      const parsed = override ? parseObligationsField(override.obligations) : null;
+      const parsed = override
+        ? parseObligationsField(override.obligations)
+        : null;
       return {
         name,
         isBuiltIn: true,
@@ -404,6 +422,8 @@ export class RolesService {
       throw new NotFoundException(`Role not found: ${roleId}`);
     }
 
+    this.assertCustomRoleRow(role, roleId);
+
     const memberCount = await db.member.count({
       where: { organizationId, role: { contains: role.name } },
     });
@@ -446,6 +466,8 @@ export class RolesService {
     if (!role) {
       throw new NotFoundException(`Role not found: ${roleId}`);
     }
+
+    this.assertCustomRoleRow(role, roleId);
 
     // Validate new name if provided
     if (dto.name && BUILT_IN_ROLES.includes(dto.name)) {
@@ -596,6 +618,8 @@ export class RolesService {
       throw new NotFoundException(`Role not found: ${roleId}`);
     }
 
+    this.assertCustomRoleRow(role, roleId);
+
     // Check if any members are assigned to this role
     const membersWithRole = await db.member.count({
       where: {
@@ -681,7 +705,10 @@ export class RolesService {
     const distinctRoles = new Set<string>();
     for (const m of members) {
       if (!m.role) continue;
-      for (const r of m.role.split(',').map((r) => r.trim()).filter(Boolean)) {
+      for (const r of m.role
+        .split(',')
+        .map((r) => r.trim())
+        .filter(Boolean)) {
         distinctRoles.add(r);
       }
     }
@@ -720,7 +747,9 @@ export class RolesService {
         .split(',')
         .map((r) => r.trim())
         .filter(Boolean);
-      return roles.some((r) => permsByRole.get(r)?.[resource]?.includes(action));
+      return roles.some((r) =>
+        permsByRole.get(r)?.[resource]?.includes(action),
+      );
     });
   }
 
@@ -778,7 +807,11 @@ export class RolesService {
       );
     }
 
-    const permissions = JSON.stringify(BUILT_IN_ROLE_PERMISSIONS[roleName] ?? {});
+    // Obligation-override rows are keyed by a BUILT-IN role name, so any rename
+    // path would turn this row into an assignable custom role holding whatever
+    // is stored here. Permissions for built-in names always come from
+    // BUILT_IN_ROLE_PERMISSIONS, so this row stores none.
+    const permissions = JSON.stringify({});
     const obligationsJson = JSON.stringify(obligations);
 
     const role = await db.organizationRole.upsert({
@@ -789,7 +822,7 @@ export class RolesService {
         permissions,
         obligations: obligationsJson,
       },
-      update: { obligations: obligationsJson },
+      update: { permissions, obligations: obligationsJson },
     });
 
     return {
@@ -814,7 +847,9 @@ export class RolesService {
       where: { organizationId, name: roleName },
       select: { obligations: true },
     });
-    const parsed = override ? parseObligationsField(override.obligations) : null;
+    const parsed = override
+      ? parseObligationsField(override.obligations)
+      : null;
     return resolveEffectiveObligations(roleName, parsed);
   }
 
