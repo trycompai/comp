@@ -46,9 +46,7 @@ export async function authorizeRoleChange({
   });
 
   if (!callerMember) {
-    throw new ForbiddenException(
-      'Caller is not a member of this organization',
-    );
+    throw new ForbiddenException('Caller is not a member of this organization');
   }
 
   const callerRoles = parseRoles(callerMember.role);
@@ -104,6 +102,105 @@ export async function authorizeRoleChange({
   if (newRolesError) {
     throw new ForbiddenException(newRolesError);
   }
+}
+
+/** Who is asking. Session callers carry a userId; API keys carry only scopes. */
+export interface MemberActor {
+  userId?: string;
+  roles?: string[] | null;
+  isApiKey?: boolean;
+  apiKeyScopes?: string[];
+}
+
+/** Build the actor from a request AuthContext — one place, both endpoints. */
+export function toMemberActor(authContext: {
+  userId?: string;
+  userRoles: string[] | null;
+  isApiKey: boolean;
+  apiKeyScopes?: string[];
+}): MemberActor {
+  return {
+    userId: authContext.userId,
+    roles: authContext.userRoles,
+    isApiKey: authContext.isApiKey,
+    apiKeyScopes: authContext.apiKeyScopes,
+  };
+}
+
+interface AuthorizeRoleRestorationParams {
+  organizationId: string;
+  targetMember: { id: string; userId: string; role: string };
+  actor?: MemberActor;
+}
+
+/**
+ * Reinstating a removed or inactive member re-grants every role the dormant row
+ * still holds, so it is a role assignment and must clear the same ceiling as
+ * `authorizeRoleChange`: the caller must be able to assign each stored role, and
+ * only an owner may restore a member who holds the owner role. Refuses (403)
+ * rather than downgrading, mirroring the role-edit path.
+ */
+export async function authorizeRoleRestoration({
+  organizationId,
+  targetMember,
+  actor,
+}: AuthorizeRoleRestorationParams): Promise<void> {
+  const restoredRoles = parseRoles(targetMember.role);
+  const callerRole = await resolveRestoringCallerRole({
+    organizationId,
+    actor,
+  });
+  const callerRoles = parseRoles(callerRole);
+
+  if (restoredRoles.includes(OWNER_ROLE) && !callerRoles.includes(OWNER_ROLE)) {
+    throw new ForbiddenException(
+      'Only an owner can reinstate a member who holds the owner role',
+    );
+  }
+
+  if (callerRoles.includes(OWNER_ROLE)) return;
+
+  const context = {
+    organizationId,
+    callerRole,
+    isApiKey: actor?.isApiKey,
+    apiKeyScopes: actor?.apiKeyScopes,
+  };
+  const callerMemberActions = await resolveCallerMemberActions(context);
+  const error = await validateAssignableRoles(
+    restoredRoles,
+    callerMemberActions,
+    context,
+  );
+  if (error) {
+    throw new ForbiddenException(`You cannot reinstate this member. ${error}`);
+  }
+}
+
+/**
+ * The caller's role string, resolved the same way `authorizeRoleChange` does it:
+ * from the member row for sessions (never from the request body), from the key's
+ * scopes for API keys, from the auth context for anything else.
+ */
+async function resolveRestoringCallerRole({
+  organizationId,
+  actor,
+}: {
+  organizationId: string;
+  actor?: MemberActor;
+}): Promise<string> {
+  if (actor?.isApiKey) return '';
+
+  if (!actor?.userId) return (actor?.roles ?? []).join(',');
+
+  const callerMember = await db.member.findFirst({
+    where: { userId: actor.userId, organizationId },
+    select: { id: true, role: true },
+  });
+  if (!callerMember) {
+    throw new ForbiddenException('Caller is not a member of this organization');
+  }
+  return callerMember.role;
 }
 
 async function assertRolesExist({

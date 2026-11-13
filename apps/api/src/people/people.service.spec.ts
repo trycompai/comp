@@ -337,7 +337,7 @@ describe('PeopleService', () => {
         'mem_1',
         'org_123',
         updateData as any,
-        'usr_caller',
+        { userId: 'usr_caller' },
       );
 
       expect(result).toEqual(updatedMember);
@@ -515,12 +515,9 @@ describe('PeopleService', () => {
       );
       setupCallerMember('usr_caller', 'org_123', 'admin');
 
-      await service.updateById(
-        'mem_1',
-        'org_123',
-        updateData as any,
-        'usr_caller',
-      );
+      await service.updateById('mem_1', 'org_123', updateData as any, {
+        userId: 'usr_caller',
+      });
 
       expect(MemberValidator.validateUser).toHaveBeenCalledWith('usr_new');
       expect(MemberValidator.validateUserNotMember).toHaveBeenCalledWith(
@@ -540,7 +537,9 @@ describe('PeopleService', () => {
       setupCallerMember('usr_caller', 'org_123', 'admin');
 
       await expect(
-        service.updateById('mem_none', 'org_123', {} as any, 'usr_caller'),
+        service.updateById('mem_none', 'org_123', {} as any, {
+          userId: 'usr_caller',
+        }),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -588,7 +587,14 @@ describe('PeopleService', () => {
       };
 
       const updateRole = (role: string) =>
-        service.updateById('mem_target', 'org_123', { role }, 'usr_caller');
+        service.updateById(
+          'mem_target',
+          'org_123',
+          { role },
+          {
+            userId: 'usr_caller',
+          },
+        );
 
       const PEOPLE_EDITOR = { member: ['read', 'update'], app: ['read'] };
 
@@ -604,12 +610,9 @@ describe('PeopleService', () => {
         setupCallerMember('usr_caller', 'org_123', 'admin');
 
         await expect(
-          service.updateById(
-            'mem_self',
-            'org_123',
-            { role: 'owner' } as any,
-            'usr_caller',
-          ),
+          service.updateById('mem_self', 'org_123', { role: 'owner' } as any, {
+            userId: 'usr_caller',
+          }),
         ).rejects.toThrow(ForbiddenException);
       });
 
@@ -621,7 +624,7 @@ describe('PeopleService', () => {
             'mem_target',
             'org_123',
             { role: 'owner' } as any,
-            'usr_caller',
+            { userId: 'usr_caller' },
           ),
         ).rejects.toThrow(ForbiddenException);
       });
@@ -642,7 +645,7 @@ describe('PeopleService', () => {
             'mem_self',
             'org_123',
             { role: 'auditor' } as any,
-            'usr_caller',
+            { userId: 'usr_caller' },
           ),
         ).rejects.toThrow(ForbiddenException);
       });
@@ -718,7 +721,7 @@ describe('PeopleService', () => {
             'mem_target',
             'org_123',
             { role: 'auditor' } as any,
-            'usr_caller',
+            { userId: 'usr_caller' },
           ),
         ).resolves.toBeDefined();
 
@@ -733,7 +736,7 @@ describe('PeopleService', () => {
             'mem_target',
             'org_123',
             { role: 'admin' } as any,
-            'usr_caller',
+            { userId: 'usr_caller' },
           ),
         ).resolves.toBeDefined();
 
@@ -756,7 +759,7 @@ describe('PeopleService', () => {
             'mem_target',
             'org_123',
             { role: 'admin' } as any,
-            'usr_caller',
+            { userId: 'usr_caller' },
           ),
         ).rejects.toThrow(ForbiddenException);
       });
@@ -769,7 +772,7 @@ describe('PeopleService', () => {
             'mem_target',
             'org_123',
             { role: 'auditor' } as any,
-            'usr_caller',
+            { userId: 'usr_caller' },
           ),
         ).rejects.toThrow(ForbiddenException);
       });
@@ -782,7 +785,7 @@ describe('PeopleService', () => {
             'mem_target',
             'org_123',
             { jobTitle: 'Director' } as any,
-            'usr_caller',
+            { userId: 'usr_caller' },
           ),
         ).resolves.toBeDefined();
       });
@@ -952,6 +955,279 @@ describe('PeopleService', () => {
           where: { userId: 'usr_1' },
         });
       });
+    });
+  });
+
+  describe('reactivateById — reinstatement applies the role ceiling', () => {
+    const ACTOR = { userId: 'usr_caller' };
+
+    const setupReinstatement = ({
+      callerRole,
+      targetRole,
+      customRoles = {},
+    }: {
+      callerRole: string;
+      targetRole: string;
+      customRoles?: Record<string, object>;
+    }) => {
+      (MemberQueries.findByIdInOrganization as jest.Mock).mockResolvedValue(
+        null, // deactivated members are excluded by this lookup
+      );
+      (db.member.findFirst as jest.Mock).mockImplementation(
+        (args: { where: { id?: string; userId?: string } }) => {
+          if (args?.where?.id === 'mem_target') {
+            return Promise.resolve({
+              id: 'mem_target',
+              userId: 'usr_target',
+              organizationId: 'org_123',
+              role: targetRole,
+              isActive: false,
+              deactivated: true,
+            });
+          }
+          if (args?.where?.userId === 'usr_caller') {
+            return Promise.resolve({
+              id: 'mem_caller',
+              userId: 'usr_caller',
+              organizationId: 'org_123',
+              role: callerRole,
+            });
+          }
+          return Promise.resolve(null);
+        },
+      );
+      (db.organizationRole.findMany as jest.Mock).mockImplementation(
+        (args: { where: { name: { in: string[] } } }) =>
+          Promise.resolve(
+            args.where.name.in
+              .filter((name) => Object.hasOwn(customRoles, name))
+              .map((name) => ({
+                name,
+                permissions: JSON.stringify(customRoles[name]),
+              })),
+          ),
+      );
+      (db.member.update as jest.Mock).mockResolvedValue({
+        id: 'mem_target',
+        user: { name: 'Target' },
+        role: targetRole,
+      });
+    };
+
+    // FAILS BEFORE THE FIX: reactivateById ignores the caller entirely, so the
+    // stored admin is handed back and db.member.update is called.
+    it('forbids a partial member:update caller from reinstating a stored admin', async () => {
+      setupReinstatement({
+        callerRole: 'people-editor',
+        targetRole: 'admin',
+        customRoles: { 'people-editor': { member: ['read', 'update'] } },
+      });
+
+      await expect(
+        service.reactivateById({
+          memberId: 'mem_target',
+          organizationId: 'org_123',
+          actor: ACTOR,
+        }),
+      ).rejects.toThrow(ForbiddenException);
+
+      expect(db.member.update).not.toHaveBeenCalled();
+    });
+
+    // FAILS BEFORE THE FIX (same reason): an admin can currently reinstate an
+    // owner-holding row; owners cannot be removed through deleteById, but they
+    // can be offboarded/deactivated elsewhere.
+    it('forbids an admin from reinstating a member who holds the owner role', async () => {
+      setupReinstatement({ callerRole: 'admin', targetRole: 'owner' });
+
+      await expect(
+        service.reactivateById({
+          memberId: 'mem_target',
+          organizationId: 'org_123',
+          actor: ACTOR,
+        }),
+      ).rejects.toThrow(ForbiddenException);
+
+      expect(db.member.update).not.toHaveBeenCalled();
+    });
+
+    it('still reinstates an employee for an admin caller', async () => {
+      setupReinstatement({ callerRole: 'admin', targetRole: 'employee' });
+
+      await expect(
+        service.reactivateById({
+          memberId: 'mem_target',
+          organizationId: 'org_123',
+          actor: ACTOR,
+        }),
+      ).resolves.toBeDefined();
+
+      expect(db.member.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'mem_target', organizationId: 'org_123' },
+          data: { deactivated: false, isActive: true },
+        }),
+      );
+    });
+
+    it('reinstates a stored admin for an owner caller', async () => {
+      setupReinstatement({ callerRole: 'owner', targetRole: 'admin' });
+
+      await expect(
+        service.reactivateById({
+          memberId: 'mem_target',
+          organizationId: 'org_123',
+          actor: ACTOR,
+        }),
+      ).resolves.toBeDefined();
+
+      expect(db.member.update).toHaveBeenCalled();
+    });
+  });
+
+  describe('updateById — { isActive: true } is a reinstatement', () => {
+    const dormantAdmin = {
+      id: 'mem_target',
+      userId: 'usr_target',
+      role: 'admin',
+      isActive: false,
+      deactivated: true,
+    };
+
+    const setupCaller = (
+      role: string,
+      customRoles: Record<string, object> = {},
+    ) => {
+      (db.member.findFirst as jest.Mock).mockImplementation(
+        (args: { where: { userId?: string } }) =>
+          args?.where?.userId === 'usr_caller'
+            ? Promise.resolve({
+                id: 'mem_caller',
+                userId: 'usr_caller',
+                organizationId: 'org_123',
+                role,
+              })
+            : Promise.resolve(null),
+      );
+      (db.organizationRole.findMany as jest.Mock).mockImplementation(
+        (args: { where: { name: { in: string[] } } }) =>
+          Promise.resolve(
+            args.where.name.in
+              .filter((name) => Object.hasOwn(customRoles, name))
+              .map((name) => ({
+                name,
+                permissions: JSON.stringify(customRoles[name]),
+              })),
+          ),
+      );
+    };
+
+    // FAILS BEFORE THE FIX: with no `role` in the body, authorizeRoleChange is
+    // skipped and MemberQueries.updateMember clears `deactivated`, restoring admin.
+    it('forbids a partial member:update caller from re-activating a stored admin', async () => {
+      (MemberValidator.validateOrganization as jest.Mock).mockResolvedValue(
+        undefined,
+      );
+      (MemberValidator.validateMemberExists as jest.Mock).mockResolvedValue(
+        dormantAdmin,
+      );
+      setupCaller('people-editor', {
+        'people-editor': { member: ['read', 'update'] },
+      });
+
+      await expect(
+        service.updateById(
+          'mem_target',
+          'org_123',
+          { isActive: true },
+          {
+            userId: 'usr_caller',
+          },
+        ),
+      ).rejects.toThrow(ForbiddenException);
+
+      expect(MemberQueries.updateMember).not.toHaveBeenCalled();
+    });
+
+    it('forbids an admin from re-activating a member who holds the owner role', async () => {
+      (MemberValidator.validateOrganization as jest.Mock).mockResolvedValue(
+        undefined,
+      );
+      (MemberValidator.validateMemberExists as jest.Mock).mockResolvedValue({
+        ...dormantAdmin,
+        role: 'owner',
+      });
+      setupCaller('admin');
+
+      await expect(
+        service.updateById(
+          'mem_target',
+          'org_123',
+          { isActive: true },
+          {
+            userId: 'usr_caller',
+          },
+        ),
+      ).rejects.toThrow(ForbiddenException);
+
+      expect(MemberQueries.updateMember).not.toHaveBeenCalled();
+    });
+
+    it('re-activates an employee for an admin caller', async () => {
+      (MemberValidator.validateOrganization as jest.Mock).mockResolvedValue(
+        undefined,
+      );
+      (MemberValidator.validateMemberExists as jest.Mock).mockResolvedValue({
+        ...dormantAdmin,
+        role: 'employee',
+      });
+      (MemberQueries.updateMember as jest.Mock).mockResolvedValue({
+        id: 'mem_target',
+        user: { name: 'Target' },
+        role: 'employee',
+      });
+      setupCaller('admin');
+
+      await expect(
+        service.updateById(
+          'mem_target',
+          'org_123',
+          { isActive: true },
+          {
+            userId: 'usr_caller',
+          },
+        ),
+      ).resolves.toBeDefined();
+
+      expect(MemberQueries.updateMember).toHaveBeenCalled();
+    });
+
+    it('does not run the ceiling for a plain edit of an already-active member', async () => {
+      (MemberValidator.validateOrganization as jest.Mock).mockResolvedValue(
+        undefined,
+      );
+      (MemberValidator.validateMemberExists as jest.Mock).mockResolvedValue({
+        ...dormantAdmin,
+        isActive: true,
+        deactivated: false,
+      });
+      (MemberQueries.updateMember as jest.Mock).mockResolvedValue({
+        id: 'mem_target',
+        user: { name: 'Target' },
+        role: 'admin',
+      });
+      setupCaller('people-editor', {
+        'people-editor': { member: ['read', 'update'] },
+      });
+
+      await expect(
+        service.updateById(
+          'mem_target',
+          'org_123',
+          { isActive: true, jobTitle: 'Director' },
+          { userId: 'usr_caller' },
+        ),
+      ).resolves.toBeDefined();
     });
   });
 
