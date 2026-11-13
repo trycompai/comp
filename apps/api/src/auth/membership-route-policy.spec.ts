@@ -50,11 +50,42 @@ describe('assertMembershipRouteAllowed', () => {
   });
 
   it.each([
+    '/organization/create-role',
+    '/organization/update-role',
+    '/organization/delete-role',
+    '/organization/list-roles',
+    '/organization/get-role',
+  ])(
+    'refuses the dynamic access control route %s with a generic 403',
+    (path) => {
+      let thrown: unknown;
+      try {
+        assertMembershipRouteAllowed(path);
+      } catch (error) {
+        thrown = error;
+      }
+
+      expect(thrown).toBeInstanceOf(APIError);
+      expect(thrown).toMatchObject({ status: 'FORBIDDEN' });
+      const { body } = thrown as APIError;
+      expect(body).toEqual({ message: 'Forbidden' });
+      const serialized = JSON.stringify(body).toLowerCase();
+      for (const hint of ['role', 'permission', '/v1', 'organization']) {
+        expect(serialized).not.toContain(hint);
+      }
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining(path));
+    },
+  );
+
+  it.each([
     '/organization/add-member',
     '/organization/accept-invitation',
     '/organization/invite-member',
     '/organization/list-members',
     '/organization/set-active',
+    '/organization/create-team',
+    '/organization/has-permission',
+    '/organization/update',
     '/get-session',
     '/sign-in/magic-link',
   ])('lets %s through', (path) => {

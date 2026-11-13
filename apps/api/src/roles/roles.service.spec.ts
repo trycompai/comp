@@ -539,6 +539,33 @@ describe('RolesService', () => {
     const roleId = 'rol_123';
     const roleVersion = new Date('2026-01-01T00:00:00Z');
 
+    it('404s instead of renaming an obligation override row', async () => {
+      (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue({
+        id: 'rol_owner_override',
+        name: 'owner',
+        permissions: JSON.stringify({
+          organization: ['read', 'update', 'delete'],
+        }),
+        obligations: '{}',
+        organizationId,
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+      });
+
+      await expect(
+        service.updateRole(
+          organizationId,
+          'rol_owner_override',
+          { name: 'ownerx' },
+          ['admin'],
+        ),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(
+        (mockDb.organizationRole.updateMany as jest.Mock).mock.calls,
+      ).toHaveLength(0);
+    });
+
     /** Wires the optimistic-concurrency write path to succeed: `updateMany` reports one row matched (the version check passed). */
     function mockSuccessfulWrite() {
       (mockDb.organizationRole.updateMany as jest.Mock).mockResolvedValue({
@@ -924,6 +951,49 @@ describe('RolesService', () => {
     });
   });
 
+  describe('override-row isolation', () => {
+    const organizationId = 'org_1';
+
+    function overrideRow(name: string) {
+      return {
+        id: `rol_${name}_override`,
+        name,
+        permissions: '{}',
+        obligations: '{}',
+        organizationId,
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+      };
+    }
+
+    it.each(['owner', 'admin'])(
+      'getRole 404s for a %s override row',
+      async (name) => {
+        (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(
+          overrideRow(name),
+        );
+
+        await expect(
+          service.getRole(organizationId, `rol_${name}_override`),
+        ).rejects.toThrow(NotFoundException);
+      },
+    );
+
+    it('deleteRole 404s for an override row and never touches members', async () => {
+      (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(
+        overrideRow('owner'),
+      );
+
+      await expect(
+        service.deleteRole(organizationId, 'rol_owner_override'),
+      ).rejects.toThrow(NotFoundException);
+      expect((mockDb.member.count as jest.Mock).mock.calls).toHaveLength(0);
+      expect(
+        (mockDb.organizationRole.delete as jest.Mock).mock.calls,
+      ).toHaveLength(0);
+    });
+  });
+
   describe('filterMembersWithPermission', () => {
     const organizationId = 'org_1';
 
@@ -1206,7 +1276,10 @@ describe('RolesService', () => {
           name: 'owner',
           obligations: JSON.stringify({ compliance: false }),
         }),
-        update: { obligations: JSON.stringify({ compliance: false }) },
+        update: {
+          permissions: JSON.stringify({}),
+          obligations: JSON.stringify({ compliance: false }),
+        },
       });
     });
 
@@ -1240,6 +1313,47 @@ describe('RolesService', () => {
           compliance: true,
         }),
       ).resolves.toEqual({ name: 'admin', obligations: { compliance: true } });
+    });
+
+    it('stores no permissions on the override row, so a rename cannot mint a privileged role', async () => {
+      (mockDb.organizationRole.upsert as jest.Mock).mockResolvedValue({
+        name: 'owner',
+        obligations: JSON.stringify({ compliance: false }),
+      });
+
+      await service.updateBuiltInObligations(organizationId, 'owner', {
+        compliance: false,
+      });
+
+      const upsertArgs = (mockDb.organizationRole.upsert as jest.Mock).mock
+        .calls[0][0] as {
+        create: { permissions: string };
+        update: { permissions: string };
+      };
+      expect(JSON.parse(upsertArgs.create.permissions)).toEqual({});
+      expect(JSON.parse(upsertArgs.update.permissions)).toEqual({});
+    });
+
+    it('a renamed override row grants nothing', async () => {
+      (mockDb.organizationRole.upsert as jest.Mock).mockResolvedValue({
+        name: 'owner',
+        obligations: '{}',
+      });
+      await service.updateBuiltInObligations(organizationId, 'owner', {
+        compliance: true,
+      });
+      const storedPermissions = (mockDb.organizationRole.upsert as jest.Mock)
+        .mock.calls[0][0].create.permissions;
+
+      // Model the rename (better-auth /organization/update-role or PATCH
+      // /v1/roles/:id): the row survives, only its name changes.
+      (mockDb.organizationRole.findMany as jest.Mock).mockResolvedValue([
+        { name: 'ownerx', permissions: storedPermissions },
+      ]);
+
+      await expect(
+        service.getPermissionsForRoles(organizationId, ['ownerx']),
+      ).resolves.toEqual({});
     });
   });
 
