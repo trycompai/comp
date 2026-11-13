@@ -42,9 +42,9 @@ deployment, or SDK workflows.
 ## Deploy credentials live in environments
 
 Repository-level secrets are available to workflows on every branch. Every job that
-deploys or publishes therefore runs
-in a GitHub environment whose deployment-branch policy admits one protected branch,
-and its credentials are stored as secrets of that environment:
+deploys or publishes therefore runs in a GitHub environment whose deployment-branch
+policy admits one protected branch, and its credentials are stored only as secrets of
+that environment:
 
 | Environment  | Branch    | Secrets                                                                                                                              |
 | ------------ | --------- | ------------------------------------------------------------------------------------------------------------------------------------ |
