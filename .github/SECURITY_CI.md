@@ -39,26 +39,13 @@ past activity. A repository administrator should remove unused `GRAM_API_KEY` an
 credential rotation is needed. This change does not disable unrelated release,
 deployment, or SDK workflows.
 
-## Deploy credentials live in environments
+## No Comp Cloud deployment
 
-Repository-level secrets are available to workflows on every branch. Every job that
-deploys or publishes therefore runs in a GitHub environment whose deployment-branch
-policy admits one protected branch, and its credentials are stored only as secrets of
-that environment:
-
-| Environment  | Branch    | Secrets                                                                                                                              |
-| ------------ | --------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `Production` | `release` | `TRIGGER_API_ACCESS_TOKEN`, `TRIGGER_APP_ACCESS_TOKEN`, `SECRET_KEY`, `VERCEL_ACCESS_TOKEN`, `CHROME_WEB_STORE_SERVICE_ACCOUNT_JSON` |
-| `staging`    | `main`    | `TRIGGER_API_ACCESS_TOKEN`, `TRIGGER_APP_ACCESS_TOKEN`, `SECRET_KEY`, `VERCEL_ACCESS_TOKEN`                                          |
-
-Trigger.dev keys are scoped to one project and one environment, so the API and app
-deploys each read their own key; the shared `TRIGGER_ACCESS_TOKEN` name is retired.
-
-Declaring `environment:` on a job does not protect a repository-level copy of the same
-secret: a branch workflow can omit it. The repository-level copies of the names above,
-and of `TRIGGER_ACCESS_TOKEN`, must not exist. Deleting them is the step that closes
-the path. The policy test below fails if a job reads one of these secrets outside
-its environment.
+Comp Cloud deploys from its own repository. This repository has no workflows that
+deploy Trigger.dev tasks or publish the browser extension, and holds no credentials
+for them. Self-hosters deploy Trigger.dev tasks to their own project. The policy test
+below fails if a workflow runs a Trigger.dev deploy, calls the Chrome Web Store, or
+reads those credentials.
 
 Run the workflow policy checks locally with:
 

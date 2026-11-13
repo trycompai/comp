@@ -76,57 +76,24 @@ questions, so generated answers are not persisted as questionnaire records.
 Local development uses `apps/browser-extension/security-questionnaire-ext/.env`.
 That file is ignored by git and is only for your local unpacked extension.
 
-Production builds do not use the local `.env`. The release workflow injects the
-production values from GitHub Actions:
+This repository does not publish the extension. To use it with a self-hosted
+instance, build it with your own values and load or publish the build yourself:
 
 ```text
-WXT_PUBLIC_API_BASE_URL=https://api.trycomp.ai
-WXT_PUBLIC_APP_BASE_URL=https://app.trycomp.ai
-WXT_GOOGLE_OAUTH_CLIENT_ID=<from GitHub secret>
+WXT_PUBLIC_API_BASE_URL=<your API URL>
+WXT_PUBLIC_APP_BASE_URL=<your app URL>
+WXT_GOOGLE_OAUTH_CLIENT_ID=<optional, enables direct Google Sheets insertion>
 ```
 
 The `WXT_PUBLIC_*` values and the Google OAuth client id are public build-time
-configuration. They are expected to appear in the built extension. The real
-secrets are the Chrome Web Store OAuth credentials and refresh token used by CI
-to upload the package.
+configuration. They are expected to appear in the built extension.
 
-Before the published extension can authenticate against production, the API
-production `COMP_EXTENSION_TRUSTED_ORIGINS` must include:
+Before the extension can authenticate against your API, the API's
+`COMP_EXTENSION_TRUSTED_ORIGINS` must include:
 
 ```text
-chrome-extension://<SECURITY_QUESTIONNAIRE_EXTENSION_ID>
+chrome-extension://<your extension id>
 ```
-
-## Chrome Web Store Release
-
-Publishing is handled by the `Security Questionnaire Extension Release`
-workflow. It only runs on the `release` branch, which is the production branch,
-and only when this extension or the workflow file changes.
-
-The workflow:
-
-- computes the next `security-questionnaire-ext-vX.Y.Z` tag,
-- injects that version into the extension package before building,
-- runs typecheck and tests,
-- builds `dist/chrome-mv3` with production API/app URLs,
-- uploads the ZIP to the existing Chrome Web Store item,
-- calls the Chrome Web Store publish API, and
-- creates the extension version tag after a successful publish.
-
-Required GitHub secrets:
-
-```text
-CHROME_WEB_STORE_CLIENT_ID
-CHROME_WEB_STORE_CLIENT_SECRET
-CHROME_WEB_STORE_REFRESH_TOKEN
-CHROME_WEB_STORE_PUBLISHER_ID
-SECURITY_QUESTIONNAIRE_EXTENSION_ID
-SECURITY_QUESTIONNAIRE_EXTENSION_GOOGLE_OAUTH_CLIENT_ID
-```
-
-The Chrome Web Store item must already exist and have its listing/privacy fields
-ready in the Developer Dashboard. The workflow updates an existing item; it does
-not create the first listing.
 
 ## Troubleshooting
 
@@ -134,7 +101,7 @@ not create the first listing.
   tab after reloading the extension. Existing tabs can keep an old content script
   until the page is refreshed.
 - If the console shows `ws://localhost:3100` or `[wxt] Failed to connect to dev
-  server`, the loaded extension is `dist/chrome-mv3-dev`. Remove that unpacked
+server`, the loaded extension is `dist/chrome-mv3-dev`. Remove that unpacked
   extension, or run `bun run --filter '@trycompai/security-questionnaire-extension' dev`.
   For normal local testing, load `dist/chrome-mv3`.
 - Chrome keeps previous entries on the extension Errors page. Clear them after
