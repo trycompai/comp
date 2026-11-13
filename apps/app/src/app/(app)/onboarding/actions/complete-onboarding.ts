@@ -12,6 +12,7 @@ import { tasks } from '@trigger.dev/sdk';
 import { revalidatePath } from 'next/cache';
 import { cookies, headers } from 'next/headers';
 import { z } from 'zod';
+import { authorizeOnboardingCaller } from './authorize-onboarding-caller';
 
 // Schema for the remaining fields (steps 4-12)
 const onboardingCompletionSchema = z.object({
@@ -62,22 +63,43 @@ export const completeOnboarding = authActionClientWithoutOrg
     },
   })
   .action(async ({ parsedInput, ctx }) => {
+    // Onboarding may be run once per organization; the claim below records that.
+    let claimed = false;
+    // Set as soon as the onboarding job is handed to Trigger, so a failure after
+    // that point never releases the claim under a run that is already going.
+    let jobTriggered = false;
+
     try {
-      // Verify user has access to this organization
-      const member = await db.member.findFirst({
-        where: {
-          userId: ctx.user!.id,
-          organizationId: parsedInput.organizationId,
-          deactivated: false,
-        },
+      // Onboarding rewrites org-wide configuration, so it needs the org-update
+      // permission in the target organization — bare membership is not enough.
+      const access = await authorizeOnboardingCaller({
+        userId: ctx.user!.id,
+        organizationId: parsedInput.organizationId,
       });
 
-      if (!member) {
+      if (!access.ok) {
         return {
           success: false,
-          error: 'Access denied',
+          error: access.error,
         };
       }
+
+      // Claim the one-time onboarding run before any write or job trigger. Only
+      // the caller that observes onboardingCompleted === false wins the flip;
+      // an already-onboarded organization is refused.
+      const claim = await db.organization.updateMany({
+        where: { id: parsedInput.organizationId, onboardingCompleted: false },
+        data: { onboardingCompleted: true },
+      });
+
+      if (claim.count === 0) {
+        return {
+          success: false,
+          error: 'Onboarding has already been completed for this organization.',
+        };
+      }
+
+      claimed = true;
 
       // Ensure the newly onboarded org is the active org.
       // This prevents the "Setting up your organization" flow from accidentally using a previous org session.
@@ -151,12 +173,6 @@ export const completeOnboarding = authActionClientWithoutOrg
 
       await db.context.createMany({ data: contextData });
 
-      // Update organization to mark onboarding as complete
-      await db.organization.update({
-        where: { id: parsedInput.organizationId },
-        data: { onboardingCompleted: true },
-      });
-
       // Ensure framework structure exists before triggering the onboard job.
       // If createOrganizationMinimal partially failed (org created but
       // initializeOrganization didn't run), recover by initializing now.
@@ -195,6 +211,7 @@ export const completeOnboarding = authActionClientWithoutOrg
       });
 
       // Now trigger the jobs that were skipped during minimal creation
+      jobTriggered = true;
       const handle = await tasks.trigger<typeof onboardOrganizationTask>(
         'onboard-organization',
         { organizationId: parsedInput.organizationId },
@@ -238,6 +255,18 @@ export const completeOnboarding = authActionClientWithoutOrg
     } catch (error) {
       console.error('Error completing onboarding:', error);
 
+      // A failure before the job started leaves an organization claimed but not
+      // onboarded, so hand the claim back and let the caller retry. A failure
+      // after the trigger keeps the claim — the job may still be running.
+      if (claimed && !jobTriggered) {
+        await db.organization
+          .updateMany({
+            where: { id: parsedInput.organizationId, onboardingCompleted: true },
+            data: { onboardingCompleted: false },
+          })
+          .catch(() => undefined);
+      }
+
       if (error instanceof Error) {
         return {
           success: false,
@@ -251,4 +280,3 @@ export const completeOnboarding = authActionClientWithoutOrg
       };
     }
   });
-
