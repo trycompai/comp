@@ -11,6 +11,9 @@ permissions:
 jobs:
   deploy:
     runs-on: warp-ubuntu-latest-arm64-4x
+    # The Production environment admits only `release`, so its secrets never
+    # resolve for a run on any other ref.
+    environment: Production
     steps:
       - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
 
@@ -53,5 +56,5 @@ jobs:
       - name: 🚀 Deploy Trigger.dev
         working-directory: ./apps/api
         env:
-          TRIGGER_ACCESS_TOKEN: ${{ secrets.TRIGGER_ACCESS_TOKEN }}
+          TRIGGER_ACCESS_TOKEN: ${{ secrets.TRIGGER_API_ACCESS_TOKEN }}
         run: bunx trigger.dev@4.7.7 deploy

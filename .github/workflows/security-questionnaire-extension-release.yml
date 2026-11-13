@@ -35,6 +35,9 @@ jobs:
     name: Publish Chrome extension
     if: ${{ github.ref == 'refs/heads/release' }}
     runs-on: warp-ubuntu-latest-arm64-4x
+    # The Production environment admits only `release`, independently of the
+    # `if:` above, so the store credentials never resolve on any other ref.
+    environment: Production
     steps:
       - name: Checkout
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0

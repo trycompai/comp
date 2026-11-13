@@ -34,12 +34,30 @@ function* configurationObjects(value: unknown): Generator<Record<string, unknown
   for (const child of Object.values(value)) yield* configurationObjects(child);
 }
 
+function pushBranches(configuration: Record<string, unknown>): string[] {
+  // Bun.YAML parses a bare `on:` key as `true`.
+  const triggers = configuration.on ?? configuration.true;
+  if (!isRecord(triggers) || !isRecord(triggers.push)) return [];
+  const { branches } = triggers.push;
+  if (!Array.isArray(branches)) return [];
+  return branches.filter((branch): branch is string => typeof branch === 'string');
+}
+
 const activePaths = [
   ...readdirSync(workflowsDirectory)
     .filter((name) => /\.ya?ml$/.test(name))
     .map((name) => join(workflowsDirectory, name)),
   ...readdirSync(actionsDirectory).map((name) => join(actionsDirectory, name, 'action.yml')),
 ];
+
+// Mirrors each environment's deployment-branch policy in the repository settings.
+// GitHub matches environment names case-insensitively.
+const deployEnvironmentBranches = new Map([
+  ['production', 'release'],
+  ['staging', 'main'],
+]);
+const deployCredentialPattern =
+  /\bsecrets\.(?:TRIGGER_API_ACCESS_TOKEN|TRIGGER_APP_ACCESS_TOKEN|SECRET_KEY|VERCEL_ACCESS_TOKEN|CHROME_WEB_STORE_SERVICE_ACCOUNT_JSON)\b/;
 
 describe('active GitHub Actions security policy', () => {
   for (const path of activePaths) {
@@ -74,6 +92,42 @@ describe('active GitHub Actions security policy', () => {
     for (const path of activePaths) {
       const source = readFileSync(path, 'utf8');
       expect(source).not.toMatch(/claude-code-security-review|ANTHROPIC_API_KEY|GRAM_API_KEY/);
+    }
+  });
+
+  test('deploy credentials are read only by jobs bound to a branch-gated environment', () => {
+    const violations: string[] = [];
+    let gatedJobs = 0;
+    for (const path of activePaths) {
+      const configuration = parseConfiguration(path);
+      if (!isRecord(configuration.jobs)) continue;
+      const branches = pushBranches(configuration);
+      for (const [name, job] of Object.entries(configuration.jobs)) {
+        if (!deployCredentialPattern.test(JSON.stringify(job))) continue;
+        gatedJobs += 1;
+        const label = `${path.replace(`${repositoryRoot}/`, '')}#${name}`;
+        const environment = isRecord(job) ? job.environment : undefined;
+        const allowedBranch =
+          typeof environment === 'string'
+            ? deployEnvironmentBranches.get(environment.toLowerCase())
+            : undefined;
+        if (!allowedBranch) {
+          violations.push(`${label} reads a deploy credential outside a deploy environment`);
+          continue;
+        }
+        const strayBranches = branches.filter((branch) => branch !== allowedBranch);
+        if (strayBranches.length > 0) {
+          violations.push(`${label} runs on ${strayBranches.join(', ')} outside ${environment}`);
+        }
+      }
+    }
+    expect(violations).toEqual([]);
+    expect(gatedJobs).toBeGreaterThan(0);
+  });
+
+  test('no workflow reads the retired shared Trigger.dev token', () => {
+    for (const path of activePaths) {
+      expect(readFileSync(path, 'utf8')).not.toMatch(/\bsecrets\.TRIGGER_ACCESS_TOKEN\b/);
     }
   });
 

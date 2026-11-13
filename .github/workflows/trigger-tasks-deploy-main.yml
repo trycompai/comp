@@ -10,6 +10,9 @@ permissions:
 jobs:
   deploy:
     runs-on: warp-ubuntu-latest-arm64-4x
+    # The staging environment admits only `main`, so its secrets never resolve
+    # for a run on any other ref.
+    environment: staging
     steps:
       - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
       - name: Use Node.js 22.x
@@ -50,7 +53,7 @@ jobs:
         working-directory: ./apps/app
         timeout-minutes: 20
         env:
-          TRIGGER_ACCESS_TOKEN: ${{ secrets.TRIGGER_ACCESS_TOKEN }}
+          TRIGGER_ACCESS_TOKEN: ${{ secrets.TRIGGER_APP_ACCESS_TOKEN }}
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
           VERCEL_ACCESS_TOKEN: ${{ secrets.VERCEL_ACCESS_TOKEN }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
