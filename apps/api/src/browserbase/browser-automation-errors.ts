@@ -47,6 +47,22 @@ export function classifyBrowserAutomationError(
   const message = getErrorText(error);
   const lower = message.toLowerCase();
 
+  // A stored secret was refused because the page was not the connection's own
+  // site: nothing was typed, and a human has to reconnect the profile.
+  if (
+    lower.includes('unexpected_page_origin') ||
+    lower.includes('refusing to enter saved credentials')
+  ) {
+    return {
+      code: 'needs_reauth',
+      stage: 'auth',
+      userFacing: message,
+      needsReauth: true,
+      blockedReason:
+        "Refused to enter saved credentials off the connection's own site.",
+    };
+  }
+
   if (
     lower.includes('two-factor') ||
     lower.includes('2fa') ||

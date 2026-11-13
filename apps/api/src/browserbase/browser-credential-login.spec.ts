@@ -2,14 +2,30 @@ import {
   performCredentialLogin,
   reloginWithStoredCredentials,
 } from './browser-credential-login';
-import type { BrowserCredentialVaultAdapter } from './credential-vault';
-import type { BrowserbaseSessionService } from './browserbase-session.service';
 import type { BrowserEvidenceSessionInput } from './browser-evidence-runner.service';
+import type { BrowserbaseSessionService } from './browserbase-session.service';
+import type { BrowserCredentialVaultAdapter } from './credential-vault';
 
 type Stagehand = import('@browserbasehq/stagehand').Stagehand;
 
-const makeStagehand = () => ({ act: jest.fn().mockResolvedValue(undefined) });
-const makePage = () => ({ goto: jest.fn().mockResolvedValue(undefined) });
+const VENDOR_ORIGIN = 'https://vendor.example.com';
+
+// Only what the code reads: act() plus the page handle the origin guard resolves.
+const makePage = (url = `${VENDOR_ORIGIN}/login`) => {
+  let currentUrl = url;
+  return {
+    goto: jest.fn().mockResolvedValue(undefined),
+    url: jest.fn(() => currentUrl),
+    frames: jest.fn(() => []),
+    setUrl: (next: string) => {
+      currentUrl = next;
+    },
+  };
+};
+const makeStagehand = (page = makePage()) => ({
+  act: jest.fn().mockResolvedValue(undefined),
+  context: { pages: () => [page] },
+});
 const makeSessions = (page: ReturnType<typeof makePage>) => ({
   ensureActivePage: jest.fn().mockResolvedValue(page),
 });
@@ -42,6 +58,7 @@ describe('performCredentialLogin', () => {
     const promise = performCredentialLogin({
       stagehand: stagehand as unknown as Stagehand,
       credentials: { username: 'alice', password, totpCode: '424242' },
+      expectedOrigin: VENDOR_ORIGIN,
       log: jest.fn(),
     });
     await jest.runAllTimersAsync();
@@ -53,11 +70,17 @@ describe('performCredentialLogin', () => {
     const findCall = (needle: string) =>
       calls.find(([instruction]) => instruction.includes(needle));
 
-    expect(findCall('%username%')?.[1]).toEqual({
+    // Each secret-carrying act also pins the page the origin guard verified.
+    expect(findCall('%username%')?.[1]).toMatchObject({
       variables: { username: 'alice' },
+      page: expect.objectContaining({ url: expect.any(Function) }),
     });
-    expect(findCall('%password%')?.[1]).toEqual({ variables: { password } });
-    expect(findCall('%code%')?.[1]).toEqual({ variables: { code: '424242' } });
+    expect(findCall('%password%')?.[1]).toMatchObject({
+      variables: { password },
+    });
+    expect(findCall('%code%')?.[1]).toMatchObject({
+      variables: { code: '424242' },
+    });
 
     // No raw secret value may appear in any instruction sent to the LLM.
     for (const [instruction] of calls) {
@@ -73,6 +96,7 @@ describe('performCredentialLogin', () => {
     const promise = performCredentialLogin({
       stagehand: stagehand as unknown as Stagehand,
       credentials: { username: 'alice', password: 'pw', totpCode: '424242' },
+      expectedOrigin: VENDOR_ORIGIN,
       log: jest.fn(),
     });
     await jest.runAllTimersAsync();
@@ -100,6 +124,7 @@ describe('performCredentialLogin', () => {
     const promise = performCredentialLogin({
       stagehand: stagehand as unknown as Stagehand,
       credentials: { username: 'alice', password: 'pw' }, // no stored code → human take-over
+      expectedOrigin: VENDOR_ORIGIN,
       log: jest.fn(),
     });
     await jest.runAllTimersAsync();

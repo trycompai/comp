@@ -32,13 +32,30 @@ jest.mock('@trycompai/auth', () => ({
   BUILT_IN_ROLE_PERMISSIONS: {},
 }));
 
-import { Test } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
 import type { Response } from 'express';
+import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
+import { PermissionGuard, PERMISSIONS_KEY } from '../auth/permission.guard';
 import { BrowserbaseController } from './browserbase.controller';
 import { BrowserbaseService } from './browserbase.service';
-import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
-import { PermissionGuard } from '../auth/permission.guard';
+
+describe('BrowserbaseController.navigateToUrl permission', () => {
+  it('requires a write-level integration permission, not read', () => {
+    // Moving a live session steers an authenticated browser, so it is a write on
+    // the org's integration state — read-level access must not be enough.
+    // Read the handler off the descriptor: the permission metadata is attached to
+    // the function object, not to the prototype method slot.
+    const handler = Object.getOwnPropertyDescriptor(
+      BrowserbaseController.prototype,
+      'navigateToUrl',
+    )?.value as object;
+    const required = Reflect.getMetadata(PERMISSIONS_KEY, handler);
+    expect(required).toEqual([
+      { resource: 'integration', actions: ['update'] },
+    ]);
+  });
+});
 
 describe('BrowserbaseController.redirectToScreenshot', () => {
   let controller: BrowserbaseController;

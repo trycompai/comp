@@ -1,5 +1,6 @@
 'use client';
 
+import { usePermissions } from '@/hooks/use-permissions';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -15,11 +16,7 @@ import {
   railSubtitleFor,
   type Step,
 } from './connect-flow-constants';
-import {
-  clearConnectState,
-  loadConnectState,
-  saveConnectState,
-} from './connect-flow-storage';
+import { clearConnectState, loadConnectState, saveConnectState } from './connect-flow-storage';
 import { normalizeUrl, stripScheme } from './connect-url';
 import type { ConnectCaptureFormData } from './ConnectCaptureForm';
 import { ConnectFlowRail } from './ConnectFlowRail';
@@ -59,13 +56,9 @@ export function ConnectVendorLoginFlow({
   const persisted = useMemo(() => loadConnectState(taskId), [taskId]);
 
   const [step, setStep] = useState<Step>(persisted?.step ?? 'enter-url');
-  const [urlInput, setUrlInput] = useState(
-    persisted ? stripScheme(persisted.url) : '',
-  );
+  const [urlInput, setUrlInput] = useState(persisted ? stripScheme(persisted.url) : '');
   const [url, setUrl] = useState(persisted?.url ?? '');
-  const [analysis, setAnalysis] = useState<LoginAnalysis | null>(
-    persisted?.analysis ?? null,
-  );
+  const [analysis, setAnalysis] = useState<LoginAnalysis | null>(persisted?.analysis ?? null);
   // Never resumed — a live analysis-run token is dead after a reload, so a
   // refresh restarts analysis from the (persisted) URL instead.
   const [analyzeRun, setAnalyzeRun] = useState<{
@@ -79,9 +72,7 @@ export function ConnectVendorLoginFlow({
   const [takeoverVariant, setTakeoverVariant] = useState<LiveSigninVariant>('finish');
   // How the blocked verification wants the user to verify (code / passkey /
   // passkey-only), so the take-over panel gives exact guidance.
-  const [takeoverMethod, setTakeoverMethod] = useState<
-    TwoFactorMethod | undefined
-  >(undefined);
+  const [takeoverMethod, setTakeoverMethod] = useState<TwoFactorMethod | undefined>(undefined);
   // The activity timeline, mirrored into flow state so it survives into the
   // take-over view after the run's realtime subscription is torn down.
   const [signinSteps, setSigninSteps] = useState<SignInStep[]>([]);
@@ -92,41 +83,36 @@ export function ConnectVendorLoginFlow({
   const context = useBrowserContext();
   const { startAnalysis, isStarting } = useLoginAnalysis();
   const { startSignin, isStarting: isStartingSignin } = useAutoSignin();
-  const { signinLiveView, setSigninLiveView, endSession, isVerifying, verify } =
-    useSigninSession();
+  const { signinLiveView, setSigninLiveView, endSession, isVerifying, verify } = useSigninSession();
 
   // Hand the (still-open) browser to the user to finish the sign-in themselves.
-  const goToTakeover = useCallback(
-    (failure?: string, method?: TwoFactorMethod) => {
-      setSigninRun(null);
-      setTakeoverMethod(method);
-      // Trust an explicit classification: a passkey/code step is a "your turn"
-      // 2FA take-over, while 'other' (device approval, CAPTCHA, link) uses the
-      // generic finish panel. Only when no method was detected do we fall back to
-      // the raw failure code.
-      const is2fa =
-        method === undefined ? failure === 'needs_2fa' : method !== 'other';
-      // Toast and panel derive from the SAME decision, so they never contradict
-      // (e.g. a toast saying "enter your code" over a "finish sign-in" panel).
-      toast.info(
-        method === 'passkey_only'
-          ? "This login requires a passkey, which can't be completed here."
-          : is2fa
-            ? 'Enter your two-factor code to finish the sign-in.'
-            : 'Finish the sign-in in the browser.',
-      );
-      setTakeoverVariant(is2fa ? '2fa' : 'finish');
-      setStep('takeover');
-    },
-    [],
-  );
+  const goToTakeover = useCallback((failure?: string, method?: TwoFactorMethod) => {
+    setSigninRun(null);
+    setTakeoverMethod(method);
+    // Trust an explicit classification: a passkey/code step is a "your turn"
+    // 2FA take-over, while 'other' (device approval, CAPTCHA, link) uses the
+    // generic finish panel. Only when no method was detected do we fall back to
+    // the raw failure code.
+    const is2fa = method === undefined ? failure === 'needs_2fa' : method !== 'other';
+    // Toast and panel derive from the SAME decision, so they never contradict
+    // (e.g. a toast saying "enter your code" over a "finish sign-in" panel).
+    toast.info(
+      method === 'passkey_only'
+        ? "This login requires a passkey, which can't be completed here."
+        : is2fa
+          ? 'Enter your two-factor code to finish the sign-in.'
+          : 'Finish the sign-in in the browser.',
+    );
+    setTakeoverVariant(is2fa ? '2fa' : 'finish');
+    setStep('takeover');
+  }, []);
 
   // Analysis (browser + AI) runs as a background task. Watching run/error also
   // handles resume, where the run may already be complete on subscribe.
-  const { run: analyzeRunState, error: analyzeError } = useRealtimeRun(
-    analyzeRun?.runId ?? '',
-    { accessToken: analyzeRun?.accessToken, enabled: !!analyzeRun },
-  );
+  const { run: analyzeRunState, error: analyzeError } = useRealtimeRun(analyzeRun?.runId ?? '', {
+    accessToken: analyzeRun?.accessToken,
+    enabled: !!analyzeRun,
+  });
 
   useEffect(() => {
     if (!analyzeRun) return;
@@ -156,10 +142,10 @@ export function ConnectVendorLoginFlow({
 
   // The automated sign-in runs as a background task on a session we show the
   // user (they watch it) and hand over on any failure.
-  const { run: signinRunState, error: signinError } = useRealtimeRun(
-    signinRun?.runId ?? '',
-    { accessToken: signinRun?.accessToken, enabled: !!signinRun },
-  );
+  const { run: signinRunState, error: signinError } = useRealtimeRun(signinRun?.runId ?? '', {
+    accessToken: signinRun?.accessToken,
+    enabled: !!signinRun,
+  });
 
   useEffect(() => {
     if (!signinRun) return;
@@ -201,18 +187,14 @@ export function ConnectVendorLoginFlow({
   // Mirror the live activity timeline into state so it stays visible after the
   // run completes and we hand over.
   useEffect(() => {
-    const steps = signinRunState?.metadata?.signinSteps as
-      | SignInStep[]
-      | undefined;
+    const steps = signinRunState?.metadata?.signinSteps as SignInStep[] | undefined;
     if (steps) setSigninSteps(steps);
   }, [signinRunState]);
 
   // Follow the AI's tab: when the run reports the live-view moved to another tab
   // (e.g. AWS opened its sign-in in a new one), re-point the iframe there so the
   // user watches — and can complete a 2FA take-over on — the right page.
-  const streamedSigninLiveView = signinRunState?.metadata?.signinLiveViewUrl as
-    | string
-    | undefined;
+  const streamedSigninLiveView = signinRunState?.metadata?.signinLiveViewUrl as string | undefined;
   useEffect(() => {
     if (!streamedSigninLiveView) return;
     setSigninLiveView((current) =>
@@ -227,8 +209,7 @@ export function ConnectVendorLoginFlow({
   // once we have it. A live sign-in can't survive a reload, so it falls back to
   // the method chooser (analysis kept) or the URL step — never to zero.
   useEffect(() => {
-    const liveStep =
-      step === 'signing-in' || step === 'takeover' || step === 'signin';
+    const liveStep = step === 'signing-in' || step === 'takeover' || step === 'signin';
 
     if ((step === 'choose' || liveStep) && analysis) {
       saveConnectState(taskId, { step: 'choose', url, analysis });
@@ -301,10 +282,18 @@ export function ConnectVendorLoginFlow({
   }, [startAnalysis, urlInput]);
 
   const { startAuth } = context;
+  // Opening a browser session moves a live browser into the site, which the API
+  // treats as a write on the org's integration state.
+  const { hasPermission } = usePermissions();
+  const canOpenBrowserSession = hasPermission('integration', 'update');
   const handleStartLiveSignin = useCallback(() => {
+    if (!canOpenBrowserSession) {
+      toast.error('You do not have permission to open a browser session.');
+      return;
+    }
     setStep('signin');
     void startAuth(url);
-  }, [startAuth, url]);
+  }, [canOpenBrowserSession, startAuth, url]);
 
   // SSO: the AI opens the identity provider (no credentials to store), then hands
   // the live browser to the user to finish there. Reuses the live sign-in run.
@@ -390,12 +379,7 @@ export function ConnectVendorLoginFlow({
 
   // Live sign-in steps use the full-width activity card (design 1b); the
   // form-sized steps use the rail + stage layout.
-  if (
-    step === 'signing-in' ||
-    step === 'takeover' ||
-    step === 'signin' ||
-    step === 'signed-in'
-  ) {
+  if (step === 'signing-in' || step === 'takeover' || step === 'signin' || step === 'signed-in') {
     const isManual = step === 'signin'; // SSO / passkey — no automated run
     const success = step === 'signed-in';
     const variant: LiveSigninVariant =
@@ -404,9 +388,7 @@ export function ConnectVendorLoginFlow({
       <ConnectLiveSignin
         host={host}
         liveViewUrl={
-          isManual
-            ? context.liveViewUrl
-            : (signinLiveView?.liveViewUrl ?? context.liveViewUrl)
+          isManual ? context.liveViewUrl : (signinLiveView?.liveViewUrl ?? context.liveViewUrl)
         }
         variant={variant}
         success={success}

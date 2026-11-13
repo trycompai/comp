@@ -1,3 +1,4 @@
+import { TaskFrequency } from '@db';
 import {
   Body,
   Controller,
@@ -10,15 +11,15 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import type { Response } from 'express';
 import {
-  ApiOperation,
   ApiBody,
+  ApiOperation,
   ApiParam,
   ApiResponse,
   ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
+import type { Response } from 'express';
 import { OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
@@ -46,7 +47,6 @@ import {
   UpdateBrowserAutomationDraftDto,
   UpdateBrowserAutomationDto,
 } from './dto/browserbase.dto';
-import { TaskFrequency } from '@db';
 
 @ApiTags('Browserbase')
 @Controller({ path: 'browserbase', version: '1' })
@@ -158,7 +158,10 @@ export class BrowserbaseController {
   // ===== Browser Navigation =====
 
   @Post('navigate')
-  @RequirePermission('integration', 'read')
+  // Moving a live session steers a browser that may hold a signed-in session,
+  // so it is a write on the org's integration state — read-level access cannot
+  // do it.
+  @RequirePermission('integration', 'update')
   @ApiOperation({
     summary: 'Navigate to a URL',
     description: 'Navigates the browser session to the specified URL',
@@ -385,7 +388,11 @@ export class BrowserbaseController {
     @Param('draftId') draftId: string,
     @Body() dto: UpdateBrowserAutomationDraftDto,
   ) {
-    return this.browserbaseService.updateAutomationDraft(draftId, dto, organizationId);
+    return this.browserbaseService.updateAutomationDraft(
+      draftId,
+      dto,
+      organizationId,
+    );
   }
 
   @Delete('automation-drafts/:draftId')
@@ -396,7 +403,10 @@ export class BrowserbaseController {
     @OrganizationId() organizationId: string,
     @Param('draftId') draftId: string,
   ): Promise<{ success: boolean }> {
-    await this.browserbaseService.deleteAutomationDraft(draftId, organizationId);
+    await this.browserbaseService.deleteAutomationDraft(
+      draftId,
+      organizationId,
+    );
     return { success: true };
   }
 
