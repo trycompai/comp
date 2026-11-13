@@ -22,7 +22,6 @@ import {
 import { ac, allRoles } from '@trycompai/auth';
 import { createAuthMiddleware } from 'better-auth/api';
 import { Redis } from '@upstash/redis';
-import type { AccessControl } from 'better-auth/plugins/access';
 import {
   assertAuthRequestAllowed,
   assertEmailChangeLinkOwner,
