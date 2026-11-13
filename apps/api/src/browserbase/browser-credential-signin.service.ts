@@ -1,14 +1,19 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { BrowserbaseSessionService } from './browserbase-session.service';
 import { BrowserAuthProfileService } from './browser-auth-profile.service';
-import { signInAndClassify } from './browser-credential-login';
+import { signInAndClassify } from './browser-credential-signin-classify';
+import { streamActiveLiveView } from './browser-signin-live-view';
+import { resolveBrowserCredentialVaultAdapter } from './browser-credential-vault.factory';
+import {
+  assertPageOnExpectedOrigin,
+  expectedOriginOf,
+} from './browser-expected-origin';
 import {
   classifyLoginOutcome,
   classifyTwoFactorMethod,
   type TwoFactorMethod,
 } from './browser-login-classifier';
 import { navigateToSignIn } from './browser-login-navigation';
-import { resolveBrowserCredentialVaultAdapter } from './browser-credential-vault.factory';
+import { BrowserbaseSessionService } from './browserbase-session.service';
 
 type Stagehand = import('@browserbasehq/stagehand').Stagehand;
 
@@ -84,27 +89,6 @@ export class BrowserCredentialSigninService {
     ),
   ) {}
 
-  /**
-   * Emit the live-view URL of the tab the AI is currently on, so the connect
-   * flow's iframe follows it across new tabs. Best-effort — a failure just
-   * leaves the live view on its current tab.
-   */
-  private async streamActiveLiveView(
-    stagehand: Stagehand,
-    sessionId: string,
-    onLiveView?: (url: string) => void,
-  ): Promise<void> {
-    if (!onLiveView) return;
-    try {
-      const pages = stagehand.context?.pages?.() ?? [];
-      const activeUrl = pages[pages.length - 1]?.url();
-      const url = await this.sessions.getActivePageLiveViewUrl(sessionId, activeUrl);
-      if (url) onLiveView(url);
-    } catch {
-      // Best-effort — keep the current live view.
-    }
-  }
-
   async signInWithStoredCredentials(input: {
     organizationId: string;
     profileId: string;
@@ -162,10 +146,20 @@ export class BrowserCredentialSigninService {
       profileHostname: profile.hostname,
     });
 
+    const expectedOrigin = expectedOriginOf(profile.hostname);
     let stagehand: Stagehand | null = null;
     try {
       stagehand = await this.sessions.createStagehand(input.sessionId);
       const activeStagehand = stagehand;
+      // Follow the AI's tab: a vendor may open sign-in in a new tab, and the live
+      // view should show the page the fill is about to touch.
+      const streamLiveView = () =>
+        streamActiveLiveView({
+          stagehand: activeStagehand,
+          sessions: this.sessions,
+          sessionId: input.sessionId,
+          onLiveView: input.onLiveView,
+        });
       const page = await this.sessions.ensureActivePage(activeStagehand);
       step('Opening the sign-in page');
       await page.goto(input.url, {
@@ -193,7 +187,15 @@ export class BrowserCredentialSigninService {
       // The sign-in may have opened in a new tab — point the live view at
       // wherever the AI actually is, so the user watches (and can complete a
       // 2FA take-over on) the right page.
-      await this.streamActiveLiveView(activeStagehand, input.sessionId, input.onLiveView);
+      await streamLiveView();
+
+      // That click can land off the connection's own site (a redirect, a
+      // federated hop). Refuse before any stored secret is typed, so the sign-in
+      // fails closed into the take-over instead of filling a page we cannot name.
+      await assertPageOnExpectedOrigin({
+        stagehand: activeStagehand,
+        expectedOrigin,
+      });
 
       // SSO: we can't hold the customer's identity-provider credentials, so the
       // AI only clicks through to the provider, then hands the live browser to
@@ -210,7 +212,7 @@ export class BrowserCredentialSigninService {
         }
         await delay(2500);
         // The identity provider often opens in a new tab — follow it.
-        await this.streamActiveLiveView(activeStagehand, input.sessionId, input.onLiveView);
+        await streamLiveView();
         step('Finish signing in with your provider');
         await record('sso_handoff', FAILURE_REASON.sso_handoff);
         finish('warn');
@@ -225,7 +227,8 @@ export class BrowserCredentialSigninService {
         log: step,
         // On reconnect the caller doesn't pass a label (no capture form), so fall
         // back to the one detected + stored at connect time.
-        usernameLabel: input.usernameLabel ?? profile.identifierLabel ?? undefined,
+        usernameLabel:
+          input.usernameLabel ?? profile.identifierLabel ?? undefined,
       });
       // The sign-in attempt navigated — often to a 2FA / verification page, and
       // sometimes in a new tab. Re-point the live view at the tab the classifier
@@ -234,11 +237,7 @@ export class BrowserCredentialSigninService {
       // this the iframe stays on the pre-submit login tab and the code field is
       // invisible, which is exactly the "your turn, but I can't see the field"
       // state users hit.
-      await this.streamActiveLiveView(
-        activeStagehand,
-        input.sessionId,
-        input.onLiveView,
-      );
+      await streamLiveView();
       step('Checking whether that worked');
 
       if (outcome === 'logged_in') {

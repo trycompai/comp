@@ -1,12 +1,13 @@
+import {
+  enterSecretField,
+  expectedOriginOf,
+  UnexpectedPageOriginError,
+} from './browser-expected-origin';
+import type { BrowserbaseSessionService } from './browserbase-session.service';
 import type {
   BrowserCredentialVaultAdapter,
   RuntimeCredentialMaterial,
 } from './credential-vault';
-import type { BrowserbaseSessionService } from './browserbase-session.service';
-import {
-  classifyLoginOutcome,
-  type SignInOutcome,
-} from './browser-login-classifier';
 
 type Stagehand = import('@browserbasehq/stagehand').Stagehand;
 type ActivePage = Awaited<
@@ -22,6 +23,8 @@ type ActivePage = Awaited<
 export interface CredentialLoginTarget {
   profile: {
     id: string;
+    /** The connection's own site; secrets are typed only on its host family. */
+    hostname: string;
     vaultProvider?: string | null;
     vaultExternalItemRef?: string | null;
     vaultConnectionId?: string | null;
@@ -41,6 +44,7 @@ export async function performCredentialLogin({
   credentials,
   log,
   usernameLabel,
+  expectedOrigin,
 }: {
   stagehand: Stagehand;
   credentials: RuntimeCredentialMaterial;
@@ -48,6 +52,9 @@ export async function performCredentialLogin({
   /** The vendor's own label for the identifier field (e.g. "IAM username"), so
    *  the streamed step matches what's on screen. Falls back to "username". */
   usernameLabel?: string;
+  /** `https://<profile hostname>`: every secret below is typed only while the
+   *  page is https on that host family. */
+  expectedOrigin: string;
 }): Promise<void> {
   // Stagehand's act() performs ONE action per call, so each field and the submit
   // are separate steps — a single "enter username and password and submit"
@@ -55,13 +62,21 @@ export async function performCredentialLogin({
   // substitution, so only placeholders (not the values) ever reach the model.
 
   // Site-specific fields (workspace, subdomain, …) usually precede the password.
+  const enterSecret = async ({
+    instruction,
+    variables,
+  }: {
+    instruction: string;
+    variables: Record<string, string>;
+  }) => enterSecretField({ stagehand, expectedOrigin, instruction, variables });
+
   const extraFields = credentials.extraFields ?? [];
   for (const field of extraFields) {
     log(`Entering ${field.label}.`);
-    await stagehand.act(
-      `Enter %value% into the "${field.label}" field on the sign-in form.`,
-      { variables: { value: field.value } },
-    );
+    await enterSecret({
+      instruction: `Enter %value% into the "${field.label}" field on the sign-in form.`,
+      variables: { value: field.value },
+    });
     await delay(1000);
   }
 
@@ -69,10 +84,11 @@ export async function performCredentialLogin({
     // Show the vendor's real field name in the step; the fill stays semantic so
     // Stagehand still finds the field even if the label is approximate.
     log(`Entering ${usernameLabel?.trim() || 'username'}.`);
-    await stagehand.act(
-      'Enter %username% into the email or username field on the sign-in form.',
-      { variables: { username: credentials.username } },
-    );
+    await enterSecret({
+      instruction:
+        'Enter %username% into the email or username field on the sign-in form.',
+      variables: { username: credentials.username },
+    });
     await delay(1000);
     // Two-step logins (Microsoft, Google, Okta) reveal the password only after a
     // Next/Continue; single-page forms (e.g. GitHub) already show it.
@@ -84,10 +100,11 @@ export async function performCredentialLogin({
 
   if (credentials.password) {
     log('Entering password.');
-    await stagehand.act(
-      'Enter %password% into the password field on the sign-in form.',
-      { variables: { password: credentials.password } },
-    );
+    await enterSecret({
+      instruction:
+        'Enter %password% into the password field on the sign-in form.',
+      variables: { password: credentials.password },
+    });
     await delay(1000);
   }
 
@@ -115,10 +132,11 @@ export async function performCredentialLogin({
     );
     await delay(1500);
     log('Entering one-time passcode.');
-    await stagehand.act(
-      'If a one-time passcode, two-factor, or verification code field is shown, enter %code% into it. If no such field is present, do nothing.',
-      { variables: { code: credentials.totpCode } },
-    );
+    await enterSecret({
+      instruction:
+        'If a one-time passcode, two-factor, or verification code field is shown, enter %code% into it. If no such field is present, do nothing.',
+      variables: { code: credentials.totpCode },
+    });
     await delay(1500);
     await stagehand.act(
       'If there is a button to submit or verify the code, click it. Otherwise do nothing.',
@@ -174,6 +192,7 @@ export async function reloginWithStoredCredentials({
 
   const credentials = await resolveCredentials();
   let page = await sessions.ensureActivePage(stagehand);
+  const expectedOrigin = expectedOriginOf(input.profile.hostname);
 
   if (!credentials) {
     return {
@@ -183,27 +202,36 @@ export async function reloginWithStoredCredentials({
     };
   }
 
-  page = await runLoginAttempt({
-    stagehand,
-    sessions,
-    credentials,
-    log,
-  });
-  if (await verifyLoggedIn()) return { isLoggedIn: true, page };
+  try {
+    page = await runLoginAttempt({
+      stagehand,
+      sessions,
+      credentials,
+      log,
+      expectedOrigin,
+    });
+    if (await verifyLoggedIn()) return { isLoggedIn: true, page };
 
-  // Retry once with a freshly resolved TOTP code, which guards against the ~30s
-  // rotation boundary landing between resolve and submit.
-  if (credentials.totpCode) {
-    const fresh = await resolveCredentials();
-    if (fresh?.totpCode) {
-      page = await runLoginAttempt({
-        stagehand,
-        sessions,
-        credentials: fresh,
-        log,
-      });
-      if (await verifyLoggedIn()) return { isLoggedIn: true, page };
+    // Retry once with a freshly resolved TOTP code, which guards against the ~30s
+    // rotation boundary landing between resolve and submit.
+    if (credentials.totpCode) {
+      const fresh = await resolveCredentials();
+      if (fresh?.totpCode) {
+        page = await runLoginAttempt({
+          stagehand,
+          sessions,
+          credentials: fresh,
+          log,
+          expectedOrigin,
+        });
+        if (await verifyLoggedIn()) return { isLoggedIn: true, page };
+      }
     }
+  } catch (error) {
+    // Fail closed: the browser is not on the connection's own site, so no secret
+    // was typed. Ask the user to reconnect instead of finishing the form.
+    if (!(error instanceof UnexpectedPageOriginError)) throw error;
+    return { isLoggedIn: false, page, reason: error.message };
   }
 
   return {
@@ -218,13 +246,15 @@ async function runLoginAttempt({
   sessions,
   credentials,
   log,
+  expectedOrigin,
 }: {
   stagehand: Stagehand;
   sessions: BrowserbaseSessionService;
   credentials: RuntimeCredentialMaterial;
   log: (message: string) => void;
+  expectedOrigin: string;
 }): Promise<ActivePage> {
-  await performCredentialLogin({ stagehand, credentials, log });
+  await performCredentialLogin({ stagehand, credentials, log, expectedOrigin });
   // Stay on the page the site lands on after login (typically an app/dashboard)
   // and verify there. Navigating back to the entered URL can return to a login
   // page — some apps always show login at the root — which reads as a failed
@@ -232,52 +262,4 @@ async function runLoginAttempt({
   // wherever we land.
   await delay(1500);
   return sessions.ensureActivePage(stagehand);
-}
-
-/**
- * The connect flow's first sign-in: fill the stored credentials and classify
- * where we land. Unlike reloginWithStoredCredentials (used by the scheduler),
- * this does NOT navigate back to the target afterward — the post-submit page is
- * exactly what we need to classify (an error, a 2FA prompt, a challenge, or a
- * signed-in dashboard).
- */
-export async function signInAndClassify({
-  stagehand,
-  vault,
-  input,
-  log,
-  usernameLabel,
-}: {
-  stagehand: Stagehand;
-  vault: BrowserCredentialVaultAdapter;
-  input: CredentialLoginTarget;
-  log: (message: string) => void;
-  /** Vendor's identifier-field label, for a truthful streamed step. */
-  usernameLabel?: string;
-}): Promise<{ outcome: SignInOutcome }> {
-  const resolveCredentials = () =>
-    vault.resolveCredentialReference({
-      profileId: input.profile.id,
-      provider: input.profile.vaultProvider,
-      externalItemRef: input.profile.vaultExternalItemRef,
-      connectionId: input.profile.vaultConnectionId,
-    });
-
-  const credentials = await resolveCredentials();
-  if (!credentials) return { outcome: 'unknown' };
-
-  await performCredentialLogin({ stagehand, credentials, log, usernameLabel });
-  let outcome = await classifyLoginOutcome(stagehand);
-
-  // A 2FA prompt still showing with a stored seed can mean the code landed on
-  // the ~30s rotation boundary — retry once with a freshly generated code.
-  if (outcome === 'needs_2fa' && credentials.totpCode) {
-    const fresh = await resolveCredentials();
-    if (fresh?.totpCode) {
-      await performCredentialLogin({ stagehand, credentials: fresh, log, usernameLabel });
-      outcome = await classifyLoginOutcome(stagehand);
-    }
-  }
-
-  return { outcome };
 }
