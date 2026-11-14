@@ -53,8 +53,16 @@ export async function requireAutomationAccess({
   taskId?: string;
 }) {
   const automation = await db.evidenceAutomation.findUnique({
-    where: { id: identifierSchema.parse(automationId) },
-    select: { taskId: true, task: { select: { organizationId: true } } },
+    where: {
+      id: identifierSchema.parse(automationId),
+      task: { organizationId },
+      ...(taskId === undefined ? {} : { taskId }),
+    },
+    select: {
+      taskId: true,
+      task: { select: { organizationId: true } },
+      evaluationCriteria: true,
+    },
   });
   if (
     automation?.task.organizationId !== organizationId ||
