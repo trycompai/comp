@@ -10,8 +10,10 @@ vi.mock('@trycompai/design-system', () => ({
     <label htmlFor={htmlFor}>{children}</label>
   ),
   Spinner: () => <span data-testid="spinner" />,
-  Select: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="ds-select">{children}</div>
+  Select: ({ children, value }: { children: React.ReactNode; value?: string }) => (
+    <div data-testid="ds-select" data-value={value}>
+      {children}
+    </div>
   ),
   SelectTrigger: ({ children, id }: { children: React.ReactNode; id?: string }) => (
     <div data-trigger-id={id}>{children}</div>
@@ -76,6 +78,36 @@ function renderFields(
     />,
   );
 }
+
+describe('ConnectionVariablesFields default preselection', () => {
+  const thresholdVariable = {
+    id: 'severity_threshold',
+    label: 'Fail at or above severity',
+    type: 'select',
+    required: false,
+    default: 'high',
+    options: [
+      { value: 'critical', label: 'Critical only' },
+      { value: 'high', label: 'High and above (default)' },
+      { value: 'low', label: 'Low and above' },
+    ],
+  } satisfies ConnectionVariable;
+
+  it('preselects a select variable default when no value is stored yet', () => {
+    // The boolean branch already falls back to `variable.default`; the select
+    // branch did not, so every defaulted dropdown rendered empty and the
+    // operator could not tell which value would be applied.
+    renderFields([thresholdVariable]);
+
+    expect(screen.getByTestId('ds-select')).toHaveAttribute('data-value', 'high');
+  });
+
+  it('leaves a select with no default empty', () => {
+    renderFields([{ ...thresholdVariable, default: undefined }]);
+
+    expect(screen.getByTestId('ds-select')).toHaveAttribute('data-value', '');
+  });
+});
 
 describe('ConnectionVariablesFields dropdown clickability inside a modal', () => {
   const modalSelectContentOptions = {
