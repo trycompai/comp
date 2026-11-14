@@ -2,6 +2,7 @@
 
 import { serverApi } from '@/lib/api-server';
 import { z } from 'zod';
+import { requireUnchangedAutomationCriteria } from './automation-criteria-integrity';
 import {
   AutomationAccessError,
   requireAutomationAccess,
@@ -28,7 +29,7 @@ export async function publishAutomation(
     const scope = scopeSchema.parse({ orgId, taskId, automationId });
     const parsedChangelog = z.string().optional().parse(changelog);
     if (scope.orgId !== organizationId) throw new AutomationAccessError();
-    await requireAutomationAccess({ organizationId, taskId, automationId });
+    const automation = await requireAutomationAccess({ organizationId, taskId, automationId });
     const result = publishResultSchema.parse(
       await callEnterpriseApi({
         endpoint: '/api/tasks-automations/publish',
@@ -37,6 +38,12 @@ export async function publishAutomation(
       }),
     );
     requireScriptKey({ key: result.scriptKey, organizationId });
+    await requireUnchangedAutomationCriteria({
+      organizationId,
+      taskId,
+      automationId,
+      evaluationCriteria: automation.evaluationCriteria,
+    });
     const versionRes = await serverApi.post(
       `/v1/tasks/${encodeURIComponent(taskId)}/automations/${encodeURIComponent(automationId)}/versions`,
       { version: result.version, scriptKey: result.scriptKey, changelog: parsedChangelog },
