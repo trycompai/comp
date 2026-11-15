@@ -7,3 +7,4 @@ export {
   type RunAllChecksResult,
   type RunCheckOptions,
 } from './check-runner';
+export { getNativeSourceIdentity } from './native-source-identity';
