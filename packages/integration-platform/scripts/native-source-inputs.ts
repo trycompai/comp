@@ -51,7 +51,7 @@ const GENERATED = [
   ':(exclude,glob)packages/db/src/generated/**',
 ];
 
-function git(root: string, args: string[]): string {
+function git({ root, args }: { root: string; args: string[] }): string {
   return execFileSync('git', ['-C', root, ...args], {
     encoding: 'utf8',
     timeout: 30_000,
@@ -76,19 +76,23 @@ export function sourceDigest(inputs: NativeSourceInput[]): string {
 
 export async function captureNativeSource(root: string): Promise<NativeSourceManifest> {
   const actualRoot = await realpath(root);
-  const gitRoot = git(actualRoot, ['rev-parse', '--show-toplevel']).trim();
+  const gitRoot = git({ root: actualRoot, args: ['rev-parse', '--show-toplevel'] }).trim();
   if ((await realpath(gitRoot)) !== actualRoot) {
     throw new Error('Native source root differs from the checkout');
   }
   for (const ignored of [false, true]) {
     const args = ['ls-files', '--others', '--exclude-standard', '-z'];
     if (ignored) args.push('--ignored');
-    const unknown = entries(git(actualRoot, [...args, '--', ...INPUTS, ...GENERATED]));
+    const unknown = entries(
+      git({ root: actualRoot, args: [...args, '--', ...INPUTS, ...GENERATED] }),
+    );
     if (unknown.length > 0) {
       throw new Error('Native runtime inputs include an untracked input file');
     }
   }
-  const tracked = entries(git(actualRoot, ['ls-files', '--stage', '-z', '--', ...INPUTS]));
+  const tracked = entries(
+    git({ root: actualRoot, args: ['ls-files', '--stage', '-z', '--', ...INPUTS] }),
+  );
   const inputs: NativeSourceInput[] = [];
   for (const entry of tracked) {
     const separator = entry.indexOf('\t');
