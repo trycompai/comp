@@ -61,6 +61,7 @@ jobs:
           src/trust-portal
           src/email/trigger-email.spec.ts
           src/trigger/trust-portal/process-access-submission.spec.ts
+          src/cloud-security/remediation.controller.spec.ts
           src/cloud-security/remediation-batch.service.spec.ts
           src/cloud-security/remediation-batch.races.spec.ts
           src/cloud-security/remediation-batch.controller.spec.ts
