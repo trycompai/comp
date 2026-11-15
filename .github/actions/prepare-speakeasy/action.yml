@@ -1,0 +1,52 @@
+name: Prepare pinned Speakeasy action
+description: >-
+  Check out Speakeasy's generation action at a pinned commit and build it from
+  this repository's Dockerfile with a digest-verified Speakeasy CLI, so no
+  Speakeasy step downloads a CLI at run time.
+inputs:
+  working-directory:
+    description: Directory holding the target's .speakeasy/workflow.yaml
+    required: true
+outputs:
+  speakeasy-version:
+    description: The Speakeasy CLI version baked into the action image
+    value: ${{ steps.cli.outputs.version }}
+runs:
+  using: composite
+  steps:
+    - name: Check out the pinned Speakeasy action
+      uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+      with:
+        repository: speakeasy-api/sdk-generation-action
+        # The action commit that sdk-generation-action v15.60.11 runs internally.
+        ref: fa50f4813201c6f919c74c25196b17c070ec4ac1
+        path: _speakeasy
+        persist-credentials: false
+
+    # Upgrade by changing the version and digest here and speakeasyVersion in
+    # workflow.yaml in one reviewed commit. The digest comes from the release's
+    # checksums.txt entry for speakeasy_linux_amd64.zip.
+    - name: Bake the verified Speakeasy CLI into the action image
+      id: cli
+      shell: bash
+      env:
+        SPEAKEASY_CLI_VERSION: 1.790.3
+        SPEAKEASY_CLI_SHA256: e1f56b42f1698503f68ce830fb98b79b44d8c0056ff7848d1e39805f844c5d7d
+        WORKFLOW_FILE: ${{ inputs.working-directory }}/.speakeasy/workflow.yaml
+      run: |
+        set -euo pipefail
+        # The CLI downloads and re-executes any speakeasyVersion other than its own.
+        if ! grep -qxF "speakeasyVersion: ${SPEAKEASY_CLI_VERSION}" "$GITHUB_WORKSPACE/$WORKFLOW_FILE"; then
+          echo "::error file=${WORKFLOW_FILE}::speakeasyVersion must be ${SPEAKEASY_CLI_VERSION}, the CLI baked into the action"
+          exit 1
+        fi
+
+        archive="$RUNNER_TEMP/speakeasy_linux_amd64.zip"
+        curl -fsSL --retry 3 -o "$archive" \
+          "https://github.com/speakeasy-api/speakeasy/releases/download/v${SPEAKEASY_CLI_VERSION}/speakeasy_linux_amd64.zip"
+        echo "${SPEAKEASY_CLI_SHA256}  ${archive}" | sha256sum --check --strict
+
+        unzip -o -j "$archive" speakeasy -d "$GITHUB_WORKSPACE/_speakeasy"
+        chmod 0755 "$GITHUB_WORKSPACE/_speakeasy/speakeasy"
+        cp "$GITHUB_ACTION_PATH/Dockerfile" "$GITHUB_WORKSPACE/_speakeasy/Dockerfile"
+        echo "version=${SPEAKEASY_CLI_VERSION}" >> "$GITHUB_OUTPUT"
