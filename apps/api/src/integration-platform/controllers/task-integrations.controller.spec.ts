@@ -18,6 +18,13 @@ jest.mock('@trycompai/auth', () => ({
   BUILT_IN_ROLE_PERMISSIONS: {},
 }));
 
+jest.mock(
+  '../../tasks/automatic-completion/complete-task-automatically',
+  () => ({
+    completeTaskAutomatically: jest.fn().mockResolvedValue({ count: 1 }),
+  }),
+);
+
 jest.mock('@db', () => ({
   db: {
     task: { findUnique: jest.fn(), update: jest.fn() },
@@ -40,12 +47,14 @@ jest.mock('@trycompai/integration-platform', () => ({
 }));
 
 import { db } from '@db';
+import { completeTaskAutomatically } from '../../tasks/automatic-completion/complete-task-automatically';
 import {
   getManifest,
   isCodeManifest,
   runAllChecks,
 } from '@trycompai/integration-platform';
 
+const mockCompleteTask = completeTaskAutomatically as jest.Mock;
 const mockedGetManifest = getManifest as jest.Mock;
 const mockedRunAllChecks = runAllChecks as jest.Mock;
 const mockedIsCodeManifest = isCodeManifest as jest.Mock;
@@ -223,7 +232,10 @@ describe('TaskIntegrationsController', () => {
     findLastAttemptPerConnectionAndCheckByTask: jest.fn(),
     countExceptedFailures: jest.fn(),
   };
-  const mockCredentialVaultService = { getDecryptedCredentials: jest.fn() };
+  const mockCredentialVaultService = {
+    getDecryptedCredentials: jest.fn(),
+    getDecryptedCredentialsWithRevision: jest.fn(),
+  };
   const mockOAuthCredentialsService = {
     getCredentials: jest.fn(),
     checkAvailability: jest.fn(),
@@ -283,6 +295,7 @@ describe('TaskIntegrationsController', () => {
     mockedIsCodeManifest.mockReturnValue(false);
     // Default: no active exceptions (existing tests behave as before).
     mockFindingExceptionFindMany.mockResolvedValue([]);
+    mockDynamicIntegrationFindFirst.mockResolvedValue(null);
     mockCheckRunRepository.create.mockImplementation(() =>
       Promise.resolve({ id: 'icr_x', startedAt: new Date() }),
     );
@@ -298,6 +311,18 @@ describe('TaskIntegrationsController', () => {
     mockCredentialVaultService.getDecryptedCredentials.mockResolvedValue(
       VALID_CREDS,
     );
+    mockCredentialVaultService.getDecryptedCredentialsWithRevision.mockImplementation(
+      async ({ connectionId }: { connectionId: string }) => {
+        const credentials =
+          await mockCredentialVaultService.getDecryptedCredentials(
+            connectionId,
+          );
+        return credentials
+          ? { credentials, credentialRevision: 'synthetic-revision' }
+          : null;
+      },
+    );
+    mockCompleteTask.mockResolvedValue({ count: 1 });
     mockTaskUpdate.mockResolvedValue({});
   });
 
@@ -340,6 +365,35 @@ describe('TaskIntegrationsController', () => {
       expect(result.accountsRun).toBe(2);
       expect(result.success).toBe(true);
       expect(result.taskStatus).toBe('done');
+    });
+
+    it('keeps task status unknown when the common current-evidence gate rejects completion', async () => {
+      mockConnectionRepository.findById.mockResolvedValue({
+        id: 'conn_1',
+        organizationId: 'org_1',
+        providerId: 'prov_aws',
+        status: 'active',
+      });
+      mockConnectionRepository.findActiveByProviderAndOrg.mockResolvedValue([
+        {
+          id: 'conn_1',
+          organizationId: 'org_1',
+          providerId: 'prov_aws',
+          metadata: {},
+          variables: {},
+        },
+      ]);
+      mockedRunAllChecks.mockResolvedValue(passingResult());
+      mockCompleteTask.mockResolvedValue({ count: 0 });
+      const result = await controller.runCheckForTask('task_1', 'org_1', body);
+      expect(result.totalPassing).toBe(1);
+      expect(result.taskStatus).toBeNull();
+      expect(mockCompleteTask).toHaveBeenCalledWith({
+        taskId: 'task_1',
+        organizationId: 'org_1',
+        source: 'native',
+      });
+      expect(mockTaskUpdate).not.toHaveBeenCalled();
     });
 
     it('marks the task failed if ANY account has findings', async () => {
@@ -491,7 +545,7 @@ describe('TaskIntegrationsController', () => {
       expect(mockTaskUpdate).not.toHaveBeenCalled();
     });
 
-    it('still fails the task for a dynamic integration on a REAL finding', async () => {
+    it('retains the raw dynamic finding while its run is held for classification', async () => {
       // Same dynamic provider, but a genuine compliance finding (no error signal).
       mockProviderRepository.findById.mockResolvedValue({
         id: 'prov_neon',
@@ -520,13 +574,16 @@ describe('TaskIntegrationsController', () => {
         checkId: 'aws-s3-encryption',
       });
 
-      expect(result.taskStatus).toBe('failed');
-      // A genuine compliance finding is a REAL failure — the run row stays
-      // 'failed' (visible to the customer), never held.
+      expect(result.taskStatus).toBeNull();
+      expect(mockTaskUpdate).not.toHaveBeenCalled();
+      expect(mockCompleteTask).not.toHaveBeenCalled();
       expect(mockCheckRunRepository.complete).toHaveBeenCalledWith(
         'icr_x',
-        expect.objectContaining({ status: 'failed' }),
+        expect.objectContaining({ status: 'inconclusive' }),
       );
+      expect(mockCheckRunRepository.addResults).toHaveBeenCalledWith([
+        expect.objectContaining({ passed: false, resourceId: 'b2' }),
+      ]);
     });
 
     it('treats a CODE-BASED provider as static even when a dynamic row shares its slug — shows the real fail, never held (CS-715)', async () => {
@@ -604,11 +661,12 @@ describe('TaskIntegrationsController', () => {
       // task — matching the Cloud Tests view + the scheduled run.
       expect(result.totalFindings).toBe(1);
       expect(result.taskStatus).toBe('done');
-      expect(mockTaskUpdate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ status: 'done' }),
-        }),
-      );
+      expect(mockCompleteTask).toHaveBeenCalledWith({
+        taskId: 'task_1',
+        organizationId: 'org_1',
+        source: 'native',
+      });
+      expect(mockTaskUpdate).not.toHaveBeenCalled();
     });
 
     it('goes done when the only finding is excepted and there are NO passing results', async () => {
@@ -642,11 +700,12 @@ describe('TaskIntegrationsController', () => {
       // No effective failures + no passing — must still transition to done, not
       // stay stuck in the prior status.
       expect(result.taskStatus).toBe('done');
-      expect(mockTaskUpdate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ status: 'done' }),
-        }),
-      );
+      expect(mockCompleteTask).toHaveBeenCalledWith({
+        taskId: 'task_1',
+        organizationId: 'org_1',
+        source: 'native',
+      });
+      expect(mockTaskUpdate).not.toHaveBeenCalled();
     });
 
     it('records a failed run for a bad account but keeps running the rest', async () => {

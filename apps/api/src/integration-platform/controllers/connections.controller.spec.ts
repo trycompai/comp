@@ -40,15 +40,9 @@ import {
   getActiveManifests,
 } from '@trycompai/integration-platform';
 
-const mockedGetManifest = getManifest as jest.MockedFunction<
-  typeof getManifest
->;
-const mockedGetAllManifests = getAllManifests as jest.MockedFunction<
-  typeof getAllManifests
->;
-const mockedGetActiveManifests = getActiveManifests as jest.MockedFunction<
-  typeof getActiveManifests
->;
+const mockedGetManifest = getManifest as jest.Mock;
+const mockedGetAllManifests = getAllManifests as jest.Mock;
+const mockedGetActiveManifests = getActiveManifests as jest.Mock;
 
 describe('ConnectionsController', () => {
   let controller: ConnectionsController;
@@ -69,6 +63,7 @@ describe('ConnectionsController', () => {
   const mockCredentialVaultService = {
     storeApiKeyCredentials: jest.fn(),
     getDecryptedCredentials: jest.fn(),
+    getDecryptedCredentialsWithRevision: jest.fn(),
     needsRefresh: jest.fn(),
     refreshOAuthTokens: jest.fn(),
   };
@@ -122,6 +117,17 @@ describe('ConnectionsController', () => {
     controller = module.get<ConnectionsController>(ConnectionsController);
 
     jest.clearAllMocks();
+    mockCredentialVaultService.getDecryptedCredentialsWithRevision.mockImplementation(
+      async ({ connectionId }: { connectionId: string }) => {
+        const credentials =
+          await mockCredentialVaultService.getDecryptedCredentials(
+            connectionId,
+          );
+        return credentials
+          ? { credentials, credentialRevision: 'synthetic-revision' }
+          : null;
+      },
+    );
     mockAutoCheckRunnerService.tryAutoRunChecks.mockResolvedValue(false);
     mockConnectionService.getConnectionForOrg.mockResolvedValue({
       id: 'conn_1',
@@ -151,7 +157,7 @@ describe('ConnectionsController', () => {
           variables: [],
         },
       ];
-      mockedGetAllManifests.mockReturnValue(manifests as never);
+      mockedGetAllManifests.mockReturnValue(manifests);
       mockOAuthCredentialsService.checkAvailability.mockResolvedValue({
         hasPlatformCredentials: true,
       });
@@ -188,7 +194,7 @@ describe('ConnectionsController', () => {
         checks: [],
         variables: [],
       };
-      mockedGetManifest.mockReturnValue(manifest as never);
+      mockedGetManifest.mockReturnValue(manifest);
 
       const result = await controller.getProvider('github');
 
@@ -197,7 +203,7 @@ describe('ConnectionsController', () => {
     });
 
     it('should throw NOT_FOUND when provider does not exist', async () => {
-      mockedGetManifest.mockReturnValue(undefined as never);
+      mockedGetManifest.mockReturnValue(undefined);
 
       await expect(controller.getProvider('nonexistent')).rejects.toThrow(
         HttpException,
@@ -255,7 +261,7 @@ describe('ConnectionsController', () => {
         updatedAt: new Date(),
       };
       mockConnectionService.getConnectionForOrg.mockResolvedValue(connection);
-      mockedGetManifest.mockReturnValue(undefined as never);
+      mockedGetManifest.mockReturnValue(undefined);
 
       const result = await controller.getConnection('conn_1', 'org_1');
 
@@ -280,7 +286,7 @@ describe('ConnectionsController', () => {
         credentialFields: [],
         checks: [],
       };
-      mockedGetManifest.mockReturnValue(manifest as never);
+      mockedGetManifest.mockReturnValue(manifest);
       mockProviderRepository.upsert.mockResolvedValue(undefined);
       mockConnectionService.createConnection.mockResolvedValue({
         id: 'conn_new',
@@ -313,7 +319,7 @@ describe('ConnectionsController', () => {
     });
 
     it('should throw NOT_FOUND when provider does not exist', async () => {
-      mockedGetManifest.mockReturnValue(undefined as never);
+      mockedGetManifest.mockReturnValue(undefined);
 
       await expect(
         controller.createConnection('org_1', {
@@ -328,7 +334,7 @@ describe('ConnectionsController', () => {
         name: 'GitHub',
         auth: { type: 'oauth2' },
       };
-      mockedGetManifest.mockReturnValue(manifest as never);
+      mockedGetManifest.mockReturnValue(manifest);
 
       await expect(
         controller.createConnection('org_1', {
@@ -375,7 +381,7 @@ describe('ConnectionsController', () => {
       mockedGetManifest.mockReturnValue({
         auth: { type: 'api_key' },
         handler: undefined,
-      } as never);
+      });
       mockConnectionService.activateConnection.mockResolvedValue(undefined);
 
       const result = await controller.testConnection('conn_1', 'org_1');
@@ -517,7 +523,7 @@ describe('ConnectionsController', () => {
       });
       mockedGetManifest.mockReturnValue({
         auth: { type: 'api_key', config: { name: 'api_key' } },
-      } as never);
+      });
       mockCredentialVaultService.getDecryptedCredentials.mockResolvedValue({
         api_key: 'test-key',
       });
@@ -546,7 +552,7 @@ describe('ConnectionsController', () => {
             tokenParams: undefined,
           },
         },
-      } as never);
+      });
       mockCredentialVaultService.needsRefresh.mockResolvedValue(false);
       mockOAuthCredentialsService.getCredentials.mockResolvedValue({
         clientId: 'client-id',
@@ -605,7 +611,7 @@ describe('ConnectionsController', () => {
       });
       mockedGetManifest.mockReturnValue({
         auth: { type: 'oauth2' },
-      } as never);
+      });
 
       await expect(
         controller.updateCredentials('conn_1', 'org_1', {
@@ -624,7 +630,7 @@ describe('ConnectionsController', () => {
       mockedGetManifest.mockReturnValue({
         id: 'datadog',
         auth: { type: 'api_key', config: { name: 'api_key' } },
-      } as never);
+      });
       mockCredentialVaultService.getDecryptedCredentials.mockResolvedValue({
         api_key: 'old-key',
         app_key: 'existing',
@@ -653,7 +659,7 @@ describe('ConnectionsController', () => {
       mockedGetManifest.mockReturnValue({
         id: 'datadog',
         auth: { type: 'api_key', config: { name: 'api_key' } },
-      } as never);
+      });
       mockCredentialVaultService.getDecryptedCredentials.mockResolvedValue({});
 
       await controller.updateCredentials('conn_1', 'org_1', {

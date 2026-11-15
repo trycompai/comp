@@ -1,3 +1,4 @@
+import { completeTaskAutomatically } from '../../tasks/automatic-completion/complete-task-automatically';
 import {
   Controller,
   Get,
@@ -477,7 +478,10 @@ export class TaskIntegrationsController {
         `Held ${heldCount} check(s) as inconclusive (pending) for task ${taskId} (manual run) — not failed, not done`,
       );
     }
-    const effectiveFailures = countEffectiveFailures(statusFailures, exceptions);
+    const effectiveFailures = countEffectiveFailures(
+      statusFailures,
+      exceptions,
+    );
     const newStatus = decideTaskStatus(
       effectiveFailures,
       totalPassing,
@@ -485,35 +489,26 @@ export class TaskIntegrationsController {
       heldCount,
     );
 
-    if (newStatus) {
-      const isTransitioningToDone =
-        newStatus === 'done' && task.status !== 'done';
-
-      let reviewDate: Date | undefined;
-      if (isTransitioningToDone && task.frequency) {
-        reviewDate = new Date();
-        switch (task.frequency) {
-          case 'monthly':
-            reviewDate.setMonth(reviewDate.getMonth() + 1);
-            break;
-          case 'quarterly':
-            reviewDate.setMonth(reviewDate.getMonth() + 3);
-            break;
-          case 'yearly':
-            reviewDate.setFullYear(reviewDate.getFullYear() + 1);
-            break;
-        }
+    let taskStatus = newStatus;
+    if (newStatus === 'done') {
+      const completion = await completeTaskAutomatically({
+        taskId,
+        organizationId,
+        source: 'native',
+      });
+      taskStatus = completion.count > 0 ? 'done' : null;
+      if (completion.count > 0) {
+        this.logger.log(
+          `Task ${taskId} completed after current evidence and review validation`,
+        );
       }
-
+    } else if (newStatus === 'failed') {
       await db.task.update({
         where: { id: taskId },
-        data: {
-          status: newStatus,
-          ...(reviewDate ? { reviewDate } : {}),
-        },
+        data: { status: 'failed' },
       });
       this.logger.log(
-        `Updated task ${taskId} status to ${newStatus} across ${accountsRun} account(s)${reviewDate ? `, next review: ${reviewDate.toISOString()}` : ''}`,
+        `Updated task ${taskId} status to failed across ${accountsRun} account(s)`,
       );
     }
 
@@ -524,7 +519,7 @@ export class TaskIntegrationsController {
       totalFindings,
       hadErrors: hasExecutionError,
       checkRunId: lastCheckRunId,
-      taskStatus: newStatus,
+      taskStatus,
     };
   }
 
@@ -564,8 +559,11 @@ export class TaskIntegrationsController {
     });
 
     try {
-      const credentials =
-        await this.credentialVaultService.getDecryptedCredentials(connectionId);
+      const selectedCredentials =
+        await this.credentialVaultService.getDecryptedCredentialsWithRevision({
+          connectionId,
+        });
+      const credentials = selectedCredentials?.credentials;
 
       if (
         !credentials ||
@@ -622,6 +620,11 @@ export class TaskIntegrationsController {
         connectionId,
         organizationId,
         checkId: checkDef.id, // Only run this specific check
+        completionContext: {
+          taskId,
+          credentialRevision: selectedCredentials?.credentialRevision ?? null,
+          configurationMetadata: connection.metadata ?? null,
+        },
         onTokenRefresh,
         logger: {
           info: (msg, data) => this.logger.log(msg, data),
@@ -708,6 +711,8 @@ export class TaskIntegrationsController {
         failedCount:
           runStatus === 'inconclusive' ? 0 : checkResult.result.findings.length,
         errorMessage: checkResult.error,
+        completionEvidenceBinding:
+          checkResult.completionEvidenceBinding ?? null,
         logs: JSON.parse(
           JSON.stringify(checkResult.result.logs),
         ) as Prisma.InputJsonValue,

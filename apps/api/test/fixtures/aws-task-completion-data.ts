@@ -14,6 +14,8 @@ export function candidate(
     archivedAt: null,
     updatedAt: NOW,
     approverId: null,
+    taskTemplateId: 'frk_tt_68e52b26bf0e656af9e4e9c3',
+    frequency: null,
     organization: { evidenceApprovalEnabled: true },
     evidenceAutomations: [
       {

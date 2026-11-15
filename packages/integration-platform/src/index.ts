@@ -168,3 +168,11 @@ export type {
   TestConnectionResponse,
   VariableOptionResponse,
 } from './api-types';
+
+export {
+  createNativeCompletionBinding,
+  createNativeScanCompletionBinding,
+  declarativeDefinitionIdentity,
+  dynamicManifestIdentity,
+  type NativeCompletionContext,
+} from './runtime/completion-binding';

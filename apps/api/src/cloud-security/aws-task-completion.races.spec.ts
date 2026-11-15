@@ -1,5 +1,18 @@
 jest.mock('@db', () => ({
-  db: { task: { findMany: jest.fn(), updateMany: jest.fn() } },
+  Prisma: jest.requireActual('@prisma/client').Prisma,
+  db: {
+    task: { findUnique: jest.fn(), findMany: jest.fn(), updateMany: jest.fn() },
+    integrationConnection: { findMany: jest.fn() },
+    integrationCheckRun: { findFirst: jest.fn() },
+    integrationCheckResult: { count: jest.fn(), findMany: jest.fn() },
+    findingException: { findMany: jest.fn() },
+    dynamicIntegration: { findUnique: jest.fn() },
+    $transaction: jest.fn(),
+  },
+}));
+jest.mock('@trycompai/integration-platform', () => ({
+  ...jest.requireActual('../../test/fixtures/native-completion-sdk').nativeSdk,
+  getManifest: jest.fn(() => ({ id: 'aws', checks: [] })),
 }));
 
 import { db, type Prisma } from '@db';
@@ -9,11 +22,9 @@ import {
   ORG,
   TASK,
 } from '../../test/fixtures/aws-task-completion-db';
-import {
-  CRITERIA,
-  finding,
-  NOW,
-} from '../../test/fixtures/aws-task-completion-data';
+import { CRITERIA, NOW } from '../../test/fixtures/aws-task-completion-data';
+import { seedAwsScanEvidence } from '../../test/fixtures/aws-scan-data';
+import { bindCompletionDatabase } from '../../test/fixtures/native-completion-mocks';
 import { autoSatisfyAwsTasks } from './aws-task-completion';
 
 const taskMocks = db.task as unknown as {
@@ -41,19 +52,19 @@ describe('actual PostgreSQL conditional task completion', () => {
     await database.seed();
     jest.clearAllMocks();
     mutation = () => Promise.resolve(undefined);
-    taskMocks.findMany.mockImplementation((args: Prisma.TaskFindManyArgs) =>
-      database.client.task.findMany(args),
-    );
-    taskMocks.updateMany.mockImplementation(
-      async (args: Prisma.TaskUpdateManyArgs) => {
-        await mutation();
-        return database.client.task.updateMany(args);
-      },
-    );
+    await seedAwsScanEvidence({ database });
+    bindCompletionDatabase({
+      client: database.client,
+      beforeWrite: () => mutation(),
+    });
   });
 
   async function complete() {
-    await autoSatisfyAwsTasks({ organizationId: ORG, findings: [finding()] });
+    await autoSatisfyAwsTasks({
+      organizationId: ORG,
+      connectionId: 'connection',
+      runId: 'current-run',
+    });
     return database.client.task.findUniqueOrThrow({
       where: { id: TASK },
       select: { status: true, automationStatus: true, lastCompletedAt: true },

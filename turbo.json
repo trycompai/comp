@@ -73,7 +73,7 @@
   "ui": "tui",
   "tasks": {
     "@trycompai/integration-platform#build": {
-      "dependsOn": ["^build", "db:generate"],
+      "dependsOn": ["^build", "db:generate", "@trycompai/db#build", "@trycompai/api#db:generate"],
       "cache": false,
       "outputs": ["dist/**"]
     },

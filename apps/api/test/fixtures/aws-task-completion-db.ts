@@ -4,6 +4,10 @@ import { randomUUID } from 'node:crypto';
 import { readFileSync, statSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { CRITERIA, NOW } from './aws-task-completion-data';
+import {
+  initializeNativeCompletionTables,
+  resetNativeCompletionTables,
+} from './native-completion-tables';
 
 export const ORG = 'synthetic-org';
 export const TASK = 'synthetic-task';
@@ -57,6 +61,7 @@ export class CompletionDatabase {
   readonly admin: PrismaClient;
   readonly client: PrismaClient;
   historicalSnapshot: unknown = undefined;
+  historicalNativeSnapshot: unknown = undefined;
   private created = false;
 
   constructor() {
@@ -66,7 +71,11 @@ export class CompletionDatabase {
     });
     this.client = new PrismaClient({
       adapter: new PrismaPg(
-        { connectionString, max: 2 },
+        {
+          connectionString,
+          max: 2,
+          options: `-c search_path=${this.schema}`,
+        },
         { schema: this.schema },
       ),
     });
@@ -118,10 +127,16 @@ export class CompletionDatabase {
       Array<{ evaluationCriteriaSnapshot: string | null }>
     >`SELECT "evaluationCriteriaSnapshot" FROM ${n}."EvidenceAutomationRun" WHERE id='historical'`;
     this.historicalSnapshot = rows[0]?.evaluationCriteriaSnapshot;
+    this.historicalNativeSnapshot = await initializeNativeCompletionTables({
+      admin: this.admin,
+      namespace: n,
+      schema: this.schema,
+    });
   }
 
   async seed() {
     const n = this.namespace;
+    await resetNativeCompletionTables({ admin: this.admin, namespace: n });
     await this.admin
       .$executeRaw`TRUNCATE ${n}."EvidenceAutomationRun",${n}."EvidenceAutomationVersion",
       ${n}."EvidenceAutomation",${n}."Task",${n}."Organization"`;

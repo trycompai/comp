@@ -39,6 +39,8 @@ backfill, synthetic pass, automatic human approval, or task-status reset. Until
 the private writer is ported, custom runs without the new binding remain
 ineligible; manual review remains available through its existing authorized path.
 
-The existing AWS service mapping and scanned-service eligibility are retained.
+The shared [automatic completion gate](../tasks/automatic-completion/README.md)
+also checks current native evidence and bound shared scans across the configured
+AWS accounts. The existing AWS service mapping and scanned-service eligibility are retained.
 This change does not establish full account/region/resource coverage or prove
 that a compliance control operates effectively.

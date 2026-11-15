@@ -8,3 +8,11 @@ export {
   type RunCheckOptions,
 } from './check-runner';
 export { getNativeSourceIdentity } from './native-source-identity';
+
+export {
+  createNativeCompletionBinding,
+  createNativeScanCompletionBinding,
+  declarativeDefinitionIdentity,
+  dynamicManifestIdentity,
+  type NativeCompletionContext,
+} from './completion-binding';

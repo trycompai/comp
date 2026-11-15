@@ -1,9 +1,69 @@
+jest.mock('./aws-scan-evidence', () => ({
+  ...jest.requireActual('./aws-scan-evidence'),
+  awsScanEvidence: jest.fn(),
+}));
+
 jest.mock('@db', () => ({
-  db: { task: { findMany: jest.fn(), updateMany: jest.fn() } },
+  Prisma: jest.requireActual('@prisma/client').Prisma,
+  db: {
+    task: { findMany: jest.fn(), updateMany: jest.fn() },
+    integrationConnection: {
+      findMany: jest.fn().mockResolvedValue([
+        {
+          id: 'synthetic-connection',
+          providerId: 'provider',
+          status: 'active',
+          metadata: null,
+          variables: {},
+          activeCredentialVersionId: 'revision',
+          credentialVersions: [{ id: 'revision', version: 1 }],
+          provider: {
+            id: 'provider',
+            slug: 'aws',
+            isActive: true,
+            manifestHash: null,
+            updatedAt: new Date(0),
+          },
+        },
+      ]),
+    },
+    $transaction: jest.fn((callback) => callback(jest.requireMock('@db').db)),
+  },
+}));
+
+jest.mock('@trycompai/integration-platform', () => ({
+  getManifest: jest.fn(() => ({ id: 'aws', checks: [] })),
+  isCodeManifest: jest.fn(() => true),
 }));
 
 import { db, type Prisma } from '@db';
-import { autoSatisfyAwsTasks } from './aws-task-completion';
+import { autoSatisfyAwsTasks as satisfyStoredScan } from './aws-task-completion';
+import { awsScanEvidence, passingAwsTemplates } from './aws-scan-evidence';
+import type { SecurityFinding } from './cloud-security.service';
+
+async function autoSatisfyAwsTasks({
+  organizationId,
+  findings,
+}: {
+  organizationId: string;
+  findings: SecurityFinding[];
+}) {
+  const passing = passingAwsTemplates(
+    findings.map((row) => ({
+      passed: row.passed === true,
+      evidence: (row.evidence ?? {}) as Prisma.JsonObject,
+    })),
+  );
+  (awsScanEvidence as jest.Mock).mockResolvedValue({
+    ...passing,
+    condition: { id: { not: '' } },
+  });
+  return satisfyStoredScan({
+    organizationId,
+    connectionId: 'synthetic-connection',
+    runId: 'synthetic-run',
+  });
+}
 import {
   candidate,
   finding,
@@ -97,7 +157,9 @@ describe('AWS cloud-scan task completion', () => {
     });
     expect(result.count).toBe(1);
     expect(taskMocks.updateMany).toHaveBeenCalledTimes(1);
-    expect(taskMocks.updateMany.mock.calls[0][0].where.id).toBe('passing-task');
+    expect(taskMocks.updateMany.mock.calls[0][0].where).toMatchObject({
+      id: 'passing-task',
+    });
     expect(
       Object.keys(taskMocks.updateMany.mock.calls[0][0].data).sort(),
     ).toEqual(['lastCompletedAt', 'status']);
@@ -147,9 +209,9 @@ describe('AWS cloud-scan task completion', () => {
       findings: [finding()],
     });
     expect(result.count).toBe(1);
-    expect(taskMocks.updateMany.mock.calls[0][0].where.organizationId).toBe(
-      'synthetic-org',
-    );
+    expect(taskMocks.updateMany.mock.calls[0][0].where).toMatchObject({
+      organizationId: 'synthetic-org',
+    });
     expect(taskMocks.findMany.mock.calls[0][0].where).toMatchObject({
       organizationId: 'synthetic-org',
       status: { in: ['todo', 'in_progress', 'failed'] },

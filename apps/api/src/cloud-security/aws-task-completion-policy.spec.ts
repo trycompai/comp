@@ -3,7 +3,7 @@ jest.mock('@db', () => ({ db: {} }));
 import {
   canAutoCompleteTask,
   taskCompletionSnapshot,
-} from './aws-task-completion';
+} from '../tasks/automatic-completion/task-completion-policy';
 import { candidate, NOW } from '../../test/fixtures/aws-task-completion-data';
 
 describe('automatic AWS task completion evidence policy', () => {

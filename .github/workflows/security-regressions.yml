@@ -40,6 +40,8 @@ jobs:
       - run: bun install --frozen-lockfile --ignore-scripts
       - run: bun run db:generate
       - run: bunx turbo run build --filter=@trycompai/auth --filter=@trycompai/company --filter=@trycompai/billing --filter=@trycompai/email --filter=@trycompai/utils --filter=@trycompai/integration-platform
+      - name: Native integration source and binding regressions
+        run: bun run --cwd packages/integration-platform test
       - name: API authorization, batch, and storage regressions
         working-directory: apps/api
         run: >-
@@ -65,6 +67,21 @@ jobs:
           src/cloud-security/aws-task-completion.spec.ts
           src/cloud-security/aws-task-completion-policy.spec.ts
           src/cloud-security/aws-task-completion.races.spec.ts
+          src/cloud-security/aws-scan-producer.spec.ts
+          src/tasks/automatic-completion
+          src/integration-platform/controllers/task-integrations.controller.spec.ts
+          src/integration-platform/controllers/connections.controller.spec.ts
+          src/integration-platform/services/connection-check-runner.service.spec.ts
+          src/integration-platform/services/credential-revision.spec.ts
+          src/integration-platform/services/internal-run-registration.spec.ts
+          src/integration-platform/services/internal-integration-debug.service.spec.ts
+          src/integration-platform/services/credential-vault.service.spec.ts
+          src/integration-platform/repositories/check-run.repository.spec.ts
+          src/integration-platform/services/connection.service.spec.ts
+          src/trigger/browser-automation/run-browser-automation.spec.ts
+          src/trigger/integration-platform/run-task-completion.spec.ts
+          src/trigger/integration-platform/run-checks-on-server.spec.ts
+          src/trigger/integration-platform/ensure-valid-credentials.spec.ts
           src/vector-store/lib/core/find-similar.spec.ts
           src/trigger/vector-store/helpers/extract-content-from-file.spec.ts
           src/questionnaire/questionnaire.service.spec.ts

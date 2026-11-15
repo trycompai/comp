@@ -24,9 +24,11 @@ export interface CreateCheckRunDto {
   taskId?: string;
   checkId: string;
   checkName: string;
+  startedAt?: Date;
 }
 
 export interface CompleteCheckRunDto {
+  checkName?: string;
   // 'inconclusive' = held our-side/transient failure (dynamic self-heal queue);
   // hidden from the customer and picked up by the agent. See run paths.
   status: 'success' | 'failed' | 'inconclusive';
@@ -36,6 +38,7 @@ export interface CompleteCheckRunDto {
   failedCount: number;
   errorMessage?: string;
   logs?: Prisma.InputJsonValue;
+  completionEvidenceBinding?: string | null;
 }
 
 export interface CreateCheckResultDto {
@@ -63,7 +66,8 @@ export class CheckRunRepository {
         checkId: data.checkId,
         checkName: data.checkName,
         status: 'running',
-        startedAt: new Date(),
+        startedAt: data.startedAt ?? new Date(),
+        ...(data.startedAt ? { createdAt: data.startedAt } : {}),
       },
     });
   }
@@ -75,6 +79,7 @@ export class CheckRunRepository {
     return db.integrationCheckRun.update({
       where: { id },
       data: {
+        checkName: data.checkName,
         status: data.status,
         completedAt: new Date(),
         durationMs: data.durationMs,
@@ -83,6 +88,7 @@ export class CheckRunRepository {
         failedCount: data.failedCount,
         errorMessage: data.errorMessage,
         logs: data.logs,
+        completionEvidenceBinding: data.completionEvidenceBinding ?? null,
       },
     });
   }

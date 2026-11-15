@@ -399,6 +399,7 @@ describe('CheckRunRepository.findLatestResultsByConnectionAndCheck', () => {
 
     expect(mockResultFindMany).toHaveBeenCalledWith({
       where: { checkRunId: 'run_1', resourceType: 'user' },
+      orderBy: { id: 'asc' },
     });
     // Every resource must map to a domain entity — the 30-row display cap is NOT reused.
     expect(mockResultFindMany.mock.calls[0][0].take).toBeUndefined();
@@ -417,6 +418,7 @@ describe('CheckRunRepository.findLatestResultsByConnectionAndCheck', () => {
 
     expect(mockResultFindMany).toHaveBeenCalledWith({
       where: { checkRunId: 'run_1' },
+      orderBy: { id: 'asc' },
     });
   });
 });

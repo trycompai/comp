@@ -663,6 +663,8 @@ export interface CheckFindingResult {
 // ============================================================================
 
 export interface IntegrationCheck {
+  /** Exact interpreter inputs for dynamic checks; the runtime build is bound separately. */
+  definitionIdentity?: string | null;
   /** Unique ID for this check */
   id: string;
 
@@ -799,6 +801,8 @@ export interface IntegrationHandler {
 // ============================================================================
 
 export interface IntegrationManifest {
+  /** Exact DB-backed manifest inputs; absent for source-defined manifests. */
+  definitionIdentity?: string | null;
   /** Unique identifier (e.g., "github", "slack") */
   id: string;
 

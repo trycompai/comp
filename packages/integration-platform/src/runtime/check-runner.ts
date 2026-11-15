@@ -1,5 +1,7 @@
 import type { IntegrationCheck, IntegrationManifest } from '../types';
 import { createCheckContext, type CheckContextOptions, type CheckResult } from './check-context';
+import { createNativeCompletionBinding, type NativeCompletionContext } from './completion-binding';
+import { getNativeSourceIdentity } from './native-source-identity';
 
 // ============================================================================
 // Check Runner
@@ -10,6 +12,7 @@ export interface RunCheckOptions extends Omit<CheckContextOptions, 'manifest'> {
   manifest: IntegrationManifest;
   /** Specific check ID to run (optional - runs all if not specified) */
   checkId?: string;
+  completionContext?: NativeCompletionContext;
 }
 
 export interface CheckRunResult {
@@ -19,6 +22,8 @@ export interface CheckRunResult {
   result: CheckResult;
   error?: string;
   durationMs: number;
+  /** Null for historical/unbound execution; never synthesize it in a caller. */
+  completionEvidenceBinding?: string | null;
 }
 
 export interface RunAllChecksResult {
@@ -36,6 +41,21 @@ export async function runCheck(
   options: Omit<RunCheckOptions, 'checkId'>,
 ): Promise<CheckRunResult> {
   const startTime = Date.now();
+  const unknownDefinition =
+    (Object.hasOwn(check, 'definitionIdentity') && !check.definitionIdentity) ||
+    (Object.hasOwn(options.manifest, 'definitionIdentity') && !options.manifest.definitionIdentity);
+  const completionEvidenceBinding = unknownDefinition
+    ? null
+    : createNativeCompletionBinding({
+        sourceIdentity: getNativeSourceIdentity(),
+        definitionIdentity: check.definitionIdentity ?? null,
+        manifestIdentity: options.manifest.definitionIdentity ?? null,
+        organizationId: options.organizationId,
+        connectionId: options.connectionId,
+        checkId: check.id,
+        context: options.completionContext,
+        variables: options.variables ?? {},
+      });
 
   const { ctx, getResults } = createCheckContext(options);
   // Expose the running check's id so emitters (e.g. AWS emitOutcomes) can stamp
@@ -57,6 +77,7 @@ export async function runCheck(
       status,
       result,
       durationMs: Date.now() - startTime,
+      completionEvidenceBinding,
     };
   } catch (err) {
     const result = getResults();
@@ -69,6 +90,7 @@ export async function runCheck(
       result,
       error: err instanceof Error ? err.message : String(err),
       durationMs: Date.now() - startTime,
+      completionEvidenceBinding,
     };
   }
 }

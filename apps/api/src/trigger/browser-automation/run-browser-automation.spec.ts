@@ -3,6 +3,7 @@ jest.mock('@db', () => ({
     browserAutomation: { findUnique: jest.fn(), update: jest.fn() },
     browserAutomationRun: { create: jest.fn() },
     task: { findUnique: jest.fn(), update: jest.fn(), updateMany: jest.fn() },
+    integrationConnection: { findMany: jest.fn().mockResolvedValue([]) },
     organization: { findUnique: jest.fn() },
     member: { findMany: jest.fn() },
   },
@@ -32,6 +33,11 @@ jest.mock('../../browserbase/browserbase.service', () => ({
 }));
 
 import { db } from '@db';
+const mockTaskModels = db.task as unknown as {
+  update: jest.Mock;
+  updateMany: jest.Mock;
+};
+import { candidate } from '../../../test/fixtures/aws-task-completion-data';
 import {
   isTaskStatusProtectedFromAutomation,
   runBrowserAutomation,
@@ -79,21 +85,29 @@ describe('shouldMarkTaskDoneAfterBrowserRun', () => {
 
 describe('shouldMarkTaskFailedAfterBrowserRun', () => {
   it('fails the task when the control regressed (verdict fail)', () => {
-    expect(shouldMarkTaskFailedAfterBrowserRun({ evaluationStatus: 'fail' })).toBe(true);
+    expect(
+      shouldMarkTaskFailedAfterBrowserRun({ evaluationStatus: 'fail' }),
+    ).toBe(true);
   });
 
   it('fails the task when the connection needs reconnect', () => {
-    expect(shouldMarkTaskFailedAfterBrowserRun({ needsReauth: true })).toBe(true);
+    expect(shouldMarkTaskFailedAfterBrowserRun({ needsReauth: true })).toBe(
+      true,
+    );
   });
 
   it('leaves the task alone on an infra-only failure (could not verify)', () => {
     // No verdict and not a reauth issue → timeout / model unavailable / etc.
     expect(shouldMarkTaskFailedAfterBrowserRun({})).toBe(false);
-    expect(shouldMarkTaskFailedAfterBrowserRun({ needsReauth: false })).toBe(false);
+    expect(shouldMarkTaskFailedAfterBrowserRun({ needsReauth: false })).toBe(
+      false,
+    );
   });
 
   it('does not fail the task on a passing verdict', () => {
-    expect(shouldMarkTaskFailedAfterBrowserRun({ evaluationStatus: 'pass' })).toBe(false);
+    expect(
+      shouldMarkTaskFailedAfterBrowserRun({ evaluationStatus: 'pass' }),
+    ).toBe(false);
   });
 });
 
@@ -104,7 +118,13 @@ describe('isTaskStatusProtectedFromAutomation', () => {
   });
 
   it('does not protect the normal automatable statuses', () => {
-    for (const status of ['todo', 'in_progress', 'in_review', 'done', 'failed']) {
+    for (const status of [
+      'todo',
+      'in_progress',
+      'in_review',
+      'done',
+      'failed',
+    ]) {
       expect(isTaskStatusProtectedFromAutomation(status)).toBe(false);
     }
   });
@@ -128,8 +148,8 @@ describe('runBrowserAutomation worker — task-status transitions are atomic + g
     });
     // findUnique serves both the title lookup and the frequency lookup.
     (db.task.findUnique as jest.Mock).mockResolvedValue({
+      ...candidate({ id: 'tsk_1', frequency: 'monthly' }),
       title: 'Enforce MFA',
-      frequency: 'monthly',
     });
     (db.task.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
     (db.browserAutomation.update as jest.Mock).mockResolvedValue({});
@@ -145,18 +165,45 @@ describe('runBrowserAutomation worker — task-status transitions are atomic + g
 
     await worker.run(payload);
 
-    expect(db.task.updateMany).toHaveBeenCalledWith(
+    expect(mockTaskModels.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: {
+        where: expect.objectContaining({
           id: 'tsk_1',
-          status: { notIn: expect.arrayContaining(['done', 'not_relevant']) },
-        },
+          organizationId: 'org_1',
+          status: 'failed',
+          automationStatus: 'AUTOMATED',
+          archivedAt: null,
+          approverId: null,
+          AND: expect.any(Array),
+        }),
         data: expect.objectContaining({ status: 'done' }),
       }),
     );
     // The task is never updated by primary key alone (which would ignore the guard).
-    expect(db.task.update).not.toHaveBeenCalled();
+    expect(mockTaskModels.update).not.toHaveBeenCalled();
   });
+
+  it.each(['MANUAL', 'in_review', 'approval', 'failed-custom'] as const)(
+    'preserves %s despite a successful browser capture',
+    async (condition) => {
+      const task = candidate({ id: 'tsk_1' });
+      if (condition === 'MANUAL') task.automationStatus = 'MANUAL';
+      if (condition === 'in_review') task.status = 'in_review';
+      if (condition === 'approval') task.approverId = 'synthetic-reviewer';
+      if (condition === 'failed-custom')
+        task.evidenceAutomations[0].runs[0].evaluationStatus = 'fail';
+      (db.task.findUnique as jest.Mock).mockResolvedValue(task);
+      mockRunBrowserAutomation.mockResolvedValue({
+        success: true,
+        runId: 'bar_1',
+        screenshotUrl: 'https://synthetic.invalid/shot',
+        evaluationStatus: 'pass',
+      });
+      await worker.run(payload);
+      expect(mockTaskModels.updateMany).not.toHaveBeenCalled();
+      expect(mockTaskModels.update).not.toHaveBeenCalled();
+    },
+  );
 
   it('flips a regressed run to failed via an updateMany that excludes not_relevant', async () => {
     mockRunBrowserAutomation.mockResolvedValue({
@@ -167,7 +214,7 @@ describe('runBrowserAutomation worker — task-status transitions are atomic + g
 
     const result = await worker.run(payload);
 
-    expect(db.task.updateMany).toHaveBeenCalledWith(
+    expect(mockTaskModels.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
           id: 'tsk_1',
@@ -177,7 +224,7 @@ describe('runBrowserAutomation worker — task-status transitions are atomic + g
       }),
     );
     expect(result.statusChangedToFailed).toBe(true);
-    expect(db.task.update).not.toHaveBeenCalled();
+    expect(mockTaskModels.update).not.toHaveBeenCalled();
   });
 
   it('treats a zero-count update as no transition (protected/already-failed task)', async () => {
