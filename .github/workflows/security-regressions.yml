@@ -62,6 +62,9 @@ jobs:
           src/cloud-security/remediation-batch.service.spec.ts
           src/cloud-security/remediation-batch.races.spec.ts
           src/cloud-security/remediation-batch.controller.spec.ts
+          src/cloud-security/aws-task-completion.spec.ts
+          src/cloud-security/aws-task-completion-policy.spec.ts
+          src/cloud-security/aws-task-completion.races.spec.ts
           src/vector-store/lib/core/find-similar.spec.ts
           src/trigger/vector-store/helpers/extract-content-from-file.spec.ts
           src/questionnaire/questionnaire.service.spec.ts
