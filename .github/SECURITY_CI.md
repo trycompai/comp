@@ -16,7 +16,19 @@ release-only guard and `legacy` npm tag, leaving `latest` to Comp v2.
 The focused workflow also checks that active actions use immutable commit references,
 streamed remote shell installers are absent, Bun matches the root package manager
 version, and the retired workflows remain inactive. Dependabot updates GitHub
-Actions references weekly. Configure `Security Regression` as a required check if
+Actions references weekly.
+
+Release tools are fixed by the repository. A step that downloads a file must check
+it against a SHA-256 digest committed in the workflow and must not hold secrets, so
+a mismatched download stops the job before any credential is exposed. The SSL.com
+CodeSignTool archive is checked this way before the signing step runs. No tool may
+resolve to `latest`. Speakeasy's published action downloads the newest CLI on every
+run, so MCP generation and publishing run its pinned source from
+`actions/prepare-speakeasy`, built from this repository's Dockerfile on digest-pinned
+base images with a digest-verified CLI. That version must match `speakeasyVersion` in
+`apps/mcp-server/.speakeasy/workflow.yaml`; otherwise the CLI downloads the requested
+release itself. Upgrading the CLI changes the version and digest in
+`prepare-speakeasy/action.yml` and `speakeasyVersion` in one reviewed commit. Configure `Security Regression` as a required check if
 branch protection should enforce these tests; code changes cannot modify that
 GitHub setting.
 

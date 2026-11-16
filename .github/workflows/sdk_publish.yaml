@@ -6,7 +6,7 @@ name: Publish
 # main receives reviewed changes before promotion to release.
 #
 # Monorepo adjustments (same as sdk_generation.yaml):
-# - We pass `working_directory: apps/mcp-server` to Speakeasy's reusable action
+# - We pass `working_directory: apps/mcp-server` to Speakeasy's action
 # - The `paths` filter points at apps/mcp-server/.speakeasy/gen.lock, not the
 #   default `.speakeasy/gen.lock` Speakeasy writes (which never matches here)
 #
@@ -16,6 +16,12 @@ name: Publish
 # would be invisible to GitHub. If you re-run `speakeasy configure publishing`,
 # delete the duplicates it creates under apps/mcp-server/.github/ and merge
 # any changes into this file.
+#
+# The release and MCP publish jobs are inlined from Speakeasy's v15.60.11
+# publish workflow for the same reason as in sdk_generation.yaml: its action
+# downloads the newest Speakeasy CLI, so these steps run on the image built by
+# prepare-speakeasy instead. Its other jobs (other languages, MCP registry) do
+# not apply to this target.
 permissions:
   checks: write
   contents: write
@@ -33,15 +39,115 @@ permissions:
       - .github/workflows/sdk_publish.yaml
   workflow_dispatch: {}
 jobs:
-  publish:
+  release:
+    name: Create Github Release
     if: github.ref == 'refs/heads/release'
-    uses: speakeasy-api/sdk-generation-action/.github/workflows/sdk-publish.yaml@68f3bfefb79354d39358bf4699863dabd2cea0f6 # v15.60.11
-    with:
-      target: comp-ai
-      working_directory: apps/mcp-server
-      # comp-v2 owns latest. This repository publishes maintenance releases only.
-      npm_tag: legacy
-    secrets:
-      github_access_token: ${{ secrets.GITHUB_TOKEN }}
-      npm_token: ${{ secrets.NPM_TOKEN }}
-      speakeasy_api_key: ${{ secrets.SPEAKEASY_API_KEY }}
+    runs-on: ubuntu-22.04
+    outputs:
+      regenerated: ${{ steps.release.outputs.mcp_typescript_regenerated }}
+      publish: ${{ steps.release.outputs.publish_mcp_typescript }}
+      directory: ${{ steps.release.outputs.mcp_typescript_directory }}
+      tag: ${{ steps.release.outputs.mcp_release_typescript }}
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          persist-credentials: false
+      - id: speakeasy
+        uses: ./.github/actions/prepare-speakeasy
+        with:
+          working-directory: apps/mcp-server
+      - id: release
+        uses: ./_speakeasy
+        with:
+          action: release
+          target: comp-ai
+          working_directory: apps/mcp-server
+          enable_sdk_changelog: true
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          speakeasy_api_key: ${{ secrets.SPEAKEASY_API_KEY }}
+      - uses: ./_speakeasy
+        if: always() && steps.speakeasy.outcome == 'success'
+        with:
+          action: log-result
+          working_directory: apps/mcp-server
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          speakeasy_api_key: ${{ secrets.SPEAKEASY_API_KEY }}
+        env:
+          GH_ACTION_RESULT: ${{ job.status }}
+          GH_ACTION_VERSION: fa50f4813201c6f919c74c25196b17c070ec4ac1
+          GH_ACTION_STEP: ${{ github.job }}
+          TARGET_TYPE: sdk
+
+  publish:
+    name: Publish MCP Typescript Server
+    needs: release
+    if: needs.release.outputs.regenerated == 'true' && needs.release.outputs.publish == 'true'
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: ${{ needs.release.outputs.directory }}
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          persist-credentials: false
+      - id: speakeasy
+        uses: ./.github/actions/prepare-speakeasy
+        with:
+          working-directory: apps/mcp-server
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24.x'
+          registry-url: https://registry.npmjs.org
+      - run: npm install --ignore-scripts
+      - run: npm rebuild bun
+      - name: Publish to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          VERSION=$(npm pkg get version | tr -d '"')
+          # comp-v2 owns latest. This repository publishes maintenance releases only.
+          TAG=legacy
+          if [[ "$VERSION" == *"-"* ]]; then
+            PRERELEASE=${VERSION#*-}
+            TAG=${PRERELEASE%%.*}
+          fi
+          npm publish --tag "$TAG" --access public
+      - name: Build and upload MCP release bundles
+        if: needs.release.outputs.tag != ''
+        continue-on-error: true # As upstream: binary and bundle uploads are optional.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ needs.release.outputs.tag }}
+        run: |
+          for TARGET in bun-darwin-arm64 bun-windows-x64-modern bun-linux-x64-modern; do
+            BINARY_PATH="bin/mcp-server-$TARGET"
+            if [[ "$TARGET" == bun-windows-x64-modern ]]; then BINARY_PATH+=.exe; fi
+            npx --no bun build src/mcp-server/mcp-server.ts --compile --target="$TARGET" --outfile="$BINARY_PATH"
+            gh release upload "$RELEASE_TAG" "$BINARY_PATH" --repo "$GITHUB_REPOSITORY"
+          done
+          npx --no bun run mcpb:build
+          gh release upload "$RELEASE_TAG" mcp-server.mcpb --repo "$GITHUB_REPOSITORY"
+      - uses: ./_speakeasy
+        if: always() && steps.speakeasy.outcome == 'success'
+        with:
+          action: publish-event
+          working_directory: apps/mcp-server
+          target_directory: ${{ needs.release.outputs.directory }}
+          registry_name: npm
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          speakeasy_api_key: ${{ secrets.SPEAKEASY_API_KEY }}
+        env:
+          GH_ACTION_RESULT: ${{ job.status }}
+          GH_ACTION_VERSION: fa50f4813201c6f919c74c25196b17c070ec4ac1
+      - uses: ./_speakeasy
+        if: always() && steps.speakeasy.outcome == 'success'
+        with:
+          action: log-result
+          working_directory: apps/mcp-server
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          speakeasy_api_key: ${{ secrets.SPEAKEASY_API_KEY }}
+        env:
+          GH_ACTION_RESULT: ${{ job.status }}
+          GH_ACTION_VERSION: fa50f4813201c6f919c74c25196b17c070ec4ac1
+          GH_ACTION_STEP: ${{ github.job }}
+          TARGET_TYPE: mcp

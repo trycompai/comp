@@ -1,5 +1,5 @@
 workflowVersion: 1.0.0
-speakeasyVersion: latest
+speakeasyVersion: 1.790.3
 sources:
     Comp AI API:
         inputs:

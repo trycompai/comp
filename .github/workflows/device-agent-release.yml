@@ -201,6 +201,21 @@ jobs:
           distribution: 'corretto'
           java-version: '11'
 
+      # Runs without signing secrets so a mismatched archive stops the job first.
+      - name: Download and verify SSL.com CodeSignTool
+        shell: powershell
+        working-directory: packages/device-agent/release
+        env:
+          # SHA-256 of CodeSignTool-v1.3.0-windows.zip. Change only with a reviewed upgrade.
+          CODESIGNTOOL_SHA256: e22094505decbe622afe5b0c27abc618ed2ba179bd94f3450490352399d5ef2a
+        run: |
+          Invoke-WebRequest -Uri "https://github.com/SSLcom/CodeSignTool/releases/download/v1.3.0/CodeSignTool-v1.3.0-windows.zip" -OutFile "codesigntool.zip"
+          $actualSha256 = (Get-FileHash -Algorithm SHA256 -Path "codesigntool.zip").Hash
+          if ($actualSha256 -ne $env:CODESIGNTOOL_SHA256) {
+            throw "CodeSignTool archive SHA-256 $actualSha256 does not match the pinned digest"
+          }
+          Expand-Archive -Path "codesigntool.zip" -DestinationPath "codesigntool"
+
       - name: Sign Windows EXE with SSL.com CodeSignTool
         shell: powershell
         working-directory: packages/device-agent/release
@@ -213,9 +228,6 @@ jobs:
           if (-not $env:ESIGNER_USERNAME -or -not $env:ESIGNER_PASSWORD -or -not $env:ESIGNER_CREDENTIAL_ID -or -not $env:ESIGNER_TOTP_SECRET) {
             throw "One or more ESIGNER secrets are not configured. Cannot sign."
           }
-
-          Invoke-WebRequest -Uri "https://github.com/SSLcom/CodeSignTool/releases/download/v1.3.0/CodeSignTool-v1.3.0-windows.zip" -OutFile "codesigntool.zip"
-          Expand-Archive -Path "codesigntool.zip" -DestinationPath "codesigntool"
 
           $jar = Get-ChildItem -Path "codesigntool" -Recurse -Filter "code_sign_tool-*.jar" | Select-Object -First 1
           if (-not $jar) { throw "CodeSignTool jar not found" }
