@@ -1,13 +1,18 @@
 import { execSync } from 'node:child_process';
 import type { CheckResult } from '../../shared/types';
 import type { ComplianceCheck } from '../types';
+import { checkCosmicScreenLock, isCosmicSession } from './cosmic-screen-lock';
 
 const MAX_IDLE_TIME_SECONDS = 900; // 15 minutes
 
 /**
  * Checks if screen lock is enabled and set to 15 minutes or less on Linux.
  *
- * Detection methods:
+ * A COSMIC session is answered from cosmic-idle's config (see ./cosmic-screen-lock.ts) and never
+ * falls through to the probes below: GNOME schemas are often installed alongside COSMIC, and
+ * gsettings would answer with GNOME values COSMIC never reads.
+ *
+ * Otherwise these are probed in order, and the first desktop that answers decides:
  *  1. GNOME: gsettings for org.gnome.desktop.session idle-delay and
  *     org.gnome.desktop.screensaver lock-enabled
  *  2. KDE: kreadconfig5 for the screen locker timeout
@@ -20,7 +25,11 @@ export class LinuxScreenLockCheck implements ComplianceCheck {
 
   async run(): Promise<CheckResult> {
     try {
-      // Try GNOME first (most common desktop environment)
+      if (isCosmicSession()) {
+        return checkCosmicScreenLock();
+      }
+
+      // Probe the remaining desktops, GNOME first (most common desktop environment)
       const gnomeResult = this.checkGnome();
       if (gnomeResult !== null) {
         return gnomeResult;
