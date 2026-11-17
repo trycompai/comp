@@ -14,6 +14,7 @@ import { gcpManifest } from '../manifests/gcp';
 import { manifest as githubManifest } from '../manifests/github';
 import { githubAppManifest } from '../manifests/github-app';
 import { googleWorkspaceManifest } from '../manifests/google-workspace';
+import { mapleManifest } from '../manifests/maple';
 import { ripplingManifest } from '../manifests/rippling';
 import { vercelManifest } from '../manifests/vercel';
 
@@ -151,6 +152,7 @@ const allManifests: IntegrationManifest[] = [
   ripplingManifest,
   vercelManifest,
   aikidoManifest,
+  mapleManifest,
 ];
 
 // Create and export the registry singleton
