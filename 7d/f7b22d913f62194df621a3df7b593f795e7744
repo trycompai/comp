@@ -1,0 +1,19 @@
+.github/TESTS_README.md
+  s_71ab1d3d0cc486::t_82d7795548799e 76
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "7df7b22d913f62194df621a3df7b593f795e7744",
+  "prompts": {},
+  "sessions": {
+    "s_71ab1d3d0cc486": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a1e4d4-fe18-720a-8c8c-df674d0dd6e1",
+        "model": "deepseek-v4.1-flash-1017-ultrafast"
+      },
+      "human_author": "Mariano Fuentes <marfuen98@gmail.com>"
+    }
+  }
+}
