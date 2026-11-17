@@ -24,6 +24,7 @@ import { OffboardingExportService } from './offboarding-export.service';
 import { CreateTemplateItemDto } from './dto/create-template-item.dto';
 import { UpdateTemplateItemDto } from './dto/update-template-item.dto';
 import { CompleteChecklistItemDto } from './dto/complete-checklist-item.dto';
+import { MarkChecklistExceptionDto } from './dto/mark-checklist-exception.dto';
 
 @ApiTags('Offboarding Checklist')
 @Controller({ path: 'offboarding-checklist', version: '1' })
@@ -240,6 +241,29 @@ export class OffboardingChecklistController {
       organizationId,
       memberId,
       templateItemId,
+    });
+  }
+
+  @Post('member/:memberId/item/:templateItemId/exception')
+  @RequirePermission('member', 'update')
+  @ApiOperation({
+    summary: 'Mark an offboarding checklist item as an exception',
+    description:
+      "Resolves an offboarding checklist item as an exception — the step could not or need not be done for this member — with a required reason, instead of completing it with evidence. The reason is recorded in the audit log and the offboarding evidence export.",
+  })
+  async markException(
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+    @Param('memberId') memberId: string,
+    @Param('templateItemId') templateItemId: string,
+    @Body() dto: MarkChecklistExceptionDto,
+  ) {
+    return this.offboardingChecklistService.markException({
+      organizationId,
+      memberId,
+      templateItemId,
+      completedById: this.requireUserId(authContext),
+      reason: dto.reason,
     });
   }
 
