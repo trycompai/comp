@@ -156,6 +156,8 @@ export const CustomAuthConfigSchema = z.object({
         placeholder: z.string().optional(),
         helpText: z.string().optional(),
         options: z.array(z.object({ value: z.string(), label: z.string() })).optional(),
+        /** Show this field only when another field holds a given value. */
+        showIf: z.object({ field: z.string(), equals: z.string() }).optional(),
       }),
     )
     .optional(),
@@ -209,6 +211,8 @@ export const CredentialFieldSchema = z.object({
   pattern: z.string().optional(),
   /** Default value */
   defaultValue: z.string().optional(),
+  /** Show this field only when another field holds a given value. */
+  showIf: z.object({ field: z.string(), equals: z.string() }).optional(),
 });
 
 export type CredentialField = z.infer<typeof CredentialFieldSchema>;

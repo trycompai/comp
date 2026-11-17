@@ -10,6 +10,7 @@ import type {
 import { manifest as aikidoManifest } from '../manifests/aikido';
 import { awsManifest } from '../manifests/aws';
 import { azureManifest } from '../manifests/azure';
+import { manifest as cybedefendManifest } from '../manifests/cybedefend';
 import { gcpManifest } from '../manifests/gcp';
 import { manifest as githubManifest } from '../manifests/github';
 import { githubAppManifest } from '../manifests/github-app';
@@ -151,6 +152,7 @@ const allManifests: IntegrationManifest[] = [
   ripplingManifest,
   vercelManifest,
   aikidoManifest,
+  cybedefendManifest,
 ];
 
 // Create and export the registry singleton

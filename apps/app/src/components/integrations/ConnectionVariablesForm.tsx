@@ -163,7 +163,7 @@ export function ConnectionVariablesFields({
               />
             ) : variable.type === 'select' ? (
               <Select
-                value={String(variableValues[variable.id] ?? '')}
+                value={String(variableValues[variable.id] ?? variable.default ?? '')}
                 onValueChange={(value) => {
                   if (value === null) return;
                   setVariableValues((prev) => ({ ...prev, [variable.id]: value }));
