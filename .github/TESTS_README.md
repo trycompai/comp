@@ -73,7 +73,7 @@ See [BRANCH_PROTECTION.md](BRANCH_PROTECTION.md) for setup instructions.
 
 ## Secrets Required
 
-Add these to your repository settings → Secrets and variables → Actions:
+Add each one to its **environment**, not to the repository: Settings → Environments → `staging` / `Production` → **Environment secrets**, or `gh secret set DATABASE_URL_DEV --env staging` / `gh secret set DATABASE_URL_PROD --env Production`. Settings → Secrets and variables → Actions creates a repository-scoped secret, which resolves on every ref and defeats the boundary below.
 
 ### Required
 
