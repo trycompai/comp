@@ -1,9 +1,12 @@
 name: Database Migrations Release
 on:
+  # push-only on purpose — do not add workflow_dispatch back. `gh workflow run --ref <branch>`
+  # runs *that branch's* copy of this file, so a dispatch trigger lets any branch push a
+  # version with the guard and `environment:` deleted and run it against the database. With
+  # only `push: release`, this workflow can never execute code from another ref.
   push: # Runs AFTER merge to release (never during PR review!)
     branches:
       - release
-  workflow_dispatch: # Allows manual triggering
 
 permissions:
   contents: read # only needs to check out the repo to run migrations
@@ -11,8 +14,9 @@ permissions:
 jobs:
   migrate:
     name: Run Database Migrations
-    # workflow_dispatch accepts any --ref, so pin the ref: without this, a dispatch
-    # from another branch runs that branch's copy of this workflow against the DB.
+    # Defence in depth only — the control is the credential: DATABASE_URL_PROD must exist
+    # as a **Production** environment secret (never repo- or org-scoped), because a branch
+    # can edit this YAML but cannot attach the reviewer-gated environment to its own copy.
     if: github.ref == 'refs/heads/release'
     runs-on: warp-ubuntu-latest-arm64-4x
     environment: Production
