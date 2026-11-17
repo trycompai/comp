@@ -1,0 +1,23 @@
+.github/TESTS_README.md
+  s_eeaead1ea113ee::t_ce0492ee542b4d 80-83
+.github/workflows/database-migrations-release.yml
+  s_eeaead1ea113ee::t_aa613bb0c67aa6 3-6,17-19
+.github/workflows/database-migrations-main.yml
+  s_eeaead1ea113ee::t_b6c19386ce26c4 6-7,16-18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "0bf73a6c9b85ea188da04b45f52b1cdf9b2a7ac3",
+  "prompts": {},
+  "sessions": {
+    "s_eeaead1ea113ee": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a1e994-4edf-7125-8975-dc0f9e28e809",
+        "model": "deepseek-v4.1-flash-1017-ultrafast"
+      },
+      "human_author": "Mariano Fuentes <marfuen98@gmail.com>"
+    }
+  }
+}
