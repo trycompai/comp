@@ -4,6 +4,7 @@ import {
   ListBucketsCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
+import { withS3ReadDeadline } from './s3-read-deadline';
 import { toReadFailure, type AwsSession, type ReadFailure } from './shared';
 
 export interface BpaFlags {
@@ -16,11 +17,11 @@ export interface BpaFlags {
 export interface S3BucketInfo {
   name: string;
   encrypted: boolean;
-  /** false when encryption status couldn't be read (error) → excluded from eval */
+  /** false when encryption status couldn't be read → an unverified outcome */
   encryptionDetermined: boolean;
   /** bucket-level Block Public Access flags, or null when none configured */
   bucketBpa: BpaFlags | null;
-  /** false when bucket-level Block Public Access couldn't be read (error) → excluded from eval */
+  /** false when bucket-level Block Public Access couldn't be read → an unverified outcome */
   publicAccessDetermined: boolean;
   /** set when the encryption read failed — the real error, surfaced in evidence */
   encryptionReadFailure?: ReadFailure;
@@ -68,13 +69,18 @@ export async function listAllBuckets(
   s3: S3Client,
   log?: (message: string) => void,
 ): Promise<Array<{ name: string; region?: string }>> {
+  const deadlineAt = Date.now() + 60_000;
   try {
     const out: Array<{ name: string; region?: string }> = [];
     let token: string | undefined;
     do {
-      const page = await s3.send(
-        new ListBucketsCommand({ MaxBuckets: 1000, ContinuationToken: token }),
-      );
+      const page = await withS3ReadDeadline({
+        deadlineAt,
+        read: (abortSignal) =>
+          s3.send(new ListBucketsCommand({ MaxBuckets: 1000, ContinuationToken: token }), {
+            abortSignal,
+          }),
+      });
       for (const b of page.Buckets ?? []) {
         if (typeof b.Name === 'string') {
           out.push({ name: b.Name, region: b.BucketRegion });
@@ -87,7 +93,10 @@ export async function listAllBuckets(
     log?.(
       `S3: paginated ListBuckets failed (${toReadFailure(err).error}); falling back to legacy form — bucket regions unknown, cross-region reads depend on S3 redirects`,
     );
-    const list = await s3.send(new ListBucketsCommand({}));
+    const list = await withS3ReadDeadline({
+      deadlineAt,
+      read: (abortSignal) => s3.send(new ListBucketsCommand({}), { abortSignal }),
+    });
     return (list.Buckets ?? [])
       .map((b) => b.Name)
       .filter((n): n is string => typeof n === 'string')
@@ -127,6 +136,7 @@ interface BucketReadOptions {
   encryption: boolean;
   publicAccess: boolean;
   log?: (message: string) => void;
+  deadlineAt: number;
 }
 
 /**
@@ -148,11 +158,15 @@ async function readBucketInfo(
 
   if (opts.encryption) {
     try {
-      const enc = await client.send(new GetBucketEncryptionCommand({ Bucket: name }));
+      const enc = await withS3ReadDeadline({
+        deadlineAt: opts.deadlineAt,
+        read: (abortSignal) =>
+          client.send(new GetBucketEncryptionCommand({ Bucket: name }), { abortSignal }),
+      });
       encrypted = (enc.ServerSideEncryptionConfiguration?.Rules?.length ?? 0) > 0;
     } catch (err) {
       // "no encryption configured" is a genuine finding; any other error
-      // (permissions/transient) is indeterminate → exclude from evaluation.
+      // (permissions/transient/timeout) remains an unverified outcome.
       if (err instanceof Error && /ServerSideEncryptionConfigurationNotFound/i.test(err.name)) {
         encrypted = false;
       } else {
@@ -165,7 +179,11 @@ async function readBucketInfo(
 
   if (opts.publicAccess) {
     try {
-      const pab = await client.send(new GetPublicAccessBlockCommand({ Bucket: name }));
+      const pab = await withS3ReadDeadline({
+        deadlineAt: opts.deadlineAt,
+        read: (abortSignal) =>
+          client.send(new GetPublicAccessBlockCommand({ Bucket: name }), { abortSignal }),
+      });
       const c = pab.PublicAccessBlockConfiguration;
       bucketBpa = {
         blockPublicAcls: Boolean(c?.BlockPublicAcls),
@@ -175,8 +193,8 @@ async function readBucketInfo(
       };
     } catch (err) {
       // "no bucket-level config" is a genuine finding (account-level may still
-      // cover it); any other error (AccessDenied/transient) is indeterminate →
-      // exclude from evaluation so we don't report a false public-access failure.
+      // cover it); any other error remains unverified, rather than asserting
+      // that a configuration is missing or silently dropping the bucket.
       if (err instanceof Error && /NoSuchPublicAccessBlockConfiguration/i.test(err.name)) {
         bucketBpa = null; // no bucket-level config
       } else {
@@ -211,9 +229,12 @@ export async function gatherBuckets(
   },
 ): Promise<S3BucketInfo[]> {
   const buckets = await listAllBuckets(s3, opts.log);
+  // Keep the whole listed inventory even if a large stalled fleet exhausts
+  // this shared budget: remaining reads fail locally as unverified outcomes.
+  const deadlineAt = Date.now() + 120_000;
 
   return mapWithConcurrency(buckets, BUCKET_READ_CONCURRENCY, ({ name, region }) => {
     const client = region && opts.clientForRegion ? opts.clientForRegion(region) : s3;
-    return readBucketInfo(client, name, opts);
+    return readBucketInfo(client, name, { ...opts, deadlineAt });
   });
 }
