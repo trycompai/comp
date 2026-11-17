@@ -35,7 +35,7 @@
   "devDependencies": {
     "@anthropic-ai/mcpb": "^1.2.0",
     "@eslint/js": "^9.26.0",
-    "@types/bun": "^1.2.13",
+    "@types/bun": "^1.4.4",
     "@types/express": "^5.0.1",
     "@types/node": "^18.19.3",
     "bun": "^1.4.4",
