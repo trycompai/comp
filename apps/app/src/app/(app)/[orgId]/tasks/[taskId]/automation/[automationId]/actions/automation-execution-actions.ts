@@ -1,6 +1,7 @@
 'use server';
 
 import { z } from 'zod';
+import { requireUnchangedAutomationCriteria } from './automation-criteria-integrity';
 import { issueRunReceipt, verifyRunReceipt } from './automation-run-receipt';
 import {
   AutomationAccessError,
@@ -19,7 +20,7 @@ export async function executeAutomationScript(data: z.infer<typeof executionSche
     const organizationId = await requireAutomationPermission('update');
     const input = executionSchema.parse(data);
     if (input.orgId !== organizationId) throw new AutomationAccessError();
-    await requireAutomationAccess({
+    const automation = await requireAutomationAccess({
       organizationId,
       taskId: input.taskId,
       automationId: input.automationId,
@@ -31,6 +32,12 @@ export async function executeAutomationScript(data: z.infer<typeof executionSche
         body: input,
       }),
     );
+    await requireUnchangedAutomationCriteria({
+      organizationId,
+      taskId: input.taskId,
+      automationId: input.automationId,
+      evaluationCriteria: automation.evaluationCriteria,
+    });
     // Callers treat this as an opaque polling handle; the real enterprise ID
     // never authorizes a read on its own. The receipt survives server restarts.
     const runId = issueRunReceipt({
