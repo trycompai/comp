@@ -3,6 +3,8 @@ on:
   push: # Runs AFTER merge to main (never during PR review!)
     branches:
       - main
+  # dispatch kept: staging migrations from a ref are a normal operator action. The ref guard
+  # below is not what protects this workflow — the `staging` environment is (see comment there).
   workflow_dispatch: # Allows manual triggering
 
 permissions:
@@ -11,7 +13,12 @@ permissions:
 jobs:
   migrate:
     name: Run Database Migrations
+    # Defence in depth only — the control is the credential: DATABASE_URL_DEV must exist as
+    # a **staging** environment secret (never repo- or org-scoped), because workflow_dispatch
+    # accepts any --ref and runs that branch's copy of this YAML, guard and all.
+    if: github.ref == 'refs/heads/main'
     runs-on: warp-ubuntu-latest-arm64-4x
+    environment: staging
     steps:
       - name: Checkout repository
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0

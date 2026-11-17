@@ -73,12 +73,14 @@ See [BRANCH_PROTECTION.md](BRANCH_PROTECTION.md) for setup instructions.
 
 ## Secrets Required
 
-Add these to your repository settings → Secrets and variables → Actions:
+Add each one to its **environment**, not to the repository: Settings → Environments → `staging` / `Production` → **Environment secrets**, or `gh secret set DATABASE_URL_DEV --env staging` / `gh secret set DATABASE_URL_PROD --env Production`. Settings → Secrets and variables → Actions creates a repository-scoped secret, which resolves on every ref and defeats the boundary below.
 
 ### Required
 
-- `DATABASE_URL_DEV` - Development database connection (for main branch)
-- `DATABASE_URL_PROD` - Production database connection (for release branch)
+- `DATABASE_URL_DEV` - **environment secret on `staging`** (not repository/org scope) — development database connection for the main-branch migration workflow
+- `DATABASE_URL_PROD` - **environment secret on `Production`** (not repository/org scope) — production database connection for the release-branch migration workflow
+
+> The database URLs must be scoped to their GitHub **environment** (`staging` / `Production`), never to the repository or the organization. The workflows' `if: github.ref == ...` guard is only defence in depth: a branch can edit the YAML, so the reviewer-gated environment — which a branch cannot attach to its own copy — is what actually gates the credential. Repository- or org-scoped secrets resolve on every ref and would undo that.
 
 ### Optional
 
