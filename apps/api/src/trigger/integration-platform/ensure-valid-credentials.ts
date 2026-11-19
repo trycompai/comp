@@ -3,6 +3,7 @@ export type IntegrationCredentialValues = Record<string, string | string[]>;
 export interface ValidCredentialsResult {
   success: boolean;
   credentials?: IntegrationCredentialValues;
+  credentialRevision?: string | null;
   error?: string;
   status?: number;
 }
@@ -81,6 +82,7 @@ export async function requestValidCredentials(params: {
     const result = (await response.json()) as {
       success: boolean;
       credentials?: IntegrationCredentialValues;
+      credentialRevision?: unknown;
     };
 
     if (!result.success || !result.credentials) {
@@ -93,6 +95,11 @@ export async function requestValidCredentials(params: {
     return {
       success: true,
       credentials: result.credentials,
+      credentialRevision:
+        typeof result.credentialRevision === 'string' &&
+        result.credentialRevision.length > 0
+          ? result.credentialRevision
+          : null,
     };
   } catch (error) {
     if (isAbortError(error) || abortController.signal.aborted) {

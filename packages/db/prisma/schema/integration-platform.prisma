@@ -350,6 +350,10 @@ model IntegrationCheckRun {
   /// Full execution logs (JSON array)
   logs Json?
 
+  /// Binds the actual native runtime/source, definition and configured scope.
+  /// Historical or unavailable provenance remains null and cannot auto-complete tasks.
+  completionEvidenceBinding String?
+
   /// Service IDs (e.g. "s3", "iam") successfully scanned in this run.
   /// Used by reconciliation to distinguish a passing finding from a
   /// service that simply wasn't re-scanned (e.g. rate limit, transient

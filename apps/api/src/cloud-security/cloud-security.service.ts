@@ -1,13 +1,19 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { db, Prisma } from '@db';
-import { getManifest, runAllChecks } from '@trycompai/integration-platform';
+import {
+  getManifest,
+  getNativeSourceIdentity,
+  runAllChecks,
+} from '@trycompai/integration-platform';
+import { awsScanBinding } from './aws-scan-binding';
+import { cloudScanServices } from './cloud-scan-configuration';
 import { runs, tasks } from '@trigger.dev/sdk';
 import { CredentialVaultService } from '../integration-platform/services/credential-vault.service';
 import { OAuthCredentialsService } from '../integration-platform/services/oauth-credentials.service';
 import { GCPSecurityService } from './providers/gcp-security.service';
 import { AWSSecurityService } from './providers/aws-security.service';
 import { AzureSecurityService } from './providers/azure-security.service';
-import { AWS_SERVICE_TASK_MAPPINGS } from './aws-task-mappings';
+import { autoSatisfyAwsTasks } from './aws-task-completion';
 import { CloudReconciliationService } from './reconciliation.service';
 import { resolveAwsScanMode } from './aws-scan-mode';
 import {
@@ -82,6 +88,7 @@ export class CloudSecurityService {
     connectionId: string,
     organizationId: string,
   ): Promise<ScanResult> {
+    const invocationStartedAt = new Date();
     this.logger.log(
       `Starting cloud security scan for connection ${connectionId}`,
     );
@@ -113,6 +120,7 @@ export class CloudSecurityService {
 
     // Get credentials - for OAuth providers, handle token refresh
     let credentials: Record<string, unknown>;
+    let credentialRevision: string | null = null;
     try {
       const manifest = getManifest(providerSlug);
       const isOAuth = manifest?.auth?.type === 'oauth2';
@@ -149,10 +157,12 @@ export class CloudSecurityService {
           });
 
         if (!accessToken) {
-          const refreshedConnection = await db.integrationConnection.findUnique({
-            where: { id: connectionId },
-            select: { errorMessage: true },
-          });
+          const refreshedConnection = await db.integrationConnection.findUnique(
+            {
+              where: { id: connectionId },
+              select: { errorMessage: true },
+            },
+          );
 
           return {
             success: false,
@@ -173,10 +183,12 @@ export class CloudSecurityService {
         credentials = { ...decrypted, access_token: accessToken };
       } else {
         // Non-OAuth (custom auth like AWS IAM Role)
-        const decrypted =
-          await this.credentialVaultService.getDecryptedCredentials(
-            connectionId,
+        const selected =
+          await this.credentialVaultService.getDecryptedCredentialsWithRevision(
+            { connectionId },
           );
+        const decrypted = selected?.credentials;
+        credentialRevision = selected?.credentialRevision ?? null;
         if (!decrypted) {
           return {
             success: false,
@@ -202,51 +214,13 @@ export class CloudSecurityService {
     // Get variables for the scan
     const variables = (connection.variables as Record<string, unknown>) || {};
 
-    // Provider baselines are always scanned regardless of toggles.
-    const BASELINE_SERVICES_BY_PROVIDER: Record<string, string[]> = {
-      aws: [
-        'cloudtrail',
-        'config',
-        'guardduty',
-        'iam-analyzer',
-        'cloudwatch',
-        'kms',
-      ],
-      gcp: ['security-command-center'],
-      azure: [],
-    };
-    const baselineServices = BASELINE_SERVICES_BY_PROVIDER[providerSlug] ?? [];
+    const { enabledServices, disabledServices } = cloudScanServices({
+      provider: providerSlug,
+      variables,
+    });
 
-    // Smart service filtering: auto-detect is additive, user can only exclude.
-    // Scan = (detectedServices MINUS disabledServices) UNION baselineServices.
-    const disabledServices = new Set<string>(
-      Array.isArray(variables.disabledServices)
-        ? (variables.disabledServices as string[])
-        : [],
-    );
-    let enabledServices: string[] | undefined;
-
-    if (
-      Array.isArray(variables.enabledServices) &&
-      (variables.enabledServices as string[]).length > 0
-    ) {
-      // Legacy format: explicit enabled list (backward compat) + baseline
-      const userEnabled = (variables.enabledServices as string[]).filter(
-        (s) => !disabledServices.has(s),
-      );
-      enabledServices = [...new Set([...userEnabled, ...baselineServices])];
-    } else if (
-      Array.isArray(variables.detectedServices) &&
-      (variables.detectedServices as string[]).length > 0
-    ) {
-      // New smart format: detected minus disabled + baseline always included
-      const filtered = (variables.detectedServices as string[]).filter(
-        (s) => !disabledServices.has(s),
-      );
-      enabledServices = [...new Set([...filtered, ...baselineServices])];
-    }
-    // else: undefined = scan all adapters (no detection data at all)
-
+    let pendingAwsRunId: string | undefined;
+    let completionEvidenceBinding: string | null = null;
     try {
       let findings: SecurityFinding[];
 
@@ -314,6 +288,28 @@ export class CloudSecurityService {
             (connection.metadata as Record<string, unknown> | null) ?? {};
           const awsScanMode = resolveAwsScanMode(metadata.awsScanMode);
           runScanMode = awsScanMode;
+          // Register this actual attempt before the provider call. A newer
+          // pending attempt must not be hidden behind an older successful scan.
+          const pending = await db.integrationCheckRun.create({
+            data: {
+              connectionId,
+              checkId: 'aws-security-scan',
+              checkName: 'AWS Security Scan',
+              status: 'running',
+              createdAt: invocationStartedAt,
+              startedAt: invocationStartedAt,
+              scanMode: awsScanMode,
+            },
+          });
+          pendingAwsRunId = pending.id;
+          completionEvidenceBinding = awsScanBinding({
+            connection,
+            organizationId,
+            credentialRevision,
+            sourceIdentity: getNativeSourceIdentity(),
+            runId: pending.id,
+            startedAt: invocationStartedAt,
+          });
           findings = await this.awsService.scanSecurityFindings(
             credentials,
             variables,
@@ -340,12 +336,15 @@ export class CloudSecurityService {
       }
 
       // Store findings in database
-      const currentRunId = await this.storeFindings(
+      const currentRunId = await this.storeFindings({
         connectionId,
-        providerSlug,
+        provider: providerSlug,
         findings,
-        runScanMode,
-      );
+        scanMode: runScanMode,
+        startedAt: invocationStartedAt,
+        existingRunId: pendingAwsRunId,
+        completionEvidenceBinding,
+      });
 
       // Reconcile against the prior scan to record resolutions and regressions.
       // Failures must NOT fail the scan — log and continue so customers always
@@ -360,7 +359,11 @@ export class CloudSecurityService {
 
       // Auto-satisfy evidence tasks based on passing scan results (AWS only)
       if (providerSlug === 'aws') {
-        await this.autoSatisfyTasks(organizationId, findings);
+        await this.autoSatisfyTasks({
+          organizationId,
+          connectionId,
+          runId: currentRunId,
+        });
       }
 
       // GCP & Azure: auto-detect services from scan findings
@@ -397,7 +400,7 @@ export class CloudSecurityService {
                 ...currentVars,
                 detectedServices: [...existingDetected],
                 disabledServices: [...disabledSet],
-              } as unknown as Prisma.InputJsonValue,
+              },
             },
           });
           this.logger.log(
@@ -425,6 +428,18 @@ export class CloudSecurityService {
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
+      if (pendingAwsRunId) {
+        await db.integrationCheckRun
+          .updateMany({
+            where: { id: pendingAwsRunId, connectionId, status: 'running' },
+            data: { status: 'failed', completedAt: new Date(), errorMessage },
+          })
+          .catch((persistError: unknown) => {
+            this.logger.error(
+              `Could not record failed AWS scan: ${String(persistError)}`,
+            );
+          });
+      }
       this.logger.error(`Scan failed for ${providerSlug}: ${errorMessage}`);
 
       return {
@@ -738,7 +753,9 @@ export class CloudSecurityService {
           detectedServices: [...existingDetected],
           disabledServices: [...updatedDisabled],
           serviceDetectionCompletedAt: new Date().toISOString(),
-          ...(gcpServicesByProject && { servicesByProject: gcpServicesByProject }),
+          ...(gcpServicesByProject && {
+            servicesByProject: gcpServicesByProject,
+          }),
         },
       },
     });
@@ -850,16 +867,23 @@ export class CloudSecurityService {
     };
   }
 
-  private async storeFindings(
-    connectionId: string,
-    provider: string,
-    findings: SecurityFinding[],
-    // Detection engine that produced these findings — AWS scan mode
-    // ('comp_scanners'/'security_hub') or GCP source ('gcp_scc'/'gcp_direct').
-    // Stored on the run so reconciliation only diffs same-engine runs. Null for
-    // Azure / untagged runs.
-    scanMode: string | null,
-  ): Promise<string> {
+  private async storeFindings({
+    connectionId,
+    provider,
+    findings,
+    scanMode,
+    startedAt,
+    existingRunId,
+    completionEvidenceBinding,
+  }: {
+    connectionId: string;
+    provider: string;
+    findings: SecurityFinding[];
+    scanMode: string | null;
+    startedAt: Date;
+    existingRunId?: string;
+    completionEvidenceBinding: string | null;
+  }): Promise<string> {
     const passedCount = findings.filter((f) => f.passed).length;
     const failedCount = findings.filter((f) => !f.passed).length;
 
@@ -870,7 +894,7 @@ export class CloudSecurityService {
       new Set(
         findings
           .map((f) => {
-            const evidence = f.evidence as Record<string, unknown> | undefined;
+            const evidence = f.evidence;
             const serviceId = evidence?.serviceId;
             return typeof serviceId === 'string' ? serviceId : null;
           })
@@ -881,21 +905,30 @@ export class CloudSecurityService {
     // Use a transaction to ensure atomicity - both run and results are created together
     const runId = await db.$transaction(async (tx) => {
       // Create a scan run record
-      const scanRun = await tx.integrationCheckRun.create({
-        data: {
-          connectionId,
-          checkId: `${provider}-security-scan`,
-          checkName: `${provider.toUpperCase()} Security Scan`,
-          status: 'success',
-          startedAt: new Date(),
-          completedAt: new Date(),
-          totalChecked: findings.length,
-          passedCount,
-          failedCount,
-          scannedServices,
-          scanMode,
-        },
-      });
+      const data = {
+        status: 'success' as const,
+        startedAt,
+        completedAt: new Date(),
+        totalChecked: findings.length,
+        passedCount,
+        failedCount,
+        scannedServices,
+        scanMode,
+        completionEvidenceBinding,
+      };
+      const scanRun = existingRunId
+        ? await tx.integrationCheckRun.update({
+            where: { id: existingRunId, connectionId, status: 'running' },
+            data,
+          })
+        : await tx.integrationCheckRun.create({
+            data: {
+              connectionId,
+              checkId: `${provider}-security-scan`,
+              checkName: `${provider.toUpperCase()} Security Scan`,
+              ...data,
+            },
+          });
 
       // Store each finding as a check result
       if (findings.length > 0) {
@@ -909,7 +942,7 @@ export class CloudSecurityService {
             description: finding.description ?? '',
             severity: finding.passed ? 'info' : finding.severity,
             remediation: finding.remediation ?? null,
-            evidence: (finding.evidence || {}) as object,
+            evidence: (finding.evidence || {}) as Prisma.InputJsonObject,
             collectedAt: new Date(finding.createdAt),
           })),
         });
@@ -927,99 +960,28 @@ export class CloudSecurityService {
    * Safety rules:
    * - Only sets tasks to 'done' — never failed/in_progress/todo
    * - Only when ALL findings pass for a service
-   * - Skips tasks with status 'not_relevant' (user intent)
-   * - Skips tasks already 'done' (idempotent)
+   * - Preserves manual decisions and configured evidence approval
+   * - Requires passing evaluations for current published custom collectors
    * - Idempotent: re-running with same results is safe
    */
-  private async autoSatisfyTasks(
-    organizationId: string,
-    findings: SecurityFinding[],
-  ): Promise<void> {
-    // Group findings by serviceId
-    const findingsByService = new Map<string, SecurityFinding[]>();
-    for (const finding of findings) {
-      const serviceId = finding.evidence?.serviceId as string | undefined;
-      if (!serviceId) continue;
-      const group = findingsByService.get(serviceId) ?? [];
-      group.push(finding);
-      findingsByService.set(serviceId, group);
-    }
-
-    // Find services where ALL findings pass
-    const passingServices: string[] = [];
-    for (const [serviceId, serviceFindings] of findingsByService) {
-      if (
-        serviceFindings.length > 0 &&
-        serviceFindings.every((f) => f.passed)
-      ) {
-        passingServices.push(serviceId);
-      }
-    }
-
-    if (passingServices.length === 0) return;
-
-    // Collect all task template IDs to satisfy
-    const templateIds = new Set<string>();
-    for (const serviceId of passingServices) {
-      const mappedTemplates = AWS_SERVICE_TASK_MAPPINGS[serviceId];
-      if (mappedTemplates) {
-        for (const id of mappedTemplates) {
-          templateIds.add(id);
-        }
-      }
-    }
-
-    if (templateIds.size === 0) return;
-
-    // For each template ID, only satisfy if ALL mapped services pass.
-    // A task template may be linked to multiple services (e.g. Encryption at Rest
-    // requires KMS + S3 + RDS + DynamoDB). Only mark done if every scanned
-    // service that maps to this template is fully passing.
-    const eligibleTemplateIds: string[] = [];
-    for (const templateId of templateIds) {
-      // Find all services that map to this template
-      const servicesForTemplate = Object.entries(AWS_SERVICE_TASK_MAPPINGS)
-        .filter(([, templates]) => templates.includes(templateId))
-        .map(([serviceId]) => serviceId);
-
-      // Only consider services that were actually scanned
-      const scannedServicesForTemplate = servicesForTemplate.filter((s) =>
-        findingsByService.has(s),
-      );
-
-      // If no services were scanned for this template, skip
-      if (scannedServicesForTemplate.length === 0) continue;
-
-      // All scanned services for this template must be passing
-      const allPassing = scannedServicesForTemplate.every((s) =>
-        passingServices.includes(s),
-      );
-
-      if (allPassing) {
-        eligibleTemplateIds.push(templateId);
-      }
-    }
-
-    if (eligibleTemplateIds.length === 0) return;
-
-    const now = new Date();
-
-    // Update tasks: only those in todo/in_progress/in_review/failed status
-    const result = await db.task.updateMany({
-      where: {
-        organizationId,
-        taskTemplateId: { in: eligibleTemplateIds },
-        status: { in: ['todo', 'in_progress', 'in_review', 'failed'] },
-      },
-      data: {
-        status: 'done',
-        lastCompletedAt: now,
-      },
+  private async autoSatisfyTasks({
+    organizationId,
+    connectionId,
+    runId,
+  }: {
+    organizationId: string;
+    connectionId: string;
+    runId: string;
+  }): Promise<void> {
+    const result = await autoSatisfyAwsTasks({
+      organizationId,
+      connectionId,
+      runId,
     });
 
     if (result.count > 0) {
       this.logger.log(
-        `Auto-satisfied ${result.count} evidence task(s) from passing AWS scan (services: ${passingServices.join(', ')})`,
+        `Auto-satisfied ${result.count} evidence task(s) from passing AWS scan (services: ${result.passingServices.join(', ')})`,
       );
     }
   }

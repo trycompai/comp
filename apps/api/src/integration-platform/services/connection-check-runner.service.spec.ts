@@ -6,7 +6,8 @@ import { ProviderRepository } from '../repositories/provider.repository';
 import { CredentialVaultService } from './credential-vault.service';
 import { OAuthCredentialsService } from './oauth-credentials.service';
 
-jest.mock('@db', () => ({ db: {} }));
+jest.mock('@db', () => ({ db: { task: { findUnique: jest.fn() } } }));
+import { db } from '@db';
 
 jest.mock('@trycompai/integration-platform', () => ({
   getManifest: jest.fn(),
@@ -15,6 +16,7 @@ jest.mock('@trycompai/integration-platform', () => ({
 
 import { getManifest, runAllChecks } from '@trycompai/integration-platform';
 
+const mockedTask = db.task as unknown as { findUnique: jest.Mock };
 const mockedGetManifest = getManifest as jest.Mock;
 const mockedRunAllChecks = runAllChecks as jest.Mock;
 
@@ -38,6 +40,7 @@ describe('ConnectionCheckRunnerService', () => {
   const mockProviderRepository = { findById: jest.fn() };
   const mockCredentialVaultService = {
     getDecryptedCredentials: jest.fn(),
+    getDecryptedCredentialsWithRevision: jest.fn(),
     getValidAccessToken: jest.fn(),
     refreshOAuthTokens: jest.fn(),
   };
@@ -62,6 +65,18 @@ describe('ConnectionCheckRunnerService', () => {
 
     service = module.get(ConnectionCheckRunnerService);
     jest.clearAllMocks();
+    (db.task.findUnique as jest.Mock).mockResolvedValue({ id: 'task_1' });
+    mockCredentialVaultService.getDecryptedCredentialsWithRevision.mockImplementation(
+      async ({ connectionId }: { connectionId: string }) => {
+        const credentials =
+          await mockCredentialVaultService.getDecryptedCredentials(
+            connectionId,
+          );
+        return credentials
+          ? { credentials, credentialRevision: 'synthetic-revision' }
+          : null;
+      },
+    );
 
     mockConnectionRepository.findById.mockResolvedValue({
       id: 'conn_1',
@@ -97,6 +112,42 @@ describe('ConnectionCheckRunnerService', () => {
       }),
     );
     expect(result).toBe(RUN_RESULT);
+  });
+
+  it('passes only the actual selected credential revision and task context to the executing server', async () => {
+    await service.runChecks({
+      connectionId: 'conn_1',
+      organizationId: 'org_1',
+      taskId: 'task_1',
+    });
+    expect(mockedTask.findUnique).toHaveBeenCalledWith({
+      where: { id: 'task_1', organizationId: 'org_1' },
+      select: { id: true },
+    });
+    expect(mockedRunAllChecks).toHaveBeenCalledWith(
+      expect.objectContaining({
+        completionContext: {
+          taskId: 'task_1',
+          credentialRevision: 'synthetic-revision',
+          configurationMetadata: null,
+        },
+      }),
+    );
+  });
+
+  it('does not bind an arbitrary task from another tenant', async () => {
+    (db.task.findUnique as jest.Mock).mockResolvedValue(null);
+    await expect(
+      service.runChecks({
+        connectionId: 'conn_1',
+        organizationId: 'org_1',
+        taskId: 'foreign-task',
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(
+      mockCredentialVaultService.getDecryptedCredentialsWithRevision,
+    ).not.toHaveBeenCalled();
+    expect(mockedRunAllChecks).not.toHaveBeenCalled();
   });
 
   it('runs ALL checks when no checkId is given (auto-run path)', async () => {

@@ -21,6 +21,8 @@ model EvidenceAutomationRun {
   // Evaluation
   evaluationStatus EvidenceAutomationEvaluationStatus?
   evaluationReason String?
+  // Exact criteria used by the evaluator; historical/unbound results stay null.
+  evaluationCriteriaSnapshot String?
 
   // Metadata
   triggeredBy EvidenceAutomationTrigger @default(scheduled)

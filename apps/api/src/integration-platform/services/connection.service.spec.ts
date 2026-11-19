@@ -4,6 +4,13 @@ import { ConnectionRepository } from '../repositories/connection.repository';
 import { ProviderRepository } from '../repositories/provider.repository';
 import { ConnectionAuthTeardownService } from './connection-auth-teardown.service';
 
+jest.mock(
+  '../../tasks/automatic-completion/complete-task-automatically',
+  () => ({
+    completeTaskAutomatically: jest.fn().mockResolvedValue({ count: 1 }),
+  }),
+);
+
 jest.mock('@db', () => ({
   db: {
     integrationCheckRun: {
@@ -12,6 +19,7 @@ jest.mock('@db', () => ({
     task: {
       findMany: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
     },
   },
 }));
@@ -21,11 +29,14 @@ jest.mock('@trycompai/integration-platform', () => ({
 }));
 
 import { db } from '@db';
+import { completeTaskAutomatically } from '../../tasks/automatic-completion/complete-task-automatically';
+const mockCompleteTask = completeTaskAutomatically as jest.Mock;
 
 const findRuns = (db.integrationCheckRun as unknown as { findMany: jest.Mock })
   .findMany;
 const findTasks = (db.task as unknown as { findMany: jest.Mock }).findMany;
-const updateTask = (db.task as unknown as { update: jest.Mock }).update;
+const updateTask = (db.task as unknown as { updateMany: jest.Mock }).updateMany;
+const directUpdate = (db.task as unknown as { update: jest.Mock }).update;
 
 describe('ConnectionService', () => {
   let service: ConnectionService;
@@ -42,6 +53,8 @@ describe('ConnectionService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    updateTask.mockResolvedValue({ count: 1 });
+    mockCompleteTask.mockResolvedValue({ count: 1 });
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -66,6 +79,8 @@ describe('ConnectionService', () => {
       findRuns.mockResolvedValue([{ taskId: 'tsk_1' }]);
       findTasks.mockResolvedValue([
         {
+          organizationId: 'org_1',
+          updatedAt: new Date('2026-01-02T03:04:05Z'),
           id: 'tsk_1',
           evidenceAutomations: [],
           integrationCheckRuns: [], // filtered query returns no active runs
@@ -81,11 +96,23 @@ describe('ConnectionService', () => {
       });
       expect(findTasks).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { id: { in: ['tsk_1'] }, status: 'failed' },
+          where: expect.objectContaining({
+            id: { in: ['tsk_1'] },
+            status: 'failed',
+            automationStatus: 'AUTOMATED',
+            archivedAt: null,
+          }),
         }),
       );
       expect(updateTask).toHaveBeenCalledWith({
-        where: { id: 'tsk_1' },
+        where: expect.objectContaining({
+          id: 'tsk_1',
+          organizationId: 'org_1',
+          status: 'failed',
+          automationStatus: 'AUTOMATED',
+          archivedAt: null,
+          evidenceAutomations: { none: { isEnabled: true } },
+        }),
         data: { status: 'todo' },
       });
     });
@@ -94,6 +121,8 @@ describe('ConnectionService', () => {
       findRuns.mockResolvedValue([{ taskId: 'tsk_2' }]);
       findTasks.mockResolvedValue([
         {
+          organizationId: 'org_1',
+          updatedAt: new Date('2026-01-02T03:04:05Z'),
           id: 'tsk_2',
           evidenceAutomations: [],
           integrationCheckRuns: [
@@ -108,16 +137,49 @@ describe('ConnectionService', () => {
 
       await service.disconnectConnection(CONNECTION_ID);
 
-      expect(updateTask).toHaveBeenCalledWith({
-        where: { id: 'tsk_2' },
-        data: { status: 'done' },
+      expect(mockCompleteTask).toHaveBeenCalledWith({
+        taskId: 'tsk_2',
+        organizationId: 'org_1',
+        source: 'disconnect',
       });
+      expect(updateTask).not.toHaveBeenCalled();
+      expect(directUpdate).not.toHaveBeenCalled();
+    });
+
+    it('does not bypass rejection by the common current-evidence gate', async () => {
+      findRuns.mockResolvedValue([{ taskId: 'tsk_gate' }]);
+      findTasks.mockResolvedValue([
+        {
+          id: 'tsk_gate',
+          organizationId: 'org_1',
+          updatedAt: new Date('2026-01-02'),
+          evidenceAutomations: [],
+          integrationCheckRuns: [
+            {
+              checkId: 'synthetic-check',
+              status: 'success',
+              createdAt: new Date('2026-01-02'),
+            },
+          ],
+        },
+      ]);
+      mockCompleteTask.mockResolvedValue({ count: 0 });
+      await service.disconnectConnection(CONNECTION_ID);
+      expect(mockCompleteTask).toHaveBeenCalledWith({
+        taskId: 'tsk_gate',
+        organizationId: 'org_1',
+        source: 'disconnect',
+      });
+      expect(updateTask).not.toHaveBeenCalled();
+      expect(directUpdate).not.toHaveBeenCalled();
     });
 
     it('leaves the task at "failed" when another active automation is still failing', async () => {
       findRuns.mockResolvedValue([{ taskId: 'tsk_3' }]);
       findTasks.mockResolvedValue([
         {
+          organizationId: 'org_1',
+          updatedAt: new Date('2026-01-02T03:04:05Z'),
           id: 'tsk_3',
           evidenceAutomations: [],
           integrationCheckRuns: [
@@ -139,6 +201,8 @@ describe('ConnectionService', () => {
       findRuns.mockResolvedValue([{ taskId: 'tsk_4' }]);
       findTasks.mockResolvedValue([
         {
+          organizationId: 'org_1',
+          updatedAt: new Date('2026-01-02T03:04:05Z'),
           id: 'tsk_4',
           evidenceAutomations: [],
           integrationCheckRuns: [
@@ -163,10 +227,13 @@ describe('ConnectionService', () => {
 
       await service.disconnectConnection(CONNECTION_ID);
 
-      expect(updateTask).toHaveBeenCalledWith({
-        where: { id: 'tsk_4' },
-        data: { status: 'done' },
+      expect(mockCompleteTask).toHaveBeenCalledWith({
+        taskId: 'tsk_4',
+        organizationId: 'org_1',
+        source: 'disconnect',
       });
+      expect(updateTask).not.toHaveBeenCalled();
+      expect(directUpdate).not.toHaveBeenCalled();
     });
 
     it('picks the latest run per checkId even when the input is reverse-sorted', async () => {
@@ -175,6 +242,8 @@ describe('ConnectionService', () => {
       findRuns.mockResolvedValue([{ taskId: 'tsk_reorder' }]);
       findTasks.mockResolvedValue([
         {
+          organizationId: 'org_1',
+          updatedAt: new Date('2026-01-02T03:04:05Z'),
           id: 'tsk_reorder',
           evidenceAutomations: [],
           // Oldest first — the opposite of the query's orderBy desc.
@@ -198,10 +267,13 @@ describe('ConnectionService', () => {
       // Latest run for check_a (2026-04-05) is success → task should become
       // done. If we naively picked the first-seen run, it would be failed
       // and the task would stay at 'failed'.
-      expect(updateTask).toHaveBeenCalledWith({
-        where: { id: 'tsk_reorder' },
-        data: { status: 'done' },
+      expect(mockCompleteTask).toHaveBeenCalledWith({
+        taskId: 'tsk_reorder',
+        organizationId: 'org_1',
+        source: 'disconnect',
       });
+      expect(updateTask).not.toHaveBeenCalled();
+      expect(directUpdate).not.toHaveBeenCalled();
     });
 
     it('swallows errors from the re-evaluation step so disconnect still succeeds', async () => {
@@ -239,10 +311,10 @@ describe('ConnectionService', () => {
       findRuns.mockResolvedValue([{ taskId: 'tsk_6' }]);
       findTasks.mockResolvedValue([
         {
+          organizationId: 'org_1',
+          updatedAt: new Date('2026-01-02T03:04:05Z'),
           id: 'tsk_6',
-          evidenceAutomations: [
-            { runs: [{ evaluationStatus: 'fail' }] },
-          ],
+          evidenceAutomations: [{ runs: [{ evaluationStatus: 'fail' }] }],
           integrationCheckRuns: [],
         },
       ]);

@@ -1,6 +1,9 @@
 import { processTrustAccessSubmissionPayload } from './trust-access-submission.processor';
 import type { TrustAccessSubmission } from './trust-access-submission';
 
+// parseRoles runs unchanged; this processor never reads the auth permission catalog.
+jest.mock('@trycompai/auth', () => ({ BUILT_IN_ROLE_PERMISSIONS: {} }));
+
 jest.mock('@db', () => ({
   db: {
     trust: { findFirst: jest.fn() },

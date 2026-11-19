@@ -118,12 +118,12 @@ export class CredentialVaultService {
     ]);
     const tag = cipher.getAuthTag();
 
-    return {
+    return Promise.resolve({
       encrypted: encrypted.toString('base64'),
       iv: iv.toString('base64'),
       tag: tag.toString('base64'),
       salt: salt.toString('base64'),
-    };
+    });
   }
 
   async decrypt(encryptedData: EncryptedData): Promise<string> {
@@ -141,7 +141,7 @@ export class CredentialVaultService {
       decipher.update(encrypted),
       decipher.final(),
     ]);
-    return decrypted.toString('utf8');
+    return Promise.resolve(decrypted.toString('utf8'));
   }
 
   /**
@@ -288,6 +288,22 @@ export class CredentialVaultService {
   async getDecryptedCredentials(
     connectionId: string,
   ): Promise<Record<string, string | string[]> | null> {
+    const selected = await this.getDecryptedCredentialsWithRevision({
+      connectionId,
+    });
+    return selected?.credentials ?? null;
+  }
+
+  async getDecryptedCredentialsWithRevision({
+    connectionId,
+  }: {
+    connectionId: string;
+  }): Promise<{
+    credentials: Record<string, string | string[]>;
+    credentialRevision: string;
+  } | null> {
+    // The revision comes from the very record decrypted below. Never stamp a
+    // later connection pointer onto credentials selected from an earlier row.
     // Prefer the active credential version set during token storage/refresh
     const connection = await this.connectionRepository.findById(connectionId);
     let version = connection?.activeCredentialVersionId
@@ -329,7 +345,7 @@ export class CredentialVaultService {
       }
     }
 
-    return decrypted;
+    return { credentials: decrypted, credentialRevision: latestVersion.id };
   }
 
   /**
@@ -660,11 +676,7 @@ export class CredentialVaultService {
       }
 
       if (isTerminalOAuthRefreshFailure(first)) {
-        await this.markTerminalTokenRefreshFailure(
-          connectionId,
-          config,
-          first,
-        );
+        await this.markTerminalTokenRefreshFailure(connectionId, config, first);
         return null;
       }
 

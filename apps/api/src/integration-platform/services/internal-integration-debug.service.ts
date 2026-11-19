@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { db } from '@db';
-import type { Prisma } from '@db';
+import type { IntegrationCredentialVersion, Prisma } from '@db';
 import { isCodeManifest } from '@trycompai/integration-platform';
 import {
   ConnectionCheckRunnerService,
@@ -9,6 +9,7 @@ import {
 import { CheckRunRepository } from '../repositories/check-run.repository';
 import { decideRunStatus } from '../utils/task-check-evaluation';
 import { DynamicManifestLoaderService } from './dynamic-manifest-loader.service';
+import { executeRegisteredCheck } from './execute-registered-check';
 
 /**
  * Read-only/diagnostic toolkit for dynamic integrations, used by internal
@@ -158,7 +159,7 @@ export class InternalIntegrationDebugService {
               encryptedPayload: true,
             },
           })
-        : Promise.resolve([]),
+        : Promise.resolve<never[]>([]),
       connectionIds.length
         ? db.integrationCheckRun.findMany({
             where: { connectionId: { in: connectionIds } },
@@ -175,10 +176,16 @@ export class InternalIntegrationDebugService {
               errorMessage: true,
             },
           })
-        : Promise.resolve([]),
+        : Promise.resolve<never[]>([]),
     ]);
 
-    const versionById = new Map(versions.map((v) => [v.id, v] as const));
+    const versionById = new Map<
+      string,
+      Pick<
+        IntegrationCredentialVersion,
+        'version' | 'createdAt' | 'expiresAt' | 'encryptedPayload'
+      >
+    >(versions.map((v) => [v.id, v] as const));
     const latestRunByConn = new Map(
       latestRuns.map((r) => [r.connectionId, r] as const),
     );
@@ -500,7 +507,11 @@ export class InternalIntegrationDebugService {
     if (!connection) {
       throw new NotFoundException(`Connection ${connectionId} not found`);
     }
-    await this.assertTaskBelongsToOrg(taskId, connection.organizationId, connectionId);
+    await this.assertTaskBelongsToOrg(
+      taskId,
+      connection.organizationId,
+      connectionId,
+    );
 
     // The runner resolves dynamic check code from the in-memory manifest
     // registry, which only refreshes from the DB every ~60s. A self-heal re-run
@@ -519,19 +530,6 @@ export class InternalIntegrationDebugService {
       );
     }
 
-    // Execute on the real runtime in-process (runChecks never persists).
-    const result = await this.runner.runChecks({
-      connectionId,
-      organizationId: connection.organizationId,
-      checkId,
-    });
-    const checkResult = result.results[0];
-    if (!checkResult) {
-      throw new NotFoundException(
-        `Check ${checkId} produced no result for connection ${connectionId}`,
-      );
-    }
-
     // A code-based manifest wins over a dynamic integration of the same slug, so
     // its checks are static and must NEVER be re-held as 'inconclusive' here —
     // otherwise the self-heal agent's re-run would re-hide a code check it cannot
@@ -546,17 +544,26 @@ export class InternalIntegrationDebugService {
           select: { id: true },
         }));
 
+    const { checkRun, checkResult } = await executeRegisteredCheck({
+      repository: this.checkRunRepository,
+      connectionId,
+      checkId,
+      taskId,
+      failureStatus: isDynamic ? 'inconclusive' : 'failed',
+      execute: () =>
+        this.runner.runChecks({
+          connectionId,
+          organizationId: connection.organizationId,
+          checkId,
+          taskId: taskId ?? undefined,
+        }),
+    });
+
     const status = decideRunStatus({
       resultStatus: checkResult.status,
       isDynamic,
     });
 
-    const checkRun = await this.checkRunRepository.create({
-      connectionId,
-      taskId: taskId ?? undefined,
-      checkId,
-      checkName: checkResult.checkName,
-    });
     const resultsToStore = [
       ...checkResult.result.passingResults.map((r) => ({
         checkRunId: checkRun.id,
@@ -585,6 +592,7 @@ export class InternalIntegrationDebugService {
       await this.checkRunRepository.addResults(resultsToStore);
     }
     await this.checkRunRepository.complete(checkRun.id, {
+      checkName: checkResult.checkName,
       status,
       durationMs: checkResult.durationMs,
       totalChecked:
@@ -597,6 +605,7 @@ export class InternalIntegrationDebugService {
       failedCount:
         status === 'inconclusive' ? 0 : checkResult.result.findings.length,
       errorMessage: checkResult.error,
+      completionEvidenceBinding: checkResult.completionEvidenceBinding ?? null,
       logs: JSON.parse(
         JSON.stringify(checkResult.result.logs),
       ) as Prisma.InputJsonValue,
@@ -630,30 +639,31 @@ export class InternalIntegrationDebugService {
     if (!connection) {
       throw new NotFoundException(`Connection ${connectionId} not found`);
     }
-    await this.assertTaskBelongsToOrg(taskId, connection.organizationId, connectionId);
-
-    const result = await this.runner.runChecks({
+    await this.assertTaskBelongsToOrg(
+      taskId,
+      connection.organizationId,
       connectionId,
-      organizationId: connection.organizationId,
+    );
+
+    const { checkRun, checkResult } = await executeRegisteredCheck({
+      repository: this.checkRunRepository,
+      connectionId,
       checkId,
+      taskId,
+      failureStatus: 'failed',
+      execute: () =>
+        this.runner.runChecks({
+          connectionId,
+          organizationId: connection.organizationId,
+          checkId,
+          taskId: taskId ?? undefined,
+        }),
     });
-    const checkResult = result.results[0];
-    if (!checkResult) {
-      throw new NotFoundException(
-        `Check ${checkId} produced no result for connection ${connectionId}`,
-      );
-    }
 
     // The REAL status — never held. A genuine fail shows red to the customer.
     const status: 'success' | 'failed' =
       checkResult.status === 'success' ? 'success' : 'failed';
 
-    const checkRun = await this.checkRunRepository.create({
-      connectionId,
-      taskId: taskId ?? undefined,
-      checkId,
-      checkName: checkResult.checkName,
-    });
     const resultsToStore = [
       ...checkResult.result.passingResults.map((r) => ({
         checkRunId: checkRun.id,
@@ -682,6 +692,7 @@ export class InternalIntegrationDebugService {
       await this.checkRunRepository.addResults(resultsToStore);
     }
     await this.checkRunRepository.complete(checkRun.id, {
+      checkName: checkResult.checkName,
       status,
       durationMs: checkResult.durationMs,
       totalChecked:
@@ -692,6 +703,7 @@ export class InternalIntegrationDebugService {
       // REAL fail → show the findings (NOT hidden like a held 'inconclusive' run).
       failedCount: checkResult.result.findings.length,
       errorMessage: checkResult.error,
+      completionEvidenceBinding: checkResult.completionEvidenceBinding ?? null,
       logs: JSON.parse(
         JSON.stringify(checkResult.result.logs),
       ) as Prisma.InputJsonValue,

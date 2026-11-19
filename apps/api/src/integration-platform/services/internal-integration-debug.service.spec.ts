@@ -556,17 +556,17 @@ describe('InternalIntegrationDebugService', () => {
       mockedDb.dynamicIntegration.findFirst.mockResolvedValue({
         id: 'din_github',
       });
-      const runChecks = jest.fn().mockResolvedValue(
-        runResult('failed', [
-          {
-            resourceType: 'repository',
-            resourceId: 'org/repo',
-            title: 'Dependabot not enabled',
-            description: 'not enabled',
-            evidence: { status: 'disabled' },
-          },
-        ]),
-      );
+      const result = runResult('failed', [
+        {
+          resourceType: 'repository',
+          resourceId: 'org/repo',
+          title: 'Dependabot not enabled',
+          description: 'not enabled',
+          evidence: { status: 'disabled' },
+        },
+      ]);
+      result.results[0].checkId = 'dependabot_enabled';
+      const runChecks = jest.fn().mockResolvedValue(result);
       const repo = makeRepo();
 
       const service = makeService({ runChecks }, repo);
@@ -588,7 +588,9 @@ describe('InternalIntegrationDebugService', () => {
         organizationId: 'org_1',
         provider: { slug: 'neon' },
       });
-      mockedDb.dynamicIntegration.findFirst.mockResolvedValue({ id: 'din_neon' });
+      mockedDb.dynamicIntegration.findFirst.mockResolvedValue({
+        id: 'din_neon',
+      });
       const runChecks = jest.fn().mockResolvedValue(runResult('success'));
       const loadDynamicManifests = jest.fn().mockResolvedValue(undefined);
 
@@ -613,7 +615,9 @@ describe('InternalIntegrationDebugService', () => {
         organizationId: 'org_1',
         provider: { slug: 'neon' },
       });
-      mockedDb.dynamicIntegration.findFirst.mockResolvedValue({ id: 'din_neon' });
+      mockedDb.dynamicIntegration.findFirst.mockResolvedValue({
+        id: 'din_neon',
+      });
       const runChecks = jest.fn().mockResolvedValue(runResult('success'));
       const loadDynamicManifests = jest
         .fn()
