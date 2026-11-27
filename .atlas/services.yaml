@@ -73,6 +73,7 @@ services:
 
   app:
     type: web
+    portal: true
     command: bun run dev:no-trigger
     cwd: apps/app
     port: 3000
@@ -82,6 +83,7 @@ services:
       - bun run db:generate
     env:
       NODE_ENV: development
+      PREVIEW_URL: ${services.app.publicUrl}
       DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:${services.postgres.port}/comp
       NEXT_PUBLIC_API_URL: http://localhost:${services.api.port}
       BACKEND_API_URL: http://localhost:${services.api.port}
@@ -109,6 +111,7 @@ services:
 
   portal:
     type: web
+    portal: true
     command: bun run dev
     cwd: apps/portal
     port: 3002
@@ -122,6 +125,7 @@ services:
       NEXT_PUBLIC_API_URL: http://localhost:${services.api.port}
       NEXT_PUBLIC_BETTER_AUTH_URL: http://localhost:${services.api.port}
       BETTER_AUTH_URL: http://localhost:3002
+      PREVIEW_URL: ${services.portal.publicUrl}
       BETTER_AUTH_SECRET: local-dev-secret-key-change-me
       INTERNAL_API_TOKEN: local-dev-internal-token
       SERVICE_TOKEN_PORTAL: local-dev-service-token-portal

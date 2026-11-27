@@ -89,7 +89,10 @@ because the script signs the session cookies with it.
 ## Sign in
 
 Use `http://localhost:<port>` URLs. Do not use the public preview URLs for
-signed-in work. The API sets a host-only cookie on `localhost`, and the app
+signed-in work. `app` and `portal` also have a preview URL (`portal: true`).
+`PREVIEW_URL` gives that URL to `next.config.ts`, which adds its host to
+`allowedDevOrigins`, so live reload (HMR) works there. Use a preview URL to
+look at public pages, for example `/auth`. The API sets a host-only cookie on `localhost`, and the app
 reads that cookie on the server. A preview URL is a different host, so the
 app does not get the cookie.
 
