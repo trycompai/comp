@@ -121,6 +121,7 @@
     "prismjs": "^1.30.0",
     "qs": "^6.15.3",
     "effect": "^3.20.0",
+    "proxy-addr": "^2.0.8",
     "protobufjs": "^7.6.3",
     "linkify-it": "^5.0.1",
     "mermaid": "^11.15.0",
