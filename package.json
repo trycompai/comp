@@ -126,6 +126,7 @@
     "mermaid": "^11.15.0",
     "shell-quote": "^1.8.4",
     "vite": "^6.4.3",
+    "solid-js": "^1.9.16",
     "@opentelemetry/core": "^2.8.0",
     "@sigstore/core": "3.2.1",
     "markdown-it": "^14.3.0",
