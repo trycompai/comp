@@ -62,12 +62,34 @@ function getOSVersion(platform: DevicePlatform): string {
         'powershell.exe -NoProfile -NonInteractive -Command "[System.Environment]::OSVersion.Version.ToString()"',
         { encoding: 'utf-8', timeout: 5000 },
       ).trim();
-      return output;
+      return withWindowsUpdateRevision(output);
     }
   } catch {
     // Fallback
   }
   return 'Unknown';
+}
+
+/**
+ * [System.Environment]::OSVersion.Version always reports revision 0, which
+ * hides the cumulative-update level. Replace it with the update build revision
+ * (UBR) from the registry, e.g. 10.0.26200.0 -> 10.0.26200.7004. If the
+ * lookup fails, the base version is returned unchanged.
+ */
+function withWindowsUpdateRevision(version: string): string {
+  try {
+    const output = execSync(
+      'reg query "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion" /v UBR',
+      { encoding: 'utf-8', timeout: 5000 },
+    );
+    const match = output.match(/UBR\s+REG_DWORD\s+0x([0-9a-f]+)/i);
+    if (!match) return version;
+    const [major, minor, build] = version.split('.');
+    if (!major || !minor || !build) return version;
+    return `${major}.${minor}.${build}.${parseInt(match[1], 16)}`;
+  } catch {
+    return version;
+  }
 }
 
 function getSerialNumber(platform: DevicePlatform): string | undefined {
