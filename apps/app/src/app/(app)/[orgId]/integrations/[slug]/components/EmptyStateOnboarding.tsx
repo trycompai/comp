@@ -2,6 +2,7 @@
 
 import { CloudShellSetup } from '@/components/integrations/CloudShellSetup';
 import { CredentialInput } from '@/components/integrations/CredentialInput';
+import { visibleCredentialFields } from '@/components/integrations/credential-field-visibility';
 import type { IntegrationProvider } from '@/hooks/use-integration-platform';
 import { useIntegrationMutations } from '@/hooks/use-integration-platform';
 import { Button, Label } from '@trycompai/design-system';
@@ -363,7 +364,13 @@ function CredentialSetup({
 
     return configuredFields;
   }, [provider.authType, provider.credentialFields]);
-  const hasConfigurableFields = fields.length > 0;
+
+  const visibleFields = useMemo(
+    () => visibleCredentialFields(fields, credentials),
+    [fields, credentials],
+  );
+
+  const hasConfigurableFields = visibleFields.length > 0;
 
   const updateCredential = (fieldId: string, value: string | string[]) => {
     setCredentials((prev) => ({ ...prev, [fieldId]: value }));
@@ -378,7 +385,7 @@ function CredentialSetup({
 
   const handleConnect = useCallback(async () => {
     const newErrors: Record<string, string> = {};
-    for (const field of fields) {
+    for (const field of visibleFields) {
       const value = credentials[field.id];
       const isMissing =
         field.type === 'multi-select'
@@ -393,9 +400,14 @@ function CredentialSetup({
       return;
     }
 
+    // Only what the operator could actually see.
+    const visibleCredentials = Object.fromEntries(
+      Object.entries(credentials).filter(([id]) => visibleFields.some((field) => field.id === id)),
+    );
+
     setConnecting(true);
     try {
-      const result = await createConnection(provider.id, credentials);
+      const result = await createConnection(provider.id, visibleCredentials);
       if (!result.success) {
         toast.error(result.error || 'Failed to connect');
         return;
@@ -407,7 +419,7 @@ function CredentialSetup({
     } finally {
       setConnecting(false);
     }
-  }, [fields, credentials, createConnection, provider, onConnected]);
+  }, [visibleFields, credentials, createConnection, provider, onConnected]);
 
   return (
     <div className="py-6 space-y-6">
@@ -423,7 +435,7 @@ function CredentialSetup({
         <div className="rounded-xl border bg-background shadow-sm">
           <div className="p-6 space-y-4">
             {hasConfigurableFields ? (
-              fields.map((field) => (
+              visibleFields.map((field) => (
                 <FieldRow
                   key={field.id}
                   field={field}
@@ -505,9 +517,7 @@ function CloudSetup({
   // AWS only — which scan engine the customer is choosing for this
   // connection. Sent in createConnection's credentials payload as the
   // `awsScanMode` variable, then read on every scan in cloud-security.service.
-  const [awsScanMode, setAwsScanMode] = useState<AwsScanModeChoice>(
-    DEFAULT_AWS_SCAN_MODE_CHOICE,
-  );
+  const [awsScanMode, setAwsScanMode] = useState<AwsScanModeChoice>(DEFAULT_AWS_SCAN_MODE_CHOICE);
 
   const allFields = provider.credentialFields ?? [];
   const visibleFields = allFields.filter(
@@ -597,9 +607,7 @@ function CloudSetup({
         )
       : regionOptions;
   const setupScript =
-    provider.id === 'aws'
-      ? getAwsCloudShellScript(awsEnvironment)
-      : (provider.setupScript ?? '');
+    provider.id === 'aws' ? getAwsCloudShellScript(awsEnvironment) : (provider.setupScript ?? '');
   const remediationScript = getAwsRemediationScript(awsEnvironment);
   const cloudShellUrl = getAwsCloudShellUrl(awsEnvironment);
 
