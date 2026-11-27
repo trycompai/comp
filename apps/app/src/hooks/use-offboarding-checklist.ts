@@ -27,6 +27,8 @@ export interface ChecklistItem {
   isAccessRevocation: boolean;
   sortOrder: number;
   completed: boolean;
+  isException: boolean;
+  exceptionReason: string | null;
   completedAt: string | null;
   completedBy: CompletedBy | null;
   completionId: string | null;
@@ -91,6 +93,24 @@ export function useOffboardingChecklist(memberId: string) {
     [api, memberId, mutate],
   );
 
+  const markException = useCallback(
+    async ({
+      templateItemId,
+      reason,
+    }: {
+      templateItemId: string;
+      reason: string;
+    }) => {
+      const response = await api.post(
+        `/v1/offboarding-checklist/member/${memberId}/item/${templateItemId}/exception`,
+        { reason },
+      );
+      if (response.error) throw new Error(response.error);
+      await mutate();
+    },
+    [api, memberId, mutate],
+  );
+
   const uploadEvidence = useCallback(
     async (templateItemId: string, file: File) => {
       const base64 = await fileToBase64(file);
@@ -125,6 +145,7 @@ export function useOffboardingChecklist(memberId: string) {
     error,
     completeItem,
     uncompleteItem,
+    markException,
     uploadEvidence,
     getDownloadUrl,
     refreshChecklist: mutate,
