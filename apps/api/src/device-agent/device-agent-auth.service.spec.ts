@@ -562,6 +562,61 @@ describe('DeviceAgentAuthService', () => {
       );
     });
 
+    it('refreshes osVersion from the check-in so an OS update is reflected without re-registering', async () => {
+      // osVersion used to be written only at registration. The agent checks in
+      // hourly but only re-registers on sign-in, so a device updated from
+      // macOS 15.7.3 to 15.8.1 kept reporting 15.7.3 indefinitely.
+      (mockDb.device.findFirst as jest.Mock).mockResolvedValue({
+        id: 'dev-1',
+        agentSessionId: 'ses-1',
+        osVersion: '15.7.3',
+        diskEncryptionEnabled: true,
+        antivirusEnabled: true,
+        passwordPolicySet: true,
+        screenLockEnabled: true,
+        checkDetails: {},
+      });
+      (mockDb.device.update as jest.Mock).mockResolvedValue({});
+
+      await service.checkIn({
+        userId: 'user-1',
+        sessionId: 'ses-1',
+        sessionDeviceAgent: true,
+        dto: { deviceId: 'dev-1', checks: [], osVersion: '15.8.1' },
+      });
+
+      expect(mockDb.device.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'dev-1' },
+          data: expect.objectContaining({ osVersion: '15.8.1' }),
+        }),
+      );
+    });
+
+    it('leaves osVersion untouched when an older agent omits it', async () => {
+      (mockDb.device.findFirst as jest.Mock).mockResolvedValue({
+        id: 'dev-1',
+        agentSessionId: 'ses-1',
+        osVersion: '15.7.3',
+        diskEncryptionEnabled: true,
+        antivirusEnabled: true,
+        passwordPolicySet: true,
+        screenLockEnabled: true,
+        checkDetails: {},
+      });
+      (mockDb.device.update as jest.Mock).mockResolvedValue({});
+
+      await service.checkIn({
+        userId: 'user-1',
+        sessionId: 'ses-1',
+        sessionDeviceAgent: true,
+        dto: { deviceId: 'dev-1', checks: [] },
+      });
+
+      const { data } = (mockDb.device.update as jest.Mock).mock.calls[0][0];
+      expect(data).not.toHaveProperty('osVersion');
+    });
+
     it('should throw NotFoundException if device not found', async () => {
       (mockDb.device.findFirst as jest.Mock).mockResolvedValue(null);
 

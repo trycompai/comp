@@ -42,6 +42,7 @@ export interface CheckInRequest {
   deviceId: string;
   checks: CheckResult[];
   agentVersion?: string;
+  osVersion?: string;
 }
 
 export interface CheckInResponse {

@@ -231,6 +231,7 @@ export class DeviceAgentAuthService {
         // (which hid the compliant device as "Missing" in the People tab).
         source: 'agent',
         ...(dto.agentVersion ? { agentVersion: dto.agentVersion } : {}),
+        ...(dto.osVersion ? { osVersion: dto.osVersion } : {}),
         ...(sessionIdToLink !== undefined ? { agentSessionId: sessionIdToLink } : {}),
       },
     });
