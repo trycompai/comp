@@ -21,7 +21,7 @@ jest.mock('./cloud-security-audit', () => ({
 
 describe('RemediationController', () => {
   let controller: RemediationController;
-  let service: jest.Mocked<RemediationService>;
+  let service: typeof mockService;
 
   const mockService = {
     getCapabilities: jest.fn(),
@@ -249,7 +249,7 @@ describe('RemediationController', () => {
         actionId,
         organizationId: orgId,
       });
-      expect(result).toEqual({ status: 'rolled_back' });
+      expect(result).toEqual(rollbackResult);
     });
 
     it('should throw BAD_REQUEST when service throws', async () => {
