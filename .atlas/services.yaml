@@ -1,0 +1,136 @@
+# Local dev stack for Atlas agents. Read docs/local-env.md first.
+# Every value here is a local development default. None is a real secret.
+# Use http://localhost:<port> URLs in the browser: the API sets a host-only
+# session cookie, and the app reads it server-side on the same host.
+services:
+  postgres:
+    type: database
+    command: docker compose -p comp-local -f packages/db/docker-compose.yml -f .atlas/docker-compose.local.yml up postgres
+    port: 5432
+
+  redis:
+    type: database
+    # Redis plus the Upstash REST emulator that the apps call (port 8079).
+    command: docker compose -p comp-local -f packages/db/docker-compose.yml -f .atlas/docker-compose.local.yml up redis redis-http
+    port: 8079
+
+  s3:
+    type: database
+    # S3-compatible storage (SeaweedFS). Buckets are made in the api setup.
+    command: docker compose -p comp-local -f packages/db/docker-compose.yml -f .atlas/docker-compose.local.yml up s3
+    port: 8333
+
+  api:
+    type: api
+    # Bun runs the TypeScript source directly with --watch (decorator
+    # metadata included). This needs about 0.5 GB. `nest start --watch` runs
+    # a tsc watch program that needs about 4 GB and does not fit next to the app.
+    command: bun --watch src/main.ts
+    cwd: apps/api
+    port: 3333
+    health: /v1/health
+    needs: [postgres, redis, s3]
+    setup:
+      - bun install --frozen-lockfile
+      - bun run db:generate
+      - cd ../.. && bunx turbo run build --filter='@trycompai/api^...' --filter='@trycompai/app^...' --filter='@trycompai/portal^...'
+      - cd ../../packages/db && bunx prisma migrate deploy
+      - cd ../../packages/db && bun prisma/seed/seed.ts
+      - cd ../../packages/db && bun prisma/seed/local-dev.ts
+      - for b in comp-attachments comp-questionnaire comp-knowledge-base comp-org-assets; do curl -sS -o /dev/null -w '%{http_code}' -X PUT "http://127.0.0.1:8333/$b" | grep -qE '^(200|409)$' || exit 1; done
+    env:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:${services.postgres.port}/comp
+      BASE_URL: http://localhost:3333
+      BETTER_AUTH_URL: http://localhost:3000
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      PORTAL_URL: http://localhost:3002
+      AUTH_TRUSTED_ORIGINS: http://localhost:3000,http://localhost:3002,http://localhost:3333
+      SECRET_KEY: local-dev-secret-key-change-me
+      ENCRYPTION_KEY: local-dev-encryption-key-change-me
+      UNSUBSCRIBE_SECRET: local-dev-unsubscribe-secret
+      INTERNAL_API_TOKEN: local-dev-internal-token
+      SERVICE_TOKEN_TRIGGER: local-dev-service-token-trigger
+      SERVICE_TOKEN_PORTAL: local-dev-service-token-portal
+      UPSTASH_REDIS_REST_URL: http://127.0.0.1:${services.redis.port}
+      UPSTASH_REDIS_REST_TOKEN: local-redis-token
+      APP_AWS_ENDPOINT: http://127.0.0.1:${services.s3.port}
+      APP_AWS_REGION: us-east-1
+      APP_AWS_ACCESS_KEY_ID: local
+      APP_AWS_SECRET_ACCESS_KEY: local
+      APP_AWS_BUCKET_NAME: comp-attachments
+      APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET: comp-questionnaire
+      APP_AWS_KNOWLEDGE_BASE_BUCKET: comp-knowledge-base
+      APP_AWS_ORG_ASSETS_BUCKET: comp-org-assets
+      RESEND_API_KEY: re_local_dummy
+      RESEND_FROM_SYSTEM: noreply@example.com
+      RESEND_FROM_DEFAULT: hello@example.com
+      # External services point at a closed local port, so calls fail fast
+      # and never leave the sandbox.
+      MACED_API_KEY: mc_dev_local_dummy
+      MACED_API_BASE_URL: http://127.0.0.1:9
+      BACKGROUND_CHECK_API_BASE_URL: http://127.0.0.1:9
+
+  app:
+    type: web
+    command: bun run dev:no-trigger
+    cwd: apps/app
+    port: 3000
+    health: /api/health
+    needs: [api]
+    setup:
+      - bun run db:generate
+    env:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:${services.postgres.port}/comp
+      NEXT_PUBLIC_API_URL: http://localhost:${services.api.port}
+      BACKEND_API_URL: http://localhost:${services.api.port}
+      NEXT_PUBLIC_BETTER_AUTH_URL: http://localhost:${services.api.port}
+      BETTER_AUTH_URL: http://localhost:3000
+      NEXT_PUBLIC_PORTAL_URL: http://localhost:3002
+      AUTH_SECRET: local-dev-secret-key-change-me
+      SECRET_KEY: local-dev-secret-key-change-me
+      REVALIDATION_SECRET: local-dev-revalidation-secret
+      UNSUBSCRIBE_SECRET: local-dev-unsubscribe-secret
+      INTERNAL_API_TOKEN: local-dev-internal-token
+      SERVICE_TOKEN_TRIGGER: local-dev-service-token-trigger
+      RESEND_API_KEY: re_local_dummy
+      UPSTASH_REDIS_REST_URL: http://127.0.0.1:${services.redis.port}
+      UPSTASH_REDIS_REST_TOKEN: local-redis-token
+      APP_AWS_ENDPOINT: http://127.0.0.1:${services.s3.port}
+      APP_AWS_REGION: us-east-1
+      APP_AWS_ACCESS_KEY_ID: local
+      APP_AWS_SECRET_ACCESS_KEY: local
+      APP_AWS_BUCKET_NAME: comp-attachments
+      APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET: comp-questionnaire
+      APP_AWS_KNOWLEDGE_BASE_BUCKET: comp-knowledge-base
+      APP_AWS_ORG_ASSETS_BUCKET: comp-org-assets
+      NEXT_TELEMETRY_DISABLED: '1'
+
+  portal:
+    type: web
+    command: bun run dev
+    cwd: apps/portal
+    port: 3002
+    health: /
+    needs: [api]
+    setup:
+      - bun run db:generate
+    env:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:${services.postgres.port}/comp
+      NEXT_PUBLIC_API_URL: http://localhost:${services.api.port}
+      NEXT_PUBLIC_BETTER_AUTH_URL: http://localhost:${services.api.port}
+      BETTER_AUTH_URL: http://localhost:3002
+      BETTER_AUTH_SECRET: local-dev-secret-key-change-me
+      INTERNAL_API_TOKEN: local-dev-internal-token
+      SERVICE_TOKEN_PORTAL: local-dev-service-token-portal
+      RESEND_API_KEY: re_local_dummy
+      UPSTASH_REDIS_REST_URL: http://127.0.0.1:${services.redis.port}
+      UPSTASH_REDIS_REST_TOKEN: local-redis-token
+      APP_AWS_ENDPOINT: http://127.0.0.1:${services.s3.port}
+      APP_AWS_REGION: us-east-1
+      APP_AWS_ACCESS_KEY_ID: local
+      APP_AWS_SECRET_ACCESS_KEY: local
+      APP_AWS_BUCKET_NAME: comp-attachments
+      NEXT_TELEMETRY_DISABLED: '1'
