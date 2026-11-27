@@ -1,3 +1,4 @@
+import { db } from '@db';
 import {
   BadRequestException,
   Injectable,
@@ -52,22 +53,39 @@ export class ConnectionCheckRunnerService {
     connectionId: string;
     organizationId: string;
     checkId?: string;
+    taskId?: string;
   }): Promise<RunAllChecksResult> {
-    const { connectionId, organizationId, checkId } = params;
+    const { connectionId, organizationId, checkId, taskId } = params;
+    if (
+      taskId &&
+      !(await db.task.findUnique({
+        where: { id: taskId, organizationId },
+        select: { id: true },
+      }))
+    ) {
+      throw new NotFoundException('Task not found');
+    }
 
-    const { connection, provider, manifest } =
-      await this.loadConnectionContext(connectionId, organizationId);
+    const { connection, provider, manifest } = await this.loadConnectionContext(
+      connectionId,
+      organizationId,
+    );
     if (!manifest.checks || manifest.checks.length === 0) {
       throw new BadRequestException(`No checks defined for ${provider.slug}`);
     }
 
-    const { credentials, variables, accessToken, onTokenRefresh } =
-      await this.resolveExecutionInputs(
-        connection,
-        organizationId,
-        provider,
-        manifest,
-      );
+    const {
+      credentials,
+      variables,
+      accessToken,
+      onTokenRefresh,
+      credentialRevision,
+    } = await this.resolveExecutionInputs(
+      connection,
+      organizationId,
+      provider,
+      manifest,
+    );
 
     return runAllChecks({
       manifest,
@@ -77,6 +95,13 @@ export class ConnectionCheckRunnerService {
       connectionId,
       organizationId,
       checkId,
+      completionContext: taskId
+        ? {
+            taskId,
+            credentialRevision,
+            configurationMetadata: connection.metadata ?? null,
+          }
+        : undefined,
       onTokenRefresh,
       logger: {
         info: (msg, data) => this.logger.log(msg, data),
@@ -105,8 +130,10 @@ export class ConnectionCheckRunnerService {
       throw new BadRequestException('Candidate code is required');
     }
 
-    const { connection, provider, manifest } =
-      await this.loadConnectionContext(connectionId, organizationId);
+    const { connection, provider, manifest } = await this.loadConnectionContext(
+      connectionId,
+      organizationId,
+    );
 
     const { credentials, variables, accessToken, onTokenRefresh } =
       await this.resolveExecutionInputs(
@@ -182,15 +209,18 @@ export class ConnectionCheckRunnerService {
    * identical to the original inline logic).
    */
   private async resolveExecutionInputs(
-    connection: { id: string; variables: unknown },
+    connection: { id: string; variables: unknown; metadata: unknown },
     organizationId: string,
     provider: { slug: string },
     manifest: NonNullable<ReturnType<typeof getManifest>>,
   ) {
     const connectionId = connection.id;
 
-    const credentials =
-      await this.credentialVaultService.getDecryptedCredentials(connectionId);
+    const selectedCredentials =
+      await this.credentialVaultService.getDecryptedCredentialsWithRevision({
+        connectionId,
+      });
+    const credentials = selectedCredentials?.credentials;
     if (!credentials) {
       throw new BadRequestException('No credentials found for connection');
     }
@@ -273,6 +303,12 @@ export class ConnectionCheckRunnerService {
       }
     }
 
-    return { credentials, variables, accessToken, onTokenRefresh };
+    return {
+      credentials,
+      variables,
+      accessToken,
+      onTokenRefresh,
+      credentialRevision: selectedCredentials?.credentialRevision ?? null,
+    };
   }
 }

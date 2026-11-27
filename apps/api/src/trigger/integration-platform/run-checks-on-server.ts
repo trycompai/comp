@@ -31,8 +31,9 @@ export async function runChecksOnServer(params: {
   connectionId: string;
   organizationId: string;
   checkId?: string;
+  taskId?: string;
 }): Promise<RunAllChecksResult> {
-  const { apiUrl, connectionId, organizationId, checkId } = params;
+  const { apiUrl, connectionId, organizationId, checkId, taskId } = params;
 
   const serviceToken = process.env.SERVICE_TOKEN_TRIGGER;
   if (!serviceToken) {
@@ -56,7 +57,10 @@ export async function runChecksOnServer(params: {
           'x-service-token': serviceToken,
           'x-organization-id': organizationId,
         },
-        body: JSON.stringify(checkId ? { checkId } : {}),
+        body: JSON.stringify({
+          ...(checkId ? { checkId } : {}),
+          ...(taskId ? { taskId } : {}),
+        }),
       },
     );
 

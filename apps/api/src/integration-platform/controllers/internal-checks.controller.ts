@@ -26,6 +26,13 @@ class RunConnectionChecksOnServerDto {
   @IsOptional()
   @IsString()
   checkId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Existing task whose native check is being evaluated.',
+  })
+  @IsOptional()
+  @IsString()
+  taskId?: string;
 }
 
 /**
@@ -60,6 +67,7 @@ export class InternalChecksController {
       connectionId,
       organizationId,
       checkId: body.checkId,
+      taskId: body.taskId,
     });
   }
 }

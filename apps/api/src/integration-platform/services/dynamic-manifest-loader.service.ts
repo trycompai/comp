@@ -1,3 +1,4 @@
+import { dynamicManifestIdentity } from '@trycompai/integration-platform';
 import {
   Injectable,
   Logger,
@@ -142,9 +143,7 @@ export class DynamicManifestLoaderService
       config: authConfig.config as AuthStrategy['config'],
     } as AuthStrategy;
 
-    const checks = integration.checks.map((check) =>
-      this.convertCheck(check, integration.slug),
-    );
+    const checks = integration.checks.map((check) => this.convertCheck(check));
 
     // Collect manifest-level variables from syncDefinition (if present)
     // These appear in the customer configuration UI (ManageIntegrationDialog)
@@ -164,6 +163,14 @@ export class DynamicManifestLoaderService
         : undefined;
 
     return {
+      definitionIdentity: dynamicManifestIdentity({
+        slug: integration.slug,
+        authConfig: integration.authConfig,
+        baseUrl: integration.baseUrl,
+        defaultHeaders: integration.defaultHeaders,
+        syncDefinition: integration.syncDefinition,
+        services: integration.services,
+      }),
       id: integration.slug,
       name: integration.name,
       description: integration.description,
@@ -192,7 +199,7 @@ export class DynamicManifestLoaderService
   /**
    * Convert a DynamicCheck (DB row) into an IntegrationCheck using the DSL interpreter.
    */
-  private convertCheck(check: DynamicCheck, _integrationSlug: string) {
+  private convertCheck(check: DynamicCheck) {
     const definition = check.definition as Record<string, unknown>;
     const variables = check.variables as unknown as CheckVariable[] | undefined;
 

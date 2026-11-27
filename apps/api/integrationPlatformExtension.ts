@@ -4,6 +4,7 @@ import type {
   BuildManifest,
 } from '@trigger.dev/build';
 import type { Plugin } from 'esbuild';
+import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { cp, mkdir } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
@@ -44,6 +45,7 @@ class IntegrationPlatformExtension implements BuildExtension {
     }
 
     context.logger.debug(`Found integration-platform at ${this._packagePath}`);
+    this.verifyNativeSource(this._packagePath);
 
     // Register esbuild plugin to resolve the workspace package
     const packagePath = this._packagePath;
@@ -51,11 +53,14 @@ class IntegrationPlatformExtension implements BuildExtension {
       name: 'resolve-integration-platform',
       setup(build) {
         // Resolve bare import
-        build.onResolve({ filter: /^@trycompai\/integration-platform$/ }, () => {
-          return {
-            path: resolve(packagePath, 'dist/index.js'),
-          };
-        });
+        build.onResolve(
+          { filter: /^@trycompai\/integration-platform$/ },
+          () => {
+            return {
+              path: resolve(packagePath, 'dist/index.js'),
+            };
+          },
+        );
 
         // Resolve subpath imports like @trycompai/integration-platform/types
         build.onResolve(
@@ -82,6 +87,7 @@ class IntegrationPlatformExtension implements BuildExtension {
     if (!packagePath) {
       return;
     }
+    this.verifyNativeSource(packagePath);
 
     const packageDistPath = resolve(packagePath, 'dist');
 
@@ -102,6 +108,7 @@ class IntegrationPlatformExtension implements BuildExtension {
     if (existsSync(packageJsonPath)) {
       await cp(packageJsonPath, resolve(destPath, 'package.json'));
     }
+    this.verifyNativeSource(packagePath);
 
     context.logger.log(
       'Copied @trycompai/integration-platform to deployment bundle',
@@ -125,5 +132,17 @@ class IntegrationPlatformExtension implements BuildExtension {
     }
 
     return undefined;
+  }
+
+  private verifyNativeSource(packagePath: string): void {
+    execFileSync(
+      'bun',
+      ['run', resolve(packagePath, 'scripts/native-source-build.ts'), 'verify'],
+      {
+        cwd: packagePath,
+        timeout: 120_000,
+        stdio: 'inherit',
+      },
+    );
   }
 }

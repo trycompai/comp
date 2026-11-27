@@ -1,3 +1,4 @@
+import { completeTaskAutomatically } from '../../tasks/automatic-completion/complete-task-automatically';
 import {
   Injectable,
   NotFoundException,
@@ -208,9 +209,16 @@ export class ConnectionService {
     if (taskIds.length === 0) return;
 
     const tasks = await db.task.findMany({
-      where: { id: { in: taskIds }, status: 'failed' },
+      where: {
+        id: { in: taskIds },
+        status: 'failed',
+        automationStatus: 'AUTOMATED',
+        archivedAt: null,
+      },
       select: {
         id: true,
+        organizationId: true,
+        updatedAt: true,
         evidenceAutomations: {
           where: { isEnabled: true },
           select: {
@@ -232,19 +240,42 @@ export class ConnectionService {
     for (const task of tasks) {
       const target = this.deriveTargetStatusForTask(task);
       if (target === 'failed') continue;
-      await db.task.update({
-        where: { id: task.id },
-        data: { status: target },
-      });
-      this.logger.log(
-        `Task ${task.id} re-evaluated to '${target}' after connection ${connectionId} disconnect`,
-      );
+      const result =
+        target === 'done'
+          ? await completeTaskAutomatically({
+              taskId: task.id,
+              organizationId: task.organizationId,
+              source: 'disconnect',
+            })
+          : await db.task.updateMany({
+              where: {
+                id: task.id,
+                organizationId: task.organizationId,
+                status: 'failed',
+                automationStatus: 'AUTOMATED',
+                archivedAt: null,
+                updatedAt: task.updatedAt,
+                evidenceAutomations: { none: { isEnabled: true } },
+                integrationCheckRuns: {
+                  none: {
+                    connection: { status: { not: 'disconnected' } },
+                  },
+                },
+              },
+              data: { status: 'todo' },
+            });
+      if (result.count > 0) {
+        this.logger.log(
+          `Task ${task.id} re-evaluated to '${target}' after connection ${connectionId} disconnect`,
+        );
+      }
     }
   }
 
   /**
-   * Mirror of the scheduler's getTargetStatus (see apps/app/src/trigger/tasks/
-   * task/task-schedule-helpers.ts), scoped to the fields we fetch above.
+   * Legacy candidate classification only. A possible Done is independently
+   * admitted and conditionally written by the common current-evidence guard;
+   * these pass-only historical fields are never completion authority.
    */
   private deriveTargetStatusForTask(task: {
     evidenceAutomations: Array<{
@@ -286,8 +317,7 @@ export class ConnectionService {
 
     if (!hasCustom && !hasApp) return 'todo';
 
-    const allPassing =
-      (!hasCustom || customPassing) && (!hasApp || appPassing);
+    const allPassing = (!hasCustom || customPassing) && (!hasApp || appPassing);
     return allPassing ? 'done' : 'failed';
   }
 

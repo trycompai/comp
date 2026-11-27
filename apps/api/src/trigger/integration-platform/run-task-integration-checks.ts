@@ -1,3 +1,4 @@
+import { completeTaskAutomatically } from '../../tasks/automatic-completion/complete-task-automatically';
 import { getManifest, runAllChecks } from '@trycompai/integration-platform';
 import { db } from '@db';
 import { logger, tags, task } from '@trigger.dev/sdk';
@@ -120,6 +121,7 @@ export const runTaskIntegrationChecks = task({
     // runtime (a non-delegated provider always has a manifest by here) that lets
     // TypeScript narrow `manifest` for the in-process branch below.
     let credentials: IntegrationCredentialValues = {};
+    let credentialRevision: string | null = null;
     let handleTokenRefresh: (() => Promise<string | null>) | undefined;
 
     if (!runOnServer && manifest) {
@@ -149,6 +151,7 @@ export const runTaskIntegrationChecks = task({
         return { success: false, error: errorMessage };
       }
       credentials = credentialsResult.credentials;
+      credentialRevision = credentialsResult.credentialRevision ?? null;
       logger.info('Credentials validated successfully');
 
       handleTokenRefresh = async (): Promise<string | null> => {
@@ -166,6 +169,7 @@ export const runTaskIntegrationChecks = task({
         }
 
         credentials = refreshResult.credentials;
+        credentialRevision = refreshResult.credentialRevision ?? null;
         return getAccessToken(credentials) ?? null;
       };
 
@@ -234,6 +238,20 @@ export const runTaskIntegrationChecks = task({
     // Run only the checks that apply to this task
     try {
       for (const checkId of effectiveCheckIds) {
+        const executionStartedAt = new Date();
+        const checkRun = await db.integrationCheckRun.create({
+          data: {
+            connectionId,
+            taskId,
+            checkId,
+            checkName:
+              manifest?.checks?.find((check) => check.id === checkId)?.name ??
+              checkId,
+            status: 'running',
+            startedAt: executionStartedAt,
+            createdAt: executionStartedAt,
+          },
+        });
         // Server-delegated providers (AWS + dynamic) run ON OUR SERVER so their
         // checks egress our VPC / resolve their DB-backed manifest there.
         // Static providers keep executing here in the Trigger.dev runtime,
@@ -247,6 +265,7 @@ export const runTaskIntegrationChecks = task({
               connectionId,
               organizationId,
               checkId,
+              taskId,
             });
           } else if (manifest) {
             result = await runAllChecks({
@@ -257,6 +276,11 @@ export const runTaskIntegrationChecks = task({
               connectionId,
               organizationId,
               checkId, // Run specific check
+              completionContext: {
+                taskId,
+                credentialRevision,
+                configurationMetadata: connection.metadata ?? null,
+              },
               onTokenRefresh:
                 manifest.auth.type === 'oauth2'
                   ? handleTokenRefresh
@@ -279,8 +303,6 @@ export const runTaskIntegrationChecks = task({
           // branch is unexpected and must NOT be silently downgraded. Re-throw
           // it to preserve the pre-change behavior (it propagates to the outer
           // catch and fails the task).
-          if (!runOnServer) throw error;
-
           // Server-run threw, and only on a transport blip (network/non-2xx) —
           // per-check execution errors come back inside the result, not thrown.
           // Record THIS check as errored and keep going so one blip doesn't abort
@@ -295,11 +317,9 @@ export const runTaskIntegrationChecks = task({
           // A transport blip is indeterminate, not a finding: it gates
           // integrationLastRunAt (retry next tick) but must not fail the task.
           hasExecutionErrors = true;
-          await db.integrationCheckRun.create({
+          await db.integrationCheckRun.update({
+            where: { id: checkRun.id },
             data: {
-              connectionId,
-              taskId,
-              checkId,
               checkName: checkDef?.name ?? checkId,
               // A transport blip (Trigger→server) is an execution error, so
               // route it through the SAME shared rule as every other run: dynamic
@@ -309,7 +329,8 @@ export const runTaskIntegrationChecks = task({
                 resultStatus: 'error',
                 isDynamic,
               }),
-              startedAt: new Date(),
+              startedAt: executionStartedAt,
+              createdAt: executionStartedAt,
               completedAt: new Date(),
               durationMs: 0,
               totalChecked: 0,
@@ -321,6 +342,7 @@ export const runTaskIntegrationChecks = task({
           logger.error(
             `Server-run failed for check ${checkId} on task ${taskId}: ${message}`,
           );
+          if (!runOnServer) throw error;
           // A dynamic transport error was just held as 'inconclusive' — count it
           // so an error-only failure (no findings) still keeps the task pending.
           if (isDynamic) heldRunCount++;
@@ -328,7 +350,20 @@ export const runTaskIntegrationChecks = task({
         }
 
         const checkResult = result.results[0];
-        if (!checkResult) continue;
+        if (!checkResult || checkResult.checkId !== checkId) {
+          hasExecutionErrors = true;
+          if (isDynamic) heldRunCount++;
+          await db.integrationCheckRun.update({
+            where: { id: checkRun.id },
+            data: {
+              status: decideRunStatus({ resultStatus: 'error', isDynamic }),
+              completedAt: new Date(),
+              errorMessage: 'Requested check produced no matching result',
+              completionEvidenceBinding: null,
+            },
+          });
+          continue;
+        }
 
         // Accumulate results. Record each failing finding (keyed like an
         // exception) so task status can exclude explicitly-excepted ones.
@@ -359,33 +394,30 @@ export const runTaskIntegrationChecks = task({
         // keeps the task pending — count it so it can't slip to 'done'.
         if (runStatus === 'inconclusive') heldRunCount++;
 
-        // Store check run
-        const checkRun = await db.integrationCheckRun.create({
-          data: {
-            connectionId,
-            taskId,
-            checkId: checkResult.checkId,
-            checkName: checkResult.checkName,
-            status: runStatus,
-            startedAt: new Date(),
-            completedAt: new Date(),
-            durationMs: checkResult.durationMs,
-            totalChecked:
-              checkResult.result.summary?.totalChecked ||
-              checkResult.result.passingResults.length +
-                checkResult.result.findings.length,
-            passedCount: checkResult.result.passingResults.length,
-            // A held (inconclusive) run has no CONFIRMED failures — its findings
-            // are our-side/transient, not real fails — so failedCount is 0. The
-            // raw findings still persist as results for the agent to diagnose.
-            failedCount:
-              runStatus === 'inconclusive'
-                ? 0
-                : checkResult.result.findings.length,
-            errorMessage: checkResult.error,
-            logs: JSON.parse(JSON.stringify(checkResult.result.logs)),
-          },
-        });
+        // Complete only after every result row has been stored.
+        const completedRunData = {
+          checkName: checkResult.checkName,
+          status: runStatus,
+          startedAt: executionStartedAt,
+          completedAt: new Date(),
+          durationMs: checkResult.durationMs,
+          totalChecked:
+            checkResult.result.summary?.totalChecked ||
+            checkResult.result.passingResults.length +
+              checkResult.result.findings.length,
+          passedCount: checkResult.result.passingResults.length,
+          // A held (inconclusive) run has no CONFIRMED failures — its findings
+          // are our-side/transient, not real fails — so failedCount is 0. The
+          // raw findings still persist as results for the agent to diagnose.
+          failedCount:
+            runStatus === 'inconclusive'
+              ? 0
+              : checkResult.result.findings.length,
+          errorMessage: checkResult.error,
+          logs: JSON.parse(JSON.stringify(checkResult.result.logs)),
+          completionEvidenceBinding:
+            checkResult.completionEvidenceBinding ?? null,
+        };
 
         // Store individual results
         const resultsToStore = [
@@ -418,6 +450,10 @@ export const runTaskIntegrationChecks = task({
         if (resultsToStore.length > 0) {
           await db.integrationCheckResult.createMany({ data: resultsToStore });
         }
+        await db.integrationCheckRun.update({
+          where: { id: checkRun.id },
+          data: completedRunData,
+        });
 
         logger.info(`Completed check ${checkId} for task ${taskId}`, {
           passed: checkResult.result.passingResults.length,
@@ -464,7 +500,10 @@ export const runTaskIntegrationChecks = task({
           `Held ${heldCount} check(s) as inconclusive (pending) for task ${taskId} — not failed, not done`,
         );
       }
-      const effectiveFailures = countEffectiveFailures(statusFailures, exceptions);
+      const effectiveFailures = countEffectiveFailures(
+        statusFailures,
+        exceptions,
+      );
       const newStatus = decideTaskStatus(
         effectiveFailures,
         totalPassing,
@@ -477,6 +516,7 @@ export const runTaskIntegrationChecks = task({
       // email, so a task that was already failed isn't re-reported every run —
       // preserving the previous "only notify on transition" behavior.
       let statusChangedToFailed = false;
+      let taskStatus = newStatus;
 
       if (newStatus === 'failed') {
         // Get current status before updating
@@ -501,38 +541,15 @@ export const runTaskIntegrationChecks = task({
           );
         }
       } else if (newStatus === 'done') {
-        // Only update to done if not already done
-        const currentTask = await db.task.findUnique({
-          where: { id: taskId },
-          select: { status: true, frequency: true },
+        const completion = await completeTaskAutomatically({
+          taskId,
+          organizationId,
+          source: 'native',
         });
-        if (currentTask && currentTask.status !== 'done') {
-          // Calculate next review date based on frequency
-          let reviewDate: Date | undefined;
-          if (currentTask.frequency) {
-            reviewDate = new Date();
-            switch (currentTask.frequency) {
-              case 'monthly':
-                reviewDate.setMonth(reviewDate.getMonth() + 1);
-                break;
-              case 'quarterly':
-                reviewDate.setMonth(reviewDate.getMonth() + 3);
-                break;
-              case 'yearly':
-                reviewDate.setFullYear(reviewDate.getFullYear() + 1);
-                break;
-            }
-          }
-
-          await db.task.update({
-            where: { id: taskId },
-            data: {
-              status: 'done',
-              ...(reviewDate ? { reviewDate } : {}),
-            },
-          });
+        taskStatus = completion.count > 0 ? 'done' : null;
+        if (completion.count > 0) {
           logger.info(
-            `Task ${taskId} marked as done - all ${totalPassing} checks passed${reviewDate ? `, next review: ${reviewDate.toISOString()}` : ''}`,
+            `Task ${taskId} completed after current evidence and review validation`,
           );
         }
       }
@@ -544,7 +561,7 @@ export const runTaskIntegrationChecks = task({
         checksRun: effectiveCheckIds.length,
         totalPassing,
         totalFindings,
-        taskStatus: newStatus,
+        taskStatus,
         // Consumed by the per-org bundled-failure email
         // (run-org-integration-checks). `statusChangedToFailed` gates inclusion;
         // failedCount/totalCount feed the "(X/Y failed)" line per task.

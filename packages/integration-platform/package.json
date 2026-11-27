@@ -28,12 +28,13 @@
     }
   },
   "scripts": {
-    "build": "tsc",
+    "build": "bun run scripts/native-source-build.ts build",
     "clean": "rm -rf .turbo node_modules dist",
     "dev": "tsc --watch",
     "format": "prettier --write .",
     "lint": "prettier --check .",
-    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit && tsc --project scripts/tsconfig.json",
     "verify": "bun run src/validators/manifest-validator.ts",
     "generate:tasks": "bun run scripts/generate-task-types.ts"
   },
