@@ -4,7 +4,11 @@ import './src/env.mjs';
 
 const isStandalone = process.env.NEXT_OUTPUT_STANDALONE === 'true';
 
+// Dev previews behind a proxy set PREVIEW_URL; allow its host so HMR is not blocked.
+const previewUrl = process.env.PREVIEW_URL ?? '';
+
 const config = {
+  allowedDevOrigins: URL.canParse(previewUrl) ? [new URL(previewUrl).hostname] : [],
   transpilePackages: [
     '@trycompai/auth',
     '@trycompai/db',

@@ -9,6 +9,9 @@ const isStandalone = process.env.NEXT_OUTPUT_STANDALONE === 'true';
 
 const workspaceRoot = path.join(__dirname, '..', '..');
 
+// Dev previews behind a proxy set PREVIEW_URL; allow its host so HMR is not blocked.
+const previewUrl = process.env.PREVIEW_URL ?? '';
+
 const config: NextConfig = {
   // Ensure Turbopack can import .md files as raw strings during dev
   turbopack: {
@@ -39,6 +42,7 @@ const config: NextConfig = {
       ? `${process.env.STATIC_ASSETS_URL}/app`
       : '',
   reactStrictMode: false,
+  allowedDevOrigins: URL.canParse(previewUrl) ? [new URL(previewUrl).hostname] : [],
   transpilePackages: [
     '@trycompai/auth',
     '@trycompai/db',
@@ -132,9 +136,9 @@ export default withSentryConfig(withBotId(config), {
   // For all available options, see:
   // https://www.npmjs.com/package/@sentry/webpack-plugin#options
 
-  org: "comp-ai",
+  org: 'comp-ai',
 
-  project: "comp",
+  project: 'comp',
 
   // Only print logs for uploading source maps in CI
   silent: !process.env.CI,
@@ -149,7 +153,7 @@ export default withSentryConfig(withBotId(config), {
   // This can increase your server load as well as your hosting bill.
   // Note: Check that the configured route will not match with your Next.js middleware, otherwise reporting of client-
   // side errors will fail.
-  tunnelRoute: "/monitoring",
+  tunnelRoute: '/monitoring',
 
   webpack: {
     // Enables automatic instrumentation of Vercel Cron Monitors. (Does not yet work with App Router route handlers.)

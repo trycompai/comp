@@ -1,0 +1,31 @@
+# Local-only infrastructure for the Atlas dev stack (.atlas/services.yaml).
+# Use it together with packages/db/docker-compose.yml under the project name
+# "comp-local". All values here are local development defaults, not secrets.
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+  redis-http:
+    # Upstash REST API emulator in front of the local Redis.
+    image: hiett/serverless-redis-http:latest
+    environment:
+      SRH_MODE: env
+      SRH_TOKEN: local-redis-token
+      SRH_CONNECTION_STRING: redis://redis:6379
+    ports:
+      - '8079:80'
+    depends_on:
+      - redis
+  s3:
+    # S3-compatible storage (SeaweedFS). With no identities file it accepts
+    # any access key, so local requests sign with dummy credentials.
+    image: chrislusf/seaweedfs:latest
+    command: server -dir=/data -s3 -s3.port=8333 -ip.bind=0.0.0.0 -volume.max=0 -master.volumeSizeLimitMB=64
+    ports:
+      - '8333:8333'
+    volumes:
+      - s3_data:/data
+
+volumes:
+  s3_data:
